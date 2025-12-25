@@ -7,7 +7,7 @@ CREATE TABLE recurring_expenses (
 
   -- Recurrence configuration
   frequency TEXT NOT NULL CHECK (frequency IN ('weekly', 'bi_weekly', 'monthly', 'quarterly', 'yearly', 'custom')),
-  interval INT NOT NULL DEFAULT 1 CHECK (interval > 0),  -- e.g., every 2 months
+  "interval" INT NOT NULL DEFAULT 1 CHECK ("interval" > 0),  -- e.g., every 2 months
 
   -- Date management
   start_date DATE NOT NULL,
@@ -62,7 +62,7 @@ CREATE POLICY "Users can view recurring expenses they participate in"
     (context_type = 'friend' AND EXISTS (
       SELECT 1 FROM friendships
       WHERE friendships.id = recurring_expenses.friendship_id
-      AND (friendships.user_a_id = auth.uid() OR friendships.user_b_id = auth.uid())
+      AND (friendships.user_a = auth.uid() OR friendships.user_b = auth.uid())
       AND friendships.status = 'accepted'
     ))
   );
@@ -85,7 +85,7 @@ CREATE POLICY "Only creator can insert recurring expenses"
       (context_type = 'friend' AND EXISTS (
         SELECT 1 FROM friendships
         WHERE friendships.id = recurring_expenses.friendship_id
-        AND (friendships.user_a_id = auth.uid() OR friendships.user_b_id = auth.uid())
+        AND (friendships.user_a = auth.uid() OR friendships.user_b = auth.uid())
         AND friendships.status = 'accepted'
       ))
     )
@@ -123,23 +123,23 @@ CREATE TRIGGER update_recurring_expenses_updated_at
 CREATE OR REPLACE FUNCTION calculate_next_occurrence(
   p_current_date DATE,
   p_frequency TEXT,
-  p_interval INT
+  p_interval_value INT
 )
 RETURNS DATE AS $$
 BEGIN
   CASE p_frequency
     WHEN 'weekly' THEN
-      RETURN p_current_date + (p_interval * INTERVAL '1 week');
+      RETURN p_current_date + (p_interval_value * INTERVAL '1 week');
     WHEN 'bi_weekly' THEN
-      RETURN p_current_date + (p_interval * INTERVAL '2 weeks');
+      RETURN p_current_date + (p_interval_value * INTERVAL '2 weeks');
     WHEN 'monthly' THEN
-      RETURN p_current_date + (p_interval * INTERVAL '1 month');
+      RETURN p_current_date + (p_interval_value * INTERVAL '1 month');
     WHEN 'quarterly' THEN
-      RETURN p_current_date + (p_interval * INTERVAL '3 months');
+      RETURN p_current_date + (p_interval_value * INTERVAL '3 months');
     WHEN 'yearly' THEN
-      RETURN p_current_date + (p_interval * INTERVAL '1 year');
+      RETURN p_current_date + (p_interval_value * INTERVAL '1 year');
     WHEN 'custom' THEN
-      RETURN p_current_date + (p_interval * INTERVAL '1 day');
+      RETURN p_current_date + (p_interval_value * INTERVAL '1 day');
     ELSE
       RETURN p_current_date + INTERVAL '1 month';
   END CASE;
@@ -152,7 +152,7 @@ RETURNS TABLE (
   id UUID,
   template_expense_id UUID,
   frequency TEXT,
-  interval INT,
+  interval_value INT,
   next_occurrence DATE,
   context_type TEXT,
   group_id UUID,
