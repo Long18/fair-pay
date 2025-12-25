@@ -45,61 +45,67 @@
 
   --font-sans: "Montserrat", "Inter", sans-serif;
 
-  /* Fintech Professional Color Palette - Inspired by Figma "Quiet Luxury" & "Frozen Lake" */
-  /* Primary Colors - Trust & Sophistication */
-  --color-primary-blue: #2C5F8D;
-  --color-primary-navy: #1A3A52;
-  --color-primary-teal: #4A90A4;
+  /* HR Refine Color Palette - Inspired by hr.refine.dev */
+  /* Primary Colors - Teal */
+  --color-primary-teal: #14B8A6;
+  --color-primary-teal-light: #2DD4BF;
+  --color-primary-teal-dark: #0D9488;
 
-  /* Accent Colors - Energy & Action */
-  --color-accent-gold: #D4AF37;
-  --color-accent-mint: #7FB3A3;
-  --color-accent-coral: #E88873;
+  /* Secondary Colors - Purple/Indigo */
+  --color-secondary-purple: #6366F1;
+  --color-secondary-indigo: #4F46E5;
+  --color-secondary-purple-light: #818CF8;
+
+  /* Accent Colors - Vibrant */
+  --color-accent-orange: #F97316;
+  --color-accent-pink: #EC4899;
+  --color-accent-emerald: #10B981;
+  --color-accent-amber: #F59E0B;
 
   /* Success & Growth */
-  --color-success-primary: #5C9F7F;
-  --color-success-light: #8BC4A8;
-  --color-success-dark: #3D7A5E;
+  --color-success-primary: #10B981;
+  --color-success-light: #34D399;
+  --color-success-dark: #059669;
 
   /* Warning & Alert */
-  --color-warning-primary: #E8A05D;
-  --color-warning-light: #F4C088;
-  --color-warning-dark: #C87D3A;
+  --color-warning-primary: #F59E0B;
+  --color-warning-light: #FBBF24;
+  --color-warning-dark: #D97706;
 
   /* Error & Danger */
-  --color-error-primary: #D66B6B;
-  --color-error-light: #E89B9B;
-  --color-error-dark: #B84848;
+  --color-error-primary: #EF4444;
+  --color-error-light: #F87171;
+  --color-error-dark: #DC2626;
 
-  /* Neutral Grays - Professional Foundation */
-  --color-gray-50: #FAFBFC;
-  --color-gray-100: #F4F6F8;
-  --color-gray-200: #E8ECEF;
-  --color-gray-300: #D1D8DD;
-  --color-gray-400: #9BA5AE;
-  --color-gray-500: #6B7780;
-  --color-gray-600: #4A5560;
-  --color-gray-700: #2E3842;
-  --color-gray-800: #1C2429;
-  --color-gray-900: #0F1419;
+  /* Neutral Grays - Modern Foundation */
+  --color-gray-50: #F9FAFB;
+  --color-gray-100: #F3F4F6;
+  --color-gray-200: #E5E7EB;
+  --color-gray-300: #D1D5DB;
+  --color-gray-400: #9CA3AF;
+  --color-gray-500: #6B7280;
+  --color-gray-600: #4B5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1F2937;
+  --color-gray-900: #111827;
 
   /* Background Colors */
   --color-bg-primary: #FFFFFF;
-  --color-bg-secondary: #FAFBFC;
-  --color-bg-tertiary: #F4F6F8;
+  --color-bg-secondary: #F9FAFB;
+  --color-bg-tertiary: #F3F4F6;
   --color-bg-elevated: #FFFFFF;
 
   /* Text Colors */
-  --color-text-primary: #1C2429;
-  --color-text-secondary: #4A5560;
-  --color-text-tertiary: #6B7780;
-  --color-text-disabled: #9BA5AE;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4B5563;
+  --color-text-tertiary: #6B7280;
+  --color-text-disabled: #9CA3AF;
   --color-text-inverse: #FFFFFF;
 
   /* Border Colors */
-  --color-border-light: #E8ECEF;
-  --color-border-medium: #D1D8DD;
-  --color-border-strong: #9BA5AE;
+  --color-border-light: #E5E7EB;
+  --color-border-medium: #D1D5DB;
+  --color-border-strong: #9CA3AF;
 }
 
 :root {
@@ -117,21 +123,21 @@
   --popover: var(--color-bg-elevated);
   --popover-foreground: var(--color-text-primary);
 
-  /* Primary Colors - Professional Blue */
-  --primary: var(--color-primary-blue);
+  /* Primary Colors - Teal (hr.refine.dev style) */
+  --primary: var(--color-primary-teal);
   --primary-foreground: var(--color-text-inverse);
 
-  /* Secondary Colors - Subtle Teal */
-  --secondary: var(--color-primary-teal);
+  /* Secondary Colors - Purple */
+  --secondary: var(--color-secondary-purple);
   --secondary-foreground: var(--color-text-inverse);
 
   /* Muted Colors */
   --muted: var(--color-gray-100);
   --muted-foreground: var(--color-text-secondary);
 
-  /* Accent Colors - Gold for CTAs */
-  --accent: var(--color-accent-gold);
-  --accent-foreground: var(--color-text-primary);
+  /* Accent Colors - Indigo for CTAs */
+  --accent: var(--color-secondary-indigo);
+  --accent-foreground: var(--color-text-inverse);
 
   /* Destructive Colors */
   --destructive: var(--color-error-primary);
@@ -140,70 +146,70 @@
   /* Border & Input Colors */
   --border: var(--color-border-light);
   --input: var(--color-gray-100);
-  --ring: var(--color-primary-blue);
+  --ring: var(--color-primary-teal);
 
-  /* Chart Colors - Professional Palette */
-  --chart-1: var(--color-primary-blue);
-  --chart-2: var(--color-success-primary);
-  --chart-3: var(--color-accent-gold);
-  --chart-4: var(--color-primary-teal);
-  --chart-5: var(--color-accent-mint);
+  /* Chart Colors - Vibrant Palette */
+  --chart-1: var(--color-primary-teal);
+  --chart-2: var(--color-secondary-purple);
+  --chart-3: var(--color-accent-orange);
+  --chart-4: var(--color-accent-emerald);
+  --chart-5: var(--color-accent-amber);
 
   /* Sidebar Colors */
   --sidebar: var(--color-bg-primary);
   --sidebar-foreground: var(--color-text-secondary);
-  --sidebar-primary: var(--color-primary-navy);
+  --sidebar-primary: var(--color-primary-teal);
   --sidebar-primary-foreground: var(--color-text-inverse);
   --sidebar-accent: var(--color-gray-50);
   --sidebar-accent-foreground: var(--color-text-primary);
   --sidebar-border: var(--color-border-light);
-  --sidebar-ring: var(--color-primary-blue);
+  --sidebar-ring: var(--color-primary-teal);
 }
 
 .dark {
-  /* Dark Mode - Professional Fintech Theme */
+  /* Dark Mode - Modern Teal/Purple Theme */
   --background: #0F1419;
-  --foreground: #E8ECEF;
+  --foreground: #E5E7EB;
 
-  --card: #1C2429;
-  --card-foreground: #E8ECEF;
+  --card: #1F2937;
+  --card-foreground: #E5E7EB;
 
-  --popover: #2E3842;
-  --popover-foreground: #E8ECEF;
+  --popover: #374151;
+  --popover-foreground: #E5E7EB;
 
-  --primary: #4A90A4;
+  --primary: #2DD4BF;
   --primary-foreground: #FFFFFF;
 
-  --secondary: #2C5F8D;
+  --secondary: #818CF8;
   --secondary-foreground: #FFFFFF;
 
-  --muted: #2E3842;
-  --muted-foreground: #9BA5AE;
+  --muted: #374151;
+  --muted-foreground: #9CA3AF;
 
-  --accent: #D4AF37;
-  --accent-foreground: #1C2429;
+  --accent: #6366F1;
+  --accent-foreground: #FFFFFF;
 
-  --destructive: #E89B9B;
-  --destructive-foreground: #1C2429;
+  --destructive: #F87171;
+  --destructive-foreground: #FFFFFF;
 
-  --border: #2E3842;
-  --input: #2E3842;
-  --ring: #4A90A4;
+  --border: #374151;
+  --input: #374151;
+  --ring: #2DD4BF;
 
-  --chart-1: #4A90A4;
-  --chart-2: #8BC4A8;
-  --chart-3: #D4AF37;
-  --chart-4: #7FB3A3;
-  --chart-5: #E8A05D;
+  --chart-1: #2DD4BF;
+  --chart-2: #818CF8;
+  --chart-3: #FB923C;
+  --chart-4: #34D399;
+  --chart-5: #FBBF24;
 
-  --sidebar: #1C2429;
-  --sidebar-foreground: #9BA5AE;
-  --sidebar-primary: #4A90A4;
+  --sidebar: #1F2937;
+  --sidebar-foreground: #9CA3AF;
+  --sidebar-primary: #2DD4BF;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #2E3842;
-  --sidebar-accent-foreground: #E8ECEF;
-  --sidebar-border: #2E3842;
-  --sidebar-ring: #4A90A4;
+  --sidebar-accent: #374151;
+  --sidebar-accent-foreground: #E5E7EB;
+  --sidebar-border: #374151;
+  --sidebar-ring: #2DD4BF;
 }
 
 @layer base {

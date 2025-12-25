@@ -18,6 +18,7 @@ export interface GlobalBalance {
   net_balance: number;
   group_balances: GroupBalance[];
   isLoading: boolean;
+  isRefetching?: boolean;
 }
 
 /**
@@ -131,6 +132,7 @@ export const useGlobalBalance = (): GlobalBalance => {
         net_balance: 0,
         group_balances: [],
         isLoading: groupMembersQuery.isLoading,
+        isRefetching: groupMembersQuery.isRefetching,
       };
     }
 
@@ -204,8 +206,9 @@ export const useGlobalBalance = (): GlobalBalance => {
       net_balance: Math.round(net_balance * 100) / 100,
       group_balances: groupBalances,
       isLoading: groupMembersQuery.isLoading || expensesQuery.isLoading || paymentsQuery.isLoading,
+      isRefetching: groupMembersQuery.isRefetching || expensesQuery.isRefetching || paymentsQuery.isRefetching,
     };
-  }, [identity, myGroups, expenses, payments, allMembers, groupMembersQuery.isLoading, expensesQuery.isLoading, paymentsQuery.isLoading]);
+  }, [identity, myGroups, expenses, payments, allMembers, groupMembersQuery.isLoading, expensesQuery.isLoading, paymentsQuery.isLoading, groupMembersQuery.isRefetching, expensesQuery.isRefetching, paymentsQuery.isRefetching]);
 
   return globalBalance;
 };

@@ -21,6 +21,7 @@ export interface ActivityItem {
 export interface RecentActivity {
   items: ActivityItem[];
   isLoading: boolean;
+  isRefetching?: boolean;
 }
 
 /**
@@ -73,6 +74,7 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
       return {
         items: [],
         isLoading: expensesQuery.isLoading || paymentsQuery.isLoading,
+        isRefetching: expensesQuery.isRefetching || paymentsQuery.isRefetching,
       };
     }
 
@@ -117,8 +119,9 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
     return {
       items,
       isLoading: expensesQuery.isLoading || paymentsQuery.isLoading,
+      isRefetching: expensesQuery.isRefetching || paymentsQuery.isRefetching,
     };
-  }, [identity, expenses, payments, limit, expensesQuery.isLoading, paymentsQuery.isLoading]);
+  }, [identity, expenses, payments, limit, expensesQuery.isLoading, paymentsQuery.isLoading, expensesQuery.isRefetching, paymentsQuery.isRefetching]);
 
   return activity;
 };
