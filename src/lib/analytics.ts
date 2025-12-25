@@ -264,4 +264,3 @@ export const trackFeatureUsed = (feature: string) => {
     label: feature,
   });
 };
-

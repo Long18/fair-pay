@@ -47,8 +47,8 @@ function DesktopHeader() {
           "items-center",
           "gap-4",
           "border-b",
-          "border-gray-100",
-          "bg-white",
+          "border-border",
+          "bg-background",
           "px-6",
           "justify-between",
           "z-40"
@@ -57,7 +57,7 @@ function DesktopHeader() {
         <div className="flex items-center gap-4 flex-1">
           {identity && (
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200">
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-muted">
                 {identity.avatar_url ? (
                   <img
                     src={identity.avatar_url}
@@ -65,16 +65,16 @@ function DesktopHeader() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-600 font-semibold text-sm">
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground font-semibold text-sm">
                     {identity.full_name?.charAt(0) || "U"}
                   </div>
                 )}
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-semibold text-gray-900">
+                <span className="text-sm font-semibold text-foreground">
                   {identity.full_name || "User"}
                 </span>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-muted-foreground">
                   ID: {identity.id.slice(0, 8)}
                 </span>
               </div>
@@ -86,7 +86,7 @@ function DesktopHeader() {
           <div className="relative flex-1 max-w-md">
             <Button
               variant="ghost"
-              className="w-full justify-start text-gray-500 bg-gray-50 rounded-full h-10 px-5 hover:bg-gray-100"
+              className="w-full justify-start text-muted-foreground bg-muted rounded-full h-10 px-5 hover:bg-muted/80"
               onClick={() => setSearchOpen(true)}
             >
               <Search className="h-4 w-4 mr-2" />
