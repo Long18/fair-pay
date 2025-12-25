@@ -101,9 +101,18 @@
         "supabase:stop": "supabase stop",
         "supabase:restart": "supabase stop && supabase start",
         "supabase:status": "supabase status",
-        "supabase:studio": "open http://127.0.0.1:54323",
+        "supabase:studio": "./scripts/open-studio.sh",
         "db:reset": "supabase db reset",
-        "db:types": "supabase gen types typescript --local > src/types/database.ts"
+        "db:types": "mkdir -p src/types && supabase gen types typescript --local > src/types/database.ts",
+        "db:seed": "./scripts/seed-local.sh",
+        "db:seed-quick": "./scripts/seed-quick.sh",
+        "db:seed-auto": "./scripts/update-seed-uuids.sh && pnpm db:seed",
+        "db:fix-uuids": "./scripts/fix-seed-uuids.sh",
+        "db:smart-seed": "./scripts/generate-smart-seed.sh",
+        "db:comprehensive-seed": "./scripts/generate-comprehensive-seed.sh",
+        "db:get-ids": "./scripts/get-profile-ids.sh",
+        "db:public-access": "./scripts/apply-public-access.sh",
+        "db:template": "./scripts/db-template.sh"
     },
     "browserslist": {
         "production": [

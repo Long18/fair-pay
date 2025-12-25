@@ -1,0 +1,18 @@
+# Dockerfile for local sample data seeding
+# This Dockerfile is used to seed the local Supabase database with sample data
+# Usage: docker build -f Dockerfile.local -t fairpay-seed . && docker run --network host fairpay-seed
+
+FROM postgres:15-alpine
+
+# Install psql client (already included in postgres image)
+# Add wait-for-it script for connection retry
+RUN apk add --no-cache bash curl
+
+# Copy SQL seed file
+COPY supabase/seed/sample-data.sql /docker-entrypoint-initdb.d/01-sample-data.sql
+
+# Set working directory
+WORKDIR /docker-entrypoint-initdb.d
+
+# Default command - will be overridden when running
+CMD ["echo", "Sample data SQL file ready. Use docker run with psql command to execute."]

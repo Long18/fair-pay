@@ -139,7 +139,7 @@ BEGIN
     -- Get payer name
     SELECT full_name INTO v_payer_name
     FROM public.profiles
-    WHERE id = NEW.from_user_id;
+    WHERE id = NEW.from_user;
 
     -- Notify the recipient
     IF NEW.group_id IS NOT NULL THEN
@@ -148,7 +148,7 @@ BEGIN
         WHERE id = NEW.group_id;
 
         PERFORM public.create_notification(
-            NEW.to_user_id,
+            NEW.to_user,
             'payment_recorded',
             'Payment Recorded',
             v_payer_name || ' paid you ' || NEW.amount || ' ' || NEW.currency || ' in ' || v_group_name,
@@ -157,7 +157,7 @@ BEGIN
         );
     ELSIF NEW.friendship_id IS NOT NULL THEN
         PERFORM public.create_notification(
-            NEW.to_user_id,
+            NEW.to_user,
             'payment_recorded',
             'Payment Recorded',
             v_payer_name || ' paid you ' || NEW.amount || ' ' || NEW.currency,
@@ -191,10 +191,10 @@ BEGIN
         WHERE id = NEW.created_by;
 
         -- Determine recipient (the user who is NOT the requester)
-        IF NEW.user_a_id = NEW.created_by THEN
-            v_recipient_id := NEW.user_b_id;
+        IF NEW.user_a = NEW.created_by THEN
+            v_recipient_id := NEW.user_b;
         ELSE
-            v_recipient_id := NEW.user_a_id;
+            v_recipient_id := NEW.user_a;
         END IF;
 
         PERFORM public.create_notification(
@@ -232,10 +232,10 @@ BEGIN
         WHERE id = auth.uid();
 
         -- Determine original requester
-        IF NEW.user_a_id = NEW.created_by THEN
-            v_requester_id := NEW.user_a_id;
+        IF NEW.user_a = NEW.created_by THEN
+            v_requester_id := NEW.user_a;
         ELSE
-            v_requester_id := NEW.user_b_id;
+            v_requester_id := NEW.user_b;
         END IF;
 
         PERFORM public.create_notification(
