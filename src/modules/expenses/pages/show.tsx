@@ -1,9 +1,11 @@
+import { useState, useEffect } from "react";
 import { useOne, useList, useDelete, useGo, useGetIdentity } from "@refinedev/core";
 import { useParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
-import { Expense, ExpenseSplit } from "../types";
+import { Expense, ExpenseSplit, Attachment } from "../types";
+import { AttachmentList } from "../components/attachment-list";
 import { Profile } from "@/modules/profile/types";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -47,15 +49,38 @@ export const ExpenseShow = () => {
     },
   });
 
+  const { query: attachmentsQuery } = useList<Attachment>({
+    resource: "attachments",
+    filters: [
+      {
+        field: "expense_id",
+        operator: "eq",
+        value: id,
+      },
+    ],
+  });
+
   const deleteMutation = useDelete();
 
   const { data: expenseData, isLoading: isLoadingExpense } = expenseQuery;
   const { data: splitsData, isLoading: isLoadingSplits } = splitsQuery;
+  const { data: attachmentsData } = attachmentsQuery;
 
   const expense: any = expenseData?.data;
   const splits: any[] = splitsData?.data || [];
+  const attachments: Attachment[] = attachmentsData?.data || [];
+  const [displayAttachments, setDisplayAttachments] = useState<Attachment[]>(attachments);
 
   const canEdit = expense?.created_by === identity?.id;
+
+  // Sync displayAttachments with fetched attachments
+  useEffect(() => {
+    setDisplayAttachments(attachments);
+  }, [attachments]);
+
+  const handleAttachmentDelete = (attachmentId: string) => {
+    setDisplayAttachments(prev => prev.filter(a => a.id !== attachmentId));
+  };
 
   const handleDelete = () => {
     if (!expense?.id) return;
@@ -217,6 +242,15 @@ export const ExpenseShow = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Attachments */}
+        {displayAttachments.length > 0 && (
+          <AttachmentList
+            attachments={displayAttachments}
+            canDelete={canEdit}
+            onDelete={handleAttachmentDelete}
+          />
+        )}
       </div>
     </div>
   );

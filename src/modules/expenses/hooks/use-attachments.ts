@@ -86,7 +86,7 @@ export const useAttachments = () => {
     userId: string
   ): Promise<Attachment[]> => {
     const results: Attachment[] = [];
-    
+
     for (const file of files) {
       const result = await uploadAttachment({ file, expenseId, userId });
       if (result) {
@@ -189,4 +189,3 @@ export const useAttachments = () => {
     uploadProgress,
   };
 };
-
