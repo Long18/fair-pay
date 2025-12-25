@@ -1,24 +1,28 @@
-import { useOne, useUpdate } from "@refinedev/core";
+import { useOne, useUpdate, useGetIdentity } from "@refinedev/core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ProfileForm } from "../components/profile-form";
 import { Profile, ProfileFormValues } from "../types";
 import { toast } from "sonner";
-import { useEffect } from "react";
 
 export const ProfileEdit = () => {
-  const { query: identityQuery } = useOne({
+  const { data: identity } = useGetIdentity<Profile>();
+
+  const { query: profileQuery } = useOne({
     resource: "profiles",
-    id: "", // Will be set by useOne automatically from auth context
+    id: identity?.id || "",
+    queryOptions: {
+      enabled: !!identity?.id,
+    },
     meta: {
       select: "*",
     },
   });
 
-  const updateMutation = useUpdate();
+  const { mutate: updateProfile } = useUpdate();
 
-  const { data: identity } = identityQuery;
-  const profile = identity?.data as Profile | undefined;
+  const { data: profileData } = profileQuery;
+  const profile = profileData?.data as Profile | undefined;
 
   const handleSubmit = (values: ProfileFormValues) => {
     if (!profile?.id) {
@@ -26,7 +30,7 @@ export const ProfileEdit = () => {
       return;
     }
 
-    updateMutation.mutate(
+    updateProfile(
       {
         resource: "profiles",
         id: profile.id,
@@ -43,16 +47,16 @@ export const ProfileEdit = () => {
     );
   };
 
-  if (!profile) {
+  if (!identity?.id || !profile) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Loading profile...</p>
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <p className="text-muted-foreground">Loading profile...</p>
       </div>
     );
   }
 
   return (
-    <div className="container max-w-2xl py-8">
+    <div className="container max-w-2xl py-8 bg-background min-h-screen">
       <Card>
         <CardHeader>
           <div className="flex items-center gap-4">

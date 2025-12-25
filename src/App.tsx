@@ -6,7 +6,6 @@ import {
   HomeIcon,
   CustomersIcon,
   BalancesIcon,
-  SettingsIcon,
   AuditLogsIcon,
 } from "./components/ui/icons";
 
@@ -188,14 +187,6 @@ function App() {
                   meta: {
                     label: "Reports",
                     icon: <AuditLogsIcon className="w-5 h-5" />,
-                  },
-                },
-                {
-                  name: "settings",
-                  list: "/settings",
-                  meta: {
-                    label: "Settings",
-                    icon: <SettingsIcon className="w-5 h-5" />,
                   },
                 },
                 {
