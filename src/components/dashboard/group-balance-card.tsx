@@ -60,4 +60,3 @@ export const GroupBalanceCard = ({ group, currency = "VND" }: GroupBalanceCardPr
     </Card>
   );
 };
-

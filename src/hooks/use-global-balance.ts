@@ -20,7 +20,7 @@ export interface GlobalBalance {
 
 /**
  * Calculate global balance across all groups user is a member of
- * 
+ *
  * Aggregates balances from all groups and provides:
  * - Total amount others owe the user
  * - Total amount user owes others
@@ -185,4 +185,3 @@ export const useGlobalBalance = (): GlobalBalance => {
 
   return globalBalance;
 };
-

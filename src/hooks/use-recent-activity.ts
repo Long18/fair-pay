@@ -25,7 +25,7 @@ export interface RecentActivity {
 
 /**
  * Fetch and merge recent expenses and payments into a unified activity feed
- * 
+ *
  * Returns the 20 most recent activities (expenses + payments) sorted by date
  */
 export const useRecentActivity = (limit: number = 20): RecentActivity => {
@@ -122,4 +122,3 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
 
   return activity;
 };
-
