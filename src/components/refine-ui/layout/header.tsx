@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { UserAvatar } from "@/components/refine-ui/layout/user-avatar";
 import { ThemeToggle } from "@/components/refine-ui/theme/theme-toggle";
+import { LanguageToggle } from "@/components/ui/language-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -102,6 +103,7 @@ function DesktopHeader() {
             </div>
 
             <ThemeToggle />
+            <LanguageToggle />
 
             <div className="relative">
               <NotificationPanel />

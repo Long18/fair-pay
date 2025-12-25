@@ -1,0 +1,138 @@
+{
+  "common": {
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "delete": "Xóa",
+    "edit": "Sửa",
+    "create": "Tạo",
+    "search": "Tìm kiếm",
+    "filter": "Lọc",
+    "loading": "Đang tải...",
+    "error": "Lỗi",
+    "success": "Thành công",
+    "confirm": "Xác nhận",
+    "back": "Quay lại",
+    "next": "Tiếp theo",
+    "submit": "Gửi",
+    "close": "Đóng"
+  },
+  "auth": {
+    "login": "Đăng nhập",
+    "logout": "Đăng xuất",
+    "register": "Tạo tài khoản",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "forgotPassword": "Quên mật khẩu?",
+    "createAccount": "Tạo tài khoản",
+    "alreadyHaveAccount": "Đã có tài khoản?",
+    "dontHaveAccount": "Chưa có tài khoản?"
+  },
+  "dashboard": {
+    "title": "Trang chủ",
+    "welcome": "Chào mừng đến với FairPay",
+    "subtitle": "Theo dõi chi tiêu chung với bạn bè và nhóm. Chia bill công bằng và thanh toán dễ dàng.",
+    "balance": "Số dư",
+    "youOwe": "Bạn nợ",
+    "youAreOwed": "Người khác nợ bạn",
+    "netBalance": "Số dư ròng",
+    "recentActivity": "Hoạt động gần đây",
+    "quickActions": "Thao tác nhanh",
+    "addExpense": "Thêm chi tiêu",
+    "recordPayment": "Ghi thanh toán",
+    "createGroup": "Tạo nhóm",
+    "addFriend": "Thêm bạn",
+    "viewAll": "Xem tất cả"
+  },
+  "groups": {
+    "title": "Nhóm",
+    "createGroup": "Tạo nhóm",
+    "groupName": "Tên nhóm",
+    "description": "Mô tả",
+    "members": "Thành viên",
+    "addMember": "Thêm thành viên",
+    "editGroup": "Sửa nhóm",
+    "deleteGroup": "Xóa nhóm",
+    "leaveGroup": "Rời nhóm",
+    "groupDetails": "Chi tiết nhóm",
+    "noGroups": "Chưa có nhóm nào",
+    "createFirst": "Tạo nhóm đầu tiên để bắt đầu chia sẻ chi tiêu"
+  },
+  "expenses": {
+    "title": "Chi tiêu",
+    "addExpense": "Thêm chi tiêu",
+    "description": "Mô tả",
+    "amount": "Số tiền",
+    "date": "Ngày",
+    "paidBy": "Người trả",
+    "splitMethod": "Phương thức chia",
+    "equal": "Chia đều",
+    "exact": "Số tiền cụ thể",
+    "percentage": "Phần trăm",
+    "category": "Danh mục",
+    "editExpense": "Sửa chi tiêu",
+    "deleteExpense": "Xóa chi tiêu",
+    "expenseDetails": "Chi tiết chi tiêu",
+    "noExpenses": "Chưa có chi tiêu nào",
+    "addFirst": "Thêm chi tiêu đầu tiên để bắt đầu theo dõi"
+  },
+  "payments": {
+    "title": "Thanh toán",
+    "recordPayment": "Ghi thanh toán",
+    "from": "Từ",
+    "to": "Đến",
+    "amount": "Số tiền",
+    "date": "Ngày",
+    "note": "Ghi chú",
+    "editPayment": "Sửa thanh toán",
+    "deletePayment": "Xóa thanh toán",
+    "paymentDetails": "Chi tiết thanh toán",
+    "noPayments": "Chưa có thanh toán nào",
+    "recordFirst": "Ghi thanh toán đầu tiên để bắt đầu thanh toán nợ"
+  },
+  "friends": {
+    "title": "Bạn bè",
+    "addFriend": "Thêm bạn",
+    "friendName": "Tên bạn",
+    "email": "Email",
+    "removeFriend": "Xóa bạn",
+    "friendDetails": "Chi tiết bạn bè",
+    "noFriends": "Chưa có bạn bè nào",
+    "addFirst": "Thêm bạn đầu tiên để bắt đầu chia sẻ chi tiêu"
+  },
+  "settings": {
+    "title": "Cài đặt",
+    "profile": "Hồ sơ",
+    "preferences": "Tùy chọn",
+    "language": "Ngôn ngữ",
+    "currency": "Tiền tệ",
+    "dateFormat": "Định dạng ngày",
+    "theme": "Giao diện",
+    "light": "Sáng",
+    "dark": "Tối",
+    "system": "Hệ thống",
+    "notifications": "Thông báo",
+    "privacy": "Quyền riêng tư",
+    "aboutFairPay": "Về FairPay"
+  },
+  "reports": {
+    "title": "Báo cáo",
+    "summary": "Tóm tắt",
+    "trends": "Xu hướng",
+    "categoryBreakdown": "Phân tích theo danh mục",
+    "monthlySpending": "Chi tiêu hàng tháng",
+    "exportData": "Xuất dữ liệu"
+  },
+  "balances": {
+    "title": "Số dư",
+    "youOwe": "Bạn nợ",
+    "owedToYou": "Nợ bạn",
+    "settleUp": "Thanh toán",
+    "simplifiedDebts": "Nợ đã rút gọn"
+  },
+  "notifications": {
+    "title": "Thông báo",
+    "markAllRead": "Đánh dấu tất cả đã đọc",
+    "noNotifications": "Không có thông báo"
+  }
+}
+

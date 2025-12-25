@@ -35,7 +35,7 @@ export function Sidebar() {
   const { menuItems, selectedKey } = useMenu();
 
   return (
-    <ShadcnSidebar collapsible="icon" className={cn("border-none", "bg-white")}>
+    <ShadcnSidebar collapsible="icon" className={cn("border-none", "bg-white", "shadow-sm")}>
       <ShadcnSidebarRail />
       <SidebarHeader />
       <ShadcnSidebarContent
@@ -48,7 +48,7 @@ export function Sidebar() {
           "pt-4",
           "pb-2",
           "border-r",
-          "border-[#F2F2F2]",
+          "border-gray-100",
           {
             "px-3": open,
             "px-1": !open,
@@ -94,7 +94,7 @@ function SidebarItemGroup({ item, selectedKey }: MenuItemProps) {
   const { open } = useShadcnSidebar();
 
   return (
-    <div className={cn("border-t", "border-sidebar-border", "pt-4")}>
+    <div className={cn("border-t", "border-gray-200", "pt-4", "mt-2")}>
       <span
         className={cn(
           "ml-3",
@@ -102,7 +102,7 @@ function SidebarItemGroup({ item, selectedKey }: MenuItemProps) {
           "text-xs",
           "font-semibold",
           "uppercase",
-          "text-muted-foreground",
+          "text-gray-500",
           "transition-all",
           "duration-200",
           {
@@ -218,7 +218,7 @@ function SidebarHeader() {
         "p-0",
         "h-16",
         "border-b",
-        "border-[#F2F2F2]",
+        "border-gray-100",
         "flex-row",
         "items-center",
         "justify-between",
@@ -233,7 +233,7 @@ function SidebarHeader() {
           "h-full",
           "items-center",
           "justify-start",
-          "gap-2",
+          "gap-3",
           "transition-discrete",
           "duration-200",
           {
@@ -242,12 +242,14 @@ function SidebarHeader() {
           }
         )}
       >
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-400 to-purple-500 flex items-center justify-center">
+          <span className="text-white font-bold text-sm">F</span>
+        </div>
         <h1
           className={cn(
-            "text-[32px]",
-            "font-extrabold",
-            "text-[#484A4F]",
-            "tracking-[-1.28px]",
+            "text-xl",
+            "font-bold",
+            "text-gray-900",
             "transition-opacity",
             "duration-200",
             {
@@ -255,14 +257,13 @@ function SidebarHeader() {
               "opacity-100": open,
             }
           )}
-          style={{ fontFamily: "Montserrat, sans-serif" }}
         >
           FairPay
         </h1>
       </div>
 
       <ShadcnSidebarTrigger
-        className={cn("text-[#828282]", "mr-1.5", {
+        className={cn("text-gray-500", "mr-1.5", {
           "opacity-0": !open,
           "opacity-100": open || isMobile,
           "pointer-events-auto": open || isMobile,
@@ -285,9 +286,9 @@ type IconProps = {
 function ItemIcon({ icon, isSelected }: IconProps) {
   return (
     <div
-      className={cn("w-4", {
-        "text-muted-foreground": !isSelected,
-        "text-sidebar-primary-foreground": isSelected,
+      className={cn("w-5 h-5", {
+        "text-gray-500": !isSelected,
+        "text-teal-600": isSelected,
       })}
     >
       {icon ?? <ListIcon />}
@@ -318,15 +319,14 @@ function SidebarButton({
     <>
       <ItemIcon icon={item.meta?.icon ?? item.icon} isSelected={isSelected} />
       <span
-        className={cn("tracking-[-0.00875rem]", "font-medium", {
+        className={cn("text-sm", "font-medium", {
           "flex-1": rightIcon,
           "text-left": rightIcon,
           "line-clamp-1": !rightIcon,
           truncate: !rightIcon,
-          "text-[#828282]": !isSelected,
-          "text-[#484A4F]": isSelected,
+          "text-gray-600": !isSelected,
+          "text-gray-900": isSelected,
         })}
-        style={{ fontFamily: "Montserrat, sans-serif" }}
       >
         {getDisplayName(item)}
       </span>
@@ -340,11 +340,12 @@ function SidebarButton({
       variant="ghost"
       size="lg"
       className={cn(
-        "flex w-full items-center justify-start gap-3 py-2 !px-3 text-sm h-auto",
+        "flex w-full items-center justify-start gap-3 py-2.5 px-3 text-sm h-auto rounded-lg",
         {
-          "bg-[#F9F9F9]": isSelected,
-          "hover:!bg-[#F9F9F9]": isSelected,
-          "hover:bg-[#FCFCFC]": !isSelected,
+          "bg-teal-50": isSelected,
+          "text-teal-700": isSelected,
+          "hover:!bg-teal-50": isSelected,
+          "hover:bg-gray-50": !isSelected,
         },
         className
       )}
