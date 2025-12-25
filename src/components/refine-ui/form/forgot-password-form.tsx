@@ -37,73 +37,63 @@ export const ForgotPasswordForm = () => {
     <div
       className={cn(
         "flex",
-        "flex-col",
         "items-center",
         "justify-center",
-        "px-6",
-        "py-8",
-        "min-h-svh"
+        "min-h-svh",
+        "bg-gradient-to-br from-teal-50 via-white to-purple-50"
       )}
     >
-      <div className={cn("flex", "items-center", "justify-center", "gap-2")}>
-        {title.icon && (
-          <div
-            className={cn("text-foreground", "[&>svg]:w-12", "[&>svg]:h-12")}
-          >
-            {title.icon}
-          </div>
-        )}
-      </div>
-
-      <Card className={cn("sm:w-[456px]", "p-12", "mt-6")}>
-        <CardHeader className={cn("px-0")}>
-          <CardTitle
-            className={cn(
-              "text-blue-600",
-              "dark:text-blue-400",
-              "text-3xl",
-              "font-semibold"
+      <Card className={cn("sm:w-[456px]", "p-8", "shadow-xl", "border-0", "bg-white/95", "backdrop-blur-sm")}>
+        <CardHeader className={cn("px-0", "pb-6", "text-center")}>
+          <div className={cn("flex", "items-center", "justify-center", "mb-4")}>
+            {title.icon && (
+              <div className={cn("text-primary", "[&>svg]:w-16", "[&>svg]:h-16")}>
+                {title.icon}
+              </div>
             )}
-          >
-            Forgot password
+          </div>
+          <CardTitle className={cn("text-2xl", "font-bold", "text-gray-900")}>
+            Forgot password?
           </CardTitle>
-          <CardDescription
-            className={cn("text-muted-foreground", "font-medium")}
-          >
-            Enter your email to change your password.
+          <CardDescription className={cn("text-gray-600", "font-normal")}>
+            Enter your email to reset your password
           </CardDescription>
         </CardHeader>
 
         <CardContent className={cn("px-0")}>
           <form onSubmit={handleForgotPassword}>
-            <div className={cn("flex", "flex-col", "gap-2")}>
-              <Label htmlFor="email">Email</Label>
-              <div className={cn("flex", "gap-2")}>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder=""
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={cn("flex-1")}
-                />
-                <Button
-                  type="submit"
-                  className={cn(
-                    "bg-blue-600",
-                    "hover:bg-blue-700",
-                    "text-white",
-                    "px-6"
-                  )}
-                >
-                  Send
-                </Button>
-              </div>
+            <div className={cn("space-y-1", "mb-6")}>
+              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-11"
+              />
             </div>
+            
+            <Button
+              type="submit"
+              size="lg"
+              className={cn(
+                "w-full",
+                "h-12",
+                "bg-gray-900",
+                "hover:bg-gray-800",
+                "text-white",
+                "font-medium"
+              )}
+            >
+              Send reset link
+            </Button>
           </form>
 
-          <div className={cn("mt-8")}>
+          <div className={cn("mt-8", "text-center")}>
             <Link
               to="/login"
               className={cn(
@@ -111,13 +101,13 @@ export const ForgotPasswordForm = () => {
                 "items-center",
                 "gap-2",
                 "text-sm",
-                "text-muted-foreground",
-                "hover:text-foreground",
+                "text-gray-600",
+                "hover:text-gray-900",
                 "transition-colors"
               )}
             >
               <ArrowLeft className={cn("w-4", "h-4")} />
-              <span>Back</span>
+              <span>Back to login</span>
             </Link>
           </div>
         </CardContent>
