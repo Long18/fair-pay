@@ -93,6 +93,7 @@
         "eslint-plugin-react-refresh": "^0.4.19",
         "globals": "^16.0.0",
         "jsdom": "^27.3.0",
+        "rollup-plugin-visualizer": "^6.0.5",
         "tailwindcss": "^4.1.4",
         "typescript": "^5.8.3",
         "typescript-eslint": "^8.30.1",

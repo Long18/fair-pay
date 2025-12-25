@@ -1,0 +1,138 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "close": "Close"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "register": "Create Account",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot Password?",
+    "createAccount": "Create Account",
+    "alreadyHaveAccount": "Already have an account?",
+    "dontHaveAccount": "Don't have an account?"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome to FairPay",
+    "subtitle": "Track shared expenses with friends and groups. Split bills fairly and settle up easily.",
+    "balance": "Balance",
+    "youOwe": "You owe",
+    "youAreOwed": "You are owed",
+    "netBalance": "Net Balance",
+    "recentActivity": "Recent Activity",
+    "quickActions": "Quick Actions",
+    "addExpense": "Add Expense",
+    "recordPayment": "Record Payment",
+    "createGroup": "Create Group",
+    "addFriend": "Add Friend",
+    "viewAll": "View All"
+  },
+  "groups": {
+    "title": "Groups",
+    "createGroup": "Create Group",
+    "groupName": "Group Name",
+    "description": "Description",
+    "members": "Members",
+    "addMember": "Add Member",
+    "editGroup": "Edit Group",
+    "deleteGroup": "Delete Group",
+    "leaveGroup": "Leave Group",
+    "groupDetails": "Group Details",
+    "noGroups": "No groups yet",
+    "createFirst": "Create your first group to start splitting expenses"
+  },
+  "expenses": {
+    "title": "Expenses",
+    "addExpense": "Add Expense",
+    "description": "Description",
+    "amount": "Amount",
+    "date": "Date",
+    "paidBy": "Paid by",
+    "splitMethod": "Split Method",
+    "equal": "Split Equally",
+    "exact": "Exact Amounts",
+    "percentage": "Percentage",
+    "category": "Category",
+    "editExpense": "Edit Expense",
+    "deleteExpense": "Delete Expense",
+    "expenseDetails": "Expense Details",
+    "noExpenses": "No expenses yet",
+    "addFirst": "Add your first expense to start tracking"
+  },
+  "payments": {
+    "title": "Payments",
+    "recordPayment": "Record Payment",
+    "from": "From",
+    "to": "To",
+    "amount": "Amount",
+    "date": "Date",
+    "note": "Note",
+    "editPayment": "Edit Payment",
+    "deletePayment": "Delete Payment",
+    "paymentDetails": "Payment Details",
+    "noPayments": "No payments yet",
+    "recordFirst": "Record your first payment to start settling up"
+  },
+  "friends": {
+    "title": "Friends",
+    "addFriend": "Add Friend",
+    "friendName": "Friend Name",
+    "email": "Email",
+    "removeFriend": "Remove Friend",
+    "friendDetails": "Friend Details",
+    "noFriends": "No friends yet",
+    "addFirst": "Add your first friend to start splitting expenses"
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "preferences": "Preferences",
+    "language": "Language",
+    "currency": "Currency",
+    "dateFormat": "Date Format",
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "notifications": "Notifications",
+    "privacy": "Privacy",
+    "aboutFairPay": "About FairPay"
+  },
+  "reports": {
+    "title": "Reports",
+    "summary": "Summary",
+    "trends": "Trends",
+    "categoryBreakdown": "Category Breakdown",
+    "monthlySpending": "Monthly Spending",
+    "exportData": "Export Data"
+  },
+  "balances": {
+    "title": "Balances",
+    "youOwe": "You Owe",
+    "owedToYou": "Owed to You",
+    "settleUp": "Settle Up",
+    "simplifiedDebts": "Simplified Debts"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark All as Read",
+    "noNotifications": "No notifications"
+  }
+}
+
