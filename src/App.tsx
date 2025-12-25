@@ -265,16 +265,32 @@ function App() {
                     <Route path="show/:id" element={<CategoryShow />} />
                   </Route>
                   <Route path="/groups">
-                    <Route index element={<GroupList />} />
+                    <Route index element={
+                      <ErrorBoundary context="Groups List">
+                        <GroupList />
+                      </ErrorBoundary>
+                    } />
                     <Route path="create" element={<GroupCreate />} />
                     <Route path="edit/:id" element={<GroupEdit />} />
-                    <Route path="show/:id" element={<GroupShow />} />
+                    <Route path="show/:id" element={
+                      <ErrorBoundary context="Group Details">
+                        <GroupShow />
+                      </ErrorBoundary>
+                    } />
                     <Route path=":groupId/expenses/create" element={<ExpenseCreate />} />
                     <Route path=":groupId/payments/create" element={<PaymentCreate />} />
                   </Route>
                   <Route path="/friends">
-                    <Route index element={<FriendList />} />
-                    <Route path="show/:id" element={<FriendShow />} />
+                    <Route index element={
+                      <ErrorBoundary context="Friends List">
+                        <FriendList />
+                      </ErrorBoundary>
+                    } />
+                    <Route path="show/:id" element={
+                      <ErrorBoundary context="Friend Details">
+                        <FriendShow />
+                      </ErrorBoundary>
+                    } />
                     <Route path=":friendshipId/expenses/create" element={<ExpenseCreate />} />
                     <Route path=":friendshipId/payments/create" element={<PaymentCreate />} />
                   </Route>
