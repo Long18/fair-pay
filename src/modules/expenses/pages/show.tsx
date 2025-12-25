@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { Expense, ExpenseSplit, Attachment } from "../types";
 import { AttachmentList } from "../components/attachment-list";
+import { CategoryIcon } from "../components/category-icon";
 import { Profile } from "@/modules/profile/types";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -130,7 +131,7 @@ export const ExpenseShow = () => {
                 <div className="flex items-center gap-2">
                   <CardTitle className="text-3xl">{expense.description}</CardTitle>
                   {expense.category && (
-                    <Badge variant="secondary">{expense.category}</Badge>
+                    <CategoryIcon category={expense.category} size="md" showLabel />
                   )}
                 </div>
                 <p className="text-muted-foreground">

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
 import { ExpenseWithSplits } from "../types";
+import { CategoryIcon } from "./category-icon";
 
 interface ExpenseListProps {
   groupId?: string;
@@ -81,9 +82,7 @@ export const ExpenseList = ({ groupId, friendshipId }: ExpenseListProps) => {
                   <div className="flex items-center gap-2">
                     <h4 className="font-medium">{expense.description}</h4>
                     {expense.category && (
-                      <Badge variant="secondary" className="text-xs">
-                        {expense.category}
-                      </Badge>
+                      <CategoryIcon category={expense.category} size="sm" />
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">

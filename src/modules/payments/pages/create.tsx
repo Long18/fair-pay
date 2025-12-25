@@ -50,12 +50,12 @@ export const PaymentCreate = () => {
         full_name: m.profiles?.full_name || "Unknown",
       }));
     }
-    
+
     if (isFriendContext && friendshipQuery.data?.data) {
       const friendship: any = friendshipQuery.data.data;
       const isUserA = friendship.user_a_id === identity?.id;
       const friendProfile = isUserA ? friendship.user_b_profile : friendship.user_a_profile;
-      
+
       return [
         {
           id: identity!.id,
@@ -67,7 +67,7 @@ export const PaymentCreate = () => {
         },
       ];
     }
-    
+
     return [];
   }, [isGroupContext, isFriendContext, membersQuery.data, friendshipQuery.data, identity]);
 
@@ -95,7 +95,7 @@ export const PaymentCreate = () => {
       {
         onSuccess: () => {
           toast.success("Payment recorded successfully");
-          
+
           if (isGroupContext) {
             go({ to: `/groups/show/${groupId}` });
           } else if (isFriendContext) {

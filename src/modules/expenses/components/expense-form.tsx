@@ -31,7 +31,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { ExpenseFormValues, EXPENSE_CATEGORIES } from "../types";
+import { ExpenseFormValues } from "../types";
+import { EXPENSE_CATEGORIES, getCategoryMeta } from "../lib/categories";
 import { useSplitCalculation } from "../hooks/use-split-calculation";
 
 const expenseSchema = z.object({
@@ -179,15 +180,37 @@ export const ExpenseForm = ({
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
+                    <SelectValue placeholder="Select category">
+                      {field.value && (() => {
+                        const meta = getCategoryMeta(field.value);
+                        const Icon = meta.icon;
+                        return (
+                          <div className="flex items-center gap-2">
+                            <div className={cn("rounded-md p-1 flex items-center justify-center", meta.bgColor)}>
+                              <Icon className={cn("h-4 w-4", meta.color)} />
+                            </div>
+                            <span>{meta.name}</span>
+                          </div>
+                        );
+                      })()}
+                    </SelectValue>
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {EXPENSE_CATEGORIES.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
+                  {EXPENSE_CATEGORIES.map((cat) => {
+                    const meta = getCategoryMeta(cat);
+                    const Icon = meta.icon;
+                    return (
+                      <SelectItem key={cat} value={cat}>
+                        <div className="flex items-center gap-2">
+                          <div className={cn("rounded-md p-1 flex items-center justify-center", meta.bgColor)}>
+                            <Icon className={cn("h-4 w-4", meta.color)} />
+                          </div>
+                          <span>{meta.name}</span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
               <FormMessage />
