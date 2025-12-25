@@ -76,7 +76,7 @@ export const ForgotPasswordForm = () => {
                 className="h-11"
               />
             </div>
-            
+
             <Button
               type="submit"
               size="lg"

@@ -75,7 +75,7 @@ function DesktopHeader() {
                   {identity.full_name || "User"}
                 </span>
                 <span className="text-xs text-gray-500">
-                  {identity.email?.split('@')[0]}
+                  ID: {identity.id.slice(0, 8)}
                 </span>
               </div>
             </div>
