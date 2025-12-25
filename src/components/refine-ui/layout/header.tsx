@@ -31,7 +31,6 @@ export const Header = () => {
 
 function DesktopHeader() {
   const [searchOpen, setSearchOpen] = useState(false);
-  const { data: identity } = useGetIdentity<Profile>();
 
   useSearchShortcut(() => setSearchOpen(true));
 
@@ -55,34 +54,6 @@ function DesktopHeader() {
         )}
       >
         <div className="flex items-center gap-4 flex-1">
-          {identity && (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full overflow-hidden bg-muted">
-                {identity.avatar_url ? (
-                  <img
-                    src={identity.avatar_url}
-                    alt={identity.full_name || "User"}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground font-semibold text-sm">
-                    {identity.full_name?.charAt(0) || "U"}
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold text-foreground">
-                  {identity.full_name || "User"}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  ID: {identity.id.slice(0, 8)}
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-3">
           <div className="relative flex-1 max-w-md">
             <Button
               variant="ghost"
@@ -93,17 +64,17 @@ function DesktopHeader() {
               <span className="text-sm">Search</span>
             </Button>
           </div>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <LanguageToggle />
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <LanguageToggle />
 
-            <div className="relative">
-              <NotificationPanel />
-            </div>
-
-            <UserDropdown />
+          <div className="relative">
+            <NotificationPanel />
           </div>
+
+          <UserDropdown />
         </div>
       </header>
       <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
@@ -223,16 +194,26 @@ const UserDropdown = () => {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger>
+      <DropdownMenuTrigger className="flex items-center gap-3 outline-none hover:opacity-80 transition-opacity">
+        <div className="hidden md:flex flex-col items-end">
+          <span className="text-sm font-semibold text-foreground">
+            {identity.full_name || "User"}
+          </span>
+        </div>
         <UserAvatar />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" className="w-56">
+        <div className="flex flex-col gap-2 px-2 py-1.5 md:hidden">
+          <span className="text-sm font-semibold text-foreground">
+            {identity.full_name || "User"}
+          </span>
+        </div>
         <DropdownMenuItem
           onClick={() => {
             go({ to: "/profile/edit" });
           }}
         >
-          <UserIcon />
+          <UserIcon className="h-4 w-4" />
           <span>Edit Profile</span>
         </DropdownMenuItem>
         <DropdownMenuItem
@@ -241,7 +222,7 @@ const UserDropdown = () => {
           }}
         >
           <LogOutIcon
-            className={cn("text-destructive", "hover:text-destructive")}
+            className={cn("h-4 w-4", "text-destructive", "hover:text-destructive")}
           />
           <span className={cn("text-destructive", "hover:text-destructive")}>
             {isLoggingOut ? "Logging out..." : "Logout"}

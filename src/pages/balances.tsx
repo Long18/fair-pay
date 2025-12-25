@@ -21,48 +21,48 @@ export const BalancesPage = () => {
   const totalOwedToMe = owedToMe.reduce((sum: number, d: AggregatedDebt) => sum + d.amount, 0);
 
   return (
-    <div className="min-h-screen bg-[#FCFCFC]">
+    <div className="min-h-screen bg-background">
       <div className="container max-w-4xl py-8 px-4 lg:px-8">
         <div className="space-y-6">
           {/* Header */}
           <div>
-            <h1 className="text-2xl font-bold text-[#1F1F1F]">
+            <h1 className="text-2xl font-bold text-foreground">
               All Balances
             </h1>
-            <p className="text-[#828282] mt-1">
+            <p className="text-muted-foreground mt-1">
               Complete overview of your debts and credits
             </p>
           </div>
 
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="border-[#EB5757]/20 bg-[#EB5757]/5">
+            <Card className="border-destructive/20 bg-destructive/5">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-[#828282]">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   Total You Owe
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-[#EB5757]">
+                <div className="text-3xl font-bold text-destructive">
                   {formatNumber(totalIOwe)} ₫
                 </div>
-                <p className="text-xs text-[#828282] mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   to {iOwe.length} {iOwe.length === 1 ? 'person' : 'people'}
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="border-[#6FCF97]/20 bg-[#6FCF97]/5">
+            <Card className="border-primary/20 bg-primary/5">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-[#828282]">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   Total Owed to You
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-[#6FCF97]">
+                <div className="text-3xl font-bold text-primary">
                   {formatNumber(totalOwedToMe)} ₫
                 </div>
-                <p className="text-xs text-[#828282] mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   from {owedToMe.length} {owedToMe.length === 1 ? 'person' : 'people'}
                 </p>
               </CardContent>
@@ -72,7 +72,7 @@ export const BalancesPage = () => {
           {/* You Owe Section */}
           {iOwe.length > 0 && (
             <div>
-              <h2 className="text-lg font-bold text-[#1F1F1F] mb-3">
+              <h2 className="text-lg font-bold text-foreground mb-3">
                 You Owe
               </h2>
               <SimplifiedDebts
@@ -85,7 +85,7 @@ export const BalancesPage = () => {
           {/* Owed to You Section */}
           {owedToMe.length > 0 && (
             <div>
-              <h2 className="text-lg font-bold text-[#1F1F1F] mb-3">
+              <h2 className="text-lg font-bold text-foreground mb-3">
                 Owed to You
               </h2>
               <SimplifiedDebts
@@ -97,14 +97,14 @@ export const BalancesPage = () => {
 
           {/* Empty State */}
           {debts.length === 0 && !isLoading && (
-            <Card className="border-[#F2F2F2]">
+            <Card className="border-border">
               <CardContent className="py-16 text-center">
                 <div className="space-y-3">
                   <div className="text-6xl">✅</div>
-                  <h3 className="text-xl font-bold text-[#1F1F1F]">
+                  <h3 className="text-xl font-bold text-foreground">
                     All Settled Up!
                   </h3>
-                  <p className="text-[#828282]">
+                  <p className="text-muted-foreground">
                     You have no outstanding debts or credits
                   </p>
                 </div>
