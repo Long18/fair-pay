@@ -1,0 +1,80 @@
+name: Database Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Run Database CRUD Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install test dependencies
+        run: npm install --save-dev vitest @vitest/ui @vitest/coverage-v8
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase local instance
+        run: npx supabase start
+
+      - name: Get Supabase credentials
+        id: supabase-credentials
+        run: |
+          SUPABASE_URL=$(npx supabase status | grep "API URL" | awk '{print $3}')
+          SUPABASE_ANON_KEY=$(npx supabase status | grep "anon key" | awk '{print $3}')
+          echo "SUPABASE_URL=$SUPABASE_URL" >> $GITHUB_ENV
+          echo "SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" >> $GITHUB_ENV
+
+      - name: Create .env.test file
+        run: |
+          echo "VITE_SUPABASE_URL=${{ env.SUPABASE_URL }}" > .env.test
+          echo "VITE_SUPABASE_ANON_KEY=${{ env.SUPABASE_ANON_KEY }}" >> .env.test
+
+      - name: Run database tests
+        run: npm run test:db
+
+      - name: Generate coverage report
+        if: always()
+        run: npm run test:db:coverage
+
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/coverage-final.json
+          flags: database-tests
+          name: database-coverage
+          fail_ci_if_error: false
+
+      - name: Stop Supabase
+        if: always()
+        run: npx supabase stop
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            coverage/
+            test-results/
+          retention-days: 30
+

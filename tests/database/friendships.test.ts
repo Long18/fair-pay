@@ -266,4 +266,3 @@ describe('Friendships CRUD Operations', () => {
     });
   });
 });
-
