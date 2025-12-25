@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { UserAvatar } from "@/components/refine-ui/layout/user-avatar";
 import { ThemeToggle } from "@/components/refine-ui/theme/theme-toggle";
 import {
@@ -6,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import {
@@ -14,8 +16,9 @@ import {
   useRefineOptions,
   useGo,
 } from "@refinedev/core";
-import { LogOutIcon, UserIcon } from "lucide-react";
+import { LogOutIcon, UserIcon, Search } from "lucide-react";
 import { NotificationPanel } from "@/modules/notifications";
+import { SearchModal, useSearchShortcut } from "@/components/global-search";
 
 export const Header = () => {
   const { isMobile } = useSidebar();
@@ -24,35 +27,52 @@ export const Header = () => {
 };
 
 function DesktopHeader() {
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useSearchShortcut(() => setSearchOpen(true));
+
   return (
-    <header
-      className={cn(
-        "sticky",
-        "top-0",
-        "flex",
-        "h-16",
-        "shrink-0",
-        "items-center",
-        "gap-4",
-        "border-b",
-        "border-border",
-        "bg-sidebar",
-        "pr-3",
-        "justify-end",
-        "z-40"
-      )}
-    >
-      <NotificationPanel />
-      <ThemeToggle />
-      <UserDropdown />
-    </header>
+    <>
+      <header
+        className={cn(
+          "sticky",
+          "top-0",
+          "flex",
+          "h-16",
+          "shrink-0",
+          "items-center",
+          "gap-4",
+          "border-b",
+          "border-border",
+          "bg-sidebar",
+          "pr-3",
+          "justify-end",
+          "z-40"
+        )}
+      >
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setSearchOpen(true)}
+          aria-label="Search (⌘K)"
+        >
+          <Search className="h-5 w-5" />
+        </Button>
+        <NotificationPanel />
+        <ThemeToggle />
+        <UserDropdown />
+      </header>
+      <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
+    </>
   );
 }
 
 function MobileHeader() {
   const { open, isMobile } = useSidebar();
-
   const { title } = useRefineOptions();
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useSearchShortcut(() => setSearchOpen(true));
 
   return (
     <header
@@ -116,9 +136,19 @@ function MobileHeader() {
       </div>
 
       <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => setSearchOpen(true)}
+          aria-label="Search"
+        >
+          <Search className="h-4 w-4" />
+        </Button>
         <NotificationPanel />
         <ThemeToggle className={cn("h-8", "w-8")} />
       </div>
+      <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
     </header>
   );
 }
