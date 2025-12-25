@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,7 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
   debts,
   isLoading = false,
 }) => {
+  const { t } = useTranslation();
   const go = useGo();
 
   if (isLoading) {
@@ -28,7 +30,7 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
       <Card className="border-[#F2F2F2]">
         <CardHeader>
           <CardTitle className="text-base font-bold text-[#333]">
-            Who Owes Whom
+            {t('dashboard.whoOwesWhom')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -53,7 +55,7 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
       <Card className="border-[#F2F2F2]">
         <CardHeader>
           <CardTitle className="text-base font-bold text-[#333]">
-            Who Owes Whom
+            {t('dashboard.whoOwesWhom')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -64,7 +66,7 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
               </div>
             </div>
             <p className="text-[#828282]">
-              All settled up! No outstanding debts.
+              {t('dashboard.allSettledUpNoDebts')}
             </p>
           </div>
         </CardContent>
@@ -76,7 +78,7 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
     <Card className="border-[#F2F2F2]">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-base font-bold text-[#333]">
-          Who Owes Whom
+          {t('dashboard.whoOwesWhom')}
         </CardTitle>
         <Button
           variant="ghost"
@@ -84,7 +86,7 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
           onClick={() => go({ to: "/balances" })}
           className="text-[#FFA14E] hover:text-[#FF8C2E]"
         >
-          View All
+          {t('dashboard.viewAll')}
         </Button>
       </CardHeader>
       <CardContent>
@@ -103,13 +105,13 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-[#333] truncate">
                     {debt.i_owe_them ? (
-                      <>You owe <span className="font-bold">{debt.counterparty_name}</span></>
+                      <>{t('dashboard.youOweUser')} <span className="font-bold">{debt.counterparty_name}</span></>
                     ) : (
-                      <><span className="font-bold">{debt.counterparty_name}</span> owes you</>
+                      <><span className="font-bold">{debt.counterparty_name}</span> {t('dashboard.userOwesYou')}</>
                     )}
                   </p>
                   <p className="text-xs text-[#828282] mt-0.5">
-                    Tap to settle up
+                    {t('dashboard.tapToSettleUp')}
                   </p>
                 </div>
               </div>
@@ -149,7 +151,7 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
             className="w-full mt-4 border-[#F2F2F2] text-[#828282] hover:text-[#FFA14E] hover:border-[#FFA14E]"
             onClick={() => go({ to: "/balances" })}
           >
-            View {debts.length - 5} more
+            {t('dashboard.viewMore', { count: debts.length - 5 })}
           </Button>
         )}
       </CardContent>

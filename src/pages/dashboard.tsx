@@ -1,4 +1,5 @@
 import { useGetIdentity, useGo } from "@refinedev/core";
+import { useTranslation } from "react-i18next";
 import { useGlobalBalance } from "@/hooks/use-global-balance";
 import { useRecentActivity } from "@/hooks/use-recent-activity";
 import { useSampleLeaderboard } from "@/hooks/use-sample-leaderboard";
@@ -19,6 +20,7 @@ import { Profile } from "@/modules/profile/types";
 import { formatNumber } from "@/lib/locale-utils";
 
 export const Dashboard = () => {
+  const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
   const go = useGo();
   const globalBalance = useGlobalBalance();
@@ -36,10 +38,10 @@ export const Dashboard = () => {
           <div className="space-y-12">
             <div className="text-center space-y-6">
               <h1 className="text-5xl lg:text-6xl font-bold tracking-tight bg-gradient-to-r from-teal-600 to-purple-600 dark:from-teal-400 dark:to-purple-400 bg-clip-text text-transparent">
-                Welcome to FairPay
+                {t('dashboard.welcome')}
               </h1>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Track shared expenses with friends and groups. Split bills fairly and settle up easily.
+                {t('dashboard.subtitle')}
               </p>
               <div className="flex gap-4 justify-center pt-6">
                 <Button
@@ -47,7 +49,7 @@ export const Dashboard = () => {
                   onClick={() => go({ to: "/login" })}
                   className="bg-primary hover:bg-primary/90 text-primary-foreground px-8"
                 >
-                  Login
+                  {t('auth.login')}
                 </Button>
                 <Button
                   size="lg"
@@ -55,7 +57,7 @@ export const Dashboard = () => {
                   onClick={() => go({ to: "/register" })}
                   className="border-primary text-primary hover:bg-primary/10 px-8"
                 >
-                  Create Account
+                  {t('auth.createAccount')}
                 </Button>
               </div>
             </div>
@@ -94,10 +96,10 @@ export const Dashboard = () => {
 
             <div className="text-center py-12 space-y-6">
               <h3 className="text-2xl font-bold text-foreground">
-                Ready to get started?
+                {t('dashboard.welcome')}
               </h3>
               <p className="text-muted-foreground">
-                Join thousands of users managing their shared expenses effortlessly
+                {t('dashboard.subtitle')}
               </p>
               <div className="flex gap-4 justify-center">
                 <Button
@@ -105,7 +107,7 @@ export const Dashboard = () => {
                   onClick={() => go({ to: "/register" })}
                   className="bg-secondary hover:bg-secondary/90 text-secondary-foreground px-8"
                 >
-                  Sign Up Now
+                  {t('auth.register')}
                 </Button>
               </div>
             </div>
@@ -139,7 +141,7 @@ export const Dashboard = () => {
               </h1>
             </div>
             <p className="text-muted-foreground">
-              Here's your financial overview
+              {t('dashboard.subtitle')}
             </p>
           </div>
 
@@ -148,7 +150,7 @@ export const Dashboard = () => {
             <Card className="border bg-card hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  You Owe
+                  {t('dashboard.youOwe')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -156,7 +158,7 @@ export const Dashboard = () => {
                   {formatNumber(totalIOwe)} ₫
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Total debt to others
+                  {t('dashboard.totalDebtToOthers')}
                 </p>
               </CardContent>
             </Card>
@@ -164,7 +166,7 @@ export const Dashboard = () => {
             <Card className="border bg-card hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  You Are Owed
+                  {t('dashboard.youAreOwed')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -180,7 +182,7 @@ export const Dashboard = () => {
             <Card className="border bg-card hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Net Balance
+                  {t('dashboard.netBalance')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -190,7 +192,7 @@ export const Dashboard = () => {
                   {netBalance > 0 ? '+' : ''}{formatNumber(netBalance)} ₫
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  {netBalance > 0 ? 'You are owed overall' : netBalance < 0 ? 'You owe overall' : 'All settled up'}
+                  {netBalance > 0 ? t('dashboard.youAreOwedOverall') : netBalance < 0 ? t('dashboard.youOweOverall') : t('dashboard.allSettled')}
                 </p>
               </CardContent>
             </Card>
@@ -208,13 +210,13 @@ export const Dashboard = () => {
             <Card className="border-[#F2F2F2]">
               <CardHeader>
                 <CardTitle className="text-base font-bold text-[#333]">
-                  Your Groups
+                  {t('dashboard.yourGroups')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {globalBalance.group_balances.length === 0 ? (
                   <p className="text-center text-[#828282] py-8 text-sm">
-                    You're not part of any groups yet. Create one to get started!
+                    {t('dashboard.noGroupsYet')}
                   </p>
                 ) : (
                   <div className="space-y-3">
@@ -233,13 +235,13 @@ export const Dashboard = () => {
             <Card className="border-[#F2F2F2]">
               <CardHeader>
                 <CardTitle className="text-base font-bold text-[#333]">
-                  Recent Activity
+                  {t('dashboard.recentActivity')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {recentActivity.items.length === 0 ? (
                   <p className="text-center text-[#828282] py-8 text-sm">
-                    No recent activity
+                    {t('dashboard.noRecentActivity')}
                   </p>
                 ) : (
                   <div className="space-y-3">
