@@ -1,7 +1,8 @@
 import { useGo } from "@refinedev/core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Users, TrendingDown } from "lucide-react";
 import { GroupBalance } from "@/hooks/use-global-balance";
 
 interface GroupBalanceCardProps {
@@ -52,10 +53,42 @@ export const GroupBalanceCard = ({ group, currency = "VND" }: GroupBalanceCardPr
           )}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-3">
         <p className={`text-sm font-medium ${getBalanceColor(group.my_balance)}`}>
           {getBalanceText(group.my_balance)}
         </p>
+
+        {/* Total Group Debt */}
+        {group.total_group_debt > 0 && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground border-t pt-3">
+            <TrendingDown className="h-4 w-4" />
+            <span>Total group debt: {formatCurrency(group.total_group_debt)}</span>
+          </div>
+        )}
+
+        {/* Top Debtors */}
+        {group.top_debtors && group.top_debtors.length > 0 && (
+          <div className="border-t pt-3">
+            <p className="text-xs font-medium text-muted-foreground mb-2">Top Debtors:</p>
+            <div className="space-y-2">
+              {group.top_debtors.slice(0, 3).map((debtor, index) => (
+                <div key={debtor.user_id} className="flex items-center gap-2 text-sm">
+                  <span className="text-xs text-muted-foreground w-4">{index + 1}.</span>
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src={debtor.avatar_url || undefined} />
+                    <AvatarFallback className="text-xs">
+                      {debtor.user_name.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="flex-1 truncate">{debtor.user_name}</span>
+                  <span className="text-xs text-red-600 font-medium">
+                    {formatCurrency(Math.abs(debtor.balance))}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

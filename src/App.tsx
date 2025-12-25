@@ -175,6 +175,18 @@ function App() {
               }}
             >
               <Routes>
+                {/* Public Dashboard route - accessible without authentication */}
+                <Route
+                  element={
+                    <Layout>
+                      <Outlet />
+                    </Layout>
+                  }
+                >
+                  <Route index element={<Dashboard />} />
+                </Route>
+
+                {/* Authenticated routes - require login */}
                 <Route
                   element={
                     <Authenticated
@@ -189,10 +201,6 @@ function App() {
                     </Authenticated>
                   }
                 >
-                  <Route
-                    index
-                    element={<Dashboard />}
-                  />
                   <Route path="/blog-posts">
                     <Route index element={<BlogPostList />} />
                     <Route path="create" element={<BlogPostCreate />} />

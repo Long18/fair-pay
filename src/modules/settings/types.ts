@@ -4,13 +4,13 @@ export type ProfileVisibility = 'public' | 'friends' | 'private';
 
 export interface UserSettings {
   user_id: string;
-  
+
   // Display preferences
   default_currency: string;
   date_format: DateFormat;
   number_format: string;
   theme: Theme;
-  
+
   // Notification preferences
   notifications_enabled: boolean;
   email_notifications: boolean;
@@ -18,12 +18,12 @@ export interface UserSettings {
   notify_on_payment_received: boolean;
   notify_on_friend_request: boolean;
   notify_on_group_invite: boolean;
-  
+
   // Privacy settings
   allow_friend_requests: boolean;
   allow_group_invites: boolean;
   profile_visibility: ProfileVisibility;
-  
+
   // Timestamps
   created_at: string;
   updated_at: string;
@@ -35,7 +35,7 @@ export interface UserSettingsFormValues {
   date_format: DateFormat;
   number_format: string;
   theme: Theme;
-  
+
   // Notification preferences
   notifications_enabled: boolean;
   email_notifications: boolean;
@@ -43,7 +43,7 @@ export interface UserSettingsFormValues {
   notify_on_payment_received: boolean;
   notify_on_friend_request: boolean;
   notify_on_group_invite: boolean;
-  
+
   // Privacy settings
   allow_friend_requests: boolean;
   allow_group_invites: boolean;
@@ -76,4 +76,3 @@ export const PROFILE_VISIBILITY_OPTIONS: { value: ProfileVisibility; label: stri
   { value: 'friends', label: 'Bạn bè', description: 'Chỉ bạn bè có thể xem hồ sơ của bạn' },
   { value: 'private', label: 'Riêng tư', description: 'Chỉ bạn có thể xem hồ sơ của bạn' },
 ];
-

@@ -22,7 +22,7 @@ describe('User Settings CRUD and RLS', () => {
 
   it('should auto-create default settings for new users', async () => {
     await supabase.auth.signInWithPassword({ email: 'user1@example.com', password: 'password' });
-    
+
     const { data, error } = await supabase
       .from('user_settings')
       .select('*')
@@ -39,7 +39,7 @@ describe('User Settings CRUD and RLS', () => {
 
   it('should allow users to view their own settings', async () => {
     await supabase.auth.signInWithPassword({ email: 'user1@example.com', password: 'password' });
-    
+
     const { data, error } = await supabase
       .from('user_settings')
       .select('*')
@@ -53,7 +53,7 @@ describe('User Settings CRUD and RLS', () => {
 
   it('should NOT allow users to view other users\' settings', async () => {
     await supabase.auth.signInWithPassword({ email: 'user1@example.com', password: 'password' });
-    
+
     const { data, error } = await supabase
       .from('user_settings')
       .select('*')
@@ -65,7 +65,7 @@ describe('User Settings CRUD and RLS', () => {
 
   it('should allow users to update their own settings', async () => {
     await supabase.auth.signInWithPassword({ email: 'user1@example.com', password: 'password' });
-    
+
     const { data, error } = await supabase
       .from('user_settings')
       .update({
@@ -85,7 +85,7 @@ describe('User Settings CRUD and RLS', () => {
 
   it('should NOT allow users to update other users\' settings', async () => {
     await supabase.auth.signInWithPassword({ email: 'user1@example.com', password: 'password' });
-    
+
     const { data, error } = await supabase
       .from('user_settings')
       .update({ default_currency: 'USD' })
@@ -98,7 +98,7 @@ describe('User Settings CRUD and RLS', () => {
 
   it('should update updated_at timestamp on update', async () => {
     await supabase.auth.signInWithPassword({ email: 'user1@example.com', password: 'password' });
-    
+
     const { data: before } = await supabase
       .from('user_settings')
       .select('updated_at')
@@ -123,7 +123,7 @@ describe('User Settings CRUD and RLS', () => {
 
   it('should handle notification preferences correctly', async () => {
     await supabase.auth.signInWithPassword({ email: 'user1@example.com', password: 'password' });
-    
+
     const { data, error } = await supabase
       .from('user_settings')
       .update({
@@ -145,7 +145,7 @@ describe('User Settings CRUD and RLS', () => {
 
   it('should handle privacy settings correctly', async () => {
     await supabase.auth.signInWithPassword({ email: 'user1@example.com', password: 'password' });
-    
+
     const { data, error } = await supabase
       .from('user_settings')
       .update({
@@ -165,7 +165,7 @@ describe('User Settings CRUD and RLS', () => {
 
   it('should handle display preferences correctly', async () => {
     await supabase.auth.signInWithPassword({ email: 'user1@example.com', password: 'password' });
-    
+
     const { data, error } = await supabase
       .from('user_settings')
       .update({
@@ -183,4 +183,3 @@ describe('User Settings CRUD and RLS', () => {
     expect(data?.theme).toBe('light');
   });
 });
-

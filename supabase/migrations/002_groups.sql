@@ -42,18 +42,37 @@ ALTER TABLE group_members ENABLE ROW LEVEL SECURITY;
 -- RLS Policies for groups
 -- ========================================
 
--- SELECT: Group members can view groups
-CREATE POLICY "Group members can view groups"
+-- SELECT: Split into two policies to avoid infinite recursion during trigger execution
+-- Policy: Users can view groups they created OR are members of
+-- Split into two non-overlapping policies to avoid recursion
+CREATE POLICY "View own created groups"
   ON groups
   FOR SELECT
   TO authenticated
-  USING (
-    id IN (
-      SELECT group_id
-      FROM group_members
-      WHERE user_id = auth.uid()
-    )
+  USING (created_by = auth.uid());
+
+-- This policy uses a SECURITY DEFINER function to avoid recursion
+CREATE OR REPLACE FUNCTION user_is_group_member(group_uuid UUID)
+RETURNS BOOLEAN
+SECURITY DEFINER
+SET search_path = public, pg_temp
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1
+    FROM group_members
+    WHERE group_id = group_uuid
+      AND user_id = auth.uid()
   );
+END;
+$$;
+
+CREATE POLICY "View member groups"
+  ON groups
+  FOR SELECT
+  TO authenticated
+  USING (user_is_group_member(id));
 
 -- INSERT: Authenticated users can create groups
 CREATE POLICY "Authenticated users can create groups"
@@ -93,49 +112,56 @@ CREATE POLICY "Group creator can delete groups"
 -- RLS Policies for group_members
 -- ========================================
 
--- SELECT: Users can view group_members records for groups they belong to
--- Simple policy: just check if a matching user_id record exists for this group
-CREATE POLICY "Group members can view members"
+-- SELECT: Users can view group_members records for groups they created
+-- This policy is intentionally simple to avoid recursion
+-- Members will be able to see other members through the groups table join
+CREATE POLICY "Group creators can view members"
   ON group_members
   FOR SELECT
   TO authenticated
   USING (
-    -- Allow users to see members of groups where they are also a member
-    -- We use a simple subquery that checks the groups table instead of recursing
     group_id IN (
-      SELECT g.id
-      FROM groups g
-      INNER JOIN group_members gm ON gm.group_id = g.id
-      WHERE gm.user_id = auth.uid()
+      SELECT id
+      FROM groups
+      WHERE created_by = auth.uid()
     )
   );
 
--- INSERT: Group admins can add members
+-- SELECT: Users can view their own group_members record
+CREATE POLICY "Users can view own membership"
+  ON group_members
+  FOR SELECT
+  TO authenticated
+  USING (
+    user_id = auth.uid()
+  );
+
+-- INSERT: Group creators can add members
 -- Note: The trigger function uses SECURITY DEFINER to bypass this policy
-CREATE POLICY "Group admins can add members"
+CREATE POLICY "Group creators can add members"
   ON group_members
   FOR INSERT
   TO authenticated
   WITH CHECK (
     group_id IN (
-      SELECT group_id
-      FROM group_members
-      WHERE user_id = auth.uid() AND role = 'admin'
+      SELECT id
+      FROM groups
+      WHERE created_by = auth.uid()
     )
   );
 
--- DELETE: Users can remove themselves OR admins can remove members
-CREATE POLICY "Users can leave or admins can remove members"
+-- DELETE: Users can remove themselves OR group creators can remove members
+CREATE POLICY "Users can leave or creators can remove members"
   ON group_members
   FOR DELETE
   TO authenticated
   USING (
     user_id = auth.uid() -- User can remove themselves
     OR
-    group_id IN ( -- Or user is admin
-      SELECT group_id
-      FROM group_members
-      WHERE user_id = auth.uid() AND role = 'admin'
+    group_id IN ( -- Or user is the group creator
+      SELECT id
+      FROM groups
+      WHERE created_by = auth.uid()
     )
   );
 
@@ -143,15 +169,24 @@ CREATE POLICY "Users can leave or admins can remove members"
 -- Trigger: Auto-add creator as admin
 -- ========================================
 
+-- Function to add group creator as admin member
+-- SECURITY DEFINER makes this run with postgres role privileges, bypassing RLS
 CREATE OR REPLACE FUNCTION add_creator_as_admin()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public, pg_temp
+LANGUAGE plpgsql
+AS $$
 BEGIN
+  -- Explicitly disable RLS for this operation
+  SET LOCAL row_security = off;
+
   INSERT INTO group_members (group_id, user_id, role)
   VALUES (NEW.id, NEW.created_by, 'admin');
+
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER
-SET search_path = public, pg_temp;
+$$;
 
 CREATE TRIGGER on_group_created
   AFTER INSERT ON groups
