@@ -1,4 +1,4 @@
-export type DateFilterOption = 
+export type DateFilterOption =
   | 'today'
   | 'this_week'
   | 'this_month'
@@ -26,4 +26,3 @@ export interface ActiveFilter {
   label: string;
   value: string;
 }
-

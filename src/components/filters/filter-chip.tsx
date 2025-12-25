@@ -35,4 +35,3 @@ export const FilterChip = ({ label, value, onRemove, className }: FilterChipProp
     </Badge>
   );
 };
-

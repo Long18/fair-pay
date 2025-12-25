@@ -8,7 +8,7 @@ export const useExpenseFilters = (initialFilters?: ExpenseFilters) => {
 
   const getDateRange = (option: DateFilterOption, customStart?: string, customEnd?: string) => {
     const today = new Date();
-    
+
     switch (option) {
       case 'today':
         return {
@@ -50,7 +50,7 @@ export const useExpenseFilters = (initialFilters?: ExpenseFilters) => {
         filters.dateRange.startDate,
         filters.dateRange.endDate
       );
-      
+
       if (dateRange) {
         conditions.push({
           field: 'expense_date',
@@ -132,7 +132,7 @@ export const useExpenseFilters = (initialFilters?: ExpenseFilters) => {
         last_30_days: 'Last 30 Days',
         custom: 'Custom Range',
       };
-      
+
       active.push({
         key: 'dateRange',
         label: 'Date',
@@ -185,7 +185,7 @@ export const useExpenseFilters = (initialFilters?: ExpenseFilters) => {
   const removeFilter = useCallback((key: string) => {
     setFilters((prev) => {
       const updated = { ...prev };
-      
+
       if (key === 'dateRange') {
         delete updated.dateRange;
       } else if (key === 'amountRange') {
@@ -199,7 +199,7 @@ export const useExpenseFilters = (initialFilters?: ExpenseFilters) => {
       } else if (key === 'paidBy') {
         delete updated.paidBy;
       }
-      
+
       return updated;
     });
   }, []);
@@ -225,4 +225,3 @@ export const useExpenseFilters = (initialFilters?: ExpenseFilters) => {
     clearAllFilters,
   };
 };
-
