@@ -8,6 +8,8 @@ export interface GroupBalance {
   group_name: string;
   my_balance: number; // Positive = others owe me, Negative = I owe others
   member_count: number;
+  total_group_debt: number; // Sum of all negative balances in the group
+  top_debtors: Array<{ user_id: string; user_name: string; avatar_url: string | null; balance: number }>; // Top 3-5 users who owe money
 }
 
 export interface GlobalBalance {
@@ -152,11 +154,30 @@ export const useGlobalBalance = (): GlobalBalance => {
       // Find current user's balance in this group
       const myBalance = balances.find(b => b.user_id === identity.id);
 
+      // Calculate total group debt (sum of all negative balances)
+      const total_group_debt = balances
+        .filter(b => b.balance < 0)
+        .reduce((sum, b) => sum + Math.abs(b.balance), 0);
+
+      // Get top debtors (users with negative balance, sorted by amount owed, limited to 5)
+      const top_debtors = balances
+        .filter(b => b.balance < 0)
+        .sort((a, b) => a.balance - b.balance) // Sort ascending (most negative first)
+        .slice(0, 5)
+        .map(b => ({
+          user_id: b.user_id,
+          user_name: b.user_name,
+          avatar_url: b.avatar_url,
+          balance: b.balance,
+        }));
+
       return {
         group_id: group.id,
         group_name: group.name,
         my_balance: myBalance?.balance || 0,
         member_count: groupMembers.length,
+        total_group_debt: Math.round(total_group_debt * 100) / 100,
+        top_debtors,
       };
     });
 

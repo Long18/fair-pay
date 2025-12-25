@@ -15,10 +15,12 @@ import {
   useLogout,
   useRefineOptions,
   useGo,
+  useGetIdentity,
 } from "@refinedev/core";
 import { LogOutIcon, UserIcon, Search } from "lucide-react";
 import { NotificationPanel } from "@/modules/notifications";
 import { SearchModal, useSearchShortcut } from "@/components/global-search";
+import { Profile } from "@/modules/profile/types";
 
 export const Header = () => {
   const { isMobile } = useSidebar();
@@ -154,6 +156,7 @@ function MobileHeader() {
 }
 
 const UserDropdown = () => {
+  const { data: identity } = useGetIdentity<Profile>();
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
   const go = useGo();
 
@@ -161,6 +164,19 @@ const UserDropdown = () => {
 
   if (!authProvider?.getIdentity) {
     return null;
+  }
+
+  // Show Login button for unauthenticated users
+  if (!identity) {
+    return (
+      <Button
+        variant="default"
+        size="sm"
+        onClick={() => go({ to: "/login" })}
+      >
+        Login
+      </Button>
+    );
   }
 
   return (
