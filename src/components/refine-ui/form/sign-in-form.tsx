@@ -216,7 +216,7 @@ export const SignInForm = () => {
 
         <CardFooter className="px-0">
           <div className={cn("w-full", "text-center")}>
-            <span className={cn("text-sm", "text-gray-600")}>
+            <span className={cn("text-sm", "text-muted-foreground")}>
               Don't have an account?{" "}
             </span>
             <Link
