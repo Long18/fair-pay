@@ -58,27 +58,28 @@ export const SignInForm = () => {
         "items-center",
         "justify-center",
         "min-h-svh",
-        "bg-gradient-to-br from-teal-50 via-white to-purple-50",
+        "bg-gradient-to-br from-teal-50 via-background to-purple-50",
+        "dark:from-gray-900 dark:via-background dark:to-gray-800",
         "relative",
         "overflow-hidden"
       )}
     >
       {/* Decorative botanical background elements */}
-      <div className="absolute top-0 right-0 w-96 h-96 opacity-10">
+      <div className="absolute top-0 right-0 w-96 h-96 opacity-10 dark:opacity-5">
         <svg viewBox="0 0 200 200" className="w-full h-full">
-          <circle cx="100" cy="100" r="80" fill="currentColor" className="text-teal-400" />
-          <circle cx="60" cy="80" r="40" fill="currentColor" className="text-teal-300" />
-          <circle cx="140" cy="120" r="50" fill="currentColor" className="text-purple-300" />
+          <circle cx="100" cy="100" r="80" fill="currentColor" className="text-teal-400 dark:text-teal-600" />
+          <circle cx="60" cy="80" r="40" fill="currentColor" className="text-teal-300 dark:text-teal-700" />
+          <circle cx="140" cy="120" r="50" fill="currentColor" className="text-purple-300 dark:text-purple-700" />
         </svg>
       </div>
-      <div className="absolute bottom-0 left-0 w-80 h-80 opacity-10">
+      <div className="absolute bottom-0 left-0 w-80 h-80 opacity-10 dark:opacity-5">
         <svg viewBox="0 0 200 200" className="w-full h-full">
-          <circle cx="100" cy="100" r="70" fill="currentColor" className="text-purple-400" />
-          <circle cx="70" cy="70" r="45" fill="currentColor" className="text-teal-300" />
+          <circle cx="100" cy="100" r="70" fill="currentColor" className="text-purple-400 dark:text-purple-600" />
+          <circle cx="70" cy="70" r="45" fill="currentColor" className="text-teal-300 dark:text-teal-700" />
         </svg>
       </div>
 
-      <Card className={cn("sm:w-[456px]", "p-8", "shadow-xl", "border-0", "bg-white/95", "backdrop-blur-sm", "z-10")}>
+      <Card className={cn("sm:w-[456px]", "p-8", "shadow-xl", "border", "bg-card/95", "backdrop-blur-sm", "z-10")}>
         <CardHeader className={cn("px-0", "pb-6", "text-center")}>
           <div className={cn("flex", "items-center", "justify-center", "mb-4")}>
             {title.icon && (
@@ -87,7 +88,7 @@ export const SignInForm = () => {
               </div>
             )}
           </div>
-          <CardTitle className={cn("text-2xl", "font-bold", "text-gray-900")}>
+          <CardTitle className={cn("text-2xl", "font-bold", "text-foreground")}>
             Welcome to {title.text || "FairPay"}
           </CardTitle>
         </CardHeader>
@@ -97,7 +98,7 @@ export const SignInForm = () => {
         <CardContent className={cn("px-0")}>
           <form onSubmit={handleSignIn}>
             <div className={cn("space-y-1", "mb-4")}>
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="email" className="text-sm font-medium">
                 Select user
               </Label>
               <Input
@@ -111,7 +112,7 @@ export const SignInForm = () => {
               />
             </div>
             <div className={cn("space-y-1", "mb-6")}>
-              <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="password" className="text-sm font-medium">
                 Password
               </Label>
               <InputPassword
@@ -128,9 +129,9 @@ export const SignInForm = () => {
               className={cn(
                 "w-full",
                 "h-12",
-                "bg-gray-900",
-                "hover:bg-gray-800",
-                "text-white",
+                "bg-foreground",
+                "hover:bg-foreground/90",
+                "text-background",
                 "font-medium"
               )}
             >
@@ -146,7 +147,7 @@ export const SignInForm = () => {
                     setRememberMe(checked === "indeterminate" ? false : checked)
                   }
                 />
-                <Label htmlFor="remember" className="text-sm text-gray-600">
+                <Label htmlFor="remember" className="text-sm text-muted-foreground">
                   Remember me
                 </Label>
               </div>
@@ -160,7 +161,7 @@ export const SignInForm = () => {
 
             <div className={cn("flex", "items-center", "gap-4", "my-6")}>
               <Separator className={cn("flex-1")} />
-              <span className={cn("text-sm", "text-gray-500")}>or</span>
+              <span className={cn("text-sm", "text-muted-foreground")}>or</span>
               <Separator className={cn("flex-1")} />
             </div>
 
