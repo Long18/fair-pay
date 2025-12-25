@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useSimplifiedBalances, useMySimplifiedDebts } from "../hooks/use-simplified-balances";
 import { UserBalance } from "../types";
+import { formatCurrency as formatCurrencyUtil } from "@/lib/locale-utils";
 
 interface SimplifiedBalanceViewProps {
   balances: UserBalance[];
@@ -35,7 +36,7 @@ export const SimplifiedBalanceView = ({
   const { iOwe, owesMe } = useMySimplifiedDebts(simplifiedBalances, currentUserId);
 
   const formatCurrency = (amount: number) => {
-    return `${Math.abs(amount).toLocaleString("vi-VN")} ${currency}`;
+    return formatCurrencyUtil(amount, currency);
   };
 
   const totalIOwe = iOwe.reduce((sum, debt) => sum + debt.amount, 0);

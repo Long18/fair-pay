@@ -3,6 +3,7 @@ import { Group } from "../types";
 import { Button } from "@/components/ui/button";
 import { Eye, Pencil } from "lucide-react";
 import { useGo } from "@refinedev/core";
+import { formatDate } from "@/lib/locale-utils";
 
 export const useGroupColumns = (): ColumnDef<Group>[] => {
   const go = useGo();
@@ -34,7 +35,7 @@ export const useGroupColumns = (): ColumnDef<Group>[] => {
         const date = new Date(row.getValue("created_at"));
         return (
           <div className="text-sm">
-            {date.toLocaleDateString("vi-VN", {
+            {formatDate(date, {
               year: "numeric",
               month: "short",
               day: "numeric",

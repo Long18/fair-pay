@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { UserBalance } from "../types";
+import { formatCurrency as formatCurrencyUtil } from "@/lib/locale-utils";
 
 interface BalanceSummaryProps {
   balances: UserBalance[];
@@ -39,7 +40,7 @@ export const BalanceSummary = ({
     : [];
 
   const formatCurrency = (amount: number) => {
-    return `${Math.abs(amount).toLocaleString("vi-VN")} ${currency}`;
+    return formatCurrencyUtil(amount, currency);
   };
 
   return (

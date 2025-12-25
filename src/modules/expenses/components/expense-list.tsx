@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Eye, X } from "lucide-react";
 import { ExpenseWithSplits } from "../types";
 import { CategoryIcon } from "./category-icon";
+import { formatDateShort, formatNumber } from "@/lib/locale-utils";
 import {
   ExpenseFiltersPanel,
   FilterChip,
@@ -132,14 +133,14 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Paid by {expense.profiles?.full_name || "Unknown"} •{" "}
-                    {new Date(expense.expense_date).toLocaleDateString("vi-VN")}
+                    {formatDateShort(expense.expense_date)}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <div className="text-right">
                   <div className="font-bold text-lg">
-                    {expense.amount.toLocaleString("vi-VN")} ₫
+                    {formatNumber(expense.amount)} ₫
                   </div>
                 </div>
                 <Button

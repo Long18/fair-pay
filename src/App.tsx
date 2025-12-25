@@ -1,7 +1,14 @@
 import { useState } from "react";
-import { Authenticated, GitHubBanner, Refine } from "@refinedev/core";
+import { Authenticated, Refine } from "@refinedev/core";
 import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
+import {
+  HomeIcon,
+  CustomersIcon,
+  BalancesIcon,
+  SettingsIcon,
+  AuditLogsIcon,
+} from "./components/ui/icons";
 
 import routerProvider, {
   CatchAllNavigate,
@@ -48,7 +55,6 @@ import { supabaseClient } from "./utility";
 function App() {
   return (
     <BrowserRouter>
-      <GitHubBanner />
       <RefineKbarProvider>
         <ThemeProvider>
           <DevtoolsProvider>
@@ -64,6 +70,7 @@ function App() {
                   list: "/",
                   meta: {
                     label: "Dashboard",
+                    icon: <HomeIcon className="w-5 h-5" />,
                   },
                 },
                 {
@@ -81,6 +88,7 @@ function App() {
                   meta: {
                     canDelete: true,
                     label: "Groups",
+                    icon: <CustomersIcon className="w-5 h-5" />,
                   },
                 },
                 {
@@ -88,6 +96,7 @@ function App() {
                   list: "/friends",
                   meta: {
                     label: "Friends",
+                    icon: <CustomersIcon className="w-5 h-5" />,
                   },
                 },
                 {
@@ -130,14 +139,16 @@ function App() {
                   name: "reports",
                   list: "/reports",
                   meta: {
-                    label: "Báo cáo",
+                    label: "Reports",
+                    icon: <AuditLogsIcon className="w-5 h-5" />,
                   },
                 },
                 {
                   name: "settings",
                   list: "/settings",
                   meta: {
-                    label: "Cài đặt",
+                    label: "Settings",
+                    icon: <SettingsIcon className="w-5 h-5" />,
                   },
                 },
                 {

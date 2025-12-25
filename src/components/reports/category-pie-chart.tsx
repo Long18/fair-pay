@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { CategoryData } from '@/hooks/use-category-breakdown';
 import { getCategoryMeta } from '@/modules/expenses';
+import { formatNumber } from '@/lib/locale-utils';
 
 interface CategoryPieChartProps {
   data: CategoryData[];
@@ -41,7 +42,7 @@ export function CategoryPieChart({ data, title = 'Chi tiêu theo danh mục' }: 
         <div className="bg-background border rounded-lg p-3 shadow-lg">
           <p className="font-medium">{data.name}</p>
           <p className="text-sm text-muted-foreground">
-            {data.value.toLocaleString('vi-VN')} ₫
+            {formatNumber(data.value)} ₫
           </p>
           <p className="text-xs text-muted-foreground">
             {data.count} chi tiêu

@@ -35,7 +35,7 @@ export function Sidebar() {
   const { menuItems, selectedKey } = useMenu();
 
   return (
-    <ShadcnSidebar collapsible="icon" className={cn("border-none")}>
+    <ShadcnSidebar collapsible="icon" className={cn("border-none", "bg-white")}>
       <ShadcnSidebarRail />
       <SidebarHeader />
       <ShadcnSidebarContent
@@ -44,11 +44,11 @@ export function Sidebar() {
           "duration-200",
           "flex",
           "flex-col",
-          "gap-2",
-          "pt-2",
+          "gap-1",
+          "pt-4",
           "pb-2",
           "border-r",
-          "border-border",
+          "border-[#F2F2F2]",
           {
             "px-3": open,
             "px-1": !open,
@@ -210,7 +210,6 @@ function SidebarItemLink({ item, selectedKey }: MenuItemProps) {
 }
 
 function SidebarHeader() {
-  const { title } = useRefineOptions();
   const { open, isMobile } = useShadcnSidebar();
 
   return (
@@ -219,7 +218,7 @@ function SidebarHeader() {
         "p-0",
         "h-16",
         "border-b",
-        "border-border",
+        "border-[#F2F2F2]",
         "flex-row",
         "items-center",
         "justify-between",
@@ -243,11 +242,12 @@ function SidebarHeader() {
           }
         )}
       >
-        <div>{title.icon}</div>
-        <h2
+        <h1
           className={cn(
-            "text-sm",
-            "font-bold",
+            "text-[32px]",
+            "font-extrabold",
+            "text-[#484A4F]",
+            "tracking-[-1.28px]",
             "transition-opacity",
             "duration-200",
             {
@@ -255,13 +255,14 @@ function SidebarHeader() {
               "opacity-100": open,
             }
           )}
+          style={{ fontFamily: "Montserrat, sans-serif" }}
         >
-          {title.text}
-        </h2>
+          FairPay
+        </h1>
       </div>
 
       <ShadcnSidebarTrigger
-        className={cn("text-muted-foreground", "mr-1.5", {
+        className={cn("text-[#828282]", "mr-1.5", {
           "opacity-0": !open,
           "opacity-100": open || isMobile,
           "pointer-events-auto": open || isMobile,
@@ -317,16 +318,15 @@ function SidebarButton({
     <>
       <ItemIcon icon={item.meta?.icon ?? item.icon} isSelected={isSelected} />
       <span
-        className={cn("tracking-[-0.00875rem]", {
+        className={cn("tracking-[-0.00875rem]", "font-medium", {
           "flex-1": rightIcon,
           "text-left": rightIcon,
           "line-clamp-1": !rightIcon,
           truncate: !rightIcon,
-          "font-normal": !isSelected,
-          "font-semibold": isSelected,
-          "text-sidebar-primary-foreground": isSelected,
-          "text-foreground": !isSelected,
+          "text-[#828282]": !isSelected,
+          "text-[#484A4F]": isSelected,
         })}
+        style={{ fontFamily: "Montserrat, sans-serif" }}
       >
         {getDisplayName(item)}
       </span>
@@ -340,12 +340,11 @@ function SidebarButton({
       variant="ghost"
       size="lg"
       className={cn(
-        "flex w-full items-center justify-start gap-2 py-2 !px-3 text-sm",
+        "flex w-full items-center justify-start gap-3 py-2 !px-3 text-sm h-auto",
         {
-          "bg-sidebar-primary": isSelected,
-          "hover:!bg-sidebar-primary/90": isSelected,
-          "text-sidebar-primary-foreground": isSelected,
-          "hover:text-sidebar-primary-foreground": isSelected,
+          "bg-[#F9F9F9]": isSelected,
+          "hover:!bg-[#F9F9F9]": isSelected,
+          "hover:bg-[#FCFCFC]": !isSelected,
         },
         className
       )}
@@ -353,7 +352,7 @@ function SidebarButton({
       {...props}
     >
       {asLink && item.route ? (
-        <Link to={item.route} className={cn("flex w-full items-center gap-2")}>
+        <Link to={item.route} className={cn("flex w-full items-center gap-3")}>
           {buttonContent}
         </Link>
       ) : (

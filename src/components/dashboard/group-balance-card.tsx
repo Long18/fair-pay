@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Users, TrendingDown } from "lucide-react";
 import { GroupBalance } from "@/hooks/use-global-balance";
+import { formatCurrency as formatCurrencyUtil } from "@/lib/locale-utils";
 
 interface GroupBalanceCardProps {
   group: GroupBalance;
@@ -14,7 +15,7 @@ export const GroupBalanceCard = ({ group, currency = "VND" }: GroupBalanceCardPr
   const go = useGo();
 
   const formatCurrency = (amount: number) => {
-    return `${Math.abs(amount).toLocaleString("vi-VN")} ${currency}`;
+    return formatCurrencyUtil(amount, currency);
   };
 
   const getBalanceColor = (balance: number) => {

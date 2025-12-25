@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { formatDate, formatNumber } from "@/lib/locale-utils";
 
 export const ExpenseShow = () => {
   const { id } = useParams<{ id: string }>();
@@ -135,7 +136,7 @@ export const ExpenseShow = () => {
                   )}
                 </div>
                 <p className="text-muted-foreground">
-                  {new Date(expense.expense_date).toLocaleDateString("vi-VN", {
+                  {formatDate(expense.expense_date, {
                     year: "numeric",
                     month: "long",
                     day: "numeric",
@@ -191,7 +192,7 @@ export const ExpenseShow = () => {
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">Total amount</p>
                 <p className="text-2xl font-bold">
-                  {expense.amount.toLocaleString("vi-VN")} {expense.currency}
+                  {formatNumber(expense.amount)} {expense.currency}
                 </p>
               </div>
             </div>
@@ -235,7 +236,7 @@ export const ExpenseShow = () => {
                   </div>
                   <div className="text-right">
                     <div className="font-bold">
-                      {split.computed_amount.toLocaleString("vi-VN")} {expense.currency}
+                      {formatNumber(split.computed_amount)} {expense.currency}
                     </div>
                   </div>
                 </div>

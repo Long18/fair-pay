@@ -30,6 +30,7 @@ export const Header = () => {
 
 function DesktopHeader() {
   const [searchOpen, setSearchOpen] = useState(false);
+  const { data: identity } = useGetIdentity<Profile>();
 
   useSearchShortcut(() => setSearchOpen(true));
 
@@ -40,29 +41,73 @@ function DesktopHeader() {
           "sticky",
           "top-0",
           "flex",
-          "h-16",
+          "h-[94px]",
           "shrink-0",
           "items-center",
           "gap-4",
           "border-b",
-          "border-border",
-          "bg-sidebar",
-          "pr-3",
-          "justify-end",
+          "border-[#E0E0E0]",
+          "bg-white",
+          "px-8",
+          "justify-between",
           "z-40"
         )}
       >
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setSearchOpen(true)}
-          aria-label="Search (⌘K)"
-        >
-          <Search className="h-5 w-5" />
-        </Button>
-        <NotificationPanel />
-        <ThemeToggle />
-        <UserDropdown />
+        <div className="flex items-center gap-4 flex-1">
+          {identity && (
+            <div className="flex items-center gap-3 px-4 py-2 border border-[#E0E0E0]/20 rounded-[10px] bg-[#E0E0E0]/15">
+              <div className="w-14 h-14 rounded-lg overflow-hidden bg-gray-200">
+                {identity.avatar_url ? (
+                  <img
+                    src={identity.avatar_url}
+                    alt={identity.full_name || "User"}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-500 font-semibold">
+                    {identity.full_name?.charAt(0) || "U"}
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold text-[#828282]">
+                  {identity.full_name || "User"}
+                </span>
+                <span className="text-[10px] font-medium text-[#BDBDBD]">
+                  ID: {identity.id.slice(0, 7)}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-[#BBB] bg-[#FCFCFC] rounded-[50px] h-14 px-6 hover:bg-[#F9F9F9]"
+              onClick={() => setSearchOpen(true)}
+            >
+              <Search className="h-5 w-5 mr-3" />
+              <span className="text-base">Search</span>
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2 px-4 h-14 border border-[rgba(189,189,189,0.2)] rounded-[50px] cursor-pointer hover:bg-[#F9F9F9]">
+              <span className="text-base text-[#828282]">English</span>
+              <svg width="13" height="7" viewBox="0 0 13 7" fill="none">
+                <path d="M1 1L6.5 6L12 1" stroke="#828282" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+
+            <div className="relative">
+              <NotificationPanel />
+            </div>
+
+            <UserDropdown />
+          </div>
+        </div>
       </header>
       <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
     </>

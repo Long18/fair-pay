@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ArrowRight } from "lucide-react";
 import { Payment } from "../types";
+import { formatDateShort, formatNumber } from "@/lib/locale-utils";
 
 interface PaymentListProps {
   groupId?: string;
@@ -91,14 +92,14 @@ export const PaymentList = ({ groupId, friendshipId }: PaymentListProps) => {
                     {payment.to_profile?.full_name}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {new Date(payment.payment_date).toLocaleDateString("vi-VN")}
+                    {formatDateShort(payment.payment_date)}
                     {payment.note && ` • ${payment.note}`}
                   </p>
                 </div>
               </div>
               <div className="text-right">
                 <div className="font-bold text-lg text-green-600">
-                  {payment.amount.toLocaleString("vi-VN")} {payment.currency}
+                  {formatNumber(payment.amount)} {payment.currency}
                 </div>
               </div>
             </div>

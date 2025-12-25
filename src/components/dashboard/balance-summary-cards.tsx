@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowDown, ArrowUp, Wallet } from "lucide-react";
+import { formatCurrency as formatCurrencyUtil } from "@/lib/locale-utils";
 
 interface BalanceSummaryCardsProps {
   totalOwedToMe: number;
@@ -15,7 +16,7 @@ export const BalanceSummaryCards = ({
   currency = "VND",
 }: BalanceSummaryCardsProps) => {
   const formatCurrency = (amount: number) => {
-    return `${Math.abs(amount).toLocaleString("vi-VN")} ${currency}`;
+    return formatCurrencyUtil(amount, currency);
   };
 
   return (

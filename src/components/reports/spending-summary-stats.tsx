@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SpendingSummary } from '@/hooks/use-spending-summary';
 import { TrendingUp, TrendingDown, Receipt, CreditCard, ArrowUpDown } from 'lucide-react';
+import { formatNumber } from '@/lib/locale-utils';
 
 interface SpendingSummaryStatsProps {
   summary: SpendingSummary;
@@ -16,7 +17,7 @@ export function SpendingSummaryStats({ summary }: SpendingSummaryStatsProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-destructive">
-            {summary.totalSpent.toLocaleString('vi-VN')} ₫
+            {formatNumber(summary.totalSpent)} ₫
           </div>
           <p className="text-xs text-muted-foreground">
             {summary.expenseCount} chi tiêu
@@ -31,7 +32,7 @@ export function SpendingSummaryStats({ summary }: SpendingSummaryStatsProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-green-600">
-            {summary.totalReceived.toLocaleString('vi-VN')} ₫
+            {formatNumber(summary.totalReceived)} ₫
           </div>
           <p className="text-xs text-muted-foreground">
             {summary.paymentCount} thanh toán
@@ -46,7 +47,7 @@ export function SpendingSummaryStats({ summary }: SpendingSummaryStatsProps) {
         </CardHeader>
         <CardContent>
           <div className={`text-2xl font-bold ${summary.netBalance >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-            {summary.netBalance >= 0 ? '+' : ''}{summary.netBalance.toLocaleString('vi-VN')} ₫
+            {summary.netBalance >= 0 ? '+' : ''}{formatNumber(summary.netBalance)} ₫
           </div>
           <p className="text-xs text-muted-foreground">
             {summary.netBalance >= 0 ? 'Bạn đang được nợ' : 'Bạn đang nợ'}
@@ -61,7 +62,7 @@ export function SpendingSummaryStats({ summary }: SpendingSummaryStatsProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            {summary.averageExpense.toLocaleString('vi-VN')} ₫
+            {formatNumber(summary.averageExpense)} ₫
           </div>
           <p className="text-xs text-muted-foreground">
             Mỗi chi tiêu

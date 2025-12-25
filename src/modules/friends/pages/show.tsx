@@ -10,6 +10,7 @@ import { Friendship } from "../types";
 import { ExpenseList, RecurringExpenseList } from "@/modules/expenses";
 import { SimplifiedBalanceView, PaymentList, useBalanceCalculation } from "@/modules/payments";
 import { useMemo } from "react";
+import { formatDateShort } from "@/lib/locale-utils";
 
 export const FriendShow = () => {
   const { id } = useParams<{ id: string }>();
@@ -139,7 +140,7 @@ export const FriendShow = () => {
                     {friendProfile.full_name}
                   </CardTitle>
                   <p className="text-muted-foreground mt-1">
-                    Friends since {new Date(friendship.created_at).toLocaleDateString("vi-VN")}
+                    Friends since {formatDateShort(friendship.created_at)}
                   </p>
                 </div>
               </div>

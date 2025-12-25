@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 import { ExpenseFormValues } from "../types";
 import { EXPENSE_CATEGORIES, getCategoryMeta } from "../lib/categories";
 import { useSplitCalculation } from "../hooks/use-split-calculation";
+import { formatNumber } from "@/lib/locale-utils";
 import { RecurringExpenseForm } from "./recurring-expense-form";
 import { DEFAULT_RECURRING_VALUES } from "../types/recurring";
 
@@ -350,14 +351,14 @@ export const ExpenseForm = ({
               <div key={participant.user_id} className="flex justify-between text-sm">
                 <span>{member?.full_name || "Unknown"}</span>
                 <span className="font-medium">
-                  {participant.computed_amount.toLocaleString("vi-VN")} ₫
+                  {formatNumber(participant.computed_amount)} ₫
                 </span>
               </div>
             );
           })}
           <div className="flex justify-between text-sm font-bold border-t pt-2">
             <span>Total</span>
-            <span>{totalSplit.toLocaleString("vi-VN")} ₫</span>
+            <span>{formatNumber(totalSplit)} ₫</span>
           </div>
         </div>
 

@@ -29,6 +29,7 @@ import { CategoryIcon } from './category-icon';
 import { useState } from 'react';
 import { useUpdateRecurringExpense, useDeleteRecurringExpense } from '../hooks/use-recurring-expenses';
 import { useNotification } from '@refinedev/core';
+import { formatNumber } from '@/lib/locale-utils';
 
 interface RecurringExpenseCardProps {
   recurring: RecurringExpense;
@@ -160,7 +161,7 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-2xl font-bold">
-              {template.amount.toLocaleString('vi-VN')} {template.currency}
+              {formatNumber(template.amount)} {template.currency}
             </span>
             <Badge variant="outline">
               {getFrequencyDescription(recurring.frequency, recurring.interval)}
