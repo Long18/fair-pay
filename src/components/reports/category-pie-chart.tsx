@@ -99,4 +99,3 @@ export function CategoryPieChart({ data, title = 'Chi tiêu theo danh mục' }: 
     </Card>
   );
 }
-

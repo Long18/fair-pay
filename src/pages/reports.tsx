@@ -75,7 +75,7 @@ export function ReportsPage() {
     const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
-    
+
     link.setAttribute('href', url);
     link.setAttribute('download', `bao-cao-chi-tieu-${format(new Date(), 'yyyy-MM-dd')}.csv`);
     link.style.visibility = 'hidden';
@@ -212,4 +212,3 @@ export function ReportsPage() {
     </div>
   );
 }
-

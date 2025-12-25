@@ -71,4 +71,3 @@ export function SpendingSummaryStats({ summary }: SpendingSummaryStatsProps) {
     </div>
   );
 }
-

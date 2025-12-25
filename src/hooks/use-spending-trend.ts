@@ -19,7 +19,7 @@ function getDateRangeForPreset(preset: DateRangePreset): DateRange {
   const now = new Date();
   const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfThisMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  
+
   switch (preset) {
     case 'this_month':
       return { start: startOfThisMonth, end: endOfThisMonth };
@@ -41,7 +41,7 @@ function getDateRangeForPreset(preset: DateRangePreset): DateRange {
 
 function determineGranularity(dateRange: DateRange): TrendGranularity {
   const days = Math.ceil((dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
-  
+
   if (days <= 31) return 'day';
   if (days <= 90) return 'week';
   return 'month';
@@ -54,7 +54,7 @@ export function useSpendingTrend(
   granularity?: TrendGranularity
 ) {
   const { data: identity } = useGetIdentity<Profile>();
-  
+
   const dateRange = customRange || getDateRangeForPreset(preset);
   const actualGranularity = granularity || determineGranularity(dateRange);
 
@@ -129,7 +129,7 @@ export function useSpendingTrend(
       }
 
       const mySplit = expense.expense_splits?.find((split: any) => split.user_id === userId);
-      
+
       if (mySplit) {
         const current = trendMap.get(key) || { amount: 0, count: 0 };
         trendMap.set(key, {
@@ -142,7 +142,7 @@ export function useSpendingTrend(
     return intervals.map(interval => {
       const key = format(interval, 'yyyy-MM-dd');
       const data = trendMap.get(key) || { amount: 0, count: 0 };
-      
+
       return {
         date: key,
         label: format(interval, formatStr, { locale: vi }),
@@ -159,4 +159,3 @@ export function useSpendingTrend(
     granularity: actualGranularity,
   };
 }
-

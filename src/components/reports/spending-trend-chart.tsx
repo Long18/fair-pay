@@ -77,4 +77,3 @@ export function SpendingTrendChart({ data, title = 'Xu hướng chi tiêu' }: Sp
     </Card>
   );
 }
-

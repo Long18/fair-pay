@@ -26,7 +26,7 @@ export interface SpendingSummary {
 
 function getDateRangeForPreset(preset: DateRangePreset): DateRange {
   const now = new Date();
-  
+
   switch (preset) {
     case 'this_month':
       return { start: startOfMonth(now), end: endOfMonth(now) };
@@ -51,7 +51,7 @@ export function useSpendingSummary(
   groupId?: string
 ) {
   const { data: identity } = useGetIdentity<Profile>();
-  
+
   const dateRange = customRange || getDateRangeForPreset(preset);
 
   const expenseFilters = [];
@@ -113,7 +113,7 @@ export function useSpendingSummary(
 
     filteredExpenses.forEach((expense: any) => {
       const mySplit = expense.expense_splits?.find((split: any) => split.user_id === userId);
-      
+
       if (mySplit) {
         totalSpent += mySplit.computed_amount;
         expenseAmounts.push(mySplit.computed_amount);
@@ -139,8 +139,8 @@ export function useSpendingSummary(
       netBalance: totalReceived - totalSpent,
       expenseCount: filteredExpenses.length,
       paymentCount: filteredPayments.length,
-      averageExpense: expenseAmounts.length > 0 
-        ? expenseAmounts.reduce((a, b) => a + b, 0) / expenseAmounts.length 
+      averageExpense: expenseAmounts.length > 0
+        ? expenseAmounts.reduce((a, b) => a + b, 0) / expenseAmounts.length
         : 0,
       largestExpense: expenseAmounts.length > 0 ? Math.max(...expenseAmounts) : 0,
       smallestExpense: expenseAmounts.length > 0 ? Math.min(...expenseAmounts) : 0,
@@ -154,4 +154,3 @@ export function useSpendingSummary(
     error: expensesQuery.error || paymentsQuery.error,
   };
 }
-
