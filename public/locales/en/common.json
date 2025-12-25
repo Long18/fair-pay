@@ -1,0 +1,57 @@
+{
+  "app_name": "FairPay",
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "actions": "Actions"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "groups": "Groups",
+    "friends": "Friends",
+    "expenses": "Expenses",
+    "payments": "Payments",
+    "profile": "Profile",
+    "settings": "Settings"
+  },
+  "balance": {
+    "you_owe": "You owe",
+    "owed_to_you": "Owed to you",
+    "net_balance": "Net Balance",
+    "settled_up": "All settled up!"
+  },
+  "expense": {
+    "add_expense": "Add Expense",
+    "description": "Description",
+    "amount": "Amount",
+    "date": "Date",
+    "category": "Category",
+    "paid_by": "Paid by",
+    "split_with": "Split with",
+    "create_success": "Expense created successfully",
+    "update_success": "Expense updated successfully",
+    "delete_success": "Expense deleted successfully"
+  },
+  "payment": {
+    "record_payment": "Record Payment",
+    "from": "From",
+    "to": "To",
+    "create_success": "Payment recorded successfully"
+  },
+  "auth": {
+    "sign_in": "Sign In",
+    "sign_out": "Sign Out",
+    "sign_up": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "remember_me": "Remember me"
+  }
+}
