@@ -41,6 +41,7 @@ import { FriendList, FriendShow } from "./modules/friends";
 import { NotificationList } from "./modules/notifications";
 import { Dashboard } from "./pages/dashboard";
 import { ReportsPage } from "./pages/reports";
+import { SettingsPage } from "./modules/settings";
 import { ErrorBoundary } from "./components/error-boundary";
 import { supabaseClient } from "./utility";
 
@@ -133,6 +134,20 @@ function App() {
                   },
                 },
                 {
+                  name: "settings",
+                  list: "/settings",
+                  meta: {
+                    label: "Cài đặt",
+                  },
+                },
+                {
+                  name: "user_settings",
+                  meta: {
+                    label: "User Settings",
+                    hide: true,
+                  },
+                },
+                {
                   name: "blog_posts",
                   list: "/blog-posts",
                   create: "/blog-posts/create",
@@ -209,6 +224,7 @@ function App() {
                   </Route>
                   <Route path="/notifications" element={<NotificationList />} />
                   <Route path="/reports" element={<ReportsPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/profile/edit" element={<ProfileEdit />} />
                   <Route path="*" element={<ErrorComponent />} />
                 </Route>

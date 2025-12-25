@@ -59,7 +59,7 @@ export const signOutTestUser = async () => {
 
 export const cleanupTestUser = async (userId: string) => {
     if (!userId) return;
-    
+
     await supabase.from('profiles').delete().eq('id', userId);
 
     try {

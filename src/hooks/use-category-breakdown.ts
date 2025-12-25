@@ -18,7 +18,7 @@ function getDateRangeForPreset(preset: DateRangePreset): DateRange {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  
+
   switch (preset) {
     case 'this_month':
       return { start: startOfMonth, end: endOfMonth };
@@ -44,7 +44,7 @@ export function useCategoryBreakdown(
   groupId?: string
 ) {
   const { data: identity } = useGetIdentity<Profile>();
-  
+
   const dateRange = customRange || getDateRangeForPreset(preset);
 
   const expenseFilters = [];
@@ -84,7 +84,7 @@ export function useCategoryBreakdown(
 
     filteredExpenses.forEach((expense: any) => {
       const mySplit = expense.expense_splits?.find((split: any) => split.user_id === userId);
-      
+
       if (mySplit) {
         const category = expense.category || 'other';
         const current = categoryMap.get(category) || { amount: 0, count: 0 };
@@ -120,4 +120,3 @@ export function useCategoryBreakdown(
     error: query.error,
   };
 }
-

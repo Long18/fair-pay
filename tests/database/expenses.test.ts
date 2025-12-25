@@ -23,7 +23,7 @@ describe('Expenses CRUD Operations', () => {
 
     await signInTestUser(testUsers.user1.email, testUsers.user1.password);
 
-    const { data: group } = await supabase
+    const { data: group, error } = await supabase
       .from('groups')
       .insert({
         name: 'Test Group for Expenses',
@@ -32,7 +32,11 @@ describe('Expenses CRUD Operations', () => {
       .select()
       .single();
 
-    testGroupId = group!.id;
+    if (error || !group) {
+      throw new Error(`Failed to create test group: ${error?.message || 'Unknown error'}`);
+    }
+
+    testGroupId = group.id;
 
     await supabase.from('group_members').insert({
       group_id: testGroupId,

@@ -111,6 +111,7 @@ CREATE POLICY "Group members can view members"
   );
 
 -- INSERT: Group admins can add members
+-- Note: The trigger function uses SECURITY DEFINER to bypass this policy
 CREATE POLICY "Group admins can add members"
   ON group_members
   FOR INSERT
@@ -149,7 +150,8 @@ BEGIN
   VALUES (NEW.id, NEW.created_by, 'admin');
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public, pg_temp;
 
 CREATE TRIGGER on_group_created
   AFTER INSERT ON groups

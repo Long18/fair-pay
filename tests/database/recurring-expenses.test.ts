@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { supabase, signInTestUser, cleanupDatabase, testUsers } from '../setup';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { supabase, signInTestUser, cleanupTestData, testUsers, createTestUser, cleanupTestUser, signOutTestUser } from '../setup';
 
 describe('Recurring Expenses CRUD Operations', () => {
   let userId1: string;
@@ -7,11 +7,23 @@ describe('Recurring Expenses CRUD Operations', () => {
   let groupId: string;
   let expenseId: string;
 
-  beforeEach(async () => {
-    await cleanupDatabase();
+  beforeAll(async () => {
+    const { user: u1 } = await createTestUser(testUsers.user1);
+    const { user: u2 } = await createTestUser(testUsers.user2);
+    userId1 = u1!.id;
+    userId2 = u2!.id;
+  });
 
-    const user1 = await signInTestUser(testUsers.user1);
-    userId1 = user1.id;
+  afterAll(async () => {
+    await cleanupTestData();
+    await cleanupTestUser(userId1);
+    await cleanupTestUser(userId2);
+  });
+
+  beforeEach(async () => {
+    await cleanupTestData();
+
+    await signInTestUser(testUsers.user1.email, testUsers.user1.password);
 
     const { data: group, error: groupError } = await supabase
       .from('groups')
@@ -27,9 +39,6 @@ describe('Recurring Expenses CRUD Operations', () => {
     expect(group).toBeDefined();
     groupId = group.id;
 
-    const user2 = await signInTestUser(testUsers.user2);
-    userId2 = user2.id;
-
     await supabase
       .from('group_members')
       .insert({
@@ -37,6 +46,8 @@ describe('Recurring Expenses CRUD Operations', () => {
         user_id: userId2,
         role: 'member',
       });
+
+    await signOutTestUser();
 
     await signInTestUser(testUsers.user1);
 
