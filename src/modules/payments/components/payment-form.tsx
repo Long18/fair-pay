@@ -34,10 +34,12 @@ import { PaymentFormValues } from "../types";
 const paymentSchema = z.object({
   to_user: z.string().uuid("Please select who you're paying"),
   amount: z.number().positive("Amount must be positive"),
-  currency: z.string().default("VND"),
+  currency: z.string(),
   payment_date: z.string(),
   note: z.string().max(500, "Note is too long").optional(),
 });
+
+type PaymentFormSchema = z.infer<typeof paymentSchema>;
 
 interface PaymentFormProps {
   fromUserId: string;
@@ -69,7 +71,7 @@ export const PaymentForm = ({
     },
   });
 
-  const handleFormSubmit = (data: PaymentFormValues) => {
+  const handleFormSubmit = (data: PaymentFormSchema) => {
     const formValues: PaymentFormValues = {
       ...data,
       from_user: fromUserId,

@@ -42,12 +42,12 @@ import { DEFAULT_RECURRING_VALUES } from "../types/recurring";
 const expenseSchema = z.object({
   description: z.string().min(1, "Description is required").max(200),
   amount: z.number().positive("Amount must be positive"),
-  currency: z.string().default("VND"),
+  currency: z.string(),
   category: z.string().optional(),
   expense_date: z.string(),
   paid_by_user_id: z.string().uuid("Please select who paid"),
   split_method: z.enum(["equal", "exact", "percentage"]),
-  is_recurring: z.boolean().default(false),
+  is_recurring: z.boolean(),
   recurring: z.object({
     frequency: z.enum(["weekly", "bi_weekly", "monthly", "quarterly", "yearly", "custom"]),
     interval: z.number().min(1),
@@ -56,6 +56,8 @@ const expenseSchema = z.object({
     notify_before_days: z.number().min(0),
   }).optional(),
 });
+
+type ExpenseFormSchema = z.infer<typeof expenseSchema>;
 
 interface ExpenseFormProps {
   groupId: string;
@@ -113,7 +115,7 @@ export const ExpenseForm = ({
     }
   }, [amount, splitMethod, participants.length, recalculate]);
 
-  const handleFormSubmit = (data: ExpenseFormValues) => {
+  const handleFormSubmit = (data: ExpenseFormSchema) => {
     const formValues: ExpenseFormValues = {
       ...data,
       context_type: "group" as const,

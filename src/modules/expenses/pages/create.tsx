@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useCreate, useGo, useList, useGetIdentity, useOne, useQueryClient } from "@refinedev/core";
+import { useCreate, useGo, useList, useGetIdentity, useOne } from "@refinedev/core";
 import { useParams } from "react-router";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ExpenseForm } from "../components/expense-form";
@@ -15,7 +15,6 @@ import { toast } from "sonner";
 export const ExpenseCreate = () => {
   const { groupId, friendshipId } = useParams<{ groupId?: string; friendshipId?: string }>();
   const go = useGo();
-  const queryClient = useQueryClient();
   const { data: identity } = useGetIdentity<Profile>();
   const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
   const { uploadAttachments } = useAttachments();
@@ -105,21 +104,6 @@ export const ExpenseCreate = () => {
         },
       },
       {
-        onMutate: async () => {
-          // Cancel outgoing refetches
-          await queryClient.cancelQueries({ queryKey: ["expenses"] });
-          await queryClient.cancelQueries({ queryKey: ["balances"] });
-
-          // Snapshot the previous value
-          const previousExpenses = queryClient.getQueryData(["expenses"]);
-          const previousBalances = queryClient.getQueryData(["balances", identity?.id]);
-
-          // Optimistically show loading state
-          toast.loading("Creating expense...", { id: "create-expense" });
-
-          // Return context with previous values
-          return { previousExpenses, previousBalances };
-        },
         onSuccess: async (data) => {
           const expenseId = data.data.id as string;
 
@@ -162,18 +146,7 @@ export const ExpenseCreate = () => {
               console.error("Failed to create recurring expense:", error);
             }
           } else {
-            toast.success("Expense created successfully", { id: "create-expense" });
-          }
-
-          // Invalidate and refetch
-          queryClient.invalidateQueries({ queryKey: ["expenses"] });
-          queryClient.invalidateQueries({ queryKey: ["balances", identity?.id] });
-          queryClient.invalidateQueries({ queryKey: ["recent-activity"] });
-          if (groupId) {
-            queryClient.invalidateQueries({ queryKey: ["groups", "show", groupId] });
-          }
-          if (friendshipId) {
-            queryClient.invalidateQueries({ queryKey: ["friendships", "show", friendshipId] });
+            toast.success("Expense created successfully");
           }
 
           // Navigate back based on context
@@ -183,21 +156,8 @@ export const ExpenseCreate = () => {
             go({ to: `/friends/show/${friendshipId}` });
           }
         },
-        onError: (error, _variables, context) => {
-          // Rollback on error
-          if (context?.previousExpenses) {
-            queryClient.setQueryData(["expenses"], context.previousExpenses);
-          }
-          if (context?.previousBalances) {
-            queryClient.setQueryData(["balances", identity?.id], context.previousBalances);
-          }
-
-          toast.error(`Failed to create expense: ${error.message}`, { id: "create-expense" });
-        },
-        onSettled: () => {
-          // Always refetch after error or success
-          queryClient.invalidateQueries({ queryKey: ["expenses"] });
-          queryClient.invalidateQueries({ queryKey: ["balances"] });
+        onError: (error) => {
+          toast.error(`Failed to create expense: ${error.message}`);
         },
       }
     );

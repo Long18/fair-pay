@@ -67,18 +67,18 @@ export class ErrorBoundary extends Component<Props, State> {
 
   private handleReset = () => {
     const newRetryCount = this.state.retryCount + 1;
-    
+
     // If exceeded max retries, redirect to home
     if (newRetryCount >= this.maxRetries) {
       window.location.href = '/';
       return;
     }
-    
-    this.setState({ 
-      hasError: false, 
-      error: null, 
+
+    this.setState({
+      hasError: false,
+      error: null,
       errorInfo: null,
-      retryCount: newRetryCount 
+      retryCount: newRetryCount
     });
   };
 
@@ -129,15 +129,15 @@ export class ErrorBoundary extends Component<Props, State> {
               )}
 
               <div className="flex gap-3">
-                <Button 
-                  onClick={this.handleReset} 
-                  variant="outline" 
+                <Button
+                  onClick={this.handleReset}
+                  variant="outline"
                   className="gap-2"
                   disabled={this.state.retryCount >= this.maxRetries}
                 >
                   <RefreshCw className="h-4 w-4" />
-                  {this.state.retryCount >= this.maxRetries 
-                    ? 'Max Retries Reached' 
+                  {this.state.retryCount >= this.maxRetries
+                    ? 'Max Retries Reached'
                     : `Try Again (${this.state.retryCount}/${this.maxRetries})`
                   }
                 </Button>
