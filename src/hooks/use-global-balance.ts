@@ -48,6 +48,9 @@ export const useGlobalBalance = (): GlobalBalance => {
     pagination: {
       mode: "off",
     },
+    queryOptions: {
+      enabled: !!identity?.id,
+    },
   });
 
   const myGroups = (groupMembersQuery.data?.data || []).map((gm: any) => ({

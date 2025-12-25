@@ -45,91 +45,165 @@
 
   --font-sans: "Montserrat", "Inter", sans-serif;
 
-  --color-orange: #FFA14E;
-  --color-purple-light: #ECCCFF;
-  --color-purple-accent: #E5A0FF;
-  --color-purple-dark: #BB6BD9;
-  --color-green-primary: #6FCF97;
-  --color-green-light: #A6D997;
-  --color-green-dark: #89B27C;
-  --color-gray-1: #333333;
-  --color-gray-2: #484A4F;
-  --color-gray-3: #828282;
-  --color-gray-4: #BDBDBD;
-  --color-gray-5: #E0E0E0;
-  --color-gray-6: #F2F2F2;
-  --color-gray-muted: #A6AAB5;
-  --color-bg-light: #FCFCFC;
-  --color-bg-panel: #F9F9F9;
+  /* Fintech Professional Color Palette - Inspired by Figma "Quiet Luxury" & "Frozen Lake" */
+  /* Primary Colors - Trust & Sophistication */
+  --color-primary-blue: #2C5F8D;
+  --color-primary-navy: #1A3A52;
+  --color-primary-teal: #4A90A4;
+
+  /* Accent Colors - Energy & Action */
+  --color-accent-gold: #D4AF37;
+  --color-accent-mint: #7FB3A3;
+  --color-accent-coral: #E88873;
+
+  /* Success & Growth */
+  --color-success-primary: #5C9F7F;
+  --color-success-light: #8BC4A8;
+  --color-success-dark: #3D7A5E;
+
+  /* Warning & Alert */
+  --color-warning-primary: #E8A05D;
+  --color-warning-light: #F4C088;
+  --color-warning-dark: #C87D3A;
+
+  /* Error & Danger */
+  --color-error-primary: #D66B6B;
+  --color-error-light: #E89B9B;
+  --color-error-dark: #B84848;
+
+  /* Neutral Grays - Professional Foundation */
+  --color-gray-50: #FAFBFC;
+  --color-gray-100: #F4F6F8;
+  --color-gray-200: #E8ECEF;
+  --color-gray-300: #D1D8DD;
+  --color-gray-400: #9BA5AE;
+  --color-gray-500: #6B7780;
+  --color-gray-600: #4A5560;
+  --color-gray-700: #2E3842;
+  --color-gray-800: #1C2429;
+  --color-gray-900: #0F1419;
+
+  /* Background Colors */
+  --color-bg-primary: #FFFFFF;
+  --color-bg-secondary: #FAFBFC;
+  --color-bg-tertiary: #F4F6F8;
+  --color-bg-elevated: #FFFFFF;
+
+  /* Text Colors */
+  --color-text-primary: #1C2429;
+  --color-text-secondary: #4A5560;
+  --color-text-tertiary: #6B7780;
+  --color-text-disabled: #9BA5AE;
+  --color-text-inverse: #FFFFFF;
+
+  /* Border Colors */
+  --color-border-light: #E8ECEF;
+  --color-border-medium: #D1D8DD;
+  --color-border-strong: #9BA5AE;
 }
 
 :root {
   --radius: 0.5rem;
-  --background: #FCFCFC;
-  --foreground: #333333;
-  --card: #FFFFFF;
-  --card-foreground: #333333;
-  --popover: #FFFFFF;
-  --popover-foreground: #333333;
-  --primary: #FFA14E;
-  --primary-foreground: #FFFFFF;
-  --secondary: #ECCCFF;
-  --secondary-foreground: #333333;
-  --muted: #F2F2F2;
-  --muted-foreground: #828282;
-  --accent: #E5A0FF;
-  --accent-foreground: #FFFFFF;
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: #E0E0E0;
-  --input: #F2F2F2;
-  --ring: #BDBDBD;
-  --chart-1: #ECCCFF;
-  --chart-2: #6FCF97;
-  --chart-3: #FFA14E;
-  --chart-4: #E5A0FF;
-  --chart-5: #A6D997;
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: #828282;
-  --sidebar-primary: #484A4F;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F9F9F9;
-  --sidebar-accent-foreground: #333333;
-  --sidebar-border: #F2F2F2;
-  --sidebar-ring: #BDBDBD;
+
+  /* Base Colors */
+  --background: var(--color-bg-secondary);
+  --foreground: var(--color-text-primary);
+
+  /* Card Colors */
+  --card: var(--color-bg-primary);
+  --card-foreground: var(--color-text-primary);
+
+  /* Popover Colors */
+  --popover: var(--color-bg-elevated);
+  --popover-foreground: var(--color-text-primary);
+
+  /* Primary Colors - Professional Blue */
+  --primary: var(--color-primary-blue);
+  --primary-foreground: var(--color-text-inverse);
+
+  /* Secondary Colors - Subtle Teal */
+  --secondary: var(--color-primary-teal);
+  --secondary-foreground: var(--color-text-inverse);
+
+  /* Muted Colors */
+  --muted: var(--color-gray-100);
+  --muted-foreground: var(--color-text-secondary);
+
+  /* Accent Colors - Gold for CTAs */
+  --accent: var(--color-accent-gold);
+  --accent-foreground: var(--color-text-primary);
+
+  /* Destructive Colors */
+  --destructive: var(--color-error-primary);
+  --destructive-foreground: var(--color-text-inverse);
+
+  /* Border & Input Colors */
+  --border: var(--color-border-light);
+  --input: var(--color-gray-100);
+  --ring: var(--color-primary-blue);
+
+  /* Chart Colors - Professional Palette */
+  --chart-1: var(--color-primary-blue);
+  --chart-2: var(--color-success-primary);
+  --chart-3: var(--color-accent-gold);
+  --chart-4: var(--color-primary-teal);
+  --chart-5: var(--color-accent-mint);
+
+  /* Sidebar Colors */
+  --sidebar: var(--color-bg-primary);
+  --sidebar-foreground: var(--color-text-secondary);
+  --sidebar-primary: var(--color-primary-navy);
+  --sidebar-primary-foreground: var(--color-text-inverse);
+  --sidebar-accent: var(--color-gray-50);
+  --sidebar-accent-foreground: var(--color-text-primary);
+  --sidebar-border: var(--color-border-light);
+  --sidebar-ring: var(--color-primary-blue);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* Dark Mode - Professional Fintech Theme */
+  --background: #0F1419;
+  --foreground: #E8ECEF;
+
+  --card: #1C2429;
+  --card-foreground: #E8ECEF;
+
+  --popover: #2E3842;
+  --popover-foreground: #E8ECEF;
+
+  --primary: #4A90A4;
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #2C5F8D;
+  --secondary-foreground: #FFFFFF;
+
+  --muted: #2E3842;
+  --muted-foreground: #9BA5AE;
+
+  --accent: #D4AF37;
+  --accent-foreground: #1C2429;
+
+  --destructive: #E89B9B;
+  --destructive-foreground: #1C2429;
+
+  --border: #2E3842;
+  --input: #2E3842;
+  --ring: #4A90A4;
+
+  --chart-1: #4A90A4;
+  --chart-2: #8BC4A8;
+  --chart-3: #D4AF37;
+  --chart-4: #7FB3A3;
+  --chart-5: #E8A05D;
+
+  --sidebar: #1C2429;
+  --sidebar-foreground: #9BA5AE;
+  --sidebar-primary: #4A90A4;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #2E3842;
+  --sidebar-accent-foreground: #E8ECEF;
+  --sidebar-border: #2E3842;
+  --sidebar-ring: #4A90A4;
 }
 
 @layer base {

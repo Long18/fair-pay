@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  seed-data:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    image: fairpay-seed
+    environment:
+      - PGHOST=127.0.0.1
+      - PGPORT=54322
+      - PGDATABASE=postgres
+      - PGUSER=postgres
+      - PGPASSWORD=postgres
+    network_mode: host
+    command: >
+      sh -c "
+        echo 'Waiting for Supabase database to be ready...' &&
+        until pg_isready -h 127.0.0.1 -p 54322 -U postgres; do
+          echo 'Waiting for database...'
+          sleep 2
+        done &&
+        echo 'Database is ready. Seeding sample data...' &&
+        psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -f /docker-entrypoint-initdb.d/01-sample-data.sql &&
+        echo 'Sample data seeded successfully!'
+      "
+    depends_on: []
