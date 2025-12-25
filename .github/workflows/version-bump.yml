@@ -58,7 +58,7 @@ jobs:
           else
             npm version ${{ inputs.version_type }} --no-git-tag-version
           fi
-          
+
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "New version: $NEW_VERSION"
@@ -72,13 +72,13 @@ jobs:
             echo "All notable changes to this project will be documented in this file." >> CHANGELOG.md
             echo "" >> CHANGELOG.md
           fi
-          
+
           # Get the date
           DATE=$(date +%Y-%m-%d)
-          
+
           # Create new entry
           NEW_ENTRY="## [${{ steps.bump.outputs.version }}] - $DATE\n\n### Added\n\n### Changed\n\n### Fixed\n\n### Removed\n\n"
-          
+
           # Insert after the header
           sed -i "4i\\$NEW_ENTRY" CHANGELOG.md || sed -i '' "4i\\$NEW_ENTRY" CHANGELOG.md
 
@@ -111,4 +111,3 @@ jobs:
           echo "4. Upload build artifacts" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "[View Release Workflow](https://github.com/${{ github.repository }}/actions/workflows/release.yml)" >> $GITHUB_STEP_SUMMARY
-

@@ -1,0 +1,190 @@
+import { useList, useCreate, useUpdate, useDelete, useOne } from '@refinedev/core';
+import { RecurringExpense, RecurringExpenseFormValues } from '../types/recurring';
+
+interface UseRecurringExpensesProps {
+  groupId?: string;
+  friendshipId?: string;
+}
+
+export function useRecurringExpenses({ groupId, friendshipId }: UseRecurringExpensesProps = {}) {
+  const filters = [];
+
+  if (groupId) {
+    filters.push({ field: 'group_id', operator: 'eq', value: groupId });
+  }
+
+  if (friendshipId) {
+    filters.push({ field: 'friendship_id', operator: 'eq', value: friendshipId });
+  }
+
+  const { query } = useList<RecurringExpense>({
+    resource: 'recurring_expenses',
+    filters,
+    sorters: [{ field: 'next_occurrence', order: 'asc' }],
+    meta: {
+      select: '*, template_expense:expenses!template_expense_id(*)',
+    },
+    pagination: {
+      mode: 'off',
+    },
+  });
+
+  const recurring = query.data?.data || [];
+  const isLoading = query.isLoading;
+  const error = query.error;
+
+  const active = recurring.filter((r) => r.is_active);
+  const paused = recurring.filter((r) => !r.is_active);
+
+  return {
+    recurring,
+    active,
+    paused,
+    isLoading,
+    error,
+  };
+}
+
+export function useRecurringExpense(id: string) {
+  const { query } = useOne<RecurringExpense>({
+    resource: 'recurring_expenses',
+    id,
+    meta: {
+      select: '*, template_expense:expenses!template_expense_id(*)',
+    },
+  });
+
+  return {
+    recurring: query.data?.data,
+    isLoading: query.isLoading,
+    error: query.error,
+  };
+}
+
+export function useCreateRecurringExpense() {
+  const { mutate, isLoading } = useCreate<RecurringExpense>();
+
+  const createRecurring = async (
+    templateExpenseId: string,
+    values: RecurringExpenseFormValues,
+    contextType: 'group' | 'friend',
+    contextId: string
+  ) => {
+    const data: any = {
+      template_expense_id: templateExpenseId,
+      frequency: values.frequency,
+      interval: values.interval,
+      start_date: values.start_date.toISOString().split('T')[0],
+      end_date: values.end_date ? values.end_date.toISOString().split('T')[0] : null,
+      next_occurrence: values.start_date.toISOString().split('T')[0],
+      notify_before_days: values.notify_before_days,
+      is_active: true,
+      context_type: contextType,
+    };
+
+    if (contextType === 'group') {
+      data.group_id = contextId;
+      data.friendship_id = null;
+    } else {
+      data.friendship_id = contextId;
+      data.group_id = null;
+    }
+
+    return new Promise<RecurringExpense>((resolve, reject) => {
+      mutate(
+        {
+          resource: 'recurring_expenses',
+          values: data,
+        },
+        {
+          onSuccess: (result) => resolve(result.data as RecurringExpense),
+          onError: (error) => reject(error),
+        }
+      );
+    });
+  };
+
+  return {
+    createRecurring,
+    isLoading,
+  };
+}
+
+export function useUpdateRecurringExpense() {
+  const { mutate, isLoading } = useUpdate<RecurringExpense>();
+
+  const updateRecurring = async (
+    id: string,
+    values: Partial<RecurringExpenseFormValues & { is_active?: boolean }>
+  ) => {
+    const data: any = {};
+
+    if (values.frequency !== undefined) data.frequency = values.frequency;
+    if (values.interval !== undefined) data.interval = values.interval;
+    if (values.start_date !== undefined) {
+      data.start_date = values.start_date.toISOString().split('T')[0];
+    }
+    if (values.end_date !== undefined) {
+      data.end_date = values.end_date ? values.end_date.toISOString().split('T')[0] : null;
+    }
+    if (values.notify_before_days !== undefined) {
+      data.notify_before_days = values.notify_before_days;
+    }
+    if (values.is_active !== undefined) {
+      data.is_active = values.is_active;
+    }
+
+    return new Promise<RecurringExpense>((resolve, reject) => {
+      mutate(
+        {
+          resource: 'recurring_expenses',
+          id,
+          values: data,
+        },
+        {
+          onSuccess: (result) => resolve(result.data as RecurringExpense),
+          onError: (error) => reject(error),
+        }
+      );
+    });
+  };
+
+  const pauseRecurring = async (id: string) => {
+    return updateRecurring(id, { is_active: false });
+  };
+
+  const resumeRecurring = async (id: string) => {
+    return updateRecurring(id, { is_active: true });
+  };
+
+  return {
+    updateRecurring,
+    pauseRecurring,
+    resumeRecurring,
+    isLoading,
+  };
+}
+
+export function useDeleteRecurringExpense() {
+  const { mutate, isLoading } = useDelete<RecurringExpense>();
+
+  const deleteRecurring = async (id: string) => {
+    return new Promise<void>((resolve, reject) => {
+      mutate(
+        {
+          resource: 'recurring_expenses',
+          id,
+        },
+        {
+          onSuccess: () => resolve(),
+          onError: (error) => reject(error),
+        }
+      );
+    });
+  };
+
+  return {
+    deleteRecurring,
+    isLoading,
+  };
+}

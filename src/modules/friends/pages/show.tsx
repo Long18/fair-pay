@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Profile } from "@/modules/profile/types";
 import { Friendship } from "../types";
-import { ExpenseList } from "@/modules/expenses";
+import { ExpenseList, RecurringExpenseList } from "@/modules/expenses";
 import { SimplifiedBalanceView, PaymentList, useBalanceCalculation } from "@/modules/payments";
 import { useMemo } from "react";
 
@@ -153,9 +153,10 @@ export const FriendShow = () => {
 
         {/* Tabs for Expenses and Balances */}
         <Tabs defaultValue="expenses" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-md grid-cols-3">
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
             <TabsTrigger value="balances">Balances</TabsTrigger>
+            <TabsTrigger value="recurring">Recurring</TabsTrigger>
           </TabsList>
 
           <TabsContent value="expenses" className="mt-6">
@@ -179,6 +180,10 @@ export const FriendShow = () => {
                 />
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="recurring" className="mt-6">
+            <RecurringExpenseList friendshipId={friendship.id} />
           </TabsContent>
         </Tabs>
       </div>
