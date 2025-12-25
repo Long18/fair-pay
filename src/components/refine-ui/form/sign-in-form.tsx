@@ -122,11 +122,11 @@ export const SignInForm = () => {
               />
             </div>
 
-            <Button 
-              type="submit" 
-              size="lg" 
+            <Button
+              type="submit"
+              size="lg"
               className={cn(
-                "w-full", 
+                "w-full",
                 "h-12",
                 "bg-gray-900",
                 "hover:bg-gray-800",
