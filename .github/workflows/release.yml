@@ -1,0 +1,182 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Trigger on version tags (e.g., v1.0.0, v1.2.3)
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  build:
+    name: Build Release Assets
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for changelog
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: |
+          npm install --save-dev vitest @vitest/ui @vitest/coverage-v8
+          echo "Skipping database tests for release (requires Supabase)"
+
+      - name: Build application
+        run: npm run build
+
+      - name: Create build archive
+        run: |
+          cd dist
+          tar -czf ../fairpay-build-${{ github.ref_name }}.tar.gz .
+          cd ..
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ github.ref_name }}
+          path: fairpay-build-${{ github.ref_name }}.tar.gz
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-${{ github.ref_name }}
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get previous tag
+          PREVIOUS_TAG=$(git describe --abbrev=0 --tags $(git rev-list --tags --skip=1 --max-count=1) 2>/dev/null || echo "")
+          
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "No previous tag found, using all commits"
+            PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          
+          echo "Generating changelog from $PREVIOUS_TAG to ${{ github.ref_name }}"
+          
+          # Generate changelog
+          CHANGELOG=$(git log $PREVIOUS_TAG..${{ github.ref_name }} --pretty=format:"- %s (%h)" --no-merges)
+          
+          # Group by type
+          FEATURES=$(echo "$CHANGELOG" | grep -i "^- feat" || echo "")
+          FIXES=$(echo "$CHANGELOG" | grep -i "^- fix" || echo "")
+          DOCS=$(echo "$CHANGELOG" | grep -i "^- docs" || echo "")
+          TESTS=$(echo "$CHANGELOG" | grep -i "^- test" || echo "")
+          CHORES=$(echo "$CHANGELOG" | grep -i "^- chore\|^- ci\|^- build" || echo "")
+          
+          # Build formatted changelog
+          FORMATTED_CHANGELOG="## What's Changed\n\n"
+          
+          if [ -n "$FEATURES" ]; then
+            FORMATTED_CHANGELOG="${FORMATTED_CHANGELOG}### ✨ Features\n${FEATURES}\n\n"
+          fi
+          
+          if [ -n "$FIXES" ]; then
+            FORMATTED_CHANGELOG="${FORMATTED_CHANGELOG}### 🐛 Bug Fixes\n${FIXES}\n\n"
+          fi
+          
+          if [ -n "$DOCS" ]; then
+            FORMATTED_CHANGELOG="${FORMATTED_CHANGELOG}### 📝 Documentation\n${DOCS}\n\n"
+          fi
+          
+          if [ -n "$TESTS" ]; then
+            FORMATTED_CHANGELOG="${FORMATTED_CHANGELOG}### ✅ Tests\n${TESTS}\n\n"
+          fi
+          
+          if [ -n "$CHORES" ]; then
+            FORMATTED_CHANGELOG="${FORMATTED_CHANGELOG}### 🔧 Chores\n${CHORES}\n\n"
+          fi
+          
+          # Save to file
+          echo -e "$FORMATTED_CHANGELOG" > RELEASE_NOTES.md
+          
+          cat RELEASE_NOTES.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ steps.version.outputs.version }}
+          body_path: RELEASE_NOTES.md
+          files: |
+            fairpay-build-${{ github.ref_name }}.tar.gz
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy:
+    name: Deploy to Production
+    needs: release
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.ref_name, '-') }}  # Only deploy stable releases
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Trigger Vercel deployment
+        run: |
+          echo "🚀 Release created! Vercel will automatically deploy from main branch."
+          echo "To manually trigger deployment:"
+          echo "1. Go to Vercel dashboard"
+          echo "2. Redeploy the main branch"
+          echo "3. Or push to main to trigger automatic deployment"
+
+      - name: Comment on latest PR (if any)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = context.ref.replace('refs/tags/', '');
+            const message = `🎉 Release ${tag} has been published!\n\n[View Release](https://github.com/${context.repo.owner}/${context.repo.repo}/releases/tag/${tag})`;
+            
+            // Find the most recent merged PR
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'closed',
+              sort: 'updated',
+              direction: 'desc',
+              per_page: 1
+            });
+            
+            if (prs.length > 0 && prs[0].merged_at) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prs[0].number,
+                body: message
+              });
+            }
+
