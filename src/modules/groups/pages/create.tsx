@@ -6,10 +6,10 @@ import { toast } from "sonner";
 
 export const GroupCreate = () => {
   const go = useGo();
-  const { mutate: createGroup, isLoading } = useCreate();
+  const createMutation = useCreate();
 
   const handleSubmit = (values: GroupFormValues) => {
-    createGroup(
+    createMutation.mutate(
       {
         resource: "groups",
         values,
@@ -36,7 +36,7 @@ export const GroupCreate = () => {
           </p>
         </CardHeader>
         <CardContent>
-          <GroupForm onSubmit={handleSubmit} isLoading={isLoading} />
+          <GroupForm onSubmit={handleSubmit} isLoading={false} />
         </CardContent>
       </Card>
     </div>

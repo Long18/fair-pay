@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { useEffect } from "react";
 
 export const ProfileEdit = () => {
-  const { data: identity } = useOne({
+  const { query: identityQuery } = useOne({
     resource: "profiles",
     id: "", // Will be set by useOne automatically from auth context
     meta: {
@@ -15,8 +15,9 @@ export const ProfileEdit = () => {
     },
   });
 
-  const { mutate: updateProfile, isLoading } = useUpdate();
+  const updateMutation = useUpdate();
 
+  const { data: identity } = identityQuery;
   const profile = identity?.data as Profile | undefined;
 
   const handleSubmit = (values: ProfileFormValues) => {
@@ -25,7 +26,7 @@ export const ProfileEdit = () => {
       return;
     }
 
-    updateProfile(
+    updateMutation.mutate(
       {
         resource: "profiles",
         id: profile.id,
@@ -35,7 +36,7 @@ export const ProfileEdit = () => {
         onSuccess: () => {
           toast.success("Profile updated successfully");
         },
-        onError: (error) => {
+        onError: (error: any) => {
           toast.error(`Failed to update profile: ${error.message}`);
         },
       }
@@ -80,7 +81,7 @@ export const ProfileEdit = () => {
               full_name: profile.full_name,
               avatar_url: profile.avatar_url || "",
             }}
-            isLoading={isLoading}
+            isLoading={false}
           />
         </CardContent>
       </Card>

@@ -13,7 +13,7 @@ interface ExpenseListProps {
 export const ExpenseList = ({ groupId }: ExpenseListProps) => {
   const go = useGo();
 
-  const { data, isLoading } = useList<ExpenseWithSplits>({
+  const { query } = useList<ExpenseWithSplits>({
     resource: "expenses",
     filters: [
       {
@@ -33,6 +33,7 @@ export const ExpenseList = ({ groupId }: ExpenseListProps) => {
     ],
   });
 
+  const { data, isLoading } = query;
   const expenses = data?.data || [];
 
   if (isLoading) {

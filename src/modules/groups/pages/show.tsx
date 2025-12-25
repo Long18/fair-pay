@@ -27,7 +27,7 @@ export const GroupShow = () => {
   const go = useGo();
   const { data: identity } = useGetIdentity<Profile>();
 
-  const { data: groupData, isLoading: isLoadingGroup } = useOne<Group>({
+  const { query: groupQuery } = useOne<Group>({
     resource: "groups",
     id: id!,
     meta: {
@@ -35,7 +35,7 @@ export const GroupShow = () => {
     },
   });
 
-  const { data: membersData, isLoading: isLoadingMembers, refetch } = useList<GroupMember>({
+  const { query: membersQuery } = useList<GroupMember>({
     resource: "group_members",
     filters: [
       {
@@ -49,8 +49,8 @@ export const GroupShow = () => {
     },
   });
 
-  const { mutate: deleteGroup, isLoading: isDeletingGroup } = useDelete();
-  const { mutate: deleteMember, isLoading: isDeletingMember } = useDelete();
+  const deleteGroupMutation = useDelete();
+  const deleteMemberMutation = useDelete();
 
   // Fetch expenses for balance calculation
   const { query: expensesQuery } = useList({
@@ -67,10 +67,15 @@ export const GroupShow = () => {
     filters: [{ field: "group_id", operator: "eq", value: id }],
   });
 
+  const { data: groupData, isLoading: isLoadingGroup } = groupQuery;
+  const { data: membersData, isLoading: isLoadingMembers } = membersQuery;
+
   const group = groupData?.data;
   const members = membersData?.data || [];
   const expenses: any[] = expensesQuery.data?.data || [];
   const payments: any[] = paymentsQuery.data?.data || [];
+
+  const refetch = membersQuery.refetch;
 
   // Calculate balances
   const membersList = members.map((m: any) => ({
@@ -86,7 +91,7 @@ export const GroupShow = () => {
     members: membersList,
   });
 
-  const currentUserMember = members.find((m) => m.user_id === identity?.id);
+  const currentUserMember = members.find((m: any) => m.user_id === identity?.id);
   const isAdmin = currentUserMember?.role === "admin";
   const isCreator = group?.created_by === identity?.id;
 
@@ -100,7 +105,7 @@ export const GroupShow = () => {
   const handleDeleteGroup = () => {
     if (!group?.id) return;
 
-    deleteGroup(
+    deleteGroupMutation.mutate(
       {
         resource: "groups",
         id: group.id,
@@ -118,7 +123,7 @@ export const GroupShow = () => {
   };
 
   const handleRemoveMember = (memberId: string) => {
-    deleteMember(
+    deleteMemberMutation.mutate(
       {
         resource: "group_members",
         id: memberId,
@@ -212,9 +217,8 @@ export const GroupShow = () => {
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={handleDeleteGroup}
-                          disabled={isDeletingGroup}
                         >
-                          {isDeletingGroup ? "Deleting..." : "Delete"}
+                          Delete
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
@@ -255,7 +259,7 @@ export const GroupShow = () => {
               currentUserId={identity?.id || ""}
               isAdmin={isAdmin}
               onRemoveMember={handleRemoveMember}
-              isLoading={isLoadingMembers || isDeletingMember}
+              isLoading={isLoadingMembers}
             />
           </TabsContent>
         </Tabs>

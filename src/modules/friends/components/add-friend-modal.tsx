@@ -43,7 +43,7 @@ export const AddFriendModal = () => {
   });
 
   // Find user by name (contains search)
-  const { query: profilesQuery, refetch } = useList<Profile>({
+  const { query: profilesQuery } = useList<Profile>({
     resource: "profiles",
     filters: [
       {
@@ -60,14 +60,14 @@ export const AddFriendModal = () => {
     },
   });
 
-  const handleSubmit = async (data: { searchTerm: string }) => {
+  const handleSubmit = async (_formData: { searchTerm: string }) => {
     if (!identity?.id) {
       toast.error("You must be logged in to add friends");
       return;
     }
 
     // Search for user by name
-    const result = await refetch();
+    const result = await profilesQuery.refetch();
     const users = result.data?.data || [];
 
     if (users.length === 0) {
