@@ -1,0 +1,213 @@
+import { useOne, useList, useDelete, useGo, useGetIdentity } from "@refinedev/core";
+import { useParams } from "react-router";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Pencil, Trash2, Plus } from "lucide-react";
+import { Group, GroupMember } from "../types";
+import { Profile } from "@/modules/profile/types";
+import { MemberList } from "../components/member-list";
+import { ExpenseList } from "@/modules/expenses";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+export const GroupShow = () => {
+  const { id } = useParams<{ id: string }>();
+  const go = useGo();
+  const { data: identity } = useGetIdentity<Profile>();
+
+  const { data: groupData, isLoading: isLoadingGroup } = useOne<Group>({
+    resource: "groups",
+    id: id!,
+    meta: {
+      select: "*",
+    },
+  });
+
+  const { data: membersData, isLoading: isLoadingMembers, refetch } = useList<GroupMember>({
+    resource: "group_members",
+    filters: [
+      {
+        field: "group_id",
+        operator: "eq",
+        value: id,
+      },
+    ],
+    meta: {
+      select: "*, profiles:user_id(*)",
+    },
+  });
+
+  const { mutate: deleteGroup, isLoading: isDeletingGroup } = useDelete();
+  const { mutate: deleteMember, isLoading: isDeletingMember } = useDelete();
+
+  const group = groupData?.data;
+  const members = membersData?.data || [];
+
+  const currentUserMember = members.find((m) => m.user_id === identity?.id);
+  const isAdmin = currentUserMember?.role === "admin";
+  const isCreator = group?.created_by === identity?.id;
+
+  const handleDeleteGroup = () => {
+    if (!group?.id) return;
+
+    deleteGroup(
+      {
+        resource: "groups",
+        id: group.id,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Group deleted successfully");
+          go({ to: "/groups" });
+        },
+        onError: (error) => {
+          toast.error(`Failed to delete group: ${error.message}`);
+        },
+      }
+    );
+  };
+
+  const handleRemoveMember = (memberId: string) => {
+    deleteMember(
+      {
+        resource: "group_members",
+        id: memberId,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Member removed successfully");
+          refetch();
+        },
+        onError: (error) => {
+          toast.error(`Failed to remove member: ${error.message}`);
+        },
+      }
+    );
+  };
+
+  if (isLoadingGroup || !group) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Loading group...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container max-w-4xl py-8">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="mb-4"
+        onClick={() => go({ to: "/groups" })}
+      >
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back to Groups
+      </Button>
+
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-3xl">{group.name}</CardTitle>
+                {group.description && (
+                  <p className="text-muted-foreground mt-2">
+                    {group.description}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground mt-2">
+                  Created{" "}
+                  {new Date(group.created_at).toLocaleDateString("vi-VN", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Expense
+                </Button>
+                {isAdmin && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => go({ to: `/groups/edit/${group.id}` })}
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                )}
+                {isCreator && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm">
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Group?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently
+                          delete the group and all associated data.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDeleteGroup}
+                          disabled={isDeletingGroup}
+                        >
+                          {isDeletingGroup ? "Deleting..." : "Delete"}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        <Tabs defaultValue="expenses" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="expenses">Expenses</TabsTrigger>
+            <TabsTrigger value="members">Members</TabsTrigger>
+          </TabsList>
+          <TabsContent value="expenses" className="mt-6">
+            <ExpenseList groupId={group.id} />
+          </TabsContent>
+          <TabsContent value="members" className="mt-6">
+            <MemberList
+              members={members.map((m: any) => ({
+                ...m,
+                profile: m.profiles,
+              }))}
+              currentUserId={identity?.id || ""}
+              isAdmin={isAdmin}
+              onRemoveMember={handleRemoveMember}
+              isLoading={isLoadingMembers || isDeletingMember}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+};
