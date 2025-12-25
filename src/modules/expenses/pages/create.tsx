@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { useCreate, useGo, useList, useGetIdentity } from "@refinedev/core";
 import { useParams } from "react-router";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ExpenseForm } from "../components/expense-form";
+import { AttachmentUpload, type AttachmentFile } from "../components/attachment-upload";
+import { useAttachments } from "../hooks/use-attachments";
 import { ExpenseFormValues } from "../types";
 import { Profile } from "@/modules/profile/types";
 import { GroupMember } from "@/modules/groups/types";
@@ -11,6 +14,8 @@ export const ExpenseCreate = () => {
   const { groupId } = useParams<{ groupId: string }>();
   const go = useGo();
   const { data: identity } = useGetIdentity<Profile>();
+  const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
+  const { uploadAttachments } = useAttachments();
 
   const { query: membersQuery } = useList<GroupMember>({
     resource: "group_members",
@@ -33,7 +38,7 @@ export const ExpenseCreate = () => {
     full_name: m.profiles.full_name,
   })) || [];
 
-  const handleSubmit = (values: ExpenseFormValues) => {
+  const handleSubmit = async (values: ExpenseFormValues) => {
     const { splits, ...expenseData } = values;
 
     createMutation.mutate(
@@ -69,6 +74,12 @@ export const ExpenseCreate = () => {
 
           await Promise.all(splitPromises);
 
+          // Upload attachments if any
+          if (attachments.length > 0 && identity?.id) {
+            const files = attachments.map(a => a.file);
+            await uploadAttachments(files, expenseId, identity.id);
+          }
+
           toast.success("Expense created successfully");
           go({ to: `/groups/show/${groupId}` });
         },
@@ -93,13 +104,23 @@ export const ExpenseCreate = () => {
         <DialogHeader>
           <DialogTitle>Add Expense</DialogTitle>
         </DialogHeader>
-        <ExpenseForm
-          groupId={groupId}
-          members={members}
-          currentUserId={identity.id}
-          onSubmit={handleSubmit}
-          isLoading={false}
-        />
+        <div className="space-y-6">
+          <ExpenseForm
+            groupId={groupId}
+            members={members}
+            currentUserId={identity.id}
+            onSubmit={handleSubmit}
+            isLoading={false}
+          />
+          
+          <div className="border-t pt-6">
+            <h3 className="text-sm font-medium mb-4">Attach Receipts (Optional)</h3>
+            <AttachmentUpload
+              attachments={attachments}
+              onAttachmentsChange={setAttachments}
+            />
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );

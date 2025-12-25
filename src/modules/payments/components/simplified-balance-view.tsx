@@ -250,4 +250,3 @@ export const SimplifiedBalanceView = ({
     </div>
   );
 };
-
