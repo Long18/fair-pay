@@ -7,7 +7,7 @@ import { ArrowLeft, Pencil, Trash2, Plus } from "lucide-react";
 import { Group, GroupMember } from "../types";
 import { Profile } from "@/modules/profile/types";
 import { MemberList } from "../components/member-list";
-import { ExpenseList } from "@/modules/expenses";
+import { ExpenseList, RecurringExpenseList } from "@/modules/expenses";
 import { SimplifiedBalanceView, PaymentList, useBalanceCalculation } from "@/modules/payments";
 import { toast } from "sonner";
 import {
@@ -230,9 +230,10 @@ export const GroupShow = () => {
         </Card>
 
         <Tabs defaultValue="expenses" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
             <TabsTrigger value="balances">Balances</TabsTrigger>
+            <TabsTrigger value="recurring">Recurring</TabsTrigger>
             <TabsTrigger value="members">Members</TabsTrigger>
           </TabsList>
           <TabsContent value="expenses" className="mt-6">
@@ -250,6 +251,9 @@ export const GroupShow = () => {
               <h3 className="text-lg font-semibold mb-4">Payment History</h3>
               <PaymentList groupId={group.id} />
             </div>
+          </TabsContent>
+          <TabsContent value="recurring" className="mt-6">
+            <RecurringExpenseList groupId={group.id} />
           </TabsContent>
           <TabsContent value="members" className="mt-6">
             <MemberList

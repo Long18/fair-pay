@@ -28,12 +28,15 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { CalendarIcon } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { CalendarIcon, Repeat } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ExpenseFormValues } from "../types";
 import { EXPENSE_CATEGORIES, getCategoryMeta } from "../lib/categories";
 import { useSplitCalculation } from "../hooks/use-split-calculation";
+import { RecurringExpenseForm } from "./recurring-expense-form";
+import { DEFAULT_RECURRING_VALUES } from "../types/recurring";
 
 const expenseSchema = z.object({
   description: z.string().min(1, "Description is required").max(200),
@@ -43,6 +46,14 @@ const expenseSchema = z.object({
   expense_date: z.string(),
   paid_by_user_id: z.string().uuid("Please select who paid"),
   split_method: z.enum(["equal", "exact", "percentage"]),
+  is_recurring: z.boolean().default(false),
+  recurring: z.object({
+    frequency: z.enum(["weekly", "bi_weekly", "monthly", "quarterly", "yearly", "custom"]),
+    interval: z.number().min(1),
+    start_date: z.date(),
+    end_date: z.date().nullable(),
+    notify_before_days: z.number().min(0),
+  }).optional(),
 });
 
 interface ExpenseFormProps {
@@ -72,6 +83,8 @@ export const ExpenseForm = ({
       expense_date: defaultValues?.expense_date || new Date().toISOString().split("T")[0],
       paid_by_user_id: defaultValues?.paid_by_user_id || currentUserId,
       split_method: defaultValues?.split_method || "equal",
+      is_recurring: false,
+      recurring: DEFAULT_RECURRING_VALUES,
     },
   });
 
@@ -347,6 +360,37 @@ export const ExpenseForm = ({
             <span>{totalSplit.toLocaleString("vi-VN")} ₫</span>
           </div>
         </div>
+
+        {/* Recurring Expense Toggle */}
+        <FormField
+          control={form.control}
+          name="is_recurring"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <FormLabel className="flex items-center gap-2">
+                  <Repeat className="h-4 w-4" />
+                  Chi phí định kỳ
+                </FormLabel>
+                <FormDescription>
+                  Tự động tạo chi phí này theo lịch (hàng tuần, tháng, ...)
+                </FormDescription>
+              </div>
+              <FormControl>
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        {/* Recurring Expense Configuration */}
+        <RecurringExpenseForm
+          control={form.control}
+          isRecurring={form.watch("is_recurring")}
+        />
 
         <Button type="submit" disabled={isLoading || !isSplitValid} className="w-full">
           {isLoading ? "Creating..." : "Create Expense"}

@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ExpenseForm } from "../components/expense-form";
 import { AttachmentUpload, type AttachmentFile } from "../components/attachment-upload";
 import { useAttachments } from "../hooks/use-attachments";
+import { useCreateRecurringExpense } from "../hooks/use-recurring-expenses";
 import { ExpenseFormValues } from "../types";
 import { Profile } from "@/modules/profile/types";
 import { GroupMember } from "@/modules/groups/types";
@@ -17,6 +18,7 @@ export const ExpenseCreate = () => {
   const { data: identity } = useGetIdentity<Profile>();
   const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
   const { uploadAttachments } = useAttachments();
+  const { createRecurring } = useCreateRecurringExpense();
 
   const isGroupContext = !!groupId;
   const isFriendContext = !!friendshipId;
@@ -83,7 +85,7 @@ export const ExpenseCreate = () => {
   }, [isGroupContext, isFriendContext, membersQuery.data, friendshipQuery.data, identity]);
 
   const handleSubmit = async (values: ExpenseFormValues) => {
-    const { splits, ...expenseData } = values;
+    const { splits, is_recurring, recurring, ...expenseData } = values;
 
     // Add context type and IDs to expense data
     const expensePayload = {
@@ -132,7 +134,20 @@ export const ExpenseCreate = () => {
             await uploadAttachments(files, expenseId, identity.id);
           }
 
-          toast.success("Expense created successfully");
+          // Create recurring expense if requested
+          if (is_recurring && recurring) {
+            try {
+              const contextType = isGroupContext ? 'group' : 'friend';
+              const contextId = groupId || friendshipId || '';
+              await createRecurring(expenseId, recurring, contextType, contextId);
+              toast.success("Expense and recurring schedule created successfully");
+            } catch (error) {
+              toast.error("Expense created but failed to set up recurring schedule");
+              console.error("Failed to create recurring expense:", error);
+            }
+          } else {
+            toast.success("Expense created successfully");
+          }
 
           // Navigate back based on context
           if (isGroupContext) {
