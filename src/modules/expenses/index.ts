@@ -11,4 +11,3 @@ export type {
   ParticipantSplit,
 } from "./types";
 export { EXPENSE_CATEGORIES } from "./types";
-

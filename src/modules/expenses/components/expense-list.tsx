@@ -101,4 +101,3 @@ export const ExpenseList = ({ groupId }: ExpenseListProps) => {
     </div>
   );
 };
-

@@ -47,7 +47,7 @@ export const ExpenseCreate = () => {
       {
         onSuccess: async (data) => {
           const expenseId = data.data.id;
-          
+
           // Create splits
           const splitPromises = splits.map((split) =>
             fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/expense_splits`, {
@@ -68,7 +68,7 @@ export const ExpenseCreate = () => {
           );
 
           await Promise.all(splitPromises);
-          
+
           toast.success("Expense created successfully");
           go({ to: `/groups/show/${groupId}` });
         },
@@ -104,4 +104,3 @@ export const ExpenseCreate = () => {
     </Dialog>
   );
 };
-
