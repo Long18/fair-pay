@@ -67,8 +67,8 @@ export const ActivityFeed = ({ items, isLoading }: ActivityFeedProps) => {
               className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
             >
               <div className={`p-2 rounded-full ${
-                item.type === "expense" 
-                  ? "bg-purple-100" 
+                item.type === "expense"
+                  ? "bg-purple-100"
                   : "bg-green-100"
               }`}>
                 {item.type === "expense" ? (
@@ -94,8 +94,8 @@ export const ActivityFeed = ({ items, isLoading }: ActivityFeedProps) => {
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className={`font-semibold ${
-                      item.type === "expense" 
-                        ? "text-purple-600" 
+                      item.type === "expense"
+                        ? "text-purple-600"
                         : "text-green-600"
                     }`}>
                       {formatCurrency(item.amount, item.currency)}
@@ -113,4 +113,3 @@ export const ActivityFeed = ({ items, isLoading }: ActivityFeedProps) => {
     </Card>
   );
 };
-

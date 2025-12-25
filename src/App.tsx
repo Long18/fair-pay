@@ -36,6 +36,7 @@ import { ProfileEdit } from "./modules/profile";
 import { GroupList, GroupCreate, GroupEdit, GroupShow } from "./modules/groups";
 import { ExpenseCreate, ExpenseShow } from "./modules/expenses";
 import { PaymentCreate } from "./modules/payments";
+import { FriendList } from "./modules/friends";
 import { Dashboard } from "./pages/dashboard";
 import { supabaseClient } from "./utility";
 
@@ -75,6 +76,20 @@ function App() {
                   meta: {
                     canDelete: true,
                     label: "Groups",
+                  },
+                },
+                {
+                  name: "friends",
+                  list: "/friends",
+                  meta: {
+                    label: "Friends",
+                  },
+                },
+                {
+                  name: "friendships",
+                  meta: {
+                    label: "Friendships",
+                    hide: true,
                   },
                 },
                 {
@@ -169,6 +184,9 @@ function App() {
                     <Route path="show/:id" element={<GroupShow />} />
                     <Route path=":groupId/expenses/create" element={<ExpenseCreate />} />
                     <Route path=":groupId/payments/create" element={<PaymentCreate />} />
+                  </Route>
+                  <Route path="/friends">
+                    <Route index element={<FriendList />} />
                   </Route>
                   <Route path="/expenses">
                     <Route path="show/:id" element={<ExpenseShow />} />

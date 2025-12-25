@@ -4,6 +4,7 @@ import { BalanceSummaryCards } from "@/components/dashboard/balance-summary-card
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { GroupBalanceCard } from "@/components/dashboard/group-balance-card";
 import { QuickActions } from "@/components/dashboard/quick-actions";
+import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const Dashboard = () => {
@@ -11,11 +12,7 @@ export const Dashboard = () => {
   const recentActivity = useRecentActivity(10);
 
   if (globalBalance.isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Loading dashboard...</p>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (
@@ -80,4 +77,3 @@ export const Dashboard = () => {
     </div>
   );
 };
-
