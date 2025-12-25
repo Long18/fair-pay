@@ -5,7 +5,7 @@
 
 -- Create groups table
 CREATE TABLE groups (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   description TEXT,
   created_by UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -21,7 +21,7 @@ CREATE TRIGGER update_groups_updated_at
 
 -- Create group_members table
 CREATE TABLE group_members (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   role TEXT NOT NULL CHECK (role IN ('admin', 'member')),

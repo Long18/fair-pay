@@ -5,7 +5,7 @@
 
 -- Create friendships table
 CREATE TABLE friendships (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_a UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   user_b UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   status TEXT NOT NULL CHECK (status IN ('pending', 'accepted', 'rejected')) DEFAULT 'pending',
@@ -117,4 +117,3 @@ COMMENT ON COLUMN friendships.user_a IS 'First user in friendship (always < user
 COMMENT ON COLUMN friendships.user_b IS 'Second user in friendship (always > user_a for consistency)';
 COMMENT ON COLUMN friendships.status IS 'pending: awaiting acceptance, accepted: active friends, rejected: declined request';
 COMMENT ON COLUMN friendships.created_by IS 'User who initiated the friendship request';
-

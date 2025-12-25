@@ -23,9 +23,12 @@ export interface PublicStats {
 export const useSampleLeaderboard = () => {
     const { data: identity } = useGetIdentity<Profile>();
 
+    // Fetch only necessary data with proper RLS filtering
     const { query: profilesQuery } = useList({
         resource: "profiles",
-        pagination: { mode: "off" },
+        pagination: {
+            mode: "off"
+        },
     });
 
     const { query: groupsQuery } = useList({
@@ -45,13 +48,16 @@ export const useSampleLeaderboard = () => {
         resource: "expenses",
         pagination: { mode: "off" },
         meta: {
-            select: "*, expense_splits!expense_id(*)",
+            select: "id, amount, group_id, paid_by_user_id, expense_splits!expense_id(user_id, computed_amount)",
         },
     });
 
     const { query: paymentsQuery } = useList({
         resource: "payments",
         pagination: { mode: "off" },
+        meta: {
+            select: "id, amount, from_user, to_user, group_id",
+        },
     });
 
     const profiles = profilesQuery.data?.data || [];

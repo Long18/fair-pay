@@ -47,6 +47,7 @@ import { PaymentCreate } from "./modules/payments";
 import { FriendList, FriendShow } from "./modules/friends";
 import { NotificationList } from "./modules/notifications";
 import { Dashboard } from "./pages/dashboard";
+import { BalancesPage } from "./pages/balances";
 import { ReportsPage } from "./pages/reports";
 import { SettingsPage } from "./modules/settings";
 import { ErrorBoundary } from "./components/error-boundary";
@@ -133,6 +134,14 @@ function App() {
                   meta: {
                     label: "Payments",
                     hide: true,
+                  },
+                },
+                {
+                  name: "balances",
+                  list: "/balances",
+                  meta: {
+                    label: "Balances",
+                    icon: <AuditLogsIcon className="w-5 h-5" />,
                   },
                 },
                 {
@@ -242,6 +251,7 @@ function App() {
                     <Route path="show/:id" element={<ExpenseShow />} />
                   </Route>
                   <Route path="/notifications" element={<NotificationList />} />
+                  <Route path="/balances" element={<BalancesPage />} />
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/profile/edit" element={<ProfileEdit />} />
