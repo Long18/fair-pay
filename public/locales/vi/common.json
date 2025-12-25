@@ -1,0 +1,57 @@
+{
+  "app_name": "FairPay",
+  "common": {
+    "loading": "Đang tải...",
+    "error": "Lỗi",
+    "success": "Thành công",
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "delete": "Xóa",
+    "edit": "Sửa",
+    "create": "Tạo mới",
+    "search": "Tìm kiếm",
+    "filter": "Lọc",
+    "actions": "Hành động"
+  },
+  "navigation": {
+    "dashboard": "Trang chủ",
+    "groups": "Nhóm",
+    "friends": "Bạn bè",
+    "expenses": "Chi tiêu",
+    "payments": "Thanh toán",
+    "profile": "Hồ sơ",
+    "settings": "Cài đặt"
+  },
+  "balance": {
+    "you_owe": "Bạn nợ",
+    "owed_to_you": "Được nợ",
+    "net_balance": "Số dư",
+    "settled_up": "Đã thanh toán hết!"
+  },
+  "expense": {
+    "add_expense": "Thêm chi tiêu",
+    "description": "Mô tả",
+    "amount": "Số tiền",
+    "date": "Ngày",
+    "category": "Danh mục",
+    "paid_by": "Người trả",
+    "split_with": "Chia với",
+    "create_success": "Tạo chi tiêu thành công",
+    "update_success": "Cập nhật chi tiêu thành công",
+    "delete_success": "Xóa chi tiêu thành công"
+  },
+  "payment": {
+    "record_payment": "Ghi thanh toán",
+    "from": "Từ",
+    "to": "Đến",
+    "create_success": "Ghi thanh toán thành công"
+  },
+  "auth": {
+    "sign_in": "Đăng nhập",
+    "sign_out": "Đăng xuất",
+    "sign_up": "Đăng ký",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "remember_me": "Ghi nhớ đăng nhập"
+  }
+}

@@ -57,7 +57,13 @@ export const Dashboard = () => {
               </div>
             </div>
 
-            <PublicStatsComponent stats={stats} />
+            <PublicStatsComponent stats={stats || {
+              total_users: 0,
+              total_groups: 0,
+              total_transactions: 0,
+              total_amount_tracked: 0,
+              generated_at: new Date().toISOString(),
+            }} />
 
             <div className="space-y-4">
               <div className="text-center">

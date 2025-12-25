@@ -53,6 +53,25 @@ import { SettingsPage } from "./modules/settings";
 import { ErrorBoundary } from "./components/error-boundary";
 import { supabaseClient } from "./utility";
 
+// Configure QueryClient with optimized caching
+// Note: Refine internally uses its own QueryClient, so we configure via options
+const queryClientConfig = {
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes - data is fresh
+      gcTime: 10 * 60 * 1000, // 10 minutes - keep in memory (formerly cacheTime)
+      refetchOnWindowFocus: false, // Don't refetch when window regains focus
+      refetchOnReconnect: true, // Refetch when user comes back online
+      refetchOnMount: false, // Don't refetch when component mounts if data is fresh
+      retry: 1, // Retry failed requests once
+      retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    },
+    mutations: {
+      retry: 1, // Retry mutations once on failure
+    },
+  },
+};
+
 function App() {
   return (
     <BrowserRouter>
@@ -65,6 +84,11 @@ function App() {
               authProvider={authProvider}
               routerProvider={routerProvider}
               notificationProvider={useNotificationProvider()}
+              options={{
+                syncWithLocation: true,
+                warnWhenUnsavedChanges: true,
+                projectId: "efvxeD-2r07zg-niV06o",
+              }}
               resources={[
                 {
                   name: "dashboard",
@@ -188,11 +212,6 @@ function App() {
                   },
                 },
               ]}
-              options={{
-                syncWithLocation: true,
-                warnWhenUnsavedChanges: true,
-                projectId: "efvxeD-2r07zg-niV06o",
-              }}
             >
               <Routes>
                 {/* Public Dashboard route - accessible without authentication */}
