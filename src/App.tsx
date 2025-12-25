@@ -38,6 +38,7 @@ import { ExpenseCreate, ExpenseShow } from "./modules/expenses";
 import { PaymentCreate } from "./modules/payments";
 import { FriendList } from "./modules/friends";
 import { Dashboard } from "./pages/dashboard";
+import { ErrorBoundary } from "./components/error-boundary";
 import { supabaseClient } from "./utility";
 
 function App() {
@@ -156,7 +157,9 @@ function App() {
                       fallback={<CatchAllNavigate to="/login" />}
                     >
                       <Layout>
-                        <Outlet />
+                        <ErrorBoundary>
+                          <Outlet />
+                        </ErrorBoundary>
                       </Layout>
                     </Authenticated>
                   }
