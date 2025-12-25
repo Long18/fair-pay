@@ -12,13 +12,13 @@ interface UseBalanceCalculationProps {
 
 /**
  * Calculate balances for a group context
- * 
+ *
  * Formula per user:
  * balance = (total paid by user) - (total owed by user) + (payments received) - (payments made)
- * 
+ *
  * Positive balance = Others owe this user
  * Negative balance = This user owes others
- * 
+ *
  * Risk mitigation: Simple, straightforward calculation without debt simplification
  */
 export const useBalanceCalculation = ({
@@ -103,7 +103,7 @@ export const useMyDebts = (
       .map(user => {
         const myBalance = currentBalance.balance;
         const theirBalance = user.balance;
-        
+
         // Determine relationship
         if (theirBalance < 0 && myBalance > 0) {
           // They owe me
@@ -125,4 +125,3 @@ export const useMyDebts = (
       .filter((debt): debt is NonNullable<typeof debt> => debt !== null);
   }, [balances, currentUserId]);
 };
-

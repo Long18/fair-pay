@@ -10,4 +10,3 @@ export type {
   UserBalance,
   SimplifiedDebt,
 } from "./types";
-

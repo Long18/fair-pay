@@ -29,8 +29,8 @@ export const PaymentCreate = () => {
   }));
 
   const suggestedToUserId = searchParams.get("toUser") || undefined;
-  const suggestedAmount = searchParams.get("amount") 
-    ? parseFloat(searchParams.get("amount")!) 
+  const suggestedAmount = searchParams.get("amount")
+    ? parseFloat(searchParams.get("amount")!)
     : undefined;
 
   const handleSubmit = (values: PaymentFormValues) => {
@@ -86,4 +86,3 @@ export const PaymentCreate = () => {
     </Dialog>
   );
 };
-

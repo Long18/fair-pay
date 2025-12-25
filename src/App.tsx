@@ -36,6 +36,7 @@ import { ProfileEdit } from "./modules/profile";
 import { GroupList, GroupCreate, GroupEdit, GroupShow } from "./modules/groups";
 import { ExpenseCreate, ExpenseShow } from "./modules/expenses";
 import { PaymentCreate } from "./modules/payments";
+import { Dashboard } from "./pages/dashboard";
 import { supabaseClient } from "./utility";
 
 function App() {
@@ -52,6 +53,13 @@ function App() {
               routerProvider={routerProvider}
               notificationProvider={useNotificationProvider()}
               resources={[
+                {
+                  name: "dashboard",
+                  list: "/",
+                  meta: {
+                    label: "Dashboard",
+                  },
+                },
                 {
                   name: "profiles",
                   meta: {
@@ -140,7 +148,7 @@ function App() {
                 >
                   <Route
                     index
-                    element={<NavigateToResource resource="blog_posts" />}
+                    element={<Dashboard />}
                   />
                   <Route path="/blog-posts">
                     <Route index element={<BlogPostList />} />
