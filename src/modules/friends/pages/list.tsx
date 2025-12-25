@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, UserPlus, Trash2 } from "lucide-react";
+import { Check, X, Trash2 } from "lucide-react";
 import { Profile } from "@/modules/profile/types";
 import { Friendship, Friend } from "../types";
+import { AddFriendModal } from "../components/add-friend-modal";
 import { toast } from "sonner";
 
 export const FriendList = () => {
@@ -126,10 +127,7 @@ export const FriendList = () => {
               Manage your friends and split expenses 1-on-1
             </p>
           </div>
-          <Button size="lg">
-            <UserPlus className="mr-2 h-5 w-5" />
-            Add Friend
-          </Button>
+          <AddFriendModal />
         </div>
 
         {/* Pending Requests (Incoming) */}
