@@ -161,4 +161,3 @@ CREATE POLICY "Users can delete their own receipts"
 COMMENT ON TABLE public.attachments IS 'Stores metadata for expense receipt attachments';
 COMMENT ON COLUMN public.attachments.storage_path IS 'Path to file in Supabase Storage (receipts bucket)';
 COMMENT ON COLUMN public.attachments.file_size IS 'File size in bytes';
-

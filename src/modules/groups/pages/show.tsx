@@ -8,7 +8,7 @@ import { Group, GroupMember } from "../types";
 import { Profile } from "@/modules/profile/types";
 import { MemberList } from "../components/member-list";
 import { ExpenseList } from "@/modules/expenses";
-import { BalanceSummary, PaymentList, useBalanceCalculation } from "@/modules/payments";
+import { SimplifiedBalanceView, PaymentList, useBalanceCalculation } from "@/modules/payments";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -239,9 +239,10 @@ export const GroupShow = () => {
             <ExpenseList groupId={group.id} />
           </TabsContent>
           <TabsContent value="balances" className="mt-6">
-            <BalanceSummary
+            <SimplifiedBalanceView
               balances={balances}
               currentUserId={identity?.id || ""}
+              simplifyDebts={group?.simplify_debts || false}
               onSettleUp={handleSettleUp}
               currency="VND"
             />
