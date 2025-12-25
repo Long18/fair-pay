@@ -61,12 +61,12 @@ export const ExpenseCreate = () => {
         full_name: m.profiles.full_name,
       })) || [];
     }
-    
+
     if (isFriendContext && friendshipQuery.data?.data) {
       const friendship: any = friendshipQuery.data.data;
       const isUserA = friendship.user_a_id === identity?.id;
       const friendProfile = isUserA ? friendship.user_b_profile : friendship.user_a_profile;
-      
+
       return [
         {
           id: identity!.id,
@@ -78,7 +78,7 @@ export const ExpenseCreate = () => {
         },
       ];
     }
-    
+
     return [];
   }, [isGroupContext, isFriendContext, membersQuery.data, friendshipQuery.data, identity]);
 
@@ -133,7 +133,7 @@ export const ExpenseCreate = () => {
           }
 
           toast.success("Expense created successfully");
-          
+
           // Navigate back based on context
           if (isGroupContext) {
             go({ to: `/groups/show/${groupId}` });
@@ -159,7 +159,7 @@ export const ExpenseCreate = () => {
   };
 
   const contextId = groupId || friendshipId;
-  
+
   if (!contextId || !identity || members.length === 0) {
     return (
       <Dialog open onOpenChange={handleClose}>

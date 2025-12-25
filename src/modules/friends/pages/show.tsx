@@ -53,7 +53,7 @@ export const FriendShow = () => {
   // Determine friend profile (the other person in the friendship)
   const friendProfile = useMemo(() => {
     if (!friendship || !identity?.id) return null;
-    
+
     const isUserA = friendship.user_a_id === identity.id;
     return isUserA ? friendship.user_b_profile : friendship.user_a_profile;
   }, [friendship, identity]);
@@ -61,7 +61,7 @@ export const FriendShow = () => {
   // Calculate balances between the two users
   const members = useMemo(() => {
     if (!identity?.id || !friendProfile) return [];
-    
+
     return [
       {
         id: identity.id,
@@ -157,11 +157,11 @@ export const FriendShow = () => {
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
             <TabsTrigger value="balances">Balances</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="expenses" className="mt-6">
             <ExpenseList friendshipId={friendship.id} />
           </TabsContent>
-          
+
           <TabsContent value="balances" className="mt-6">
             <SimplifiedBalanceView
               balances={balances}
@@ -170,10 +170,10 @@ export const FriendShow = () => {
               onSettleUp={handleSettleUp}
               currency="VND"
             />
-            
+
             {payments.length > 0 && (
               <div className="mt-6">
-                <PaymentList 
+                <PaymentList
                   friendshipId={friendship.id}
                   currency="VND"
                 />
@@ -185,4 +185,3 @@ export const FriendShow = () => {
     </div>
   );
 };
-
