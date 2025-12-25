@@ -1,12 +1,12 @@
-import { 
-  UtensilsCrossed, 
-  Car, 
-  Home, 
-  Tv, 
-  ShoppingBag, 
-  Zap, 
-  Heart, 
-  GraduationCap, 
+import {
+  UtensilsCrossed,
+  Car,
+  Home,
+  Tv,
+  ShoppingBag,
+  Zap,
+  Heart,
+  GraduationCap,
   MoreHorizontal,
   LucideIcon
 } from "lucide-react";
@@ -79,9 +79,8 @@ export const getCategoryMeta = (category: string | null | undefined): CategoryMe
   if (!category) {
     return CATEGORY_CONFIG['Other'];
   }
-  
+
   return CATEGORY_CONFIG[category] || CATEGORY_CONFIG['Other'];
 };
 
 export const EXPENSE_CATEGORIES = Object.keys(CATEGORY_CONFIG);
-
