@@ -32,7 +32,7 @@ export const ExpenseShow = () => {
     resource: "expenses",
     id: id!,
     meta: {
-      select: "*, profiles:paid_by_user_id(id, full_name, avatar_url)",
+      select: "*, profiles!paid_by_user_id(id, full_name, avatar_url)",
     },
   });
 
@@ -46,7 +46,7 @@ export const ExpenseShow = () => {
       },
     ],
     meta: {
-      select: "*, profiles:user_id(id, full_name, avatar_url)",
+      select: "*, profiles!user_id(id, full_name, avatar_url)",
     },
   });
 

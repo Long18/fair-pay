@@ -34,7 +34,7 @@ export const ExpenseCreate = () => {
       },
     ],
     meta: {
-      select: "*, profiles:user_id(id, full_name)",
+      select: "*, profiles!user_id(id, full_name)",
     },
     queryOptions: {
       enabled: isGroupContext,
@@ -46,7 +46,7 @@ export const ExpenseCreate = () => {
     resource: "friendships",
     id: friendshipId!,
     meta: {
-      select: "*, user_a_profile:user_a_id(id, full_name), user_b_profile:user_b_id(id, full_name)",
+      select: "*, user_a_profile!user_a(id, full_name), user_b_profile!user_b(id, full_name)",
     },
     queryOptions: {
       enabled: isFriendContext,

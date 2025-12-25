@@ -10,7 +10,7 @@ describe('Database Stress Tests', () => {
     for (let i = 0; i < 5; i++) {
       const email = `stress-test-${i}-${Date.now()}@example.com`;
       const password = 'StressTest123!';
-      
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -43,7 +43,7 @@ describe('Database Stress Tests', () => {
           email: user.email,
           password: user.password,
         });
-        
+
         if (signInError) throw signInError;
 
         const { data, error } = await supabase
@@ -63,7 +63,7 @@ describe('Database Stress Tests', () => {
       });
 
       const results = await Promise.all(promises);
-      
+
       const successCount = results.filter(r => !r.error).length;
       const errorCount = results.filter(r => r.error).length;
       const errors = results.filter(r => r.error).map(r => r.error);
@@ -86,7 +86,7 @@ describe('Database Stress Tests', () => {
         email: testUsers[0].email,
         password: testUsers[0].password,
       });
-      
+
       if (signInError) throw signInError;
 
       // Find the group created by testUsers[0]
@@ -111,7 +111,7 @@ describe('Database Stress Tests', () => {
       });
 
       const results = await Promise.all(promises);
-      
+
       const successCount = results.filter(r => !r.error).length;
       const errorCount = results.filter(r => r.error).length;
       const errors = results.filter(r => r.error).map(r => r.error);
@@ -136,7 +136,7 @@ describe('Database Stress Tests', () => {
         email: testUsers[0].email,
         password: testUsers[0].password,
       });
-      
+
       if (signInError) throw signInError;
 
       const userGroup = testGroups.find(g => g.name.includes(testUsers[0].email));
@@ -164,7 +164,7 @@ describe('Database Stress Tests', () => {
       });
 
       const results = await Promise.all(promises);
-      
+
       const successCount = results.filter(r => !r.error).length;
       const errorCount = results.filter(r => r.error).length;
       const errors = results.filter(r => r.error).map(r => r.error);
@@ -183,11 +183,11 @@ describe('Database Stress Tests', () => {
         email: testUsers[0].email,
         password: testUsers[0].password,
       });
-      
+
       if (signInError) throw signInError;
 
       const start = Date.now();
-      
+
       const { data, error } = await supabase
         .from('groups')
         .select('*, group_members(count)')
@@ -196,7 +196,7 @@ describe('Database Stress Tests', () => {
       const duration = Date.now() - start;
 
       console.log(`Groups query took ${duration}ms, returned ${data?.length || 0} groups`);
-      
+
       expect(error).toBeNull();
       expect(duration).toBeLessThan(5000);
     });
@@ -206,11 +206,11 @@ describe('Database Stress Tests', () => {
         email: testUsers[0].email,
         password: testUsers[0].password,
       });
-      
+
       if (signInError) throw signInError;
 
       const start = Date.now();
-      
+
       const { data, error } = await supabase
         .from('expenses')
         .select(`
@@ -225,7 +225,7 @@ describe('Database Stress Tests', () => {
       const duration = Date.now() - start;
 
       console.log(`Expenses query took ${duration}ms, returned ${data?.length || 0} expenses`);
-      
+
       expect(error).toBeNull();
       expect(duration).toBeLessThan(5000);
     });
@@ -243,12 +243,12 @@ describe('Database Stress Tests', () => {
         email: testUsers[4].email,
         password: testUsers[4].password,
       });
-      
+
       if (signInError) throw signInError;
 
       // Try to access testUsers[0]'s group (which testUsers[4] is not a member of)
       const otherUserGroup = testGroups.find(g => g.name.includes(testUsers[0].email));
-      
+
       if (!otherUserGroup) {
         console.log('No suitable group found for RLS test');
         return;
@@ -274,11 +274,11 @@ describe('Database Stress Tests', () => {
         email: testUsers[0].email,
         password: testUsers[0].password,
       });
-      
+
       if (signInError) throw signInError;
 
       const ownGroup = testGroups.find(g => g.name.includes(testUsers[0].email));
-      
+
       if (!ownGroup) {
         console.log('No own group found for RLS test');
         return;
@@ -296,4 +296,3 @@ describe('Database Stress Tests', () => {
     });
   });
 });
-

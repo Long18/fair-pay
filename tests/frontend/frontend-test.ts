@@ -36,7 +36,7 @@ function logRequest(method: string, url: string, duration: number, status: 'succ
 
 async function testAuthFlow() {
   console.log('\n=== Testing Authentication Flow ===');
-  
+
   const testEmail = `frontend-test-${Date.now()}@example.com`;
   const testPassword = 'FrontendTest123!';
   let userId: string | undefined;
@@ -51,7 +51,7 @@ async function testAuthFlow() {
     });
     const duration1 = Date.now() - start1;
     logRequest('POST', '/auth/v1/signup', duration1, signUpError ? 'error' : 'success');
-    
+
     if (signUpError) throw signUpError;
     userId = signUpData.user?.id;
     console.log(`✅ User registered (${duration1}ms)`);
@@ -65,7 +65,7 @@ async function testAuthFlow() {
     });
     const duration2 = Date.now() - start2;
     logRequest('POST', '/auth/v1/token', duration2, signInError ? 'error' : 'success');
-    
+
     if (signInError) throw signInError;
     console.log(`✅ User signed in (${duration2}ms)`);
 
@@ -86,7 +86,7 @@ async function testAuthFlow() {
 
 async function testGroupOperations(userId: string) {
   console.log('\n=== Testing Group Operations ===');
-  
+
   try {
     // Create group
     console.log('1. Creating group...');
@@ -101,7 +101,7 @@ async function testGroupOperations(userId: string) {
       .single();
     const duration1 = Date.now() - start1;
     logRequest('POST', '/rest/v1/groups', duration1, createError ? 'error' : 'success');
-    
+
     if (createError || !group) throw createError || new Error('No group returned');
     console.log(`✅ Group created (${duration1}ms)`);
 
@@ -114,7 +114,7 @@ async function testGroupOperations(userId: string) {
       .order('created_at', { ascending: false });
     const duration2 = Date.now() - start2;
     logRequest('GET', '/rest/v1/groups', duration2, fetchError ? 'error' : 'success');
-    
+
     if (fetchError) throw fetchError;
     console.log(`✅ Groups fetched: ${groups?.length || 0} groups (${duration2}ms)`);
 
@@ -127,7 +127,7 @@ async function testGroupOperations(userId: string) {
       .eq('id', group.id);
     const duration3 = Date.now() - start3;
     logRequest('PATCH', '/rest/v1/groups', duration3, updateError ? 'error' : 'success');
-    
+
     if (updateError) throw updateError;
     console.log(`✅ Group updated (${duration3}ms)`);
 
@@ -140,7 +140,7 @@ async function testGroupOperations(userId: string) {
 
 async function testExpenseOperations(userId: string, groupId: string) {
   console.log('\n=== Testing Expense Operations ===');
-  
+
   try {
     // Create expense
     console.log('1. Creating expense...');
@@ -160,7 +160,7 @@ async function testExpenseOperations(userId: string, groupId: string) {
       .single();
     const duration1 = Date.now() - start1;
     logRequest('POST', '/rest/v1/expenses', duration1, createError ? 'error' : 'success');
-    
+
     if (createError || !expense) throw createError || new Error('No expense returned');
     console.log(`✅ Expense created (${duration1}ms)`);
 
@@ -179,7 +179,7 @@ async function testExpenseOperations(userId: string, groupId: string) {
       .order('expense_date', { ascending: false });
     const duration2 = Date.now() - start2;
     logRequest('GET', '/rest/v1/expenses', duration2, fetchError ? 'error' : 'success');
-    
+
     if (fetchError) throw fetchError;
     console.log(`✅ Expenses fetched: ${expenses?.length || 0} expenses (${duration2}ms)`);
 
@@ -192,7 +192,7 @@ async function testExpenseOperations(userId: string, groupId: string) {
       .eq('id', expense.id);
     const duration3 = Date.now() - start3;
     logRequest('DELETE', '/rest/v1/expenses', duration3, deleteError ? 'error' : 'success');
-    
+
     if (deleteError) throw deleteError;
     console.log(`✅ Expense deleted (${duration3}ms)`);
   } catch (error) {
@@ -203,7 +203,7 @@ async function testExpenseOperations(userId: string, groupId: string) {
 
 async function cleanup(userId: string, groupId: string) {
   console.log('\n=== Cleaning up ===');
-  
+
   try {
     await supabase.from('groups').delete().eq('id', groupId);
     await supabase.from('profiles').delete().eq('id', userId);
@@ -216,7 +216,7 @@ async function cleanup(userId: string, groupId: string) {
 
 function analyzeRequests() {
   console.log('\n=== Request Pattern Analysis ===');
-  
+
   const totalRequests = requestLogs.length;
   const successCount = requestLogs.filter(r => r.status === 'success').length;
   const errorCount = requestLogs.filter(r => r.status === 'error').length;
@@ -245,7 +245,7 @@ function analyzeRequests() {
 
   // Check for potential issues
   console.log(`\n=== Potential Issues ===`);
-  
+
   const slowRequests = requestLogs.filter(r => r.duration > 1000);
   if (slowRequests.length > 0) {
     console.log(`⚠️  ${slowRequests.length} slow requests (>1s)`);
@@ -265,21 +265,21 @@ function analyzeRequests() {
 
 async function main() {
   console.log('🚀 Starting Frontend Integration Tests\n');
-  
+
   try {
     const { userId, session } = await testAuthFlow();
-    
+
     if (!userId || !session) {
       throw new Error('Auth flow did not return user or session');
     }
 
     const groupId = await testGroupOperations(userId);
     await testExpenseOperations(userId, groupId);
-    
+
     analyzeRequests();
-    
+
     await cleanup(userId, groupId);
-    
+
     console.log('\n✅ All tests passed!');
     process.exit(0);
   } catch (error) {
@@ -290,4 +290,3 @@ async function main() {
 }
 
 main();
-

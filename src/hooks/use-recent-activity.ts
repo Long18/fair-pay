@@ -44,7 +44,7 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
       },
     ],
     meta: {
-      select: "*, groups:group_id(id, name), profiles:created_by(id, full_name)",
+      select: "*, groups!group_id(id, name), profiles!created_by(id, full_name)",
     },
   });
 
@@ -61,7 +61,7 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
       },
     ],
     meta: {
-      select: "*, groups:group_id(id, name), profiles:created_by(id, full_name), from_profile:from_user(full_name), to_profile:to_user(full_name)",
+      select: "*, groups!group_id(id, name), profiles!created_by(id, full_name), from_profile:from_user(full_name), to_profile:to_user(full_name)",
     },
   });
 

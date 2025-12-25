@@ -8,11 +8,11 @@ interface UseRecurringExpensesProps {
 
 export function useRecurringExpenses({ groupId, friendshipId }: UseRecurringExpensesProps = {}) {
   const filters = [];
-  
+
   if (groupId) {
     filters.push({ field: 'group_id', operator: 'eq' as const, value: groupId });
   }
-  
+
   if (friendshipId) {
     filters.push({ field: 'friendship_id', operator: 'eq' as const, value: friendshipId });
   }
@@ -22,7 +22,7 @@ export function useRecurringExpenses({ groupId, friendshipId }: UseRecurringExpe
     filters,
     sorters: [{ field: 'next_occurrence', order: 'asc' }],
     meta: {
-      select: '*, template_expense:expenses!template_expense_id(*)',
+      select: '*, template_expense!template_expense_id(*)',
     },
     pagination: {
       mode: 'off',
@@ -50,7 +50,7 @@ export function useRecurringExpense(id: string) {
     resource: 'recurring_expenses',
     id,
     meta: {
-      select: '*, template_expense:expenses!template_expense_id(*)',
+      select: '*, template_expense!template_expense_id(*)',
     },
   });
 
