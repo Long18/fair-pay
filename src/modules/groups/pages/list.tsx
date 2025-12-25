@@ -1,4 +1,5 @@
-import { useList, useGo } from "@refinedev/core";
+import { useGo } from "@refinedev/core";
+import { useTable } from "@refinedev/react-table";
 import { DataTable } from "@/components/refine-ui/data-table/data-table";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -9,14 +10,15 @@ export const GroupList = () => {
   const go = useGo();
   const columns = useGroupColumns();
 
-  const { data, isLoading } = useList<Group>({
-    resource: "groups",
-    meta: {
-      select: "*",
+  const table = useTable<Group>({
+    columns,
+    refineCoreProps: {
+      resource: "groups",
+      meta: {
+        select: "*",
+      },
     },
   });
-
-  const groups = data?.data || [];
 
   return (
     <div className="container py-8">
@@ -33,11 +35,7 @@ export const GroupList = () => {
         </Button>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={groups}
-        isLoading={isLoading}
-      />
+      <DataTable table={table} />
     </div>
   );
 };

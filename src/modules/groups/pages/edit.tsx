@@ -11,7 +11,7 @@ export const GroupEdit = () => {
   const { id } = useParams<{ id: string }>();
   const go = useGo();
 
-  const { data, isLoading: isLoadingGroup } = useOne<Group>({
+  const { query: groupQuery } = useOne<Group>({
     resource: "groups",
     id: id!,
     meta: {
@@ -19,8 +19,9 @@ export const GroupEdit = () => {
     },
   });
 
-  const { mutate: updateGroup, isLoading: isUpdating } = useUpdate();
+  const updateMutation = useUpdate();
 
+  const { data, isLoading: isLoadingGroup } = groupQuery;
   const group = data?.data;
 
   const handleSubmit = (values: GroupFormValues) => {
@@ -29,7 +30,7 @@ export const GroupEdit = () => {
       return;
     }
 
-    updateGroup(
+    updateMutation.mutate(
       {
         resource: "groups",
         id: group.id,
@@ -81,7 +82,7 @@ export const GroupEdit = () => {
               name: group.name,
               description: group.description || "",
             }}
-            isLoading={isUpdating}
+            isLoading={false}
           />
         </CardContent>
       </Card>

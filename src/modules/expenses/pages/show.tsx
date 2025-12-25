@@ -25,7 +25,7 @@ export const ExpenseShow = () => {
   const go = useGo();
   const { data: identity } = useGetIdentity<Profile>();
 
-  const { data: expenseData, isLoading: isLoadingExpense } = useOne<Expense>({
+  const { query: expenseQuery } = useOne<Expense>({
     resource: "expenses",
     id: id!,
     meta: {
@@ -33,7 +33,7 @@ export const ExpenseShow = () => {
     },
   });
 
-  const { data: splitsData, isLoading: isLoadingSplits } = useList<ExpenseSplit>({
+  const { query: splitsQuery } = useList<ExpenseSplit>({
     resource: "expense_splits",
     filters: [
       {
@@ -47,7 +47,10 @@ export const ExpenseShow = () => {
     },
   });
 
-  const { mutate: deleteExpense, isLoading: isDeletingExpense } = useDelete();
+  const deleteMutation = useDelete();
+
+  const { data: expenseData, isLoading: isLoadingExpense } = expenseQuery;
+  const { data: splitsData, isLoading: isLoadingSplits } = splitsQuery;
 
   const expense: any = expenseData?.data;
   const splits: any[] = splitsData?.data || [];
@@ -57,7 +60,7 @@ export const ExpenseShow = () => {
   const handleDelete = () => {
     if (!expense?.id) return;
 
-    deleteExpense(
+    deleteMutation.mutate(
       {
         resource: "expenses",
         id: expense.id,
@@ -134,9 +137,8 @@ export const ExpenseShow = () => {
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={handleDelete}
-                          disabled={isDeletingExpense}
                         >
-                          {isDeletingExpense ? "Deleting..." : "Delete"}
+                          Delete
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
