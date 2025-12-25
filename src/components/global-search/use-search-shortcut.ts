@@ -14,4 +14,3 @@ export const useSearchShortcut = (onTrigger: () => void) => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onTrigger]);
 };
-
