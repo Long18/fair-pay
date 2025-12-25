@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useCreate, useGo, useGetIdentity, useList, useOne } from "@refinedev/core";
+import { useCreate, useGo, useGetIdentity, useList, useOne, useQueryClient } from "@refinedev/core";
 import { useParams, useSearchParams } from "react-router";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PaymentForm } from "../components/payment-form";
@@ -12,6 +12,7 @@ export const PaymentCreate = () => {
   const { groupId, friendshipId } = useParams<{ groupId?: string; friendshipId?: string }>();
   const [searchParams] = useSearchParams();
   const go = useGo();
+  const queryClient = useQueryClient();
   const { data: identity } = useGetIdentity<Profile>();
 
   const createMutation = useCreate();
@@ -93,8 +94,34 @@ export const PaymentCreate = () => {
         values: paymentData,
       },
       {
+        onMutate: async () => {
+          // Cancel outgoing refetches
+          await queryClient.cancelQueries({ queryKey: ["payments"] });
+          await queryClient.cancelQueries({ queryKey: ["balances"] });
+
+          // Snapshot the previous value
+          const previousPayments = queryClient.getQueryData(["payments"]);
+          const previousBalances = queryClient.getQueryData(["balances", identity?.id]);
+
+          // Optimistically show loading state
+          toast.loading("Recording payment...", { id: "create-payment" });
+
+          // Return context with previous values
+          return { previousPayments, previousBalances };
+        },
         onSuccess: () => {
-          toast.success("Payment recorded successfully");
+          toast.success("Payment recorded successfully", { id: "create-payment" });
+
+          // Invalidate and refetch
+          queryClient.invalidateQueries({ queryKey: ["payments"] });
+          queryClient.invalidateQueries({ queryKey: ["balances", identity?.id] });
+          queryClient.invalidateQueries({ queryKey: ["recent-activity"] });
+          if (groupId) {
+            queryClient.invalidateQueries({ queryKey: ["groups", "show", groupId] });
+          }
+          if (friendshipId) {
+            queryClient.invalidateQueries({ queryKey: ["friendships", "show", friendshipId] });
+          }
 
           if (isGroupContext) {
             go({ to: `/groups/show/${groupId}` });
@@ -102,8 +129,21 @@ export const PaymentCreate = () => {
             go({ to: `/friends/show/${friendshipId}` });
           }
         },
-        onError: (error) => {
-          toast.error(`Failed to record payment: ${error.message}`);
+        onError: (error, _variables, context) => {
+          // Rollback on error
+          if (context?.previousPayments) {
+            queryClient.setQueryData(["payments"], context.previousPayments);
+          }
+          if (context?.previousBalances) {
+            queryClient.setQueryData(["balances", identity?.id], context.previousBalances);
+          }
+
+          toast.error(`Failed to record payment: ${error.message}`, { id: "create-payment" });
+        },
+        onSettled: () => {
+          // Always refetch after error or success
+          queryClient.invalidateQueries({ queryKey: ["payments"] });
+          queryClient.invalidateQueries({ queryKey: ["balances"] });
         },
       }
     );

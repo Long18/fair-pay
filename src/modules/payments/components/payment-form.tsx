@@ -69,7 +69,7 @@ export const PaymentForm = ({
     },
   });
 
-  const handleFormSubmit = (data: any) => {
+  const handleFormSubmit = (data: PaymentFormValues) => {
     const formValues: PaymentFormValues = {
       ...data,
       from_user: fromUserId,

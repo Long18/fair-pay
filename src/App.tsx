@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Authenticated, Refine } from "@refinedev/core";
 import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
@@ -25,6 +25,8 @@ import { Layout } from "./components/refine-ui/layout/layout";
 import { Toaster } from "./components/refine-ui/notification/toaster";
 import { useNotificationProvider } from "./components/refine-ui/notification/use-notification-provider";
 import { ThemeProvider } from "./components/refine-ui/theme/theme-provider";
+
+// Eagerly loaded components (critical path)
 import {
   BlogPostCreate,
   BlogPostEdit,
@@ -47,11 +49,20 @@ import { PaymentCreate } from "./modules/payments";
 import { FriendList, FriendShow } from "./modules/friends";
 import { NotificationList } from "./modules/notifications";
 import { Dashboard } from "./pages/dashboard";
-import { BalancesPage } from "./pages/balances";
-import { ReportsPage } from "./pages/reports";
-import { SettingsPage } from "./modules/settings";
 import { ErrorBoundary } from "./components/error-boundary";
 import { supabaseClient } from "./utility";
+
+// Lazy loaded components (code splitting)
+const BalancesPage = lazy(() => import("./pages/balances").then(m => ({ default: m.BalancesPage })));
+const ReportsPage = lazy(() => import("./pages/reports").then(m => ({ default: m.ReportsPage })));
+const SettingsPage = lazy(() => import("./modules/settings").then(m => ({ default: m.SettingsPage })));
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+  </div>
+);
 
 // Configure QueryClient with optimized caching
 // Note: Refine internally uses its own QueryClient, so we configure via options
@@ -88,6 +99,7 @@ function App() {
                 syncWithLocation: true,
                 warnWhenUnsavedChanges: true,
                 projectId: "efvxeD-2r07zg-niV06o",
+                reactQuery: queryClientConfig,
               }}
               resources={[
                 {
@@ -270,9 +282,21 @@ function App() {
                     <Route path="show/:id" element={<ExpenseShow />} />
                   </Route>
                   <Route path="/notifications" element={<NotificationList />} />
-                  <Route path="/balances" element={<BalancesPage />} />
-                  <Route path="/reports" element={<ReportsPage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/balances" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <BalancesPage />
+                    </Suspense>
+                  } />
+                  <Route path="/reports" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ReportsPage />
+                    </Suspense>
+                  } />
+                  <Route path="/settings" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <SettingsPage />
+                    </Suspense>
+                  } />
                   <Route path="/profile/edit" element={<ProfileEdit />} />
                   <Route path="*" element={<ErrorComponent />} />
                 </Route>

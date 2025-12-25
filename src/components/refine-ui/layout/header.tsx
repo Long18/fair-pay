@@ -101,6 +101,8 @@ function DesktopHeader() {
               </svg>
             </div>
 
+            <ThemeToggle />
+
             <div className="relative">
               <NotificationPanel />
             </div>

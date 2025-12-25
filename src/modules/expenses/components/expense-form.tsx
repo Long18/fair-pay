@@ -113,7 +113,7 @@ export const ExpenseForm = ({
     }
   }, [amount, splitMethod, participants.length, recalculate]);
 
-  const handleFormSubmit = (data: any) => {
+  const handleFormSubmit = (data: ExpenseFormValues) => {
     const formValues: ExpenseFormValues = {
       ...data,
       context_type: "group" as const,
