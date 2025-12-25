@@ -7,21 +7,32 @@ import { Eye } from "lucide-react";
 import { ExpenseWithSplits } from "../types";
 
 interface ExpenseListProps {
-  groupId: string;
+  groupId?: string;
+  friendshipId?: string;
 }
 
-export const ExpenseList = ({ groupId }: ExpenseListProps) => {
+export const ExpenseList = ({ groupId, friendshipId }: ExpenseListProps) => {
   const go = useGo();
+
+  const filters = [];
+  if (groupId) {
+    filters.push({
+      field: "group_id",
+      operator: "eq" as const,
+      value: groupId,
+    });
+  }
+  if (friendshipId) {
+    filters.push({
+      field: "friendship_id",
+      operator: "eq" as const,
+      value: friendshipId,
+    });
+  }
 
   const { query } = useList<ExpenseWithSplits>({
     resource: "expenses",
-    filters: [
-      {
-        field: "group_id",
-        operator: "eq",
-        value: groupId,
-      },
-    ],
+    filters,
     meta: {
       select: "*, profiles:paid_by_user_id(id, full_name, avatar_url)",
     },

@@ -36,7 +36,7 @@ import { ProfileEdit } from "./modules/profile";
 import { GroupList, GroupCreate, GroupEdit, GroupShow } from "./modules/groups";
 import { ExpenseCreate, ExpenseShow } from "./modules/expenses";
 import { PaymentCreate } from "./modules/payments";
-import { FriendList } from "./modules/friends";
+import { FriendList, FriendShow } from "./modules/friends";
 import { Dashboard } from "./pages/dashboard";
 import { ErrorBoundary } from "./components/error-boundary";
 import { supabaseClient } from "./utility";
@@ -190,6 +190,9 @@ function App() {
                   </Route>
                   <Route path="/friends">
                     <Route index element={<FriendList />} />
+                    <Route path="show/:id" element={<FriendShow />} />
+                    <Route path=":friendshipId/expenses/create" element={<ExpenseCreate />} />
+                    <Route path=":friendshipId/payments/create" element={<PaymentCreate />} />
                   </Route>
                   <Route path="/expenses">
                     <Route path="show/:id" element={<ExpenseShow />} />

@@ -1,10 +1,10 @@
-import { useList, useGetIdentity, useUpdate, useDelete } from "@refinedev/core";
+import { useList, useGetIdentity, useUpdate, useDelete, useGo } from "@refinedev/core";
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, Trash2 } from "lucide-react";
+import { Check, X, Trash2, ChevronRight } from "lucide-react";
 import { Profile } from "@/modules/profile/types";
 import { Friendship, Friend } from "../types";
 import { AddFriendModal } from "../components/add-friend-modal";
@@ -14,6 +14,7 @@ export const FriendList = () => {
   const { data: identity } = useGetIdentity<Profile>();
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
+  const go = useGo();
 
   const { query } = useList<Friendship>({
     resource: "friendships",
@@ -241,7 +242,8 @@ export const FriendList = () => {
                 {acceptedFriends.map((friend) => (
                   <div
                     key={friend.friendship_id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                    onClick={() => go({ to: `/friends/show/${friend.friendship_id}` })}
                   >
                     <div className="flex items-center gap-3">
                       <Avatar>
@@ -255,13 +257,19 @@ export const FriendList = () => {
                       </Avatar>
                       <div className="font-medium">{friend.full_name}</div>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleRemoveFriend(friend.friendship_id, friend.full_name)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveFriend(friend.friendship_id, friend.full_name);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    </div>
                   </div>
                 ))}
               </div>
