@@ -20,17 +20,17 @@ export const BalanceSummaryCards = ({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* Total Owed to Me */}
-      <Card>
+      <Card className="border-gray-100 hover:shadow-lg transition-shadow">
         <CardContent className="pt-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-green-100 rounded-full">
-              <ArrowDown className="h-6 w-6 text-green-600" />
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-teal-50 rounded-xl">
+              <ArrowDown className="h-6 w-6 text-teal-600" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">You are owed</p>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-sm text-gray-600 font-medium">You are owed</p>
+              <p className="text-2xl font-bold text-teal-600 mt-1">
                 {formatCurrency(totalOwedToMe)}
               </p>
             </div>
@@ -39,15 +39,15 @@ export const BalanceSummaryCards = ({
       </Card>
 
       {/* Total I Owe */}
-      <Card>
+      <Card className="border-gray-100 hover:shadow-lg transition-shadow">
         <CardContent className="pt-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-red-100 rounded-full">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-red-50 rounded-xl">
               <ArrowUp className="h-6 w-6 text-red-600" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">You owe</p>
-              <p className="text-2xl font-bold text-red-600">
+              <p className="text-sm text-gray-600 font-medium">You owe</p>
+              <p className="text-2xl font-bold text-red-600 mt-1">
                 {formatCurrency(totalIOwe)}
               </p>
             </div>
@@ -56,20 +56,20 @@ export const BalanceSummaryCards = ({
       </Card>
 
       {/* Net Balance */}
-      <Card>
+      <Card className="border-gray-100 hover:shadow-lg transition-shadow">
         <CardContent className="pt-6">
-          <div className="flex items-center gap-3">
-            <div className={`p-3 rounded-full ${
-              netBalance >= 0 ? "bg-blue-100" : "bg-orange-100"
+          <div className="flex items-center gap-4">
+            <div className={`p-3 rounded-xl ${
+              netBalance >= 0 ? "bg-purple-50" : "bg-orange-50"
             }`}>
               <Wallet className={`h-6 w-6 ${
-                netBalance >= 0 ? "text-blue-600" : "text-orange-600"
+                netBalance >= 0 ? "text-purple-600" : "text-orange-600"
               }`} />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">Net balance</p>
-              <p className={`text-2xl font-bold ${
-                netBalance >= 0 ? "text-blue-600" : "text-orange-600"
+              <p className="text-sm text-gray-600 font-medium">Net balance</p>
+              <p className={`text-2xl font-bold mt-1 ${
+                netBalance >= 0 ? "text-purple-600" : "text-orange-600"
               }`}>
                 {netBalance >= 0 ? "+" : ""}{formatCurrency(netBalance)}
               </p>
