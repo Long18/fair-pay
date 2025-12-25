@@ -26,6 +26,9 @@ export const Dashboard = () => {
   const { topDebtors, topCreditors, stats } = useSampleLeaderboard();
   const { data: debts = [], isLoading: debtsLoading } = useAggregatedDebts();
 
+  // Check if any data is refetching
+  const isRefetching = globalBalance.isRefetching || recentActivity.isRefetching;
+
   if (!identity) {
     return (
       <div className="min-h-screen bg-[#FCFCFC]">
@@ -115,6 +118,9 @@ export const Dashboard = () => {
   if (globalBalance.isLoading) {
     return <DashboardSkeleton />;
   }
+
+  // Show refetching indicator
+  const showRefetchingIndicator = isRefetching && !globalBalance.isLoading;
 
   const firstName = identity.full_name?.split(" ")[0] || "there";
   const totalOwedToMe = globalBalance.total_owed_to_me;
