@@ -13,11 +13,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { GroupFormValues } from "../types";
 
 const groupSchema = z.object({
   name: z.string().min(1, "Group name is required").max(100, "Name is too long"),
   description: z.string().max(500, "Description is too long").optional(),
+  simplify_debts: z.boolean().optional(),
 });
 
 interface GroupFormProps {
@@ -36,6 +38,7 @@ export const GroupForm = ({
     defaultValues: {
       name: defaultValues?.name || "",
       description: defaultValues?.description || "",
+      simplify_debts: defaultValues?.simplify_debts || false,
     },
   });
 
@@ -77,6 +80,28 @@ export const GroupForm = ({
                 Add more details about what this group is for.
               </FormDescription>
               <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="simplify_debts"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <FormLabel className="text-base">Simplify Debts</FormLabel>
+                <FormDescription>
+                  Automatically minimize the number of transactions needed to settle all debts.
+                  For example, if A owes B $20 and B owes C $20, the system will suggest A pays C directly.
+                </FormDescription>
+              </div>
+              <FormControl>
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
             </FormItem>
           )}
         />

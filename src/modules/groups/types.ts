@@ -24,6 +24,7 @@ export interface GroupWithMembers extends Group {
 export interface GroupFormValues {
   name: string;
   description?: string;
+  simplify_debts?: boolean;
 }
 
 export interface AddMemberFormValues {

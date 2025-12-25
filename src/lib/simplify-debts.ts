@@ -1,13 +1,13 @@
 /**
  * Debt Simplification Algorithm
- * 
+ *
  * This algorithm reduces the number of transactions needed to settle all debts
  * while keeping the total amount each person pays/receives unchanged.
- * 
+ *
  * Example:
  * - Original: A owes B $20, B owes C $20
  * - Simplified: A owes C $20 (B doesn't need to be involved)
- * 
+ *
  * Algorithm:
  * 1. Calculate net balance for each person (sum of all debts)
  * 2. Create two groups: creditors (positive balance) and debtors (negative balance)
@@ -122,11 +122,11 @@ export function areDebtsEquivalent(debts1: DebtEdge[], debts2: DebtEdge[]): bool
 
   // Check if all users have same balance in both structures
   const allUsers = new Set([...balances1.keys(), ...balances2.keys()]);
-  
+
   for (const userId of allUsers) {
     const balance1 = balances1.get(userId) || 0;
     const balance2 = balances2.get(userId) || 0;
-    
+
     if (Math.abs(balance1 - balance2) > 0.01) {
       return false;
     }
@@ -141,4 +141,3 @@ export function areDebtsEquivalent(debts1: DebtEdge[], debts2: DebtEdge[]): bool
 export function formatDebtEdge(debt: DebtEdge, getUserName: (id: string) => string): string {
   return `${getUserName(debt.from)} owes ${getUserName(debt.to)} ${debt.amount.toFixed(2)}`;
 }
-

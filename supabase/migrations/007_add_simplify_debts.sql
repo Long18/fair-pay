@@ -12,4 +12,3 @@ COMMENT ON COLUMN public.groups.simplify_debts IS 'When true, debts are automati
 -- Update existing groups to have simplify_debts enabled (opt-in for existing groups)
 -- Comment out if you want existing groups to default to false
 -- UPDATE public.groups SET simplify_debts = true;
-
