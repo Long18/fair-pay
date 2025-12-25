@@ -12,6 +12,9 @@ import { PublicLeaderboard } from "@/components/dashboard/public-leaderboard";
 import { PublicStatsComponent } from "@/components/dashboard/public-stats";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { FloatingActionButton } from "@/components/ui/floating-action-button";
+import { SimplifiedDebts } from "@/components/dashboard/simplified-debts";
+import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
 import { Profile } from "@/modules/profile/types";
 import { formatNumber } from "@/lib/locale-utils";
 
@@ -21,6 +24,7 @@ export const Dashboard = () => {
   const globalBalance = useGlobalBalance();
   const recentActivity = useRecentActivity(10);
   const { topDebtors, topCreditors, stats } = useSampleLeaderboard();
+  const { data: debts = [], isLoading: debtsLoading } = useAggregatedDebts();
 
   if (!identity) {
     return (
@@ -107,8 +111,9 @@ export const Dashboard = () => {
   }
 
   const firstName = identity.full_name?.split(" ")[0] || "there";
-  const totalEarned = Math.abs(globalBalance.total_owed_to_me);
-  const formattedEarnings = formatNumber(totalEarned);
+  const totalOwedToMe = globalBalance.total_owed_to_me;
+  const totalIOwe = globalBalance.total_i_owe;
+  const netBalance = globalBalance.net_balance;
 
   return (
     <div className="min-h-screen bg-[#FCFCFC]">
@@ -121,95 +126,146 @@ export const Dashboard = () => {
                 Hey {firstName}!
               </h1>
             </div>
-            <h2 className="text-2xl font-bold text-[#1F1F1F]">
-              You earned VND {formattedEarnings} this month.
+            <h2 className="text-xl font-semibold text-[#1F1F1F]">
+              Your Balance Summary
             </h2>
+          </div>
+
+          {/* Primary Balance Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="border-[#F2F2F2] bg-white">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-[#828282]">
+                  You Owe
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-[#EB5757]">
+                  {formatNumber(totalIOwe)} ₫
+                </div>
+                <p className="text-xs text-[#828282] mt-1">
+                  Total debt to others
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-[#F2F2F2] bg-white">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-[#828282]">
+                  You Are Owed
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-[#6FCF97]">
+                  {formatNumber(totalOwedToMe)} ₫
+                </div>
+                <p className="text-xs text-[#828282] mt-1">
+                  Total credit from others
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-[#F2F2F2] bg-white">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-[#828282]">
+                  Net Balance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`text-3xl font-bold ${
+                  netBalance > 0 ? 'text-[#6FCF97]' : netBalance < 0 ? 'text-[#EB5757]' : 'text-[#828282]'
+                }`}>
+                  {netBalance > 0 ? '+' : ''}{formatNumber(netBalance)} ₫
+                </div>
+                <p className="text-xs text-[#828282] mt-1">
+                  {netBalance > 0 ? 'You are owed overall' : netBalance < 0 ? 'You owe overall' : 'All settled up'}
+                </p>
+              </CardContent>
+            </Card>
           </div>
 
           <QuickActions />
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              <WeeklyEarningsChart />
+          {/* Simplified Debts View */}
+          <SimplifiedDebts
+            debts={debts}
+            isLoading={debtsLoading}
+          />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <SuccessRateChart />
-                <PaymentIssuesChart />
-              </div>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="border-[#F2F2F2]">
+              <CardHeader>
+                <CardTitle className="text-base font-bold text-[#333]">
+                  Your Groups
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {globalBalance.group_balances.length === 0 ? (
+                  <p className="text-center text-[#828282] py-8 text-sm">
+                    You're not part of any groups yet. Create one to get started!
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {globalBalance.group_balances.map((group) => (
+                      <GroupBalanceCard
+                        key={group.group_id}
+                        group={group}
+                        currency="VND"
+                      />
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-            <div className="space-y-6">
-              <Card className="border-[#F2F2F2]">
-                <CardHeader>
-                  <CardTitle className="text-base font-bold text-[#333]">
-                    Your Groups
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {globalBalance.group_balances.length === 0 ? (
-                    <p className="text-center text-[#828282] py-8 text-sm">
-                      You're not part of any groups yet. Create one to get started!
-                    </p>
-                  ) : (
-                    <div className="space-y-3">
-                      {globalBalance.group_balances.map((group) => (
-                        <GroupBalanceCard
-                          key={group.group_id}
-                          group={group}
-                          currency="VND"
-                        />
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card className="border-[#F2F2F2]">
-                <CardHeader>
-                  <CardTitle className="text-base font-bold text-[#333]">
-                    Recent Activity
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {recentActivity.items.length === 0 ? (
-                    <p className="text-center text-[#828282] py-8 text-sm">
-                      No recent activity
-                    </p>
-                  ) : (
-                    <div className="space-y-3">
-                      {recentActivity.items.slice(0, 5).map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-start gap-3 p-3 rounded-lg hover:bg-[#F9F9F9] transition-colors"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-[#333] truncate">
-                              {item.description}
-                            </p>
-                            <p className="text-xs text-[#828282] mt-1">
-                              {new Date(item.date).toLocaleDateString()}
-                            </p>
-                          </div>
-                          {item.amount && (
-                            <span className={`text-sm font-semibold ${
-                              item.type === "payment"
-                                ? "text-[#6FCF97]"
-                                : "text-[#FFA14E]"
-                            }`}>
-                              {item.amount > 0 ? "+" : ""}
-                              {formatNumber(item.amount)}
-                            </span>
-                          )}
+            <Card className="border-[#F2F2F2]">
+              <CardHeader>
+                <CardTitle className="text-base font-bold text-[#333]">
+                  Recent Activity
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {recentActivity.items.length === 0 ? (
+                  <p className="text-center text-[#828282] py-8 text-sm">
+                    No recent activity
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {recentActivity.items.slice(0, 5).map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-start gap-3 p-3 rounded-lg hover:bg-[#F9F9F9] transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-[#333] truncate">
+                            {item.description}
+                          </p>
+                          <p className="text-xs text-[#828282] mt-1">
+                            {new Date(item.date).toLocaleDateString()}
+                          </p>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                        {item.amount && (
+                          <span className={`text-sm font-semibold ${
+                            item.type === "payment"
+                              ? "text-[#6FCF97]"
+                              : "text-[#FFA14E]"
+                          }`}>
+                            {item.amount > 0 ? "+" : ""}
+                            {formatNumber(item.amount)}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
+
+      {/* Floating Action Button for quick expense creation */}
+      <FloatingActionButton href="/expenses/create" />
     </div>
   );
 };

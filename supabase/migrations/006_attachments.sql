@@ -106,6 +106,7 @@ ON CONFLICT (id) DO NOTHING;
 -- Storage RLS policies for receipts bucket
 
 -- SELECT: Users can view receipts for expenses they can see
+DROP POLICY IF EXISTS "Users can view receipts for their expenses" ON storage.objects;
 CREATE POLICY "Users can view receipts for their expenses"
   ON storage.objects
   FOR SELECT
@@ -138,6 +139,7 @@ CREATE POLICY "Users can view receipts for their expenses"
   );
 
 -- INSERT: Authenticated users can upload files
+DROP POLICY IF EXISTS "Authenticated users can upload receipts" ON storage.objects;
 CREATE POLICY "Authenticated users can upload receipts"
   ON storage.objects
   FOR INSERT
@@ -148,6 +150,7 @@ CREATE POLICY "Authenticated users can upload receipts"
   );
 
 -- DELETE: Users can delete their own uploads
+DROP POLICY IF EXISTS "Users can delete their own receipts" ON storage.objects;
 CREATE POLICY "Users can delete their own receipts"
   ON storage.objects
   FOR DELETE

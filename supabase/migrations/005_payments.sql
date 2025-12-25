@@ -5,7 +5,7 @@
 
 -- Create payments table
 CREATE TABLE payments (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   context_type TEXT NOT NULL CHECK (context_type IN ('group', 'friend')),
   group_id UUID REFERENCES groups(id) ON DELETE CASCADE,
   friendship_id UUID REFERENCES friendships(id) ON DELETE CASCADE,

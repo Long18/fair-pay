@@ -5,7 +5,7 @@
 
 -- Create expenses table
 CREATE TABLE expenses (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   context_type TEXT NOT NULL CHECK (context_type IN ('group', 'friend')),
   group_id UUID REFERENCES groups(id) ON DELETE CASCADE,
   friendship_id UUID REFERENCES friendships(id) ON DELETE CASCADE,
@@ -33,7 +33,7 @@ CREATE TRIGGER update_expenses_updated_at
 
 -- Create expense_splits table
 CREATE TABLE expense_splits (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   expense_id UUID NOT NULL REFERENCES expenses(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   split_method TEXT NOT NULL CHECK (split_method IN ('equal', 'exact', 'percentage')),
