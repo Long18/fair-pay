@@ -1,0 +1,32 @@
+0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17
+ECHO,Tuần 1 Tháng 4,,,,,,,,,,,,,,,,
+,2025-04-23 00:00:00,,,2025-04-24 00:00:00,,,2025-04-25 00:00:00,,,2025-04-28 00:00:00,,,2025-04-29 00:00:00,,,Tổng kết,
+,Cà phê,Cơm trưa,Nước,Cà phê,Cơm trưa,Nước,Cà phê,Cơm trưa,Nước,Cà phê,Cơm trưa,Nước,Cà phê,Cơm trưa,Nước,Tổng tiền,Đã chuyển
+Nghi,,,,,,,,,,,,,,,,0,False
+Hoàng Anh,39,,,30,,,,,,,,,,25,,0,True
+Chị Kim (Ngân),,,,,,,,,,,,,,,,0,False
+Tuyến,,,,,,,,,,,,,,,,0,False
+Anh Thịnh,55,,,,,,,,,,,,,,,0,True
+,,,,,,,,,,,,,,,,0,
+,,,,,,,,,,,,,,,,0,
+,,,,,,,,,,,,,,,,0,
+,,,,,,,,,,,,,,,,0,
+,,,,,,,,,,,,,,,,0,
+,,,,,,,,,,,,,,,,0,
+,,,,,,,,,,,,,,,,0,
+,,,,,,,,,,,,,,,,0,
+Other,,,,,,,,,,,,,,,,0,False
+Thắng,,,,,,,,,,,,,,,,#ERROR!,False
+Thái,,,,,,,,,,,,,,,,#ERROR!,False
+Music,Cà phê,Cơm trưa,Nước,Cà phê,Cơm trưa,Nước,Cà phê,Cơm trưa,Nước,Cà phê,Cơm trưa,Nước,,,,Tổng tiền,Đã chuyển
+Thuần,,,,,,,,,,,,,,,,0,False
+Marketing,Cà phê,Cơm trưa,Nước,Cà phê,Cơm trưa,Nước,Cà phê,Cơm trưa,Nước,Cà phê,Cơm trưa,Nước,Cà phê,Cơm trưa,Nước,Tổng tiền,Đã chuyển
+Trang,,,,,,,,,,,,,27,,,0,True
+Tổng,94,0,0,30,0,0,0,0,0,0,0,0,0,25,0,124,124
+Long,55,,,,,,,,,,,,,,,55,Other
+Tổng,149,0,0,30,0,0,0,0,0,0,0,0,0,25,0,179,False
+,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,
+,,,,,,"Lưu ý cho mọi người: màu xanh lá là tiền mn đã chuyển nha (trả trong tuần). 
+Em đã thêm công thức cho cộng tổng trừ các cột xanh ra. 
+Mọi người cứ chuyển đúng tiền ở cột tổng là được.",,,,,,,,,,,

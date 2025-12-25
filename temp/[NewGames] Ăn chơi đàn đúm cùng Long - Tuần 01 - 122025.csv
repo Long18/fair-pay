@@ -1,0 +1,35 @@
+0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17
+Core,Tuần 1 Tháng 12,,,,,,,,,,,,,,,,
+,2025-12-01 00:00:00,,,2025-12-02 00:00:00,,,2025-12-03 00:00:00,,,2025-12-04 00:00:00,,,2025-12-05 00:00:00,,,Tổng kết,
+,Ăn sáng,Ăn Chiều,Ăn tối,Ăn sáng,Ăn Chiều,Ăn Trưa,Cà phê,Nước,Ăn tối,Cà phê,Siêu thị,Cơm trưa,Cà phê,Cơm trưa,Nước,Tổng tiền,Đã chuyển
+Anh Thắng,,,,,,,,,,,,,,,,0,True
+Chị Ngân,,,,,,,,,,,,45,,,,0,True
+Anh Mike a.k.a Mai,,,,,,,,,,,,45,,,,0,True
+Anh Tâm,,,,,,,,,,,,,,,,0,True
+Thục Nghi,,,,,39,,,,,,,,,,,0,True
+Hoàng Anh,,,,,,,,,,,33,45,,,,78,False
+Chị Kayen,,,,,39,,,,,,,45,,,,0,True
+Chị Hạ,,,,,,,,,,,,,,,,0,True
+Tuyến,,,,,39,,,,,,,45,,,,0,True
+,,,,,,,,,,,,,,,,0,False
+Anh Tuấn,,,,,,,,,,,,,,,,0,True
+Anh Đăng,,,,,,,,,,,,45,,,,0,True
+Anh Vũ,,,,,,,,,,,,,,,,0,True
+Thịnh (Arin),,,,,49.5,,,,,,,45,,,,0,True
+,,,,,,,,,,,,,,,,0,False
+,,,,,,,,,,,,,,,,0,False
+Rush,Icnoud,Cơm trưa,Ăn tối,Ăn sáng,Ăn Chiều,Ăn Trưa,Cà phê,Cơm trưa,Nước,Cà phê,Siêu thị,Cơm trưa,Cà phê,Cơm trưa,Nước,Tổng tiền,Đã chuyển
+Nhi,,,,,,,,,,,,,,,,0,True
+Music,Icnoud,Cơm trưa,Ăn tối,Ăn sáng,Ăn Chiều,Ăn Trưa,Cà phê,Cơm trưa,Nước,Cà phê,Siêu thị,Cơm trưa,Cà phê,Cơm trưa,Nước,Tổng tiền,Đã chuyển
+Thuần,,,,,,,,,,,,,,,,0,True
+People,Icnoud,Cơm trưa,Ăn tối,Ăn sáng,Ăn Chiều,Ăn Trưa,Cà phê,Cơm trưa,Nước,Cà phê,Siêu thị,Cơm trưa,Cà phê,Cơm trưa,Nước,Tổng tiền,Đã chuyển
+Chị Hảo,,,,,,,,,,,,,,,,0,True
+Chị Ngọc,,,,,,,,,,,,,,,,0,True
+Tổng,0,0,0,0,216,0,0,0,0,0,33,270,0,0,0,519,519
+Long,,,,,49.5,,,,,,,,,,,49.5,Other
+Tổng,0,0,0,0,265.5,0,0,0,0,0,33,270,0,0,0,568.5,False
+,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,
+,,,,,,"Lưu ý cho mọi người: màu xanh lá là tiền mn đã chuyển nha (trả trong tuần). 
+Em đã thêm công thức cho cộng tổng trừ các cột xanh ra. 
+Mọi người cứ chuyển đúng tiền ở cột tổng là được.",,,,,,,,,,,

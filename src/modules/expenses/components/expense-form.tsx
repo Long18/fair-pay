@@ -389,7 +389,7 @@ export const ExpenseForm = ({
         {/* Recurring Expense Configuration */}
         <RecurringExpenseForm
           control={form.control}
-          isRecurring={form.watch("is_recurring")}
+          isRecurring={form.watch("is_recurring") || false}
         />
 
         <Button type="submit" disabled={isLoading || !isSplitValid} className="w-full">

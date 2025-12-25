@@ -8,13 +8,13 @@ interface UseRecurringExpensesProps {
 
 export function useRecurringExpenses({ groupId, friendshipId }: UseRecurringExpensesProps = {}) {
   const filters = [];
-
+  
   if (groupId) {
-    filters.push({ field: 'group_id', operator: 'eq', value: groupId });
+    filters.push({ field: 'group_id', operator: 'eq' as const, value: groupId });
   }
-
+  
   if (friendshipId) {
-    filters.push({ field: 'friendship_id', operator: 'eq', value: friendshipId });
+    filters.push({ field: 'friendship_id', operator: 'eq' as const, value: friendshipId });
   }
 
   const { query } = useList<RecurringExpense>({
@@ -62,11 +62,11 @@ export function useRecurringExpense(id: string) {
 }
 
 export function useCreateRecurringExpense() {
-  const { mutate, isLoading } = useCreate<RecurringExpense>();
+  const { mutate } = useCreate<RecurringExpense>();
 
   const createRecurring = async (
     templateExpenseId: string,
-    values: RecurringExpenseFormValues,
+    values: Omit<RecurringExpenseFormValues, 'is_recurring'>,
     contextType: 'group' | 'friend',
     contextId: string
   ) => {
@@ -106,12 +106,11 @@ export function useCreateRecurringExpense() {
 
   return {
     createRecurring,
-    isLoading,
   };
 }
 
 export function useUpdateRecurringExpense() {
-  const { mutate, isLoading } = useUpdate<RecurringExpense>();
+  const { mutate } = useUpdate<RecurringExpense>();
 
   const updateRecurring = async (
     id: string,
@@ -161,12 +160,11 @@ export function useUpdateRecurringExpense() {
     updateRecurring,
     pauseRecurring,
     resumeRecurring,
-    isLoading,
   };
 }
 
 export function useDeleteRecurringExpense() {
-  const { mutate, isLoading } = useDelete<RecurringExpense>();
+  const { mutate } = useDelete<RecurringExpense>();
 
   const deleteRecurring = async (id: string) => {
     return new Promise<void>((resolve, reject) => {
@@ -185,6 +183,5 @@ export function useDeleteRecurringExpense() {
 
   return {
     deleteRecurring,
-    isLoading,
   };
 }

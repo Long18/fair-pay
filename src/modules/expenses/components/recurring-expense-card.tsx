@@ -18,7 +18,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { MoreVertical, Repeat, Pause, Play, Trash2, Calendar } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import {
@@ -38,8 +37,10 @@ interface RecurringExpenseCardProps {
 
 export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const { pauseRecurring, resumeRecurring, isLoading: isUpdating } = useUpdateRecurringExpense();
-  const { deleteRecurring, isLoading: isDeleting } = useDeleteRecurringExpense();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { pauseRecurring, resumeRecurring } = useUpdateRecurringExpense();
+  const { deleteRecurring } = useDeleteRecurringExpense();
   const { open: notify } = useNotification();
 
   const status = getRecurringExpenseStatus(recurring);
@@ -47,6 +48,7 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
 
   const handlePauseResume = async () => {
     try {
+      setIsUpdating(true);
       if (recurring.is_active) {
         await pauseRecurring(recurring.id);
         notify?.({
@@ -67,11 +69,14 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
         message: 'Có lỗi xảy ra',
         description: error instanceof Error ? error.message : 'Không thể cập nhật',
       });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   const handleDelete = async () => {
     try {
+      setIsDeleting(true);
       await deleteRecurring(recurring.id);
       notify?.({
         type: 'success',
@@ -85,6 +90,8 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
         message: 'Có lỗi xảy ra',
         description: error instanceof Error ? error.message : 'Không thể xóa',
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -153,7 +160,7 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-2xl font-bold">
-              {formatCurrency(template.amount, template.currency)}
+              {template.amount.toLocaleString('vi-VN')} {template.currency}
             </span>
             <Badge variant="outline">
               {getFrequencyDescription(recurring.frequency, recurring.interval)}
