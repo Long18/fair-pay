@@ -1,3 +1,14 @@
+export interface Attachment {
+    id: string;
+    expense_id: string;
+    storage_path: string;
+    file_name: string;
+    mime_type: string;
+    file_size: number;
+    created_at: string;
+    created_by: string;
+}
+
 export interface Expense {
     id: string;
     context_type: 'group' | 'friend';
@@ -13,6 +24,7 @@ export interface Expense {
     created_by: string;
     created_at: string;
     updated_at: string;
+    attachments?: Attachment[];
 }
 
 export interface ExpenseSplit {
