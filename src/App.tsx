@@ -40,6 +40,7 @@ import { PaymentCreate } from "./modules/payments";
 import { FriendList, FriendShow } from "./modules/friends";
 import { NotificationList } from "./modules/notifications";
 import { Dashboard } from "./pages/dashboard";
+import { ReportsPage } from "./pages/reports";
 import { ErrorBoundary } from "./components/error-boundary";
 import { supabaseClient } from "./utility";
 
@@ -125,6 +126,13 @@ function App() {
                   },
                 },
                 {
+                  name: "reports",
+                  list: "/reports",
+                  meta: {
+                    label: "Báo cáo",
+                  },
+                },
+                {
                   name: "blog_posts",
                   list: "/blog-posts",
                   create: "/blog-posts/create",
@@ -200,6 +208,7 @@ function App() {
                     <Route path="show/:id" element={<ExpenseShow />} />
                   </Route>
                   <Route path="/notifications" element={<NotificationList />} />
+                  <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/profile/edit" element={<ProfileEdit />} />
                   <Route path="*" element={<ErrorComponent />} />
                 </Route>

@@ -359,7 +359,7 @@ describe('Recurring Expenses Helper Functions', () => {
     const { data, error } = await supabase.rpc('calculate_next_occurrence', {
       p_current_date: '2025-01-15',
       p_frequency: 'monthly',
-      p_interval: 1,
+      p_interval_value: 1,
     });
 
     expect(error).toBeNull();
@@ -371,7 +371,7 @@ describe('Recurring Expenses Helper Functions', () => {
     const { data, error } = await supabase.rpc('calculate_next_occurrence', {
       p_current_date: '2025-01-15',
       p_frequency: 'weekly',
-      p_interval: 2,
+      p_interval_value: 2,
     });
 
     expect(error).toBeNull();
@@ -383,7 +383,7 @@ describe('Recurring Expenses Helper Functions', () => {
     const { data, error } = await supabase.rpc('calculate_next_occurrence', {
       p_current_date: '2025-01-15',
       p_frequency: 'yearly',
-      p_interval: 1,
+      p_interval_value: 1,
     });
 
     expect(error).toBeNull();

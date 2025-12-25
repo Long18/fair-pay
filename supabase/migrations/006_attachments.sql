@@ -44,7 +44,7 @@ CREATE POLICY "Users can view attachments for their expenses"
         (e.friendship_id IS NOT NULL AND EXISTS (
           SELECT 1 FROM public.friendships f
           WHERE f.id = e.friendship_id
-          AND (f.user_a_id = auth.uid() OR f.user_b_id = auth.uid())
+          AND (f.user_a = auth.uid() OR f.user_b = auth.uid())
         ))
       )
     )
@@ -72,7 +72,7 @@ CREATE POLICY "Users can add attachments to their expenses"
         (e.friendship_id IS NOT NULL AND EXISTS (
           SELECT 1 FROM public.friendships f
           WHERE f.id = e.friendship_id
-          AND (f.user_a_id = auth.uid() OR f.user_b_id = auth.uid())
+          AND (f.user_a = auth.uid() OR f.user_b = auth.uid())
         ))
       )
     )
@@ -130,7 +130,7 @@ CREATE POLICY "Users can view receipts for their expenses"
           (e.friendship_id IS NOT NULL AND EXISTS (
             SELECT 1 FROM public.friendships f
             WHERE f.id = e.friendship_id
-            AND (f.user_a_id = auth.uid() OR f.user_b_id = auth.uid())
+            AND (f.user_a = auth.uid() OR f.user_b = auth.uid())
           ))
         )
       )

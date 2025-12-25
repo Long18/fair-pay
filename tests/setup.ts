@@ -58,9 +58,16 @@ export const signOutTestUser = async () => {
 };
 
 export const cleanupTestUser = async (userId: string) => {
+    if (!userId) return;
+    
     await supabase.from('profiles').delete().eq('id', userId);
 
-    await supabase.auth.admin.deleteUser(userId);
+    try {
+        await supabase.auth.admin.deleteUser(userId);
+    } catch (error) {
+        // Ignore errors during cleanup
+        console.warn(`Failed to delete user ${userId}:`, error);
+    }
 };
 
 export const cleanupTestData = async () => {

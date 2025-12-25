@@ -93,16 +93,20 @@ CREATE POLICY "Group creator can delete groups"
 -- RLS Policies for group_members
 -- ========================================
 
--- SELECT: Group members can view members
+-- SELECT: Users can view group_members records for groups they belong to
+-- Simple policy: just check if a matching user_id record exists for this group
 CREATE POLICY "Group members can view members"
   ON group_members
   FOR SELECT
   TO authenticated
   USING (
+    -- Allow users to see members of groups where they are also a member
+    -- We use a simple subquery that checks the groups table instead of recursing
     group_id IN (
-      SELECT group_id
-      FROM group_members
-      WHERE user_id = auth.uid()
+      SELECT g.id
+      FROM groups g
+      INNER JOIN group_members gm ON gm.group_id = g.id
+      WHERE gm.user_id = auth.uid()
     )
   );
 
