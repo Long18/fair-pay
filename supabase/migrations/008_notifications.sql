@@ -74,7 +74,7 @@ BEGIN
     INSERT INTO public.notifications (user_id, type, title, message, link, related_id)
     VALUES (p_user_id, p_type, p_title, p_message, p_link, p_related_id)
     RETURNING id INTO v_notification_id;
-    
+
     RETURN v_notification_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -91,13 +91,13 @@ BEGIN
     SELECT full_name INTO v_payer_name
     FROM public.profiles
     WHERE id = NEW.paid_by_user_id;
-    
+
     -- Get group name if group expense
     IF NEW.group_id IS NOT NULL THEN
         SELECT name INTO v_group_name
         FROM public.groups
         WHERE id = NEW.group_id;
-        
+
         -- Notify all group members except the payer
         FOR v_member IN
             SELECT gm.user_id
@@ -115,9 +115,9 @@ BEGIN
             );
         END LOOP;
     END IF;
-    
+
     -- TODO: Handle friendship expense notifications
-    
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -140,13 +140,13 @@ BEGIN
     SELECT full_name INTO v_payer_name
     FROM public.profiles
     WHERE id = NEW.from_user_id;
-    
+
     -- Notify the recipient
     IF NEW.group_id IS NOT NULL THEN
         SELECT name INTO v_group_name
         FROM public.groups
         WHERE id = NEW.group_id;
-        
+
         PERFORM public.create_notification(
             NEW.to_user_id,
             'payment_recorded',
@@ -165,7 +165,7 @@ BEGIN
             NEW.id
         );
     END IF;
-    
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -189,14 +189,14 @@ BEGIN
         SELECT full_name INTO v_requester_name
         FROM public.profiles
         WHERE id = NEW.created_by;
-        
+
         -- Determine recipient (the user who is NOT the requester)
         IF NEW.user_a_id = NEW.created_by THEN
             v_recipient_id := NEW.user_b_id;
         ELSE
             v_recipient_id := NEW.user_a_id;
         END IF;
-        
+
         PERFORM public.create_notification(
             v_recipient_id,
             'friend_request',
@@ -206,7 +206,7 @@ BEGIN
             NEW.id
         );
     END IF;
-    
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -230,14 +230,14 @@ BEGIN
         SELECT full_name INTO v_accepter_name
         FROM public.profiles
         WHERE id = auth.uid();
-        
+
         -- Determine original requester
         IF NEW.user_a_id = NEW.created_by THEN
             v_requester_id := NEW.user_a_id;
         ELSE
             v_requester_id := NEW.user_b_id;
         END IF;
-        
+
         PERFORM public.create_notification(
             v_requester_id,
             'friend_accepted',
@@ -247,7 +247,7 @@ BEGIN
             NEW.id
         );
     END IF;
-    
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -269,12 +269,12 @@ BEGIN
     SELECT name INTO v_group_name
     FROM public.groups
     WHERE id = NEW.group_id;
-    
+
     -- Get adder name (the creator of the group or current user)
     SELECT full_name INTO v_adder_name
     FROM public.profiles
     WHERE id = COALESCE(auth.uid(), NEW.user_id);
-    
+
     -- Don't notify the user who created the group (they added themselves)
     IF NEW.user_id != (SELECT created_by FROM public.groups WHERE id = NEW.group_id) THEN
         PERFORM public.create_notification(
@@ -286,7 +286,7 @@ BEGIN
             NEW.group_id
         );
     END IF;
-    
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -308,4 +308,3 @@ COMMENT ON FUNCTION public.notify_payment_recorded IS 'Trigger function to notif
 COMMENT ON FUNCTION public.notify_friend_request IS 'Trigger function to notify users when they receive a friend request';
 COMMENT ON FUNCTION public.notify_friend_accepted IS 'Trigger function to notify users when their friend request is accepted';
 COMMENT ON FUNCTION public.notify_added_to_group IS 'Trigger function to notify users when they are added to a group';
-

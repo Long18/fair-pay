@@ -15,6 +15,7 @@ import {
   useGo,
 } from "@refinedev/core";
 import { LogOutIcon, UserIcon } from "lucide-react";
+import { NotificationPanel } from "@/modules/notifications";
 
 export const Header = () => {
   const { isMobile } = useSidebar();
@@ -41,6 +42,7 @@ function DesktopHeader() {
         "z-40"
       )}
     >
+      <NotificationPanel />
       <ThemeToggle />
       <UserDropdown />
     </header>
@@ -113,7 +115,10 @@ function MobileHeader() {
         </h2>
       </div>
 
-      <ThemeToggle className={cn("h-8", "w-8")} />
+      <div className="flex items-center gap-1">
+        <NotificationPanel />
+        <ThemeToggle className={cn("h-8", "w-8")} />
+      </div>
     </header>
   );
 }
