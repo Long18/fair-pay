@@ -37,6 +37,7 @@ import { GroupList, GroupCreate, GroupEdit, GroupShow } from "./modules/groups";
 import { ExpenseCreate, ExpenseShow } from "./modules/expenses";
 import { PaymentCreate } from "./modules/payments";
 import { FriendList, FriendShow } from "./modules/friends";
+import { NotificationList } from "./modules/notifications";
 import { Dashboard } from "./pages/dashboard";
 import { ErrorBoundary } from "./components/error-boundary";
 import { supabaseClient } from "./utility";
@@ -197,6 +198,7 @@ function App() {
                   <Route path="/expenses">
                     <Route path="show/:id" element={<ExpenseShow />} />
                   </Route>
+                  <Route path="/notifications" element={<NotificationList />} />
                   <Route path="/profile/edit" element={<ProfileEdit />} />
                   <Route path="*" element={<ErrorComponent />} />
                 </Route>
