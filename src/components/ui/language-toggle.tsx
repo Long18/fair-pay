@@ -7,25 +7,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './dropdown-menu';
-import { setLocalSettings } from '@/lib/local-settings';
 
 export const LanguageToggle = () => {
   const { i18n } = useTranslation();
   const currentLanguage = i18n.language;
 
-  const changeLanguage = async (lng: 'en' | 'vi') => {
-    try {
-      await i18n.changeLanguage(lng);
-      setLocalSettings({ language: lng });
-      
-      // Force a re-render by updating a key in localStorage that i18n watches
-      localStorage.setItem('i18nextLng', lng);
-      
-      // Reload page to ensure all components update
-      window.location.reload();
-    } catch (error) {
-      console.error('Failed to change language:', error);
-    }
+  const changeLanguage = (lng: 'en' | 'vi') => {
+    i18n.changeLanguage(lng);
   };
 
   return (
@@ -38,15 +26,19 @@ export const LanguageToggle = () => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => changeLanguage('en')}>
-          <span className="flex items-center gap-2">
+          <span className="flex items-center gap-2 w-full">
             English
-            {currentLanguage === 'en' && <Check className="h-4 w-4" />}
+            {(currentLanguage === 'en' || currentLanguage.startsWith('en')) && (
+              <Check className="h-4 w-4 ml-auto" />
+            )}
           </span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => changeLanguage('vi')}>
-          <span className="flex items-center gap-2">
+          <span className="flex items-center gap-2 w-full">
             Tiếng Việt
-            {currentLanguage === 'vi' && <Check className="h-4 w-4" />}
+            {(currentLanguage === 'vi' || currentLanguage.startsWith('vi')) && (
+              <Check className="h-4 w-4 ml-auto" />
+            )}
           </span>
         </DropdownMenuItem>
       </DropdownMenuContent>
