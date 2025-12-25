@@ -45,7 +45,7 @@ export const GroupShow = () => {
       },
     ],
     meta: {
-      select: "*, profiles:user_id(*)",
+      select: "*, profiles!user_id(*)",
     },
   });
 
@@ -57,7 +57,7 @@ export const GroupShow = () => {
     resource: "expenses",
     filters: [{ field: "group_id", operator: "eq", value: id }],
     meta: {
-      select: "*, expense_splits:expense_id(*)",
+      select: "*, expense_splits!expense_id(*)",
     },
   });
 

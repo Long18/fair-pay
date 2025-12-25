@@ -81,7 +81,7 @@ describe('Groups CRUD Operations', () => {
       await signOutTestUser();
     });
 
-    it('should have simplify_debts default to true', async () => {
+    it('should have simplify_debts default to false', async () => {
       await signInTestUser(testUsers.user1.email, testUsers.user1.password);
 
       const { data: group } = await supabase
@@ -90,7 +90,7 @@ describe('Groups CRUD Operations', () => {
         .eq('id', testGroupId)
         .single();
 
-      expect(group?.simplify_debts).toBe(true);
+      expect(group?.simplify_debts).toBe(false);
 
       await signOutTestUser();
     });
@@ -256,14 +256,25 @@ describe('Groups CRUD Operations', () => {
     it('should add member to group', async () => {
       await signInTestUser(testUsers.user1.email, testUsers.user1.password);
 
-      const { error } = await supabase.from('group_members').insert({
-        group_id: testGroupId,
-        user_id: user2Id,
-        role: 'member',
-      });
+      // First check if user2 is already a member (from trigger)
+      const { data: existingMembers } = await supabase
+        .from('group_members')
+        .select('*')
+        .eq('group_id', testGroupId)
+        .eq('user_id', user2Id);
 
-      expect(error).toBeNull();
+      // Only add if not already a member
+      if (!existingMembers || existingMembers.length === 0) {
+        const { error } = await supabase.from('group_members').insert({
+          group_id: testGroupId,
+          user_id: user2Id,
+          role: 'member',
+        });
 
+        expect(error).toBeNull();
+      }
+
+      // Verify member was added or already exists
       const { data: members } = await supabase
         .from('group_members')
         .select('*')

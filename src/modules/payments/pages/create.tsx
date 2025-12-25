@@ -24,7 +24,7 @@ export const PaymentCreate = () => {
     resource: "group_members",
     filters: [{ field: "group_id", operator: "eq", value: groupId }],
     meta: {
-      select: "*, profiles:user_id(*)",
+      select: "*, profiles!user_id(*)",
     },
     queryOptions: {
       enabled: isGroupContext,
@@ -36,7 +36,7 @@ export const PaymentCreate = () => {
     resource: "friendships",
     id: friendshipId!,
     meta: {
-      select: "*, user_a_profile:user_a_id(id, full_name), user_b_profile:user_b_id(id, full_name)",
+      select: "*, user_a_profile!user_a(id, full_name), user_b_profile!user_b(id, full_name)",
     },
     queryOptions: {
       enabled: isFriendContext,

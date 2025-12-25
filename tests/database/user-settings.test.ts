@@ -1,14 +1,21 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { setupDb, teardownDb, signInUser, supabase } from '../setup';
+import { supabase, createTestUser, signInTestUser, signOutTestUser, cleanupTestUser, testUsers } from '../setup';
 
 describe('User Settings CRUD and RLS', () => {
-  let user1: any;
-  let user2: any;
+  let user1Id: string;
+  let user2Id: string;
 
   beforeAll(async () => {
-    await setupDb();
-    user1 = await signInUser('user1@example.com', 'password');
-    user2 = await signInUser('user2@example.com', 'password');
+    // Create test users
+    const { user: u1 } = await createTestUser(testUsers.user1);
+    const { user: u2 } = await createTestUser(testUsers.user2);
+
+    if (!u1 || !u2) {
+      throw new Error('Failed to create test users');
+    }
+
+    user1Id = u1.id;
+    user2Id = u2.id;
   });
 
   beforeEach(async () => {
@@ -17,54 +24,55 @@ describe('User Settings CRUD and RLS', () => {
   });
 
   afterAll(async () => {
-    await teardownDb();
+    await cleanupTestUser(user1Id);
+    await cleanupTestUser(user2Id);
   });
 
   it('should auto-create default settings for new users', async () => {
-    await supabase.auth.signInWithPassword({ email: 'user1@example.com', password: 'password' });
+    await signInTestUser(testUsers.user1.email, testUsers.user1.password);
 
     const { data, error } = await supabase
       .from('user_settings')
       .select('*')
-      .eq('user_id', user1.id)
+      .eq('user_id', user1Id)
       .single();
 
     expect(error).toBeNull();
     expect(data).toBeDefined();
-    expect(data?.user_id).toBe(user1.id);
+    expect(data?.user_id).toBe(user1Id);
     expect(data?.default_currency).toBe('VND');
     expect(data?.theme).toBe('system');
     expect(data?.notifications_enabled).toBe(true);
   });
 
   it('should allow users to view their own settings', async () => {
-    await supabase.auth.signInWithPassword({ email: 'user1@example.com', password: 'password' });
+    await supabase.auth.signInWithPassword({ email: 'test.user1@fairpay.test', password: testUsers.user1.password });
 
     const { data, error } = await supabase
       .from('user_settings')
       .select('*')
-      .eq('user_id', user1.id)
+      .eq('user_id', user1Id)
       .single();
 
     expect(error).toBeNull();
     expect(data).toBeDefined();
-    expect(data?.user_id).toBe(user1.id);
+    expect(data?.user_id).toBe(user1Id);
   });
 
   it('should NOT allow users to view other users\' settings', async () => {
-    await supabase.auth.signInWithPassword({ email: 'user1@example.com', password: 'password' });
+    await supabase.auth.signInWithPassword({ email: 'test.user1@fairpay.test', password: testUsers.user1.password });
 
     const { data, error } = await supabase
       .from('user_settings')
       .select('*')
-      .eq('user_id', user2.id);
+      .eq('user_id', user2Id);
 
     expect(error).toBeNull(); // RLS doesn't error, just returns empty
     expect(data).toHaveLength(0);
   });
 
   it('should allow users to update their own settings', async () => {
-    await supabase.auth.signInWithPassword({ email: 'user1@example.com', password: 'password' });
+    await supabase.auth.signInWithPassword({ email: 'test.user1@fairpay.test', password: testUsers.user1.password });
 
     const { data, error } = await supabase
       .from('user_settings')
@@ -73,7 +81,7 @@ describe('User Settings CRUD and RLS', () => {
         theme: 'dark',
         notifications_enabled: false,
       })
-      .eq('user_id', user1.id)
+      .eq('user_id', user1Id)
       .select()
       .single();
 
@@ -84,12 +92,12 @@ describe('User Settings CRUD and RLS', () => {
   });
 
   it('should NOT allow users to update other users\' settings', async () => {
-    await supabase.auth.signInWithPassword({ email: 'user1@example.com', password: 'password' });
+    await supabase.auth.signInWithPassword({ email: 'test.user1@fairpay.test', password: testUsers.user1.password });
 
     const { data, error } = await supabase
       .from('user_settings')
       .update({ default_currency: 'USD' })
-      .eq('user_id', user2.id)
+      .eq('user_id', user2Id)
       .select();
 
     expect(error).toBeNull(); // RLS prevents update silently
@@ -97,12 +105,12 @@ describe('User Settings CRUD and RLS', () => {
   });
 
   it('should update updated_at timestamp on update', async () => {
-    await supabase.auth.signInWithPassword({ email: 'user1@example.com', password: 'password' });
+    await supabase.auth.signInWithPassword({ email: 'test.user1@fairpay.test', password: testUsers.user1.password });
 
     const { data: before } = await supabase
       .from('user_settings')
       .select('updated_at')
-      .eq('user_id', user1.id)
+      .eq('user_id', user1Id)
       .single();
 
     await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
@@ -110,19 +118,19 @@ describe('User Settings CRUD and RLS', () => {
     await supabase
       .from('user_settings')
       .update({ default_currency: 'EUR' })
-      .eq('user_id', user1.id);
+      .eq('user_id', user1Id);
 
     const { data: after } = await supabase
       .from('user_settings')
       .select('updated_at')
-      .eq('user_id', user1.id)
+      .eq('user_id', user1Id)
       .single();
 
     expect(new Date(after!.updated_at).getTime()).toBeGreaterThan(new Date(before!.updated_at).getTime());
   });
 
   it('should handle notification preferences correctly', async () => {
-    await supabase.auth.signInWithPassword({ email: 'user1@example.com', password: 'password' });
+    await supabase.auth.signInWithPassword({ email: 'test.user1@fairpay.test', password: testUsers.user1.password });
 
     const { data, error } = await supabase
       .from('user_settings')
@@ -132,7 +140,7 @@ describe('User Settings CRUD and RLS', () => {
         notify_on_friend_request: false,
         notify_on_group_invite: true,
       })
-      .eq('user_id', user1.id)
+      .eq('user_id', user1Id)
       .select()
       .single();
 
@@ -144,7 +152,7 @@ describe('User Settings CRUD and RLS', () => {
   });
 
   it('should handle privacy settings correctly', async () => {
-    await supabase.auth.signInWithPassword({ email: 'user1@example.com', password: 'password' });
+    await supabase.auth.signInWithPassword({ email: 'test.user1@fairpay.test', password: testUsers.user1.password });
 
     const { data, error } = await supabase
       .from('user_settings')
@@ -153,7 +161,7 @@ describe('User Settings CRUD and RLS', () => {
         allow_group_invites: false,
         profile_visibility: 'private',
       })
-      .eq('user_id', user1.id)
+      .eq('user_id', user1Id)
       .select()
       .single();
 
@@ -164,7 +172,7 @@ describe('User Settings CRUD and RLS', () => {
   });
 
   it('should handle display preferences correctly', async () => {
-    await supabase.auth.signInWithPassword({ email: 'user1@example.com', password: 'password' });
+    await supabase.auth.signInWithPassword({ email: 'test.user1@fairpay.test', password: testUsers.user1.password });
 
     const { data, error } = await supabase
       .from('user_settings')
@@ -173,7 +181,7 @@ describe('User Settings CRUD and RLS', () => {
         date_format: 'YYYY-MM-DD',
         theme: 'light',
       })
-      .eq('user_id', user1.id)
+      .eq('user_id', user1Id)
       .select()
       .single();
 

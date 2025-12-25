@@ -20,7 +20,7 @@ export const FriendShow = () => {
     resource: "friendships",
     id: id!,
     meta: {
-      select: "*, user_a_profile:user_a_id(id, full_name, avatar_url), user_b_profile:user_b_id(id, full_name, avatar_url)",
+      select: "*, user_a_profile!user_a(id, full_name, avatar_url), user_b_profile!user_b(id, full_name, avatar_url)",
     },
   });
 
@@ -29,7 +29,7 @@ export const FriendShow = () => {
     resource: "expenses",
     filters: [{ field: "friendship_id", operator: "eq", value: id }],
     meta: {
-      select: "*, expense_splits:expense_id(*)",
+      select: "*, expense_splits!expense_id(*)",
     },
     pagination: {
       mode: "off",

@@ -30,7 +30,7 @@ export const useGlobalSearch = (query: string) => {
       pageSize: 10,
     },
     meta: {
-      select: "*, profiles:paid_by_user_id(full_name)",
+      select: "*, profiles!paid_by_user_id(full_name)",
     },
     queryOptions: {
       enabled: !!query && query.length >= 2,
@@ -71,7 +71,7 @@ export const useGlobalSearch = (query: string) => {
       pageSize: 10,
     },
     meta: {
-      select: "*, user_a_profile:user_a_id(id, full_name), user_b_profile:user_b_id(id, full_name)",
+      select: "*, user_a_profile!user_a(id, full_name), user_b_profile!user_b(id, full_name)",
     },
     queryOptions: {
       enabled: !!query && query.length >= 2,

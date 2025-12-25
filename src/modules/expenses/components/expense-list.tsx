@@ -41,7 +41,7 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
     resource: "expenses",
     filters: crudFilters,
     meta: {
-      select: "*, profiles:paid_by_user_id(id, full_name, avatar_url)",
+      select: "*, profiles!paid_by_user_id(id, full_name, avatar_url)",
     },
     sorters: [
       {

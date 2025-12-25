@@ -43,7 +43,7 @@ export const useGlobalBalance = (): GlobalBalance => {
       },
     ],
     meta: {
-      select: "*, groups:group_id(id, name)",
+      select: "*, groups!group_id(id, name)",
     },
     pagination: {
       mode: "off",
@@ -105,7 +105,7 @@ export const useGlobalBalance = (): GlobalBalance => {
       },
     ] : [],
     meta: {
-      select: "*, profiles:user_id(id, full_name, avatar_url)",
+      select: "*, profiles!user_id(id, full_name, avatar_url)",
     },
     pagination: {
       mode: "off",

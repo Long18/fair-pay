@@ -83,6 +83,21 @@ export const cleanupTestData = async () => {
 
 beforeAll(async () => {
     console.log('Setting up test environment...');
+
+    // Clean up any existing test users from previous runs
+    try {
+        const { data: { users } } = await supabase.auth.admin.listUsers();
+        const testEmails = Object.values(testUsers).map(u => u.email);
+
+        for (const user of users || []) {
+            if (testEmails.includes(user.email || '')) {
+                await supabase.from('profiles').delete().eq('id', user.id);
+                await supabase.auth.admin.deleteUser(user.id);
+            }
+        }
+    } catch (error) {
+        console.warn('Failed to cleanup existing test users:', error);
+    }
 });
 
 afterEach(async () => {
