@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RecurringExpenseCard } from '../components/recurring-expense-card';
 import { useRecurringExpenses } from '../hooks/use-recurring-expenses';
+import { RecurringExpense } from '../types/recurring';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Repeat, Info } from 'lucide-react';
@@ -77,7 +78,7 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
             </div>
           ) : (
             active.map((item) => (
-              <RecurringExpenseCard key={item.id} recurring={item} />
+              <RecurringExpenseCard key={item.id} recurring={item as RecurringExpense} />
             ))
           )}
         </TabsContent>
@@ -91,7 +92,7 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
             </div>
           ) : (
             paused.map((item) => (
-              <RecurringExpenseCard key={item.id} recurring={item} />
+              <RecurringExpenseCard key={item.id} recurring={item as RecurringExpense} />
             ))
           )}
         </TabsContent>

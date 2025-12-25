@@ -57,6 +57,14 @@ export interface ExpenseFormValues {
     friendship_id?: string;
     paid_by_user_id: string;
     split_method: 'equal' | 'exact' | 'percentage';
+    is_recurring?: boolean;
+    recurring?: {
+        frequency: 'weekly' | 'bi_weekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom';
+        interval: number;
+        start_date: Date;
+        end_date: Date | null;
+        notify_before_days: number;
+    };
     splits: ParticipantSplit[];
 }
 

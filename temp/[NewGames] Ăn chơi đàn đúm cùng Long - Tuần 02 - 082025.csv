@@ -1,0 +1,32 @@
+0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17
+CORE,Tuần 1 Tháng 4,,,,,,,,,,,,,,,,
+,2025-08-11 00:00:00,,,2025-08-12 00:00:00,,,2025-08-13 00:00:00,,,2025-08-14 00:00:00,,,2025-08-15 00:00:00,,,Tổng kết,
+,Cà phê,Ăn Chiều,Ăn tối,Cà phê,Cơm trưa,Sushi,Kara,Cơm trưa,Ăn tối,Cà phê,Cơm trưa,Nước,Cà phê,Cơm trưa,Nước,Tổng tiền,Đã chuyển
+Thục Nghi,,24,,,,,,,,,,,,,,0,True
+Hoàng Anh,,8,,,,,,,,,,,,,,0,True
+Chị Kim (Ngân),,16,,,,,,,,,,,,,,0,True
+Tuyến,,,,,,,,,,,,,,,,0,False
+Anh Thịnh,,,,,,,,,,,,,,,,0,True
+Anh Tuấn,,,,,,,,,,,,,,,,0,False
+Anh Đăng,,,,,,,,,,,,,,,,0,False
+Anh Mike a.k.a Mike,,32,,,,,,,,,,,,,,0,True
+Chị Ngân,,,,,,,,,,,,,,,,0,False
+Anh Vũ,,,,,,,,,,,,,,,,0,False
+Anh Tâm,,32,,,,,,,,,,,,,,0,True
+,,,,,,,,,,,,,,,,0,False
+,,,,,,,,,,,,,,,,0,False
+Other,,,,,,,,,,,,,,,,0,False
+Anh Thắng,,,,,,,,,,,,,,,,0,False
+,,,,,,,,,,,,,,,,0,False
+Music,Kara,Cơm trưa,Ăn tối,Cà phê,Cơm trưa,Nước,Cà phê,Cơm trưa,Nước,Cà phê,Cơm trưa,Nước,Cà phê,Cơm trưa,Nước,Tổng tiền,Đã chuyển
+Thuần,,28,,,,,,,,,,,,,,0,True
+Marketing,Kara,Cơm trưa,Ăn tối,Cà phê,Cơm trưa,Nước,Cà phê,Cơm trưa,Nước,Cà phê,Cơm trưa,Nước,Cà phê,Cơm trưa,Nước,Tổng tiền,Đã chuyển
+Bảo,,,,,,,,,,,,,,,,0,False
+Tổng,0,140,0,0,0,0,0,0,0,0,0,0,0,0,0,140,140
+Long,,32,,,,,,,,,,,,,,32,Other
+Tổng,0,172,0,0,0,0,0,0,0,0,0,0,0,0,0,172,False
+,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,
+,,,,,,"Lưu ý cho mọi người: màu xanh lá là tiền mn đã chuyển nha (trả trong tuần). 
+Em đã thêm công thức cho cộng tổng trừ các cột xanh ra. 
+Mọi người cứ chuyển đúng tiền ở cột tổng là được.",,,,,,,,,,,

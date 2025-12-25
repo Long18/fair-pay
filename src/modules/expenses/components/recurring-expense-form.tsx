@@ -226,8 +226,8 @@ export function RecurringExpenseForm({ control, isRecurring }: RecurringExpenseF
                 name="recurring.interval"
                 control={control}
                 render={({ field: intervalField }) => {
-                  if (!startField.value) return null;
-
+                  if (!startField.value) return <></>;
+                  
                   const nextDate = calculateNextOccurrence(
                     startField.value,
                     freqField.value as RecurringFrequency,

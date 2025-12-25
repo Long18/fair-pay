@@ -1,0 +1,44 @@
+0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17
+Core,Tuần 3 Tháng 12,,,,,,,,,,,,,,,,
+,2025-12-15 00:00:00,,,2025-12-16 00:00:00,,,2025-12-17 00:00:00,,,2025-12-18 00:00:00,,,2025-12-19 00:00:00,,,Tổng kết,
+,Ăn sáng,Cơm trưa,Ăn tối,Ăn sáng,Cơm trưa,Ăn Trưa,Cà phê,Cơm trưa,Ăn tối,Cà phê,Siêu thị,Cơm trưa,Cà phê,Cơm trưa,Karaoke,Tổng tiền,Đã chuyển
+Anh Thắng,,,,,,,,,,,,,,,,0,False
+Chị Ngân,,,,,,,,,,,,,,,,0,False
+Anh Mike a.k.a Mai,,,,,,,,,,,,,,,85,85,False
+Anh Tâm,,45,,,,,,,,,,,,,85,0,True
+Thục Nghi,,5,,,,,,,,,,,,,85,90,False
+Hoàng Anh,,45,,,62,,,,,,,,,,85,192,False
+Chị Kayen,,45,,,30.548,,,,,,,,,,85,0,True
+Chị Hạ,,,,,,,,,,,,,,,85,0,True
+Tuyến,,45,,,39,,,,,,,,,,85,0,True
+Anh Phúc,,,,,,,,,,,,,,,85,0,True
+Anh Tuấn,,,,,,,,,,,,,,,,0,False
+Anh Đăng,,,,,,,,,,,,,,,85,0,True
+Anh Vũ,,,,,,,,,,,,,,,,0,False
+Thịnh (Arin),,45,,,,,,,,,,,,,85,0,True
+Rush,Icnoud,Cơm trưa,Ăn tối,Ăn sáng,Ăn Chiều,Ăn Trưa,Cà phê,Cơm trưa,Nước,Cà phê,Siêu thị,Cơm trưa,Cà phê,Cơm trưa,Karaoke,Tổng tiền,Đã chuyển
+,,,,,,,,,,,,,,,,,False
+,,,,,,,,,,,,,,,,,False
+,,,,,,,,,,,,,,,,,False
+Hải,,,,,,,,,,,,,,,,,False
+Minh,,,,,,,,,,,,,,,85,85,False
+Kapu,,,,,,,,,,,,,,,85,0,True
+Nhi,,,,,,,,,,,,,,,85,85,False
+Đức,,45,,,,,,,,,,,,,,45,False
+Thái,,45,,,,,,,,,,,,,,0,True
+,,,,,,,,,,,,,,,,,False
+,,,,,,,,,,,,,,,,,False
+,,,,,,,,,,,,,,,,,False
+Music,Icnoud,Cơm trưa,Ăn tối,Ăn sáng,Ăn Chiều,Ăn Trưa,Cà phê,Cơm trưa,Nước,Cà phê,Siêu thị,Cơm trưa,Cà phê,Cơm trưa,Karaoke,Tổng tiền,Đã chuyển
+Thuần,,,,,,,,,,,,,,,85,0,True
+People,Icnoud,Cơm trưa,Ăn tối,Ăn sáng,Ăn Chiều,Ăn Trưa,Cà phê,Cơm trưa,Nước,Cà phê,Siêu thị,Cơm trưa,Cà phê,Cơm trưa,Karaoke,Tổng tiền,Đã chuyển
+Chị Hảo,,,,,,,,,,,,,,,,0,True
+Chị Ngọc,,,,,,,,,,,,,,,,0,True
+Tổng,0,365,0,0,131.548,0,0,0,0,0,0,0,0,0,1020,1516.548,1516.548
+Long,,45,,,42,,,,,,,,,,85,172,Other
+Tổng,0,320,0,0,173.548,0,0,0,0,0,0,0,0,0,1105,1688.548,False
+,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,
+,,,,,,"Lưu ý cho mọi người: màu xanh lá là tiền mn đã chuyển nha (trả trong tuần). 
+Em đã thêm công thức cho cộng tổng trừ các cột xanh ra. 
+Mọi người cứ chuyển đúng tiền ở cột tổng là được.",,,,,,,,,,,
