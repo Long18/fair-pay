@@ -40,10 +40,11 @@ export const ForgotPasswordForm = () => {
         "items-center",
         "justify-center",
         "min-h-svh",
-        "bg-gradient-to-br from-teal-50 via-white to-purple-50"
+        "bg-gradient-to-br from-teal-50 via-background to-purple-50",
+        "dark:from-gray-900 dark:via-background dark:to-gray-800"
       )}
     >
-      <Card className={cn("sm:w-[456px]", "p-8", "shadow-xl", "border-0", "bg-white/95", "backdrop-blur-sm")}>
+      <Card className={cn("sm:w-[456px]", "p-8", "shadow-xl", "border", "bg-card/95", "backdrop-blur-sm")}>
         <CardHeader className={cn("px-0", "pb-6", "text-center")}>
           <div className={cn("flex", "items-center", "justify-center", "mb-4")}>
             {title.icon && (
@@ -52,10 +53,10 @@ export const ForgotPasswordForm = () => {
               </div>
             )}
           </div>
-          <CardTitle className={cn("text-2xl", "font-bold", "text-gray-900")}>
+          <CardTitle className={cn("text-2xl", "font-bold", "text-foreground")}>
             Forgot password?
           </CardTitle>
-          <CardDescription className={cn("text-gray-600", "font-normal")}>
+          <CardDescription className={cn("text-muted-foreground", "font-normal")}>
             Enter your email to reset your password
           </CardDescription>
         </CardHeader>
@@ -63,7 +64,7 @@ export const ForgotPasswordForm = () => {
         <CardContent className={cn("px-0")}>
           <form onSubmit={handleForgotPassword}>
             <div className={cn("space-y-1", "mb-6")}>
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="email" className="text-sm font-medium">
                 Email
               </Label>
               <Input
@@ -83,9 +84,9 @@ export const ForgotPasswordForm = () => {
               className={cn(
                 "w-full",
                 "h-12",
-                "bg-gray-900",
-                "hover:bg-gray-800",
-                "text-white",
+                "bg-foreground",
+                "hover:bg-foreground/90",
+                "text-background",
                 "font-medium"
               )}
             >
@@ -101,8 +102,8 @@ export const ForgotPasswordForm = () => {
                 "items-center",
                 "gap-2",
                 "text-sm",
-                "text-gray-600",
-                "hover:text-gray-900",
+                "text-muted-foreground",
+                "hover:text-foreground",
                 "transition-colors"
               )}
             >
