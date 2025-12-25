@@ -8,6 +8,7 @@ import { Group, GroupMember } from "../types";
 import { Profile } from "@/modules/profile/types";
 import { MemberList } from "../components/member-list";
 import { ExpenseList } from "@/modules/expenses";
+import { BalanceSummary, PaymentList, useBalanceCalculation } from "@/modules/payments";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -51,12 +52,50 @@ export const GroupShow = () => {
   const { mutate: deleteGroup, isLoading: isDeletingGroup } = useDelete();
   const { mutate: deleteMember, isLoading: isDeletingMember } = useDelete();
 
+  // Fetch expenses for balance calculation
+  const { query: expensesQuery } = useList({
+    resource: "expenses",
+    filters: [{ field: "group_id", operator: "eq", value: id }],
+    meta: {
+      select: "*, expense_splits:expense_id(*)",
+    },
+  });
+
+  // Fetch payments for balance calculation
+  const { query: paymentsQuery } = useList({
+    resource: "payments",
+    filters: [{ field: "group_id", operator: "eq", value: id }],
+  });
+
   const group = groupData?.data;
   const members = membersData?.data || [];
+  const expenses: any[] = expensesQuery.data?.data || [];
+  const payments: any[] = paymentsQuery.data?.data || [];
+
+  // Calculate balances
+  const membersList = members.map((m: any) => ({
+    id: m.user_id,
+    full_name: m.profiles?.full_name || "Unknown",
+    avatar_url: m.profiles?.avatar_url,
+  }));
+
+  const balances = useBalanceCalculation({
+    expenses,
+    payments,
+    currentUserId: identity?.id || "",
+    members: membersList,
+  });
 
   const currentUserMember = members.find((m) => m.user_id === identity?.id);
   const isAdmin = currentUserMember?.role === "admin";
   const isCreator = group?.created_by === identity?.id;
+
+  const handleSettleUp = (toUserId: string, amount: number) => {
+    if (!group?.id) return;
+    go({
+      to: `/groups/${group.id}/payments/create?toUser=${toUserId}&amount=${amount}`,
+    });
+  };
 
   const handleDeleteGroup = () => {
     if (!group?.id) return;
@@ -187,12 +226,25 @@ export const GroupShow = () => {
         </Card>
 
         <Tabs defaultValue="expenses" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
+            <TabsTrigger value="balances">Balances</TabsTrigger>
             <TabsTrigger value="members">Members</TabsTrigger>
           </TabsList>
           <TabsContent value="expenses" className="mt-6">
             <ExpenseList groupId={group.id} />
+          </TabsContent>
+          <TabsContent value="balances" className="mt-6">
+            <BalanceSummary
+              balances={balances}
+              currentUserId={identity?.id || ""}
+              onSettleUp={handleSettleUp}
+              currency="VND"
+            />
+            <div className="mt-8">
+              <h3 className="text-lg font-semibold mb-4">Payment History</h3>
+              <PaymentList groupId={group.id} />
+            </div>
           </TabsContent>
           <TabsContent value="members" className="mt-6">
             <MemberList

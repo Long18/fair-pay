@@ -332,4 +332,3 @@ export const ExpenseForm = ({
     </Form>
   );
 };
-

@@ -35,6 +35,7 @@ import { Register } from "./pages/register";
 import { ProfileEdit } from "./modules/profile";
 import { GroupList, GroupCreate, GroupEdit, GroupShow } from "./modules/groups";
 import { ExpenseCreate, ExpenseShow } from "./modules/expenses";
+import { PaymentCreate } from "./modules/payments";
 import { supabaseClient } from "./utility";
 
 function App() {
@@ -87,6 +88,13 @@ function App() {
                   name: "expense_splits",
                   meta: {
                     label: "Expense Splits",
+                    hide: true,
+                  },
+                },
+                {
+                  name: "payments",
+                  meta: {
+                    label: "Payments",
                     hide: true,
                   },
                 },
@@ -152,6 +160,7 @@ function App() {
                     <Route path="edit/:id" element={<GroupEdit />} />
                     <Route path="show/:id" element={<GroupShow />} />
                     <Route path=":groupId/expenses/create" element={<ExpenseCreate />} />
+                    <Route path=":groupId/payments/create" element={<PaymentCreate />} />
                   </Route>
                   <Route path="/expenses">
                     <Route path="show/:id" element={<ExpenseShow />} />
