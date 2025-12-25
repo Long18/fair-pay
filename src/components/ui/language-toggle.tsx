@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Button } from './button';
-import { Globe } from 'lucide-react';
+import { Globe, Check } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,10 +11,21 @@ import { setLocalSettings } from '@/lib/local-settings';
 
 export const LanguageToggle = () => {
   const { i18n } = useTranslation();
+  const currentLanguage = i18n.language;
 
-  const changeLanguage = (lng: 'en' | 'vi') => {
-    i18n.changeLanguage(lng);
-    setLocalSettings({ language: lng });
+  const changeLanguage = async (lng: 'en' | 'vi') => {
+    try {
+      await i18n.changeLanguage(lng);
+      setLocalSettings({ language: lng });
+      
+      // Force a re-render by updating a key in localStorage that i18n watches
+      localStorage.setItem('i18nextLng', lng);
+      
+      // Reload page to ensure all components update
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to change language:', error);
+    }
   };
 
   return (
@@ -27,10 +38,16 @@ export const LanguageToggle = () => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => changeLanguage('en')}>
-          English
+          <span className="flex items-center gap-2">
+            English
+            {currentLanguage === 'en' && <Check className="h-4 w-4" />}
+          </span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => changeLanguage('vi')}>
-          Tiếng Việt
+          <span className="flex items-center gap-2">
+            Tiếng Việt
+            {currentLanguage === 'vi' && <Check className="h-4 w-4" />}
+          </span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

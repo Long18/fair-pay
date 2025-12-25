@@ -31,21 +31,21 @@ export const Dashboard = () => {
 
   if (!identity) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-purple-50">
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-background to-purple-50 dark:from-gray-900 dark:via-background dark:to-gray-800">
         <div className="container max-w-7xl py-16 px-4 lg:px-8">
           <div className="space-y-12">
             <div className="text-center space-y-6">
-              <h1 className="text-5xl lg:text-6xl font-bold tracking-tight bg-gradient-to-r from-teal-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-5xl lg:text-6xl font-bold tracking-tight bg-gradient-to-r from-teal-600 to-purple-600 dark:from-teal-400 dark:to-purple-400 bg-clip-text text-transparent">
                 Welcome to FairPay
               </h1>
-              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                 Track shared expenses with friends and groups. Split bills fairly and settle up easily.
               </p>
               <div className="flex gap-4 justify-center pt-6">
                 <Button
                   size="lg"
                   onClick={() => go({ to: "/login" })}
-                  className="bg-teal-600 hover:bg-teal-700 text-white px-8"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-8"
                 >
                   Login
                 </Button>
@@ -53,7 +53,7 @@ export const Dashboard = () => {
                   size="lg"
                   variant="outline"
                   onClick={() => go({ to: "/register" })}
-                  className="border-teal-600 text-teal-600 hover:bg-teal-50 px-8"
+                  className="border-primary text-primary hover:bg-primary/10 px-8"
                 >
                   Create Account
                 </Button>
@@ -70,10 +70,10 @@ export const Dashboard = () => {
 
             <div className="space-y-6">
               <div className="text-center">
-                <h2 className="text-3xl font-bold text-gray-900">
+                <h2 className="text-3xl font-bold text-foreground">
                   Community Leaderboard
                 </h2>
-                <p className="text-gray-600 mt-2">
+                <p className="text-muted-foreground mt-2">
                   See how our community manages their shared expenses
                 </p>
               </div>
@@ -93,17 +93,17 @@ export const Dashboard = () => {
             </div>
 
             <div className="text-center py-12 space-y-6">
-              <h3 className="text-2xl font-bold text-gray-900">
+              <h3 className="text-2xl font-bold text-foreground">
                 Ready to get started?
               </h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 Join thousands of users managing their shared expenses effortlessly
               </p>
               <div className="flex gap-4 justify-center">
                 <Button
                   size="lg"
                   onClick={() => go({ to: "/register" })}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-8"
+                  className="bg-secondary hover:bg-secondary/90 text-secondary-foreground px-8"
                 >
                   Sign Up Now
                 </Button>
@@ -128,68 +128,68 @@ export const Dashboard = () => {
   const netBalance = globalBalance.net_balance;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="container max-w-7xl py-8 px-4 lg:px-8">
         <div className="space-y-8">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="text-2xl">👋</span>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-foreground">
                 Hey {firstName}!
               </h1>
             </div>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               Here's your financial overview
             </p>
           </div>
 
           {/* Primary Balance Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="border-gray-100 bg-white hover:shadow-lg transition-shadow">
+            <Card className="border bg-card hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-600">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   You Owe
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-red-600">
+                <div className="text-3xl font-bold text-red-600 dark:text-red-400">
                   {formatNumber(totalIOwe)} ₫
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-muted-foreground mt-2">
                   Total debt to others
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="border-gray-100 bg-white hover:shadow-lg transition-shadow">
+            <Card className="border bg-card hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-600">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   You Are Owed
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-teal-600">
+                <div className="text-3xl font-bold text-teal-600 dark:text-teal-400">
                   {formatNumber(totalOwedToMe)} ₫
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-muted-foreground mt-2">
                   Total credit from others
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="border-gray-100 bg-white hover:shadow-lg transition-shadow">
+            <Card className="border bg-card hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-600">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   Net Balance
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className={`text-3xl font-bold ${
-                  netBalance > 0 ? 'text-teal-600' : netBalance < 0 ? 'text-red-600' : 'text-gray-600'
+                  netBalance > 0 ? 'text-teal-600 dark:text-teal-400' : netBalance < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
                 }`}>
                   {netBalance > 0 ? '+' : ''}{formatNumber(netBalance)} ₫
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-muted-foreground mt-2">
                   {netBalance > 0 ? 'You are owed overall' : netBalance < 0 ? 'You owe overall' : 'All settled up'}
                 </p>
               </CardContent>

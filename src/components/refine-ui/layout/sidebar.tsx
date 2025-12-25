@@ -35,7 +35,7 @@ export function Sidebar() {
   const { menuItems, selectedKey } = useMenu();
 
   return (
-    <ShadcnSidebar collapsible="icon" className={cn("border-none", "bg-white", "shadow-sm")}>
+    <ShadcnSidebar collapsible="icon" className={cn("border-none", "bg-sidebar", "shadow-sm")}>
       <ShadcnSidebarRail />
       <SidebarHeader />
       <ShadcnSidebarContent
@@ -48,7 +48,7 @@ export function Sidebar() {
           "pt-4",
           "pb-2",
           "border-r",
-          "border-gray-100",
+          "border-sidebar-border",
           {
             "px-3": open,
             "px-1": !open,
@@ -94,7 +94,7 @@ function SidebarItemGroup({ item, selectedKey }: MenuItemProps) {
   const { open } = useShadcnSidebar();
 
   return (
-    <div className={cn("border-t", "border-gray-200", "pt-4", "mt-2")}>
+    <div className={cn("border-t", "border-sidebar-border", "pt-4", "mt-2")}>
       <span
         className={cn(
           "ml-3",
@@ -102,7 +102,7 @@ function SidebarItemGroup({ item, selectedKey }: MenuItemProps) {
           "text-xs",
           "font-semibold",
           "uppercase",
-          "text-gray-500",
+          "text-muted-foreground",
           "transition-all",
           "duration-200",
           {
@@ -218,7 +218,7 @@ function SidebarHeader() {
         "p-0",
         "h-16",
         "border-b",
-        "border-gray-100",
+        "border-sidebar-border",
         "flex-row",
         "items-center",
         "justify-between",
@@ -242,14 +242,14 @@ function SidebarHeader() {
           }
         )}
       >
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-400 to-purple-500 flex items-center justify-center">
-          <span className="text-white font-bold text-sm">F</span>
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+          <span className="text-primary-foreground font-bold text-sm">F</span>
         </div>
         <h1
           className={cn(
             "text-xl",
             "font-bold",
-            "text-gray-900",
+            "text-sidebar-foreground",
             "transition-opacity",
             "duration-200",
             {
@@ -263,7 +263,7 @@ function SidebarHeader() {
       </div>
 
       <ShadcnSidebarTrigger
-        className={cn("text-gray-500", "mr-1.5", {
+        className={cn("text-muted-foreground", "mr-1.5", {
           "opacity-0": !open,
           "opacity-100": open || isMobile,
           "pointer-events-auto": open || isMobile,
@@ -287,8 +287,8 @@ function ItemIcon({ icon, isSelected }: IconProps) {
   return (
     <div
       className={cn("w-5 h-5", {
-        "text-gray-500": !isSelected,
-        "text-teal-600": isSelected,
+        "text-muted-foreground": !isSelected,
+        "text-primary": isSelected,
       })}
     >
       {icon ?? <ListIcon />}
@@ -324,8 +324,8 @@ function SidebarButton({
           "text-left": rightIcon,
           "line-clamp-1": !rightIcon,
           truncate: !rightIcon,
-          "text-gray-600": !isSelected,
-          "text-gray-900": isSelected,
+          "text-muted-foreground": !isSelected,
+          "text-foreground": isSelected,
         })}
       >
         {getDisplayName(item)}
@@ -342,10 +342,10 @@ function SidebarButton({
       className={cn(
         "flex w-full items-center justify-start gap-3 py-2.5 px-3 text-sm h-auto rounded-lg",
         {
-          "bg-teal-50": isSelected,
-          "text-teal-700": isSelected,
-          "hover:!bg-teal-50": isSelected,
-          "hover:bg-gray-50": !isSelected,
+          "bg-primary/10": isSelected,
+          "text-primary": isSelected,
+          "hover:!bg-primary/10": isSelected,
+          "hover:bg-accent": !isSelected,
         },
         className
       )}
