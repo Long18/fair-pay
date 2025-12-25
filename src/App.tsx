@@ -32,6 +32,9 @@ import {
 import { ForgotPassword } from "./pages/forgot-password";
 import { Login } from "./pages/login";
 import { Register } from "./pages/register";
+import { ProfileEdit } from "./modules/profile";
+import { GroupList, GroupCreate, GroupEdit, GroupShow } from "./modules/groups";
+import { ExpenseCreate, ExpenseShow } from "./modules/expenses";
 import { supabaseClient } from "./utility";
 
 function App() {
@@ -48,6 +51,45 @@ function App() {
               routerProvider={routerProvider}
               notificationProvider={useNotificationProvider()}
               resources={[
+                {
+                  name: "profiles",
+                  meta: {
+                    label: "Profile",
+                  },
+                },
+                {
+                  name: "groups",
+                  list: "/groups",
+                  create: "/groups/create",
+                  edit: "/groups/edit/:id",
+                  show: "/groups/show/:id",
+                  meta: {
+                    canDelete: true,
+                    label: "Groups",
+                  },
+                },
+                {
+                  name: "group_members",
+                  meta: {
+                    label: "Group Members",
+                    hide: true,
+                  },
+                },
+                {
+                  name: "expenses",
+                  show: "/expenses/show/:id",
+                  meta: {
+                    label: "Expenses",
+                    hide: true,
+                  },
+                },
+                {
+                  name: "expense_splits",
+                  meta: {
+                    label: "Expense Splits",
+                    hide: true,
+                  },
+                },
                 {
                   name: "blog_posts",
                   list: "/blog-posts",
@@ -104,6 +146,17 @@ function App() {
                     <Route path="edit/:id" element={<CategoryEdit />} />
                     <Route path="show/:id" element={<CategoryShow />} />
                   </Route>
+                  <Route path="/groups">
+                    <Route index element={<GroupList />} />
+                    <Route path="create" element={<GroupCreate />} />
+                    <Route path="edit/:id" element={<GroupEdit />} />
+                    <Route path="show/:id" element={<GroupShow />} />
+                    <Route path=":groupId/expenses/create" element={<ExpenseCreate />} />
+                  </Route>
+                  <Route path="/expenses">
+                    <Route path="show/:id" element={<ExpenseShow />} />
+                  </Route>
+                  <Route path="/profile/edit" element={<ProfileEdit />} />
                   <Route path="*" element={<ErrorComponent />} />
                 </Route>
                 <Route
