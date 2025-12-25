@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { useGlobalSearch } from "./use-global-search";
 import { SearchResult } from "./types";
 import { getCategoryMeta } from "@/modules/expenses/lib/categories";
+import { formatNumber } from "@/lib/locale-utils";
 
 interface SearchModalProps {
   open: boolean;
@@ -247,7 +248,7 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
                         </div>
                         {result.metadata?.amount && (
                           <div className="text-sm font-medium">
-                            {result.metadata.amount.toLocaleString("vi-VN")}{" "}
+                            {formatNumber(result.metadata.amount)}{" "}
                             {result.metadata.currency}
                           </div>
                         )}

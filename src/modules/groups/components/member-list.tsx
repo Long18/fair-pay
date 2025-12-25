@@ -5,6 +5,7 @@ import { GroupMember } from "../types";
 import { Profile } from "@/modules/profile/types";
 import { Button } from "@/components/ui/button";
 import { Trash2, UserPlus } from "lucide-react";
+import { formatDateShort } from "@/lib/locale-utils";
 
 interface MemberListProps {
   members: (GroupMember & { profile?: Profile })[];
@@ -64,7 +65,7 @@ export const MemberList = ({
                   </div>
                   <div className="text-xs text-muted-foreground">
                     Joined{" "}
-                    {new Date(member.joined_at).toLocaleDateString("vi-VN")}
+                    {formatDateShort(member.joined_at)}
                   </div>
                 </div>
               </div>

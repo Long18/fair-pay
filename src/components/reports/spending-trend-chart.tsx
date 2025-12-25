@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { TrendDataPoint } from '@/hooks/use-spending-trend';
+import { formatNumber } from '@/lib/locale-utils';
 
 interface SpendingTrendChartProps {
   data: TrendDataPoint[];
@@ -30,7 +31,7 @@ export function SpendingTrendChart({ data, title = 'Xu hướng chi tiêu' }: Sp
         <div className="bg-background border rounded-lg p-3 shadow-lg">
           <p className="font-medium">{data.label}</p>
           <p className="text-sm text-primary">
-            {data.amount.toLocaleString('vi-VN')} ₫
+            {formatNumber(data.amount)} ₫
           </p>
           <p className="text-xs text-muted-foreground">
             {data.count} chi tiêu

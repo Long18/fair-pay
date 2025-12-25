@@ -16,6 +16,7 @@ import {
 import { Attachment } from "../types";
 import { useAttachments } from "../hooks/use-attachments";
 import { useState } from "react";
+import { formatDate } from "@/lib/locale-utils";
 
 interface AttachmentListProps {
   attachments: Attachment[];
@@ -51,8 +52,8 @@ export const AttachmentList = ({
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString("vi-VN", {
+  const formatAttachmentDate = (dateString: string): string => {
+    return formatDate(dateString, {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -128,7 +129,7 @@ export const AttachmentList = ({
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {formatDate(attachment.created_at)}
+                      {formatAttachmentDate(attachment.created_at)}
                     </p>
 
                     {/* Actions */}

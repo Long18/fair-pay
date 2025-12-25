@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { CrudFilters } from "@refinedev/core";
 import { ExpenseFilters, ActiveFilter, DateFilterOption } from "./types";
 import { startOfToday, startOfWeek, startOfMonth, subDays, format } from "date-fns";
+import { formatNumber } from "@/lib/locale-utils";
 
 export const useExpenseFilters = (initialFilters?: ExpenseFilters) => {
   const [filters, setFilters] = useState<ExpenseFilters>(initialFilters || {});
@@ -143,10 +144,10 @@ export const useExpenseFilters = (initialFilters?: ExpenseFilters) => {
     if (filters.amountRange) {
       const parts: string[] = [];
       if (filters.amountRange.min !== undefined) {
-        parts.push(`≥${filters.amountRange.min.toLocaleString('vi-VN')}`);
+        parts.push(`≥${formatNumber(filters.amountRange.min)}`);
       }
       if (filters.amountRange.max !== undefined) {
-        parts.push(`≤${filters.amountRange.max.toLocaleString('vi-VN')}`);
+        parts.push(`≤${formatNumber(filters.amountRange.max)}`);
       }
       if (parts.length > 0) {
         active.push({

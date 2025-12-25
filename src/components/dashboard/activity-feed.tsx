@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Receipt, HandCoins } from "lucide-react";
 import { ActivityItem } from "@/hooks/use-recent-activity";
 import { formatDistanceToNow } from "date-fns";
+import { formatNumber } from "@/lib/locale-utils";
 
 interface ActivityFeedProps {
   items: ActivityItem[];
@@ -14,7 +15,7 @@ export const ActivityFeed = ({ items, isLoading }: ActivityFeedProps) => {
   const go = useGo();
 
   const formatCurrency = (amount: number, currency: string) => {
-    return `${amount.toLocaleString("vi-VN")} ${currency}`;
+    return `${formatNumber(amount)} ${currency}`;
   };
 
   const handleActivityClick = (item: ActivityItem) => {

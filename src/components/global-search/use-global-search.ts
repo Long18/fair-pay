@@ -5,6 +5,7 @@ import { Expense } from "@/modules/expenses/types";
 import { Group } from "@/modules/groups/types";
 import { Friendship } from "@/modules/friends/types";
 import { SearchResult } from "./types";
+import { formatDateShort } from "@/lib/locale-utils";
 
 const RECENT_SEARCHES_KEY = "fairpay_recent_searches";
 const MAX_RECENT_SEARCHES = 5;
@@ -113,7 +114,7 @@ export const useGlobalSearch = (query: string) => {
       id: expense.id,
       type: "expense" as const,
       title: expense.description,
-      subtitle: `Paid by ${expense.profiles?.full_name || "Unknown"} • ${new Date(expense.expense_date).toLocaleDateString("vi-VN")}`,
+      subtitle: `Paid by ${expense.profiles?.full_name || "Unknown"} • ${formatDateShort(expense.expense_date)}`,
       link: `/expenses/show/${expense.id}`,
       metadata: {
         amount: expense.amount,

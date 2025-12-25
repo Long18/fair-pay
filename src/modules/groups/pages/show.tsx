@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { formatDate } from "@/lib/locale-utils";
 
 export const GroupShow = () => {
   const { id } = useParams<{ id: string }>();
@@ -173,7 +174,7 @@ export const GroupShow = () => {
                 )}
                 <p className="text-xs text-muted-foreground mt-2">
                   Created{" "}
-                  {new Date(group.created_at).toLocaleDateString("vi-VN", {
+                  {formatDate(group.created_at, {
                     year: "numeric",
                     month: "long",
                     day: "numeric",
