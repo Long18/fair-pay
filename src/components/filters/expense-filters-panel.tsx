@@ -42,7 +42,7 @@ export const ExpenseFiltersPanel = ({
   onOpenChange,
 }: ExpenseFiltersPanelProps) => {
   const [internalOpen, setInternalOpen] = useState(false);
-  
+
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
   const setOpen = isControlled ? (onOpenChange || (() => {})) : setInternalOpen;
@@ -306,4 +306,3 @@ export const ExpenseFiltersPanel = ({
     </Sheet>
   );
 };
-

@@ -68,7 +68,7 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
           onClearAll={clearAllFilters}
           members={members}
         />
-        
+
         {hasActiveFilters && (
           <div className="flex flex-wrap items-center gap-2 flex-1">
             {activeFilters.map((filter) => (
