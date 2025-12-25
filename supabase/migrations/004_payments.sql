@@ -49,16 +49,16 @@ CREATE POLICY "Involved parties can view payments"
     OR
     -- Or user is in the group (for group context)
     (context_type = 'group' AND group_id IN (
-      SELECT group_id 
-      FROM group_members 
+      SELECT group_id
+      FROM group_members
       WHERE user_id = auth.uid()
     ))
     OR
     -- Or user is part of the friendship (for friend context)
     (context_type = 'friend' AND friendship_id IN (
-      SELECT id 
-      FROM friendships 
-      WHERE (user_a = auth.uid() OR user_b = auth.uid()) 
+      SELECT id
+      FROM friendships
+      WHERE (user_a = auth.uid() OR user_b = auth.uid())
         AND status = 'accepted'
     ))
   );
@@ -78,16 +78,16 @@ CREATE POLICY "Users can record payments they make"
     (
       -- Group payments: user is member of the group
       (context_type = 'group' AND group_id IN (
-        SELECT group_id 
-        FROM group_members 
+        SELECT group_id
+        FROM group_members
         WHERE user_id = auth.uid()
       ))
       OR
       -- Friend payments: user is part of the friendship
       (context_type = 'friend' AND friendship_id IN (
-        SELECT id 
-        FROM friendships 
-        WHERE (user_a = auth.uid() OR user_b = auth.uid()) 
+        SELECT id
+        FROM friendships
+        WHERE (user_a = auth.uid() OR user_b = auth.uid())
           AND status = 'accepted'
       ))
     )
@@ -112,4 +112,3 @@ COMMENT ON COLUMN payments.amount IS 'Payment amount';
 COMMENT ON COLUMN payments.currency IS 'Currency code (default VND)';
 COMMENT ON COLUMN payments.payment_date IS 'Date when payment was made';
 COMMENT ON COLUMN payments.note IS 'Optional note about the payment';
-

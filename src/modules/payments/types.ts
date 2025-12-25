@@ -52,4 +52,3 @@ export interface SimplifiedDebt {
   to_user_name: string;
   amount: number;
 }
-

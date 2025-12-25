@@ -50,7 +50,7 @@ export const ExpenseCreate = () => {
 
           // Create splits
           const splitPromises = splits.map((split) =>
-            fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/expense_splits`, {
+            fetch(`${import.meta.env.SUPABASE_URL}/rest/v1/expense_splits`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",

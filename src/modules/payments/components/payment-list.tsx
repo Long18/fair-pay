@@ -94,4 +94,3 @@ export const PaymentList = ({ groupId }: PaymentListProps) => {
     </div>
   );
 };
-
