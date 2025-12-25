@@ -5,19 +5,33 @@ import { ArrowRight } from "lucide-react";
 import { Payment } from "../types";
 
 interface PaymentListProps {
-  groupId: string;
+  groupId?: string;
+  friendshipId?: string;
+  currency?: string;
 }
 
-export const PaymentList = ({ groupId }: PaymentListProps) => {
+export const PaymentList = ({ groupId, friendshipId }: PaymentListProps) => {
+  const filters = [];
+
+  if (groupId) {
+    filters.push({
+      field: "group_id",
+      operator: "eq" as const,
+      value: groupId,
+    });
+  }
+
+  if (friendshipId) {
+    filters.push({
+      field: "friendship_id",
+      operator: "eq" as const,
+      value: friendshipId,
+    });
+  }
+
   const { query } = useList<Payment>({
     resource: "payments",
-    filters: [
-      {
-        field: "group_id",
-        operator: "eq",
-        value: groupId,
-      },
-    ],
+    filters,
     meta: {
       select: "*, from_profile:from_user(id, full_name, avatar_url), to_profile:to_user(id, full_name, avatar_url)",
     },

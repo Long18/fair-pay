@@ -8,27 +8,27 @@ interface CategoryIconProps {
   className?: string;
 }
 
-export const CategoryIcon = ({ 
-  category, 
-  size = "md", 
+export const CategoryIcon = ({
+  category,
+  size = "md",
   showLabel = false,
-  className 
+  className
 }: CategoryIconProps) => {
   const meta = getCategoryMeta(category);
   const Icon = meta.icon;
-  
+
   const sizeClasses = {
     sm: "h-4 w-4",
     md: "h-5 w-5",
     lg: "h-6 w-6",
   };
-  
+
   const containerSizeClasses = {
     sm: "p-1",
     md: "p-1.5",
     lg: "p-2",
   };
-  
+
   return (
     <div className={cn("flex items-center gap-2", className)}>
       <div
@@ -46,4 +46,3 @@ export const CategoryIcon = ({
     </div>
   );
 };
-

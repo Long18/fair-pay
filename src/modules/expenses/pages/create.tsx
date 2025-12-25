@@ -103,7 +103,7 @@ export const ExpenseCreate = () => {
       },
       {
         onSuccess: async (data) => {
-          const expenseId = data.data.id;
+          const expenseId = data.data.id as string;
 
           // Create splits
           const splitPromises = splits.map((split) =>
