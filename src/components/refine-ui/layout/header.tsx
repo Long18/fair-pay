@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { UserAvatar } from "@/components/refine-ui/layout/user-avatar";
 import { ThemeToggle } from "@/components/refine-ui/theme/theme-toggle";
 import { LanguageToggle } from "@/components/ui/language-toggle";
@@ -6,6 +7,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -18,7 +20,7 @@ import {
   useGo,
   useGetIdentity,
 } from "@refinedev/core";
-import { LogOutIcon, UserIcon, Search } from "lucide-react";
+import { LogOutIcon, UserIcon, Search, Settings } from "lucide-react";
 import { NotificationPanel } from "@/modules/notifications";
 import { SearchModal, useSearchShortcut } from "@/components/global-search";
 import { Profile } from "@/modules/profile/types";
@@ -169,6 +171,7 @@ function MobileHeader() {
 }
 
 const UserDropdown = () => {
+  const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
   const go = useGo();
@@ -187,7 +190,7 @@ const UserDropdown = () => {
         size="sm"
         onClick={() => go({ to: "/login" })}
       >
-        Login
+        {t('auth.login')}
       </Button>
     );
   }
@@ -199,13 +202,19 @@ const UserDropdown = () => {
           <span className="text-sm font-semibold text-foreground">
             {identity.full_name || "User"}
           </span>
+          <span className="text-xs text-muted-foreground">
+            {identity.id.slice(0, 8)}
+          </span>
         </div>
         <UserAvatar />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <div className="flex flex-col gap-2 px-2 py-1.5 md:hidden">
+        <div className="flex flex-col gap-1 px-2 py-2 md:hidden border-b border-border mb-1">
           <span className="text-sm font-semibold text-foreground">
             {identity.full_name || "User"}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            ID: {identity.id.slice(0, 8)}
           </span>
         </div>
         <DropdownMenuItem
@@ -214,8 +223,17 @@ const UserDropdown = () => {
           }}
         >
           <UserIcon className="h-4 w-4" />
-          <span>Edit Profile</span>
+          <span>{t('auth.editProfile')}</span>
         </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => {
+            go({ to: "/settings" });
+          }}
+        >
+          <Settings className="h-4 w-4" />
+          <span>{t('settings.title')}</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => {
             logout();
@@ -225,7 +243,7 @@ const UserDropdown = () => {
             className={cn("h-4 w-4", "text-destructive", "hover:text-destructive")}
           />
           <span className={cn("text-destructive", "hover:text-destructive")}>
-            {isLoggingOut ? "Logging out..." : "Logout"}
+            {isLoggingOut ? t('auth.loggingOut') : t('auth.logout')}
           </span>
         </DropdownMenuItem>
       </DropdownMenuContent>

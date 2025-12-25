@@ -25,7 +25,9 @@
     "forgotPassword": "Quên mật khẩu?",
     "createAccount": "Tạo tài khoản",
     "alreadyHaveAccount": "Đã có tài khoản?",
-    "dontHaveAccount": "Chưa có tài khoản?"
+    "dontHaveAccount": "Chưa có tài khoản?",
+    "loggingOut": "Đang đăng xuất...",
+    "editProfile": "Sửa hồ sơ"
   },
   "dashboard": {
     "title": "Trang chủ",

@@ -25,7 +25,9 @@
     "forgotPassword": "Forgot Password?",
     "createAccount": "Create Account",
     "alreadyHaveAccount": "Already have an account?",
-    "dontHaveAccount": "Don't have an account?"
+    "dontHaveAccount": "Don't have an account?",
+    "loggingOut": "Logging out...",
+    "editProfile": "Edit Profile"
   },
   "dashboard": {
     "title": "Dashboard",
