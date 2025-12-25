@@ -159,7 +159,7 @@ export const FriendShow = () => {
           </TabsList>
 
           <TabsContent value="expenses" className="mt-6">
-            <ExpenseList friendshipId={friendship.id} />
+            <ExpenseList friendshipId={friendship.id} members={members} />
           </TabsContent>
 
           <TabsContent value="balances" className="mt-6">

@@ -194,4 +194,3 @@ export const useGlobalSearch = (query: string) => {
     clearRecentSearches,
   };
 };
-

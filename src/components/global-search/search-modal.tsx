@@ -339,4 +339,3 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
     </Dialog>
   );
 };
-

@@ -236,7 +236,7 @@ export const GroupShow = () => {
             <TabsTrigger value="members">Members</TabsTrigger>
           </TabsList>
           <TabsContent value="expenses" className="mt-6">
-            <ExpenseList groupId={group.id} />
+            <ExpenseList groupId={group.id} members={membersList} />
           </TabsContent>
           <TabsContent value="balances" className="mt-6">
             <SimplifiedBalanceView
