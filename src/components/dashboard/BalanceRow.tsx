@@ -7,7 +7,6 @@ interface BalanceRowProps {
   groupName?: string;
   amount: number;
   iOweThemFlag: boolean;
-  avatarUrl?: string | null;
   onClick?: () => void;
   disabled?: boolean;
 }
@@ -17,7 +16,6 @@ export function BalanceRow({
   groupName,
   amount,
   iOweThemFlag,
-  avatarUrl,
   onClick,
   disabled = false,
 }: BalanceRowProps) {

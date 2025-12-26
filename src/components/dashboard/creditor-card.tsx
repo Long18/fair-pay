@@ -22,7 +22,7 @@ export const CreditorCard = ({
   amountPaid,
   amountDue,
   hasIssue = false,
-  currency = "VND",
+  currency = "VND", // eslint-disable-line @typescript-eslint/no-unused-vars
   onMenuClick,
 }: CreditorCardProps) => {
   const formatCurrency = (value: number) => {
