@@ -45,4 +45,3 @@ export const CircularProgress = ({
     </div>
   );
 };
-
