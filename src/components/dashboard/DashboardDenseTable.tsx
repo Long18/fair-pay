@@ -18,6 +18,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
 import { useGo } from "@refinedev/core";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Tooltip,
   TooltipContent,
@@ -32,6 +33,7 @@ interface DashboardDenseTableProps {
 export function DashboardDenseTable({ disabled = false }: DashboardDenseTableProps) {
   const { data: debts = [], isLoading } = useAggregatedDebts();
   const go = useGo();
+  const { t } = useTranslation();
   const [view, setView] = useState<"all" | "groups" | "friends">("all");
 
   const formatCurrency = (value: number) => {

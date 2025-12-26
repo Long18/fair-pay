@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight, Wallet, AlertCircle } from "lucide-react";
 import { useGlobalBalance } from "@/hooks/use-global-balance";
+import { useTranslation } from "react-i18next";
 import {
   Tooltip,
   TooltipContent,
@@ -15,6 +16,7 @@ interface DashboardTopCardsProps {
 
 export function DashboardTopCards({ disabled = false }: DashboardTopCardsProps) {
   const globalBalance = useGlobalBalance();
+  const { t } = useTranslation();
 
   const totalOwed = Math.abs(globalBalance.total_i_owe);
   const totalOwedToMe = globalBalance.total_owed_to_me;
@@ -42,7 +44,7 @@ export function DashboardTopCards({ disabled = false }: DashboardTopCardsProps) 
           </div>
           <div className="space-y-1 text-right">
             <div className="text-2xl font-bold tracking-tight">₫{formatCurrency(totalOwedToMe)}</div>
-            <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Total Settled</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">{t('dashboard.totalSettled')}</div>
             <div className="text-xs text-muted-foreground">of ₫{formatCurrency(totalOwed + totalOwedToMe)}</div>
           </div>
         </CardContent>
@@ -57,8 +59,8 @@ export function DashboardTopCards({ disabled = false }: DashboardTopCardsProps) 
                 <Wallet className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm font-medium leading-none">Next Settlement</p>
-                <p className="text-xs text-muted-foreground mt-1">Pending actions</p>
+                <p className="text-sm font-medium leading-none">{t('dashboard.nextSettlement')}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t('dashboard.pendingActions')}</p>
               </div>
             </div>
             {totalOwed > 0 && <AlertCircle className="h-4 w-4 text-orange-500" />}
@@ -68,24 +70,24 @@ export function DashboardTopCards({ disabled = false }: DashboardTopCardsProps) 
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="w-full">
-                    <Button size="sm" className="w-full font-medium" disabled={disabled}>Settle Up</Button>
+                    <Button size="sm" className="w-full font-medium" disabled={disabled}>{t('dashboard.settleUp')}</Button>
                   </span>
                 </TooltipTrigger>
                 {disabled && (
                   <TooltipContent>
-                    <p className="text-xs">Login to settle up</p>
+                    <p className="text-xs">{t('dashboard.loginToSettleUp')}</p>
                   </TooltipContent>
                 )}
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="w-full">
-                    <Button size="sm" variant="outline" className="w-full" disabled={disabled}>Remind</Button>
+                    <Button size="sm" variant="outline" className="w-full" disabled={disabled}>{t('dashboard.remind')}</Button>
                   </span>
                 </TooltipTrigger>
                 {disabled && (
                   <TooltipContent>
-                    <p className="text-xs">Login to send reminders</p>
+                    <p className="text-xs">{t('dashboard.loginToSendReminders')}</p>
                   </TooltipContent>
                 )}
               </Tooltip>
@@ -101,16 +103,16 @@ export function DashboardTopCards({ disabled = false }: DashboardTopCardsProps) 
         </div>
         <CardContent className="p-6 relative z-10">
           <div className="space-y-2">
-            <p className="text-sm font-medium text-primary">Your Net Balance</p>
+            <p className="text-sm font-medium text-primary">{t('dashboard.yourNetBalance')}</p>
             <h3 className="text-4xl font-bold tracking-tighter">
               {netBalance >= 0 ? '+' : ''}₫{formatCurrency(netBalance)}
             </h3>
             <p className="text-xs text-muted-foreground">
               {netBalance > 0
-                ? `You are owed overall`
+                ? t('dashboard.youAreOwedOverall')
                 : netBalance < 0
-                ? `You owe overall`
-                : `All settled up`
+                ? t('dashboard.youOweOverall')
+                : t('dashboard.allSettled')
               }
             </p>
           </div>
@@ -120,13 +122,13 @@ export function DashboardTopCards({ disabled = false }: DashboardTopCardsProps) 
                 <TooltipTrigger asChild>
                   <span className="w-full">
                     <Button className="w-full shadow-sm" size="sm" disabled={disabled}>
-                      {netBalance > 0 ? 'Request All' : 'Settle Up'}
+                      {netBalance > 0 ? t('dashboard.requestAll') : t('dashboard.settleUp')}
                     </Button>
                   </span>
                 </TooltipTrigger>
                 {disabled && (
                   <TooltipContent>
-                    <p className="text-xs">Login to manage payments</p>
+                    <p className="text-xs">{t('dashboard.loginToManagePayments')}</p>
                   </TooltipContent>
                 )}
               </Tooltip>
