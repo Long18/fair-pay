@@ -62,7 +62,7 @@ function DesktopHeader() {
         <div className="flex flex-col justify-center">
           <h1 className="text-lg font-semibold tracking-tight leading-none">{t('dashboard.title')}</h1>
           <span className="text-xs text-muted-foreground mt-1">
-            {firstName 
+            {firstName
               ? t('header.welcomeBack', { name: firstName })
               : t('header.welcomeGuest')
             }
