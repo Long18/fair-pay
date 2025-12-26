@@ -34,10 +34,11 @@ export const Header = () => {
 function DesktopHeader() {
   const [searchOpen, setSearchOpen] = useState(false);
   const { data: identity } = useGetIdentity<Profile>();
+  const { t } = useTranslation();
 
   useSearchShortcut(() => setSearchOpen(true));
 
-  const firstName = identity?.full_name?.split(" ")[0] || "Guest";
+  const firstName = identity?.full_name?.split(" ")[0];
 
   return (
     <>
@@ -59,9 +60,12 @@ function DesktopHeader() {
         )}
       >
         <div className="flex flex-col justify-center">
-          <h1 className="text-lg font-semibold tracking-tight leading-none">Dashboard</h1>
+          <h1 className="text-lg font-semibold tracking-tight leading-none">{t('dashboard.title')}</h1>
           <span className="text-xs text-muted-foreground mt-1">
-            Welcome back, {firstName}
+            {firstName 
+              ? t('header.welcomeBack', { name: firstName })
+              : t('header.welcomeGuest')
+            }
           </span>
         </div>
 
@@ -73,7 +77,7 @@ function DesktopHeader() {
               onClick={() => setSearchOpen(true)}
             >
               <Search className="h-4 w-4 mr-2" />
-              <span className="text-sm">Search transactions...</span>
+              <span className="text-sm">{t('header.search')}</span>
             </Button>
           </div>
         </div>

@@ -56,11 +56,11 @@ export function DashboardEmptyState({ disabled = false }: DashboardEmptyStatePro
       <p className="text-muted-foreground text-sm max-w-xs mb-6">
         {disabled
           ? "Login to add expenses and track your shared costs with friends."
-          : "You are all settled up! Add an expense or create a group to get started."
+          : {t('dashboard.allSettledUpNoDebts')}
         }
       </p>
       <Button onClick={handleClick}>
-        {disabled ? "Login to Get Started" : "Add Expense"}
+        {disabled ? "Login to Get Started" : {t('dashboard.addExpense')}}
       </Button>
     </div>
   );
