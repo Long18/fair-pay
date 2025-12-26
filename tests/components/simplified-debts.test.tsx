@@ -119,7 +119,7 @@ describe('SimplifiedDebts', () => {
       render(<SimplifiedDebts debts={[mockDebts[0]]} isLoading={false} />);
 
       const settleButtons = screen.getAllByRole('button');
-      const settleButton = settleButtons.find(btn => 
+      const settleButton = settleButtons.find(btn =>
         btn.querySelector('svg') // ArrowRight icon
       );
 
@@ -162,4 +162,3 @@ describe('SimplifiedDebts', () => {
     });
   });
 });
-

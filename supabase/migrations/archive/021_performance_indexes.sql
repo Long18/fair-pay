@@ -42,22 +42,21 @@ CREATE INDEX IF NOT EXISTS idx_friendships_users_status
 -- Partial index for group expenses (excludes friend expenses)
 CREATE INDEX IF NOT EXISTS idx_expenses_group_id_context
   ON expenses(group_id, context_type)
-  WHERE context_type = 'group' AND deleted_at IS NULL;
+  WHERE context_type = 'group';
 
 -- Partial index for friend expenses (excludes group expenses)
 CREATE INDEX IF NOT EXISTS idx_expenses_friendship_id_context
   ON expenses(friendship_id, context_type)
-  WHERE context_type = 'friend' AND deleted_at IS NULL;
+  WHERE context_type = 'friend';
 
 -- Index for date-based queries (expense history)
 CREATE INDEX IF NOT EXISTS idx_expenses_expense_date_user
-  ON expenses(expense_date DESC, paid_by_user_id)
-  WHERE deleted_at IS NULL;
+  ON expenses(expense_date DESC, paid_by_user_id);
 
 -- Index for balance calculations (paid by user)
 CREATE INDEX IF NOT EXISTS idx_expenses_paid_by_user_amount
   ON expenses(paid_by_user_id, amount, is_payment)
-  WHERE deleted_at IS NULL AND is_payment = false;
+  WHERE is_payment = false;
 
 -- ========================================
 -- Part 4: Expense Splits Indexes (Join optimization)
@@ -77,23 +76,21 @@ CREATE INDEX IF NOT EXISTS idx_expense_splits_user_computed
 
 -- Index for payments FROM a user (ordered by date)
 CREATE INDEX IF NOT EXISTS idx_payments_from_user_date
-  ON payments(from_user, created_at DESC)
-  WHERE deleted_at IS NULL;
+  ON payments(from_user, created_at DESC);
 
 -- Index for payments TO a user (ordered by date)
 CREATE INDEX IF NOT EXISTS idx_payments_to_user_date
-  ON payments(to_user, created_at DESC)
-  WHERE deleted_at IS NULL;
+  ON payments(to_user, created_at DESC);
 
 -- Index for group payment lookups
 CREATE INDEX IF NOT EXISTS idx_payments_group_id
   ON payments(group_id)
-  WHERE deleted_at IS NULL AND group_id IS NOT NULL;
+  WHERE group_id IS NOT NULL;
 
 -- Index for friendship payment lookups
 CREATE INDEX IF NOT EXISTS idx_payments_friendship_id
   ON payments(friendship_id)
-  WHERE deleted_at IS NULL AND friendship_id IS NOT NULL;
+  WHERE friendship_id IS NOT NULL;
 
 -- ========================================
 -- Part 6: Notifications Indexes (Unread queries)

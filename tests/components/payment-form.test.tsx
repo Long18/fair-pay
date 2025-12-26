@@ -149,4 +149,3 @@ describe('PaymentForm', () => {
     expect(noteField).toBeInTheDocument();
   });
 });
-
