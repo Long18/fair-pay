@@ -41,7 +41,7 @@ interface LeaderboardResponse {
 
 export const useSampleLeaderboard = () => {
     const result = useCustom<LeaderboardResponse>({
-        url: "", // Not used with Supabase RPC
+        url: "",
         method: "get",
         config: {
             query: {},
@@ -49,17 +49,63 @@ export const useSampleLeaderboard = () => {
         queryOptions: {
             queryKey: ["leaderboard"],
             queryFn: async (): Promise<any> => {
+                const { data: sessionData } = await supabaseClient.auth.getSession();
+
+                if (!sessionData?.session) {
+                    return {
+                        data: {
+                            topDebtors: [],
+                            topCreditors: [],
+                            stats: {
+                                total_users: 0,
+                                total_groups: 0,
+                                total_transactions: 0,
+                                total_amount_tracked: 0,
+                                generated_at: new Date().toISOString(),
+                            },
+                        }
+                    };
+                }
+
                 const { data, error } = await supabaseClient.rpc(
                     'get_leaderboard_data',
                     { p_limit: 5, p_offset: 0 }
                 );
 
-                if (error) throw new Error(error.message);
+                if (error) {
+                    console.error('Leaderboard RPC error:', error);
+                    return {
+                        data: {
+                            topDebtors: [],
+                            topCreditors: [],
+                            stats: {
+                                total_users: 0,
+                                total_groups: 0,
+                                total_transactions: 0,
+                                total_amount_tracked: 0,
+                                generated_at: new Date().toISOString(),
+                            },
+                        }
+                    };
+                }
 
                 const result = data?.[0];
-                if (!result) throw new Error("No leaderboard data returned");
+                if (!result) {
+                    return {
+                        data: {
+                            topDebtors: [],
+                            topCreditors: [],
+                            stats: {
+                                total_users: 0,
+                                total_groups: 0,
+                                total_transactions: 0,
+                                total_amount_tracked: 0,
+                                generated_at: new Date().toISOString(),
+                            },
+                        }
+                    };
+                }
 
-                // Add rank and badges to the returned data
                 const addRankAndBadge = (users: any[]) =>
                     users.map((user, index) => ({
                         ...user,
@@ -78,8 +124,9 @@ export const useSampleLeaderboard = () => {
                     }
                 };
             },
-            staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-            gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+            staleTime: 5 * 60 * 1000,
+            gcTime: 10 * 60 * 1000,
+            retry: false,
         },
     });
 
