@@ -125,7 +125,12 @@
         "db:comprehensive-seed": "./scripts/generate-comprehensive-seed.sh",
         "db:get-ids": "./scripts/get-profile-ids.sh",
         "db:public-access": "./scripts/apply-public-access.sh",
-        "db:template": "./scripts/db-template.sh"
+        "db:template": "./scripts/db-template.sh",
+        "db:fix-migrations": "./scripts/fix_migration_history.sh",
+        "db:push": "supabase db push",
+        "db:push:dry": "supabase db push --dry-run",
+        "db:pull": "supabase db pull",
+        "db:remote:status": "supabase migration list --linked"
     },
     "browserslist": {
         "production": [
