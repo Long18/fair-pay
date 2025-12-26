@@ -149,4 +149,3 @@ export const CreditorCard = ({
     </Card>
   );
 };
-
