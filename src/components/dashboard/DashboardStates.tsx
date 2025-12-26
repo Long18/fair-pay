@@ -2,6 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { FilePlus } from "lucide-react";
 import { useGo } from "@refinedev/core";
+import { useTranslation } from "react-i18next";
 
 export function DashboardSkeleton() {
   return (
@@ -38,6 +39,7 @@ interface DashboardEmptyStateProps {
 
 export function DashboardEmptyState({ disabled = false }: DashboardEmptyStateProps) {
   const go = useGo();
+  const { t } = useTranslation();
 
   const handleClick = () => {
     if (disabled) {
@@ -52,15 +54,15 @@ export function DashboardEmptyState({ disabled = false }: DashboardEmptyStatePro
       <div className="h-12 w-12 bg-muted rounded-full flex items-center justify-center mb-4">
         <FilePlus className="h-6 w-6 text-muted-foreground" />
       </div>
-      <h3 className="text-lg font-semibold">No recent activity</h3>
+      <h3 className="text-lg font-semibold">{t('dashboard.noRecentActivity')}</h3>
       <p className="text-muted-foreground text-sm max-w-xs mb-6">
         {disabled
-          ? "Login to add expenses and track your shared costs with friends."
-          : {t('dashboard.allSettledUpNoDebts')}
+          ? t('dashboard.loginToAddExpense')
+          : t('dashboard.allSettledUpNoDebts')
         }
       </p>
       <Button onClick={handleClick}>
-        {disabled ? "Login to Get Started" : {t('dashboard.addExpense')}}
+        {disabled ? t('dashboard.loginToGetStarted') : t('dashboard.addExpense')}
       </Button>
     </div>
   );
