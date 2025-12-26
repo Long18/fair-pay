@@ -18,6 +18,19 @@ export interface CategoryMeta {
   bgColor: string;
 }
 
+/**
+ * Expense Categories Configuration
+ *
+ * IMPORTANT: These categories are synchronized with the database enum type.
+ * Database: expense_category enum in supabase/migrations/007_expense_categories_constraint.sql
+ *
+ * To add a new category:
+ * 1. Add it to the database enum via migration
+ * 2. Add it to this CATEGORY_CONFIG object
+ * 3. Update the expense_category enum in the database
+ *
+ * @see supabase/migrations/007_expense_categories_constraint.sql
+ */
 export const CATEGORY_CONFIG: Record<string, CategoryMeta> = {
   'Food & Drink': {
     name: 'Food & Drink',
