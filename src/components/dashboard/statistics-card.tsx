@@ -16,7 +16,7 @@ export const StatisticsCard = ({
   subtitle,
   instalmentsLeft,
   amountDue,
-  currency = "VND", // eslint-disable-line @typescript-eslint/no-unused-vars
+  currency: _currency = "VND",
 }: StatisticsCardProps) => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('vi-VN').format(value);

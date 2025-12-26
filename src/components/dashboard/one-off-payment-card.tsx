@@ -12,7 +12,7 @@ interface OneOffPaymentCardProps {
 export const OneOffPaymentCard = ({
   discountPercentage,
   discountedAmount,
-  currency = "VND", // eslint-disable-line @typescript-eslint/no-unused-vars
+  currency: _currency = "VND",
   onPayNow,
 }: OneOffPaymentCardProps) => {
   const formatCurrency = (value: number) => {
