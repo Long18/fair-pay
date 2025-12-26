@@ -51,7 +51,7 @@ export const Dashboard = () => {
     const totalPaid = globalBalance.total_owed_to_me;
     const totalAmount = totalDebt + totalPaid;
     const percentage = totalAmount > 0 ? Math.round((totalPaid / totalAmount) * 100) : 0;
-    
+
     const totalTransactions = recentActivity.items.length;
     const remainingPayments = debts.filter(d => d.i_owe_them).length;
 
@@ -86,83 +86,173 @@ export const Dashboard = () => {
 
   if (!identity) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-background to-purple-50 dark:from-gray-900 dark:via-background dark:to-gray-800">
-        <div className="container max-w-7xl py-16 px-4 lg:px-8">
+      <div className="min-h-screen bg-white">
+        {/* Green diagonal background accent */}
+        <div className="absolute top-0 left-0 right-0 h-64 bg-gradient-to-br from-green-400 to-green-500 transform -skew-y-3 origin-top-left -z-10" />
+
+        {/* Header */}
+        <div className="relative bg-white border-b border-gray-200 px-6 py-4">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-8">
+              <h1 className="text-2xl font-bold text-gray-900">FairPay</h1>
+            </div>
+            <div className="flex items-center gap-4">
+              <Button
+                onClick={() => go({ to: "/login" })}
+                variant="ghost"
+                className="text-gray-700 hover:text-gray-900"
+              >
+                {t('auth.login')}
+              </Button>
+              <Button
+                onClick={() => go({ to: "/register" })}
+                className="bg-green-500 hover:bg-green-600 text-white"
+              >
+                {t('auth.register')}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="relative max-w-7xl mx-auto p-6 lg:p-8">
           <div className="space-y-12">
-            <div className="text-center space-y-6">
-              <h1 className="text-5xl lg:text-6xl font-bold tracking-tight bg-gradient-to-r from-teal-600 to-purple-600 dark:from-teal-400 dark:to-purple-400 bg-clip-text text-transparent">
-                {t('dashboard.welcome')}
-              </h1>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                {t('dashboard.subtitle')}
+            {/* Welcome Section */}
+            <div className="text-center space-y-6 pt-12">
+              <h2 className="text-5xl font-bold text-gray-900">
+                Welcome to FairPay
+              </h2>
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                Track shared expenses with friends and groups. Split bills fairly and settle up easily.
               </p>
               <div className="flex gap-4 justify-center pt-6">
                 <Button
                   size="lg"
-                  onClick={() => go({ to: "/login" })}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-8"
+                  onClick={() => go({ to: "/register" })}
+                  className="bg-green-500 hover:bg-green-600 text-white px-8 py-6 text-lg"
                 >
-                  {t('auth.login')}
+                  Get Started Free
                 </Button>
                 <Button
                   size="lg"
                   variant="outline"
-                  onClick={() => go({ to: "/register" })}
-                  className="border-primary text-primary hover:bg-primary/10 px-8"
+                  onClick={() => go({ to: "/login" })}
+                  className="border-2 border-green-500 text-green-600 hover:bg-green-50 px-8 py-6 text-lg"
                 >
-                  {t('auth.createAccount')}
+                  Sign In
                 </Button>
               </div>
             </div>
 
-            <PublicStatsComponent stats={stats || {
-              total_users: 0,
-              total_groups: 0,
-              total_transactions: 0,
-              total_amount_tracked: 0,
-              generated_at: new Date().toISOString(),
-            }} />
+            {/* Stats Section */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white rounded-xl border-2 border-gray-200 p-6 text-center hover:shadow-lg transition-shadow">
+                <div className="text-4xl mb-3">👥</div>
+                <div className="text-3xl font-bold text-green-600">{stats?.total_users || 0}</div>
+                <div className="text-sm text-gray-600 mt-2">Active Users</div>
+              </div>
+              <div className="bg-white rounded-xl border-2 border-gray-200 p-6 text-center hover:shadow-lg transition-shadow">
+                <div className="text-4xl mb-3">👨‍👩‍👧‍👦</div>
+                <div className="text-3xl font-bold text-green-600">{stats?.total_groups || 0}</div>
+                <div className="text-sm text-gray-600 mt-2">Groups</div>
+              </div>
+              <div className="bg-white rounded-xl border-2 border-gray-200 p-6 text-center hover:shadow-lg transition-shadow">
+                <div className="text-4xl mb-3">💸</div>
+                <div className="text-3xl font-bold text-green-600">{stats?.total_transactions || 0}</div>
+                <div className="text-sm text-gray-600 mt-2">Transactions</div>
+              </div>
+              <div className="bg-white rounded-xl border-2 border-gray-200 p-6 text-center hover:shadow-lg transition-shadow">
+                <div className="text-4xl mb-3">💰</div>
+                <div className="text-3xl font-bold text-green-600">
+                  ₫{new Intl.NumberFormat('vi-VN').format(stats?.total_amount_tracked || 0)}
+                </div>
+                <div className="text-sm text-gray-600 mt-2">Amount Tracked</div>
+              </div>
+            </div>
 
+            {/* Community Leaderboard */}
             <div className="space-y-6">
               <div className="text-center">
-                <h2 className="text-3xl font-bold text-foreground">
-                  Community Leaderboard
-                </h2>
-                <p className="text-muted-foreground mt-2">
-                  See how our community manages their shared expenses
-                </p>
+                <h3 className="text-3xl font-bold text-gray-900">Community Leaderboard</h3>
+                <p className="text-gray-600 mt-2">See how our community manages their shared expenses</p>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <PublicLeaderboard
-                  users={topCreditors}
-                  title="Top Creditors"
-                  type="creditors"
-                />
-                <PublicLeaderboard
-                  users={topDebtors}
-                  title="Top Debtors"
-                  type="debtors"
-                />
+                {/* Top Creditors */}
+                <div className="bg-white rounded-xl border-2 border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                  <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <span className="text-2xl">📈</span>
+                    Top Creditors
+                  </h4>
+                  <div className="space-y-3">
+                    {topCreditors.slice(0, 5).map((user: any, index: number) => (
+                      <div key={user.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-green-50 transition-colors">
+                        <div className="text-lg font-bold text-gray-400">
+                          {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                        </div>
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={user.avatar_url} />
+                          <AvatarFallback className="bg-green-100 text-green-700">
+                            {user.name?.charAt(0) || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                          <p className="text-xs text-gray-600">Is owed</p>
+                        </div>
+                        <div className="text-sm font-bold text-green-600">
+                          ₫{new Intl.NumberFormat('vi-VN').format(user.balance || 0)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Top Debtors */}
+                <div className="bg-white rounded-xl border-2 border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                  <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <span className="text-2xl">📉</span>
+                    Top Debtors
+                  </h4>
+                  <div className="space-y-3">
+                    {topDebtors.slice(0, 5).map((user: any, index: number) => (
+                      <div key={user.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-red-50 transition-colors">
+                        <div className="text-lg font-bold text-gray-400">
+                          {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                        </div>
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={user.avatar_url} />
+                          <AvatarFallback className="bg-red-100 text-red-700">
+                            {user.name?.charAt(0) || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                          <p className="text-xs text-gray-600">Owes</p>
+                        </div>
+                        <div className="text-sm font-bold text-red-600">
+                          ₫{new Intl.NumberFormat('vi-VN').format(user.balance || 0)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="text-center py-12 space-y-6">
-              <h3 className="text-2xl font-bold text-foreground">
-                {t('dashboard.welcome')}
-              </h3>
-              <p className="text-muted-foreground">
-                {t('dashboard.subtitle')}
+            {/* CTA Section */}
+            <div className="text-center py-12 space-y-6 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-12">
+              <h3 className="text-3xl font-bold text-gray-900">Ready to get started?</h3>
+              <p className="text-lg text-gray-600 max-w-xl mx-auto">
+                Join thousands of users managing their shared expenses effortlessly
               </p>
-              <div className="flex gap-4 justify-center">
-                <Button
-                  size="lg"
-                  onClick={() => go({ to: "/register" })}
-                  className="bg-secondary hover:bg-secondary/90 text-secondary-foreground px-8"
-                >
-                  {t('auth.register')}
-                </Button>
-              </div>
+              <Button
+                size="lg"
+                onClick={() => go({ to: "/register" })}
+                className="bg-green-500 hover:bg-green-600 text-white px-12 py-6 text-lg"
+              >
+                Create Free Account
+              </Button>
             </div>
           </div>
         </div>
@@ -185,13 +275,13 @@ export const Dashboard = () => {
       <div className="relative bg-white border-b border-gray-200 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <TabNavigation tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
-          
+
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
               <span className="text-sm text-gray-700 font-medium">{identity.full_name || identity.email}</span>
             </div>
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2">
