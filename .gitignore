@@ -17,6 +17,10 @@ dist-ssr
 .env
 .env.local
 
+# Supabase backups (production data dumps)
+supabase/backups/
+*.sql.backup
+
 # Editor directories and files
 
 .vscode/_

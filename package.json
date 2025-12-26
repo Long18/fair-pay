@@ -103,6 +103,7 @@
     },
     "scripts": {
         "dev": "refine dev",
+        "dev:port": "refine dev -- --port",
         "build": "tsc && refine build",
         "start": "refine start",
         "refine": "refine",
@@ -110,6 +111,13 @@
         "test:db:watch": "vitest watch tests/database",
         "test:db:coverage": "vitest run tests/database --coverage",
         "test:db:ui": "vitest --ui tests/database",
+        "test:stress": "vitest run tests/stress --reporter=verbose",
+        "test:stress:api": "vitest run tests/stress/api-stress.test.ts",
+        "test:stress:db": "vitest run tests/stress/database-stress.test.ts",
+        "test:stress:frontend": "vitest run tests/stress/frontend-stress.test.tsx",
+        "test:stress:concurrent": "vitest run tests/stress/concurrent-users.test.ts",
+        "test:stress:benchmark": "vitest run tests/stress/performance-benchmark.test.ts",
+        "test:stress:all": "vitest run tests/stress --reporter=verbose --reporter=json --outputFile=tests/stress-results.json",
         "supabase:start": "supabase start",
         "supabase:stop": "supabase stop",
         "supabase:restart": "supabase stop && supabase start",
@@ -130,7 +138,9 @@
         "db:push": "supabase db push",
         "db:push:dry": "supabase db push --dry-run",
         "db:pull": "supabase db pull",
-        "db:remote:status": "supabase migration list --linked"
+        "db:remote:status": "supabase migration list --linked",
+        "db:pull-data": "./scripts/pull-production-data.sh",
+        "db:import-test": "./scripts/import-test-data.sh"
     },
     "browserslist": {
         "production": [
