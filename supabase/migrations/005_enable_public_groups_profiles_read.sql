@@ -11,7 +11,7 @@ CREATE POLICY "Public can view all groups"
   ON groups FOR SELECT
   USING (true);
 
--- Enable public SELECT on profiles table  
+-- Enable public SELECT on profiles table
 CREATE POLICY "Public can view all profiles"
   ON profiles FOR SELECT
   USING (true);
