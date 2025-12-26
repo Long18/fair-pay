@@ -17,7 +17,7 @@ export const RepaymentPlanCard = ({
   instalmentsLeft,
   instalmentAmount,
   paymentType,
-  currency = "VND", // eslint-disable-line @typescript-eslint/no-unused-vars
+  currency: _currency = "VND",
   onActivate,
   onChange,
 }: RepaymentPlanCardProps) => {
