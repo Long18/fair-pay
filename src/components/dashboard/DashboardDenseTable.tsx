@@ -31,7 +31,7 @@ interface DashboardDenseTableProps {
 }
 
 export function DashboardDenseTable({ disabled = false }: DashboardDenseTableProps) {
-  const { items: activities, isLoading } = useRecentActivity(10);
+  const { items: activities = [], isLoading } = useRecentActivity(10);
   const go = useGo();
   const { t } = useTranslation();
   const [view, setView] = useState<"all" | "expenses" | "payments">("all");
