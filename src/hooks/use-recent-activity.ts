@@ -78,14 +78,6 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
   const payments: any[] = paymentsQuery.data?.data || [];
 
   const activity = useMemo(() => {
-    if (!identity?.id) {
-      return {
-        items: [],
-        isLoading: expensesQuery.isLoading || paymentsQuery.isLoading,
-        isRefetching: expensesQuery.isRefetching || paymentsQuery.isRefetching,
-      };
-    }
-
     // Transform expenses into activity items
     const expenseItems: ActivityItem[] = expenses.map(expense => ({
       id: expense.id,
@@ -98,7 +90,7 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
       group_name: expense.groups?.name,
       created_by_id: expense.created_by,
       created_by_name: expense.profiles?.full_name || "Unknown",
-      is_mine: expense.created_by === identity.id,
+      is_mine: identity?.id ? expense.created_by === identity.id : false,
     }));
 
     // Transform payments into activity items
@@ -113,7 +105,7 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
       group_name: payment.groups?.name,
       created_by_id: payment.created_by,
       created_by_name: payment.profiles?.full_name || "Unknown",
-      is_mine: payment.created_by === identity.id,
+      is_mine: identity?.id ? payment.created_by === identity.id : false,
     }));
 
     // Merge and sort by date
