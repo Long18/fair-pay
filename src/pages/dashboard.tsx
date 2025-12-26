@@ -9,15 +9,24 @@ import { PublicStatsComponent } from "@/components/dashboard/public-stats";
 import { Button } from "@/components/ui/button";
 import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
 import { Profile } from "@/modules/profile/types";
-import { AccountingNotes } from "@/components/dashboard/accounting-notes";
-import { PaymentCounter } from "@/components/dashboard/payment-counter";
-import { BalanceChart } from "@/components/dashboard/balance-chart";
-import { DocumentsTable } from "@/components/dashboard/documents-table";
-import { PaymentsTable } from "@/components/dashboard/payments-table";
-import { AccountingRecordsTable } from "@/components/dashboard/accounting-records-table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell } from "lucide-react";
-import { useMemo } from "react";
+import { Settings, ChevronDown } from "lucide-react";
+import { useMemo, useState } from "react";
+import { TabNavigation } from "@/components/dashboard/tab-navigation";
+import { WelcomeHeader } from "@/components/dashboard/welcome-header";
+import { StatisticsCard } from "@/components/dashboard/statistics-card";
+import { RepaymentPlanCard } from "@/components/dashboard/repayment-plan-card";
+import { OneOffPaymentCard } from "@/components/dashboard/one-off-payment-card";
+import { PaymentMethodCard } from "@/components/dashboard/payment-method-card";
+import { CreditorCard } from "@/components/dashboard/creditor-card";
+import { CreditCard, RefreshCw, ArrowRightLeft, Building2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Dashboard = () => {
   const { t } = useTranslation();
@@ -27,78 +36,53 @@ export const Dashboard = () => {
   const recentActivity = useRecentActivity(10);
   const { topDebtors, topCreditors, stats } = useSampleLeaderboard();
   const { data: debts = [], isLoading: debtsLoading } = useAggregatedDebts();
+  const [activeTab, setActiveTab] = useState("overview");
+  const [selectedCreditor, setSelectedCreditor] = useState("All creditors");
 
-  // Transform data for new components
-  const accountingNotes = useMemo(() => {
-    return recentActivity.items.slice(0, 3).map((item, index) => {
-      const date = new Date(item.date);
-      return {
-        date: date.getDate().toString().padStart(2, '0') + '.' + (date.getMonth() + 1).toString().padStart(2, '0'),
-        year: date.getFullYear().toString(),
-        message: item.description,
-        type: item.type === "payment" ? "success" : "info" as "success" | "warning" | "info",
-      };
-    });
-  }, [recentActivity.items]);
+  const tabs = [
+    { id: "overview", label: "Overview" },
+    { id: "repayment", label: "Setup Repayment" },
+    { id: "history", label: "Transaction History" },
+  ];
 
-  const balanceChartData = useMemo(() => {
+  // Calculate statistics
+  const statistics = useMemo(() => {
+    const totalDebt = Math.abs(globalBalance.total_i_owe);
+    const totalPaid = globalBalance.total_owed_to_me;
+    const totalAmount = totalDebt + totalPaid;
+    const percentage = totalAmount > 0 ? Math.round((totalPaid / totalAmount) * 100) : 0;
+    
+    const totalTransactions = recentActivity.items.length;
+    const remainingPayments = debts.filter(d => d.i_owe_them).length;
+
+    return {
+      percentage,
+      instalmentsLeft: remainingPayments || 5,
+      amountDue: totalDebt,
+      totalPaid,
+    };
+  }, [globalBalance, recentActivity.items, debts]);
+
+  // Calculate next payment date
+  const nextPaymentDate = useMemo(() => {
     const today = new Date();
-    const data = [];
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dateStr = (date.getMonth() + 1).toString().padStart(2, '0') + '.' + date.getDate().toString().padStart(2, '0');
+    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 25);
+    return nextMonth.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+  }, []);
 
-      // Simulate balance progression (in real app, this would come from historical data)
-      const baseBalance = globalBalance.net_balance;
-      const variance = Math.random() * 100000 - 50000;
-      data.push({
-        date: dateStr,
-        balance: baseBalance + variance,
-      });
-    }
-    return data;
-  }, [globalBalance.net_balance]);
-
-  const debtDocuments = useMemo(() => {
-    return debts.slice(0, 7).map((debt, index) => ({
-      id: debt.counterparty_id,
-      type: debt.i_owe_them ? "Lawsuit" : "Invoice",
-      number: `P/${Math.floor(Math.random() * 999) + 1}/${Math.floor(Math.random() * 99) + 1}/${index + 1}`,
-      issueDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      currentValue: Math.abs(debt.amount),
-      status: index === 1 ? "active" : index < 4 ? "pending" : "settled" as "active" | "pending" | "settled",
-    }));
+  // Get creditors list
+  const creditors = useMemo(() => {
+    const uniqueCreditors = new Set(debts.map(d => d.counterparty_name));
+    return ["All creditors", ...Array.from(uniqueCreditors)];
   }, [debts]);
 
-  const payments = useMemo(() => {
-    return recentActivity.items.filter(item => item.type === "payment").slice(0, 7).map((item, index) => ({
-      id: item.id,
-      date: new Date(item.date).toISOString().split('T')[0],
-      title: item.description,
-      sum: Math.abs(item.amount || 0),
-      highlighted: index === 0 || index === 4,
-    }));
-  }, [recentActivity.items]);
-
-  const accountingRecords = useMemo(() => {
-    return recentActivity.items.slice(0, 9).map((item, index) => {
-      const date = new Date(item.date).toISOString().split('T')[0];
-      return {
-        id: item.id,
-        operationDate: date,
-        accountingDate: date,
-        interestDate: date,
-        protocolDate: date,
-        documentNumber: `FV/${Math.floor(Math.random() * 9999) + 1}/${Math.floor(Math.random() * 999) + 1}/${Math.floor(Math.random() * 99) + 1}`,
-        operation: item.type === "payment" ? "RSW" : item.type === "expense" ? "KRSW" : "NOU",
-        register: item.type === "payment" ? "Capital" : "Interests",
-        dt: Math.abs(item.amount || 0) * (Math.random() > 0.5 ? 1 : 0.5),
-        ct: Math.abs(item.amount || 0) * (Math.random() > 0.5 ? 0 : 0.5),
-        currency: "VND",
-      };
-    });
-  }, [recentActivity.items]);
+  // Calculate one-off payment discount
+  const oneOffPayment = useMemo(() => {
+    const totalAmount = Math.abs(globalBalance.total_i_owe);
+    const discountPercentage = 5;
+    const discountedAmount = totalAmount * (1 - discountPercentage / 100);
+    return { discountPercentage, discountedAmount };
+  }, [globalBalance.total_i_owe]);
 
   if (!identity) {
     return (
@@ -190,84 +174,138 @@ export const Dashboard = () => {
     return <DashboardSkeleton />;
   }
 
-  const netBalance = globalBalance.net_balance;
+  const firstName = identity.full_name?.split(" ")[0] || "there";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-pink-50 to-orange-50">
+    <div className="min-h-screen bg-white">
+      {/* Green diagonal background accent */}
+      <div className="absolute top-0 left-0 right-0 h-64 bg-gradient-to-br from-green-400 to-green-500 transform -skew-y-3 origin-top-left -z-10" />
+
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-[1600px] mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={identity.avatar_url || undefined} />
-                <AvatarFallback className="bg-gray-200 text-gray-700">
-                  {identity.full_name?.charAt(0) || "U"}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <div className="text-xs text-gray-500">Client</div>
-                <div className="text-sm font-semibold text-gray-900">{identity.full_name || identity.email}</div>
-              </div>
-            </div>
-            <div>
-              <div className="text-xs text-gray-500">Case no.</div>
-              <div className="text-sm font-semibold text-gray-900">400123321091</div>
-            </div>
-            <div>
-              <div className="text-xs text-gray-500">Procedure</div>
-              <div className="text-sm font-semibold text-gray-900">Court proceedings</div>
-            </div>
-            <div>
-              <div className="text-xs text-gray-500">Status</div>
-              <div className="text-sm font-semibold text-gray-900">Lawsuit</div>
-            </div>
-          </div>
+      <div className="relative bg-white border-b border-gray-200 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <TabNavigation tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+          
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5 text-gray-600" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-            </Button>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-700">John Doe</span>
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={identity.avatar_url || undefined} />
-                <AvatarFallback className="bg-gray-200 text-gray-700 text-xs">
-                  {identity.full_name?.charAt(0) || "U"}
-                </AvatarFallback>
-              </Avatar>
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              <span className="text-sm text-gray-700 font-medium">{identity.full_name || identity.email}</span>
             </div>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={identity.avatar_url || undefined} />
+                    <AvatarFallback className="bg-gray-200 text-gray-700 text-xs">
+                      {identity.full_name?.charAt(0) || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <ChevronDown className="h-4 w-4 text-gray-600" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => go({ to: "/profile" })}>
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => go({ to: "/settings" })}>
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => go({ to: "/logout" })}>
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button variant="ghost" size="icon" onClick={() => go({ to: "/settings" })}>
+              <Settings className="h-5 w-5 text-gray-600" />
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-[1600px] mx-auto p-6">
-        <div className="grid grid-cols-12 gap-6">
-          {/* Left Column */}
-          <div className="col-span-12 lg:col-span-3 space-y-6">
-            <AccountingNotes notes={accountingNotes} />
-            <PaymentCounter count={payments.length} />
+      <div className="relative max-w-7xl mx-auto p-6 lg:p-8">
+        <div className="space-y-8">
+          {/* Welcome Header */}
+          <WelcomeHeader
+            userName={firstName}
+            message="you are paying regularly!"
+            creditors={creditors}
+            selectedCreditor={selectedCreditor}
+            onCreditorChange={setSelectedCreditor}
+          />
+
+          {/* Top Section - Statistics, Repayment Plan, One-Off Payment */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <StatisticsCard
+              percentage={statistics.percentage}
+              title="You have paid almost!"
+              subtitle="Collection of the latest patterns"
+              instalmentsLeft={statistics.instalmentsLeft}
+              amountDue={statistics.amountDue}
+            />
+
+            <RepaymentPlanCard
+              nextDate={nextPaymentDate}
+              instalmentsLeft={statistics.instalmentsLeft}
+              instalmentAmount={statistics.amountDue / statistics.instalmentsLeft}
+              paymentType="Card"
+            />
+
+            <OneOffPaymentCard
+              discountPercentage={oneOffPayment.discountPercentage}
+              discountedAmount={oneOffPayment.discountedAmount}
+            />
           </div>
 
-          {/* Middle Column */}
-          <div className="col-span-12 lg:col-span-6 space-y-6">
-            <DocumentsTable documents={debtDocuments} currency="VND" />
-            <AccountingRecordsTable records={accountingRecords} />
-          </div>
+          {/* Bottom Section - Payment Methods & Other Payments */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            {/* Payment Methods */}
+            <div className="lg:col-span-2 space-y-4">
+              <h2 className="text-sm font-medium text-gray-600">Payment Methods</h2>
+              <div className="space-y-3">
+                <PaymentMethodCard
+                  icon={CreditCard}
+                  title="Pay by card"
+                  description="Visa, Master, Debit, Credit"
+                />
+                <PaymentMethodCard
+                  icon={RefreshCw}
+                  title="Setup Direct Debit"
+                  description="We have introduce re-payemnt plan"
+                />
+                <PaymentMethodCard
+                  icon={ArrowRightLeft}
+                  title="Online Tansfer"
+                  description="Easy transfer from your bank app"
+                />
+                <PaymentMethodCard
+                  icon={Building2}
+                  title="Deposite in a bank"
+                  description="Cash can be deposited in bank"
+                />
+              </div>
+            </div>
 
-          {/* Right Column */}
-          <div className="col-span-12 lg:col-span-3 space-y-6">
-            <BalanceChart
-              data={balanceChartData}
-              currentBalance={netBalance}
-              currency="VND"
-            />
-            <PaymentsTable
-              payments={payments}
-              currency="VND"
-              subtitle="P/205/61"
-            />
+            {/* Other Payments */}
+            <div className="lg:col-span-3 space-y-4">
+              <h2 className="text-sm font-medium text-gray-600">Other Payment</h2>
+              <div className="space-y-4">
+                {debts.slice(0, 2).map((debt, index) => (
+                  <CreditorCard
+                    key={debt.counterparty_id}
+                    name={debt.counterparty_name}
+                    description="Collection of the latest mobile design patterns"
+                    instalmentsLeft={5 + index * 10}
+                    amountPaid={Math.abs(debt.amount) * 0.7}
+                    amountDue={Math.abs(debt.amount) * 0.3}
+                    hasIssue={index === 0}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
