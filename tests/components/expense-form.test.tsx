@@ -209,4 +209,3 @@ describe('ExpenseForm', () => {
     expect(paidBySelect).toBeInTheDocument();
   });
 });
-
