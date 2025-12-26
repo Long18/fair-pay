@@ -36,4 +36,3 @@ export const TabNavigation = ({ tabs, activeTab, onTabChange }: TabNavigationPro
     </div>
   );
 };
-
