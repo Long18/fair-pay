@@ -41,6 +41,7 @@ import {
 import { ForgotPassword } from "./pages/forgot-password";
 import { Login } from "./pages/login";
 import { Register } from "./pages/register";
+import { OAuthConsent } from "./pages/oauth";
 import { ProfileEdit } from "./modules/profile";
 import { GroupList, GroupCreate, GroupEdit, GroupShow } from "./modules/groups";
 import { ExpenseCreate, ExpenseShow } from "./modules/expenses";
@@ -219,6 +220,9 @@ function App() {
               ]}
             >
               <Routes>
+                {/* OAuth consent route - public but requires authentication */}
+                <Route path="/oauth/consent" element={<OAuthConsent />} />
+
                 {/* Public Dashboard route - accessible without authentication */}
                 <Route
                   element={
