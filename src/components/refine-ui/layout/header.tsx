@@ -33,8 +33,11 @@ export const Header = () => {
 
 function DesktopHeader() {
   const [searchOpen, setSearchOpen] = useState(false);
+  const { data: identity } = useGetIdentity<Profile>();
 
   useSearchShortcut(() => setSearchOpen(true));
+
+  const firstName = identity?.full_name?.split(" ")[0] || "Guest";
 
   return (
     <>
@@ -48,22 +51,29 @@ function DesktopHeader() {
           "items-center",
           "gap-4",
           "border-b",
-          "border-border",
-          "bg-background",
+          "bg-background/95",
+          "backdrop-blur-sm",
           "px-6",
           "justify-between",
           "z-40"
         )}
       >
-        <div className="flex items-center gap-4 flex-1">
-          <div className="relative flex-1 max-w-md">
+        <div className="flex flex-col justify-center">
+          <h1 className="text-lg font-semibold tracking-tight leading-none">Dashboard</h1>
+          <span className="text-xs text-muted-foreground mt-1">
+            Welcome back, {firstName}
+          </span>
+        </div>
+
+        <div className="hidden md:flex items-center space-x-2 flex-1 max-w-md mx-8">
+          <div className="relative w-full">
             <Button
               variant="ghost"
-              className="w-full justify-start text-muted-foreground bg-muted rounded-full h-10 px-5 hover:bg-muted/80"
+              className="w-full justify-start text-muted-foreground bg-muted/50 rounded-full h-9 px-5 hover:bg-muted/80 border-none"
               onClick={() => setSearchOpen(true)}
             >
               <Search className="h-4 w-4 mr-2" />
-              <span className="text-sm">Search</span>
+              <span className="text-sm">Search transactions...</span>
             </Button>
           </div>
         </div>
