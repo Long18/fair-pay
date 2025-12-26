@@ -49,24 +49,7 @@ export const useSampleLeaderboard = () => {
         queryOptions: {
             queryKey: ["leaderboard"],
             queryFn: async (): Promise<any> => {
-                const { data: sessionData } = await supabaseClient.auth.getSession();
-
-                if (!sessionData?.session) {
-                    return {
-                        data: {
-                            topDebtors: [],
-                            topCreditors: [],
-                            stats: {
-                                total_users: 0,
-                                total_groups: 0,
-                                total_transactions: 0,
-                                total_amount_tracked: 0,
-                                generated_at: new Date().toISOString(),
-                            },
-                        }
-                    };
-                }
-
+                // RPC has anon permissions, so we can call it without authentication
                 const { data, error } = await supabaseClient.rpc(
                     'get_leaderboard_data',
                     { p_limit: 5, p_offset: 0 }

@@ -46,6 +46,11 @@ export default defineConfig({
             },
         }),
     ],
+    server: {
+        port: parseInt(process.env.PORT || '3000', 10),
+        host: true,
+        strictPort: false,
+    },
     resolve: {
         alias: {
             "@": path.resolve(__dirname, "./src"),
