@@ -20,6 +20,12 @@ import {
   SidebarTrigger as ShadcnSidebarTrigger,
   useSidebar as useShadcnSidebar,
 } from "@/components/ui/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
   useLink,
@@ -35,33 +41,32 @@ export function Sidebar() {
   const { menuItems, selectedKey } = useMenu();
 
   return (
-    <ShadcnSidebar collapsible="icon" className={cn("border-none", "bg-sidebar", "shadow-sm")}>
+    <ShadcnSidebar
+      collapsible="icon"
+      className={cn("border-none bg-background shadow-sm", {
+        "w-16": !open,
+      })}
+    >
       <ShadcnSidebarRail />
       <SidebarHeader />
       <ShadcnSidebarContent
         className={cn(
-          "transition-discrete",
-          "duration-200",
-          "flex",
-          "flex-col",
-          "gap-1",
-          "pt-4",
-          "pb-2",
-          "border-r",
-          "border-sidebar-border",
+          "transition-discrete duration-200 flex flex-col gap-1 pt-4 pb-2 border-r",
           {
             "px-3": open,
-            "px-1": !open,
+            "px-1 items-center": !open,
           }
         )}
       >
-        {menuItems.map((item: TreeMenuItem) => (
-          <SidebarItem
-            key={item.key || item.name}
-            item={item}
-            selectedKey={selectedKey}
-          />
-        ))}
+        <TooltipProvider delayDuration={0}>
+          {menuItems.map((item: TreeMenuItem) => (
+            <SidebarItem
+              key={item.key || item.name}
+              item={item}
+              selectedKey={selectedKey}
+            />
+          ))}
+        </TooltipProvider>
       </ShadcnSidebarContent>
     </ShadcnSidebar>
   );
@@ -205,6 +210,20 @@ function SidebarItemDropdown({ item, selectedKey }: MenuItemProps) {
 
 function SidebarItemLink({ item, selectedKey }: MenuItemProps) {
   const isSelected = item.key === selectedKey;
+  const { open } = useShadcnSidebar();
+
+  if (!open) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <SidebarButton item={item} isSelected={isSelected} asLink={true} />
+        </TooltipTrigger>
+        <TooltipContent side="right" className="font-medium text-xs">
+          {getDisplayName(item)}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
 
   return <SidebarButton item={item} isSelected={isSelected} asLink={true} />;
 }
@@ -215,43 +234,28 @@ function SidebarHeader() {
   return (
     <ShadcnSidebarHeader
       className={cn(
-        "p-0",
-        "h-16",
-        "border-b",
-        "border-sidebar-border",
-        "flex-row",
-        "items-center",
-        "justify-between",
-        "overflow-hidden"
+        "p-0 h-16 border-b flex-row items-center overflow-hidden",
+        {
+          "justify-between": open,
+          "justify-center": !open,
+        }
       )}
     >
       <div
         className={cn(
-          "whitespace-nowrap",
-          "flex",
-          "flex-row",
-          "h-full",
-          "items-center",
-          "justify-start",
-          "gap-3",
-          "transition-discrete",
-          "duration-200",
+          "whitespace-nowrap flex flex-row h-full items-center gap-3 transition-discrete duration-200",
           {
-            "pl-3": !open,
-            "pl-5": open,
+            "pl-5 justify-start": open,
+            "justify-center": !open,
           }
         )}
       >
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-          <span className="text-primary-foreground font-bold text-sm">F</span>
+        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold shadow-sm">
+          <span className="text-sm">FP</span>
         </div>
         <h1
           className={cn(
-            "text-xl",
-            "font-bold",
-            "text-sidebar-foreground",
-            "transition-opacity",
-            "duration-200",
+            "text-xl font-bold transition-opacity duration-200",
             {
               "opacity-0": !open,
               "opacity-100": open,
@@ -262,14 +266,14 @@ function SidebarHeader() {
         </h1>
       </div>
 
-      <ShadcnSidebarTrigger
-        className={cn("text-muted-foreground", "mr-1.5", {
-          "opacity-0": !open,
-          "opacity-100": open || isMobile,
-          "pointer-events-auto": open || isMobile,
-          "pointer-events-none": !open && !isMobile,
-        })}
-      />
+      {open && (
+        <ShadcnSidebarTrigger
+          className={cn("text-muted-foreground mr-1.5", {
+            "opacity-100": open || isMobile,
+            "pointer-events-auto": open || isMobile,
+          })}
+        />
+      )}
     </ShadcnSidebarHeader>
   );
 }
@@ -314,37 +318,42 @@ function SidebarButton({
   ...props
 }: SidebarButtonProps) {
   const Link = useLink();
+  const { open } = useShadcnSidebar();
 
   const buttonContent = (
     <>
       <ItemIcon icon={item.meta?.icon ?? item.icon} isSelected={isSelected} />
-      <span
-        className={cn("text-sm", "font-medium", {
-          "flex-1": rightIcon,
-          "text-left": rightIcon,
-          "line-clamp-1": !rightIcon,
-          truncate: !rightIcon,
-          "text-muted-foreground": !isSelected,
-          "text-foreground": isSelected,
-        })}
-      >
-        {getDisplayName(item)}
-      </span>
-      {rightIcon}
+      {open && (
+        <>
+          <span
+            className={cn("text-sm font-medium", {
+              "flex-1": rightIcon,
+              "text-left": rightIcon,
+              "line-clamp-1": !rightIcon,
+              truncate: !rightIcon,
+              "text-muted-foreground": !isSelected,
+              "text-foreground": isSelected,
+            })}
+          >
+            {getDisplayName(item)}
+          </span>
+          {rightIcon}
+        </>
+      )}
     </>
   );
 
   return (
     <Button
       asChild={!!(asLink && item.route)}
-      variant="ghost"
-      size="lg"
+      variant={isSelected ? "secondary" : "ghost"}
+      size={open ? "lg" : "icon"}
       className={cn(
-        "flex w-full items-center justify-start gap-3 py-2.5 px-3 text-sm h-auto rounded-lg",
+        "rounded-lg transition-all",
         {
-          "bg-primary/10": isSelected,
-          "text-primary": isSelected,
-          "hover:!bg-primary/10": isSelected,
+          "flex w-full items-center justify-start gap-3 py-2.5 px-3 h-auto": open,
+          "h-10 w-10": !open,
+          "bg-accent text-accent-foreground shadow-sm": isSelected,
           "hover:bg-accent": !isSelected,
         },
         className
@@ -353,7 +362,9 @@ function SidebarButton({
       {...props}
     >
       {asLink && item.route ? (
-        <Link to={item.route} className={cn("flex w-full items-center gap-3")}>
+        <Link to={item.route} className={cn("flex items-center", {
+          "w-full gap-3": open,
+        })}>
           {buttonContent}
         </Link>
       ) : (
