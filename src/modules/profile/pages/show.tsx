@@ -253,7 +253,7 @@ export const ProfileShow = () => {
                             : "bg-red-100 text-red-700"
                         }
                       >
-                        {activity.is_lender ? "Lent" : "Borrowed"}
+                        {activity.is_lender ? "Paid" : "Owes"}
                       </Badge>
                     </TableCell>
                     <TableCell>{formatDateShort(activity.date)}</TableCell>
