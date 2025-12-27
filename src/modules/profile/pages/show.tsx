@@ -1,8 +1,8 @@
-import { useOne, useGo } from "@refinedev/core";
+import { useOne, useGo, useGetIdentity } from "@refinedev/core";
 import { useParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Profile } from "../types";
 import { supabaseClient } from "@/utility/supabaseClient";
@@ -21,8 +21,20 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
+  TooltipProvider,
 } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 interface DebtSummary {
   counterparty_id: string;
@@ -49,10 +61,14 @@ export const ProfileShow = () => {
   const { id } = useParams<{ id: string }>();
   const go = useGo();
   const { t } = useTranslation();
+  const { data: identity } = useGetIdentity<Profile>();
   const [debts, setDebts] = useState<DebtSummary[]>([]);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [isLoadingDebts, setIsLoadingDebts] = useState(true);
   const [isLoadingActivities, setIsLoadingActivities] = useState(true);
+  const [settleDialogOpen, setSettleDialogOpen] = useState(false);
+  const [selectedDebt, setSelectedDebt] = useState<DebtSummary | null>(null);
+  const [isSettling, setIsSettling] = useState(false);
 
   const { query: profileQuery } = useOne<Profile>({
     resource: "profiles",
@@ -61,6 +77,58 @@ export const ProfileShow = () => {
 
   const { data: profileData, isLoading: isLoadingProfile } = profileQuery;
   const profile = profileData?.data;
+  
+  const isOwnProfile = identity?.id === id;
+  const canSettle = isOwnProfile;
+
+  // Refetch debts
+  const refetchDebts = () => {
+    if (!id) return;
+    setIsLoadingDebts(true);
+    Promise.resolve(
+      supabaseClient
+        .rpc("get_user_debts_aggregated", { p_user_id: id })
+        .then(({ data, error }: { data: any; error: any }) => {
+          if (error) {
+            console.error("Error fetching debts:", error);
+            setDebts([]);
+          } else {
+            setDebts(data || []);
+          }
+        })
+    ).finally(() => setIsLoadingDebts(false));
+  };
+
+  // Handle settle all debts with a specific person
+  const handleSettleAll = async () => {
+    if (!selectedDebt || !identity?.id) return;
+
+    setIsSettling(true);
+    try {
+      const { data, error } = await supabaseClient.rpc('settle_all_debts_with_person', {
+        p_counterparty_id: selectedDebt.counterparty_id,
+      });
+
+      if (error) throw error;
+
+      toast.success(t('dashboard.settleSuccess', {
+        name: selectedDebt.counterparty_name,
+        amount: formatCurrency(selectedDebt.amount),
+        defaultValue: `Successfully settled ₫${formatCurrency(selectedDebt.amount)} with ${selectedDebt.counterparty_name}`,
+      }));
+
+      refetchDebts();
+      setSettleDialogOpen(false);
+      setSelectedDebt(null);
+    } catch (error: any) {
+      console.error('Error settling debt:', error);
+      toast.error(t('dashboard.settleError', {
+        defaultValue: `Failed to settle debt: ${error.message}`,
+      }));
+    } finally {
+      setIsSettling(false);
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -172,48 +240,73 @@ export const ProfileShow = () => {
           ) : debts.length === 0 ? (
             <p className="text-muted-foreground text-center py-4">{t('profile.noDebts')}</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('profile.person')}</TableHead>
-                  <TableHead>{t('profile.status')}</TableHead>
-                  <TableHead className="text-right">{t('profile.amount')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {debts.map((debt) => (
-                  <TableRow key={debt.counterparty_id} className="group hover:bg-accent/50 transition-all">
-                    <TableCell className="font-medium max-w-[200px]">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                            {debt.counterparty_name}
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="top">
-                          <p className="text-xs">{debt.counterparty_name}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={debt.i_owe_them ? "destructive" : "default"}
-                        className={`${debt.i_owe_them ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"} transition-all group-hover:scale-105`}
-                      >
-                        {debt.i_owe_them ? t('profile.owes') : t('profile.isOwed')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell
-                      className={`text-right font-bold text-base transition-all group-hover:scale-105 ${
-                        debt.i_owe_them ? "text-red-600" : "text-green-600"
-                      }`}
-                    >
-                      {formatCurrency(debt.amount, "VND")}
-                    </TableCell>
+            <TooltipProvider>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('profile.person')}</TableHead>
+                    <TableHead>{t('profile.status')}</TableHead>
+                    <TableHead className="text-right">{t('profile.amount')}</TableHead>
+                    {canSettle && <TableHead className="w-[120px]"></TableHead>}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {debts.map((debt) => {
+                    const canSettleThisDebt = canSettle && !debt.i_owe_them; // Only settle debts owed TO you
+                    
+                    return (
+                      <TableRow key={debt.counterparty_id} className="group hover:bg-accent/50 transition-all">
+                        <TableCell className="font-medium max-w-[200px]">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                                {debt.counterparty_name}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              <p className="text-xs">{debt.counterparty_name}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={debt.i_owe_them ? "destructive" : "default"}
+                            className={`${debt.i_owe_them ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"} transition-all group-hover:scale-105`}
+                          >
+                            {debt.i_owe_them ? t('profile.owes') : t('profile.isOwed')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell
+                          className={`text-right font-bold text-base transition-all group-hover:scale-105 ${
+                            debt.i_owe_them ? "text-red-600" : "text-green-600"
+                          }`}
+                        >
+                          {formatCurrency(debt.amount, "VND")}
+                        </TableCell>
+                        {canSettle && (
+                          <TableCell>
+                            {canSettleThisDebt && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="opacity-0 group-hover:opacity-100 transition-all border-green-200 hover:bg-green-50 hover:border-green-300 text-green-700 hover:text-green-800"
+                                onClick={() => {
+                                  setSelectedDebt(debt);
+                                  setSettleDialogOpen(true);
+                                }}
+                              >
+                                <CheckCircle2 className="h-4 w-4 mr-1" />
+                                {t('dashboard.settleAll', 'Settle')}
+                              </Button>
+                            )}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TooltipProvider>
           )}
         </CardContent>
       </Card>
@@ -307,6 +400,50 @@ export const ProfileShow = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Settle Confirmation Dialog */}
+      <AlertDialog open={settleDialogOpen} onOpenChange={setSettleDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('dashboard.settleAllTitle', 'Settle All Debts')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedDebt && (
+                <>
+                  {t('dashboard.settleAllDescription', {
+                    name: selectedDebt.counterparty_name,
+                    amount: formatCurrency(selectedDebt.amount),
+                    defaultValue: `Are you sure you want to mark all debts with ${selectedDebt.counterparty_name} (₫${formatCurrency(selectedDebt.amount)}) as paid? This action cannot be undone.`,
+                  })}
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSettling}>
+              {t('common.cancel', 'Cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSettleAll}
+              disabled={isSettling}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {isSettling ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  {t('dashboard.settling', 'Settling...')}
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  {t('dashboard.confirmSettle', 'Confirm Settle')}
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
