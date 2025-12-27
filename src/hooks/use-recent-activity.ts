@@ -45,7 +45,7 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
             setIsLoadingPublic(true);
             supabaseClient
                 .rpc("get_public_recent_activities", { p_limit: limit })
-                .then(({ data, error }) => {
+                .then(async ({ data, error }) => {
                     if (error) {
                         console.error("Error fetching public activities:", error);
                         setPublicActivities([]);
@@ -61,9 +61,28 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
                             group_name: item.group_name,
                             created_by_id: item.created_by_id,
                             created_by_name: item.created_by_name || "Unknown",
-                            created_by_avatar_url: item.created_by_avatar_url,
                             is_mine: false,
                         }));
+
+                        // Fetch avatar_urls from profiles table
+                        if (activities.length > 0) {
+                            const createdByIds = activities.map((a) => a.created_by_id).filter(Boolean);
+                            if (createdByIds.length > 0) {
+                                const { data: profiles } = await supabaseClient
+                                    .from("profiles")
+                                    .select("id, avatar_url")
+                                    .in("id", createdByIds);
+
+                                // Map avatar_url to activities
+                                const profileMap = new Map(
+                                    (profiles || []).map((p: any) => [p.id, p.avatar_url])
+                                );
+                                activities.forEach((activity) => {
+                                    activity.created_by_avatar_url = profileMap.get(activity.created_by_id);
+                                });
+                            }
+                        }
+
                         setPublicActivities(activities);
                     }
                     setIsLoadingPublic(false);
