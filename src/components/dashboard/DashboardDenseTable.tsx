@@ -266,7 +266,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                               <span className="text-sm font-medium truncate max-w-[300px]">{item.description}</span>
                               {'is_mine' in item && 'created_by_name' in item && (
                                 <span className="text-xs text-muted-foreground">
-                                  by {item.is_mine ? "You" : item.created_by_name}
+                                  {t('dashboard.by')} {item.is_mine ? t('common.you') : item.created_by_name}
                                 </span>
                               )}
                             </div>
@@ -277,7 +277,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                                 {item.group_name}
                               </Badge>
                             ) : (
-                              <span className="text-xs text-muted-foreground">Personal</span>
+                              <span className="text-xs text-muted-foreground">{t('dashboard.personal')}</span>
                             )}
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">
