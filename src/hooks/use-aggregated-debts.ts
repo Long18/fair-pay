@@ -47,30 +47,30 @@ export const useAggregatedDebts = () => {
                 result = response.data;
                 rpcError = response.error;
 
-                    // If authenticated but no real data, fallback to demo data for better UX
-                    if (!rpcError && (!result || result.length === 0)) {
-                        const demoResponse = await supabaseClient.rpc("get_public_demo_debts");
-                        if (!demoResponse.error) {
-                            result = demoResponse.data;
-                        }
+                // If authenticated but no real data, fallback to demo data for better UX
+                if (!rpcError && (!result || result.length === 0)) {
+                    const demoResponse = await supabaseClient.rpc("get_public_demo_debts");
+                    if (!demoResponse.error) {
+                        result = demoResponse.data;
                     }
                 }
-
-                if (rpcError) {
-                    console.error("Error fetching debts:", rpcError);
-                    throw rpcError;
-                }
-
-                setData(result || []);
-                setError(null);
-            } catch (err) {
-                console.error("Failed to fetch debts:", err);
-                setData([]);
-                setError(err instanceof Error ? err : new Error("Unknown error"));
-            } finally {
-                setIsLoading(false);
             }
-        };
+
+            if (rpcError) {
+                console.error("Error fetching debts:", rpcError);
+                throw rpcError;
+            }
+
+            setData(result || []);
+            setError(null);
+        } catch (err) {
+            console.error("Failed to fetch debts:", err);
+            setData([]);
+            setError(err instanceof Error ? err : new Error("Unknown error"));
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
         fetchDebts();

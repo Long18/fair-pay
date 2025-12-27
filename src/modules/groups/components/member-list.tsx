@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { GroupMember } from "../types";
 import { Profile } from "@/modules/profile/types";
@@ -46,6 +46,7 @@ export const MemberList = ({
             >
               <div className="flex items-center gap-3">
                 <Avatar>
+                  <AvatarImage src={member.profile?.avatar_url || undefined} alt={member.profile?.full_name} />
                   <AvatarFallback>
                     {member.profile?.full_name
                       ?.split(" ")

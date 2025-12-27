@@ -28,6 +28,7 @@ import { useGo } from "@refinedev/core";
 interface Friend {
   counterparty_id: string;
   counterparty_name: string;
+  counterparty_avatar_url?: string;
   amount: number;
   i_owe_them: boolean;
 }
@@ -161,7 +162,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-9 w-9 border-2 border-border">
-                          <AvatarImage src={undefined} />
+                          <AvatarImage src={friend.counterparty_avatar_url || undefined} alt={friend.counterparty_name} />
                           <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
                             {friend.counterparty_name.substring(0, 2).toUpperCase()}
                           </AvatarFallback>

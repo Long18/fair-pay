@@ -34,7 +34,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Check, ChevronsUpDown, UserPlus } from "lucide-react";
 import { Profile } from "@/modules/profile/types";
 import { Friendship } from "@/modules/friends/types";
@@ -226,6 +226,7 @@ export const AddMemberModal = ({
                         {selectedFriend ? (
                           <div className="flex items-center gap-2">
                             <Avatar className="h-5 w-5">
+                              <AvatarImage src={selectedFriend.avatar_url || undefined} alt={selectedFriend.full_name} />
                               <AvatarFallback className="text-xs">
                                 {selectedFriend.full_name
                                   ?.split(" ")
@@ -271,6 +272,7 @@ export const AddMemberModal = ({
                             >
                               <div className="flex items-center gap-2 w-full">
                                 <Avatar className="h-6 w-6">
+                                  <AvatarImage src={friend.avatar_url || undefined} alt={friend.full_name} />
                                   <AvatarFallback className="text-xs">
                                     {friend.full_name
                                       ?.split(" ")

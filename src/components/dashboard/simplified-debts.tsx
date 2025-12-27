@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatNumber } from "@/lib/locale-utils";
 import { useGo } from "@refinedev/core";
 import { ArrowRight, Check } from "lucide-react";
@@ -98,6 +98,7 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
             >
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
+                  <AvatarImage src={debt.counterparty_avatar_url || undefined} alt={debt.counterparty_name} />
                   <AvatarFallback className="bg-[#FFA14E] text-white text-sm">
                     {debt.counterparty_name.charAt(0).toUpperCase()}
                   </AvatarFallback>

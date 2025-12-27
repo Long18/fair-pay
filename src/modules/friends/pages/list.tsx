@@ -2,7 +2,7 @@ import { useList, useGetIdentity, useUpdate, useDelete, useGo } from "@refinedev
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, Trash2, ChevronRight } from "lucide-react";
 import { Profile } from "@/modules/profile/types";
@@ -146,6 +146,7 @@ export const FriendList = () => {
                   >
                     <div className="flex items-center gap-3">
                       <Avatar>
+                        <AvatarImage src={friend.avatar_url || undefined} alt={friend.full_name} />
                         <AvatarFallback>
                           {friend.full_name
                             ?.split(" ")
@@ -200,6 +201,7 @@ export const FriendList = () => {
                   >
                     <div className="flex items-center gap-3">
                       <Avatar>
+                        <AvatarImage src={friend.avatar_url || undefined} alt={friend.full_name} />
                         <AvatarFallback>
                           {friend.full_name
                             ?.split(" ")
@@ -247,6 +249,7 @@ export const FriendList = () => {
                   >
                     <div className="flex items-center gap-3">
                       <Avatar>
+                        <AvatarImage src={friend.avatar_url || undefined} alt={friend.full_name} />
                         <AvatarFallback>
                           {friend.full_name
                             ?.split(" ")
