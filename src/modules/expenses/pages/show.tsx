@@ -23,11 +23,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
+import { supabaseClient } from "@/utility/supabaseClient";
 
 export const ExpenseShow = () => {
   const { id } = useParams<{ id: string }>();
   const go = useGo();
   const { data: identity } = useGetIdentity<Profile>();
+  const [splits, setSplits] = useState<any[]>([]);
+  const [isLoadingSplits, setIsLoadingSplits] = useState(true);
 
   const { query: expenseQuery } = useOne<Expense>({
     resource: "expenses",
@@ -37,19 +40,39 @@ export const ExpenseShow = () => {
     },
   });
 
-  const { query: splitsQuery } = useList<ExpenseSplit>({
-    resource: "expense_splits",
-    filters: [
-      {
-        field: "expense_id",
-        operator: "eq",
-        value: id,
-      },
-    ],
-    meta: {
-      select: "*, profiles!user_id(id, full_name, avatar_url)",
-    },
-  });
+  // Fetch splits using RPC function to bypass RLS for public viewing
+  useEffect(() => {
+    if (!id) return;
+
+    setIsLoadingSplits(true);
+    Promise.resolve(
+      supabaseClient
+        .rpc("get_expense_splits_public", { p_expense_id: id })
+        .then(({ data, error }: { data: any; error: any }) => {
+          if (error) {
+            console.error("Error fetching splits:", error);
+            setSplits([]);
+          } else {
+            // Transform data to match expected format
+            const transformedSplits = (data || []).map((split: any) => ({
+              id: split.id,
+              expense_id: split.expense_id,
+              user_id: split.user_id,
+              split_method: split.split_method,
+              split_value: split.split_value,
+              computed_amount: split.computed_amount,
+              created_at: split.created_at,
+              profiles: {
+                id: split.user_id,
+                full_name: split.user_full_name,
+                avatar_url: split.user_avatar_url,
+              },
+            }));
+            setSplits(transformedSplits);
+          }
+        })
+    ).finally(() => setIsLoadingSplits(false));
+  }, [id]);
 
   const { query: attachmentsQuery } = useList<Attachment>({
     resource: "attachments",
@@ -65,11 +88,9 @@ export const ExpenseShow = () => {
   const deleteMutation = useDelete();
 
   const { data: expenseData, isLoading: isLoadingExpense } = expenseQuery;
-  const { data: splitsData, isLoading: isLoadingSplits } = splitsQuery;
   const { data: attachmentsData } = attachmentsQuery;
 
   const expense: any = expenseData?.data;
-  const splits: any[] = splitsData?.data || [];
   const attachments: Attachment[] = attachmentsData?.data || [];
   const [displayAttachments, setDisplayAttachments] = useState<Attachment[]>(attachments);
 

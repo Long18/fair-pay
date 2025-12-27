@@ -77,7 +77,7 @@ export const ProfileShow = () => {
     if (!id) return;
 
     setIsLoadingActivities(true);
-    
+
     Promise.resolve(
       supabaseClient
         .rpc("get_user_activities", { p_user_id: id, p_limit: 10 })
