@@ -59,29 +59,26 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
     return "Just now";
   };
 
-  // Filter out sample data when user is authenticated
-  // Only show real debt data when logged in
-  const realDebts = isAuthenticated
-    ? debts.filter(d => !d.counterparty_id.startsWith('demo-'))
-    : debts;
+  // Show all debts (including demo data from database for unauthenticated users)
+  // The hook queries database for both authenticated and unauthenticated cases
+  const debtItems = debts.map(d => {
+    // Check if this is demo data: has owed_to_name field (only demo data has this)
+    // Demo UUIDs are in range: 00000000-0000-0000-0000-000000000001 to 00000000-0000-0000-0000-000000000003
+    const isDemoData = !!(d as any).owed_to_name ||
+                       (typeof d.counterparty_id === 'string' && d.counterparty_id.startsWith('00000000-0000-0000-0000-00000000'));
 
-  // Combine activities and debts into one list
-  // Debts appear first (most important), followed by activities sorted by date
-  const debtItems = realDebts.map(d => {
-    // Check if this is sample/demo data (counterparty_id starts with "demo-")
-    const isSampleData = d.counterparty_id.startsWith('demo-');
-
-    // For demo data (unauthenticated), show neutral relationship: "John owes Sarah"
+    // For demo data, show neutral relationship: "John owes Sarah"
     // For real data (authenticated), show personalized: "You owe John" or "John owes you"
     const getDescription = () => {
-      // If it's sample data OR user is not authenticated, show neutral format
-      if (isSampleData || !isAuthenticated) {
-        const owedToName = (d as any).owedToName || 'someone';
-        return d.i_owe_them
-          ? `${owedToName} owes ${d.counterparty_name}`
-          : `${d.counterparty_name} owes ${owedToName}`;
+      // If it's demo data, construct neutral format using owed_to_name field
+      if (isDemoData) {
+        const owedToName = (d as any).owed_to_name || 'someone';
+        // Demo data structure:
+        // i_owe_them = false means: "owed_to_name owes counterparty_name"
+        // Example: owed_to_name="John", counterparty_name="Sarah" → "John owes Sarah"
+        return `${owedToName} owes ${d.counterparty_name}`;
       } else {
-        // Authenticated with real data: personalized wording
+        // Real data: personalized wording
         return d.i_owe_them
           ? `You owe ${d.counterparty_name}`
           : `${d.counterparty_name} owes you`;
@@ -174,7 +171,12 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                               variant={item.i_owe_them ? "default" : "destructive"}
                               className="text-xs"
                             >
-                              {item.i_owe_them ? "You owe" : "Owes you"}
+                              {/* For demo data, show neutral "Owes" badge. For real data, show personalized "You owe"/"Owes you" */}
+                              {!!(item as any).owed_to_name ||
+                               (typeof item.id === 'string' && item.id.startsWith('00000000-0000-0000-0000-00000000'))
+                                ? "Owes"
+                                : (item.i_owe_them ? "You owe" : "Owes you")
+                              }
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
