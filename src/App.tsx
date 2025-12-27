@@ -262,7 +262,10 @@ function App() {
                     <Route path=":friendshipId/payments/create" element={<PaymentCreate />} />
                   </Route>
                   <Route path="/expenses">
-                    {/* show/:id moved to public routes */}
+                    <Route path="create" element={<ExpenseCreate />} />
+                  </Route>
+                  <Route path="/payments">
+                    <Route path="create" element={<PaymentCreate />} />
                   </Route>
                   <Route path="/notifications" element={<NotificationList />} />
                   <Route path="/balances" element={
