@@ -29,10 +29,14 @@ interface ActivityItem {
   id: string;
   type: "expense" | "payment";
   description: string;
-  amount: number;
+  total_amount: number;
+  user_share: number;
   currency: string;
   date: string;
   group_name?: string;
+  paid_by_name?: string;
+  is_lender: boolean;
+  is_borrower: boolean;
 }
 
 export const ProfileShow = () => {
@@ -73,51 +77,32 @@ export const ProfileShow = () => {
     if (!id) return;
 
     setIsLoadingActivities(true);
-
-    Promise.all([
+    
+    Promise.resolve(
       supabaseClient
-        .from("expenses")
-        .select("id, description, amount, currency, date, group_id, groups(name)")
-        .or(`created_by.eq.${id},expense_splits.user_id.eq.${id}`)
-        .order("date", { ascending: false })
-        .limit(10),
-      supabaseClient
-        .from("payments")
-        .select("id, description, amount, currency, created_at")
-        .or(`from_user.eq.${id},to_user.eq.${id}`)
-        .order("created_at", { ascending: false })
-        .limit(10),
-    ])
-      .then(([expensesRes, paymentsRes]) => {
-        const expenses: ActivityItem[] = (expensesRes.data || []).map((e: any) => ({
-          id: e.id,
-          type: "expense" as const,
-          description: e.description,
-          amount: e.amount,
-          currency: e.currency || "VND",
-          date: e.date,
-          group_name: e.groups?.name,
-        }));
-
-        const payments: ActivityItem[] = (paymentsRes.data || []).map((p: any) => ({
-          id: p.id,
-          type: "payment" as const,
-          description: p.description || "Payment",
-          amount: p.amount,
-          currency: p.currency || "VND",
-          date: p.created_at,
-        }));
-
-        const combined = [...expenses, ...payments].sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
-        setActivities(combined.slice(0, 10));
-      })
-      .catch((err) => {
-        console.error("Error fetching activities:", err);
-        setActivities([]);
-      })
-      .finally(() => setIsLoadingActivities(false));
+        .rpc("get_user_activities", { p_user_id: id, p_limit: 10 })
+        .then(({ data, error }: { data: any; error: any }) => {
+          if (error) {
+            console.error("Error fetching activities:", error);
+            setActivities([]);
+          } else {
+            const activities: ActivityItem[] = (data || []).map((item: any) => ({
+              id: item.id,
+              type: "expense" as const,
+              description: item.description,
+              total_amount: item.total_amount,
+              user_share: item.user_share,
+              currency: item.currency || "VND",
+              date: item.date,
+              group_name: item.group_name,
+              paid_by_name: item.paid_by_name,
+              is_lender: item.is_lender,
+              is_borrower: item.is_borrower,
+            }));
+            setActivities(activities);
+          }
+        })
+    ).finally(() => setIsLoadingActivities(false));
   }, [id]);
 
   if (isLoadingProfile) {
@@ -223,9 +208,10 @@ export const ProfileShow = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Description</TableHead>
-                  <TableHead>Type</TableHead>
+                  <TableHead>Paid By</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-right">Your Share</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -253,13 +239,30 @@ export const ProfileShow = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={activity.type === "expense" ? "default" : "secondary"}>
-                        {activity.type}
+                      <div className="text-sm">{activity.paid_by_name || "Unknown"}</div>
+                      <div className="text-xs text-muted-foreground">
+                        Total: {formatCurrency(activity.total_amount, activity.currency)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={activity.is_lender ? "secondary" : "default"}
+                        className={
+                          activity.is_lender
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }
+                      >
+                        {activity.is_lender ? "Lent" : "Borrowed"}
                       </Badge>
                     </TableCell>
                     <TableCell>{formatDateShort(activity.date)}</TableCell>
-                    <TableCell className="text-right font-semibold">
-                      {formatCurrency(activity.amount, activity.currency)}
+                    <TableCell
+                      className={`text-right font-semibold ${
+                        activity.is_lender ? "text-green-600" : "text-red-600"
+                      }`}
+                    >
+                      {formatCurrency(activity.user_share, activity.currency)}
                     </TableCell>
                   </TableRow>
                 ))}

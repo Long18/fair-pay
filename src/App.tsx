@@ -200,14 +200,14 @@ function App() {
                   }
                 >
                   <Route index element={<Dashboard />} />
-                  
+
                   {/* Public profile view */}
                   <Route path="/profile/:id" element={
                     <ErrorBoundary context="Profile Details">
                       <ProfileShow />
                     </ErrorBoundary>
                   } />
-                  
+
                   {/* Public expense view */}
                   <Route path="/expenses/show/:id" element={
                     <ErrorBoundary context="Expense Details">
