@@ -1,4 +1,5 @@
 export { ExpenseCreate } from "./pages/create";
+export { ExpenseEdit } from "./pages/edit";
 export { ExpenseShow } from "./pages/show";
 export { RecurringExpenseList } from "./pages/recurring-list";
 export { ExpenseForm } from "./components/expense-form";
