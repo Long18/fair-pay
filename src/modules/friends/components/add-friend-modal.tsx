@@ -48,6 +48,7 @@ export const AddFriendModal = () => {
   const [open, setOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { data: identity } = useGetIdentity<Profile>();
   const createMutation = useCreate();
 
@@ -138,6 +139,7 @@ export const AddFriendModal = () => {
     const userA = identity.id < targetUser.id ? identity.id : targetUser.id;
     const userB = identity.id < targetUser.id ? targetUser.id : identity.id;
 
+    setIsSubmitting(true);
     createMutation.mutate(
       {
         resource: "friendships",
@@ -155,6 +157,7 @@ export const AddFriendModal = () => {
           form.reset();
           setSearchValue("");
           friendshipsQuery.refetch();
+          setIsSubmitting(false);
         },
         onError: (error: any) => {
           if (error.message?.includes("duplicate")) {
@@ -162,6 +165,7 @@ export const AddFriendModal = () => {
           } else {
             toast.error(`Failed to send request: ${error.message}`);
           }
+          setIsSubmitting(false);
         },
       }
     );
@@ -301,9 +305,9 @@ export const AddFriendModal = () => {
               <Button
                 type="submit"
                 className="flex-1"
-                disabled={!form.watch("userId") || createMutation.isPending}
+                disabled={!form.watch("userId") || isSubmitting}
               >
-                {createMutation.isPending ? "Sending..." : "Send Request"}
+                {isSubmitting ? "Sending..." : "Send Request"}
               </Button>
             </div>
           </form>

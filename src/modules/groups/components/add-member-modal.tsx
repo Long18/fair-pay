@@ -65,6 +65,7 @@ export const AddMemberModal = ({
   const setOpen = controlledOnOpenChange || setInternalOpen;
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { data: identity } = useGetIdentity<Profile>();
   const createMutation = useCreate();
 
@@ -162,6 +163,7 @@ export const AddMemberModal = ({
       return;
     }
 
+    setIsSubmitting(true);
     createMutation.mutate(
       {
         resource: "group_members",
@@ -180,6 +182,7 @@ export const AddMemberModal = ({
           membersQuery.refetch();
           friendshipsQuery.refetch();
           onSuccess?.();
+          setIsSubmitting(false);
         },
         onError: (error: any) => {
           if (error.message?.includes("duplicate") || error.message?.includes("unique")) {
@@ -187,6 +190,7 @@ export const AddMemberModal = ({
           } else {
             toast.error(`Failed to add member: ${error.message}`);
           }
+          setIsSubmitting(false);
         },
       }
     );
@@ -315,9 +319,9 @@ export const AddMemberModal = ({
             <Button
               type="submit"
               className="flex-1"
-              disabled={!form.watch("userId") || createMutation.isPending}
+              disabled={!form.watch("userId") || isSubmitting}
             >
-              {createMutation.isPending ? "Adding..." : "Add Member"}
+              {isSubmitting ? "Adding..." : "Add Member"}
             </Button>
           </div>
         </form>
