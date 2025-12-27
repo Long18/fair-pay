@@ -282,7 +282,7 @@ function SidebarHeader() {
 function getDisplayName(item: TreeMenuItem) {
   const { t } = useTranslation();
   const label = item.meta?.label ?? item.label ?? item.name;
-  
+
   // Map resource names to translation keys
   const translationMap: Record<string, string> = {
     'Dashboard': 'dashboard.title',
@@ -292,7 +292,7 @@ function getDisplayName(item: TreeMenuItem) {
     'Reports': 'reports.title',
     'Settings': 'settings.title',
   };
-  
+
   return translationMap[label] ? t(translationMap[label]) : label;
 }
 
