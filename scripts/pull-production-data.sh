@@ -57,7 +57,7 @@ echo -e "${YELLOW}🔍 Step 5: Verifying data...${NC}"
 # Count records in key tables
 echo "Counting records in key tables:"
 psql postgresql://postgres:postgres@localhost:54322/postgres -c "
-SELECT 
+SELECT
   'profiles' as table_name, COUNT(*) as count FROM profiles
 UNION ALL
 SELECT 'friendships', COUNT(*) FROM friendships

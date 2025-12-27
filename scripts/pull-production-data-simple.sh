@@ -38,4 +38,3 @@ echo "  http://localhost:54323 (Database → Tables)"
 echo ""
 echo "Or use Supabase CLI:"
 echo "  supabase db remote commit"
-

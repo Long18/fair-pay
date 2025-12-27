@@ -1,12 +1,11 @@
--- Migration: Update public demo debts to return real production data
--- Purpose: Allow unauthenticated users to see real production data from a specific user
+-- Migration: Dynamic public demo data - automatically shows top debtor
+-- Purpose: Show real production data without hardcoding user ID
 -- Date: 2025-12-27
 
 -- Drop existing function
 DROP FUNCTION IF EXISTS get_public_demo_debts();
 
--- Create function to return REAL debts from a specific user (for demo purposes)
--- This shows actual production data to unauthenticated users
+-- Create function to return debts from user with most debts (dynamic)
 CREATE OR REPLACE FUNCTION get_public_demo_debts()
 RETURNS TABLE (
     counterparty_id uuid,
@@ -20,11 +19,21 @@ SET search_path = public
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    -- Hardcoded demo user ID (Long's account)
-    demo_user_id uuid := '9ac73f98-d6ff-54dd-8337-e96816e855c1';
+    demo_user_id uuid;
 BEGIN
-    -- Return real debts from demo user by querying directly from user_debts_summary
-    -- This bypasses authentication requirements and shows actual production data
+    -- Automatically find user with most debts (most active user)
+    SELECT owed_user INTO demo_user_id
+    FROM user_debts_summary
+    GROUP BY owed_user
+    ORDER BY SUM(amount_owed) DESC
+    LIMIT 1;
+
+    -- If no data, return empty
+    IF demo_user_id IS NULL THEN
+        RETURN;
+    END IF;
+
+    -- Return real debts from most active user
     RETURN QUERY
     WITH debt_calculations AS (
         SELECT
@@ -55,13 +64,10 @@ BEGIN
 END;
 $$;
 
--- Grant execute permission to anonymous (unauthenticated) users
+-- Grant execute permission to anonymous users
 GRANT EXECUTE ON FUNCTION get_public_demo_debts() TO anon;
-
--- Grant execute permission to authenticated users (for fallback scenarios)
 GRANT EXECUTE ON FUNCTION get_public_demo_debts() TO authenticated;
 
--- Add comment for documentation
+-- Add comment
 COMMENT ON FUNCTION get_public_demo_debts IS
-'Returns REAL production debt data from demo user account. Shows actual debts for demonstration purposes to unauthenticated users. Uses user Long account as demo data source.';
-
+'Returns REAL production debt data from user with most debts. Automatically updates when data changes. No hardcoded user ID required.';
