@@ -10,11 +10,11 @@ export function useRecurringExpenses({ groupId, friendshipId }: UseRecurringExpe
   const filters = [];
 
   if (groupId) {
-    filters.push({ field: 'group_id', operator: 'eq' as const, value: groupId });
+    filters.push({ field: 'expenses.group_id', operator: 'eq' as const, value: groupId });
   }
 
   if (friendshipId) {
-    filters.push({ field: 'friendship_id', operator: 'eq' as const, value: friendshipId });
+    filters.push({ field: 'expenses.friendship_id', operator: 'eq' as const, value: friendshipId });
   }
 
   const { query } = useList<RecurringExpense>({
@@ -22,7 +22,7 @@ export function useRecurringExpenses({ groupId, friendshipId }: UseRecurringExpe
     filters,
     sorters: [{ field: 'next_occurrence', order: 'asc' }],
     meta: {
-      select: '*, template_expense!template_expense_id(*)',
+      select: '*, expenses:template_expense_id(*)',
     },
     pagination: {
       mode: 'off',
@@ -50,7 +50,7 @@ export function useRecurringExpense(id: string) {
     resource: 'recurring_expenses',
     id,
     meta: {
-      select: '*, template_expense!template_expense_id(*)',
+      select: '*, expenses:template_expense_id(*)',
     },
   });
 
@@ -67,28 +67,17 @@ export function useCreateRecurringExpense() {
   const createRecurring = async (
     templateExpenseId: string,
     values: Omit<RecurringExpenseFormValues, 'is_recurring'>,
-    contextType: 'group' | 'friend',
-    contextId: string
+    _contextType: 'group' | 'friend',
+    _contextId: string
   ) => {
     const data: any = {
       template_expense_id: templateExpenseId,
       frequency: values.frequency,
       interval: values.interval,
-      start_date: values.start_date.toISOString().split('T')[0],
-      end_date: values.end_date ? values.end_date.toISOString().split('T')[0] : null,
       next_occurrence: values.start_date.toISOString().split('T')[0],
-      notify_before_days: values.notify_before_days,
+      end_date: values.end_date ? values.end_date.toISOString().split('T')[0] : null,
       is_active: true,
-      context_type: contextType,
     };
-
-    if (contextType === 'group') {
-      data.group_id = contextId;
-      data.friendship_id = null;
-    } else {
-      data.friendship_id = contextId;
-      data.group_id = null;
-    }
 
     return new Promise<RecurringExpense>((resolve, reject) => {
       mutate(
@@ -120,14 +109,8 @@ export function useUpdateRecurringExpense() {
 
     if (values.frequency !== undefined) data.frequency = values.frequency;
     if (values.interval !== undefined) data.interval = values.interval;
-    if (values.start_date !== undefined) {
-      data.start_date = values.start_date.toISOString().split('T')[0];
-    }
     if (values.end_date !== undefined) {
       data.end_date = values.end_date ? values.end_date.toISOString().split('T')[0] : null;
-    }
-    if (values.notify_before_days !== undefined) {
-      data.notify_before_days = values.notify_before_days;
     }
     if (values.is_active !== undefined) {
       data.is_active = values.is_active;

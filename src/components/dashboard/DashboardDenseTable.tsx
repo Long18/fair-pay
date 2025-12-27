@@ -1,4 +1,4 @@
-import { MoreHorizontal, Receipt, Banknote } from "lucide-react";
+import { MoreHorizontal, Receipt, Banknote, Users } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -16,9 +16,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useRecentActivity } from "@/hooks/use-recent-activity";
-import { useGo } from "@refinedev/core";
-import { useState } from "react";
+import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useGo, useGetIdentity } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
+import { Profile } from "@/modules/profile/types";
 import {
   Tooltip,
   TooltipContent,
@@ -32,9 +34,13 @@ interface DashboardDenseTableProps {
 
 export function DashboardDenseTable({ disabled = false }: DashboardDenseTableProps) {
   const { items: activities = [], isLoading } = useRecentActivity(10);
+  const { data: debts = [], isLoading: debtsLoading } = useAggregatedDebts();
+  const { data: identity } = useGetIdentity<Profile>();
   const go = useGo();
   const { t } = useTranslation();
-  const [view, setView] = useState<"all" | "expenses" | "payments">("all");
+
+  // Check if user is authenticated (not just disabled prop)
+  const isAuthenticated = !!identity?.id;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('vi-VN').format(Math.abs(value));
@@ -53,16 +59,53 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
     return "Just now";
   };
 
-  const filteredActivities = activities.filter(activity => {
-    if (view === "all") return true;
-    return activity.type === view.slice(0, -1); // "expenses" -> "expense", "payments" -> "payment"
+  // Filter out sample data when user is authenticated
+  // Only show real debt data when logged in
+  const realDebts = isAuthenticated
+    ? debts.filter(d => !d.counterparty_id.startsWith('demo-'))
+    : debts;
+
+  // Combine activities and debts into one list
+  // Debts appear first (most important), followed by activities sorted by date
+  const debtItems = realDebts.map(d => {
+    // Check if this is sample/demo data (counterparty_id starts with "demo-")
+    const isSampleData = d.counterparty_id.startsWith('demo-');
+
+    // For demo data (unauthenticated), show neutral relationship: "John owes Sarah"
+    // For real data (authenticated), show personalized: "You owe John" or "John owes you"
+    const getDescription = () => {
+      // If it's sample data OR user is not authenticated, show neutral format
+      if (isSampleData || !isAuthenticated) {
+        const owedToName = (d as any).owedToName || 'someone';
+        return d.i_owe_them
+          ? `${owedToName} owes ${d.counterparty_name}`
+          : `${d.counterparty_name} owes ${owedToName}`;
+      } else {
+        // Authenticated with real data: personalized wording
+        return d.i_owe_them
+          ? `You owe ${d.counterparty_name}`
+          : `${d.counterparty_name} owes you`;
+      }
+    };
+
+    return {
+      ...d,
+      itemType: 'debt' as const,
+      id: d.counterparty_id,
+      description: getDescription(),
+      amount: d.amount,
+      type: d.i_owe_them ? 'payment' : 'expense',
+      date: new Date().toISOString(),
+    };
   });
 
-  if (isLoading) {
+  const activityItems = activities.map(a => ({ ...a, itemType: 'activity' as const }));
+
+  if (isLoading || debtsLoading) {
     return <div className="h-64 flex items-center justify-center text-muted-foreground">Loading...</div>;
   }
 
-  if (filteredActivities.length === 0) {
+  if (debtItems.length === 0 && activityItems.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed rounded-xl bg-muted/10">
         <div className="h-12 w-12 bg-muted rounded-full flex items-center justify-center mb-4">
@@ -80,123 +123,218 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold tracking-tight">Recent Activity</h3>
-        <div className="flex gap-2">
-          <Button
-            variant={view === "all" ? "outline" : "ghost"}
-            size="sm"
-            className="h-8 text-xs"
-            onClick={() => setView("all")}
-          >
-            All
-          </Button>
-          <Button
-            variant={view === "expenses" ? "outline" : "ghost"}
-            size="sm"
-            className="h-8 text-xs"
-            onClick={() => setView("expenses")}
-          >
-            Expenses
-          </Button>
-          <Button
-            variant={view === "payments" ? "outline" : "ghost"}
-            size="sm"
-            className="h-8 text-xs"
-            onClick={() => setView("payments")}
-          >
-            Payments
-          </Button>
+    <div className="space-y-6">
+      {/* Balances / Debts Table */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold tracking-tight">Balances</h3>
+          {debtItems.length > 0 && (
+            <Badge variant="secondary" className="text-xs">
+              {debtItems.length} {debtItems.length === 1 ? 'balance' : 'balances'}
+            </Badge>
+          )}
+        </div>
+
+        <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+          {debtItems.length > 0 ? (
+            <Table>
+              <TableHeader className="bg-muted/30">
+                <TableRow>
+                  <TableHead className="w-[50px]"></TableHead>
+                  <TableHead>Person</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TooltipProvider delayDuration={0}>
+                  {debtItems.map((item) => (
+                    <Tooltip key={item.id}>
+                      <TooltipTrigger asChild>
+                        <TableRow
+                          className={`group ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+                          onClick={() => {
+                            if (disabled) return;
+                            go({ to: `/profile/${item.id}` });
+                          }}
+                        >
+                          <TableCell>
+                            <Avatar className="h-8 w-8 border">
+                              <AvatarFallback className={`text-xs ${item.i_owe_them ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
+                                {item.counterparty_name.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            <span className="text-sm font-medium">{item.description}</span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={item.i_owe_them ? "default" : "destructive"}
+                              className="text-xs"
+                            >
+                              {item.i_owe_them ? "You owe" : "Owes you"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className={`text-sm font-semibold ${item.i_owe_them ? 'text-green-600' : 'text-red-600'}`}>
+                              ₫{formatCurrency(Number(item.amount))}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  disabled={disabled}
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem disabled={disabled}>View Profile</DropdownMenuItem>
+                                <DropdownMenuItem disabled={disabled}>Settle Up</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      </TooltipTrigger>
+                      {disabled && (
+                        <TooltipContent>
+                          <p className="text-xs">Login to view details</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  ))}
+                </TooltipProvider>
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="flex flex-col items-center justify-center p-8 text-center">
+              <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center mb-3">
+                <Users className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium text-muted-foreground">All settled up! 🎉</p>
+              <p className="text-xs text-muted-foreground mt-1">No outstanding balances</p>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader className="bg-muted/30">
-            <TableRow>
-              <TableHead className="w-[50px]"></TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Group</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TooltipProvider delayDuration={0}>
-              {filteredActivities.slice(0, 10).map((activity) => (
-                <Tooltip key={activity.id}>
-                  <TooltipTrigger asChild>
-                    <TableRow
-                      className={`group ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
-                      onClick={() => !disabled && go({ to: activity.type === "expense" ? `/expenses/show/${activity.id}` : `/payments/show/${activity.id}` })}
-                    >
-                      <TableCell>
-                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${activity.type === "expense" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>
-                          {activity.type === "expense" ? <Receipt className="h-4 w-4" /> : <Banknote className="h-4 w-4" />}
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium truncate max-w-[300px]">{activity.description}</span>
-                          <span className="text-xs text-muted-foreground">
-                            by {activity.is_mine ? "You" : activity.created_by_name}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {activity.group_name ? (
-                          <Badge variant="outline" className="text-xs">
-                            {activity.group_name}
-                          </Badge>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Personal</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {formatTimeAgo(activity.date)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <span className="text-sm font-medium">
-                          ₫{formatCurrency(activity.amount)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                              disabled={disabled}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem disabled={disabled}>View Details</DropdownMenuItem>
-                            <DropdownMenuItem disabled={disabled}>Edit</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive" disabled={disabled}>Delete</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  </TooltipTrigger>
-                  {disabled && (
-                    <TooltipContent>
-                      <p className="text-xs">Login to view details</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              ))}
-            </TooltipProvider>
-          </TableBody>
-        </Table>
-        <div className="p-2 border-t bg-muted/10">
-          <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground h-8">
-            View all transactions
-          </Button>
+      {/* Recent Activity Table */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold tracking-tight">Recent Activity</h3>
+        </div>
+
+        <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+          <Table>
+            <TableHeader className="bg-muted/30">
+              <TableRow>
+                <TableHead className="w-[50px]"></TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Group</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TooltipProvider delayDuration={0}>
+                {activityItems.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <div className="flex flex-col items-center justify-center">
+                        <Receipt className="h-8 w-8 mb-2 opacity-50" />
+                        <p className="text-sm">No recent activity</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  activityItems.slice(0, 10).map((item) => (
+                    <Tooltip key={item.id}>
+                      <TooltipTrigger asChild>
+                        <TableRow
+                          className={`group ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+                          onClick={() => {
+                            if (disabled) return;
+                            if ('type' in item) {
+                              go({ to: item.type === "expense" ? `/expenses/show/${item.id}` : `/payments/show/${item.id}` });
+                            }
+                          }}
+                        >
+                          <TableCell>
+                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${'type' in item && item.type === "expense" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>
+                              {'type' in item && item.type === "expense" ? <Receipt className="h-4 w-4" /> : <Banknote className="h-4 w-4" />}
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium truncate max-w-[300px]">{item.description}</span>
+                              {'is_mine' in item && 'created_by_name' in item && (
+                                <span className="text-xs text-muted-foreground">
+                                  by {item.is_mine ? "You" : item.created_by_name}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {'group_name' in item && item.group_name ? (
+                              <Badge variant="outline" className="text-xs">
+                                {item.group_name}
+                              </Badge>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Personal</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {formatTimeAgo('date' in item ? item.date : undefined)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="text-sm font-medium">
+                              ₫{formatCurrency(Number(item.amount))}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  disabled={disabled}
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem disabled={disabled}>View Details</DropdownMenuItem>
+                                <DropdownMenuItem disabled={disabled}>Edit</DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" disabled={disabled}>Delete</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      </TooltipTrigger>
+                      {disabled && (
+                        <TooltipContent>
+                          <p className="text-xs">Login to view details</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  ))
+                )}
+              </TooltipProvider>
+            </TableBody>
+          </Table>
+          <div className="p-2 border-t bg-muted/10">
+            <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground h-8">
+              View all transactions
+            </Button>
+          </div>
         </div>
       </div>
     </div>
