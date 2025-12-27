@@ -16,6 +16,7 @@ export interface ActivityItem {
     group_name?: string;
     created_by_id: string;
     created_by_name: string;
+    created_by_avatar_url?: string;
     is_mine: boolean; // Whether current user created this activity
 }
 
@@ -60,6 +61,7 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
                             group_name: item.group_name,
                             created_by_id: item.created_by_id,
                             created_by_name: item.created_by_name || "Unknown",
+                            created_by_avatar_url: item.created_by_avatar_url,
                             is_mine: false,
                         }));
                         setPublicActivities(activities);
@@ -82,7 +84,7 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
             },
         ],
         meta: {
-            select: "*, groups!group_id(id, name), profiles!created_by(id, full_name)",
+            select: "*, groups!group_id(id, name), profiles!created_by(id, full_name, avatar_url)",
         },
         queryOptions: {
             // Only fetch if authenticated
@@ -103,7 +105,7 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
             },
         ],
         meta: {
-            select: "*, groups!group_id(id, name), profiles!created_by(id, full_name), from_profile:profiles!from_user(full_name), to_profile:profiles!to_user(full_name)",
+            select: "*, groups!group_id(id, name), profiles!created_by(id, full_name, avatar_url), from_profile:profiles!from_user(full_name), to_profile:profiles!to_user(full_name)",
         },
         queryOptions: {
             // Only fetch if authenticated
@@ -140,6 +142,7 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
             group_name: expense.groups?.name,
             created_by_id: expense.created_by,
             created_by_name: expense.profiles?.full_name || "Unknown",
+            created_by_avatar_url: expense.profiles?.avatar_url,
             is_mine: identity?.id ? expense.created_by === identity.id : false,
         }));
 
@@ -155,6 +158,7 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
             group_name: payment.groups?.name,
             created_by_id: payment.created_by,
             created_by_name: payment.profiles?.full_name || "Unknown",
+            created_by_avatar_url: payment.profiles?.avatar_url,
             is_mine: identity?.id ? payment.created_by === identity.id : false,
         }));
 

@@ -403,13 +403,17 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                           }}
                         >
                           <TableCell>
-                            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center shadow-md group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
-                              {item.type === "expense" ? (
-                                <Receipt className="h-6 w-6 text-purple-600" />
-                              ) : (
-                                <Banknote className="h-6 w-6 text-pink-600" />
-                              )}
-                            </div>
+                            <Avatar className="h-12 w-12 border-2 shadow-md ring-2 ring-offset-1 ring-offset-background transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg border-purple-200 ring-purple-100">
+                              <AvatarImage src={item.created_by_avatar_url || undefined} alt={item.created_by_name} />
+                              <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700">
+                                {item.created_by_name
+                                  ?.split(" ")
+                                  .map((n: string) => n[0])
+                                  .join("")
+                                  .toUpperCase()
+                                  .slice(0, 2) || "?"}
+                              </AvatarFallback>
+                            </Avatar>
                           </TableCell>
                           <TableCell className="font-medium max-w-[300px]">
                             <div className="flex flex-col gap-1">

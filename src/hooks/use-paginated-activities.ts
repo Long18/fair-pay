@@ -78,6 +78,7 @@ export const usePaginatedActivities = ({
             group_name: item.group_name,
             created_by_id: item.created_by_id,
             created_by_name: item.created_by_name || "Unknown",
+            created_by_avatar_url: item.created_by_avatar_url,
             is_mine: false,
           }));
           setItems(activities);
@@ -89,7 +90,7 @@ export const usePaginatedActivities = ({
           supabaseClient
             .from("expenses")
             .select(
-              "*, groups!group_id(id, name), profiles!created_by(id, full_name)",
+              "*, groups!group_id(id, name), profiles!created_by(id, full_name, avatar_url)",
               { count: "exact" }
             )
             .order("created_at", { ascending: false })
@@ -97,7 +98,7 @@ export const usePaginatedActivities = ({
           supabaseClient
             .from("payments")
             .select(
-              "*, groups!group_id(id, name), profiles!created_by(id, full_name), from_profile:profiles!from_user(full_name), to_profile:profiles!to_user(full_name)",
+              "*, groups!group_id(id, name), profiles!created_by(id, full_name, avatar_url), from_profile:profiles!from_user(full_name), to_profile:profiles!to_user(full_name)",
               { count: "exact" }
             )
             .order("created_at", { ascending: false })
@@ -127,6 +128,7 @@ export const usePaginatedActivities = ({
             group_name: expense.groups?.name,
             created_by_id: expense.created_by,
             created_by_name: expense.profiles?.full_name || "Unknown",
+            created_by_avatar_url: expense.profiles?.avatar_url,
             is_mine: expense.created_by === identity.id,
           }));
 
@@ -142,6 +144,7 @@ export const usePaginatedActivities = ({
             group_name: payment.groups?.name,
             created_by_id: payment.created_by,
             created_by_name: payment.profiles?.full_name || "Unknown",
+            created_by_avatar_url: payment.profiles?.avatar_url,
             is_mine: payment.created_by === identity.id,
           }));
 
