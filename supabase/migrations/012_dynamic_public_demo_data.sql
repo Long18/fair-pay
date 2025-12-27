@@ -30,12 +30,12 @@ BEGIN
     GROUP BY owed_user, p.full_name
     ORDER BY SUM(amount_owed) DESC
     LIMIT 1;
-    
+
     -- If no data, return empty
     IF demo_user_id IS NULL THEN
         RETURN;
     END IF;
-    
+
     -- Return real debts from most active user
     RETURN QUERY
     WITH debt_calculations AS (

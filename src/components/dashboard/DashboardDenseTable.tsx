@@ -39,7 +39,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
   const go = useGo();
   const { t } = useTranslation();
 
-  // Check if user is authenticated (not just disabled prop)
+  // Always allow navigation for public demo users
   const isAuthenticated = !!identity?.id;
 
   const formatCurrency = (value: number) => {
@@ -142,9 +142,8 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                     <Tooltip key={item.id}>
                       <TooltipTrigger asChild>
                         <TableRow
-                          className={`group ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+                          className="group cursor-pointer hover:bg-accent/50"
                           onClick={() => {
-                            if (disabled) return;
                             go({ to: `/profile/${item.id}` });
                           }}
                         >
@@ -183,24 +182,22 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  disabled={disabled}
                                 >
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem disabled={disabled}>View Profile</DropdownMenuItem>
-                                <DropdownMenuItem disabled={disabled}>Settle Up</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => go({ to: `/profile/${item.id}` })}>
+                                  View Profile
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => go({ to: `/settle/${item.id}` })}>
+                                  Settle Up
+                                </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
                         </TableRow>
                       </TooltipTrigger>
-                      {disabled && (
-                        <TooltipContent>
-                          <p className="text-xs">Login to view details</p>
-                        </TooltipContent>
-                      )}
                     </Tooltip>
                   ))}
                 </TooltipProvider>
@@ -252,9 +249,8 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                     <Tooltip key={item.id}>
                       <TooltipTrigger asChild>
                         <TableRow
-                          className={`group ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+                          className="group cursor-pointer hover:bg-accent/50"
                           onClick={() => {
-                            if (disabled) return;
                             if ('type' in item) {
                               go({ to: item.type === "expense" ? `/expenses/show/${item.id}` : `/payments/show/${item.id}` });
                             }
@@ -299,25 +295,33 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  disabled={disabled}
                                 >
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem disabled={disabled}>View Details</DropdownMenuItem>
-                                <DropdownMenuItem disabled={disabled}>Edit</DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive" disabled={disabled}>Delete</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => {
+                                  if ('type' in item) {
+                                    go({ to: item.type === "expense" ? `/expenses/show/${item.id}` : `/payments/show/${item.id}` });
+                                  }
+                                }}>
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => {
+                                  if ('type' in item) {
+                                    go({ to: item.type === "expense" ? `/expenses/edit/${item.id}` : `/payments/edit/${item.id}` });
+                                  }
+                                }}>
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive">
+                                  Delete
+                                </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
                         </TableRow>
                       </TooltipTrigger>
-                      {disabled && (
-                        <TooltipContent>
-                          <p className="text-xs">Login to view details</p>
-                        </TooltipContent>
-                      )}
                     </Tooltip>
                   ))
                 )}
