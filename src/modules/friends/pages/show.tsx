@@ -3,7 +3,7 @@ import { useParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Plus } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Profile } from "@/modules/profile/types";
 import { Friendship } from "../types";
@@ -127,6 +127,7 @@ export const FriendShow = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
+                  <AvatarImage src={friendProfile.avatar_url || undefined} alt={friendProfile.full_name} />
                   <AvatarFallback className="text-2xl">
                     {friendProfile.full_name
                       ?.split(" ")

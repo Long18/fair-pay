@@ -118,4 +118,3 @@ $$;
 -- Ensure permissions are set
 GRANT EXECUTE ON FUNCTION get_user_debts_aggregated(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION get_public_demo_debts() TO anon, authenticated;
-

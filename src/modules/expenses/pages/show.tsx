@@ -8,7 +8,7 @@ import { Expense, ExpenseSplit, Attachment } from "../types";
 import { AttachmentList } from "../components/attachment-list";
 import { CategoryIcon } from "../components/category-icon";
 import { Profile } from "@/modules/profile/types";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
@@ -251,6 +251,7 @@ export const ExpenseShow = () => {
           <CardContent className="space-y-6">
             <div className="flex items-center gap-6 p-6 bg-gradient-to-br from-muted/50 to-muted rounded-xl shadow-sm">
               <Avatar className="h-16 w-16 border-4 border-background shadow-lg ring-4 ring-primary/10">
+                <AvatarImage src={expense.profiles?.avatar_url || undefined} alt={expense.profiles?.full_name} />
                 <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-primary/20 to-primary/10">
                   {expense.profiles?.full_name
                     ?.split(" ")
@@ -357,6 +358,7 @@ export const ExpenseShow = () => {
                             ? 'border-green-300 ring-green-200'
                             : 'border-background ring-primary/20 group-hover:ring-primary/50 group-hover:scale-105'
                         }`}>
+                          <AvatarImage src={split.profiles?.avatar_url || undefined} alt={split.profiles?.full_name} />
                           <AvatarFallback className={`text-sm font-semibold ${
                             isPaid
                               ? 'bg-gradient-to-br from-green-100 to-green-50 text-green-700'
