@@ -1,6 +1,6 @@
 import { useList, useGo } from "@refinedev/core";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye, X } from "lucide-react";
@@ -116,6 +116,7 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 flex-1">
                 <Avatar className="h-10 w-10">
+                  <AvatarImage src={expense.profiles?.avatar_url} alt={expense.profiles?.full_name} />
                   <AvatarFallback>
                     {expense.profiles?.full_name
                       ?.split(" ")

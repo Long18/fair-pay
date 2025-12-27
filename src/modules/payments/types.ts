@@ -48,7 +48,9 @@ export interface UserBalance {
 export interface SimplifiedDebt {
   from_user_id: string;
   from_user_name: string;
+  from_user_avatar_url?: string | null;
   to_user_id: string;
   to_user_name: string;
+  to_user_avatar_url?: string | null;
   amount: number;
 }
