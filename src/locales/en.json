@@ -147,7 +147,15 @@
     "deleteExpense": "Delete Expense",
     "expenseDetails": "Expense Details",
     "noExpenses": "No expenses yet",
-    "addFirst": "Add your first expense to start tracking"
+    "addFirst": "Add your first expense to start tracking",
+    "splitDetails": "Split Details",
+    "total": "Total",
+    "split": "split",
+    "yourShare": "Your Share",
+    "status": "Status",
+    "paid": "Paid",
+    "owes": "Owes",
+    "unknown": "Unknown"
   },
   "payments": {
     "title": "Payments",
@@ -213,5 +221,26 @@
     "search": "Search...",
     "welcomeBack": "Welcome back, {{name}}",
     "welcomeGuest": "Welcome back, Guest"
+  },
+  "profile": {
+    "title": "Profile",
+    "memberSince": "Member since",
+    "debtsSummary": "Debts Summary",
+    "recentActivity": "Recent Activity",
+    "noDebts": "No debts",
+    "noRecentActivity": "No recent activity",
+    "loadingProfile": "Loading profile...",
+    "loadingDebts": "Loading debts...",
+    "loadingActivities": "Loading activities...",
+    "profileNotFound": "Profile not found",
+    "person": "Person",
+    "status": "Status",
+    "amount": "Amount",
+    "owes": "Owes",
+    "isOwed": "Is owed",
+    "type": "Type",
+    "group": "Group",
+    "paid": "Paid",
+    "yourShare": "Your Share"
   }
 }
