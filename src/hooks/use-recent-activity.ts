@@ -1,6 +1,7 @@
 import { useList, useGetIdentity } from "@refinedev/core";
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { Profile } from "@/modules/profile/types";
+import { supabaseClient } from "@/utility/supabaseClient";
 
 export type ActivityType = "expense" | "payment";
 
@@ -24,54 +25,49 @@ export interface RecentActivity {
     isRefetching?: boolean;
 }
 
-/**
- * Sample activity data for when database is empty or unauthenticated
- */
-const SAMPLE_ACTIVITIES: ActivityItem[] = [
-    {
-        id: "sample-1",
-        type: "expense",
-        description: "Lunch at Pizza Place",
-        amount: 450000,
-        currency: "VND",
-        date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-        group_name: "Weekend Trip",
-        created_by_id: "demo-user-1",
-        created_by_name: "John",
-        is_mine: false,
-    },
-    {
-        id: "sample-2",
-        type: "payment",
-        description: "Sarah paid Mike",
-        amount: 200000,
-        currency: "VND",
-        date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-        created_by_id: "demo-user-2",
-        created_by_name: "Sarah",
-        is_mine: false,
-    },
-    {
-        id: "sample-3",
-        type: "expense",
-        description: "Movie tickets",
-        amount: 300000,
-        currency: "VND",
-        date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-        group_name: "Friends",
-        created_by_id: "demo-user-3",
-        created_by_name: "Emma",
-        is_mine: false,
-    },
-];
+// Removed SAMPLE_ACTIVITIES - now always query real data from database
 
 /**
  * Fetch and merge recent expenses and payments into a unified activity feed
  *
- * Returns the 20 most recent activities (expenses + payments) sorted by date
+ * - For authenticated users: Query their real expenses and payments
+ * - For unauthenticated users: Query public activities via RPC function
  */
 export const useRecentActivity = (limit: number = 20): RecentActivity => {
     const { data: identity } = useGetIdentity<Profile>();
+    const [publicActivities, setPublicActivities] = useState<ActivityItem[]>([]);
+    const [isLoadingPublic, setIsLoadingPublic] = useState(false);
+
+    // For unauthenticated users, fetch public activities
+    useEffect(() => {
+        if (!identity?.id) {
+            setIsLoadingPublic(true);
+            supabaseClient
+                .rpc("get_public_recent_activities", { p_limit: limit })
+                .then(({ data, error }) => {
+                    if (error) {
+                        console.error("Error fetching public activities:", error);
+                        setPublicActivities([]);
+                    } else {
+                        const activities: ActivityItem[] = (data || []).map((item: any) => ({
+                            id: item.id,
+                            type: item.type as ActivityType,
+                            description: item.description,
+                            amount: item.amount,
+                            currency: item.currency || "VND",
+                            date: item.date,
+                            group_id: item.group_id,
+                            group_name: item.group_name,
+                            created_by_id: item.created_by_id,
+                            created_by_name: item.created_by_name || "Unknown",
+                            is_mine: false,
+                        }));
+                        setPublicActivities(activities);
+                    }
+                })
+                .finally(() => setIsLoadingPublic(false));
+        }
+    }, [identity?.id, limit]);
 
     // Fetch recent expenses
     const { query: expensesQuery } = useList({
@@ -89,7 +85,7 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
             select: "*, groups!group_id(id, name), profiles!created_by(id, full_name)",
         },
         queryOptions: {
-            // Only fetch if authenticated, otherwise show sample data
+            // Only fetch if authenticated
             enabled: !!identity?.id,
         },
     });
@@ -110,7 +106,7 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
             select: "*, groups!group_id(id, name), profiles!created_by(id, full_name), from_profile:profiles!from_user(full_name), to_profile:profiles!to_user(full_name)",
         },
         queryOptions: {
-            // Only fetch if authenticated, otherwise show sample data
+            // Only fetch if authenticated
             enabled: !!identity?.id,
         },
     });
@@ -119,16 +115,16 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
     const payments: any[] = paymentsQuery.data?.data || [];
 
     const activity = useMemo(() => {
-        // If not authenticated, show sample data immediately
+        // For unauthenticated users, return public activities
         if (!identity?.id) {
             return {
-                items: SAMPLE_ACTIVITIES,
-                isLoading: false,
+                items: publicActivities,
+                isLoading: isLoadingPublic,
                 isRefetching: false,
             };
         }
 
-        // Ensure we have valid arrays to work with
+        // For authenticated users, merge their expenses and payments
         const safeExpenses = Array.isArray(expenses) ? expenses : [];
         const safePayments = Array.isArray(payments) ? payments : [];
 
@@ -167,15 +163,12 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
             return new Date(b.date).getTime() - new Date(a.date).getTime();
         });
 
-        // If authenticated but no real data, use sample activities for demo purposes
-        const items = allItems.length > 0 ? allItems.slice(0, limit) : SAMPLE_ACTIVITIES;
-
         return {
-            items,
+            items: allItems.slice(0, limit),
             isLoading: expensesQuery.isLoading || paymentsQuery.isLoading,
             isRefetching: expensesQuery.isRefetching || paymentsQuery.isRefetching,
         };
-    }, [identity, expenses, payments, limit, expensesQuery.isLoading, paymentsQuery.isLoading, expensesQuery.isRefetching, paymentsQuery.isRefetching]);
+    }, [identity, publicActivities, isLoadingPublic, expenses, payments, limit, expensesQuery.isLoading, paymentsQuery.isLoading, expensesQuery.isRefetching, paymentsQuery.isRefetching]);
 
     return activity;
 };
