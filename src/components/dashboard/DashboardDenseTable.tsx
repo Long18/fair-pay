@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { usePaginatedActivities } from "@/hooks/use-paginated-activities";
 import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useGo, useGetIdentity } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
 import { Profile } from "@/modules/profile/types";
@@ -240,6 +240,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                                 ? "ring-teal-200 group-hover:ring-teal-300"
                                 : "ring-red-200 group-hover:ring-red-300"
                             }`}>
+                              <AvatarImage src={item.counterparty_avatar_url || undefined} alt={item.counterparty_name} />
                               <AvatarFallback className={`text-base font-bold ${getAvatarGradient(item.i_owe_them)} ${getAvatarTextColor(item.i_owe_them)}`}>
                                 {item.counterparty_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                               </AvatarFallback>
