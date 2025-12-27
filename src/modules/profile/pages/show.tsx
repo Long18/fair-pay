@@ -73,7 +73,7 @@ export const ProfileShow = () => {
     if (!id) return;
 
     setIsLoadingActivities(true);
-    
+
     Promise.all([
       supabaseClient
         .from("expenses")
@@ -271,4 +271,3 @@ export const ProfileShow = () => {
     </div>
   );
 };
-

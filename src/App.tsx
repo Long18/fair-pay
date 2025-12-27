@@ -30,7 +30,7 @@ import { ForgotPassword } from "./pages/forgot-password";
 import { Login } from "./pages/login";
 import { Register } from "./pages/register";
 import { OAuthConsent } from "./pages/oauth";
-import { ProfileEdit } from "./modules/profile";
+import { ProfileEdit, ProfileShow } from "./modules/profile";
 import { GroupList, GroupCreate, GroupEdit, GroupShow } from "./modules/groups";
 import { ExpenseCreate, ExpenseShow } from "./modules/expenses";
 import { PaymentCreate } from "./modules/payments";
@@ -204,7 +204,7 @@ function App() {
                   {/* Public profile view */}
                   <Route path="/profile/:id" element={
                     <ErrorBoundary context="Profile Details">
-                      <FriendShow />
+                      <ProfileShow />
                     </ErrorBoundary>
                   } />
                   
