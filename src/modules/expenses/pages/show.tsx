@@ -276,7 +276,7 @@ export const ExpenseShow = () => {
                         </TooltipContent>
                       </Tooltip>
                       <div className="text-xs text-muted-foreground mt-1 font-medium">
-                        {String(t(`expenses.${split.split_method}`, split.split_method))} {t('expenses.split')}
+                        {String(t(`expenses.${split.split_method}`, split.split_method))}
                       </div>
                     </div>
                   </div>
