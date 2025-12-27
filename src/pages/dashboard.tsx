@@ -29,10 +29,7 @@ export const Dashboard = () => {
         <DashboardSkeleton />
       ) : (
         <>
-          {/* Active Balances Feed - Priority Section */}
-          <BalanceFeed disabled={!isAuthenticated} />
-
-          {/* Recent Activity */}
+          {/* Recent Activity with Debt Information */}
           <DashboardDenseTable disabled={!isAuthenticated} />
 
           {/* Financial Overview Cards */}

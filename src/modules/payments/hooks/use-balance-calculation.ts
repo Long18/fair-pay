@@ -11,23 +11,14 @@ interface UseBalanceCalculationProps {
 }
 
 /**
- * Calculate balances for a group context
- *
- * Formula per user:
- * balance = (total paid by user) - (total owed by user) + (payments received) - (payments made)
- *
- * Positive balance = Others owe this user
- * Negative balance = This user owes others
- *
- * Risk mitigation: Simple, straightforward calculation without debt simplification
+ * Pure function to calculate balances (no hooks)
+ * Can be called from anywhere, including inside loops/maps
  */
-export const useBalanceCalculation = ({
-  expenses,
-  payments,
-  currentUserId,
-  members,
-}: UseBalanceCalculationProps): UserBalance[] => {
-  return useMemo(() => {
+export const calculateBalances = (
+  expenses: ExpenseWithSplits[],
+  payments: Payment[],
+  members: Array<{ id: string; full_name: string; avatar_url?: string | null }>
+): UserBalance[] => {
     // Initialize balance for each member
     const balanceMap = new Map<string, number>();
     members.forEach(member => {
@@ -81,6 +72,27 @@ export const useBalanceCalculation = ({
 
     // Sort: debts first (negative), then credits (positive)
     return balances.sort((a, b) => a.balance - b.balance);
+};
+
+/**
+ * Calculate balances for a group context (React Hook version)
+ *
+ * Formula per user:
+ * balance = (total paid by user) - (total owed by user) + (payments received) - (payments made)
+ *
+ * Positive balance = Others owe this user
+ * Negative balance = This user owes others
+ *
+ * Risk mitigation: Simple, straightforward calculation without debt simplification
+ */
+export const useBalanceCalculation = ({
+  expenses,
+  payments,
+  currentUserId,
+  members,
+}: UseBalanceCalculationProps): UserBalance[] => {
+  return useMemo(() => {
+    return calculateBalances(expenses, payments, members);
   }, [expenses, payments, members, currentUserId]);
 };
 

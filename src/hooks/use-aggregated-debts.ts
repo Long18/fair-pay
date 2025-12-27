@@ -11,8 +11,38 @@ export interface AggregatedDebt {
 }
 
 /**
+ * Sample debt data for public/unauthenticated users
+ * Format: "John owes Sarah" (neutral, shows relationship between two people)
+ */
+const SAMPLE_DEBTS: AggregatedDebt[] = [
+    {
+        counterparty_id: "demo-1",
+        counterparty_name: "John",
+        amount: 250000,
+        i_owe_them: false, // Format as: "John owes [someone]"
+        owedToName: "Sarah", // Who John owes money to
+    },
+    {
+        counterparty_id: "demo-2",
+        counterparty_name: "Mike",
+        amount: 150000,
+        i_owe_them: true, // Format as: "[someone] owes Mike"
+        owedToName: "Alex", // Who owes money to Mike
+    },
+    {
+        counterparty_id: "demo-3",
+        counterparty_name: "Emma",
+        amount: 300000,
+        i_owe_them: false, // Format as: "Emma owes [someone]"
+        owedToName: "John", // Who Emma owes money to
+    },
+] as any; // Type assertion needed for extra field
+
+/**
  * Hook to fetch aggregated debts for current user using server-side function
  * This replaces client-side balance calculation with optimized database query
+ *
+ * When not authenticated, returns sample debt data for demo purposes
  */
 export const useAggregatedDebts = () => {
     const { data: identity } = useGetIdentity<Profile>();
@@ -23,7 +53,8 @@ export const useAggregatedDebts = () => {
     useEffect(() => {
         const fetchDebts = async () => {
             if (!identity?.id) {
-                setData([]);
+                // Return sample data for unauthenticated users
+                setData(SAMPLE_DEBTS);
                 setIsLoading(false);
                 return;
             }

@@ -1,6 +1,6 @@
 import { useList, useGetIdentity } from "@refinedev/core";
 import { useMemo } from "react";
-import { useBalanceCalculation } from "@/modules/payments";
+import { calculateBalances } from "@/modules/payments";
 import { Profile } from "@/modules/profile/types";
 
 export interface GroupBalance {
@@ -70,7 +70,7 @@ export const useGlobalBalance = (): GlobalBalance => {
       },
     ] : [],
     meta: {
-      select: "*, expense_splits:expense_id(*)",
+      select: "*, expense_splits(*)",
     },
     pagination: {
       mode: "off",
@@ -148,13 +148,12 @@ export const useGlobalBalance = (): GlobalBalance => {
           avatar_url: m.profiles?.avatar_url,
         }));
 
-      // Calculate balances for this group using existing hook logic
-      const balances = useBalanceCalculation({
-        expenses: groupExpenses,
-        payments: groupPayments,
-        currentUserId: identity.id,
-        members: groupMembers,
-      });
+      // Calculate balances for this group using pure function (not hook)
+      const balances = calculateBalances(
+        groupExpenses,
+        groupPayments,
+        groupMembers
+      );
 
       // Find current user's balance in this group
       const myBalance = balances.find(b => b.user_id === identity.id);
