@@ -15,7 +15,10 @@
     "next": "Next",
     "submit": "Submit",
     "close": "Close",
-    "payNow": "Pay Now"
+    "payNow": "Pay Now",
+    "justNow": "Just now",
+    "hoursAgo": "h ago",
+    "daysAgo": "d ago"
   },
   "auth": {
     "login": "Login",
@@ -95,7 +98,6 @@
     "addFriendsToSplit": "Add friends to split with",
     "lastActivity": "Last activity",
     "entity": "Entity",
-    "balance": "Balance",
     "all": "All",
     "groups": "Groups",
     "friends": "Friends",
