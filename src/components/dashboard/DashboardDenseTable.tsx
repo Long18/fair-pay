@@ -39,7 +39,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
   const { data: identity } = useGetIdentity<Profile>();
   const go = useGo();
   const { t } = useTranslation();
-  
+
   // Pagination states
   const [balancesPage, setBalancesPage] = useState(1);
   const [activitiesPage, setActivitiesPage] = useState(1);
@@ -95,7 +95,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
   });
 
   const activityItems = activities.map(a => ({ ...a, itemType: 'activity' as const }));
-  
+
   // Pagination logic
   const totalBalances = debtItems.length;
   const totalActivities = activityItems.length;
@@ -231,9 +231,9 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
             </Table>
             {hasMoreBalances && (
               <div className="p-3 border-t bg-muted/10">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="w-full text-xs font-medium h-9 hover:bg-accent group"
                   onClick={() => setBalancesPage(prev => prev + 1)}
                 >
@@ -393,9 +393,9 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
           </Table>
           {hasMoreActivities && (
             <div className="p-3 border-t bg-muted/10">
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 className="w-full text-xs font-medium h-9 hover:bg-accent group"
                 onClick={() => setActivitiesPage(prev => prev + 1)}
               >
