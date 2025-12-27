@@ -5,8 +5,10 @@ import { UserBalance } from "../types";
 export interface SimplifiedBalance {
   from_user_id: string;
   from_user_name: string;
+  from_user_avatar_url?: string | null;
   to_user_id: string;
   to_user_name: string;
+  to_user_avatar_url?: string | null;
   amount: number;
 }
 
@@ -81,18 +83,25 @@ export const useSimplifiedBalances = ({
       ? simplifyDebts(originalEdges)
       : { simplified: originalEdges, transactionsSaved: 0 };
 
-    // Helper to find user name
+    // Helper to find user info
     const getUserName = (userId: string) => {
       const user = balances.find(b => b.user_id === userId);
       return user?.user_name || 'Unknown';
+    };
+
+    const getUserAvatarUrl = (userId: string) => {
+      const user = balances.find(b => b.user_id === userId);
+      return user?.avatar_url || null;
     };
 
     // Convert edges to simplified balance format
     const toSimplifiedBalance = (edge: DebtEdge): SimplifiedBalance => ({
       from_user_id: edge.from,
       from_user_name: getUserName(edge.from),
+      from_user_avatar_url: getUserAvatarUrl(edge.from),
       to_user_id: edge.to,
       to_user_name: getUserName(edge.to),
+      to_user_avatar_url: getUserAvatarUrl(edge.to),
       amount: edge.amount,
     });
 

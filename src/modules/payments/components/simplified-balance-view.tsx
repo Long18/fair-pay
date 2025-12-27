@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Info } from "lucide-react";
 import {
@@ -145,6 +145,7 @@ export const SimplifiedBalanceView = ({
                 >
                   <div className="flex items-center gap-3 flex-1">
                     <Avatar>
+                      <AvatarImage src={debt.to_user_avatar_url || undefined} alt={debt.to_user_name} />
                       <AvatarFallback>
                         {debt.to_user_name
                           ?.split(" ")
@@ -201,6 +202,7 @@ export const SimplifiedBalanceView = ({
                 >
                   <div className="flex items-center gap-3 flex-1">
                     <Avatar>
+                      <AvatarImage src={debt.from_user_avatar_url || undefined} alt={debt.from_user_name} />
                       <AvatarFallback>
                         {debt.from_user_name
                           ?.split(" ")
