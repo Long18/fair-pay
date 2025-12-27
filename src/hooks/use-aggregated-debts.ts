@@ -11,38 +11,10 @@ export interface AggregatedDebt {
 }
 
 /**
- * Sample debt data for public/unauthenticated users
- * Format: "John owes Sarah" (neutral, shows relationship between two people)
- */
-const SAMPLE_DEBTS: AggregatedDebt[] = [
-    {
-        counterparty_id: "demo-1",
-        counterparty_name: "John",
-        amount: 250000,
-        i_owe_them: false, // Format as: "John owes [someone]"
-        owedToName: "Sarah", // Who John owes money to
-    },
-    {
-        counterparty_id: "demo-2",
-        counterparty_name: "Mike",
-        amount: 150000,
-        i_owe_them: true, // Format as: "[someone] owes Mike"
-        owedToName: "Alex", // Who owes money to Mike
-    },
-    {
-        counterparty_id: "demo-3",
-        counterparty_name: "Emma",
-        amount: 300000,
-        i_owe_them: false, // Format as: "Emma owes [someone]"
-        owedToName: "John", // Who Emma owes money to
-    },
-] as any; // Type assertion needed for extra field
-
-/**
- * Hook to fetch aggregated debts for current user using server-side function
- * This replaces client-side balance calculation with optimized database query
- *
- * When not authenticated, returns sample debt data for demo purposes
+ * Hook to fetch aggregated debts
+ * - For authenticated users: Fetches their real debt data using get_user_debts_aggregated
+ * - For unauthenticated users: Fetches public demo data using get_public_demo_debts
+ * - All data comes from database, no hardcoded sample data
  */
 export const useAggregatedDebts = () => {
     const { data: identity } = useGetIdentity<Profile>();
@@ -52,30 +24,38 @@ export const useAggregatedDebts = () => {
 
     useEffect(() => {
         const fetchDebts = async () => {
-            if (!identity?.id) {
-                // Return sample data for unauthenticated users
-                setData(SAMPLE_DEBTS);
-                setIsLoading(false);
-                return;
-            }
-
             setIsLoading(true);
             try {
-                const { data: result, error: rpcError } = await supabaseClient.rpc(
-                    "get_user_debts_aggregated",
-                    {
-                        p_user_id: identity.id,
-                    }
-                );
+                let result;
+                let rpcError;
+
+                if (!identity?.id) {
+                    // Unauthenticated: Fetch public demo data from database
+                    const response = await supabaseClient.rpc("get_public_demo_debts");
+                    result = response.data;
+                    rpcError = response.error;
+                } else {
+                    // Authenticated: Fetch user's real data
+                    const response = await supabaseClient.rpc(
+                        "get_user_debts_aggregated",
+                        {
+                            p_user_id: identity.id,
+                        }
+                    );
+                    result = response.data;
+                    rpcError = response.error;
+                }
 
                 if (rpcError) {
-                    console.error("Error fetching aggregated debts:", rpcError);
+                    console.error("Error fetching debts:", rpcError);
                     throw rpcError;
                 }
 
                 setData(result || []);
                 setError(null);
             } catch (err) {
+                console.error("Failed to fetch debts:", err);
+                setData([]);
                 setError(err instanceof Error ? err : new Error("Unknown error"));
             } finally {
                 setIsLoading(false);

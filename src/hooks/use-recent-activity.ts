@@ -25,6 +25,47 @@ export interface RecentActivity {
 }
 
 /**
+ * Sample activity data for when database is empty or unauthenticated
+ */
+const SAMPLE_ACTIVITIES: ActivityItem[] = [
+    {
+        id: "sample-1",
+        type: "expense",
+        description: "Lunch at Pizza Place",
+        amount: 450000,
+        currency: "VND",
+        date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+        group_name: "Weekend Trip",
+        created_by_id: "demo-user-1",
+        created_by_name: "John",
+        is_mine: false,
+    },
+    {
+        id: "sample-2",
+        type: "payment",
+        description: "Sarah paid Mike",
+        amount: 200000,
+        currency: "VND",
+        date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+        created_by_id: "demo-user-2",
+        created_by_name: "Sarah",
+        is_mine: false,
+    },
+    {
+        id: "sample-3",
+        type: "expense",
+        description: "Movie tickets",
+        amount: 300000,
+        currency: "VND",
+        date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+        group_name: "Friends",
+        created_by_id: "demo-user-3",
+        created_by_name: "Emma",
+        is_mine: false,
+    },
+];
+
+/**
  * Fetch and merge recent expenses and payments into a unified activity feed
  *
  * Returns the 20 most recent activities (expenses + payments) sorted by date
@@ -48,8 +89,8 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
             select: "*, groups!group_id(id, name), profiles!created_by(id, full_name)",
         },
         queryOptions: {
-            // Allow query even without authentication (for public view)
-            enabled: true,
+            // Only fetch if authenticated, otherwise show sample data
+            enabled: !!identity?.id,
         },
     });
 
@@ -69,8 +110,8 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
             select: "*, groups!group_id(id, name), profiles!created_by(id, full_name), from_profile:profiles!from_user(full_name), to_profile:profiles!to_user(full_name)",
         },
         queryOptions: {
-            // Allow query even without authentication (for public view)
-            enabled: true,
+            // Only fetch if authenticated, otherwise show sample data
+            enabled: !!identity?.id,
         },
     });
 
@@ -78,6 +119,15 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
     const payments: any[] = paymentsQuery.data?.data || [];
 
     const activity = useMemo(() => {
+        // If not authenticated, show sample data immediately
+        if (!identity?.id) {
+            return {
+                items: SAMPLE_ACTIVITIES,
+                isLoading: false,
+                isRefetching: false,
+            };
+        }
+
         // Ensure we have valid arrays to work with
         const safeExpenses = Array.isArray(expenses) ? expenses : [];
         const safePayments = Array.isArray(payments) ? payments : [];
@@ -117,8 +167,8 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
             return new Date(b.date).getTime() - new Date(a.date).getTime();
         });
 
-        // Take only the requested limit
-        const items = allItems.slice(0, limit);
+        // If authenticated but no real data, use sample activities for demo purposes
+        const items = allItems.length > 0 ? allItems.slice(0, limit) : SAMPLE_ACTIVITIES;
 
         return {
             items,
