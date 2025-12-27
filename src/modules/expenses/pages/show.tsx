@@ -252,8 +252,8 @@ export const ExpenseShow = () => {
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-muted-foreground capitalize">
-                        {split.split_method} {t('expenses.split')}
+                      <div className="text-xs text-muted-foreground">
+                        {String(t(`expenses.${split.split_method}`, split.split_method))} {t('expenses.split')}
                       </div>
                     </div>
                   </div>

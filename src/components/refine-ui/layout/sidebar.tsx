@@ -35,6 +35,7 @@ import {
 } from "@refinedev/core";
 import { ChevronRight, ListIcon } from "lucide-react";
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 export function Sidebar() {
   const { open } = useShadcnSidebar();
@@ -279,7 +280,20 @@ function SidebarHeader() {
 }
 
 function getDisplayName(item: TreeMenuItem) {
-  return item.meta?.label ?? item.label ?? item.name;
+  const { t } = useTranslation();
+  const label = item.meta?.label ?? item.label ?? item.name;
+  
+  // Map resource names to translation keys
+  const translationMap: Record<string, string> = {
+    'Dashboard': 'dashboard.title',
+    'Groups': 'groups.title',
+    'Friends': 'friends.title',
+    'Balances': 'balances.title',
+    'Reports': 'reports.title',
+    'Settings': 'settings.title',
+  };
+  
+  return translationMap[label] ? t(translationMap[label]) : label;
 }
 
 type IconProps = {
