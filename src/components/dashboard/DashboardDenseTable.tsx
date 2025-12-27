@@ -59,26 +59,18 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
     return "Just now";
   };
 
-  // Show all debts (including demo data from database for unauthenticated users)
-  // The hook queries database for both authenticated and unauthenticated cases
+  // Show all debts (real data for both authenticated and unauthenticated users)
   const debtItems = debts.map(d => {
-    // Check if this is demo data: has owed_to_name field (only demo data has this)
-    // Demo UUIDs are in range: 00000000-0000-0000-0000-000000000001 to 00000000-0000-0000-0000-000000000003
-    const isDemoData = !!(d as any).owed_to_name ||
-                       (typeof d.counterparty_id === 'string' && d.counterparty_id.startsWith('00000000-0000-0000-0000-00000000'));
 
-    // For demo data, show neutral relationship: "John owes Sarah"
-    // For real data (authenticated), show personalized: "You owe John" or "John owes you"
+    // For unauthenticated/public data: show actual names (e.g., "Hoàng Anh owes Long")
+    // For authenticated data: show personalized (e.g., "You owe Hoàng Anh" or "Hoàng Anh owes you")
     const getDescription = () => {
-      // If it's demo data, construct neutral format using owed_to_name field
-      if (isDemoData) {
-        const owedToName = (d as any).owed_to_name || 'someone';
-        // Demo data structure:
-        // i_owe_them = false means: "owed_to_name owes counterparty_name"
-        // Example: owed_to_name="John", counterparty_name="Sarah" → "John owes Sarah"
-        return `${owedToName} owes ${d.counterparty_name}`;
+      // If owed_to_name is present, it's public data - use actual names
+      if ((d as any).owed_to_name) {
+        const owedToName = (d as any).owed_to_name;
+        return `${d.counterparty_name} owes ${owedToName}`;
       } else {
-        // Real data: personalized wording
+        // Real authenticated data: personalized wording
         return d.i_owe_them
           ? `You owe ${d.counterparty_name}`
           : `${d.counterparty_name} owes you`;

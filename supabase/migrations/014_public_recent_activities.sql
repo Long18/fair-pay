@@ -51,4 +51,3 @@ GRANT EXECUTE ON FUNCTION get_public_recent_activities(integer) TO authenticated
 
 COMMENT ON FUNCTION get_public_recent_activities IS
 'Returns recent expense activities from public groups. Accessible to everyone including unauthenticated users. Does not include payments for privacy.';
-

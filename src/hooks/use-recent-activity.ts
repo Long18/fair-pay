@@ -64,8 +64,8 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
                         }));
                         setPublicActivities(activities);
                     }
-                })
-                .finally(() => setIsLoadingPublic(false));
+                    setIsLoadingPublic(false);
+                });
         }
     }, [identity?.id, limit]);
 
