@@ -49,17 +49,17 @@ export const usePaginatedActivities = ({
 
       if (!identity?.id) {
         // For unauthenticated users: use RPC function
-        // Note: RPC functions don't support .select() for counting
-        // We'll need to fetch total count separately
+        // Fetch total count by querying all expenses
         const [dataResult, countResult] = await Promise.all([
           supabaseClient.rpc("get_public_recent_activities", {
             p_limit: pageSize,
             p_offset: offset,
           }),
-          supabaseClient.rpc("get_public_recent_activities", {
-            p_limit: 1000, // Large limit to get total
-            p_offset: 0,
-          }),
+          supabaseClient
+            .from("expenses")
+            .select("id", { count: "exact", head: true })
+            .eq("is_payment", false)
+            .not("group_id", "is", null),
         ]);
 
         if (dataResult.error) {
@@ -81,7 +81,7 @@ export const usePaginatedActivities = ({
             is_mine: false,
           }));
           setItems(activities);
-          setTotalItems(countResult.data?.length || 0);
+          setTotalItems(countResult.count || 0);
         }
       } else {
         // For authenticated users: query expenses and payments with pagination
@@ -194,4 +194,3 @@ export const usePaginatedActivities = ({
     refetch: fetchActivities,
   };
 };
-

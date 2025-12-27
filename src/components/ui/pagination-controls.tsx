@@ -30,7 +30,7 @@ export function PaginationControls({
   // Calculate visible page numbers
   const getVisiblePages = () => {
     const pages: (number | "ellipsis")[] = [];
-    
+
     if (totalPages <= maxVisiblePages) {
       // Show all pages if total is small
       for (let i = 1; i <= totalPages; i++) {
@@ -170,4 +170,3 @@ export function PaginationControls({
     </div>
   );
 }
-
