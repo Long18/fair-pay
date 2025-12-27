@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useCreate, useList, useGetIdentity } from "@refinedev/core";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -21,65 +21,116 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { UserPlus } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Check, ChevronsUpDown, UserPlus } from "lucide-react";
 import { Profile } from "@/modules/profile/types";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const addFriendSchema = z.object({
-  searchTerm: z.string().min(1, "Please enter a name or email to search"),
+  userId: z.string().min(1, "Please select a user"),
 });
 
 export const AddFriendModal = () => {
   const [open, setOpen] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
   const { data: identity } = useGetIdentity<Profile>();
   const createMutation = useCreate();
 
   const form = useForm({
     resolver: zodResolver(addFriendSchema),
     defaultValues: {
-      searchTerm: "",
+      userId: "",
     },
   });
 
-  // Find user by name (contains search)
+  // Get existing friendships to exclude
+  const { query: friendshipsQuery } = useList({
+    resource: "friendships",
+    pagination: { mode: "off" },
+    queryOptions: {
+      enabled: !!identity?.id,
+    },
+  });
+
+  const existingFriendIds = useMemo(() => {
+    if (!identity?.id || !friendshipsQuery.data?.data) return new Set<string>();
+    const friendships: any[] = friendshipsQuery.data.data;
+    const friendIds = new Set<string>();
+    friendships.forEach((f) => {
+      if (f.user_a === identity.id) friendIds.add(f.user_b);
+      if (f.user_b === identity.id) friendIds.add(f.user_a);
+    });
+    return friendIds;
+  }, [friendshipsQuery.data, identity?.id]);
+
+  // Find users by name (auto-fetch when search value changes)
   const { query: profilesQuery } = useList<Profile>({
     resource: "profiles",
-    filters: [
-      {
-        field: "full_name",
-        operator: "contains",
-        value: form.watch("searchTerm"),
-      },
-    ],
+    filters: searchValue
+      ? [
+          {
+            field: "full_name",
+            operator: "contains",
+            value: searchValue,
+          },
+        ]
+      : [],
     pagination: {
       pageSize: 10,
     },
     queryOptions: {
-      enabled: false, // Don't auto-fetch
+      enabled: popoverOpen && searchValue.length >= 1,
     },
   });
 
-  const handleSubmit = async (_formData: { searchTerm: string }) => {
+  const availableUsers = useMemo(() => {
+    const users = profilesQuery.data?.data || [];
+    return users.filter(
+      (user) => user.id !== identity?.id && !existingFriendIds.has(user.id)
+    );
+  }, [profilesQuery.data, identity?.id, existingFriendIds]);
+
+  const userId = form.watch("userId");
+  const selectedUser = useMemo(() => {
+    if (!userId) return null;
+    // Try to find in available users first
+    const found = availableUsers.find((u) => u.id === userId);
+    if (found) return found;
+    // If not in available users, try to fetch from profiles
+    // This handles case when user was selected but list refreshed
+    return profilesQuery.data?.data?.find((u) => u.id === userId) || null;
+  }, [userId, availableUsers, profilesQuery.data]);
+
+  const handleSelectUser = (userId: string) => {
+    form.setValue("userId", userId);
+    setPopoverOpen(false);
+    setSearchValue("");
+  };
+
+  const handleSubmit = async (formData: { userId: string }) => {
     if (!identity?.id) {
       toast.error("You must be logged in to add friends");
       return;
     }
 
-    // Search for user by name
-    const result = await profilesQuery.refetch();
-    const users = result.data?.data || [];
-
-    if (users.length === 0) {
-      toast.error("No users found with that name");
-      return;
-    }
-
-    // If multiple results, use first one (could enhance with selection UI)
-    const targetUser = users[0];
-
-    if (targetUser.id === identity.id) {
-      toast.error("You cannot add yourself as a friend");
+    const targetUser = availableUsers.find((u) => u.id === formData.userId);
+    if (!targetUser) {
+      toast.error("Please select a valid user");
       return;
     }
 
@@ -102,6 +153,8 @@ export const AddFriendModal = () => {
           toast.success(`Friend request sent to ${targetUser.full_name}`);
           setOpen(false);
           form.reset();
+          setSearchValue("");
+          friendshipsQuery.refetch();
         },
         onError: (error: any) => {
           if (error.message?.includes("duplicate")) {
@@ -114,8 +167,17 @@ export const AddFriendModal = () => {
     );
   };
 
+  const handleDialogOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+      form.reset();
+      setSearchValue("");
+      setPopoverOpen(false);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogTrigger asChild>
         <Button size="lg">
           <UserPlus className="mr-2 h-5 w-5" />
@@ -133,19 +195,91 @@ export const AddFriendModal = () => {
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             <FormField
               control={form.control}
-              name="searchTerm"
+              name="userId"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Search by Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="text"
-                      placeholder="Enter friend's name"
-                      {...field}
-                    />
-                  </FormControl>
+                <FormItem className="flex flex-col">
+                  <FormLabel>Search for Friend</FormLabel>
+                  <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn(
+                            "w-full justify-between",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {selectedUser ? (
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-5 w-5">
+                                <AvatarFallback className="text-xs">
+                                  {selectedUser.full_name
+                                    ?.split(" ")
+                                    .map((n) => n[0])
+                                    .join("")
+                                    .toUpperCase() || "?"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span>{selectedUser.full_name}</span>
+                            </div>
+                          ) : (
+                            <span>Search by name...</span>
+                          )}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                      <Command>
+                        <CommandInput
+                          placeholder="Type to search users..."
+                          value={searchValue}
+                          onValueChange={setSearchValue}
+                        />
+                        <CommandList>
+                          <CommandEmpty>
+                            {searchValue.length === 0
+                              ? "Type to search users..."
+                              : "No users found"}
+                          </CommandEmpty>
+                          <CommandGroup>
+                            {availableUsers.map((user) => (
+                              <CommandItem
+                                key={user.id}
+                                value={user.id}
+                                onSelect={() => handleSelectUser(user.id)}
+                                keywords={user.full_name?.split(" ") || []}
+                              >
+                                <div className="flex items-center gap-2 w-full">
+                                  <Avatar className="h-6 w-6">
+                                    <AvatarFallback className="text-xs">
+                                      {user.full_name
+                                        ?.split(" ")
+                                        .map((n) => n[0])
+                                        .join("")
+                                        .toUpperCase() || "?"}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span className="flex-1">{user.full_name}</span>
+                                  <Check
+                                    className={cn(
+                                      "h-4 w-4",
+                                      field.value === user.id
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                  />
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   <FormDescription>
-                    We'll find users matching this name
+                    Start typing to search for users by name
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -155,13 +289,21 @@ export const AddFriendModal = () => {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  setOpen(false);
+                  form.reset();
+                  setSearchValue("");
+                }}
                 className="flex-1"
               >
                 Cancel
               </Button>
-              <Button type="submit" className="flex-1">
-                Send Request
+              <Button
+                type="submit"
+                className="flex-1"
+                disabled={!form.watch("userId") || createMutation.isPending}
+              >
+                {createMutation.isPending ? "Sending..." : "Send Request"}
               </Button>
             </div>
           </form>

@@ -21,7 +21,7 @@ export const FriendShow = () => {
     resource: "friendships",
     id: id!,
     meta: {
-      select: "*, user_a_profile!user_a(id, full_name, avatar_url), user_b_profile!user_b(id, full_name, avatar_url)",
+      select: "*, user_a_profile:profiles!user_a(id, full_name, avatar_url), user_b_profile:profiles!user_b(id, full_name, avatar_url)",
     },
   });
 
