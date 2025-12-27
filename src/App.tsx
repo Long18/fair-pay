@@ -7,6 +7,7 @@ import {
   CustomersIcon,
   BalancesIcon,
   AuditLogsIcon,
+  FairPayIcon,
 } from "./components/ui/icons";
 
 import routerProvider, {
@@ -89,6 +90,7 @@ function App() {
                 projectId: "efvxeD-2r07zg-niV06o",
                 title: {
                   text: "FairPay",
+                  icon: <FairPayIcon className="w-6 h-6" />,
                 },
                 reactQuery: {
                   clientConfig: queryClientConfig,

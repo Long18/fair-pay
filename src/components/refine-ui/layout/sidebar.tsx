@@ -36,6 +36,7 @@ import {
 import { ChevronRight, ListIcon } from "lucide-react";
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { FairPayIcon } from "@/components/ui/icons";
 
 export function Sidebar() {
   const { open } = useShadcnSidebar();
@@ -252,7 +253,7 @@ function SidebarHeader() {
         )}
       >
         <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold shadow-sm">
-          <span className="text-sm">FP</span>
+          <FairPayIcon className="w-5 h-5" />
         </div>
         <h1
           className={cn(

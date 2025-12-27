@@ -334,3 +334,14 @@ export const PaymentPlansIcon: React.FC<IconProps> = ({ className, size = 24, ..
     />
   </svg>
 );
+
+export const FairPayIcon: React.FC<IconProps> = ({ className, size = 24, ...props }) => (
+  <img
+    src="/favicon.ico"
+    alt="FairPay"
+    width={size}
+    height={size}
+    className={className}
+    {...props}
+  />
+);
