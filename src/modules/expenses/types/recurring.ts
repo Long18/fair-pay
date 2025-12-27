@@ -22,20 +22,15 @@ export interface RecurringExpense {
   template_expense_id: string;
   frequency: RecurringFrequency;
   interval: number;
-  start_date: string;
-  end_date: string | null;
   next_occurrence: string;
-  last_created_at: string | null;
+  end_date: string | null;
   is_active: boolean;
-  notify_before_days: number;
-  context_type: 'group' | 'friend';
-  group_id: string | null;
-  friendship_id: string | null;
-  created_by: string;
   created_at: string;
   updated_at: string;
 
+  // Joined data from the expenses table
   template_expense?: Expense;
+  expenses?: Expense; // This is how Supabase returns the joined data
 }
 
 export interface RecurringExpenseFormValues {
@@ -59,8 +54,6 @@ export const DEFAULT_RECURRING_VALUES: RecurringExpenseFormValues = {
 export interface RecurringExpenseStatus {
   is_active: boolean;
   next_occurrence: string;
-  last_created_at: string | null;
-  occurrences_count?: number;
   has_end_date: boolean;
   days_until_next: number;
 }
@@ -73,7 +66,6 @@ export function getRecurringExpenseStatus(recurring: RecurringExpense): Recurrin
   return {
     is_active: recurring.is_active,
     next_occurrence: recurring.next_occurrence,
-    last_created_at: recurring.last_created_at,
     has_end_date: recurring.end_date !== null,
     days_until_next: daysUntil,
   };

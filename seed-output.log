@@ -1,0 +1,78 @@
+🌱 Starting comprehensive test data seeding...
+
+This will create: Friends, Groups, Expenses, Splits, Payments, and Reports
+
+👤 Getting main user...
+✅ Main user: Alice Johnson (alice@test.com)
+
+📝 Creating diverse test users...
+⚠️  Alice Johnson: invalid input syntax for type uuid: "alice.johnson-1766820655705"
+⚠️  Bob Smith: invalid input syntax for type uuid: "bob.smith-1766820655716"
+⚠️  Charlie Brown: invalid input syntax for type uuid: "charlie.brown-1766820655722"
+⚠️  Diana Prince: invalid input syntax for type uuid: "diana.prince-1766820655731"
+⚠️  Evan Williams: invalid input syntax for type uuid: "evan.williams-1766820655742"
+⚠️  Fiona Green: invalid input syntax for type uuid: "fiona.green-1766820655747"
+
+🤝 Creating friendships with various states...
+
+👥 Creating groups...
+✅ Weekend Trip 2024 (0 members)
+✅ Office Lunch Club (0 members)
+✅ Apartment 304 (0 members)
+
+💰 Creating expenses with diverse split scenarios...
+
+💸 Creating payment settlements...
+
+🔍 Computing final aggregated debts...
+
+╭────────────────────────────────────────────────────╮
+│ 📊 FINAL DASHBOARD DEBTS (After Payments)         │
+├────────────────────────────────────────────────────┤
+│ 🔴 PEOPLE WHO OWE YOU:                             │
+│   Bob Smith                 ₫        666.666,67 │
+│   Charlie Brown             ₫        666.666,66 │
+│ 🟢 PEOPLE YOU OWE:                                 │
+│   Bob Smith                 ₫        166.666,67 │
+│   Charlie Brown             ₫           100.000 │
+╰────────────────────────────────────────────────────╯
+
+📈 SUMMARY:
+   Total owed to you:  ₫1.333.333,33
+   Total you owe:      ₫266.666,67
+   Net balance:        ₫1.066.666,66
+   Status: ✅ You are owed money
+
+╭────────────────────────────────────────────────────╮
+│ ✅ COMPREHENSIVE TEST DATA CREATED!                │
+├────────────────────────────────────────────────────┤
+│ Friends created:         5                              │
+│ Groups created:          3                              │
+│ Expenses created:        0                              │
+│ Payment settlements:     3                              │
+│                                                    │
+│ Split methods tested:                              │
+│   ✓ Equal splits                                   │
+│   ✓ Percentage splits                              │
+│   ✓ Exact amounts                                  │
+│   ✓ By shares                                      │
+│   ✓ Rounding edge cases                            │
+╰────────────────────────────────────────────────────╯
+
+🔄 NEXT STEPS:
+1. Refresh your dashboard (Cmd + Shift + R)
+2. Check the Recent Activity table
+3. View Friends list
+4. Explore Groups
+5. Check individual expense details
+
+📱 EXPECTED UI:
+┌────────────────────────────────────────────────┐
+│ RECENT ACTIVITY TABLE (mixed rows):           │
+│ [A] Alice owes you      | Debt | ₫200k        │
+│ [E] Evan owes you       | Debt | ₫1,500k      │
+│ 🧾  Concert tickets     | Food | ₫3,000k      │
+│ [C] You owe Charlie     | Debt | ₫300k        │
+│ 💰 Payment from Alice   | Payment | ₫200k     │
+└────────────────────────────────────────────────┘
+

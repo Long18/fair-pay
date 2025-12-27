@@ -195,15 +195,6 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
               )}
             </div>
           </div>
-
-          {recurring.last_created_at && (
-            <div className="pt-3 border-t">
-              <p className="text-xs text-muted-foreground">
-                Lần tạo gần nhất:{' '}
-                {format(new Date(recurring.last_created_at), 'PPPpp', { locale: vi })}
-              </p>
-            </div>
-          )}
         </CardContent>
       </Card>
 

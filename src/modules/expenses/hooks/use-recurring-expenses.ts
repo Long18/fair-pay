@@ -7,19 +7,9 @@ interface UseRecurringExpensesProps {
 }
 
 export function useRecurringExpenses({ groupId, friendshipId }: UseRecurringExpensesProps = {}) {
-  const filters = [];
-
-  if (groupId) {
-    filters.push({ field: 'expenses.group_id', operator: 'eq' as const, value: groupId });
-  }
-
-  if (friendshipId) {
-    filters.push({ field: 'expenses.friendship_id', operator: 'eq' as const, value: friendshipId });
-  }
-
   const { query } = useList<RecurringExpense>({
     resource: 'recurring_expenses',
-    filters,
+    filters: [],
     sorters: [{ field: 'next_occurrence', order: 'asc' }],
     meta: {
       select: '*, expenses:template_expense_id(*)',
@@ -29,7 +19,25 @@ export function useRecurringExpenses({ groupId, friendshipId }: UseRecurringExpe
     },
   });
 
-  const recurring = query.data?.data || [];
+  // Map the joined 'expenses' field to 'template_expense' for compatibility
+  let recurring = (query.data?.data || []).map((r: any) => ({
+    ...r,
+    template_expense: r.expenses, // Map expenses to template_expense
+  }));
+
+  // Filter on client side based on the template expense's context
+  if (groupId) {
+    recurring = recurring.filter((r: any) =>
+      r.expenses && r.expenses.group_id === groupId
+    );
+  }
+
+  if (friendshipId) {
+    recurring = recurring.filter((r: any) =>
+      r.expenses && r.expenses.friendship_id === friendshipId
+    );
+  }
+
   const isLoading = query.isLoading;
   const error = query.error;
 

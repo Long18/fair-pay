@@ -34,7 +34,7 @@ export const PaymentList = ({ groupId, friendshipId }: PaymentListProps) => {
     resource: "payments",
     filters,
     meta: {
-      select: "*, from_profile!from_user(id, full_name, avatar_url), to_profile!to_user(id, full_name, avatar_url)",
+      select: "*, from_profile:profiles!from_user(id, full_name, avatar_url), to_profile:profiles!to_user(id, full_name, avatar_url)",
     },
     sorters: [
       {
