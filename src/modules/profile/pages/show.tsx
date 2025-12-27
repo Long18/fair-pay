@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useTranslation } from "react-i18next";
 
 interface DebtSummary {
   counterparty_id: string;
@@ -42,6 +43,7 @@ interface ActivityItem {
 export const ProfileShow = () => {
   const { id } = useParams<{ id: string }>();
   const go = useGo();
+  const { t } = useTranslation();
   const [debts, setDebts] = useState<DebtSummary[]>([]);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [isLoadingDebts, setIsLoadingDebts] = useState(true);
@@ -108,7 +110,7 @@ export const ProfileShow = () => {
   if (isLoadingProfile) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-muted-foreground">Loading profile...</p>
+        <p className="text-muted-foreground">{t('profile.loadingProfile')}</p>
       </div>
     );
   }
@@ -116,7 +118,7 @@ export const ProfileShow = () => {
   if (!profile) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-muted-foreground">Profile not found</p>
+        <p className="text-muted-foreground">{t('profile.profileNotFound')}</p>
       </div>
     );
   }
@@ -141,7 +143,7 @@ export const ProfileShow = () => {
           <div>
             <h1 className="text-2xl font-bold">{profile.full_name}</h1>
             <p className="text-sm text-muted-foreground">
-              Member since {formatDateShort(profile.created_at)}
+              {t('profile.memberSince')} {formatDateShort(profile.created_at)}
             </p>
           </div>
         </div>
@@ -149,20 +151,20 @@ export const ProfileShow = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Debts Summary</CardTitle>
+          <CardTitle>{t('profile.debtsSummary')}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoadingDebts ? (
-            <p className="text-muted-foreground text-center py-4">Loading debts...</p>
+            <p className="text-muted-foreground text-center py-4">{t('profile.loadingDebts')}</p>
           ) : debts.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">No debts</p>
+            <p className="text-muted-foreground text-center py-4">{t('profile.noDebts')}</p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Person</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>{t('profile.person')}</TableHead>
+                  <TableHead>{t('profile.status')}</TableHead>
+                  <TableHead className="text-right">{t('profile.amount')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -176,7 +178,7 @@ export const ProfileShow = () => {
                         variant={debt.i_owe_them ? "default" : "secondary"}
                         className="capitalize"
                       >
-                        {debt.i_owe_them ? "Owes" : "Is owed"}
+                        {debt.i_owe_them ? t('profile.owes') : t('profile.isOwed')}
                       </Badge>
                     </TableCell>
                     <TableCell
@@ -196,22 +198,22 @@ export const ProfileShow = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
+          <CardTitle>{t('profile.recentActivity')}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoadingActivities ? (
-            <p className="text-muted-foreground text-center py-4">Loading activities...</p>
+            <p className="text-muted-foreground text-center py-4">{t('profile.loadingActivities')}</p>
           ) : activities.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">No recent activity</p>
+            <p className="text-muted-foreground text-center py-4">{t('profile.noRecentActivity')}</p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Paid By</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Your Share</TableHead>
+                  <TableHead>{t('expenses.description')}</TableHead>
+                  <TableHead>{t('expenses.paidBy')}</TableHead>
+                  <TableHead>{t('profile.status')}</TableHead>
+                  <TableHead>{t('expenses.date')}</TableHead>
+                  <TableHead className="text-right">{t('profile.yourShare')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -239,9 +241,9 @@ export const ProfileShow = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm">{activity.paid_by_name || "Unknown"}</div>
+                      <div className="text-sm">{activity.paid_by_name || t('expenses.unknown')}</div>
                       <div className="text-xs text-muted-foreground">
-                        Total: {formatCurrency(activity.total_amount, activity.currency)}
+                        {t('expenses.total')}: {formatCurrency(activity.total_amount, activity.currency)}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -253,7 +255,7 @@ export const ProfileShow = () => {
                             : "bg-red-100 text-red-700"
                         }
                       >
-                        {activity.is_lender ? "Paid" : "Owes"}
+                        {activity.is_lender ? t('expenses.paid') : t('expenses.owes')}
                       </Badge>
                     </TableCell>
                     <TableCell>{formatDateShort(activity.date)}</TableCell>

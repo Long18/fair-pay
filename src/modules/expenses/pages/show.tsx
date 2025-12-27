@@ -24,10 +24,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
 import { supabaseClient } from "@/utility/supabaseClient";
+import { useTranslation } from "react-i18next";
 
 export const ExpenseShow = () => {
   const { id } = useParams<{ id: string }>();
   const go = useGo();
+  const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
   const [splits, setSplits] = useState<any[]>([]);
   const [isLoadingSplits, setIsLoadingSplits] = useState(true);
@@ -207,11 +209,11 @@ export const ExpenseShow = () => {
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <p className="text-sm text-muted-foreground">Paid by</p>
-                <p className="font-medium">{expense.profiles?.full_name || "Unknown"}</p>
+                <p className="text-sm text-muted-foreground">{t('expenses.paidBy')}</p>
+                <p className="font-medium">{expense.profiles?.full_name || t('expenses.unknown')}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-muted-foreground">Total amount</p>
+                <p className="text-sm text-muted-foreground">{t('expenses.total')} {t('expenses.amount').toLowerCase()}</p>
                 <p className="text-2xl font-bold">
                   {formatNumber(expense.amount)} {expense.currency}
                 </p>
@@ -222,7 +224,7 @@ export const ExpenseShow = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Split Details</CardTitle>
+            <CardTitle>{t('expenses.splitDetails')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -243,15 +245,15 @@ export const ExpenseShow = () => {
                     </Avatar>
                     <div>
                       <div className="font-medium">
-                        {split.profiles?.full_name || "Unknown User"}
+                        {split.profiles?.full_name || t('expenses.unknown')}
                         {split.user_id === identity?.id && (
                           <span className="text-xs text-muted-foreground ml-2">
-                            (You)
+                            ({t('dashboard.youOwe').split(' ')[0]})
                           </span>
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground capitalize">
-                        {split.split_method} split
+                        {split.split_method} {t('expenses.split')}
                       </div>
                     </div>
                   </div>

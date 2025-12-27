@@ -146,7 +146,15 @@
     "deleteExpense": "Xóa chi tiêu",
     "expenseDetails": "Chi tiết chi tiêu",
     "noExpenses": "Chưa có chi tiêu nào",
-    "addFirst": "Thêm chi tiêu đầu tiên để bắt đầu theo dõi"
+    "addFirst": "Thêm chi tiêu đầu tiên để bắt đầu theo dõi",
+    "splitDetails": "Chi tiết chia tiền",
+    "total": "Tổng",
+    "split": "chia",
+    "yourShare": "Phần của bạn",
+    "status": "Trạng thái",
+    "paid": "Đã trả",
+    "owes": "Nợ",
+    "unknown": "Không rõ"
   },
   "payments": {
     "title": "Thanh toán",
@@ -212,5 +220,26 @@
     "search": "Tìm kiếm...",
     "welcomeBack": "Chào mừng trở lại, {{name}}",
     "welcomeGuest": "Chào mừng trở lại, Khách"
+  },
+  "profile": {
+    "title": "Hồ sơ",
+    "memberSince": "Thành viên từ",
+    "debtsSummary": "Tổng quan công nợ",
+    "recentActivity": "Hoạt động gần đây",
+    "noDebts": "Không có công nợ",
+    "noRecentActivity": "Không có hoạt động gần đây",
+    "loadingProfile": "Đang tải hồ sơ...",
+    "loadingDebts": "Đang tải công nợ...",
+    "loadingActivities": "Đang tải hoạt động...",
+    "profileNotFound": "Không tìm thấy hồ sơ",
+    "person": "Người",
+    "status": "Trạng thái",
+    "amount": "Số tiền",
+    "owes": "Nợ",
+    "isOwed": "Được nợ",
+    "type": "Loại",
+    "group": "Nhóm",
+    "paid": "Đã trả",
+    "yourShare": "Phần của bạn"
   }
 }
