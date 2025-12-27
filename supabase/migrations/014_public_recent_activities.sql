@@ -3,7 +3,11 @@
 -- Date: 2025-12-27
 
 -- Create function to return recent activities (expenses only, no payments for privacy)
-CREATE OR REPLACE FUNCTION get_public_recent_activities(p_limit integer DEFAULT 20)
+-- Updated to support pagination with offset
+CREATE OR REPLACE FUNCTION get_public_recent_activities(
+    p_limit integer DEFAULT 10,
+    p_offset integer DEFAULT 0
+)
 RETURNS TABLE (
     id uuid,
     type text,
@@ -41,13 +45,14 @@ BEGIN
     WHERE e.is_payment = false
       AND e.group_id IS NOT NULL -- Only group expenses (public)
     ORDER BY e.created_at DESC
-    LIMIT p_limit;
+    LIMIT p_limit
+    OFFSET p_offset;
 END;
 $$;
 
 -- Grant execute permission
-GRANT EXECUTE ON FUNCTION get_public_recent_activities(integer) TO anon;
-GRANT EXECUTE ON FUNCTION get_public_recent_activities(integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION get_public_recent_activities(integer, integer) TO anon;
+GRANT EXECUTE ON FUNCTION get_public_recent_activities(integer, integer) TO authenticated;
 
 COMMENT ON FUNCTION get_public_recent_activities IS
 'Returns recent expense activities from public groups. Accessible to everyone including unauthenticated users. Does not include payments for privacy.';

@@ -246,5 +246,13 @@
         "group": "Group",
         "paid": "Paid",
         "yourShare": "Your Share"
+    },
+    "pagination": {
+        "showing": "Showing {{start}}-{{end}} of {{total}}",
+        "firstPage": "First page",
+        "previousPage": "Previous",
+        "nextPage": "Next",
+        "lastPage": "Last page",
+        "pageNumber": "Page {{page}}"
     }
 }

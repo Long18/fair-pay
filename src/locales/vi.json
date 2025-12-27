@@ -245,5 +245,13 @@
         "group": "Nhóm",
         "paid": "Đã trả",
         "yourShare": "Phần của bạn"
+    },
+    "pagination": {
+        "showing": "Hiển thị {{start}}-{{end}} trên {{total}}",
+        "firstPage": "Trang đầu",
+        "previousPage": "Trước",
+        "nextPage": "Tiếp",
+        "lastPage": "Trang cuối",
+        "pageNumber": "Trang {{page}}"
     }
 }

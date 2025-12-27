@@ -9,17 +9,21 @@
 
 -- Create enum type for expense categories
 -- These match exactly with frontend categories in src/modules/expenses/lib/categories.ts
-CREATE TYPE expense_category AS ENUM (
-  'Food & Drink',
-  'Transportation',
-  'Accommodation',
-  'Entertainment',
-  'Shopping',
-  'Utilities',
-  'Healthcare',
-  'Education',
-  'Other'
-);
+DO $$ BEGIN
+  CREATE TYPE expense_category AS ENUM (
+    'Food & Drink',
+    'Transportation',
+    'Accommodation',
+    'Entertainment',
+    'Shopping',
+    'Utilities',
+    'Healthcare',
+    'Education',
+    'Other'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- ========================================
 -- Part 2: Migrate Existing Data
