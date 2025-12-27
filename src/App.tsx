@@ -191,7 +191,7 @@ function App() {
                 {/* OAuth consent route - public but requires authentication */}
                 <Route path="/oauth/consent" element={<OAuthConsent />} />
 
-                {/* Public Dashboard route - accessible without authentication */}
+                {/* Public routes - accessible without authentication */}
                 <Route
                   element={
                     <Layout>
@@ -200,6 +200,20 @@ function App() {
                   }
                 >
                   <Route index element={<Dashboard />} />
+                  
+                  {/* Public profile view */}
+                  <Route path="/profile/:id" element={
+                    <ErrorBoundary context="Profile Details">
+                      <FriendShow />
+                    </ErrorBoundary>
+                  } />
+                  
+                  {/* Public expense view */}
+                  <Route path="/expenses/show/:id" element={
+                    <ErrorBoundary context="Expense Details">
+                      <ExpenseShow />
+                    </ErrorBoundary>
+                  } />
                 </Route>
 
                 {/* Authenticated routes - require login */}
@@ -239,16 +253,11 @@ function App() {
                         <FriendList />
                       </ErrorBoundary>
                     } />
-                    <Route path="show/:id" element={
-                      <ErrorBoundary context="Friend Details">
-                        <FriendShow />
-                      </ErrorBoundary>
-                    } />
                     <Route path=":friendshipId/expenses/create" element={<ExpenseCreate />} />
                     <Route path=":friendshipId/payments/create" element={<PaymentCreate />} />
                   </Route>
                   <Route path="/expenses">
-                    <Route path="show/:id" element={<ExpenseShow />} />
+                    {/* show/:id moved to public routes */}
                   </Route>
                   <Route path="/notifications" element={<NotificationList />} />
                   <Route path="/balances" element={
