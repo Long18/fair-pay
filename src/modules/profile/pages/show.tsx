@@ -17,6 +17,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useTranslation } from "react-i18next";
 
 interface DebtSummary {
@@ -126,24 +131,32 @@ export const ProfileShow = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => go({ to: "/" })}>
+        <Button variant="ghost" size="icon" onClick={() => go({ to: "/" })} className="hover:scale-110 transition-transform">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div className="flex items-center gap-4">
-          <Avatar className="h-16 w-16">
+        <div className="flex items-center gap-6">
+          <Avatar className="h-20 w-20 border-4 border-background shadow-lg ring-4 ring-primary/10">
             <AvatarImage src={profile.avatar_url || undefined} />
-            <AvatarFallback>
+            <AvatarFallback className="text-xl font-bold bg-gradient-to-br from-primary/20 to-primary/10">
               {profile.full_name
                 ?.split(" ")
                 .map((n: string) => n[0])
                 .join("")
-                .toUpperCase() || "U"}
+                .toUpperCase()
+                .slice(0, 2) || "U"}
             </AvatarFallback>
           </Avatar>
           <div>
-            <h1 className="text-2xl font-bold">{profile.full_name}</h1>
-            <p className="text-sm text-muted-foreground">
-              {t('profile.memberSince')} {formatDateShort(profile.created_at)}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <h1 className="text-3xl font-bold line-clamp-2 max-w-[400px] leading-tight">{profile.full_name}</h1>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs">
+                <p className="text-sm font-semibold">{profile.full_name}</p>
+              </TooltipContent>
+            </Tooltip>
+            <p className="text-sm text-muted-foreground mt-1">
+              {t('profile.memberSince', { date: formatDateShort(profile.created_at) })}
             </p>
           </div>
         </div>
@@ -169,20 +182,29 @@ export const ProfileShow = () => {
               </TableHeader>
               <TableBody>
                 {debts.map((debt) => (
-                  <TableRow key={debt.counterparty_id}>
-                    <TableCell className="font-medium">
-                      {debt.counterparty_name}
+                  <TableRow key={debt.counterparty_id} className="group hover:bg-accent/50 transition-all">
+                    <TableCell className="font-medium max-w-[200px]">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                            {debt.counterparty_name}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          <p className="text-xs">{debt.counterparty_name}</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </TableCell>
                     <TableCell>
                       <Badge
-                        variant={debt.i_owe_them ? "default" : "secondary"}
-                        className="capitalize"
+                        variant={debt.i_owe_them ? "destructive" : "default"}
+                        className={`${debt.i_owe_them ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"} transition-all group-hover:scale-105`}
                       >
                         {debt.i_owe_them ? t('profile.owes') : t('profile.isOwed')}
                       </Badge>
                     </TableCell>
                     <TableCell
-                      className={`text-right font-semibold ${
+                      className={`text-right font-bold text-base transition-all group-hover:scale-105 ${
                         debt.i_owe_them ? "text-red-600" : "text-green-600"
                       }`}
                     >
@@ -220,7 +242,7 @@ export const ProfileShow = () => {
                 {activities.map((activity) => (
                   <TableRow
                     key={activity.id}
-                    className="cursor-pointer hover:bg-accent/50"
+                    className="group cursor-pointer hover:bg-accent/50 transition-all duration-200"
                     onClick={() => {
                       go({
                         to:
@@ -230,38 +252,50 @@ export const ProfileShow = () => {
                       });
                     }}
                   >
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{activity.description}</div>
-                        {activity.group_name && (
-                          <div className="text-xs text-muted-foreground">
-                            {activity.group_name}
+                    <TableCell className="max-w-[200px]">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div>
+                            <div className="font-semibold line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                              {activity.description}
+                            </div>
+                            {activity.group_name && (
+                              <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                                {activity.group_name}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <p className="text-xs font-medium">{activity.description}</p>
+                          {activity.group_name && (
+                            <p className="text-xs text-muted-foreground">{activity.group_name}</p>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm">{activity.paid_by_name || t('expenses.unknown')}</div>
+                      <div className="text-sm">{activity.paid_by_name || t('profile.unknown')}</div>
                       <div className="text-xs text-muted-foreground">
-                        {t('expenses.total')}: {formatCurrency(activity.total_amount, activity.currency)}
+                        {t('profile.total')}: {formatCurrency(activity.total_amount, activity.currency)}
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge
-                        variant={activity.is_lender ? "secondary" : "default"}
-                        className={
-                          activity.is_lender
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
-                        }
+                        variant={activity.is_borrower ? "destructive" : "default"}
+                        className={`transition-all group-hover:scale-105 ${
+                          activity.is_borrower
+                            ? "bg-red-100 text-red-700"
+                            : "bg-green-100 text-green-700"
+                        }`}
                       >
-                        {activity.is_lender ? t('expenses.paid') : t('expenses.owes')}
+                        {activity.is_borrower ? t('profile.owes') : t('profile.paid')}
                       </Badge>
                     </TableCell>
-                    <TableCell>{formatDateShort(activity.date)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{formatDateShort(activity.date)}</TableCell>
                     <TableCell
-                      className={`text-right font-semibold ${
-                        activity.is_lender ? "text-green-600" : "text-red-600"
+                      className={`text-right font-bold text-base transition-transform group-hover:scale-105 ${
+                        activity.is_borrower ? "text-red-600" : "text-green-600"
                       }`}
                     >
                       {formatCurrency(activity.user_share, activity.currency)}

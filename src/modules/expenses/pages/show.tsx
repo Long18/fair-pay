@@ -22,6 +22,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { useTranslation } from "react-i18next";
@@ -198,23 +203,33 @@ export const ExpenseShow = () => {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
-              <Avatar className="h-12 w-12">
-                <AvatarFallback>
+            <div className="flex items-center gap-6 p-6 bg-gradient-to-br from-muted/50 to-muted rounded-xl shadow-sm">
+              <Avatar className="h-16 w-16 border-4 border-background shadow-lg ring-4 ring-primary/10">
+                <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-primary/20 to-primary/10">
                   {expense.profiles?.full_name
                     ?.split(" ")
                     .map((n: string) => n[0])
                     .join("")
-                    .toUpperCase() || "?"}
+                    .toUpperCase()
+                    .slice(0, 2) || "?"}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <p className="text-sm text-muted-foreground">{t('expenses.paidBy')}</p>
-                <p className="font-medium">{expense.profiles?.full_name || t('expenses.unknown')}</p>
+                <p className="text-sm text-muted-foreground font-medium">{t('expenses.paidBy')}</p>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <p className="font-bold text-lg line-clamp-2 leading-tight max-w-[300px]">
+                      {expense.profiles?.full_name || t('profile.unknown')}
+                    </p>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs">
+                    <p className="text-sm font-semibold">{expense.profiles?.full_name || t('profile.unknown')}</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
               <div className="text-right">
-                <p className="text-sm text-muted-foreground">{t('expenses.total')} {t('expenses.amount').toLowerCase()}</p>
-                <p className="text-2xl font-bold">
+                <p className="text-sm text-muted-foreground font-medium">{t('expenses.totalAmount')}</p>
+                <p className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                   {formatNumber(expense.amount)} {expense.currency}
                 </p>
               </div>
@@ -231,34 +246,42 @@ export const ExpenseShow = () => {
               {splits.map((split: any) => (
                 <div
                   key={split.id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
+                  className="group flex items-center justify-between p-4 border-2 rounded-xl hover:border-primary/50 hover:bg-accent/30 transition-all duration-200"
                 >
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarFallback>
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-12 w-12 border-2 border-background shadow-md ring-2 ring-offset-1 ring-offset-background transition-all duration-200 group-hover:ring-primary/50 group-hover:scale-105">
+                      <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-muted to-muted/50">
                         {split.profiles?.full_name
                           ?.split(" ")
                           .map((n: string) => n[0])
                           .join("")
-                          .toUpperCase() || "?"}
+                          .toUpperCase()
+                          .slice(0, 2) || "?"}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <div className="font-medium">
-                        {split.profiles?.full_name || t('expenses.unknown')}
-                        {split.user_id === identity?.id && (
-                          <span className="text-xs text-muted-foreground ml-2">
-                            ({t('dashboard.youOwe').split(' ')[0]})
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
+                    <div className="max-w-[250px]">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="font-semibold text-base line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                            {split.profiles?.full_name || t('profile.unknown')}
+                            {split.user_id === identity?.id && (
+                              <span className="text-xs text-muted-foreground ml-2 font-normal">
+                                ({t('common.you')})
+                              </span>
+                            )}
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <p className="text-sm font-semibold">{split.profiles?.full_name || t('profile.unknown')}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <div className="text-xs text-muted-foreground mt-1 font-medium">
                         {String(t(`expenses.${split.split_method}`, split.split_method))} {t('expenses.split')}
                       </div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold">
+                    <div className="font-bold text-lg group-hover:scale-110 transition-transform">
                       {formatNumber(split.computed_amount)} {expense.currency}
                     </div>
                   </div>

@@ -1,4 +1,4 @@
-import { MoreHorizontal, Receipt, Banknote, Users } from "lucide-react";
+import { MoreHorizontal, Receipt, Banknote, Users, ChevronRight } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useGo, useGetIdentity } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
 import { Profile } from "@/modules/profile/types";
+import { useState } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -38,6 +39,11 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
   const { data: identity } = useGetIdentity<Profile>();
   const go = useGo();
   const { t } = useTranslation();
+  
+  // Pagination states
+  const [balancesPage, setBalancesPage] = useState(1);
+  const [activitiesPage, setActivitiesPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   // Always allow navigation for public demo users
   const isAuthenticated = !!identity?.id;
@@ -89,6 +95,14 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
   });
 
   const activityItems = activities.map(a => ({ ...a, itemType: 'activity' as const }));
+  
+  // Pagination logic
+  const totalBalances = debtItems.length;
+  const totalActivities = activityItems.length;
+  const displayedBalances = debtItems.slice(0, balancesPage * ITEMS_PER_PAGE);
+  const displayedActivities = activityItems.slice(0, activitiesPage * ITEMS_PER_PAGE);
+  const hasMoreBalances = totalBalances > displayedBalances.length;
+  const hasMoreActivities = totalActivities > displayedActivities.length;
 
   if (isLoading || debtsLoading) {
     return <div className="h-64 flex items-center justify-center text-muted-foreground">{t('common.loading')}</div>;
@@ -126,36 +140,48 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
 
         <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
           {debtItems.length > 0 ? (
-            <Table>
-              <TableHeader className="bg-muted/30">
-                <TableRow>
-                  <TableHead className="w-[50px]"></TableHead>
-                  <TableHead>{t('profile.person')}</TableHead>
-                  <TableHead>{t('profile.status')}</TableHead>
-                  <TableHead className="text-right">{t('profile.amount')}</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TooltipProvider delayDuration={0}>
-                  {debtItems.map((item) => (
+            <>
+              <Table>
+                <TableHeader className="bg-muted/30">
+                  <TableRow>
+                    <TableHead className="w-[50px]"></TableHead>
+                    <TableHead>{t('profile.person')}</TableHead>
+                    <TableHead>{t('profile.status')}</TableHead>
+                    <TableHead className="text-right">{t('profile.amount')}</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TooltipProvider delayDuration={0}>
+                    {displayedBalances.map((item) => (
                     <Tooltip key={item.id}>
                       <TooltipTrigger asChild>
                         <TableRow
-                          className="group cursor-pointer hover:bg-accent/50"
+                          className="group cursor-pointer hover:bg-accent/50 transition-all duration-200"
                           onClick={() => {
                             go({ to: `/profile/${item.id}` });
                           }}
                         >
                           <TableCell>
-                            <Avatar className="h-8 w-8 border">
-                              <AvatarFallback className={`text-xs ${item.i_owe_them ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
-                                {item.counterparty_name.charAt(0).toUpperCase()}
+                            <Avatar className="h-10 w-10 border-2 border-background shadow-sm ring-2 ring-offset-1 ring-offset-background transition-all duration-200 group-hover:ring-primary/50">
+                              <AvatarFallback className={`text-sm font-semibold ${item.i_owe_them ? "bg-gradient-to-br from-green-50 to-green-100 text-green-700" : "bg-gradient-to-br from-red-50 to-red-100 text-red-700"}`}>
+                                {item.counterparty_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                               </AvatarFallback>
                             </Avatar>
                           </TableCell>
-                          <TableCell className="font-medium">
-                            <span className="text-sm font-medium">{item.description}</span>
+                          <TableCell className="font-medium max-w-[250px]">
+                            <div className="flex flex-col gap-0.5">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="text-sm font-semibold leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+                                    {item.description}
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs">
+                                  <p className="text-xs">{item.description}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
                           </TableCell>
                           <TableCell>
                             <Badge
@@ -203,6 +229,20 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                 </TooltipProvider>
               </TableBody>
             </Table>
+            {hasMoreBalances && (
+              <div className="p-3 border-t bg-muted/10">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full text-xs font-medium h-9 hover:bg-accent group"
+                  onClick={() => setBalancesPage(prev => prev + 1)}
+                >
+                  {t('dashboard.viewMore', { count: Math.min(ITEMS_PER_PAGE, totalBalances - displayedBalances.length) })}
+                  <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </div>
+            )}
+            </>
           ) : (
             <div className="flex flex-col items-center justify-center p-8 text-center">
               <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center mb-3">
@@ -245,11 +285,11 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                     </TableCell>
                   </TableRow>
                 ) : (
-                  activityItems.slice(0, 10).map((item) => (
+                  displayedActivities.map((item) => (
                     <Tooltip key={item.id}>
                       <TooltipTrigger asChild>
                         <TableRow
-                          className="group cursor-pointer hover:bg-accent/50"
+                          className="group cursor-pointer hover:bg-accent/50 transition-all duration-200"
                           onClick={() => {
                             if ('type' in item) {
                               go({ to: item.type === "expense" ? `/expenses/show/${item.id}` : `/payments/show/${item.id}` });
@@ -257,25 +297,48 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                           }}
                         >
                           <TableCell>
-                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${'type' in item && item.type === "expense" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>
-                              {'type' in item && item.type === "expense" ? <Receipt className="h-4 w-4" /> : <Banknote className="h-4 w-4" />}
+                            <div className={`h-10 w-10 rounded-xl flex items-center justify-center shadow-sm transition-all duration-200 group-hover:scale-110 ${'type' in item && item.type === "expense" ? "bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 group-hover:shadow-blue-200" : "bg-gradient-to-br from-green-50 to-green-100 text-green-700 group-hover:shadow-green-200"}`}>
+                              {'type' in item && item.type === "expense" ? <Receipt className="h-5 w-5" /> : <Banknote className="h-5 w-5" />}
                             </div>
                           </TableCell>
-                          <TableCell className="font-medium">
-                            <div className="flex flex-col">
-                              <span className="text-sm font-medium truncate max-w-[300px]">{item.description}</span>
+                          <TableCell className="font-medium max-w-[280px]">
+                            <div className="flex flex-col gap-1">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="text-sm font-semibold leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+                                    {item.description}
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs">
+                                  <p className="text-xs font-medium">{item.description}</p>
+                                </TooltipContent>
+                              </Tooltip>
                               {'is_mine' in item && 'created_by_name' in item && (
-                                <span className="text-xs text-muted-foreground">
-                                  {t('dashboard.by')} {item.is_mine ? t('common.you') : item.created_by_name}
-                                </span>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="text-xs text-muted-foreground line-clamp-2 leading-tight max-w-[250px] group-hover:text-foreground transition-colors">
+                                      {t('dashboard.by')} {item.is_mine ? t('common.you') : item.created_by_name}
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="max-w-xs">
+                                    <p className="text-xs font-medium">{t('dashboard.by')} {item.is_mine ? t('common.you') : item.created_by_name}</p>
+                                  </TooltipContent>
+                                </Tooltip>
                               )}
                             </div>
                           </TableCell>
                           <TableCell>
                             {'group_name' in item && item.group_name ? (
-                              <Badge variant="outline" className="text-xs">
-                                {item.group_name}
-                              </Badge>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="outline" className="text-xs max-w-[120px] truncate group-hover:scale-105 transition-transform">
+                                    {item.group_name}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  <p className="text-xs font-medium">{item.group_name}</p>
+                                </TooltipContent>
+                              </Tooltip>
                             ) : (
                               <span className="text-xs text-muted-foreground">{t('dashboard.personal')}</span>
                             )}
@@ -328,11 +391,19 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
               </TooltipProvider>
             </TableBody>
           </Table>
-          <div className="p-2 border-t bg-muted/10">
-            <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground h-8">
-              {t('dashboard.viewAllTransactions')}
-            </Button>
-          </div>
+          {hasMoreActivities && (
+            <div className="p-3 border-t bg-muted/10">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-full text-xs font-medium h-9 hover:bg-accent group"
+                onClick={() => setActivitiesPage(prev => prev + 1)}
+              >
+                {t('dashboard.viewMore', { count: Math.min(ITEMS_PER_PAGE, totalActivities - displayedActivities.length) })}
+                <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>
