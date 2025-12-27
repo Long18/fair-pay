@@ -9,6 +9,7 @@ import { supabaseClient } from "@/utility/supabaseClient";
 import { useEffect, useState } from "react";
 import { formatCurrency, formatDateShort } from "@/lib/locale-utils";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -55,6 +56,7 @@ interface ActivityItem {
   paid_by_name?: string;
   is_lender: boolean;
   is_borrower: boolean;
+  is_payment: boolean;
 }
 
 export const ProfileShow = () => {
@@ -69,6 +71,8 @@ export const ProfileShow = () => {
   const [settleDialogOpen, setSettleDialogOpen] = useState(false);
   const [selectedDebt, setSelectedDebt] = useState<DebtSummary | null>(null);
   const [isSettling, setIsSettling] = useState(false);
+  const [selectedActivities, setSelectedActivities] = useState<Set<string>>(new Set());
+  const [settleActivitiesDialogOpen, setSettleActivitiesDialogOpen] = useState(false);
 
   const { query: profileQuery } = useOne<Profile>({
     resource: "profiles",
@@ -77,7 +81,7 @@ export const ProfileShow = () => {
 
   const { data: profileData, isLoading: isLoadingProfile } = profileQuery;
   const profile = profileData?.data;
-  
+
   const isOwnProfile = identity?.id === id;
   const canSettle = isOwnProfile;
 
@@ -99,6 +103,35 @@ export const ProfileShow = () => {
     ).finally(() => setIsLoadingDebts(false));
   };
 
+  // Refetch activities
+  const refetchActivities = () => {
+    if (!id) return;
+    setIsLoadingActivities(true);
+    Promise.resolve(
+      supabaseClient
+        .rpc("get_user_activities", { p_user_id: id, p_limit: 10 })
+        .then(({ data, error }: { data: any; error: any }) => {
+          if (!error) {
+            const activities: ActivityItem[] = (data || []).map((item: any) => ({
+              id: item.id,
+              type: "expense" as const,
+              description: item.description,
+              total_amount: item.total_amount,
+              user_share: item.user_share,
+              currency: item.currency || "VND",
+              date: item.date,
+              group_name: item.group_name,
+              paid_by_name: item.paid_by_name,
+              is_lender: item.is_lender,
+              is_borrower: item.is_borrower,
+              is_payment: false,
+            }));
+            setActivities(activities);
+          }
+        })
+    ).finally(() => setIsLoadingActivities(false));
+  };
+
   // Handle settle all debts with a specific person
   const handleSettleAll = async () => {
     if (!selectedDebt || !identity?.id) return;
@@ -118,6 +151,7 @@ export const ProfileShow = () => {
       }));
 
       refetchDebts();
+      refetchActivities();
       setSettleDialogOpen(false);
       setSelectedDebt(null);
     } catch (error: any) {
@@ -130,9 +164,83 @@ export const ProfileShow = () => {
     }
   };
 
+  // Handle settle selected activities
+  const handleSettleSelectedActivities = async () => {
+    if (selectedActivities.size === 0 || !identity?.id) return;
+
+    setIsSettling(true);
+    try {
+      let successCount = 0;
+      const errors: string[] = [];
+
+      for (const activityId of Array.from(selectedActivities)) {
+        const { error } = await supabaseClient.rpc('settle_expense', {
+          p_expense_id: activityId,
+        });
+
+        if (error) {
+          errors.push(error.message);
+        } else {
+          successCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(t('profile.settleActivitiesSuccess', {
+          count: successCount,
+          defaultValue: `Successfully settled ${successCount} expense(s)`,
+        }));
+      }
+
+      if (errors.length > 0) {
+        toast.error(t('profile.settleActivitiesError', {
+          count: errors.length,
+          defaultValue: `Failed to settle ${errors.length} expense(s)`,
+        }));
+      }
+
+      refetchDebts();
+      refetchActivities();
+      setSettleActivitiesDialogOpen(false);
+      setSelectedActivities(new Set());
+    } catch (error: any) {
+      console.error('Error settling activities:', error);
+      toast.error(t('profile.settleActivitiesError', {
+        defaultValue: `Failed to settle expenses: ${error.message}`,
+      }));
+    } finally {
+      setIsSettling(false);
+    }
+  };
+
+  // Toggle activity selection
+  const toggleActivitySelection = (activityId: string) => {
+    setSelectedActivities(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(activityId)) {
+        newSet.delete(activityId);
+      } else {
+        newSet.add(activityId);
+      }
+      return newSet;
+    });
+  };
+
+  // Select all unpaid activities where user is lender
+  const selectAllUnpaidActivities = () => {
+    const unpaidLenderActivities = activities
+      .filter(a => a.is_lender && !a.is_payment)
+      .map(a => a.id);
+    setSelectedActivities(new Set(unpaidLenderActivities));
+  };
+
+  // Clear all selections
+  const clearAllSelections = () => {
+    setSelectedActivities(new Set());
+  };
+
   useEffect(() => {
     if (!id) return;
-
     setIsLoadingDebts(true);
     Promise.resolve(
       supabaseClient
@@ -150,9 +258,7 @@ export const ProfileShow = () => {
 
   useEffect(() => {
     if (!id) return;
-
     setIsLoadingActivities(true);
-
     Promise.resolve(
       supabaseClient
         .rpc("get_user_activities", { p_user_id: id, p_limit: 10 })
@@ -173,6 +279,7 @@ export const ProfileShow = () => {
               paid_by_name: item.paid_by_name,
               is_lender: item.is_lender,
               is_borrower: item.is_borrower,
+              is_payment: false,
             }));
             setActivities(activities);
           }
@@ -195,6 +302,8 @@ export const ProfileShow = () => {
       </div>
     );
   }
+
+  const unpaidLenderActivitiesCount = activities.filter(a => a.is_lender && !a.is_payment).length;
 
   return (
     <div className="space-y-6">
@@ -230,178 +339,290 @@ export const ProfileShow = () => {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('profile.debtsSummary')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoadingDebts ? (
-            <p className="text-muted-foreground text-center py-4">{t('profile.loadingDebts')}</p>
-          ) : debts.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">{t('profile.noDebts')}</p>
-          ) : (
-            <TooltipProvider>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('profile.person')}</TableHead>
-                    <TableHead>{t('profile.status')}</TableHead>
-                    <TableHead className="text-right">{t('profile.amount')}</TableHead>
-                    {canSettle && <TableHead className="w-[120px]"></TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {debts.map((debt) => {
-                    const canSettleThisDebt = canSettle && !debt.i_owe_them; // Only settle debts owed TO you
-                    
-                    return (
-                      <TableRow key={debt.counterparty_id} className="group hover:bg-accent/50 transition-all">
-                        <TableCell className="font-medium max-w-[200px]">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                                {debt.counterparty_name}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                              <p className="text-xs">{debt.counterparty_name}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={debt.i_owe_them ? "destructive" : "default"}
-                            className={`${debt.i_owe_them ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"} transition-all group-hover:scale-105`}
-                          >
-                            {debt.i_owe_them ? t('profile.owes') : t('profile.isOwed')}
-                          </Badge>
-                        </TableCell>
-                        <TableCell
-                          className={`text-right font-bold text-base transition-all group-hover:scale-105 ${
-                            debt.i_owe_them ? "text-red-600" : "text-green-600"
-                          }`}
-                        >
-                          {formatCurrency(debt.amount, "VND")}
-                        </TableCell>
-                        {canSettle && (
-                          <TableCell>
-                            {canSettleThisDebt && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="opacity-0 group-hover:opacity-100 transition-all border-green-200 hover:bg-green-50 hover:border-green-300 text-green-700 hover:text-green-800"
-                                onClick={() => {
-                                  setSelectedDebt(debt);
-                                  setSettleDialogOpen(true);
-                                }}
-                              >
-                                <CheckCircle2 className="h-4 w-4 mr-1" />
-                                {t('dashboard.settleAll', 'Settle')}
-                              </Button>
-                            )}
+      {/* Debts Summary with External Settle All Button */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <div>
+            <h3 className="text-xl font-bold tracking-tight text-foreground">
+              {t('profile.debtsSummary')}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {debts.length} {t('profile.debts', 'debts')}
+            </p>
+          </div>
+          {canSettle && debts.filter(d => !d.i_owe_them).length > 0 && (
+            <Button
+              variant="default"
+              size="sm"
+              className="bg-green-600 hover:bg-green-700"
+              onClick={() => {
+                const firstDebt = debts.find(d => !d.i_owe_them);
+                if (firstDebt) {
+                  setSelectedDebt(firstDebt);
+                  setSettleDialogOpen(true);
+                }
+              }}
+            >
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              {t('dashboard.settleAll', 'Settle All')}
+            </Button>
+          )}
+        </div>
+
+        <Card>
+          <CardContent className="pt-6">
+            {isLoadingDebts ? (
+              <p className="text-muted-foreground text-center py-4">{t('profile.loadingDebts')}</p>
+            ) : debts.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">{t('profile.noDebts')}</p>
+            ) : (
+              <TooltipProvider>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('profile.person')}</TableHead>
+                      <TableHead>{t('profile.status')}</TableHead>
+                      <TableHead className="text-right">{t('profile.amount')}</TableHead>
+                      {canSettle && <TableHead className="w-[120px]"></TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {debts.map((debt) => {
+                      const canSettleThisDebt = canSettle && !debt.i_owe_them;
+
+                      return (
+                        <TableRow key={debt.counterparty_id} className="group hover:bg-accent/50 transition-all">
+                          <TableCell className="font-medium max-w-[200px]">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                                  {debt.counterparty_name}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">
+                                <p className="text-xs">{debt.counterparty_name}</p>
+                              </TooltipContent>
+                            </Tooltip>
                           </TableCell>
-                        )}
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TooltipProvider>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('profile.recentActivity')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoadingActivities ? (
-            <p className="text-muted-foreground text-center py-4">{t('profile.loadingActivities')}</p>
-          ) : activities.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">{t('profile.noRecentActivity')}</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('expenses.description')}</TableHead>
-                  <TableHead>{t('expenses.paidBy')}</TableHead>
-                  <TableHead>{t('profile.status')}</TableHead>
-                  <TableHead>{t('expenses.date')}</TableHead>
-                  <TableHead className="text-right">{t('profile.yourShare')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {activities.map((activity) => (
-                  <TableRow
-                    key={activity.id}
-                    className="group cursor-pointer hover:bg-accent/50 transition-all duration-200"
-                    onClick={() => {
-                      go({
-                        to:
-                          activity.type === "expense"
-                            ? `/expenses/show/${activity.id}`
-                            : `/payments/show/${activity.id}`,
-                      });
-                    }}
-                  >
-                    <TableCell className="max-w-[200px]">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div>
-                            <div className="font-semibold line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                              {activity.description}
-                            </div>
-                            {activity.group_name && (
-                              <div className="text-xs text-muted-foreground mt-0.5 truncate">
-                                {activity.group_name}
-                              </div>
-                            )}
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-xs">
-                          <p className="text-xs font-medium">{activity.description}</p>
-                          {activity.group_name && (
-                            <p className="text-xs text-muted-foreground">{activity.group_name}</p>
+                          <TableCell>
+                            <Badge
+                              variant={debt.i_owe_them ? "destructive" : "default"}
+                              className={`${debt.i_owe_them ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"} transition-all group-hover:scale-105`}
+                            >
+                              {debt.i_owe_them ? t('profile.owes') : t('profile.isOwed')}
+                            </Badge>
+                          </TableCell>
+                          <TableCell
+                            className={`text-right font-bold text-base transition-all group-hover:scale-105 ${
+                              debt.i_owe_them ? "text-red-600" : "text-green-600"
+                            }`}
+                          >
+                            {formatCurrency(debt.amount, "VND")}
+                          </TableCell>
+                          {canSettle && (
+                            <TableCell>
+                              {canSettleThisDebt && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="opacity-0 group-hover:opacity-100 transition-all border-green-200 hover:bg-green-50 hover:border-green-300 text-green-700 hover:text-green-800"
+                                  onClick={() => {
+                                    setSelectedDebt(debt);
+                                    setSettleDialogOpen(true);
+                                  }}
+                                >
+                                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                                  {t('dashboard.settleAll', 'Settle')}
+                                </Button>
+                              )}
+                            </TableCell>
                           )}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">{activity.paid_by_name || t('profile.unknown')}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {t('profile.total')}: {formatCurrency(activity.total_amount, activity.currency)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={activity.is_borrower ? "destructive" : "default"}
-                        className={`transition-all group-hover:scale-105 ${
-                          activity.is_borrower
-                            ? "bg-red-100 text-red-700"
-                            : "bg-green-100 text-green-700"
-                        }`}
-                      >
-                        {activity.is_borrower ? t('profile.owes') : t('profile.paid')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{formatDateShort(activity.date)}</TableCell>
-                    <TableCell
-                      className={`text-right font-bold text-base transition-transform group-hover:scale-105 ${
-                        activity.is_borrower ? "text-red-600" : "text-green-600"
-                      }`}
-                    >
-                      {formatCurrency(activity.user_share, activity.currency)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TooltipProvider>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Settle Confirmation Dialog */}
+      {/* Recent Activity with Checkboxes and Bulk Actions */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <div>
+            <h3 className="text-xl font-bold tracking-tight text-foreground">
+              {t('profile.recentActivity')}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {activities.length} {t('profile.activities', 'activities')}
+              {canSettle && unpaidLenderActivitiesCount > 0 && (
+                <span className="text-green-600 ml-2">
+                  ({unpaidLenderActivitiesCount} {t('profile.canSettle', 'can settle')})
+                </span>
+              )}
+            </p>
+          </div>
+          {canSettle && (
+            <div className="flex items-center gap-2">
+              {selectedActivities.size > 0 ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearAllSelections}
+                  >
+                    {t('common.clear', 'Clear')} ({selectedActivities.size})
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={() => setSettleActivitiesDialogOpen(true)}
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    {t('profile.settleSelected', `Settle ${selectedActivities.size}`)}
+                  </Button>
+                </>
+              ) : unpaidLenderActivitiesCount > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={selectAllUnpaidActivities}
+                >
+                  {t('profile.selectAll', 'Select All')} ({unpaidLenderActivitiesCount})
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+
+        <Card>
+          <CardContent className="pt-6">
+            {isLoadingActivities ? (
+              <p className="text-muted-foreground text-center py-4">{t('profile.loadingActivities')}</p>
+            ) : activities.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">{t('profile.noRecentActivity')}</p>
+            ) : (
+              <TooltipProvider>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      {canSettle && <TableHead className="w-[50px]"></TableHead>}
+                      <TableHead>{t('expenses.description')}</TableHead>
+                      <TableHead>{t('expenses.paidBy')}</TableHead>
+                      <TableHead>{t('profile.status')}</TableHead>
+                      <TableHead>{t('expenses.date')}</TableHead>
+                      <TableHead className="text-right">{t('profile.yourShare')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {activities.map((activity) => {
+                      const canSelectThis = canSettle && activity.is_lender && !activity.is_payment;
+                      const isSelected = selectedActivities.has(activity.id);
+
+                      return (
+                        <TableRow
+                          key={activity.id}
+                          className={`group transition-all duration-200 ${
+                            isSelected ? "bg-green-50/50" : "hover:bg-accent/50"
+                          } ${canSelectThis ? "cursor-pointer" : ""}`}
+                        >
+                          {canSettle && (
+                            <TableCell
+                              onClick={(e) => {
+                                if (canSelectThis) {
+                                  e.stopPropagation();
+                                  toggleActivitySelection(activity.id);
+                                }
+                              }}
+                            >
+                              {canSelectThis && (
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={() => toggleActivitySelection(activity.id)}
+                                  className="h-4 w-4"
+                                />
+                              )}
+                            </TableCell>
+                          )}
+                          <TableCell
+                            className="max-w-[200px] cursor-pointer"
+                            onClick={() => {
+                              go({
+                                to:
+                                  activity.type === "expense"
+                                    ? `/expenses/show/${activity.id}`
+                                    : `/payments/show/${activity.id}`,
+                              });
+                            }}
+                          >
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div>
+                                  <div className="font-semibold line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                                    {activity.description}
+                                  </div>
+                                  {activity.group_name && (
+                                    <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                                      {activity.group_name}
+                                    </div>
+                                  )}
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-xs">
+                                <p className="text-xs font-medium">{activity.description}</p>
+                                {activity.group_name && (
+                                  <p className="text-xs text-muted-foreground">{activity.group_name}</p>
+                                )}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">{activity.paid_by_name || t('profile.unknown')}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {t('profile.total')}: {formatCurrency(activity.total_amount, activity.currency)}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={activity.is_borrower ? "destructive" : "default"}
+                              className={`transition-all group-hover:scale-105 ${
+                                activity.is_borrower
+                                  ? "bg-red-100 text-red-700"
+                                  : activity.is_payment
+                                  ? "bg-gray-100 text-gray-700"
+                                  : "bg-green-100 text-green-700"
+                              }`}
+                            >
+                              {activity.is_payment
+                                ? t('expenses.paid', 'Paid')
+                                : activity.is_borrower
+                                ? t('profile.owes')
+                                : t('profile.paid')}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{formatDateShort(activity.date)}</TableCell>
+                          <TableCell
+                            className={`text-right font-bold text-base transition-transform group-hover:scale-105 ${
+                              activity.is_borrower ? "text-red-600" : "text-green-600"
+                            }`}
+                          >
+                            {formatCurrency(activity.user_share, activity.currency)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TooltipProvider>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Settle Single Debt Dialog */}
       <AlertDialog open={settleDialogOpen} onOpenChange={setSettleDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -438,6 +659,45 @@ export const ProfileShow = () => {
                 <>
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   {t('dashboard.confirmSettle', 'Confirm Settle')}
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Settle Selected Activities Dialog */}
+      <AlertDialog open={settleActivitiesDialogOpen} onOpenChange={setSettleActivitiesDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('profile.settleActivitiesTitle', 'Settle Selected Expenses')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('profile.settleActivitiesDescription', {
+                count: selectedActivities.size,
+                defaultValue: `Are you sure you want to mark ${selectedActivities.size} expense(s) as paid? This action cannot be undone.`,
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSettling}>
+              {t('common.cancel', 'Cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSettleSelectedActivities}
+              disabled={isSettling}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {isSettling ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  {t('dashboard.settling', 'Settling...')}
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  {t('profile.confirmSettleActivities', 'Confirm')}
                 </>
               )}
             </AlertDialogAction>

@@ -260,7 +260,19 @@
         "type": "Type",
         "group": "Group",
         "paid": "Paid",
-        "yourShare": "Your Share"
+        "yourShare": "Your Share",
+        "settleActivitiesSuccess": "Successfully settled {{count}} expense(s)",
+        "settleActivitiesError": "Failed to settle {{count}} expense(s)",
+        "settleActivitiesTitle": "Settle Selected Expenses",
+        "settleActivitiesDescription": "Are you sure you want to mark {{count}} expense(s) as paid? This action cannot be undone.",
+        "confirmSettleActivities": "Confirm",
+        "selectAll": "Select All",
+        "settleSelected": "Settle",
+        "canSettle": "can settle",
+        "activities": "activities",
+        "debts": "debts",
+        "total": "Total",
+        "unknown": "Unknown"
     },
     "pagination": {
         "showing": "Showing {{start}}-{{end}} of {{total}}",

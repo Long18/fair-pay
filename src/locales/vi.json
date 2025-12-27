@@ -259,7 +259,19 @@
         "type": "Loại",
         "group": "Nhóm",
         "paid": "Đã trả",
-        "yourShare": "Phần của bạn"
+        "yourShare": "Phần của bạn",
+        "settleActivitiesSuccess": "Đã xác nhận {{count}} khoản chi tiêu",
+        "settleActivitiesError": "Không thể xác nhận {{count}} khoản chi tiêu",
+        "settleActivitiesTitle": "Xác nhận các khoản đã chọn",
+        "settleActivitiesDescription": "Bạn có chắc muốn đánh dấu {{count}} khoản chi tiêu là đã trả? Hành động này không thể hoàn tác.",
+        "confirmSettleActivities": "Xác nhận",
+        "selectAll": "Chọn tất cả",
+        "settleSelected": "Xác nhận",
+        "canSettle": "có thể xác nhận",
+        "activities": "hoạt động",
+        "debts": "khoản nợ",
+        "total": "Tổng",
+        "unknown": "Không rõ"
     },
     "pagination": {
         "showing": "Hiển thị {{start}}-{{end}} trên {{total}}",

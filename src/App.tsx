@@ -87,6 +87,9 @@ function App() {
                 syncWithLocation: true,
                 warnWhenUnsavedChanges: true,
                 projectId: "efvxeD-2r07zg-niV06o",
+                title: {
+                  text: "FairPay",
+                },
                 reactQuery: {
                   clientConfig: queryClientConfig,
                 },
