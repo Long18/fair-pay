@@ -56,7 +56,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
     currentPage,
     refetch: refetchActivities,
   } = usePaginatedActivities({ pageSize: 10 });
-  
+
   const { data: debts = [], isLoading: debtsLoading, refetch: refetchDebts } = useAggregatedDebts();
   const { data: identity } = useGetIdentity<Profile>();
   const go = useGo();
