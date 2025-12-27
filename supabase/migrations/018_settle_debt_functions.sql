@@ -19,7 +19,7 @@ DECLARE
 BEGIN
     -- Get current user ID
     v_user_id := auth.uid();
-    
+
     IF v_user_id IS NULL THEN
         RAISE EXCEPTION 'User must be authenticated';
     END IF;
@@ -48,7 +48,7 @@ BEGIN
 
     -- Mark as paid
     UPDATE expenses
-    SET 
+    SET
         is_payment = true,
         updated_at = NOW()
     WHERE id = p_expense_id;
@@ -83,7 +83,7 @@ DECLARE
 BEGIN
     -- Get current user ID
     v_user_id := auth.uid();
-    
+
     IF v_user_id IS NULL THEN
         RAISE EXCEPTION 'User must be authenticated';
     END IF;
@@ -94,7 +94,7 @@ BEGIN
     -- 2. expense_splits.user_id = counterparty (they owe me)
     -- 3. is_payment = false (unpaid)
     UPDATE expenses e
-    SET 
+    SET
         is_payment = true,
         updated_at = NOW()
     FROM expense_splits es
@@ -109,7 +109,7 @@ BEGIN
     RETURN json_build_object(
         'success', true,
         'settled_count', v_settled_count,
-        'message', format('Settled %s debt(s) with %s', v_settled_count, 
+        'message', format('Settled %s debt(s) with %s', v_settled_count,
             (SELECT full_name FROM profiles WHERE id = p_counterparty_id))
     );
 END;
