@@ -42,12 +42,12 @@ def parse_request_md(filename):
     """Parse Request.md and extract all transactions"""
     with open(filename, 'r', encoding='utf-8') as f:
         content = f.read()
-    
+
     transactions = []
     current_status = None
-    
+
     lines = content.split('\n')
-    
+
     for line in lines:
         # Check section
         if '#### A) Outstanding debts' in line or '(còn nợ)' in line:
@@ -56,10 +56,10 @@ def parse_request_md(filename):
         elif '#### B) Paid history' in line or '(đã thanh toán xong)' in line:
             current_status = 'paid'
             continue
-        
+
         if not current_status:
             continue
-        
+
         # Parse transaction lines
         # Pattern 1: * Name - Date - Time - Amount - Purpose
         match1 = re.match(r'\s*[\*\-]\s*([^-]+)\s*-\s*(\d{2}/\d{2}/\d{4})\s*-\s*([^-]+)\s*-\s*([\d,]+)đ\s*-\s*(.+)', line)
@@ -74,7 +74,7 @@ def parse_request_md(filename):
                 'status': current_status
             })
             continue
-        
+
         # Pattern 2: - Name - ngày DD/MM/YYYY - Time: Amount Purpose
         match2 = re.match(r'\s*-\s*([^-]+)\s*-\s*ngày\s*(\d{2}/\d{2}/\d{4})\s*-\s*([^:]+):\s*([\d,]+)đ\s*(.+)', line)
         if match2:
@@ -88,7 +88,7 @@ def parse_request_md(filename):
                 'status': current_status
             })
             continue
-    
+
     return transactions
 
 def generate_sql(transactions):
@@ -107,7 +107,7 @@ def generate_sql(transactions):
     lines.append("  cnt_paid INT := 0;")
     lines.append("BEGIN")
     lines.append("")
-    
+
     for idx, txn in enumerate(transactions, 1):
         name = txn['name']
         date_str = txn['date']
@@ -115,17 +115,17 @@ def generate_sql(transactions):
         amount = txn['amount']
         purpose = txn['purpose']
         status = txn['status']
-        
+
         # Skip if Long/Music (self-payment)
         if name in ['Long', 'Music']:
             continue
-        
+
         # Get debtor UUID
         debtor_id = USERS.get(name)
         if not debtor_id:
             print(f"Warning: Unknown user '{name}'", file=__import__('sys').stderr)
             continue
-        
+
         # Convert date
         date_parts = date_str.split('/')
         if len(date_parts) == 3:
@@ -133,7 +133,7 @@ def generate_sql(transactions):
             iso_date = f"{year}-{month}-{day}"
         else:
             iso_date = "2025-12-01"
-        
+
         # Guess time
         if 'sáng' in time_str:
             hour = '10:00:00'
@@ -145,9 +145,9 @@ def generate_sql(transactions):
             hour = '09:00:00'
         else:
             hour = '12:00:00'
-        
+
         datetime_str = f"{iso_date} {hour}"
-        
+
         # Determine category
         purpose_lower = purpose.lower()
         if 'cà phê' in purpose_lower or 'coffee' in purpose_lower:
@@ -164,40 +164,39 @@ def generate_sql(transactions):
             category = 'Utilities'
         else:
             category = 'Other'
-        
+
         purpose_escaped = purpose.replace("'", "''")
-        
+
         is_payment_flag = 'true' if status == 'paid' else 'false'
-        
+
         lines.append(f"  -- {idx}. {status.upper()}: {name} owes Long {amount:,}đ - {purpose}")
         lines.append(f"  INSERT INTO expenses (context_type, group_id, description, amount, currency, category, expense_date, paid_by_user_id, is_payment, created_by, created_at)")
         lines.append(f"  VALUES ('group', '{GROUP_ID}', '{purpose_escaped}', {amount}, 'VND', '{category}', '{iso_date}', '{LONG_ID}', {is_payment_flag}, '{LONG_ID}', '{datetime_str}') RETURNING id INTO eid;")
-        
+
         # ONLY ONE SPLIT: the debtor owes Long the FULL amount
         lines.append(f"  INSERT INTO expense_splits (expense_id, user_id, split_method, computed_amount)")
         lines.append(f"  VALUES (eid, '{debtor_id}', 'equal', {amount});")
-        
+
         if status == 'paid':
             lines.append(f"  cnt_paid := cnt_paid + 1;")
         else:
             lines.append(f"  cnt_unpaid := cnt_unpaid + 1;")
         lines.append("")
-    
+
     lines.append("  RAISE NOTICE 'UNPAID transactions: %', cnt_unpaid;")
     lines.append("  RAISE NOTICE 'PAID transactions: %', cnt_paid;")
     lines.append("  RAISE NOTICE 'Total: %', cnt_unpaid + cnt_paid;")
     lines.append("END $$;")
     lines.append("")
-    
+
     return '\n'.join(lines)
 
 if __name__ == '__main__':
     transactions = parse_request_md('.cursor/plan/Request.md')
-    
+
     print(f"Parsed {len(transactions)} transactions", file=__import__('sys').stderr)
     print(f"UNPAID: {sum(1 for t in transactions if t['status'] == 'owes')}", file=__import__('sys').stderr)
     print(f"PAID: {sum(1 for t in transactions if t['status'] == 'paid')}", file=__import__('sys').stderr)
-    
+
     sql = generate_sql(transactions)
     print(sql)
-

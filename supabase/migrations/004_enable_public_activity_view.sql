@@ -7,11 +7,13 @@ DROP POLICY IF EXISTS "Participants can view expenses" ON expenses;
 DROP POLICY IF EXISTS "Involved parties can view payments" ON payments;
 
 -- Recreate expenses SELECT policy with public access
+DROP POLICY IF EXISTS "Public can view all expenses" ON expenses;
 CREATE POLICY "Public can view all expenses"
   ON expenses FOR SELECT
   USING (true);  -- Allow everyone to view all expenses
 
 -- Recreate payments SELECT policy with public access
+DROP POLICY IF EXISTS "Public can view all payments" ON payments;
 CREATE POLICY "Public can view all payments"
   ON payments FOR SELECT
   USING (true);  -- Allow everyone to view all payments
