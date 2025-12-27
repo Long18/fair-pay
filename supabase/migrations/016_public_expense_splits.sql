@@ -40,6 +40,5 @@ $$;
 GRANT EXECUTE ON FUNCTION get_expense_splits_public(uuid) TO anon;
 GRANT EXECUTE ON FUNCTION get_expense_splits_public(uuid) TO authenticated;
 
-COMMENT ON FUNCTION get_expense_splits_public IS 
+COMMENT ON FUNCTION get_expense_splits_public IS
 'Returns expense split details for public viewing. Bypasses RLS to allow unauthenticated users to view expense breakdowns.';
-
