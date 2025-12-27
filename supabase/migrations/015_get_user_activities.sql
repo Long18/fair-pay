@@ -51,7 +51,7 @@ BEGIN
     LEFT JOIN profiles p_creator ON e.created_by = p_creator.id
     LEFT JOIN profiles p_payer ON e.paid_by_user_id = p_payer.id
     LEFT JOIN expense_splits es ON es.expense_id = e.id AND es.user_id = p_user_id
-    WHERE 
+    WHERE
         e.is_payment = false
         AND (
             e.paid_by_user_id = p_user_id
@@ -69,7 +69,6 @@ $$;
 GRANT EXECUTE ON FUNCTION get_user_activities(uuid, integer) TO anon;
 GRANT EXECUTE ON FUNCTION get_user_activities(uuid, integer) TO authenticated;
 
-COMMENT ON FUNCTION get_user_activities IS 
-'Returns expenses and payments for a specific user with detailed split information. 
+COMMENT ON FUNCTION get_user_activities IS
+'Returns expenses and payments for a specific user with detailed split information.
 Available to both authenticated and anonymous users for public profile viewing.';
-
