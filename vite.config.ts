@@ -11,7 +11,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-            includeAssets: ['favicon.ico', 'banner.png'],
+            includeAssets: ['favicon.ico'],
       manifest: {
         name: 'FairPay - Expense Splitting Made Easy',
         short_name: 'FairPay',
