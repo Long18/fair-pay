@@ -87,4 +87,3 @@ BEGIN
 END $$;
 
 COMMENT ON TABLE profiles IS 'User profiles with full Vietnamese names';
-
