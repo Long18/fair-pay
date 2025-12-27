@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useOne, useList, useDelete, useGo, useGetIdentity } from "@refinedev/core";
 import { useParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +8,7 @@ import { ArrowLeft, Pencil, Trash2, Plus } from "lucide-react";
 import { Group, GroupMember } from "../types";
 import { Profile } from "@/modules/profile/types";
 import { MemberList } from "../components/member-list";
+import { AddMemberModal } from "../components/add-member-modal";
 import { ExpenseList, RecurringExpenseList } from "@/modules/expenses";
 import { SimplifiedBalanceView, PaymentList, useBalanceCalculation } from "@/modules/payments";
 import { toast } from "sonner";
@@ -27,6 +29,7 @@ export const GroupShow = () => {
   const { id } = useParams<{ id: string }>();
   const go = useGo();
   const { data: identity } = useGetIdentity<Profile>();
+  const [addMemberModalOpen, setAddMemberModalOpen] = useState(false);
 
   const { query: groupQuery } = useOne<Group>({
     resource: "groups",
@@ -257,6 +260,15 @@ export const GroupShow = () => {
             <RecurringExpenseList groupId={group.id} />
           </TabsContent>
           <TabsContent value="members" className="mt-6">
+            <AddMemberModal
+              groupId={group.id}
+              open={addMemberModalOpen}
+              onOpenChange={setAddMemberModalOpen}
+              onSuccess={() => {
+                membersQuery.refetch();
+                setAddMemberModalOpen(false);
+              }}
+            />
             <MemberList
               members={members.map((m: any) => ({
                 ...m,
@@ -265,6 +277,7 @@ export const GroupShow = () => {
               currentUserId={identity?.id || ""}
               isAdmin={isAdmin}
               onRemoveMember={handleRemoveMember}
+              onAddMember={isAdmin ? () => setAddMemberModalOpen(true) : undefined}
               isLoading={isLoadingMembers}
             />
           </TabsContent>
