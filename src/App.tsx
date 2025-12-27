@@ -33,7 +33,7 @@ import { Register } from "./pages/register";
 import { OAuthConsent } from "./pages/oauth";
 import { ProfileEdit, ProfileShow } from "./modules/profile";
 import { GroupList, GroupCreate, GroupEdit, GroupShow } from "./modules/groups";
-import { ExpenseCreate, ExpenseShow } from "./modules/expenses";
+import { ExpenseCreate, ExpenseEdit, ExpenseShow } from "./modules/expenses";
 import { PaymentCreate } from "./modules/payments";
 import { FriendList, FriendShow } from "./modules/friends";
 import { NotificationList } from "./modules/notifications";
@@ -148,6 +148,7 @@ function App() {
                 {
                   name: "expenses",
                   show: "/expenses/show/:id",
+                  edit: "/expenses/edit/:id",
                   meta: {
                     label: "Expenses",
                     hide: true,
@@ -263,6 +264,7 @@ function App() {
                   </Route>
                   <Route path="/expenses">
                     <Route path="create" element={<ExpenseCreate />} />
+                    <Route path="edit/:id" element={<ExpenseEdit />} />
                   </Route>
                   <Route path="/payments">
                     <Route path="create" element={<PaymentCreate />} />

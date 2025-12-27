@@ -211,6 +211,14 @@ export const ExpenseShow = () => {
               </div>
               {canEdit && (
                 <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => go({ to: `/expenses/edit/${expense.id}` })}
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="destructive" size="sm">
