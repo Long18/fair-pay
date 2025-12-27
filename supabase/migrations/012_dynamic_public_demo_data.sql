@@ -12,7 +12,8 @@ RETURNS TABLE (
     counterparty_name text,
     amount decimal,
     i_owe_them boolean,
-    owed_to_name text
+    owed_to_name text,
+    owed_to_id uuid
 )
 SECURITY DEFINER
 SET search_path = public
@@ -20,19 +21,21 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
     demo_user_id uuid;
+    demo_user_name text;
 BEGIN
     -- Automatically find user with most debts (most active user)
-    SELECT owed_user INTO demo_user_id
+    SELECT owed_user, p.full_name INTO demo_user_id, demo_user_name
     FROM user_debts_summary
-    GROUP BY owed_user
+    JOIN profiles p ON p.id = owed_user
+    GROUP BY owed_user, p.full_name
     ORDER BY SUM(amount_owed) DESC
     LIMIT 1;
-
+    
     -- If no data, return empty
     IF demo_user_id IS NULL THEN
         RETURN;
     END IF;
-
+    
     -- Return real debts from most active user
     RETURN QUERY
     WITH debt_calculations AS (
@@ -55,7 +58,8 @@ BEGIN
         p.full_name as counterparty_name,
         ABS(dc.signed_amount) as amount,
         dc.signed_amount > 0 as i_owe_them,
-        NULL::text as owed_to_name
+        demo_user_name as owed_to_name,
+        demo_user_id as owed_to_id
     FROM debt_calculations dc
     JOIN profiles p ON p.id = dc.other_user_id
     WHERE dc.other_user_id IS NOT NULL
