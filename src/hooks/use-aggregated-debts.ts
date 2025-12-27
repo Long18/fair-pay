@@ -24,28 +24,27 @@ export const useAggregatedDebts = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
-    useEffect(() => {
-        const fetchDebts = async () => {
-            setIsLoading(true);
-            try {
-                let result;
-                let rpcError;
+    const fetchDebts = async () => {
+        setIsLoading(true);
+        try {
+            let result;
+            let rpcError;
 
-                if (!identity?.id) {
-                    // Unauthenticated: Fetch public demo data from database
-                    const response = await supabaseClient.rpc("get_public_demo_debts");
-                    result = response.data;
-                    rpcError = response.error;
-                } else {
-                    // Authenticated: Fetch user's real data
-                    const response = await supabaseClient.rpc(
-                        "get_user_debts_aggregated",
-                        {
-                            p_user_id: identity.id,
-                        }
-                    );
-                    result = response.data;
-                    rpcError = response.error;
+            if (!identity?.id) {
+                // Unauthenticated: Fetch public demo data from database
+                const response = await supabaseClient.rpc("get_public_demo_debts");
+                result = response.data;
+                rpcError = response.error;
+            } else {
+                // Authenticated: Fetch user's real data
+                const response = await supabaseClient.rpc(
+                    "get_user_debts_aggregated",
+                    {
+                        p_user_id: identity.id,
+                    }
+                );
+                result = response.data;
+                rpcError = response.error;
 
                     // If authenticated but no real data, fallback to demo data for better UX
                     if (!rpcError && (!result || result.length === 0)) {
@@ -72,8 +71,9 @@ export const useAggregatedDebts = () => {
             }
         };
 
+    useEffect(() => {
         fetchDebts();
     }, [identity?.id]);
 
-    return { data, isLoading, error };
+    return { data, isLoading, error, refetch: fetchDebts };
 };
