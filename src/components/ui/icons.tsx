@@ -335,7 +335,11 @@ export const PaymentPlansIcon: React.FC<IconProps> = ({ className, size = 24, ..
   </svg>
 );
 
-export const FairPayIcon: React.FC<IconProps> = ({ className, size = 24, ...props }) => (
+interface ImageIconProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+  size?: number;
+}
+
+export const FairPayIcon: React.FC<ImageIconProps> = ({ className, size = 24, ...props }) => (
   <img
     src="/favicon.ico"
     alt="FairPay"
