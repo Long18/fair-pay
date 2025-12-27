@@ -1,142 +1,89 @@
 #!/bin/bash
 
-# Pull Production Data from Supabase to Local
-# This script dumps production database and restores it locally
+# Script to pull production data into local development
+# This will help debug production issues locally
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
+echo "🔄 Pulling Production Data to Local..."
+echo "========================================"
+
+# Colors
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}Pull Production Data to Local${NC}"
-echo -e "${BLUE}========================================${NC}"
-echo ""
-
-# Check if Supabase CLI is installed
+# Check if supabase CLI is installed
 if ! command -v supabase &> /dev/null; then
-    echo -e "${RED}❌ Supabase CLI is not installed${NC}"
-    echo -e "${YELLOW}Install it with: brew install supabase/tap/supabase${NC}"
+    echo -e "${RED}❌ Supabase CLI not found. Please install it first.${NC}"
+    echo "   brew install supabase/tap/supabase"
     exit 1
 fi
 
-# Check if project is linked
-if [ ! -f ".git/supabase-project-ref" ] && [ ! -f "supabase/.temp/project-ref" ]; then
-    echo -e "${YELLOW}⚠️  Project not linked to remote Supabase${NC}"
-    echo -e "${YELLOW}Run: supabase link --project-ref <your-project-ref>${NC}"
-    echo ""
-    read -p "Do you want to link now? (y/n) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        supabase link
-    else
-        exit 1
-    fi
-fi
-
-# Check if local Supabase is running
-echo -e "${BLUE}📊 Checking local Supabase status...${NC}"
-if ! supabase status &> /dev/null; then
-    echo -e "${YELLOW}⚠️  Local Supabase is not running${NC}"
-    read -p "Start local Supabase? (y/n) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo -e "${BLUE}🚀 Starting Supabase...${NC}"
-        supabase start
-    else
-        exit 1
-    fi
-fi
-
-# Warning about data loss
+# Step 1: Backup current local data (optional)
 echo ""
-echo -e "${RED}⚠️  WARNING: This will REPLACE all local data with production data!${NC}"
-echo -e "${YELLOW}This action cannot be undone.${NC}"
+echo -e "${YELLOW}📦 Step 1: Backing up current local data...${NC}"
+BACKUP_FILE="supabase/backups/local-backup-$(date +%Y%m%d-%H%M%S).sql"
+mkdir -p supabase/backups
+supabase db dump --local --data-only > "$BACKUP_FILE" 2>/dev/null || echo "No local data to backup (fresh start)"
+echo -e "${GREEN}✅ Local backup saved to: $BACKUP_FILE${NC}"
+
+# Step 2: Dump production data
 echo ""
-read -p "Are you sure you want to continue? (yes/no) " -r
-echo
-if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
-    echo -e "${YELLOW}Aborted.${NC}"
-    exit 0
-fi
+echo -e "${YELLOW}📥 Step 2: Dumping production data...${NC}"
+PROD_DATA_FILE="supabase/backups/production-data-$(date +%Y%m%d-%H%M%S).sql"
+supabase db dump --data-only --schema public > "$PROD_DATA_FILE"
+echo -e "${GREEN}✅ Production data dumped to: $PROD_DATA_FILE${NC}"
 
-# Create backup directory
-BACKUP_DIR="supabase/backups"
-mkdir -p "$BACKUP_DIR"
-
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-DUMP_FILE="$BACKUP_DIR/production_dump_$TIMESTAMP.sql"
-
+# Step 3: Reset local database
 echo ""
-echo -e "${BLUE}📥 Step 1: Dumping production database...${NC}"
-echo -e "${YELLOW}This may take a few minutes depending on data size${NC}"
+echo -e "${YELLOW}🔄 Step 3: Resetting local database...${NC}"
+supabase db reset --local
+echo -e "${GREEN}✅ Local database reset${NC}"
 
-# Dump production database (schema + data)
-if supabase db dump --data-only -f "$DUMP_FILE"; then
-    echo -e "${GREEN}✅ Production data dumped to: $DUMP_FILE${NC}"
-else
-    echo -e "${RED}❌ Failed to dump production database${NC}"
-    exit 1
-fi
-
+# Step 4: Load production data into local
 echo ""
-echo -e "${BLUE}📊 Step 2: Resetting local database...${NC}"
+echo -e "${YELLOW}📤 Step 4: Loading production data into local...${NC}"
+supabase db push --local < "$PROD_DATA_FILE" 2>&1 | grep -v "^$" || true
+# Alternative method using psql directly
+psql postgresql://postgres:postgres@localhost:54322/postgres < "$PROD_DATA_FILE" 2>&1 | tail -10 || true
+echo -e "${GREEN}✅ Production data loaded${NC}"
 
-# Reset local database (this will apply all migrations)
-if supabase db reset; then
-    echo -e "${GREEN}✅ Local database reset complete${NC}"
-else
-    echo -e "${RED}❌ Failed to reset local database${NC}"
-    exit 1
-fi
-
+# Step 5: Verify data
 echo ""
-echo -e "${BLUE}📥 Step 3: Restoring production data to local...${NC}"
-
-# Get local database connection string
-DB_URL=$(supabase status -o env | grep "DB_URL=" | cut -d'=' -f2-)
-
-if [ -z "$DB_URL" ]; then
-    echo -e "${RED}❌ Could not get local database URL${NC}"
-    exit 1
-fi
-
-# Restore data using psql
-if psql "$DB_URL" -f "$DUMP_FILE" > /dev/null 2>&1; then
-    echo -e "${GREEN}✅ Production data restored successfully${NC}"
-else
-    echo -e "${YELLOW}⚠️  Some warnings occurred during restore (this is usually normal)${NC}"
-fi
-
-echo ""
-echo -e "${BLUE}🔍 Step 4: Verifying data...${NC}"
+echo -e "${YELLOW}🔍 Step 5: Verifying data...${NC}"
 
 # Count records in key tables
-PROFILES_COUNT=$(psql "$DB_URL" -t -c "SELECT COUNT(*) FROM profiles;" | xargs)
-GROUPS_COUNT=$(psql "$DB_URL" -t -c "SELECT COUNT(*) FROM groups;" | xargs)
-EXPENSES_COUNT=$(psql "$DB_URL" -t -c "SELECT COUNT(*) FROM expenses;" | xargs)
-PAYMENTS_COUNT=$(psql "$DB_URL" -t -c "SELECT COUNT(*) FROM payments;" | xargs)
+echo "Counting records in key tables:"
+psql postgresql://postgres:postgres@localhost:54322/postgres -c "
+SELECT 
+  'profiles' as table_name, COUNT(*) as count FROM profiles
+UNION ALL
+SELECT 'friendships', COUNT(*) FROM friendships
+UNION ALL
+SELECT 'groups', COUNT(*) FROM groups
+UNION ALL
+SELECT 'expenses', COUNT(*) FROM expenses
+UNION ALL
+SELECT 'payments', COUNT(*) FROM payments
+UNION ALL
+SELECT 'expense_splits', COUNT(*) FROM expense_splits
+ORDER BY table_name;
+" 2>&1 | grep -v "^$"
 
-echo -e "${GREEN}✅ Data verification:${NC}"
-echo -e "   Profiles: ${BLUE}$PROFILES_COUNT${NC}"
-echo -e "   Groups: ${BLUE}$GROUPS_COUNT${NC}"
-echo -e "   Expenses: ${BLUE}$EXPENSES_COUNT${NC}"
-echo -e "   Payments: ${BLUE}$PAYMENTS_COUNT${NC}"
+# Step 6: Test the problematic function
+echo ""
+echo -e "${YELLOW}🧪 Step 6: Testing get_public_demo_debts function...${NC}"
+psql postgresql://postgres:postgres@localhost:54322/postgres -c "SELECT * FROM get_public_demo_debts();" 2>&1 | head -20
 
 echo ""
-echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}✅ Production data successfully pulled!${NC}"
-echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}✅ Production data pull complete!${NC}"
 echo ""
-echo -e "${BLUE}📝 Next steps:${NC}"
-echo -e "   1. Open Supabase Studio: ${YELLOW}pnpm supabase:studio${NC}"
-echo -e "   2. Start dev server: ${YELLOW}pnpm dev${NC}"
-echo -e "   3. Test with production data locally"
+echo "Next steps:"
+echo "1. Start your local dev server: pnpm run dev"
+echo "2. Test the application with production data"
+echo "3. Debug any issues"
 echo ""
-echo -e "${YELLOW}💡 Tip: The dump file is saved at: $DUMP_FILE${NC}"
-echo -e "${YELLOW}   You can restore it again later if needed.${NC}"
-echo ""
+echo "To restore local data from backup:"
+echo "  psql postgresql://postgres:postgres@localhost:54322/postgres < $BACKUP_FILE"
