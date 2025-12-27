@@ -36,7 +36,7 @@ export const PaymentCreate = () => {
     resource: "friendships",
     id: friendshipId!,
     meta: {
-      select: "*, user_a_profile!user_a(id, full_name), user_b_profile!user_b(id, full_name)",
+      select: "*, user_a_profile:profiles!user_a(id, full_name), user_b_profile:profiles!user_b(id, full_name)",
     },
     queryOptions: {
       enabled: isFriendContext,
