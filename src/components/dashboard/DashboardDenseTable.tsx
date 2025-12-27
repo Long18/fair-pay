@@ -1,4 +1,4 @@
-import { MoreHorizontal, Receipt, Banknote, Users, TrendingUp, TrendingDown } from "lucide-react";
+import { MoreHorizontal, Receipt, Banknote, Users, TrendingUp, TrendingDown, CheckCircle2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -11,8 +11,19 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { usePaginatedActivities } from "@/hooks/use-paginated-activities";
@@ -21,6 +32,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useGo, useGetIdentity } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
 import { Profile } from "@/modules/profile/types";
+import { useState } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -28,6 +40,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { PaginationControls } from "@/components/ui/pagination-controls";
+import { supabaseClient } from "@/utility/supabaseClient";
+import { toast } from "sonner";
 
 interface DashboardDenseTableProps {
   disabled?: boolean;
@@ -40,12 +54,18 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
     isLoading: activitiesLoading,
     setPage,
     currentPage,
+    refetch: refetchActivities,
   } = usePaginatedActivities({ pageSize: 10 });
-
-  const { data: debts = [], isLoading: debtsLoading } = useAggregatedDebts();
+  
+  const { data: debts = [], isLoading: debtsLoading, refetch: refetchDebts } = useAggregatedDebts();
   const { data: identity } = useGetIdentity<Profile>();
   const go = useGo();
   const { t } = useTranslation();
+
+  // State for settle dialog
+  const [settleDialogOpen, setSettleDialogOpen] = useState(false);
+  const [selectedDebt, setSelectedDebt] = useState<typeof debtItems[0] | null>(null);
+  const [isSettling, setIsSettling] = useState(false);
 
   const isAuthenticated = !!identity?.id;
 
@@ -78,6 +98,36 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
 
   const getAmountColor = (owe: boolean) => {
     return owe ? "text-teal-600" : "text-red-600";
+  };
+
+  // Handle settle all debts
+  const handleSettleAll = async (counterpartyId: string, counterpartyName: string, amount: number) => {
+    setIsSettling(true);
+    try {
+      const { data, error } = await supabaseClient.rpc('settle_all_debts_with_person', {
+        p_counterparty_id: counterpartyId,
+      });
+
+      if (error) throw error;
+
+      toast.success(t('dashboard.settleSuccess', {
+        name: counterpartyName,
+        amount: formatCurrency(amount),
+        defaultValue: `Successfully settled ₫${formatCurrency(amount)} with ${counterpartyName}`,
+      }));
+
+      // Refetch debts and activities
+      refetchDebts();
+      refetchActivities();
+      setSettleDialogOpen(false);
+    } catch (error: any) {
+      console.error('Error settling debt:', error);
+      toast.error(t('dashboard.settleError', {
+        defaultValue: `Failed to settle debt: ${error.message}`,
+      }));
+    } finally {
+      setIsSettling(false);
+    }
   };
 
   // Process debts for display
@@ -229,25 +279,49 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                             </div>
                           </TableCell>
                           <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-primary/10"
-                                >
-                                  <MoreHorizontal className="h-5 w-5" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-48">
-                                <DropdownMenuItem onClick={() => go({ to: `/profile/${item.counterparty_id}` })}>
-                                  {t('dashboard.viewDetails')}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => go({ to: `/settle/${item.counterparty_id}` })}>
-                                  {t('dashboard.settleUp')}
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            {isAuthenticated ? (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-primary/10"
+                                  >
+                                    <MoreHorizontal className="h-5 w-5" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56">
+                                  <DropdownMenuItem onClick={() => go({ to: `/profile/${item.counterparty_id}` })}>
+                                    <Receipt className="h-4 w-4 mr-2" />
+                                    {t('dashboard.viewDetails')}
+                                  </DropdownMenuItem>
+                                  {!item.i_owe_them && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setSelectedDebt(item);
+                                          setSettleDialogOpen(true);
+                                        }}
+                                        className="text-green-600 focus:text-green-600 focus:bg-green-50"
+                                      >
+                                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                                        {t('dashboard.settleAll')} (₫{formatCurrency(Number(item.amount))})
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                                onClick={() => go({ to: `/profile/${item.counterparty_id}` })}
+                              >
+                                <MoreHorizontal className="h-5 w-5" />
+                              </Button>
+                            )}
                           </TableCell>
                         </TableRow>
                       </TooltipTrigger>
@@ -424,6 +498,58 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
           )}
         </div>
       </div>
+
+      {/* Settle Confirmation Dialog */}
+      <AlertDialog open={settleDialogOpen} onOpenChange={setSettleDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('dashboard.settleAllTitle', 'Settle All Debts')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedDebt && (
+                <>
+                  {t('dashboard.settleAllDescription', {
+                    name: selectedDebt.counterparty_name,
+                    amount: formatCurrency(Number(selectedDebt.amount)),
+                    defaultValue: `Are you sure you want to mark all debts with ${selectedDebt.counterparty_name} (₫${formatCurrency(Number(selectedDebt.amount))}) as paid? This action cannot be undone.`,
+                  })}
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSettling}>
+              {t('common.cancel', 'Cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (selectedDebt) {
+                  handleSettleAll(
+                    selectedDebt.counterparty_id,
+                    selectedDebt.counterparty_name,
+                    Number(selectedDebt.amount)
+                  );
+                }
+              }}
+              disabled={isSettling}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {isSettling ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  {t('dashboard.settling', 'Settling...')}
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  {t('dashboard.confirmSettle', 'Confirm Settle')}
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
