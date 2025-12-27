@@ -11,6 +11,7 @@ import { Profile } from "@/modules/profile/types";
 import { GroupMember } from "@/modules/groups/types";
 import { Friendship } from "@/modules/friends/types";
 import { toast } from "sonner";
+import { supabaseClient } from "@/utility/supabaseClient";
 
 export const ExpenseCreate = () => {
   const { groupId, friendshipId } = useParams<{ groupId?: string; friendshipId?: string }>();
@@ -85,7 +86,7 @@ export const ExpenseCreate = () => {
   }, [isGroupContext, isFriendContext, membersQuery.data, friendshipQuery.data, identity]);
 
   const handleSubmit = async (values: ExpenseFormValues) => {
-    const { splits, is_recurring, recurring, ...expenseData } = values;
+    const { splits, is_recurring, recurring, split_method, ...expenseData } = values;
 
     // Add context type and IDs to expense data
     const expensePayload = {
@@ -93,6 +94,7 @@ export const ExpenseCreate = () => {
       context_type: isGroupContext ? 'group' : 'friend',
       group_id: isGroupContext ? groupId : null,
       friendship_id: isFriendContext ? friendshipId : null,
+      created_by: identity!.id,
     };
 
     createMutation.mutate(
@@ -107,23 +109,17 @@ export const ExpenseCreate = () => {
         onSuccess: async (data) => {
           const expenseId = data.data.id as string;
 
-          // Create splits
+          // Create splits using Supabase client
           const splitPromises = splits.map((split) =>
-            fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/expense_splits`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-              },
-              body: JSON.stringify({
+            supabaseClient
+              .from("expense_splits")
+              .insert({
                 expense_id: expenseId,
                 user_id: split.user_id,
                 split_method: values.split_method,
                 split_value: split.split_value,
                 computed_amount: split.computed_amount,
-              }),
-            })
+              })
           );
 
           await Promise.all(splitPromises);

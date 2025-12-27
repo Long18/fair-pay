@@ -1,4 +1,4 @@
-import { useCreate, useGo } from "@refinedev/core";
+import { useCreate, useGo, useGetIdentity } from "@refinedev/core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GroupForm } from "../components/group-form";
 import { GroupFormValues } from "../types";
@@ -7,12 +7,21 @@ import { toast } from "sonner";
 export const GroupCreate = () => {
   const go = useGo();
   const createMutation = useCreate();
+  const { data: identity } = useGetIdentity<{ id: string }>();
 
   const handleSubmit = (values: GroupFormValues) => {
+    if (!identity?.id) {
+      toast.error("User identity not found. Please try logging in again.");
+      return;
+    }
+
     createMutation.mutate(
       {
         resource: "groups",
-        values,
+        values: {
+          ...values,
+          created_by: identity.id,
+        },
       },
       {
         onSuccess: (data) => {
