@@ -47,16 +47,16 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
   };
 
   const formatTimeAgo = (date?: string) => {
-    if (!date) return "No activity";
+    if (!date) return t('dashboard.noRecentActivity');
     const now = new Date();
     const past = new Date(date);
     const diffMs = now.getTime() - past.getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffHours / 24);
 
-    if (diffDays > 0) return `${diffDays}d ago`;
-    if (diffHours > 0) return `${diffHours}h ago`;
-    return "Just now";
+    if (diffDays > 0) return `${diffDays}${t('common.daysAgo', 'd ago')}`;
+    if (diffHours > 0) return `${diffHours}${t('common.hoursAgo', 'h ago')}`;
+    return t('common.justNow', 'Just now');
   };
 
   // Show all debts (real data for both authenticated and unauthenticated users)
@@ -68,12 +68,12 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
       // If owed_to_name is present, it's public data - use actual names
       if ((d as any).owed_to_name) {
         const owedToName = (d as any).owed_to_name;
-        return `${d.counterparty_name} owes ${owedToName}`;
+        return `${d.counterparty_name} ${t('dashboard.owes')} ${owedToName}`;
       } else {
         // Real authenticated data: personalized wording
         return d.i_owe_them
-          ? `You owe ${d.counterparty_name}`
-          : `${d.counterparty_name} owes you`;
+          ? `${t('dashboard.youOwe')} ${d.counterparty_name}`
+          : `${d.counterparty_name} ${t('dashboard.userOwesYou')}`;
       }
     };
 
@@ -91,7 +91,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
   const activityItems = activities.map(a => ({ ...a, itemType: 'activity' as const }));
 
   if (isLoading || debtsLoading) {
-    return <div className="h-64 flex items-center justify-center text-muted-foreground">Loading...</div>;
+    return <div className="h-64 flex items-center justify-center text-muted-foreground">{t('common.loading')}</div>;
   }
 
   if (debtItems.length === 0 && activityItems.length === 0) {
@@ -100,11 +100,11 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
         <div className="h-12 w-12 bg-muted rounded-full flex items-center justify-center mb-4">
           <Receipt className="h-6 w-6 text-muted-foreground" />
         </div>
-        <h3 className="text-lg font-semibold">No recent activity</h3>
+        <h3 className="text-lg font-semibold">{t('dashboard.noRecentActivity')}</h3>
         <p className="text-muted-foreground text-sm max-w-xs mt-2">
           {disabled
-            ? "Login to add expenses and track your shared costs with friends."
-            : "Start by adding your first expense or payment."
+            ? t('dashboard.loginToAddExpense')
+            : t('dashboard.recordNewExpense')
           }
         </p>
       </div>
@@ -116,10 +116,10 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
       {/* Balances / Debts Table */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold tracking-tight">Balances</h3>
+          <h3 className="text-lg font-semibold tracking-tight">{t('balances.title')}</h3>
           {debtItems.length > 0 && (
             <Badge variant="secondary" className="text-xs">
-              {debtItems.length} {debtItems.length === 1 ? 'balance' : 'balances'}
+              {debtItems.length} {debtItems.length === 1 ? t('dashboard.balance') : t('balances.title').toLowerCase()}
             </Badge>
           )}
         </div>
@@ -130,9 +130,9 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
               <TableHeader className="bg-muted/30">
                 <TableRow>
                   <TableHead className="w-[50px]"></TableHead>
-                  <TableHead>Person</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>{t('profile.person')}</TableHead>
+                  <TableHead>{t('profile.status')}</TableHead>
+                  <TableHead className="text-right">{t('profile.amount')}</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -165,8 +165,8 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                               {/* For demo data, show neutral "Owes" badge. For real data, show personalized "You owe"/"Owes you" */}
                               {!!(item as any).owed_to_name ||
                                (typeof item.id === 'string' && item.id.startsWith('00000000-0000-0000-0000-00000000'))
-                                ? "Owes"
-                                : (item.i_owe_them ? "You owe" : "Owes you")
+                                ? t('dashboard.owes')
+                                : (item.i_owe_them ? t('dashboard.youOwe') : t('dashboard.userOwesYou'))
                               }
                             </Badge>
                           </TableCell>
@@ -188,10 +188,10 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={() => go({ to: `/profile/${item.id}` })}>
-                                  View Profile
+                                  {t('dashboard.viewDetails')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => go({ to: `/settle/${item.id}` })}>
-                                  Settle Up
+                                  {t('dashboard.settleUp')}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -208,8 +208,8 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
               <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center mb-3">
                 <Users className="h-5 w-5 text-muted-foreground" />
               </div>
-              <p className="text-sm font-medium text-muted-foreground">All settled up! 🎉</p>
-              <p className="text-xs text-muted-foreground mt-1">No outstanding balances</p>
+              <p className="text-sm font-medium text-muted-foreground">{t('dashboard.allSettledUpNoDebts')}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('balances.settleUp')}</p>
             </div>
           )}
         </div>
@@ -218,7 +218,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
       {/* Recent Activity Table */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold tracking-tight">Recent Activity</h3>
+          <h3 className="text-lg font-semibold tracking-tight">{t('dashboard.recentActivity')}</h3>
         </div>
 
         <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
@@ -226,10 +226,10 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
             <TableHeader className="bg-muted/30">
               <TableRow>
                 <TableHead className="w-[50px]"></TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Group</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
+                <TableHead>{t('expenses.description')}</TableHead>
+                <TableHead>{t('groups.title')}</TableHead>
+                <TableHead>{t('expenses.date')}</TableHead>
+                <TableHead className="text-right">{t('expenses.amount')}</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -240,7 +240,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       <div className="flex flex-col items-center justify-center">
                         <Receipt className="h-8 w-8 mb-2 opacity-50" />
-                        <p className="text-sm">No recent activity</p>
+                        <p className="text-sm">{t('dashboard.noRecentActivity')}</p>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -305,17 +305,17 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                                     go({ to: item.type === "expense" ? `/expenses/show/${item.id}` : `/payments/show/${item.id}` });
                                   }
                                 }}>
-                                  View Details
+                                  {t('dashboard.viewDetails')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => {
                                   if ('type' in item) {
                                     go({ to: item.type === "expense" ? `/expenses/edit/${item.id}` : `/payments/edit/${item.id}` });
                                   }
                                 }}>
-                                  Edit
+                                  {t('common.edit')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem className="text-destructive">
-                                  Delete
+                                  {t('common.delete')}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -330,7 +330,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
           </Table>
           <div className="p-2 border-t bg-muted/10">
             <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground h-8">
-              View all transactions
+              {t('dashboard.viewAllTransactions')}
             </Button>
           </div>
         </div>
