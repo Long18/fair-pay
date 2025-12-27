@@ -78,9 +78,27 @@ export const usePaginatedActivities = ({
             group_name: item.group_name,
             created_by_id: item.created_by_id,
             created_by_name: item.created_by_name || "Unknown",
-            created_by_avatar_url: item.created_by_avatar_url,
             is_mine: false,
           }));
+
+          // Fetch avatar_urls from profiles table
+          if (activities.length > 0) {
+            const createdByIds = activities.map((a) => a.created_by_id).filter(Boolean);
+            if (createdByIds.length > 0) {
+              const { data: profiles } = await supabaseClient
+                .from("profiles")
+                .select("id, avatar_url")
+                .in("id", createdByIds);
+
+              // Map avatar_url to activities
+              const profileMap = new Map(
+                (profiles || []).map((p: any) => [p.id, p.avatar_url])
+              );
+              activities.forEach((activity) => {
+                activity.created_by_avatar_url = profileMap.get(activity.created_by_id);
+              });
+            }
+          }
           setItems(activities);
           setTotalItems(countResult.count || 0);
         }

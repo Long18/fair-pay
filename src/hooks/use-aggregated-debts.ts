@@ -61,7 +61,27 @@ export const useAggregatedDebts = () => {
                 throw rpcError;
             }
 
-            setData(result || []);
+            // Fetch avatar_urls from profiles table
+            const debts = result || [];
+            if (debts.length > 0) {
+                const counterpartyIds = debts.map((d: any) => d.counterparty_id).filter(Boolean);
+                if (counterpartyIds.length > 0) {
+                    const { data: profiles } = await supabaseClient
+                        .from("profiles")
+                        .select("id, avatar_url")
+                        .in("id", counterpartyIds);
+
+                    // Map avatar_url to debts
+                    const profileMap = new Map(
+                        (profiles || []).map((p: any) => [p.id, p.avatar_url])
+                    );
+                    debts.forEach((debt: any) => {
+                        debt.counterparty_avatar_url = profileMap.get(debt.counterparty_id);
+                    });
+                }
+            }
+
+            setData(debts);
             setError(null);
         } catch (err) {
             console.error("Failed to fetch debts:", err);
