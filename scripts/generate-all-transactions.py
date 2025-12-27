@@ -46,7 +46,7 @@ TRANSACTIONS = [
     ('Anh Mike', '2025-12-19 23:00:00', 85000, 'Tiền hát karaoke Apple Mũi Né', ['Hoàng Anh', 'Anh Mike', 'Minh Hồ', 'Đức', 'Long']),
     ('Minh Hồ', '2025-12-19 23:00:00', 85000, 'Tiền hát karaoke Apple Mũi Né', ['Hoàng Anh', 'Anh Mike', 'Minh Hồ', 'Đức', 'Long']),
     ('Đức', '2025-12-19 23:00:00', 85000, 'Tiền hát karaoke Apple Mũi Né', ['Hoàng Anh', 'Anh Mike', 'Minh Hồ', 'Đức', 'Long']),
-    
+
     # ===== PAID TRANSACTIONS =====
     # April 2025
     ('Hoàng Anh', '2025-04-01 10:00:00', 30000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
@@ -67,14 +67,14 @@ TRANSACTIONS = [
     ('Hoàng Anh', '2025-04-23 10:00:00', 35000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
     ('Hoàng Anh', '2025-04-24 10:00:00', 35000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
     ('Hoàng Anh', '2025-04-25 10:00:00', 35000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
-    
+
     # June 2025
     ('Chị Kim (Ngân)', '2025-06-18 19:00:00', 100000, 'Tiền ăn tối', ['Chị Kim (Ngân)', 'Hoàng Anh', 'Thục Nghi', 'Long']),
     ('Chị Kim (Ngân)', '2025-06-18 23:00:00', 62000, 'Tiền hát karaoke', ['Chị Kim (Ngân)', 'Thục Nghi', 'Long']),
     ('Hoàng Anh', '2025-06-18 19:00:00', 100000, 'Tiền ăn tối', ['Chị Kim (Ngân)', 'Hoàng Anh', 'Thục Nghi', 'Long']),
     ('Thục Nghi', '2025-06-18 19:00:00', 100000, 'Tiền ăn tối', ['Chị Kim (Ngân)', 'Hoàng Anh', 'Thục Nghi', 'Long']),
     ('Thục Nghi', '2025-06-18 23:00:00', 62000, 'Tiền hát karaoke', ['Chị Kim (Ngân)', 'Thục Nghi', 'Long']),
-    
+
     # July 2025
     ('Chị Kim (Ngân)', '2025-07-16 19:00:00', 150000, 'Tiền ăn tối', ['Chị Kim (Ngân)', 'Hoàng Anh', 'Thục Nghi', 'Long']),
     ('Chị Kim (Ngân)', '2025-07-16 23:00:00', 70000, 'Tiền hát karaoke', ['Chị Kim (Ngân)', 'Hoàng Anh', 'Thục Nghi', 'Long']),
@@ -88,7 +88,7 @@ TRANSACTIONS = [
     ('Chị Kim (Ngân)', '2025-07-30 19:00:00', 150000, 'Tiền ăn tối', ['Chị Kim (Ngân)', 'Hoàng Anh', 'Thục Nghi', 'Long']),
     ('Hoàng Anh', '2025-07-30 19:00:00', 150000, 'Tiền ăn tối', ['Chị Kim (Ngân)', 'Hoàng Anh', 'Thục Nghi', 'Long']),
     ('Thục Nghi', '2025-07-30 19:00:00', 150000, 'Tiền ăn tối', ['Chị Kim (Ngân)', 'Hoàng Anh', 'Thục Nghi', 'Long']),
-    
+
     # August 2025
     ('Hoàng Anh', '2025-08-01 09:00:00', 30000, 'Tiền Grab', ['Hoàng Anh', 'Long']),
     ('Hoàng Anh', '2025-08-01 10:00:00', 25000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
@@ -101,7 +101,7 @@ TRANSACTIONS = [
     ('Hoàng Anh', '2025-08-18 10:00:00', 25000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
     ('Hoàng Anh', '2025-08-19 10:00:00', 25000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
     ('Hoàng Anh', '2025-08-22 10:00:00', 25000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
-    
+
     # September 2025
     ('Hoàng Anh', '2025-09-01 10:00:00', 25000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
     ('Hoàng Anh', '2025-09-02 10:00:00', 25000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
@@ -115,7 +115,7 @@ TRANSACTIONS = [
     ('Hoàng Anh', '2025-09-22 10:00:00', 25000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
     ('Hoàng Anh', '2025-09-23 10:00:00', 25000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
     ('Hoàng Anh', '2025-09-26 10:00:00', 25000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
-    
+
     # October 2025
     ('Hoàng Anh', '2025-10-01 09:00:00', 29000, 'Tiền iCloud', ['Hoàng Anh', 'Long']),
     ('Hoàng Anh', '2025-10-03 10:00:00', 25000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
@@ -131,7 +131,7 @@ TRANSACTIONS = [
     ('Hoàng Anh', '2025-10-27 10:00:00', 25000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
     ('Hoàng Anh', '2025-10-28 10:00:00', 25000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
     ('Hoàng Anh', '2025-10-31 10:00:00', 25000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
-    
+
     # November 2025 (Week 1-2)
     ('Hoàng Anh', '2025-11-03 10:00:00', 25000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
     ('Hoàng Anh', '2025-11-04 10:00:00', 25000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
@@ -139,7 +139,7 @@ TRANSACTIONS = [
     ('Hoàng Anh', '2025-11-10 10:00:00', 25000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
     ('Hoàng Anh', '2025-11-11 10:00:00', 25000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
     ('Hoàng Anh', '2025-11-14 10:00:00', 25000, 'Tiền cà phê', ['Hoàng Anh', 'Long']),
-    
+
     # November 2025 (Week 3) - Large group lunch
     ('Anh Mike a.k.a Mai', '2025-11-17 08:00:00', 15000, 'Tiền ăn sáng', ['Anh Mike a.k.a Mai', 'Long']),
     ('Hoàng Anh', '2025-11-18 12:00:00', 45000, 'Tiền ăn trưa (Ăn Trưa)', ['Hoàng Anh', 'Chị Kayen', 'Long', 'Chị Ngân', 'Thịnh (Arin)', 'Tuyến']),
@@ -150,14 +150,14 @@ TRANSACTIONS = [
     ('Chị Ngân', '2025-11-18 12:00:00', 45000, 'Tiền ăn trưa (Ăn Trưa)', ['Hoàng Anh', 'Chị Kayen', 'Long', 'Chị Ngân', 'Thịnh (Arin)', 'Tuyến']),
     ('Thịnh (Arin)', '2025-11-18 12:00:00', 45000, 'Tiền ăn trưa (Ăn Trưa)', ['Hoàng Anh', 'Chị Kayen', 'Long', 'Chị Ngân', 'Thịnh (Arin)', 'Tuyến']),
     ('Tuyến', '2025-11-18 12:00:00', 45000, 'Tiền ăn trưa (Ăn Trưa)', ['Hoàng Anh', 'Chị Kayen', 'Long', 'Chị Ngân', 'Thịnh (Arin)', 'Tuyến']),
-    
+
     # November 19, 2025 - dinner
     ('Hoàng Anh', '2025-11-19 19:00:00', 100000, 'Tiền ăn tối', ['Hoàng Anh', 'Chị Kayen', 'Long', 'Thục Nghi', 'Tuyến']),
     ('Chị Kayen', '2025-11-19 19:00:00', 100000, 'Tiền ăn tối', ['Hoàng Anh', 'Chị Kayen', 'Long', 'Thục Nghi', 'Tuyến']),
     ('Long', '2025-11-19 19:00:00', 100000, 'Tiền ăn tối', ['Hoàng Anh', 'Chị Kayen', 'Long', 'Thục Nghi', 'Tuyến']),
     ('Thục Nghi', '2025-11-19 19:00:00', 100000, 'Tiền ăn tối', ['Hoàng Anh', 'Chị Kayen', 'Long', 'Thục Nghi', 'Tuyến']),
     ('Tuyến', '2025-11-19 19:00:00', 100000, 'Tiền ăn tối', ['Hoàng Anh', 'Chị Kayen', 'Long', 'Thục Nghi', 'Tuyến']),
-    
+
     # November 20, 2025
     ('Anh Mike a.k.a Mai', '2025-11-20 19:00:00', 50000, 'Tiền ăn tối', ['Anh Mike a.k.a Mai', 'Long']),
     ('Anh Tâm', '2025-11-20 19:00:00', 56000, 'Tiền ăn tối', ['Anh Tâm', 'Long']),
@@ -166,21 +166,21 @@ TRANSACTIONS = [
     ('Hoàng Anh', '2025-11-20 12:00:00', 45000, 'Tiền ăn trưa', ['Long', 'Hoàng Anh', 'Chị Kayen', 'Tuyến']),
     ('Chị Kayen', '2025-11-20 12:00:00', 45000, 'Tiền ăn trưa', ['Long', 'Hoàng Anh', 'Chị Kayen', 'Tuyến']),
     ('Tuyến', '2025-11-20 12:00:00', 45000, 'Tiền ăn trưa', ['Long', 'Hoàng Anh', 'Chị Kayen', 'Tuyến']),
-    
+
     # December 2025 Week 1
     ('Chị Kayen', '2025-12-02 12:00:00', 39000, 'Tiền ăn trưa (Ăn Chiều)', ['Chị Kayen', 'Long', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến']),
     ('Long', '2025-12-02 12:00:00', 49500, 'Tiền ăn trưa (Ăn Chiều)', ['Chị Kayen', 'Long', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến']),
     ('Thịnh (Arin)', '2025-12-02 12:00:00', 49500, 'Tiền ăn trưa (Ăn Chiều)', ['Chị Kayen', 'Long', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến']),
     ('Thục Nghi', '2025-12-02 12:00:00', 39000, 'Tiền ăn trưa (Ăn Chiều)', ['Chị Kayen', 'Long', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến']),
     ('Tuyến', '2025-12-02 12:00:00', 39000, 'Tiền ăn trưa (Ăn Chiều)', ['Chị Kayen', 'Long', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến']),
-    
+
     ('Anh Mike a.k.a Mai', '2025-12-03 12:00:00', 50000, 'Tiền ăn trưa (Ăn Trưa)', ['Anh Mike a.k.a Mai', 'Chị Ngân', 'Hoàng Anh', 'Long', 'Thục Nghi', 'Tuyến']),
     ('Chị Ngân', '2025-12-03 12:00:00', 50000, 'Tiền ăn trưa (Ăn Trưa)', ['Anh Mike a.k.a Mai', 'Chị Ngân', 'Hoàng Anh', 'Long', 'Thục Nghi', 'Tuyến']),
     ('Hoàng Anh', '2025-12-03 12:00:00', 45000, 'Tiền ăn trưa (Ăn Trưa)', ['Anh Mike a.k.a Mai', 'Chị Ngân', 'Hoàng Anh', 'Long', 'Thục Nghi', 'Tuyến']),
     ('Long', '2025-12-03 12:00:00', 50000, 'Tiền ăn trưa (Ăn Trưa)', ['Anh Mike a.k.a Mai', 'Chị Ngân', 'Hoàng Anh', 'Long', 'Thục Nghi', 'Tuyến']),
     ('Thục Nghi', '2025-12-03 12:00:00', 35000, 'Tiền ăn trưa (Ăn Trưa)', ['Anh Mike a.k.a Mai', 'Chị Ngân', 'Hoàng Anh', 'Long', 'Thục Nghi', 'Tuyến']),
     ('Tuyến', '2025-12-03 12:00:00', 50000, 'Tiền ăn trưa (Ăn Trưa)', ['Anh Mike a.k.a Mai', 'Chị Ngân', 'Hoàng Anh', 'Long', 'Thục Nghi', 'Tuyến']),
-    
+
     # December Week 2
     ('Chị Ngân', '2025-12-08 12:00:00', 45000, 'Tiền ăn trưa (Ăn Chiều)', ['Chị Ngân', 'Hoàng Anh', 'Long', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến']),
     ('Hoàng Anh', '2025-12-08 12:00:00', 45000, 'Tiền ăn trưa (Ăn Chiều)', ['Chị Ngân', 'Hoàng Anh', 'Long', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến']),
@@ -188,18 +188,18 @@ TRANSACTIONS = [
     ('Thịnh (Arin)', '2025-12-08 12:00:00', 45000, 'Tiền ăn trưa (Ăn Chiều)', ['Chị Ngân', 'Hoàng Anh', 'Long', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến']),
     ('Thục Nghi', '2025-12-08 12:00:00', 45000, 'Tiền ăn trưa (Ăn Chiều)', ['Chị Ngân', 'Hoàng Anh', 'Long', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến']),
     ('Tuyến', '2025-12-08 12:00:00', 45000, 'Tiền ăn trưa (Ăn Chiều)', ['Chị Ngân', 'Hoàng Anh', 'Long', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến']),
-    
+
     ('Hoàng Anh', '2025-12-09 12:00:00', 45000, 'Tiền ăn trưa (Ăn Trưa)', ['Hoàng Anh', 'Long']),
-    
+
     ('Anh Mike a.k.a Mai', '2025-12-10 12:00:00', 50000, 'Tiền ăn trưa', ['Anh Mike a.k.a Mai', 'Chị Ngân', 'Thái', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến', 'Long']),
     ('Chị Ngân', '2025-12-10 12:00:00', 45000, 'Tiền ăn trưa', ['Anh Mike a.k.a Mai', 'Chị Ngân', 'Thái', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến', 'Long']),
     ('Thái', '2025-12-10 12:00:00', 45000, 'Tiền ăn trưa', ['Anh Mike a.k.a Mai', 'Chị Ngân', 'Thái', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến', 'Long']),
     ('Thịnh (Arin)', '2025-12-10 12:00:00', 45000, 'Tiền ăn trưa', ['Anh Mike a.k.a Mai', 'Chị Ngân', 'Thái', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến', 'Long']),
     ('Thục Nghi', '2025-12-10 12:00:00', 45000, 'Tiền ăn trưa', ['Anh Mike a.k.a Mai', 'Chị Ngân', 'Thái', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến', 'Long']),
     ('Tuyến', '2025-12-10 12:00:00', 45000, 'Tiền ăn trưa', ['Anh Mike a.k.a Mai', 'Chị Ngân', 'Thái', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến', 'Long']),
-    
+
     ('Hoàng Anh', '2025-12-11 19:00:00', 45000, 'Tiền đi siêu thị', ['Hoàng Anh', 'Long']),
-    
+
     # December Week 3
     ('Chị Kayen', '2025-12-15 12:00:00', 45000, 'Tiền ăn trưa', ['Chị Kayen', 'Long', 'Thái', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến']),
     ('Long', '2025-12-15 12:00:00', 45000, 'Tiền ăn trưa', ['Chị Kayen', 'Long', 'Thái', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến']),
@@ -207,7 +207,7 @@ TRANSACTIONS = [
     ('Thịnh (Arin)', '2025-12-15 12:00:00', 45000, 'Tiền ăn trưa', ['Chị Kayen', 'Long', 'Thái', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến']),
     ('Thục Nghi', '2025-12-15 12:00:00', 5000, 'Tiền ăn trưa', ['Chị Kayen', 'Long', 'Thái', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến']),
     ('Tuyến', '2025-12-15 12:00:00', 45000, 'Tiền ăn trưa', ['Chị Kayen', 'Long', 'Thái', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến']),
-    
+
     ('Anh Tâm', '2025-12-16 12:00:00', 45000, 'Tiền ăn trưa', ['Anh Tâm', 'Chị Kayen', 'Long', 'Thái', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến']),
     ('Chị Kayen', '2025-12-16 12:00:00', 45000, 'Tiền ăn trưa', ['Anh Tâm', 'Chị Kayen', 'Long', 'Thái', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến']),
     ('Long', '2025-12-16 12:00:00', 45000, 'Tiền ăn trưa', ['Anh Tâm', 'Chị Kayen', 'Long', 'Thái', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến']),
@@ -215,15 +215,15 @@ TRANSACTIONS = [
     ('Thịnh (Arin)', '2025-12-16 12:00:00', 45000, 'Tiền ăn trưa', ['Anh Tâm', 'Chị Kayen', 'Long', 'Thái', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến']),
     ('Thục Nghi', '2025-12-16 12:00:00', 5000, 'Tiền ăn trưa', ['Anh Tâm', 'Chị Kayen', 'Long', 'Thái', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến']),
     ('Tuyến', '2025-12-16 12:00:00', 45000, 'Tiền ăn trưa', ['Anh Tâm', 'Chị Kayen', 'Long', 'Thái', 'Thịnh (Arin)', 'Thục Nghi', 'Tuyến']),
-    
+
     ('Hải', '2025-12-17 10:00:00', 35000, 'Tiền cà phê', ['Hải', 'Long']),
     ('Long', '2025-12-17 10:00:00', 35000, 'Tiền cà phê', ['Hải', 'Long']),
-    
+
     ('Long', '2025-12-18 19:00:00', 201000, 'Tiền đi siêu thị', ['Long']),  # Music paid, assuming Long
     ('Long', '2025-12-18 19:00:00', 5000, 'Tiền ăn trưa', ['Long']),
     ('Thục Nghi', '2025-12-18 12:00:00', 5000, 'Tiền ăn trưa', ['Thục Nghi', 'Long']),
     ('Tuyến', '2025-12-18 12:00:00', 45000, 'Tiền ăn trưa', ['Tuyến', 'Long']),
-    
+
     # December 19 - Karaoke party
     ('Anh Tâm', '2025-12-19 23:00:00', 85000, 'Tiền hát karaoke', ['Anh Tâm', 'Chị Ngân', 'Anh Đăng', 'Anh Phúc', 'Minh', 'Long']),
     ('Chị Ngân', '2025-12-19 23:00:00', 85000, 'Tiền hát karaoke', ['Anh Tâm', 'Chị Ngân', 'Anh Đăng', 'Anh Phúc', 'Minh', 'Long']),
@@ -242,21 +242,21 @@ def generate_sql():
     lines.append("")
     lines.append("DO $$")
     lines.append("DECLARE")
-    
+
     # Add user variables
     for name, uuid in sorted(set(USERS.items())):
         var_name = name.lower().replace(' ', '_').replace('(', '').replace(')', '').replace('.', '')
         lines.append(f"  u_{var_name} UUID := '{uuid}';")
-    
+
     lines.append(f"  g_new UUID := '{GROUP_ID}';")
     lines.append("  eid UUID;")
     lines.append("  cnt INT := 0;")
     lines.append("BEGIN")
     lines.append("")
-    
+
     for idx, (paid_by, dt, amount, desc, participants) in enumerate(TRANSACTIONS, 1):
         paid_by_var = paid_by.lower().replace(' ', '_').replace('(', '').replace(')', '').replace('.', '')
-        
+
         # Determine category
         if 'cà phê' in desc.lower():
             category = 'Food & Drink'
@@ -272,34 +272,33 @@ def generate_sql():
             category = 'Utilities'
         else:
             category = 'Other'
-        
+
         # Escape single quotes in description
         desc_escaped = desc.replace("'", "''")
-        
+
         # Extract date from datetime
         date_part = dt.split(' ')[0]
-        
+
         # Insert expense (using correct schema: context_type, group_id, friendship_id, description, amount, currency, category, expense_date, paid_by_user_id, is_payment, created_by, created_at)
         lines.append(f"  -- {idx}. {desc} ({paid_by}, {dt})")
         lines.append(f"  INSERT INTO expenses (context_type, group_id, description, amount, currency, category, expense_date, paid_by_user_id, is_payment, created_by, created_at)")
         lines.append(f"  VALUES ('group', g_new, '{desc_escaped}', {amount}, 'VND', '{category}', '{date_part}', u_{paid_by_var}, false, u_long, '{dt}') RETURNING id INTO eid;")
-        
+
         # Insert splits
         split_amount = amount // len(participants)
         split_values = []
         for p in participants:
             p_var = p.lower().replace(' ', '_').replace('(', '').replace(')', '').replace('.', '')
             split_values.append(f"(gen_random_uuid(), eid, u_{p_var}, 'equal', NULL, {split_amount}, now())")
-        
+
         lines.append(f"  INSERT INTO expense_splits VALUES {', '.join(split_values)};")
         lines.append(f"  cnt := cnt + 1;")
         lines.append("")
-    
+
     lines.append(f"  RAISE NOTICE 'Total: % transactions', cnt;")
     lines.append("END $$;")
-    
+
     return '\n'.join(lines)
 
 if __name__ == '__main__':
     print(generate_sql())
-
