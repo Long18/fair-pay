@@ -41,7 +41,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
     setPage,
     currentPage,
   } = usePaginatedActivities({ pageSize: 10 });
-  
+
   const { data: debts = [], isLoading: debtsLoading } = useAggregatedDebts();
   const { data: identity } = useGetIdentity<Profile>();
   const go = useGo();
