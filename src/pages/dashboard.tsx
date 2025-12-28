@@ -3,7 +3,7 @@ import { useGetIdentity } from "@refinedev/core";
 import { Profile } from "@/modules/profile/types";
 import { DashboardHero } from "@/components/dashboard/DashboardHero";
 import { DashboardTopCards } from "@/components/dashboard/DashboardTopCards";
-import { DashboardActionsList } from "@/components/dashboard/DashboardActionsList";
+import { FloatingActionButton } from "@/components/dashboard/FloatingActionButton";
 import { DashboardDenseTable } from "@/components/dashboard/DashboardDenseTable";
 import { DashboardSkeleton, DashboardEmptyState } from "@/components/dashboard/DashboardStates";
 import { BalanceFeed } from "@/components/dashboard/BalanceFeed";
@@ -34,11 +34,11 @@ export const Dashboard = () => {
 
           {/* Financial Overview Cards */}
           <DashboardTopCards disabled={!isAuthenticated} />
-
-          {/* Quick Actions */}
-          <DashboardActionsList disabled={!isAuthenticated} />
         </>
       )}
+
+      {/* Floating Action Button - Always visible */}
+      <FloatingActionButton disabled={!isAuthenticated} />
     </div>
   );
 };
