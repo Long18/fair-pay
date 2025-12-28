@@ -65,7 +65,7 @@ export default defineConfig({
           // Vendor chunk for React and core libraries
           'react-vendor': ['react', 'react-dom'],
 
-          // Refine framework (core only - other packages auto-chunked)
+          // FairPay framework dependencies (Refine core)
           'refine': ['@refinedev/core'],
 
           // UI libraries

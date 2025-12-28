@@ -8,6 +8,9 @@ const authProvider: AuthProvider = {
             if (providerName) {
                 const { data, error } = await supabaseClient.auth.signInWithOAuth({
                     provider: providerName,
+                    options: {
+                        redirectTo: window.location.origin,
+                    },
                 });
 
                 if (error) {
