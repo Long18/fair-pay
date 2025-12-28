@@ -81,7 +81,7 @@ export function ActivityTable({
               key={activity.id}
               className={cn(
                 "cursor-pointer",
-                index % 2 === 0 && "bg-muted/30",
+                index % 2 === 0 && "bg-muted/50 dark:bg-muted/30",
                 disabled && "opacity-50 cursor-not-allowed"
               )}
               onClick={() => {

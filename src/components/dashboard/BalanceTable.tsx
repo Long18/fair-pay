@@ -84,7 +84,7 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false }: Bala
               key={balance.counterparty_id}
               className={cn(
                 "cursor-pointer",
-                index % 2 === 0 && "bg-muted/30",
+                index % 2 === 0 && "bg-muted/50 dark:bg-muted/30",
                 disabled && "opacity-50 cursor-not-allowed"
               )}
               onClick={() => !disabled && go({ to: `/profile/${balance.counterparty_id}` })}
