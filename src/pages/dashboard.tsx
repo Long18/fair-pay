@@ -16,7 +16,7 @@ export const Dashboard = () => {
   const { data: identity } = useGetIdentity<Profile>();
   const { t } = useTranslation();
   const globalBalance = useGlobalBalance();
-  const { data: debts = [], isLoading: debtsLoading } = useAggregatedDebts();
+  const { data: debts = [], isLoading: debtsLoading, refetch: refetchDebts } = useAggregatedDebts();
   const {
     items: activities,
     metadata: activitiesMetadata,
@@ -25,6 +25,22 @@ export const Dashboard = () => {
   } = usePaginatedActivities({ pageSize: 10 });
 
   const [loading, setLoading] = useState(true);
+
+  // Refetch data when component mounts or becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && identity?.id) {
+        console.log('Dashboard visible, refetching data...');
+        refetchDebts();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [identity?.id, refetchDebts]);
 
   useEffect(() => {
     if (!globalBalance.isLoading && !debtsLoading && !activitiesLoading) {
