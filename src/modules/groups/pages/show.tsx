@@ -30,6 +30,8 @@ export const GroupShow = () => {
   const go = useGo();
   const { data: identity } = useGetIdentity<Profile>();
   const [addMemberModalOpen, setAddMemberModalOpen] = useState(false);
+  const [currentMemberPage, setCurrentMemberPage] = useState(1);
+  const memberPageSize = 10;
 
   const { query: groupQuery } = useOne<Group>({
     resource: "groups",
@@ -48,6 +50,12 @@ export const GroupShow = () => {
         value: id,
       },
     ],
+    pagination: {
+      mode: "off",
+    },
+    queryOptions: {
+      enabled: !!id,
+    },
     meta: {
       select: "*, profiles!user_id(*)",
     },
@@ -75,14 +83,28 @@ export const GroupShow = () => {
   const { data: membersData, isLoading: isLoadingMembers } = membersQuery;
 
   const group = groupData?.data;
-  const members = membersData?.data || [];
+  const allMembers = membersData?.data || [];
   const expenses: any[] = expensesQuery.data?.data || [];
   const payments: any[] = paymentsQuery.data?.data || [];
 
   const refetch = membersQuery.refetch;
 
-  // Calculate balances
-  const membersList = members.map((m: any) => ({
+  // Pagination metadata for members
+  const totalMembers = allMembers.length;
+  const memberPaginationMetadata = {
+    totalItems: totalMembers,
+    totalPages: Math.ceil(totalMembers / memberPageSize),
+    currentPage: currentMemberPage,
+    pageSize: memberPageSize,
+  };
+
+  // Client-side pagination: slice the members array
+  const startIndex = (currentMemberPage - 1) * memberPageSize;
+  const endIndex = startIndex + memberPageSize;
+  const members = allMembers.slice(startIndex, endIndex);
+
+  // Calculate balances (use all members, not just paginated slice)
+  const membersList = allMembers.map((m: any) => ({
     id: m.user_id,
     full_name: m.profiles?.full_name || "Unknown",
     avatar_url: m.profiles?.avatar_url,
@@ -95,7 +117,7 @@ export const GroupShow = () => {
     members: membersList,
   });
 
-  const currentUserMember = members.find((m: any) => m.user_id === identity?.id);
+  const currentUserMember = allMembers.find((m: any) => m.user_id === identity?.id);
   const isAdmin = currentUserMember?.role === "admin";
   const isCreator = group?.created_by === identity?.id;
 
@@ -153,7 +175,7 @@ export const GroupShow = () => {
   }
 
   return (
-    <div className="container max-w-4xl py-8">
+    <div className="container px-4 sm:px-6 py-4 sm:py-8 max-w-7xl">
       <Button
         variant="ghost"
         size="sm"
@@ -161,17 +183,18 @@ export const GroupShow = () => {
         onClick={() => go({ to: "/groups" })}
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Groups
+        <span className="hidden sm:inline">Back to Groups</span>
+        <span className="sm:hidden">Back</span>
       </Button>
 
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4">
               <div>
-                <CardTitle className="text-3xl">{group.name}</CardTitle>
+                <CardTitle className="text-2xl sm:text-3xl">{group.name}</CardTitle>
                 {group.description && (
-                  <p className="text-muted-foreground mt-2">
+                  <p className="text-muted-foreground mt-2 text-sm sm:text-base">
                     {group.description}
                   </p>
                 )}
@@ -184,76 +207,84 @@ export const GroupShow = () => {
                   })}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button
+                  className="w-full sm:w-auto"
                   onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Expense
                 </Button>
-                {isAdmin && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => go({ to: `/groups/edit/${group.id}` })}
-                  >
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                )}
-                {isCreator && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="sm">
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Group?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently
-                          delete the group and all associated data.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={handleDeleteGroup}
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
+                <div className="flex gap-2">
+                  {isAdmin && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 sm:flex-none"
+                      onClick={() => go({ to: `/groups/edit/${group.id}` })}
+                    >
+                      <Pencil className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Edit</span>
+                    </Button>
+                  )}
+                  {isCreator && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm" className="flex-1 sm:flex-none">
+                          <Trash2 className="h-4 w-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Delete</span>
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Group?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently
+                            delete the group and all associated data.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleDeleteGroup}
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
               </div>
             </div>
           </CardHeader>
         </Card>
 
         <Tabs defaultValue="expenses" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="expenses">Expenses</TabsTrigger>
-            <TabsTrigger value="balances">Balances</TabsTrigger>
-            <TabsTrigger value="recurring">Recurring</TabsTrigger>
-            <TabsTrigger value="members">Members</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-4">
+            <TabsTrigger value="expenses" className="text-xs sm:text-sm">Expenses</TabsTrigger>
+            <TabsTrigger value="balances" className="text-xs sm:text-sm">Balances</TabsTrigger>
+            <TabsTrigger value="recurring" className="text-xs sm:text-sm">Recurring</TabsTrigger>
+            <TabsTrigger value="members" className="text-xs sm:text-sm">Members</TabsTrigger>
           </TabsList>
           <TabsContent value="expenses" className="mt-6">
             <ExpenseList groupId={group.id} members={membersList} />
           </TabsContent>
           <TabsContent value="balances" className="mt-6">
-            <SimplifiedBalanceView
-              balances={balances}
-              currentUserId={identity?.id || ""}
-              simplifyDebts={group?.simplify_debts || false}
-              onSettleUp={handleSettleUp}
-              currency="VND"
-            />
-            <div className="mt-8">
-              <h3 className="text-lg font-semibold mb-4">Payment History</h3>
-              <PaymentList groupId={group.id} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+              <div>
+                <SimplifiedBalanceView
+                  balances={balances}
+                  currentUserId={identity?.id || ""}
+                  simplifyDebts={group?.simplify_debts || false}
+                  onSettleUp={handleSettleUp}
+                  currency="VND"
+                />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Payment History</h3>
+                <PaymentList groupId={group.id} />
+              </div>
             </div>
           </TabsContent>
           <TabsContent value="recurring" className="mt-6">
@@ -279,6 +310,8 @@ export const GroupShow = () => {
               onRemoveMember={handleRemoveMember}
               onAddMember={isAdmin ? () => setAddMemberModalOpen(true) : undefined}
               isLoading={isLoadingMembers}
+              paginationMetadata={memberPaginationMetadata}
+              onPageChange={setCurrentMemberPage}
             />
           </TabsContent>
         </Tabs>

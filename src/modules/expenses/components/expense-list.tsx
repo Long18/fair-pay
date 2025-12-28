@@ -12,6 +12,8 @@ import {
   FilterChip,
   useExpenseFilters,
 } from "@/components/filters";
+import { PaginationControls, PaginationMetadata } from "@/components/ui/pagination-controls";
+import { useState } from "react";
 
 interface ExpenseListProps {
   groupId?: string;
@@ -21,6 +23,8 @@ interface ExpenseListProps {
 
 export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseListProps) => {
   const go = useGo();
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   const contextType = groupId ? 'group' : friendshipId ? 'friend' : undefined;
   const contextId = groupId || friendshipId;
@@ -41,6 +45,9 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
   const { query } = useList<ExpenseWithSplits>({
     resource: "expenses",
     filters: crudFilters,
+    pagination: {
+      mode: "off",
+    },
     meta: {
       select: "*, profiles!paid_by_user_id(id, full_name, avatar_url)",
     },
@@ -53,7 +60,20 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
   });
 
   const { data, isLoading } = query;
-  const expenses = data?.data || [];
+  const allExpenses = data?.data || [];
+
+  // Client-side pagination
+  const totalExpenses = allExpenses.length;
+  const paginationMetadata: PaginationMetadata = {
+    totalItems: totalExpenses,
+    totalPages: Math.ceil(totalExpenses / pageSize),
+    currentPage: currentPage,
+    pageSize: pageSize,
+  };
+
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const expenses = allExpenses.slice(startIndex, endIndex);
 
   if (isLoading) {
     return <div className="text-center py-8">Loading expenses...</div>;
@@ -156,6 +176,16 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
           </CardContent>
         </Card>
       ))}
+
+      {/* Pagination Controls */}
+      {!isLoading && allExpenses.length > 0 && paginationMetadata.totalPages > 1 && (
+        <div className="mt-6">
+          <PaginationControls
+            metadata={paginationMetadata}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      )}
     </div>
   );
 };
