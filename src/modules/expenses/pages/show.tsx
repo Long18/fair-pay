@@ -22,12 +22,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-  TooltipProvider,
-} from "@/components/ui/tooltip";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { useTranslation } from "react-i18next";
@@ -179,7 +173,7 @@ export const ExpenseShow = () => {
   }
 
   return (
-    <div className="container max-w-4xl py-8">
+      <div className="container max-w-4xl py-8">
       <Button
         variant="ghost"
         size="sm"
@@ -263,16 +257,9 @@ export const ExpenseShow = () => {
               </Avatar>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground font-medium">{t('expenses.paidBy')}</p>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <p className="font-bold text-lg line-clamp-2 leading-tight max-w-[300px]">
-                      {expense.profiles?.full_name || t('profile.unknown')}
-                    </p>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="max-w-xs">
-                    <p className="text-sm font-semibold">{expense.profiles?.full_name || t('profile.unknown')}</p>
-                  </TooltipContent>
-                </Tooltip>
+                <p className="font-bold text-lg line-clamp-2 leading-tight max-w-[300px]" title={expense.profiles?.full_name || t('profile.unknown')}>
+                  {expense.profiles?.full_name || t('profile.unknown')}
+                </p>
               </div>
               <div className="text-right">
                 <p className="text-sm text-muted-foreground font-medium">{t('expenses.totalAmount')}</p>
@@ -337,7 +324,6 @@ export const ExpenseShow = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <TooltipProvider>
               <div className="space-y-3">
                 {splits.map((split: any) => {
                   const isCurrentUserSplit = split.user_id === identity?.id;
@@ -373,23 +359,16 @@ export const ExpenseShow = () => {
                           </AvatarFallback>
                         </Avatar>
                         <div className="max-w-[250px] flex-1">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className={`font-semibold text-base line-clamp-2 leading-tight transition-colors ${
-                                isPaid ? 'text-green-700' : 'group-hover:text-primary'
-                              }`}>
-                                {split.profiles?.full_name || t('profile.unknown')}
-                                {isCurrentUserSplit && (
-                                  <span className="text-xs text-muted-foreground ml-2 font-normal">
-                                    ({t('common.you')})
-                                  </span>
-                                )}
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-xs">
-                              <p className="text-sm font-semibold">{split.profiles?.full_name || t('profile.unknown')}</p>
-                            </TooltipContent>
-                          </Tooltip>
+                          <div className={`font-semibold text-base line-clamp-2 leading-tight transition-colors ${
+                            isPaid ? 'text-green-700' : 'group-hover:text-primary'
+                          }`} title={split.profiles?.full_name || t('profile.unknown')}>
+                            {split.profiles?.full_name || t('profile.unknown')}
+                            {isCurrentUserSplit && (
+                              <span className="text-xs text-muted-foreground ml-2 font-normal">
+                                ({t('common.you')})
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 mt-1">
                             <div className="text-xs text-muted-foreground font-medium">
                               {String(t(`expenses.${split.split_method}`, split.split_method))}
@@ -420,7 +399,6 @@ export const ExpenseShow = () => {
                   );
                 })}
               </div>
-            </TooltipProvider>
           </CardContent>
         </Card>
 

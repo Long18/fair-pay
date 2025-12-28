@@ -34,7 +34,7 @@ import { OAuthConsent } from "./pages/oauth";
 import { ProfileEdit, ProfileShow } from "./modules/profile";
 import { GroupList, GroupCreate, GroupEdit, GroupShow } from "./modules/groups";
 import { ExpenseCreate, ExpenseContextSelector, ExpenseEdit, ExpenseShow } from "./modules/expenses";
-import { PaymentCreate } from "./modules/payments";
+import { PaymentCreate, PaymentShow } from "./modules/payments";
 import { FriendList, FriendShow } from "./modules/friends";
 import { NotificationList } from "./modules/notifications";
 import { Dashboard } from "./pages/dashboard";
@@ -163,6 +163,7 @@ function App() {
                 },
                 {
                   name: "payments",
+                  show: "/payments/show/:id",
                   meta: {
                     label: "Payments",
                     hide: true,
@@ -218,6 +219,13 @@ function App() {
                   <Route path="/expenses/show/:id" element={
                     <ErrorBoundary context="Expense Details">
                       <ExpenseShow />
+                    </ErrorBoundary>
+                  } />
+
+                  {/* Public payment view */}
+                  <Route path="/payments/show/:id" element={
+                    <ErrorBoundary context="Payment Details">
+                      <PaymentShow />
                     </ErrorBoundary>
                   } />
                 </Route>

@@ -57,7 +57,7 @@ export function DisplaySettingsForm({ settings, onSave, isUpdating }: DisplaySet
           render={({ field }) => (
             <FormItem>
               <FormLabel>Tiền tệ mặc định</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn tiền tệ" />
@@ -85,7 +85,7 @@ export function DisplaySettingsForm({ settings, onSave, isUpdating }: DisplaySet
           render={({ field }) => (
             <FormItem>
               <FormLabel>Định dạng ngày</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn định dạng" />
@@ -149,4 +149,3 @@ export function DisplaySettingsForm({ settings, onSave, isUpdating }: DisplaySet
     </Form>
   );
 }
-

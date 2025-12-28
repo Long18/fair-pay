@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useCreate, useGo, useGetIdentity, useList, useOne } from "@refinedev/core";
 import { useParams, useSearchParams } from "react-router";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ResponsiveDialog } from "@/components/refine-ui/responsive-dialog";
 import { PaymentForm } from "../components/payment-form";
 import { PaymentFormValues } from "../types";
 import { Profile } from "@/modules/profile/types";
@@ -23,6 +23,9 @@ export const PaymentCreate = () => {
   const { query: membersQuery } = useList({
     resource: "group_members",
     filters: [{ field: "group_id", operator: "eq", value: groupId }],
+    pagination: {
+      mode: "off", // Disable pagination to get all members
+    },
     meta: {
       select: "*, profiles!user_id(*)",
     },
@@ -124,35 +127,35 @@ export const PaymentCreate = () => {
 
   if (!identity || !contextId || isLoading || members.length === 0) {
     return (
-      <Dialog open onOpenChange={handleClose}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Loading...</DialogTitle>
-          </DialogHeader>
-          <div className="py-8 text-center">
-            <p>Loading payment form...</p>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ResponsiveDialog
+        open={true}
+        onOpenChange={handleClose}
+        title="Loading..."
+        className="max-w-md"
+      >
+        <div className="py-8 text-center">
+          <p>Loading payment form...</p>
+        </div>
+      </ResponsiveDialog>
     );
   }
 
   return (
-    <Dialog open onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Record Payment</DialogTitle>
-        </DialogHeader>
-        <PaymentForm
-          fromUserId={identity.id}
-          fromUserName={identity.full_name}
-          members={members}
-          suggestedAmount={suggestedAmount}
-          suggestedToUserId={suggestedToUserId}
-          onSubmit={handleSubmit}
-          isLoading={false}
-        />
-      </DialogContent>
-    </Dialog>
+    <ResponsiveDialog
+      open={true}
+      onOpenChange={handleClose}
+      title="Record Payment"
+      className="max-w-md"
+    >
+      <PaymentForm
+        fromUserId={identity.id}
+        fromUserName={identity.full_name}
+        members={members}
+        suggestedAmount={suggestedAmount}
+        suggestedToUserId={suggestedToUserId}
+        onSubmit={handleSubmit}
+        isLoading={false}
+      />
+    </ResponsiveDialog>
   );
 };
