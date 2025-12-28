@@ -100,55 +100,20 @@ export function DonationDialog({ open, onOpenChange, settings }: DonationDialogP
                 )}
               </button>
 
-              {hasBankInfo && (
+              {hasBankInfo && bankDetails && (
                 <div className="w-full space-y-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="bank-select" className="text-sm font-medium flex items-center gap-2">
-                      <BanknoteIcon className="h-4 w-4" />
-                      {t('settings.donation.selectYourBank', 'Select Your Bank App')}
-                    </Label>
-                    <Select value={selectedBankId} onValueChange={setSelectedBankId}>
-                      <SelectTrigger id="bank-select" className="w-full">
-                        <SelectValue placeholder={
-                          bankInfo?.app && findBankById(bankInfo.app)?.name ||
-                          t('settings.donation.chooseBank', 'Choose your bank app')
-                        } />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[300px]">
-                        {VIETQR_BANKS.map((bank) => (
-                          <SelectItem key={bank.id} value={bank.id}>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{bank.name}</span>
-                              <span className="text-xs text-muted-foreground">({bank.code})</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {bankDetails && (
-                    <>
-                      <Button
-                        onClick={() => handleOpenBankApp()}
-                        size="lg"
-                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md"
-                      >
-                        <BanknoteIcon className="mr-2 h-5 w-5" />
-                        {t('settings.donation.openBankApp', 'Open {{bankName}} App', { bankName: bankDetails.name })}
-                        <ArrowUpRightIcon className="ml-2 h-4 w-4" />
-                      </Button>
-                      <p className="text-xs text-muted-foreground text-center">
-                        {t('settings.donation.bankAppHint', 'Opens {{bankName}} app to complete payment', { bankName: bankDetails.shortName })}
-                      </p>
-                    </>
-                  )}
-
-                  {!bankDetails && (
-                    <p className="text-xs text-muted-foreground text-center">
-                      {t('settings.donation.selectBankToOpen', 'Select a bank app to open it directly')}
-                    </p>
-                  )}
+                  <Button
+                    onClick={() => handleOpenBankApp()}
+                    size="lg"
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md"
+                  >
+                    <BanknoteIcon className="mr-2 h-5 w-5" />
+                    {t('settings.donation.openBankApp', 'Open {{bankName}} App', { bankName: bankDetails.name })}
+                    <ArrowUpRightIcon className="ml-2 h-4 w-4" />
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    {t('settings.donation.bankAppHint', 'Opens {{bankName}} app to complete payment', { bankName: bankDetails.shortName })}
+                  </p>
                 </div>
               )}
 
@@ -182,6 +147,44 @@ export function DonationDialog({ open, onOpenChange, settings }: DonationDialogP
                   <span className="text-muted-foreground">Bank:</span>
                   <span className="font-medium">{settings.bank_info.bank}</span>
                 </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {hasBankInfo && (
+          <>
+            <Separator />
+            <div className="flex flex-col items-center py-4 space-y-3">
+              <div className="w-full max-w-sm space-y-2">
+                <Label htmlFor="bank-select" className="text-sm font-medium flex items-center justify-center gap-2">
+                  <BanknoteIcon className="h-4 w-4" />
+                  {t('settings.donation.selectYourBank', 'Select Your Bank App')}
+                </Label>
+                <Select value={selectedBankId} onValueChange={setSelectedBankId}>
+                  <SelectTrigger id="bank-select" className="w-full">
+                    <SelectValue placeholder={
+                      bankInfo?.app && findBankById(bankInfo.app)?.name ||
+                      t('settings.donation.chooseBank', 'Choose your bank app')
+                    } />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {VIETQR_BANKS.map((bank) => (
+                      <SelectItem key={bank.id} value={bank.id}>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{bank.name}</span>
+                          <span className="text-xs text-muted-foreground">({bank.code})</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {!bankDetails && (
+                <p className="text-xs text-muted-foreground text-center">
+                  {t('settings.donation.selectBankToOpen', 'Select a bank app to open it directly')}
+                </p>
               )}
             </div>
           </>

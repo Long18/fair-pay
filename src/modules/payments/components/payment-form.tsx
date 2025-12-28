@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "@refinedev/react-hook-form";
+import { useState } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -70,6 +71,8 @@ export const PaymentForm = ({
       note: "",
     },
   });
+
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   const handleFormSubmit = (data: PaymentFormSchema) => {
     const formValues: PaymentFormValues = {
@@ -145,7 +148,7 @@ export const PaymentForm = ({
           render={({ field }) => (
             <FormItem className="flex flex-col">
               <FormLabel>Date</FormLabel>
-              <Popover>
+              <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                 <PopoverTrigger asChild>
                   <FormControl>
                     <Button
@@ -164,13 +167,15 @@ export const PaymentForm = ({
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto overflow-hidden p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={field.value ? new Date(field.value) : undefined}
-                    onSelect={(date) =>
+                    captionLayout="dropdown"
+                    onSelect={(date) => {
                       field.onChange(date?.toISOString().split("T")[0])
-                    }
+                      setDatePickerOpen(false)
+                    }}
                     initialFocus
                   />
                 </PopoverContent>
