@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { useGo, useResourceParams, useTranslate } from "@refinedev/core";
 import { useEffect, useState } from "react";
 
-import { ChevronLeftIcon } from "@/components/ui/icons";
+import { ChevronLeftIcon, InfoIcon } from "@/components/ui/icons";
 /**
  * When the app is navigated to a non-existent route, refine shows a default error page.
  * A custom error component can be used for this error page.

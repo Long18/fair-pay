@@ -12,7 +12,7 @@ import {
   useResourceParams,
   useUserFriendlyName,
 } from "@refinedev/core";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon } from "@/components/ui/icons";
 import { EditButton } from "../buttons/edit";
 
 type ShowViewProps = PropsWithChildren<{

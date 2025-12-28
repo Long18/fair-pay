@@ -44,7 +44,7 @@ import { formatNumber } from "@/lib/locale-utils";
 import { RecurringExpenseForm } from "./recurring-expense-form";
 import { DEFAULT_RECURRING_VALUES } from "../types/recurring";
 
-import { RepeatIcon, PercentIcon, DollarSignIcon, UserPlusIcon, UserMinusIcon, XIcon } from "@/components/ui/icons";
+import { RepeatIcon, PercentIcon, DollarSignIcon, UserPlusIcon, UserMinusIcon, XIcon, CalendarIcon } from "@/components/ui/icons";
 const expenseSchema = z.object({
   description: z.string().min(1, "Description is required").max(200),
   amount: z.number().positive("Amount must be positive"),

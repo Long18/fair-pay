@@ -17,7 +17,7 @@ import { useAttachments } from "../hooks/use-attachments";
 import { useState } from "react";
 import { formatDate } from "@/lib/locale-utils";
 
-import { DownloadIcon, Trash2Icon, FileImageIcon, EyeIcon } from "@/components/ui/icons";
+import { DownloadIcon, Trash2Icon, FileImageIcon, EyeIcon, FileIcon } from "@/components/ui/icons";
 interface AttachmentListProps {
   attachments: Attachment[];
   canDelete?: boolean;

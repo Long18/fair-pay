@@ -76,11 +76,12 @@ export function ActivityTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {activities.map((activity) => (
+          {activities.map((activity, index) => (
             <TableRow
               key={activity.id}
               className={cn(
                 "cursor-pointer",
+                index % 2 === 0 && "bg-muted/30",
                 disabled && "opacity-50 cursor-not-allowed"
               )}
               onClick={() => {

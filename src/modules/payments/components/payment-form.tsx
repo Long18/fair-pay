@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon } from "@/components/ui/icons";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { PaymentFormValues } from "../types";

@@ -15,7 +15,7 @@ import { CategoryPieChart, SpendingTrendChart, SpendingSummaryStats } from '@/co
 import { Group } from '@/modules/groups/types';
 import { DateRange } from 'react-day-picker';
 
-import { DownloadIcon, Loader2Icon } from "@/components/ui/icons";
+import { DownloadIcon, Loader2Icon, CalendarIcon } from "@/components/ui/icons";
 export function ReportsPage() {
   const [preset, setPreset] = useState<DateRangePreset>('this_month');
   const [customRange, setCustomRange] = useState<DateRange>();

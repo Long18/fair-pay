@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
-import { UploadIcon, XIcon, FileImageIcon } from "@/components/ui/icons";
+import { UploadIcon, XIcon, FileImageIcon, FileIcon } from "@/components/ui/icons";
 export interface AttachmentFile {
   file: File;
   preview?: string;
