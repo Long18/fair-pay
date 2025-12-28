@@ -177,7 +177,7 @@ const UserDropdown = () => {
   const go = useGo();
 
   const authProvider = useActiveAuthProvider();
-  
+
   // Check if user is admin
   const isAdmin = identity?.email === import.meta.env.VITE_ADMIN_EMAIL;
 
