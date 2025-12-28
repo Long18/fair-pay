@@ -1,7 +1,7 @@
 import { useGetIdentity } from "@refinedev/core";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { Profile } from "@/modules/profile/types";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 export interface AggregatedDebt {
     counterparty_id: string;
@@ -25,7 +25,7 @@ export const useAggregatedDebts = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
-    const fetchDebts = async () => {
+    const fetchDebts = useCallback(async () => {
         setIsLoading(true);
         try {
             let result;
@@ -64,7 +64,7 @@ export const useAggregatedDebts = () => {
             // Fetch avatar_urls from profiles table
             const debts = result || [];
             if (debts.length > 0) {
-                const counterpartyIds = debts.map((d: any) => d.counterparty_id).filter(Boolean);
+                const counterpartyIds = debts.map((d: { counterparty_id: string }) => d.counterparty_id).filter(Boolean);
                 if (counterpartyIds.length > 0) {
                     const { data: profiles } = await supabaseClient
                         .from("profiles")
@@ -73,9 +73,9 @@ export const useAggregatedDebts = () => {
 
                     // Map avatar_url to debts
                     const profileMap = new Map(
-                        (profiles || []).map((p: any) => [p.id, p.avatar_url])
+                        (profiles || []).map((p: { id: string; avatar_url: string }) => [p.id, p.avatar_url])
                     );
-                    debts.forEach((debt: any) => {
+                    debts.forEach((debt: { counterparty_id: string; counterparty_avatar_url?: string }) => {
                         debt.counterparty_avatar_url = profileMap.get(debt.counterparty_id);
                     });
                 }
@@ -90,11 +90,56 @@ export const useAggregatedDebts = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [identity?.id]);
 
     useEffect(() => {
         fetchDebts();
-    }, [identity?.id]);
+    }, [fetchDebts]);
+
+    // Real-time subscription to refetch when expenses or splits change
+    useEffect(() => {
+        if (!identity?.id) return;
+
+        // Subscribe to changes in expenses table
+        const expensesChannel = supabaseClient
+            .channel('expenses-changes')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'expenses',
+                },
+                () => {
+                    console.log('Expense changed, refetching debts...');
+                    fetchDebts();
+                }
+            )
+            .subscribe();
+
+        // Subscribe to changes in expense_splits table
+        const splitsChannel = supabaseClient
+            .channel('expense-splits-changes')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'expense_splits',
+                },
+                () => {
+                    console.log('Expense split changed, refetching debts...');
+                    fetchDebts();
+                }
+            )
+            .subscribe();
+
+        // Cleanup subscriptions on unmount
+        return () => {
+            supabaseClient.removeChannel(expensesChannel);
+            supabaseClient.removeChannel(splitsChannel);
+        };
+    }, [identity?.id, fetchDebts]);
 
     return { data, isLoading, error, refetch: fetchDebts };
 };
