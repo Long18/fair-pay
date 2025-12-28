@@ -97,7 +97,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
   };
 
   const getAmountColor = (owe: boolean) => {
-    return owe ? "text-teal-600" : "text-red-600";
+    return owe ? "text-emerald-600" : "text-red-600";
   };
 
   // Handle settle all debts
@@ -185,31 +185,31 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
   return (
     <div className="space-y-8">
       {/* ============================================== */}
-      {/* BALANCES / DEBTS SECTION - IMPROVED UI/UX */}
+      {/* BALANCES / DEBTS SECTION - FRIENDLY TABLE LAYOUT */}
       {/* ============================================== */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between px-1">
+        <div className="flex items-center justify-between px-2">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-teal-100 to-purple-100 flex items-center justify-center shadow-sm">
-              <TrendingUp className="h-5 w-5 text-teal-600" />
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center shadow-sm">
+              <Banknote className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <h3 className="text-xl font-bold tracking-tight text-foreground">
+              <h2 className="text-xl font-bold tracking-tight text-foreground">
                 {t('balances.title')}
-              </h3>
-              <p className="text-xs text-muted-foreground">
+              </h2>
+              <p className="text-sm text-muted-foreground">
                 {debtItems.length} {debtItems.length === 1 ? t('dashboard.balance') : t('balances.title').toLowerCase()}
               </p>
             </div>
           </div>
           {debtItems.length > 0 && (
-            <Badge variant="outline" className="text-sm font-semibold px-4 py-1.5 border-2">
+            <Badge variant="outline" className="text-sm font-semibold px-3 py-1.5 border-2">
               {debtItems.length}
             </Badge>
           )}
         </div>
 
-        <div className="rounded-2xl border-2 bg-card shadow-xl overflow-hidden">
+        <div className="rounded-2xl border-2 bg-card shadow-lg overflow-hidden">
           {debtItems.length > 0 ? (
             <Table>
               <TableHeader className="bg-gradient-to-r from-muted/50 to-muted/30 border-b-2">
@@ -227,43 +227,30 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                     <Tooltip key={item.counterparty_id}>
                       <TooltipTrigger asChild>
                         <TableRow
-                          className={`group cursor-pointer transition-all duration-300 hover:bg-gradient-to-r ${
-                            item.i_owe_them
-                              ? "hover:from-emerald-50/50 hover:to-teal-50/30"
-                              : "hover:from-rose-50/50 hover:to-red-50/30"
-                          } ${index % 2 === 0 ? "bg-muted/20" : ""}`}
+                          className={`group cursor-pointer transition-all duration-200 hover:bg-muted/30 ${
+                            index % 2 === 0 ? "bg-muted/10" : ""
+                          }`}
                           onClick={() => go({ to: `/profile/${item.counterparty_id}` })}
                         >
                           <TableCell>
-                            <Avatar className={`h-12 w-12 border-3 shadow-lg ring-4 ring-offset-2 ring-offset-background transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl ${
-                              item.i_owe_them
-                                ? "ring-teal-200 group-hover:ring-teal-300"
-                                : "ring-red-200 group-hover:ring-red-300"
-                            }`}>
+                            <Avatar className="h-11 w-11 border-2 shadow-md ring-2 ring-offset-1 ring-offset-background transition-all duration-200 group-hover:scale-105 group-hover:shadow-lg border-muted ring-muted/20">
                               <AvatarImage src={item.counterparty_avatar_url || undefined} alt={item.counterparty_name} />
-                              <AvatarFallback className={`text-base font-bold ${getAvatarGradient(item.i_owe_them)} ${getAvatarTextColor(item.i_owe_them)}`}>
+                              <AvatarFallback className={`text-sm font-semibold ${getAvatarGradient(item.i_owe_them)} ${getAvatarTextColor(item.i_owe_them)}`}>
                                 {item.counterparty_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                               </AvatarFallback>
                             </Avatar>
                           </TableCell>
                           <TableCell className="font-medium max-w-[280px]">
                             <div className="flex flex-col gap-1">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="text-base font-bold leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-200">
-                                    {item.description}
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="max-w-sm">
-                                  <p className="text-sm font-medium">{item.description}</p>
-                                </TooltipContent>
-                              </Tooltip>
+                              <span className="text-base font-semibold leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                                {item.description}
+                              </span>
                             </div>
                           </TableCell>
                           <TableCell>
                             <Badge
-                              variant={item.i_owe_them ? "default" : "destructive"}
-                              className="text-sm font-semibold px-3 py-1 shadow-sm"
+                              variant={item.i_owe_them ? "default" : "secondary"}
+                              className="text-sm font-medium px-2.5 py-0.5"
                             >
                               {!!(item as any).owed_to_name ||
                                (typeof item.counterparty_id === 'string' && item.counterparty_id.startsWith('00000000-0000-0000-0000-00000000'))
@@ -273,46 +260,25 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <div className="flex flex-col items-end gap-1">
-                              <span className={`text-lg font-bold ${getAmountColor(item.i_owe_them)} group-hover:scale-105 transition-transform duration-200`}>
-                                ₫{formatCurrency(Number(item.amount))}
-                              </span>
-                            </div>
+                            <span className={`text-lg font-bold ${getAmountColor(item.i_owe_them)} group-hover:scale-105 transition-transform inline-block`}>
+                              ₫{formatCurrency(Number(item.amount))}
+                            </span>
                           </TableCell>
                           <TableCell>
-                            {isAuthenticated ? (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-primary/10"
-                                  >
-                                    <MoreHorizontal className="h-5 w-5" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-56">
-                                  <DropdownMenuItem onClick={() => go({ to: `/profile/${item.counterparty_id}` })}>
-                                    <Receipt className="h-4 w-4 mr-2" />
-                                    {t('dashboard.viewDetails')}
-                                  </DropdownMenuItem>
-                                  {!item.i_owe_them && (
-                                    <>
-                                      <DropdownMenuSeparator />
-                                      <DropdownMenuItem
-                                        onClick={() => {
-                                          setSelectedDebt(item);
-                                          setSettleDialogOpen(true);
-                                        }}
-                                        className="text-green-600 focus:text-green-600 focus:bg-green-50"
-                                      >
-                                        <CheckCircle2 className="h-4 w-4 mr-2" />
-                                        {t('dashboard.settleAll')} (₫{formatCurrency(Number(item.amount))})
-                                      </DropdownMenuItem>
-                                    </>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                            {isAuthenticated && !item.i_owe_them ? (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="opacity-0 group-hover:opacity-100 transition-all duration-200 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedDebt(item);
+                                  setSettleDialogOpen(true);
+                                }}
+                              >
+                                <CheckCircle2 className="h-4 w-4 mr-1" />
+                                {t('dashboard.settle', 'Settle')}
+                              </Button>
                             ) : (
                               <Button
                                 variant="ghost"
@@ -326,6 +292,10 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                           </TableCell>
                         </TableRow>
                       </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-sm">
+                        <p className="text-sm font-medium">{item.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Click to view profile</p>
+                      </TooltipContent>
                     </Tooltip>
                   ))}
                 </TooltipProvider>
@@ -333,10 +303,10 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
             </Table>
           ) : (
             <div className="flex flex-col items-center justify-center p-12 text-center">
-              <div className="h-16 w-16 bg-gradient-to-br from-teal-100 to-emerald-100 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
-                <Users className="h-8 w-8 text-teal-600" />
+              <div className="h-16 w-16 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-2xl flex items-center justify-center mb-4 shadow-sm">
+                <Users className="h-8 w-8 text-emerald-600" />
               </div>
-              <p className="text-lg font-bold text-foreground mb-1">{t('dashboard.allSettledUpNoDebts')}</p>
+              <p className="text-lg font-semibold text-foreground mb-1">{t('dashboard.allSettledUpNoDebts')}</p>
               <p className="text-sm text-muted-foreground">{t('balances.settleUp')}</p>
             </div>
           )}
@@ -344,26 +314,26 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
       </div>
 
       {/* ============================================== */}
-      {/* RECENT ACTIVITY SECTION - IMPROVED UI/UX + PAGINATION */}
+      {/* RECENT ACTIVITY SECTION - FRIENDLY TABLE LAYOUT */}
       {/* ============================================== */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between px-1">
+        <div className="flex items-center justify-between px-2">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center shadow-sm">
-              <TrendingDown className="h-5 w-5 text-purple-600" />
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center shadow-sm">
+              <Receipt className="h-5 w-5 text-purple-600" />
             </div>
             <div>
-              <h3 className="text-xl font-bold tracking-tight text-foreground">
+              <h2 className="text-xl font-bold tracking-tight text-foreground">
                 {t('dashboard.recentActivity')}
-              </h3>
-              <p className="text-xs text-muted-foreground">
+              </h2>
+              <p className="text-sm text-muted-foreground">
                 {metadata.totalItems} {t('dashboard.transactions', 'transactions')}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="rounded-2xl border-2 bg-card shadow-xl overflow-hidden">
+        <div className="rounded-2xl border-2 bg-card shadow-lg overflow-hidden">
           <Table>
             <TableHeader className="bg-gradient-to-r from-muted/50 to-muted/30 border-b-2">
               <TableRow className="hover:bg-transparent">
@@ -393,8 +363,8 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                     <Tooltip key={item.id}>
                       <TooltipTrigger asChild>
                         <TableRow
-                          className={`group cursor-pointer transition-all duration-300 hover:bg-gradient-to-r hover:from-purple-50/50 hover:to-pink-50/30 ${
-                            index % 2 === 0 ? "bg-muted/20" : ""
+                          className={`group cursor-pointer transition-all duration-200 hover:bg-muted/30 ${
+                            index % 2 === 0 ? "bg-muted/10" : ""
                           }`}
                           onClick={() => {
                             if ('type' in item) {
@@ -403,9 +373,9 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                           }}
                         >
                           <TableCell>
-                            <Avatar className="h-12 w-12 border-2 shadow-md ring-2 ring-offset-1 ring-offset-background transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg border-purple-200 ring-purple-100">
+                            <Avatar className="h-11 w-11 border-2 shadow-md ring-2 ring-offset-1 ring-offset-background transition-all duration-200 group-hover:scale-105 group-hover:shadow-lg border-muted ring-muted/20">
                               <AvatarImage src={item.created_by_avatar_url || undefined} alt={item.created_by_name} />
-                              <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700">
+                              <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-purple-100 to-indigo-100 text-purple-700">
                                 {item.created_by_name
                                   ?.split(" ")
                                   .map((n: string) => n[0])
@@ -417,39 +387,18 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                           </TableCell>
                           <TableCell className="font-medium max-w-[300px]">
                             <div className="flex flex-col gap-1">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="text-base font-bold leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-200">
-                                    {item.description}
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="max-w-sm">
-                                  <p className="text-sm font-medium">{item.description}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="text-xs text-muted-foreground font-medium line-clamp-1">
-                                    {t('dashboard.by')} {item.created_by_name}
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent side="top">
-                                  <p className="text-xs">{t('dashboard.by')} {item.created_by_name}</p>
-                                </TooltipContent>
-                              </Tooltip>
+                              <span className="text-base font-semibold leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                                {item.description}
+                              </span>
+                              <span className="text-xs text-muted-foreground font-medium">
+                                {t('dashboard.by')} {item.created_by_name}
+                              </span>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className="text-sm font-semibold text-muted-foreground line-clamp-1 max-w-[120px] block group-hover:text-primary transition-colors duration-200">
-                                  {item.group_name || t('dashboard.personal')}
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent side="top">
-                                <p className="text-sm">{item.group_name || t('dashboard.personal')}</p>
-                              </TooltipContent>
-                            </Tooltip>
+                            <Badge variant="outline" className="font-medium text-sm">
+                              {item.group_name || t('dashboard.personal')}
+                            </Badge>
                           </TableCell>
                           <TableCell>
                             <span className="text-sm font-medium text-muted-foreground">
@@ -457,32 +406,25 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                             </span>
                           </TableCell>
                           <TableCell className="text-right">
-                            <span className="text-lg font-bold text-primary group-hover:scale-105 transition-transform duration-200 inline-block">
+                            <span className="text-lg font-bold text-primary group-hover:scale-105 transition-transform inline-block">
                               ₫{formatCurrency(Number(item.amount))}
                             </span>
                           </TableCell>
                           <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-primary/10"
-                                >
-                                  <MoreHorizontal className="h-5 w-5" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-48">
-                                <DropdownMenuItem
-                                  onClick={() => go({ to: item.type === "expense" ? `/expenses/show/${item.id}` : `/payments/show/${item.id}` })}
-                                >
-                                  {t('dashboard.viewDetails')}
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-primary/10"
+                            >
+                              <MoreHorizontal className="h-5 w-5" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-sm">
+                        <p className="text-sm font-medium">{item.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Click to view details</p>
+                      </TooltipContent>
                     </Tooltip>
                   ))
                 )}
