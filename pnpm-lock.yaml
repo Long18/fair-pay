@@ -126,7 +126,7 @@ importers:
         specifier: ^2.89.0
         version: 2.89.0
       '@tailwindcss/vite':
-        specifier: ^4.1.8
+        specifier: ^4.1.18
         version: 4.1.18(vite@6.4.1(@types/node@20.19.27)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1))
       '@tanstack/react-query':
         specifier: ^5.90.12
@@ -217,7 +217,7 @@ importers:
         specifier: ^9.25.0
         version: 9.39.2
       '@tailwindcss/postcss':
-        specifier: ^4.1.4
+        specifier: ^4.1.18
         version: 4.1.18
       '@testing-library/jest-dom':
         specifier: ^6.9.1
@@ -274,7 +274,7 @@ importers:
         specifier: ^3.6.2
         version: 3.6.2(@types/node@20.19.27)(hono@4.11.1)(typescript@5.9.3)
       tailwindcss:
-        specifier: ^4.1.4
+        specifier: ^4.1.18
         version: 4.1.18
       typescript:
         specifier: ^5.8.3

@@ -38,6 +38,8 @@ import { PaymentCreate, PaymentShow } from "./modules/payments";
 import { FriendList, FriendShow } from "./modules/friends";
 import { NotificationList } from "./modules/notifications";
 import { Dashboard } from "./pages/dashboard";
+import { PrivacyPage } from "./pages/privacy";
+import { TermsPage } from "./pages/terms";
 import { ErrorBoundary } from "./components/error-boundary";
 import { supabaseClient } from "./utility";
 
@@ -207,6 +209,10 @@ function App() {
                   }
                 >
                   <Route index element={<Dashboard />} />
+
+                  {/* Public legal pages */}
+                  <Route path="/privacy" element={<PrivacyPage />} />
+                  <Route path="/terms" element={<TermsPage />} />
 
                   {/* Public profile view */}
                   <Route path="/profile/:id" element={

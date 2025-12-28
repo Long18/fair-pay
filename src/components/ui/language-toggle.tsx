@@ -7,8 +7,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './dropdown-menu';
+import { cn } from '@/lib/utils';
 
-export const LanguageToggle = () => {
+interface LanguageToggleProps {
+  className?: string;
+}
+
+export const LanguageToggle = ({ className }: LanguageToggleProps) => {
   const { i18n } = useTranslation();
   const currentLanguage = i18n.language;
 
@@ -19,7 +24,7 @@ export const LanguageToggle = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" className={cn(className)}>
           <Globe className="h-[1.2rem] w-[1.2rem]" />
           <span className="sr-only">Toggle language</span>
         </Button>
