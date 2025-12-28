@@ -1,4 +1,5 @@
 export { PaymentCreate } from "./pages/create";
+export { PaymentShow } from "./pages/show";
 export { PaymentForm } from "./components/payment-form";
 export { PaymentList } from "./components/payment-list";
 export { BalanceSummary } from "./components/balance-summary";

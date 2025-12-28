@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useCreate, useGo, useList, useGetIdentity, useOne } from "@refinedev/core";
 import { useParams } from "react-router";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ResponsiveDialog } from "@/components/refine-ui/responsive-dialog";
 import { ExpenseForm } from "../components/expense-form";
 import { AttachmentUpload, type AttachmentFile } from "../components/attachment-upload";
 import { useAttachments } from "../hooks/use-attachments";
@@ -34,6 +34,9 @@ export const ExpenseCreate = () => {
         value: groupId,
       },
     ],
+    pagination: {
+      mode: "off", // Disable pagination to get all members
+    },
     meta: {
       select: "*, profiles!user_id(id, full_name)",
     },
@@ -173,45 +176,42 @@ export const ExpenseCreate = () => {
 
   if (!contextId || !identity || members.length === 0) {
     return (
-      <Dialog open onOpenChange={handleClose}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Loading...</DialogTitle>
-          </DialogHeader>
-          <div className="py-8 text-center">
-            <p>Loading expense form...</p>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ResponsiveDialog
+        open={true}
+        onOpenChange={handleClose}
+        title="Loading..."
+      >
+        <div className="py-8 text-center">
+          <p>Loading expense form...</p>
+        </div>
+      </ResponsiveDialog>
     );
   }
 
   return (
-    <Dialog open onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {isGroupContext ? "Add Group Expense" : "Add Expense with Friend"}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-6">
-          <ExpenseForm
-            groupId={contextId}
-            members={members}
-            currentUserId={identity.id}
-            onSubmit={handleSubmit}
-            isLoading={false}
-          />
+    <ResponsiveDialog
+      open={true}
+      onOpenChange={handleClose}
+      title={isGroupContext ? "Add Group Expense" : "Add Expense with Friend"}
+      className="max-w-2xl max-h-[90vh] overflow-y-auto"
+    >
+      <div className="space-y-6">
+        <ExpenseForm
+          groupId={contextId}
+          members={members}
+          currentUserId={identity.id}
+          onSubmit={handleSubmit}
+          isLoading={false}
+        />
 
-          <div className="border-t pt-6">
-            <h3 className="text-sm font-medium mb-4">Attach Receipts (Optional)</h3>
-            <AttachmentUpload
-              attachments={attachments}
-              onAttachmentsChange={setAttachments}
-            />
-          </div>
+        <div className="border-t pt-6">
+          <h3 className="text-sm font-medium mb-4">Attach Receipts (Optional)</h3>
+          <AttachmentUpload
+            attachments={attachments}
+            onAttachmentsChange={setAttachments}
+          />
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </ResponsiveDialog>
   );
 };

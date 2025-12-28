@@ -1,8 +1,9 @@
 import { useGo } from "@refinedev/core";
 import { useTable } from "@refinedev/react-table";
 import { DataTable } from "@/components/refine-ui/data-table/data-table";
+import { EmptyState } from "@/components/refine-ui/empty-state";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 import { useGroupColumns } from "../components/group-table-columns";
 import { Group } from "../types";
 
@@ -20,6 +21,8 @@ export const GroupList = () => {
     },
   });
 
+  const hasGroups = table.refineCore.tableQuery.data?.data && table.refineCore.tableQuery.data.data.length > 0;
+
   return (
     <div className="container py-8">
       <div className="flex items-center justify-between mb-6">
@@ -35,7 +38,19 @@ export const GroupList = () => {
         </Button>
       </div>
 
-      <DataTable table={table} />
+      {hasGroups ? (
+        <DataTable table={table} />
+      ) : (
+        <EmptyState
+          icon={<Users />}
+          title="No groups yet"
+          description="Create your first group to start splitting expenses with friends and family."
+          action={{
+            label: "Create Group",
+            onClick: () => go({ to: "/groups/create" }),
+          }}
+        />
+      )}
     </div>
   );
 };

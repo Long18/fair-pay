@@ -1,6 +1,6 @@
 import { useGetIdentity, useList, useGo } from "@refinedev/core";
 import { useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ResponsiveDialog } from "@/components/refine-ui/responsive-dialog";
 import { Button } from "@/components/ui/button";
 import { Users, UserPlus, PlusCircle } from "lucide-react";
 import { Profile } from "@/modules/profile/types";
@@ -11,7 +11,7 @@ export const ExpenseContextSelector = () => {
   const go = useGo();
   const { data: identity } = useGetIdentity<Profile>();
 
-  const { data: groupsData, isLoading: loadingGroups } = useList({
+  const { query: groupsQuery } = useList({
     resource: "group_members",
     filters: [
       {
@@ -28,7 +28,7 @@ export const ExpenseContextSelector = () => {
     },
   });
 
-  const { data: friendshipsData, isLoading: loadingFriendships } = useList<Friendship>({
+  const { query: friendshipsQuery } = useList<Friendship>({
     resource: "friendships",
     filters: [
       {
@@ -45,8 +45,10 @@ export const ExpenseContextSelector = () => {
     },
   });
 
-  const groups = groupsData?.data?.map((m: any) => m.groups).filter(Boolean) || [];
-  const friendships = friendshipsData?.data || [];
+  const groups = groupsQuery.data?.data?.map((m: any) => m.groups).filter(Boolean) || [];
+  const friendships = friendshipsQuery.data?.data || [];
+  const loadingGroups = groupsQuery.isLoading;
+  const loadingFriendships = friendshipsQuery.isLoading;
 
   useEffect(() => {
     if (!identity) return;
@@ -83,93 +85,108 @@ export const ExpenseContextSelector = () => {
 
   if (!identity || loadingGroups || loadingFriendships) {
     return (
-      <Dialog open onOpenChange={handleClose}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Loading...</DialogTitle>
-          </DialogHeader>
-          <div className="py-8 text-center">
-            <p>Setting up expense form...</p>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ResponsiveDialog
+        open={true}
+        onOpenChange={handleClose}
+        title="Loading..."
+      >
+        <div className="py-8 text-center">
+          <p>Setting up expense form...</p>
+        </div>
+      </ResponsiveDialog>
     );
   }
 
   if (groups.length === 0 && friendships.length === 0) {
     return (
-      <Dialog open onOpenChange={handleClose}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Get Started with Expenses</DialogTitle>
-            <DialogDescription>
-              To add an expense, you need to create a group or add a friend first.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 pt-4">
+      <ResponsiveDialog
+        open={true}
+        onOpenChange={handleClose}
+        title="Create Your First Group or Add a Friend"
+        description="Expenses in FairPay are shared with groups or friends. Let's get you started!"
+        className="max-w-md"
+      >
+        <div className="space-y-4 pt-4">
+          <div className="space-y-3">
             <Button
               onClick={handleCreateGroup}
-              className="w-full justify-start"
+              className="w-full justify-start h-auto py-4"
               size="lg"
             >
-              <Users className="mr-2 h-5 w-5" />
-              Create a Group
+              <Users className="mr-3 h-6 w-6" />
+              <div className="text-left">
+                <div className="font-semibold">Create a Group</div>
+                <div className="text-xs opacity-90">Split expenses with multiple people</div>
+              </div>
             </Button>
             <Button
               onClick={handleViewFriends}
               variant="outline"
-              className="w-full justify-start"
+              className="w-full justify-start h-auto py-4"
               size="lg"
             >
-              <UserPlus className="mr-2 h-5 w-5" />
-              Add a Friend
+              <UserPlus className="mr-3 h-6 w-6" />
+              <div className="text-left">
+                <div className="font-semibold">Add a Friend</div>
+                <div className="text-xs opacity-90">Share expenses one-on-one</div>
+              </div>
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
+          <div className="text-xs text-muted-foreground text-center pt-2">
+            💡 Tip: Groups are great for roommates, trips, or events
+          </div>
+        </div>
+      </ResponsiveDialog>
     );
   }
 
   return (
-    <Dialog open onOpenChange={handleClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Select Context</DialogTitle>
-          <DialogDescription>
-            Choose where to add this expense
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3 pt-4">
-          {groups.map((group: any) => (
-            <Button
-              key={group.id}
-              onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
-              variant="outline"
-              className="w-full justify-start"
-              size="lg"
-            >
-              <Users className="mr-2 h-5 w-5" />
-              {group.name}
-            </Button>
-          ))}
-          {friendships.map((friendship: any) => {
-            const isUserA = friendship.user_a_id === identity?.id;
-            const friendProfile = isUserA ? friendship.user_b_profile : friendship.user_a_profile;
-            return (
+    <ResponsiveDialog
+      open={true}
+      onOpenChange={handleClose}
+      title="Where would you like to add this expense?"
+      description="Select the group or friend to share this expense with"
+    >
+      <div className="space-y-2 pt-4">
+        {groups.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground px-1">Groups</p>
+            {groups.map((group: any) => (
               <Button
-                key={friendship.id}
-                onClick={() => go({ to: `/friends/${friendship.id}/expenses/create` })}
+                key={group.id}
+                onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
                 variant="outline"
-                className="w-full justify-start"
+                className="w-full justify-start h-auto py-3"
                 size="lg"
               >
-                <UserPlus className="mr-2 h-5 w-5" />
-                {friendProfile?.full_name || "Friend"}
+                <Users className="mr-3 h-5 w-5 flex-shrink-0" />
+                <span className="truncate">{group.name}</span>
               </Button>
-            );
-          })}
-        </div>
-      </DialogContent>
-    </Dialog>
+            ))}
+          </div>
+        )}
+        {friendships.length > 0 && (
+          <div className="space-y-2 mt-4">
+            <p className="text-sm font-medium text-muted-foreground px-1">Friends</p>
+            {friendships.map((friendship: any) => {
+              const isUserA = friendship.user_a_id === identity?.id;
+              const friendProfile = isUserA ? friendship.user_b_profile : friendship.user_a_profile;
+              return (
+                <Button
+                  key={friendship.id}
+                  onClick={() => go({ to: `/friends/${friendship.id}/expenses/create` })}
+                  variant="outline"
+                  className="w-full justify-start h-auto py-3"
+                  size="lg"
+                >
+                  <UserPlus className="mr-3 h-5 w-5 flex-shrink-0" />
+                  <span className="truncate">{friendProfile?.full_name || "Friend"}</span>
+                </Button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </ResponsiveDialog>
   );
 };

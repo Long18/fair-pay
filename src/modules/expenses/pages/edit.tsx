@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useUpdate, useGo, useList, useGetIdentity, useOne } from "@refinedev/core";
 import { useParams } from "react-router";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ResponsiveDialog } from "@/components/refine-ui/responsive-dialog";
 import { ExpenseForm } from "../components/expense-form";
 import { AttachmentUpload, type AttachmentFile } from "../components/attachment-upload";
 import { useAttachments } from "../hooks/use-attachments";
@@ -74,6 +74,9 @@ export const ExpenseEdit = () => {
         value: expense?.group_id,
       },
     ],
+    pagination: {
+      mode: "off", // Disable pagination to get all members
+    },
     meta: {
       select: "*, profiles!user_id(id, full_name)",
     },
@@ -181,16 +184,15 @@ export const ExpenseEdit = () => {
 
   if (!expense || !identity || members.length === 0 || existingSplits.length === 0) {
     return (
-      <Dialog open onOpenChange={handleClose}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Loading...</DialogTitle>
-          </DialogHeader>
-          <div className="py-8 text-center">
-            <p>Loading expense data...</p>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ResponsiveDialog
+        open={true}
+        onOpenChange={handleClose}
+        title="Loading..."
+      >
+        <div className="py-8 text-center">
+          <p>Loading expense data...</p>
+        </div>
+      </ResponsiveDialog>
     );
   }
 
@@ -212,30 +214,30 @@ export const ExpenseEdit = () => {
   };
 
   return (
-    <Dialog open onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Edit Expense</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-6">
-          <ExpenseForm
-            groupId={contextId!}
-            members={members}
-            currentUserId={identity.id}
-            onSubmit={handleSubmit}
-            isLoading={false}
-            defaultValues={defaultValues}
-          />
+    <ResponsiveDialog
+      open={true}
+      onOpenChange={handleClose}
+      title="Edit Expense"
+      className="max-w-2xl max-h-[90vh] overflow-y-auto"
+    >
+      <div className="space-y-6">
+        <ExpenseForm
+          groupId={contextId!}
+          members={members}
+          currentUserId={identity.id}
+          onSubmit={handleSubmit}
+          isLoading={false}
+          defaultValues={defaultValues}
+        />
 
-          <div className="border-t pt-6">
-            <h3 className="text-sm font-medium mb-4">Add More Receipts (Optional)</h3>
-            <AttachmentUpload
-              attachments={attachments}
-              onAttachmentsChange={setAttachments}
-            />
-          </div>
+        <div className="border-t pt-6">
+          <h3 className="text-sm font-medium mb-4">Add More Receipts (Optional)</h3>
+          <AttachmentUpload
+            attachments={attachments}
+            onAttachmentsChange={setAttachments}
+          />
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </ResponsiveDialog>
   );
 };

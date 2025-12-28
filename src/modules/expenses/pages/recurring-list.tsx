@@ -4,6 +4,7 @@ import { useRecurringExpenses } from '../hooks/use-recurring-expenses';
 import { RecurringExpense } from '../types/recurring';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { EmptyState } from '@/components/refine-ui/empty-state';
 import { Repeat, Info } from 'lucide-react';
 
 interface RecurringExpenseListProps {
@@ -39,15 +40,11 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
 
   if (recurring.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="p-4 rounded-full bg-muted mb-4">
-          <Repeat className="h-8 w-8 text-muted-foreground" />
-        </div>
-        <h3 className="text-lg font-medium">Chưa có chi phí định kỳ</h3>
-        <p className="text-sm text-muted-foreground mt-2">
-          Khi tạo chi phí, chọn "Chi phí định kỳ" để tự động tạo chi phí theo lịch
-        </p>
-      </div>
+      <EmptyState
+        icon={<Repeat />}
+        title="Chưa có chi phí định kỳ"
+        description="Khi tạo chi phí, chọn 'Chi phí định kỳ' để tự động tạo chi phí theo lịch"
+      />
     );
   }
 
