@@ -81,7 +81,7 @@ export function DonationDialog({ open, onOpenChange, settings }: DonationDialogP
           <>
             <Separator />
             <div className="flex flex-col items-center py-4 gap-4">
-              <p className="text-xs text-muted-foreground text-center">
+              <p className="text-xs text-center" style={{ color: '#D82D8B' }}>
                 {t('settings.donation.includeMomo', 'Include Momo')}
               </p>
               <button
@@ -102,23 +102,6 @@ export function DonationDialog({ open, onOpenChange, settings }: DonationDialogP
                   </div>
                 )}
               </button>
-
-              {hasBankInfo && bankDetails && (
-                <div className="w-full space-y-3">
-                  <Button
-                    onClick={() => handleOpenBankApp()}
-                    size="lg"
-                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md"
-                  >
-                    <BanknoteIcon className="mr-2 h-5 w-5" />
-                    {t('settings.donation.openBankApp', 'Open {{bankName}} App', { bankName: bankDetails.name })}
-                    <ArrowUpRightIcon className="ml-2 h-4 w-4" />
-                  </Button>
-                  <p className="text-xs text-muted-foreground text-center">
-                    {t('settings.donation.bankAppHint', 'Opens {{bankName}} app to complete payment', { bankName: bankDetails.shortName })}
-                  </p>
-                </div>
-              )}
 
               {!hasBankInfo && (
                 <p className="text-xs text-muted-foreground text-center">
@@ -183,6 +166,23 @@ export function DonationDialog({ open, onOpenChange, settings }: DonationDialogP
                   </SelectContent>
                 </Select>
               </div>
+
+              {bankDetails && (
+                <div className="w-full max-w-sm space-y-3">
+                  <Button
+                    onClick={() => handleOpenBankApp()}
+                    size="lg"
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md"
+                  >
+                    <BanknoteIcon className="mr-2 h-5 w-5" />
+                    {t('settings.donation.openBankApp', 'Open {{bankName}} App', { bankName: bankDetails.name })}
+                    <ArrowUpRightIcon className="ml-2 h-4 w-4" />
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    {t('settings.donation.bankAppHint', 'Opens {{bankName}} app to complete payment', { bankName: bankDetails.shortName })}
+                  </p>
+                </div>
+              )}
 
               {!bankDetails && (
                 <p className="text-xs text-muted-foreground text-center">
