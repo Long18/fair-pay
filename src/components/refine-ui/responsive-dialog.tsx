@@ -60,7 +60,7 @@ export function ResponsiveDialog({
           <DrawerTitle>{title}</DrawerTitle>
           {description && <DrawerDescription>{description}</DrawerDescription>}
         </DrawerHeader>
-        <div className="px-4">{children}</div>
+        <div className="px-4 overflow-y-auto max-h-[calc(100vh-12rem)]">{children}</div>
         {showCancel && (
           <DrawerFooter className="pt-2">
             <DrawerClose asChild>

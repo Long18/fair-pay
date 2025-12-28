@@ -110,6 +110,7 @@ export const ExpenseForm = ({
   } = useSplitCalculation();
 
   const [manualSplits, setManualSplits] = useState<Record<string, number>>({});
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   const amount = form.watch("amount");
   const splitMethod = form.watch("split_method");
@@ -313,7 +314,7 @@ export const ExpenseForm = ({
           render={({ field }) => (
             <FormItem className="flex flex-col">
               <FormLabel>Date</FormLabel>
-              <Popover>
+              <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                 <PopoverTrigger asChild>
                   <FormControl>
                     <Button
@@ -332,13 +333,15 @@ export const ExpenseForm = ({
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto overflow-hidden p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={field.value ? new Date(field.value) : undefined}
-                    onSelect={(date) =>
+                    captionLayout="dropdown"
+                    onSelect={(date) => {
                       field.onChange(date?.toISOString().split("T")[0])
-                    }
+                      setDatePickerOpen(false)
+                    }}
                     initialFocus
                   />
                 </PopoverContent>
