@@ -33,7 +33,7 @@ import { Register } from "./pages/register";
 import { OAuthConsent } from "./pages/oauth";
 import { ProfileEdit, ProfileShow } from "./modules/profile";
 import { GroupList, GroupCreate, GroupEdit, GroupShow } from "./modules/groups";
-import { ExpenseCreate, ExpenseEdit, ExpenseShow } from "./modules/expenses";
+import { ExpenseCreate, ExpenseContextSelector, ExpenseEdit, ExpenseShow } from "./modules/expenses";
 import { PaymentCreate } from "./modules/payments";
 import { FriendList, FriendShow } from "./modules/friends";
 import { NotificationList } from "./modules/notifications";
@@ -263,7 +263,7 @@ function App() {
                     <Route path=":friendshipId/payments/create" element={<PaymentCreate />} />
                   </Route>
                   <Route path="/expenses">
-                    <Route path="create" element={<ExpenseCreate />} />
+                    <Route path="create" element={<ExpenseContextSelector />} />
                     <Route path="edit/:id" element={<ExpenseEdit />} />
                   </Route>
                   <Route path="/payments">

@@ -1,4 +1,5 @@
 export { ExpenseCreate } from "./pages/create";
+export { ExpenseContextSelector } from "./pages/context-selector";
 export { ExpenseEdit } from "./pages/edit";
 export { ExpenseShow } from "./pages/show";
 export { RecurringExpenseList } from "./pages/recurring-list";
