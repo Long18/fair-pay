@@ -12,7 +12,6 @@ import {
 
 import routerProvider, {
   CatchAllNavigate,
-  DocumentTitleHandler,
   NavigateToResource,
   UnsavedChangesNotifier,
 } from "@refinedev/react-router";
@@ -25,6 +24,7 @@ import { Layout } from "./components/refine-ui/layout/layout";
 import { Toaster } from "./components/refine-ui/notification/toaster";
 import { useNotificationProvider } from "./components/refine-ui/notification/use-notification-provider";
 import { ThemeProvider } from "./components/refine-ui/theme/theme-provider";
+import { useDocumentTitle } from "./hooks/use-document-title";
 
 // Eagerly loaded components (critical path)
 import { ForgotPassword } from "./pages/forgot-password";
@@ -90,6 +90,7 @@ function App() {
                 syncWithLocation: true,
                 warnWhenUnsavedChanges: true,
                 projectId: "efvxeD-2r07zg-niV06o",
+                // Application branding - controls browser tab title and sidebar display
                 title: {
                   text: "FairPay",
                   icon: <FairPayIcon className="w-6 h-6" />,
@@ -326,7 +327,7 @@ function App() {
               <Toaster />
               <RefineKbar />
               <UnsavedChangesNotifier />
-              <DocumentTitleHandler />
+              <DocumentTitle />
             </Refine>
             <DevtoolsPanel />
           </DevtoolsProvider>
@@ -334,6 +335,12 @@ function App() {
       </RefineKbarProvider>
     </BrowserRouter>
   );
+}
+
+// Wrapper component to apply custom document title
+function DocumentTitle() {
+  useDocumentTitle();
+  return null;
 }
 
 export default App;
