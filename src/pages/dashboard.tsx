@@ -6,6 +6,7 @@ import { DashboardSkeleton } from "@/components/dashboard/DashboardStates";
 import { BalanceTable } from "@/components/dashboard/BalanceTable";
 import { ActivityTable } from "@/components/dashboard/ActivityTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Spinner } from "@/components/ui/spinner";
 import { useGlobalBalance } from "@/hooks/use-global-balance";
 import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
 import { usePaginatedActivities } from "@/hooks/use-paginated-activities";
@@ -48,7 +49,7 @@ export const Dashboard = () => {
   return (
     <>
       {loading ? (
-        <DashboardSkeleton />
+        <Spinner size="lg" className="min-h-[400px]" />
       ) : (
         <Tabs defaultValue="balances" className="space-y-4">
           <TabsList>

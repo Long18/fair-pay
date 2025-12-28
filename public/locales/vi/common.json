@@ -6,6 +6,7 @@
     "success": "Thành công",
     "cancel": "Hủy",
     "save": "Lưu",
+    "saving": "Đang lưu...",
     "delete": "Xóa",
     "edit": "Sửa",
     "create": "Tạo mới",
@@ -53,5 +54,23 @@
     "email": "Email",
     "password": "Mật khẩu",
     "remember_me": "Ghi nhớ đăng nhập"
+  },
+  "settings": {
+    "donation": {
+      "title": "Cài Đặt Widget Ủng Hộ",
+      "description": "Cấu hình widget ủng hộ cho FairPay của bạn",
+      "enableWidget": "Bật Widget",
+      "enableWidgetDescription": "Hiển thị widget ủng hộ cho người dùng đã đăng nhập",
+      "images": "Hình Ảnh",
+      "imagesDescription": "Tải lên ảnh đại diện và mã QR",
+      "avatar": "Ảnh Đại Diện",
+      "qrCode": "Ảnh Mã QR",
+      "text": "Nội Dung Văn Bản",
+      "textDescription": "Tùy chỉnh văn bản theo ngôn ngữ",
+      "ctaText": "Văn Bản Kêu Gọi",
+      "donateMessage": "Tin Nhắn Ủng Hộ",
+      "saved": "Lưu cài đặt ủng hộ thành công",
+      "error": "Không thể lưu cài đặt ủng hộ"
+    }
   }
 }

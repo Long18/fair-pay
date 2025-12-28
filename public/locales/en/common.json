@@ -6,6 +6,7 @@
     "success": "Success",
     "cancel": "Cancel",
     "save": "Save",
+    "saving": "Saving...",
     "delete": "Delete",
     "edit": "Edit",
     "create": "Create",
@@ -53,5 +54,23 @@
     "email": "Email",
     "password": "Password",
     "remember_me": "Remember me"
+  },
+  "settings": {
+    "donation": {
+      "title": "Donation Widget Settings",
+      "description": "Configure the donation widget for your FairPay instance",
+      "enableWidget": "Enable Widget",
+      "enableWidgetDescription": "Show the donation widget to authenticated users",
+      "images": "Images",
+      "imagesDescription": "Upload avatar and QR code images",
+      "avatar": "Avatar Image",
+      "qrCode": "QR Code Image",
+      "text": "Text Content",
+      "textDescription": "Customize text in different languages",
+      "ctaText": "Call-to-Action Text",
+      "donateMessage": "Donation Message",
+      "saved": "Donation settings saved successfully",
+      "error": "Failed to save donation settings"
+    }
   }
 }
