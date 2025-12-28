@@ -2,10 +2,10 @@ import { useGo } from "@refinedev/core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, TrendingDown } from "lucide-react";
 import { GroupBalance } from "@/hooks/use-global-balance";
 import { formatCurrency as formatCurrencyUtil } from "@/lib/locale-utils";
 
+import { UsersIcon, TrendingDownIcon } from "@/components/ui/icons";
 interface GroupBalanceCardProps {
   group: GroupBalance;
   currency?: string;
@@ -40,7 +40,7 @@ export const GroupBalanceCard = ({ group, currency = "VND" }: GroupBalanceCardPr
           <div className="flex-1 min-w-0">
             <CardTitle className="text-lg truncate">{group.group_name}</CardTitle>
             <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
-              <Users className="h-3 w-3" />
+              <UsersIcon className="h-3 w-3" />
               <span>{group.member_count} members</span>
             </div>
           </div>
@@ -62,7 +62,7 @@ export const GroupBalanceCard = ({ group, currency = "VND" }: GroupBalanceCardPr
         {/* Total Group Debt */}
         {group.total_group_debt > 0 && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground border-t pt-3">
-            <TrendingDown className="h-4 w-4" />
+            <TrendingDownIcon className="h-4 w-4" />
             <span>Total group debt: {formatCurrency(group.total_group_debt)}</span>
           </div>
         )}

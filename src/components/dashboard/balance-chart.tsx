@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import { MoreVerticalIcon } from "@/components/ui/icons";
 interface BalanceDataPoint {
   date: string;
   balance: number;
@@ -31,7 +31,7 @@ export const BalanceChart = ({ data, currentBalance, currency = "USD" }: Balance
           Balance
         </CardTitle>
         <Button variant="ghost" size="icon" className="h-8 w-8">
-          <MoreVertical className="h-4 w-4 text-gray-500" />
+          <MoreVerticalIcon className="h-4 w-4 text-gray-500" />
         </Button>
       </CardHeader>
       <CardContent>

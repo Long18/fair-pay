@@ -2,11 +2,11 @@ import { useGetIdentity, useList, useGo } from "@refinedev/core";
 import { useEffect } from "react";
 import { ResponsiveDialog } from "@/components/refine-ui/responsive-dialog";
 import { Button } from "@/components/ui/button";
-import { Users, UserPlus, PlusCircle } from "lucide-react";
 import { Profile } from "@/modules/profile/types";
 import { Friendship } from "@/modules/friends/types";
 import { toast } from "sonner";
 
+import { UsersIcon, UserPlusIcon, PlusCircleIcon } from "@/components/ui/icons";
 export const ExpenseContextSelector = () => {
   const go = useGo();
   const { data: identity } = useGetIdentity<Profile>();
@@ -113,7 +113,7 @@ export const ExpenseContextSelector = () => {
               className="w-full justify-start h-auto py-4"
               size="lg"
             >
-              <Users className="mr-3 h-6 w-6" />
+              <UsersIcon className="mr-3 h-6 w-6" />
               <div className="text-left">
                 <div className="font-semibold">Create a Group</div>
                 <div className="text-xs opacity-90">Split expenses with multiple people</div>
@@ -125,7 +125,7 @@ export const ExpenseContextSelector = () => {
               className="w-full justify-start h-auto py-4"
               size="lg"
             >
-              <UserPlus className="mr-3 h-6 w-6" />
+              <UserPlusIcon className="mr-3 h-6 w-6" />
               <div className="text-left">
                 <div className="font-semibold">Add a Friend</div>
                 <div className="text-xs opacity-90">Share expenses one-on-one</div>
@@ -159,7 +159,7 @@ export const ExpenseContextSelector = () => {
                 className="w-full justify-start h-auto py-3"
                 size="lg"
               >
-                <Users className="mr-3 h-5 w-5 flex-shrink-0" />
+                <UsersIcon className="mr-3 h-5 w-5 flex-shrink-0" />
                 <span className="truncate">{group.name}</span>
               </Button>
             ))}
@@ -179,7 +179,7 @@ export const ExpenseContextSelector = () => {
                   className="w-full justify-start h-auto py-3"
                   size="lg"
                 >
-                  <UserPlus className="mr-3 h-5 w-5 flex-shrink-0" />
+                  <UserPlusIcon className="mr-3 h-5 w-5 flex-shrink-0" />
                   <span className="truncate">{friendProfile?.full_name || "Friend"}</span>
                 </Button>
               );

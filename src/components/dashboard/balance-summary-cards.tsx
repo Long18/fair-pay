@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowDown, ArrowUp, Wallet } from "lucide-react";
 import { formatCurrency as formatCurrencyUtil } from "@/lib/locale-utils";
 
+import { ArrowDownIcon, ArrowUpIcon, WalletIcon } from "@/components/ui/icons";
 interface BalanceSummaryCardsProps {
   totalOwedToMe: number;
   totalIOwe: number;
@@ -26,7 +26,7 @@ export const BalanceSummaryCards = ({
         <CardContent className="pt-6">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-teal-50 rounded-xl">
-              <ArrowDown className="h-6 w-6 text-teal-600" />
+              <ArrowDownIcon className="h-6 w-6 text-teal-600" />
             </div>
             <div className="flex-1">
               <p className="text-sm text-gray-600 font-medium">You are owed</p>
@@ -43,7 +43,7 @@ export const BalanceSummaryCards = ({
         <CardContent className="pt-6">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-red-50 rounded-xl">
-              <ArrowUp className="h-6 w-6 text-red-600" />
+              <ArrowUpIcon className="h-6 w-6 text-red-600" />
             </div>
             <div className="flex-1">
               <p className="text-sm text-gray-600 font-medium">You owe</p>
@@ -62,7 +62,7 @@ export const BalanceSummaryCards = ({
             <div className={`p-3 rounded-xl ${
               netBalance >= 0 ? "bg-purple-50" : "bg-orange-50"
             }`}>
-              <Wallet className={`h-6 w-6 ${
+              <WalletIcon className={`h-6 w-6 ${
                 netBalance >= 0 ? "text-purple-600" : "text-orange-600"
               }`} />
             </div>

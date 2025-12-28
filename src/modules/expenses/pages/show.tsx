@@ -3,7 +3,6 @@ import { useOne, useList, useDelete, useGo, useGetIdentity } from "@refinedev/co
 import { useParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Pencil, Trash2, CheckCircle2, XCircle } from "lucide-react";
 import { Expense, ExpenseSplit, Attachment } from "../types";
 import { AttachmentList } from "../components/attachment-list";
 import { CategoryIcon } from "../components/category-icon";
@@ -26,6 +25,7 @@ import { formatDate, formatNumber } from "@/lib/locale-utils";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { useTranslation } from "react-i18next";
 
+import { ArrowLeftIcon, PencilIcon, Trash2Icon, CheckCircle2Icon, XCircleIcon } from "@/components/ui/icons";
 export const ExpenseShow = () => {
   const { id } = useParams<{ id: string }>();
   const go = useGo();
@@ -180,7 +180,7 @@ export const ExpenseShow = () => {
         className="mb-4"
         onClick={() => go({ to: `/groups/show/${expense.group_id}` })}
       >
-        <ArrowLeft className="h-4 w-4 mr-2" />
+        <ArrowLeftIcon className="h-4 w-4 mr-2" />
         Back to Group
       </Button>
 
@@ -210,13 +210,13 @@ export const ExpenseShow = () => {
                     size="sm"
                     onClick={() => go({ to: `/expenses/edit/${expense.id}` })}
                   >
-                    <Pencil className="h-4 w-4 mr-2" />
+                    <PencilIcon className="h-4 w-4 mr-2" />
                     Edit
                   </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="destructive" size="sm">
-                        <Trash2 className="h-4 w-4 mr-2" />
+                        <Trash2Icon className="h-4 w-4 mr-2" />
                         Delete
                       </Button>
                     </AlertDialogTrigger>
@@ -279,7 +279,7 @@ export const ExpenseShow = () => {
                 <AlertDialog open={settleAllDialogOpen} onOpenChange={setSettleAllDialogOpen}>
                   <AlertDialogTrigger asChild>
                     <Button variant="default" size="sm" className="bg-green-600 hover:bg-green-700">
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      <CheckCircle2Icon className="h-4 w-4 mr-2" />
                       {t('expenses.settleAll', 'Settle All')}
                     </Button>
                   </AlertDialogTrigger>
@@ -312,7 +312,7 @@ export const ExpenseShow = () => {
                           </>
                         ) : (
                           <>
-                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            <CheckCircle2Icon className="h-4 w-4 mr-2" />
                             {t('expenses.confirmSettle', 'Confirm')}
                           </>
                         )}
@@ -375,13 +375,13 @@ export const ExpenseShow = () => {
                             </div>
                             {isPaid && (
                               <Badge variant="outline" className="text-xs bg-green-100 text-green-700 border-green-300">
-                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                <CheckCircle2Icon className="h-3 w-3 mr-1" />
                                 {t('expenses.paid', 'Paid')}
                               </Badge>
                             )}
                             {!isPaid && !isCurrentUserSplit && (
                               <Badge variant="outline" className="text-xs bg-red-100 text-red-700 border-red-300">
-                                <XCircle className="h-3 w-3 mr-1" />
+                                <XCircleIcon className="h-3 w-3 mr-1" />
                                 {t('expenses.unpaid', 'Unpaid')}
                               </Badge>
                             )}

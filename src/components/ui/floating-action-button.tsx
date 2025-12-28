@@ -1,9 +1,9 @@
 import React from "react";
-import { Plus } from "lucide-react";
 import { useGo } from "@refinedev/core";
 import { Button } from "./button";
 import { cn } from "@/lib/utils";
 
+import { PlusIcon } from "@/components/ui/icons";
 interface FABProps {
   onClick?: () => void;
   href?: string;
@@ -19,7 +19,7 @@ interface FABProps {
 export const FloatingActionButton: React.FC<FABProps> = ({
   onClick,
   href,
-  icon = <Plus className="h-6 w-6" />,
+  icon = <PlusIcon className="h-6 w-6" />,
   label = "Add Expense",
   className,
 }) => {

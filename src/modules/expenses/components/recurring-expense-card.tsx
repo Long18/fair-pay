@@ -17,7 +17,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { MoreVertical, Repeat, Pause, Play, Trash2, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import {
@@ -31,6 +30,7 @@ import { useUpdateRecurringExpense, useDeleteRecurringExpense } from '../hooks/u
 import { useNotification } from '@refinedev/core';
 import { formatNumber } from '@/lib/locale-utils';
 
+import { MoreVerticalIcon, RepeatIcon, PauseIcon, PlayIcon, Trash2Icon, CalendarIcon } from "@/components/ui/icons";
 interface RecurringExpenseCardProps {
   recurring: RecurringExpense;
   onUpdate?: () => void;
@@ -107,7 +107,7 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-primary/10">
-                <Repeat className="h-5 w-5 text-primary" />
+                <RepeatIcon className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <CardTitle className="text-base">{template.description}</CardTitle>
@@ -125,7 +125,7 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
-                  <MoreVertical className="h-4 w-4" />
+                  <MoreVerticalIcon className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -135,12 +135,12 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
                 >
                   {recurring.is_active ? (
                     <>
-                      <Pause className="mr-2 h-4 w-4" />
+                      <PauseIcon className="mr-2 h-4 w-4" />
                       Tạm dừng
                     </>
                   ) : (
                     <>
-                      <Play className="mr-2 h-4 w-4" />
+                      <PlayIcon className="mr-2 h-4 w-4" />
                       Tiếp tục
                     </>
                   )}
@@ -150,7 +150,7 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
                   className="text-destructive"
                   disabled={isDeleting}
                 >
-                  <Trash2 className="mr-2 h-4 w-4" />
+                  <Trash2Icon className="mr-2 h-4 w-4" />
                   Xóa
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -172,7 +172,7 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
             <div className="space-y-1">
               <p className="text-muted-foreground">Lần tạo tiếp theo</p>
               <div className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
+                <CalendarIcon className="h-3 w-3" />
                 <p className="font-medium">
                   {format(new Date(recurring.next_occurrence), 'PPP', { locale: vi })}
                 </p>

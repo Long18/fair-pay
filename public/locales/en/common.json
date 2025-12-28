@@ -71,6 +71,10 @@
       "bankInfoDescription": "Configure VietQR bank information for direct app deeplinks",
       "bankApp": "Bank App",
       "selectBank": "Select bank app",
+      "selectYourBank": "Select Your Bank App",
+      "chooseBank": "Choose your bank app",
+      "selectBankFirst": "Please select your bank app first",
+      "selectBankToOpen": "Select a bank app to open it directly",
       "accountName": "Account Holder Name",
       "bankAccount": "Account Number",
       "bankCode": "Bank Code",
@@ -81,7 +85,10 @@
       "saved": "Donation settings saved successfully",
       "error": "Failed to save donation settings",
       "openingBankApp": "Opening bank app...",
+      "openBankApp": "Open {{bankName}} App",
+      "bankAppHint": "Opens {{bankName}} app to complete payment",
       "scanQRCode": "Please scan the QR code with your banking app",
+      "scanQRCodeHint": "Scan the QR code with your banking app",
       "tapToOpenBank": "Tap to open bank app",
       "tapHint": "Tap QR code to open banking app directly"
     }

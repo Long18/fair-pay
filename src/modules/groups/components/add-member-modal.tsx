@@ -35,12 +35,12 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Check, ChevronsUpDown, UserPlus } from "lucide-react";
 import { Profile } from "@/modules/profile/types";
 import { Friendship } from "@/modules/friends/types";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+import { CheckIcon, ChevronsUpDownIcon, UserPlusIcon } from "@/components/ui/icons";
 const addMemberSchema = z.object({
   userId: z.string().min(1, "Please select a friend"),
 });
@@ -240,7 +240,7 @@ export const AddMemberModal = ({
                         ) : (
                           <span>Search friends...</span>
                         )}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </FormControl>
                   </PopoverTrigger>
@@ -282,7 +282,7 @@ export const AddMemberModal = ({
                                   </AvatarFallback>
                                 </Avatar>
                                 <span className="flex-1">{friend.full_name}</span>
-                                <Check
+                                <CheckIcon
                                   className={cn(
                                     "h-4 w-4",
                                     field.value === friend.id
@@ -346,7 +346,7 @@ export const AddMemberModal = ({
       <DialogTrigger asChild>
         {trigger || (
           <Button size="sm">
-            <UserPlus className="h-4 w-4 mr-2" />
+            <UserPlusIcon className="h-4 w-4 mr-2" />
             Add Member
           </Button>
         )}

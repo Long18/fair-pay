@@ -3,9 +3,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Eye, UserPlus, Users2, TrendingUp, TrendingDown } from "lucide-react";
 import { useGo } from "@refinedev/core";
 
+import { EyeIcon, UserPlusIcon, Users2Icon, TrendingUpIcon, TrendingDownIcon } from "@/components/ui/icons";
 /**
  * Friends Table Component
  *
@@ -52,7 +52,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
   };
 
   const getBalanceIcon = (iOweThem: boolean) => {
-    return iOweThem ? TrendingDown : TrendingUp;
+    return iOweThem ? TrendingDownIcon : TrendingUpIcon;
   };
 
   if (isLoading) {
@@ -60,7 +60,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Users2 className="h-5 w-5" />
+            <Users2Icon className="h-5 w-5" />
             Friends
           </CardTitle>
         </CardHeader>
@@ -80,13 +80,13 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Users2 className="h-5 w-5" />
+            <Users2Icon className="h-5 w-5" />
             Friends
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-12 space-y-4">
-            <Users2 className="h-12 w-12 text-muted-foreground mx-auto" />
+            <Users2Icon className="h-12 w-12 text-muted-foreground mx-auto" />
             <div>
               <p className="text-foreground font-medium">No friends yet</p>
               <p className="text-sm text-muted-foreground mt-2">
@@ -99,7 +99,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
                 variant="default"
                 className="w-full sm:w-auto"
               >
-                <UserPlus className="h-4 w-4 mr-2" />
+                <UserPlusIcon className="h-4 w-4 mr-2" />
                 Add Friend
               </Button>
               <Button
@@ -107,7 +107,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
                 variant="outline"
                 className="w-full sm:w-auto"
               >
-                <Users2 className="h-4 w-4 mr-2" />
+                <Users2Icon className="h-4 w-4 mr-2" />
                 Join a Group
               </Button>
             </div>
@@ -125,7 +125,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Users2 className="h-5 w-5" />
+            <Users2Icon className="h-5 w-5" />
             Friends
             <Badge variant="secondary" className="ml-1">
               {friends.length}
@@ -137,7 +137,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
             className="w-full sm:w-auto"
             onClick={() => go({ to: "/friends" })}
           >
-            <UserPlus className="h-4 w-4 mr-1" />
+            <UserPlusIcon className="h-4 w-4 mr-1" />
             Add
           </Button>
         </div>
@@ -195,7 +195,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
                           go({ to: `/friends/${friend.counterparty_id}` });
                         }}
                       >
-                        <Eye className="h-3 w-3 mr-1" />
+                        <EyeIcon className="h-3 w-3 mr-1" />
                         View
                       </Button>
                     </div>
@@ -272,7 +272,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
                           go({ to: `/friends/${friend.counterparty_id}` });
                         }}
                       >
-                        <Eye className="h-4 w-4 mr-1" />
+                        <EyeIcon className="h-4 w-4 mr-1" />
                         View
                       </Button>
                     </TableCell>

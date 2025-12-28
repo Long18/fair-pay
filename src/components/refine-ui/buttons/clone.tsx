@@ -2,9 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { type BaseKey, useCloneButton } from "@refinedev/core";
-import { Copy } from "lucide-react";
 import React from "react";
 
+import { CopyIcon } from "@/components/ui/icons";
 type CloneButtonProps = {
   /**
    * Resource name for API data interactions. `identifier` of the resource can be used instead of the `name` of the resource.
@@ -68,7 +68,7 @@ export const CloneButton = React.forwardRef<
         >
           {children ?? (
             <div className="flex items-center gap-2 font-semibold">
-              <Copy className="h-4 w-4" />
+              <CopyIcon className="h-4 w-4" />
               <span>{label}</span>
             </div>
           )}

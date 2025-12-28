@@ -2,9 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { type BaseKey, useListButton } from "@refinedev/core";
-import { List } from "lucide-react";
 import React from "react";
 
+import { ListIcon } from "@/components/ui/icons";
 type ListButtonProps = {
   /**
    * Resource name for API data interactions. `identifier` of the resource can be used instead of the `name` of the resource.
@@ -58,7 +58,7 @@ export const ListButton = React.forwardRef<
       >
         {children ?? (
           <div className="flex items-center gap-2 font-semibold">
-            <List className="w-4 h-4" />
+            <ListIcon className="w-4 h-4" />
             <span>{label}</span>
           </div>
         )}

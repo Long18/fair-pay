@@ -1,6 +1,5 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -16,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useForgotPassword, useLink, useRefineOptions } from "@refinedev/core";
 
+import { ArrowLeftIcon } from "@/components/ui/icons";
 export const ForgotPasswordForm = () => {
   const [email, setEmail] = useState("");
 
@@ -107,7 +107,7 @@ export const ForgotPasswordForm = () => {
                 "transition-colors"
               )}
             >
-              <ArrowLeft className={cn("w-4", "h-4")} />
+              <ArrowLeftIcon className={cn("w-4", "h-4")} />
               <span>Back to login</span>
             </Link>
           </div>

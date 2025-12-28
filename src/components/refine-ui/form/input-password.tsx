@@ -2,9 +2,9 @@
 
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 
+import { EyeIcon, EyeOffIcon } from "@/components/ui/icons";
 type InputPasswordProps = React.ComponentProps<"input">;
 
 export const InputPassword = ({ className, ...props }: InputPasswordProps) => {
@@ -26,9 +26,9 @@ export const InputPassword = ({ className, ...props }: InputPasswordProps) => {
         onClick={() => setShowPassword(!showPassword)}
       >
         {showPassword ? (
-          <EyeOff size={18} className={cn("text-gray-500")} />
+          <EyeOffIcon size={18} className={cn("text-gray-500")} />
         ) : (
-          <Eye size={18} className={cn("text-gray-500")} />
+          <EyeIcon size={18} className={cn("text-gray-500")} />
         )}
       </button>
     </div>

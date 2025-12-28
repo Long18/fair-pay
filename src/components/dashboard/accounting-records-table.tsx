@@ -1,10 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MoreVertical, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 
+import { MoreVerticalIcon, SearchIcon, XIcon } from "@/components/ui/icons";
 interface AccountingRecord {
   id: string;
   operationDate: string;
@@ -49,7 +49,7 @@ export const AccountingRecordsTable = ({ records }: AccountingRecordsTableProps)
         </CardTitle>
         <div className="flex items-center gap-2">
           <div className="relative">
-            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <SearchIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               type="text"
               placeholder="FV/2343/123/12"
@@ -64,12 +64,12 @@ export const AccountingRecordsTable = ({ records }: AccountingRecordsTableProps)
                 onClick={() => setSearchTerm("")}
                 className="absolute right-0 top-1/2 transform -translate-y-1/2 h-8 w-8"
               >
-                <X className="h-3 w-3 text-gray-400" />
+                <XIcon className="h-3 w-3 text-gray-400" />
               </Button>
             )}
           </div>
           <Button variant="ghost" size="icon" className="h-8 w-8">
-            <MoreVertical className="h-4 w-4 text-gray-500" />
+            <MoreVerticalIcon className="h-4 w-4 text-gray-500" />
           </Button>
         </div>
       </CardHeader>

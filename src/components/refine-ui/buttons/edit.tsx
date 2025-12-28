@@ -2,9 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { type BaseKey, useEditButton } from "@refinedev/core";
-import { Pencil } from "lucide-react";
 import React from "react";
 
+import { PencilIcon } from "@/components/ui/icons";
 type EditButtonProps = {
   /**
    * Resource name for API data interactions. `identifier` of the resource can be used instead of the `name` of the resource.
@@ -68,7 +68,7 @@ export const EditButton = React.forwardRef<
         >
           {children ?? (
             <div className="flex items-center gap-2 font-semibold">
-              <Pencil className="h-4 w-4" />
+              <PencilIcon className="h-4 w-4" />
               <span>{label}</span>
             </div>
           )}

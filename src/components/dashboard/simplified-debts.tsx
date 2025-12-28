@@ -6,9 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatNumber } from "@/lib/locale-utils";
 import { useGo } from "@refinedev/core";
-import { ArrowRight, Check } from "lucide-react";
 import { AggregatedDebt } from "@/hooks/use-aggregated-debts";
 
+import { ArrowRightIcon, CheckIcon } from "@/components/ui/icons";
 interface SimplifiedDebtsProps {
   debts: AggregatedDebt[];
   isLoading?: boolean;
@@ -62,7 +62,7 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
           <div className="text-center py-8 space-y-3">
             <div className="flex justify-center">
               <div className="h-16 w-16 rounded-full bg-[#6FCF97]/10 flex items-center justify-center">
-                <Check className="h-8 w-8 text-[#6FCF97]" />
+                <CheckIcon className="h-8 w-8 text-[#6FCF97]" />
               </div>
             </div>
             <p className="text-[#828282]">
@@ -139,7 +139,7 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
                     });
                   }}
                 >
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRightIcon className="h-4 w-4" />
                 </Button>
               </div>
             </div>

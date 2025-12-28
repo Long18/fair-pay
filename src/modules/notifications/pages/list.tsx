@@ -1,10 +1,10 @@
 import { useGo } from "@refinedev/core";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Bell } from "lucide-react";
 import { useNotifications } from "../hooks/use-notifications";
 import { NotificationItem } from "../components/notification-item";
 
+import { ArrowLeftIcon, BellIcon } from "@/components/ui/icons";
 export const NotificationList = () => {
   const go = useGo();
   const {
@@ -23,7 +23,7 @@ export const NotificationList = () => {
         className="mb-4"
         onClick={() => go({ to: "/" })}
       >
-        <ArrowLeft className="h-4 w-4 mr-2" />
+        <ArrowLeftIcon className="h-4 w-4 mr-2" />
         Back
       </Button>
 
@@ -56,7 +56,7 @@ export const NotificationList = () => {
             </div>
           ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-4">
-              <Bell className="h-16 w-16 text-muted-foreground mb-4" />
+              <BellIcon className="h-16 w-16 text-muted-foreground mb-4" />
               <p className="text-lg font-medium text-foreground mb-2">
                 No notifications yet
               </p>

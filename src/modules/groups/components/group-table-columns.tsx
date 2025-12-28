@@ -1,10 +1,10 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Group } from "../types";
 import { Button } from "@/components/ui/button";
-import { Eye, Pencil } from "lucide-react";
 import { useGo } from "@refinedev/core";
 import { formatDate } from "@/lib/locale-utils";
 
+import { EyeIcon, PencilIcon } from "@/components/ui/icons";
 export const useGroupColumns = (): ColumnDef<Group>[] => {
   const go = useGo();
 
@@ -56,14 +56,14 @@ export const useGroupColumns = (): ColumnDef<Group>[] => {
               size="sm"
               onClick={() => go({ to: `/groups/show/${group.id}` })}
             >
-              <Eye className="h-4 w-4" />
+              <EyeIcon className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => go({ to: `/groups/edit/${group.id}` })}
             >
-              <Pencil className="h-4 w-4" />
+              <PencilIcon className="h-4 w-4" />
             </Button>
           </div>
         );

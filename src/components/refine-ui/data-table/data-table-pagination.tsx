@@ -1,11 +1,5 @@
 "use client";
 
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-} from "lucide-react";
 import { useMemo } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -18,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
+import { ChevronLeftIcon, ChevronRightIcon, ChevronsLeftIcon, ChevronsRightIcon } from "@/components/ui/icons";
 type DataTablePaginationProps = {
   currentPage: number;
   pageCount: number;
@@ -107,7 +102,7 @@ export function DataTablePagination({
               disabled={currentPage === 1}
               aria-label="Go to first page"
             >
-              <ChevronsLeft />
+              <ChevronsLeftIcon />
             </Button>
             <Button
               variant="outline"
@@ -116,7 +111,7 @@ export function DataTablePagination({
               disabled={currentPage === 1}
               aria-label="Go to previous page"
             >
-              <ChevronLeft />
+              <ChevronLeftIcon />
             </Button>
             <Button
               variant="outline"
@@ -125,7 +120,7 @@ export function DataTablePagination({
               disabled={currentPage === pageCount}
               aria-label="Go to next page"
             >
-              <ChevronRight />
+              <ChevronRightIcon />
             </Button>
             <Button
               variant="outline"
@@ -134,7 +129,7 @@ export function DataTablePagination({
               disabled={currentPage === pageCount}
               aria-label="Go to last page"
             >
-              <ChevronsRight />
+              <ChevronsRightIcon />
             </Button>
           </div>
         </div>

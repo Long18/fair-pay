@@ -13,9 +13,9 @@ import {
   useLink,
   useResourceParams,
 } from "@refinedev/core";
-import { Home } from "lucide-react";
 import { Fragment, useMemo } from "react";
 
+import { HomeIcon } from "@/components/ui/icons";
 export function Breadcrumb() {
   const Link = useLink();
   const { breadcrumbs } = useBreadcrumb();
@@ -35,7 +35,7 @@ export function Breadcrumb() {
       Component: (
         <Link to={rootRouteResource.matchedRoute ?? "/"}>
           {rootRouteResource?.resource?.meta?.icon ?? (
-            <Home className="h-4 w-4" />
+            <HomeIcon className="h-4 w-4" />
           )}
         </Link>
       ),

@@ -3,9 +3,9 @@ import { BalanceRow } from "./BalanceRow";
 import { useGo } from "@refinedev/core";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowDown, ArrowUp, Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { ArrowDownIcon, ArrowUpIcon, WalletIcon } from "@/components/ui/icons";
 interface BalanceFeedProps {
   disabled?: boolean;
 }
@@ -57,7 +57,7 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-red-50 rounded-xl">
-                  <ArrowDown className="h-6 w-6 text-red-600" />
+                  <ArrowDownIcon className="h-6 w-6 text-red-600" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-muted-foreground font-medium">Owed to you</p>
@@ -74,7 +74,7 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-green-50 rounded-xl">
-                  <ArrowUp className="h-6 w-6 text-green-600" />
+                  <ArrowUpIcon className="h-6 w-6 text-green-600" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-muted-foreground font-medium">You owe</p>
@@ -91,7 +91,7 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-purple-50 rounded-xl">
-                  <Wallet className="h-6 w-6 text-purple-600" />
+                  <WalletIcon className="h-6 w-6 text-purple-600" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-muted-foreground font-medium">Net balance</p>
@@ -123,7 +123,7 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-red-50 rounded-xl">
-                <ArrowDown className="h-6 w-6 text-red-600" />
+                <ArrowDownIcon className="h-6 w-6 text-red-600" />
               </div>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground font-medium">Owed to you</p>
@@ -140,7 +140,7 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-green-50 rounded-xl">
-                <ArrowUp className="h-6 w-6 text-green-600" />
+                <ArrowUpIcon className="h-6 w-6 text-green-600" />
               </div>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground font-medium">You owe</p>
@@ -159,7 +159,7 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
               <div className={`p-3 rounded-xl ${
                 netBalance >= 0 ? "bg-purple-50" : "bg-orange-50"
               }`}>
-                <Wallet className={`h-6 w-6 ${
+                <WalletIcon className={`h-6 w-6 ${
                   netBalance >= 0 ? "text-purple-600" : "text-orange-600"
                 }`} />
               </div>

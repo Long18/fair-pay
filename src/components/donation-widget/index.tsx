@@ -5,9 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { useDonationSettings } from '@/hooks/use-donation-settings';
 import { DonationDialog } from './DonationDialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+import { HeartIcon } from "@/components/ui/icons";
 // Admin email that can always see the widget (even when disabled)
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'admin@fairpay.com';
 
@@ -102,7 +102,7 @@ export function DonationWidget() {
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full w-full bg-gradient-to-br from-pink-500 to-red-500">
-                    <Heart className="h-8 w-8 text-white fill-current" />
+                    <HeartIcon className="h-8 w-8 text-white fill-current" />
                   </div>
                 )}
               </button>

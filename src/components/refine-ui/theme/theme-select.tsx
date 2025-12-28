@@ -8,10 +8,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { Check, ChevronDown, Monitor, Moon, Sun } from "lucide-react";
 import React from "react";
 import { useTheme } from "./theme-provider";
 
+import { CheckIcon, ChevronDownIcon, MonitorIcon, MoonIcon, SunIcon } from "@/components/ui/icons";
 type ThemeOption = {
   value: "light" | "dark" | "system";
   label: string;
@@ -22,17 +22,17 @@ const themeOptions: ThemeOption[] = [
   {
     value: "light",
     label: "Light",
-    icon: <Sun className="h-4 w-4" />,
+    icon: <SunIcon className="h-4 w-4" />,
   },
   {
     value: "dark",
     label: "Dark",
-    icon: <Moon className="h-4 w-4" />,
+    icon: <MoonIcon className="h-4 w-4" />,
   },
   {
     value: "system",
     label: "System",
-    icon: <Monitor className="h-4 w-4" />,
+    icon: <MonitorIcon className="h-4 w-4" />,
   },
 ];
 
@@ -66,7 +66,7 @@ export function ThemeSelect() {
             {currentTheme?.icon}
             <span>{currentTheme?.label}</span>
           </div>
-          <ChevronDown className="h-4 w-4 opacity-50" />
+          <ChevronDownIcon className="h-4 w-4 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-40 space-y-1">
@@ -87,7 +87,7 @@ export function ThemeSelect() {
               {option.icon}
               <span>{option.label}</span>
               {isSelected && (
-                <Check className="h-4 w-4 absolute right-2 text-primary" />
+                <CheckIcon className="h-4 w-4 absolute right-2 text-primary" />
               )}
             </DropdownMenuItem>
           );

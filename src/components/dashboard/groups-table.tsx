@@ -1,9 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Eye, Users } from "lucide-react";
 import { useGo } from "@refinedev/core";
 
+import { EyeIcon, UsersIcon } from "@/components/ui/icons";
 interface GroupBalance {
   group_id: string;
   group_name: string;
@@ -42,7 +42,7 @@ export const GroupsTable = ({ groups, isLoading }: GroupsTableProps) => {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Users className="h-5 w-5" />
+            <UsersIcon className="h-5 w-5" />
             Groups
           </CardTitle>
         </CardHeader>
@@ -62,13 +62,13 @@ export const GroupsTable = ({ groups, isLoading }: GroupsTableProps) => {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Users className="h-5 w-5" />
+            <UsersIcon className="h-5 w-5" />
             Groups
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-12">
-            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <UsersIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-foreground font-medium">No groups yet</p>
             <p className="text-sm text-muted-foreground mt-2">Create a group to start tracking shared expenses</p>
             <Button
@@ -87,7 +87,7 @@ export const GroupsTable = ({ groups, isLoading }: GroupsTableProps) => {
     <Card>
       <CardHeader>
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <Users className="h-5 w-5" />
+          <UsersIcon className="h-5 w-5" />
           Groups
           <span className="text-sm font-normal text-muted-foreground">({groups.length})</span>
         </CardTitle>
@@ -129,7 +129,7 @@ export const GroupsTable = ({ groups, isLoading }: GroupsTableProps) => {
                     size="sm"
                     onClick={() => go({ to: `/groups/show/${group.group_id}` })}
                   >
-                    <Eye className="h-4 w-4 mr-1" />
+                    <EyeIcon className="h-4 w-4 mr-1" />
                     View
                   </Button>
                 </TableCell>

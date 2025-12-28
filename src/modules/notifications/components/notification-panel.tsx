@@ -5,12 +5,12 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNotifications } from "../hooks/use-notifications";
 import { NotificationItem } from "./notification-item";
 import { useState } from "react";
 
+import { BellIcon } from "@/components/ui/icons";
 export const NotificationPanel = () => {
   const go = useGo();
   const {
@@ -33,7 +33,7 @@ export const NotificationPanel = () => {
           className="relative"
           aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
         >
-          <Bell className="h-5 w-5" />
+          <BellIcon className="h-5 w-5" />
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
               {unreadCount > 99 ? "99+" : unreadCount}
@@ -73,7 +73,7 @@ export const NotificationPanel = () => {
             </div>
           ) : displayNotifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4">
-              <Bell className="h-12 w-12 text-muted-foreground mb-3" />
+              <BellIcon className="h-12 w-12 text-muted-foreground mb-3" />
               <p className="text-sm font-medium text-foreground mb-1">
                 No new notifications
               </p>

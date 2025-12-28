@@ -5,8 +5,7 @@ import { GroupForm } from "../components/group-form";
 import { Group, GroupFormValues } from "../types";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-
+import { ArrowLeftIcon } from "@/components/ui/icons";
 export const GroupEdit = () => {
   const { id } = useParams<{ id: string }>();
   const go = useGo();
@@ -64,7 +63,7 @@ export const GroupEdit = () => {
         className="mb-4"
         onClick={() => go({ to: `/groups/show/${group.id}` })}
       >
-        <ArrowLeft className="h-4 w-4 mr-2" />
+        <ArrowLeftIcon className="h-4 w-4 mr-2" />
         Back to Group
       </Button>
 

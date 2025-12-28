@@ -71,6 +71,10 @@
       "bankInfoDescription": "Cấu hình thông tin ngân hàng VietQR để mở ứng dụng trực tiếp",
       "bankApp": "Ứng Dụng Ngân Hàng",
       "selectBank": "Chọn ứng dụng ngân hàng",
+      "selectYourBank": "Chọn Ứng Dụng Ngân Hàng",
+      "chooseBank": "Chọn ứng dụng ngân hàng của bạn",
+      "selectBankFirst": "Vui lòng chọn ứng dụng ngân hàng trước",
+      "selectBankToOpen": "Chọn ứng dụng ngân hàng để mở trực tiếp",
       "accountName": "Tên Chủ Tài Khoản",
       "bankAccount": "Số Tài Khoản",
       "bankCode": "Mã Ngân Hàng",
@@ -81,7 +85,10 @@
       "saved": "Lưu cài đặt ủng hộ thành công",
       "error": "Không thể lưu cài đặt ủng hộ",
       "openingBankApp": "Đang mở ứng dụng ngân hàng...",
+      "openBankApp": "Mở Ứng Dụng {{bankName}}",
+      "bankAppHint": "Mở ứng dụng {{bankName}} để hoàn tất thanh toán",
       "scanQRCode": "Vui lòng quét mã QR bằng ứng dụng ngân hàng",
+      "scanQRCodeHint": "Quét mã QR bằng ứng dụng ngân hàng của bạn",
       "tapToOpenBank": "Chạm để mở ứng dụng ngân hàng",
       "tapHint": "Chạm vào mã QR để mở ứng dụng ngân hàng trực tiếp"
     }

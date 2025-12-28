@@ -1,16 +1,9 @@
 import { useGo } from "@refinedev/core";
 import { cn } from "@/lib/utils";
 import { Notification } from "../types";
-import {
-  Receipt,
-  HandCoins,
-  UserPlus,
-  Users,
-  Edit,
-  Trash2
-} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
+import { ReceiptIcon, HandCoinsIcon, UserPlusIcon, UsersIcon, Trash2Icon } from "@/components/ui/icons";
 interface NotificationItemProps {
   notification: Notification;
   onMarkAsRead: (id: string) => void;
@@ -21,44 +14,44 @@ const getNotificationMeta = (type: Notification['type']) => {
   switch (type) {
     case 'expense_added':
       return {
-        icon: Receipt,
+        icon: ReceiptIcon,
         iconColor: 'text-purple-600',
         iconBgColor: 'bg-purple-100',
       };
     case 'payment_recorded':
       return {
-        icon: HandCoins,
+        icon: HandCoinsIcon,
         iconColor: 'text-green-600',
         iconBgColor: 'bg-green-100',
       };
     case 'friend_request':
       return {
-        icon: UserPlus,
+        icon: UserPlusIcon,
         iconColor: 'text-blue-600',
         iconBgColor: 'bg-blue-100',
       };
     case 'friend_accepted':
     case 'added_to_group':
       return {
-        icon: Users,
+        icon: UsersIcon,
         iconColor: 'text-indigo-600',
         iconBgColor: 'bg-indigo-100',
       };
     case 'expense_updated':
       return {
-        icon: Edit,
+        icon: PencilIcon,
         iconColor: 'text-orange-600',
         iconBgColor: 'bg-orange-100',
       };
     case 'expense_deleted':
       return {
-        icon: Trash2,
+        icon: Trash2Icon,
         iconColor: 'text-red-600',
         iconBgColor: 'bg-red-100',
       };
     default:
       return {
-        icon: Receipt,
+        icon: ReceiptIcon,
         iconColor: 'text-gray-600',
         iconBgColor: 'bg-gray-100',
       };

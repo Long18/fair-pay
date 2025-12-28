@@ -4,10 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { GroupMember } from "../types";
 import { Profile } from "@/modules/profile/types";
 import { Button } from "@/components/ui/button";
-import { Trash2, UserPlus } from "lucide-react";
 import { formatDateShort } from "@/lib/locale-utils";
 import { PaginationControls, PaginationMetadata } from "@/components/ui/pagination-controls";
 
+import { Trash2Icon, UserPlusIcon } from "@/components/ui/icons";
 interface MemberListProps {
   members: (GroupMember & { profile?: Profile })[];
   currentUserId: string;
@@ -38,7 +38,7 @@ export const MemberList = ({
           </CardTitle>
           {isAdmin && onAddMember && (
             <Button onClick={onAddMember} size="sm" className="w-full sm:w-auto">
-              <UserPlus className="h-4 w-4 mr-2" />
+              <UserPlusIcon className="h-4 w-4 mr-2" />
               Add Member
             </Button>
           )}
@@ -90,7 +90,7 @@ export const MemberList = ({
                       onClick={() => onRemoveMember(member.id)}
                       disabled={isLoading}
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                      <Trash2Icon className="h-4 w-4 text-destructive" />
                     </Button>
                   )}
               </div>

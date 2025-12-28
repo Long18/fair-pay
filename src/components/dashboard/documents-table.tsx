@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import { MoreVerticalIcon } from "@/components/ui/icons";
 interface Document {
   id: string;
   type: string;
@@ -47,7 +47,7 @@ export const DocumentsTable = ({ documents, currency = "USD" }: DocumentsTablePr
           Debt documents
         </CardTitle>
         <Button variant="ghost" size="icon" className="h-8 w-8">
-          <MoreVertical className="h-4 w-4 text-gray-500" />
+          <MoreVerticalIcon className="h-4 w-4 text-gray-500" />
         </Button>
       </CardHeader>
       <CardContent>

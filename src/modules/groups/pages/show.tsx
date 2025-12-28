@@ -4,7 +4,6 @@ import { useParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Pencil, Trash2, Plus } from "lucide-react";
 import { Group, GroupMember } from "../types";
 import { Profile } from "@/modules/profile/types";
 import { MemberList } from "../components/member-list";
@@ -25,6 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { formatDate } from "@/lib/locale-utils";
 
+import { ArrowLeftIcon, PencilIcon, Trash2Icon, PlusIcon } from "@/components/ui/icons";
 export const GroupShow = () => {
   const { id } = useParams<{ id: string }>();
   const go = useGo();
@@ -182,7 +182,7 @@ export const GroupShow = () => {
         className="mb-4"
         onClick={() => go({ to: "/groups" })}
       >
-        <ArrowLeft className="h-4 w-4 mr-2" />
+        <ArrowLeftIcon className="h-4 w-4 mr-2" />
         <span className="hidden sm:inline">Back to Groups</span>
         <span className="sm:hidden">Back</span>
       </Button>
@@ -212,7 +212,7 @@ export const GroupShow = () => {
                   className="w-full sm:w-auto"
                   onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <PlusIcon className="h-4 w-4 mr-2" />
                   Add Expense
                 </Button>
                 <div className="flex gap-2">
@@ -223,7 +223,7 @@ export const GroupShow = () => {
                       className="flex-1 sm:flex-none"
                       onClick={() => go({ to: `/groups/edit/${group.id}` })}
                     >
-                      <Pencil className="h-4 w-4 sm:mr-2" />
+                      <PencilIcon className="h-4 w-4 sm:mr-2" />
                       <span className="hidden sm:inline">Edit</span>
                     </Button>
                   )}
@@ -231,7 +231,7 @@ export const GroupShow = () => {
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="destructive" size="sm" className="flex-1 sm:flex-none">
-                          <Trash2 className="h-4 w-4 sm:mr-2" />
+                          <Trash2Icon className="h-4 w-4 sm:mr-2" />
                           <span className="hidden sm:inline">Delete</span>
                         </Button>
                       </AlertDialogTrigger>

@@ -12,8 +12,7 @@ import {
 } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
 import { UserSettings } from '../types';
-import { Loader2 } from 'lucide-react';
-
+import { Loader2Icon } from "@/components/ui/icons";
 const notificationSettingsSchema = z.object({
   notifications_enabled: z.boolean(),
   email_notifications: z.boolean(),
@@ -197,7 +196,7 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
         </div>
 
         <Button type="submit" disabled={isUpdating}>
-          {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isUpdating && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
           Lưu cài đặt
         </Button>
       </form>

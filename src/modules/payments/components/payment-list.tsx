@@ -1,12 +1,12 @@
 import { useList } from "@refinedev/core";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowRight } from "lucide-react";
 import { Payment } from "../types";
 import { formatDateShort, formatNumber } from "@/lib/locale-utils";
 import { PaginationControls, PaginationMetadata } from "@/components/ui/pagination-controls";
 import { useState } from "react";
 
+import { ArrowRightIcon } from "@/components/ui/icons";
 interface PaymentListProps {
   groupId?: string;
   friendshipId?: string;
@@ -101,7 +101,7 @@ export const PaymentList = ({ groupId, friendshipId }: PaymentListProps) => {
                       .toUpperCase() || "?"}
                   </AvatarFallback>
                 </Avatar>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                <ArrowRightIcon className="h-4 w-4 text-muted-foreground" />
                 <Avatar className="h-10 w-10">
                   <AvatarImage
                     src={payment.to_profile?.avatar_url || undefined}

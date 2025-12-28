@@ -1,4 +1,3 @@
-import { MoreHorizontal, Receipt, Banknote, Users, TrendingUp, TrendingDown, CheckCircle2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -43,6 +42,7 @@ import { PaginationControls } from "@/components/ui/pagination-controls";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { toast } from "sonner";
 
+import { MoreHorizontalIcon, ReceiptIcon, BanknoteIcon, UsersIcon, TrendingUpIcon, TrendingDownIcon, CheckCircle2Icon } from "@/components/ui/icons";
 interface DashboardDenseTableProps {
   disabled?: boolean;
 }
@@ -165,7 +165,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
       <div className="flex flex-col items-center justify-center p-16 text-center border-2 border-dashed rounded-2xl bg-gradient-to-br from-muted/30 via-muted/10 to-muted/30">
         <div className="relative">
           <div className="h-20 w-20 bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
-            <Receipt className="h-10 w-10 text-primary/60" />
+            <ReceiptIcon className="h-10 w-10 text-primary/60" />
           </div>
           <div className="absolute -top-1 -right-1 h-6 w-6 bg-primary/20 rounded-full animate-pulse" />
         </div>
@@ -191,7 +191,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
         <div className="flex items-center justify-between px-2">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center shadow-sm">
-              <Banknote className="h-5 w-5 text-emerald-600" />
+              <BanknoteIcon className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
               <h2 className="text-xl font-bold tracking-tight text-foreground">
@@ -276,7 +276,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                                   setSettleDialogOpen(true);
                                 }}
                               >
-                                <CheckCircle2 className="h-4 w-4 mr-1" />
+                                <CheckCircle2Icon className="h-4 w-4 mr-1" />
                                 {t('dashboard.settle', 'Settle')}
                               </Button>
                             ) : (
@@ -286,7 +286,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                                 className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-all duration-200"
                                 onClick={() => go({ to: `/profile/${item.counterparty_id}` })}
                               >
-                                <MoreHorizontal className="h-5 w-5" />
+                                <MoreHorizontalIcon className="h-5 w-5" />
                               </Button>
                             )}
                           </TableCell>
@@ -304,7 +304,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
           ) : (
             <div className="flex flex-col items-center justify-center p-12 text-center">
               <div className="h-16 w-16 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-2xl flex items-center justify-center mb-4 shadow-sm">
-                <Users className="h-8 w-8 text-emerald-600" />
+                <UsersIcon className="h-8 w-8 text-emerald-600" />
               </div>
               <p className="text-lg font-semibold text-foreground mb-1">{t('dashboard.allSettledUpNoDebts')}</p>
               <p className="text-sm text-muted-foreground">{t('balances.settleUp')}</p>
@@ -320,7 +320,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
         <div className="flex items-center justify-between px-2">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center shadow-sm">
-              <Receipt className="h-5 w-5 text-purple-600" />
+              <ReceiptIcon className="h-5 w-5 text-purple-600" />
             </div>
             <div>
               <h2 className="text-xl font-bold tracking-tight text-foreground">
@@ -352,7 +352,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                     <TableCell colSpan={6} className="text-center py-16">
                       <div className="flex flex-col items-center justify-center">
                         <div className="h-16 w-16 bg-gradient-to-br from-muted/50 to-muted/30 rounded-2xl flex items-center justify-center mb-4">
-                          <Receipt className="h-8 w-8 text-muted-foreground/50" />
+                          <ReceiptIcon className="h-8 w-8 text-muted-foreground/50" />
                         </div>
                         <p className="text-base font-semibold text-muted-foreground">{t('dashboard.noRecentActivity')}</p>
                       </div>
@@ -416,7 +416,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                               size="icon"
                               className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-primary/10"
                             >
-                              <MoreHorizontal className="h-5 w-5" />
+                              <MoreHorizontalIcon className="h-5 w-5" />
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -489,7 +489,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  <CheckCircle2Icon className="h-4 w-4 mr-2" />
                   {t('dashboard.confirmSettle', 'Confirm Settle')}
                 </>
               )}

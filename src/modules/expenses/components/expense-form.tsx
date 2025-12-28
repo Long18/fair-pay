@@ -34,7 +34,6 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { CalendarIcon, Repeat, Percent, DollarSign, UserPlus, UserMinus, X } from "lucide-react";
 import { MemberCombobox } from "@/components/ui/member-combobox";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -45,6 +44,7 @@ import { formatNumber } from "@/lib/locale-utils";
 import { RecurringExpenseForm } from "./recurring-expense-form";
 import { DEFAULT_RECURRING_VALUES } from "../types/recurring";
 
+import { RepeatIcon, PercentIcon, DollarSignIcon, UserPlusIcon, UserMinusIcon, XIcon } from "@/components/ui/icons";
 const expenseSchema = z.object({
   description: z.string().min(1, "Description is required").max(200),
   amount: z.number().positive("Amount must be positive"),
@@ -505,7 +505,7 @@ export const ExpenseForm = ({
                                 {member.full_name}
                                 {isCurrentUser && <Badge variant="outline" className="ml-1 text-xs px-1 py-0">You</Badge>}
                                 {!isCurrentUser && participants.length > 1 && (
-                                  <X className="h-3 w-3" />
+                                  <XIcon className="h-3 w-3" />
                                 )}
                               </Button>
                             );
@@ -581,7 +581,7 @@ export const ExpenseForm = ({
                   {/* Helper text for empty selection */}
                   {participants.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
-                      <UserPlus className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                      <UserPlusIcon className="h-10 w-10 mx-auto mb-3 opacity-50" />
                       <p className="text-sm font-medium mb-1">No participants selected</p>
                       <p className="text-xs">Use the search above to add people to split with</p>
                     </div>
@@ -628,7 +628,7 @@ export const ExpenseForm = ({
             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
                 <FormLabel className="flex items-center gap-2">
-                  <Repeat className="h-4 w-4" />
+                  <RepeatIcon className="h-4 w-4" />
                   Chi phí định kỳ
                 </FormLabel>
                 <FormDescription>

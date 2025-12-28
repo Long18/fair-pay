@@ -6,9 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Profile } from "@/modules/profile/types";
 import { formatNumber } from "@/lib/locale-utils";
-import { RefreshCw, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+import { RefreshCwIcon, AlertCircleIcon } from "@/components/ui/icons";
 /**
  * Balances Page - Shows detailed view of all debts and credits
  *
@@ -58,7 +58,7 @@ export const BalancesPage = () => {
               disabled={isRefreshing || isLoading}
               className="gap-2"
             >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCwIcon className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
           </div>
@@ -66,7 +66,7 @@ export const BalancesPage = () => {
           {/* Error State */}
           {error && (
             <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
+              <AlertCircleIcon className="h-4 w-4" />
               <AlertDescription>
                 Failed to load balances. Please try refreshing the page.
               </AlertDescription>
@@ -191,7 +191,7 @@ export const BalancesPage = () => {
             <Card className="border-border">
               <CardContent className="py-16 text-center">
                 <div className="space-y-3">
-                  <RefreshCw className="h-12 w-12 mx-auto animate-spin text-muted-foreground" />
+                  <RefreshCwIcon className="h-12 w-12 mx-auto animate-spin text-muted-foreground" />
                   <p className="text-muted-foreground">
                     Loading balances...
                   </p>

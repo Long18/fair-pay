@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
-
+import { TrendingUpIcon, TrendingDownIcon, MinusIcon } from "@/components/ui/icons";
 interface BalanceSummaryProps {
   totalOwed: number;
   totalOwedToMe: number;
@@ -22,7 +21,7 @@ export const BalanceSummary = ({
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-            <TrendingDown className="h-4 w-4 text-destructive" />
+            <TrendingDownIcon className="h-4 w-4 text-destructive" />
             You Owe
           </CardTitle>
         </CardHeader>
@@ -38,7 +37,7 @@ export const BalanceSummary = ({
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-green-500" />
+            <TrendingUpIcon className="h-4 w-4 text-green-500" />
             Owed to You
           </CardTitle>
         </CardHeader>
@@ -54,7 +53,7 @@ export const BalanceSummary = ({
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-            <Minus className="h-4 w-4 text-muted-foreground" />
+            <MinusIcon className="h-4 w-4 text-muted-foreground" />
             Net Balance
           </CardTitle>
         </CardHeader>

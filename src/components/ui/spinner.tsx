@@ -1,7 +1,7 @@
 import * as React from "react";
-import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import { Loader2Icon } from "@/components/ui/icons";
 export interface SpinnerProps extends React.HTMLAttributes<HTMLDivElement> {
   size?: "sm" | "md" | "lg" | "xl";
 }
@@ -19,7 +19,7 @@ export function Spinner({ size = "md", className, ...props }: SpinnerProps) {
       className={cn("flex items-center justify-center", className)}
       {...props}
     >
-      <Loader2 className={cn("animate-spin text-muted-foreground", sizeClasses[size])} />
+      <Loader2Icon className={cn("animate-spin text-muted-foreground", sizeClasses[size])} />
     </div>
   );
 }

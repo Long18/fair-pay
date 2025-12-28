@@ -3,9 +3,9 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { type BaseKey, useRefreshButton } from "@refinedev/core";
-import { RefreshCcw } from "lucide-react";
 import React from "react";
 
+import { RefreshCcwIcon } from "@/components/ui/icons";
 type RefreshButtonProps = {
   /**
    * Resource name for API data interactions. `identifier` of the resource can be used instead of the `name` of the resource.
@@ -64,7 +64,7 @@ export const RefreshButton = React.forwardRef<
       >
         {children ?? (
           <div className="flex items-center gap-2">
-            <RefreshCcw
+            <RefreshCcwIcon
               className={cn("h-4 w-4", {
                 "animate-spin": loading,
               })}

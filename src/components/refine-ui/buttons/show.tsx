@@ -2,9 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { type BaseKey, useShowButton } from "@refinedev/core";
-import { Eye } from "lucide-react";
 import React from "react";
 
+import { EyeIcon } from "@/components/ui/icons";
 type ShowButtonProps = {
   /**
    * Resource name for API data interactions. `identifier` of the resource can be used instead of the `name` of the resource.
@@ -68,7 +68,7 @@ export const ShowButton = React.forwardRef<
         >
           {children ?? (
             <div className="flex items-center gap-2 font-semibold">
-              <Eye className="h-4 w-4" />
+              <EyeIcon className="h-4 w-4" />
               <span>{label}</span>
             </div>
           )}

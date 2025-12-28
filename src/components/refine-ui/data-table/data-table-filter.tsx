@@ -2,7 +2,6 @@
 
 import { useTranslate, type CrudOperators } from "@refinedev/core";
 import type { Column, Table as ReactTable } from "@tanstack/react-table";
-import { Check, ChevronsUpDown, ListFilter, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { DateRange } from "react-day-picker";
 
@@ -26,6 +25,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
+import { CheckIcon, ChevronsUpDownIcon, ListFilterIcon, XIcon } from "@/components/ui/icons";
 export type DataTableFilterDropdownProps<TData> = {
   column: Column<TData>;
   contentClassName?: string;
@@ -63,7 +63,7 @@ export function DataTableFilterDropdown<TData>({
             triggerClassName
           )}
         >
-          <ListFilter className={cn("!h-3", "!w-3")} />
+          <ListFilterIcon className={cn("!h-3", "!w-3")} />
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -118,7 +118,7 @@ export function DataTableFilterDropdownActions({
           onClear();
         }}
       >
-        <X className={cn("w-3.5", "h-3.5", "text-muted-foreground")} />
+        <XIcon className={cn("w-3.5", "h-3.5", "text-muted-foreground")} />
         {t("buttons.clear", "Clear")}
       </Button>
 
@@ -374,7 +374,7 @@ export function DataTableFilterCombobox<TData>({
                                 handleRemove(val);
                               }}
                             >
-                              <X className={cn("!h-2", "!w-2")} />
+                              <XIcon className={cn("!h-2", "!w-2")} />
                             </span>
                           </Badge>
                         ))}
@@ -404,7 +404,7 @@ export function DataTableFilterCombobox<TData>({
                     </span>
                   )}
 
-                  <ChevronsUpDown
+                  <ChevronsUpDownIcon
                     className={cn("h-4", "w-4", "shrink-0", "opacity-50")}
                   />
                 </div>
@@ -432,7 +432,7 @@ export function DataTableFilterCombobox<TData>({
                         keywords={option.label?.split(" ") ?? []}
                       >
                         {option.label}
-                        <Check
+                        <CheckIcon
                           className={cn(
                             "ml-auto",
                             "h-4",
@@ -924,7 +924,7 @@ export function DataTableFilterOperatorSelect({
           <div className={cn("truncate")}>
             {selectedLabel ?? placeholderText}
           </div>
-          <ChevronsUpDown
+          <ChevronsUpDownIcon
             className={cn("ml-2", "h-4", "w-4", "shrink-0", "opacity-50")}
           />
         </Button>
@@ -944,7 +944,7 @@ export function DataTableFilterOperatorSelect({
                     setOpen(false);
                   }}
                 >
-                  <Check
+                  <CheckIcon
                     className={cn(
                       "mr-2",
                       "h-4",
