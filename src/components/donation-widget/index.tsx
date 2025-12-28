@@ -4,10 +4,12 @@ import { Profile } from '@/modules/profile/types';
 import { useTranslation } from 'react-i18next';
 import { useDonationSettings } from '@/hooks/use-donation-settings';
 import { DonationDialog } from './DonationDialog';
-import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// Admin email that can always see the widget (even when disabled)
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'admin@fairpay.com';
 
 export function DonationWidget() {
   const { data: identity } = useGetIdentity<Profile>();
@@ -15,10 +17,16 @@ export function DonationWidget() {
   const { data: settings, isLoading } = useDonationSettings();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const isAuthenticated = !!identity;
   const currentLang = i18n.language as 'en' | 'vi';
+  const isAdmin = identity?.email === ADMIN_EMAIL;
 
-  if (isLoading || !settings || !settings.is_enabled || !isAuthenticated) {
+  // Show widget if enabled OR if user is admin
+  if (isLoading || !settings) {
+    return null;
+  }
+
+  // Only show if enabled or admin is viewing
+  if (!settings.is_enabled && !isAdmin) {
     return null;
   }
 
@@ -27,39 +35,56 @@ export function DonationWidget() {
 
   return (
     <>
+      <style>{`
+        @keyframes float {
+          0%, 100% {
+            transform: translate(0, 0);
+          }
+          25% {
+            transform: translate(10px, -10px);
+          }
+          50% {
+            transform: translate(-5px, -15px);
+          }
+          75% {
+            transform: translate(-10px, -5px);
+          }
+        }
+
+        .floating-widget {
+          animation: float 8s ease-in-out infinite;
+        }
+      `}</style>
+
       <TooltipProvider delayDuration={300}>
-        <div className="fixed bottom-6 left-6 z-50">
+        <div className="fixed bottom-6 left-6 z-50 floating-widget">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                size="icon"
+              <button
                 onClick={() => setIsDialogOpen(true)}
                 className={cn(
-                  'h-14 w-14 rounded-full shadow-xl',
-                  'bg-gradient-to-br from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600',
-                  'text-white',
+                  'h-16 w-16 rounded-full shadow-xl',
+                  'bg-transparent border-2 border-white/20',
                   'transition-all duration-300 ease-out',
                   'hover:scale-110 active:scale-95',
-                  'hover:shadow-2xl hover:ring-4 hover:ring-pink-500/30',
+                  'hover:shadow-2xl',
                   'relative overflow-hidden group',
-                  'animate-pulse'
+                  'cursor-pointer'
                 )}
                 aria-label={ctaText}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-transparent opacity-60" />
-
-                <div className="absolute inset-0 rounded-full bg-pink-400 animate-ping opacity-20" />
-
                 {avatarUrl ? (
                   <img
                     src={avatarUrl}
                     alt="Donate"
-                    className="relative z-10 h-10 w-10 rounded-full object-cover"
+                    className="h-full w-full rounded-full object-cover"
                   />
                 ) : (
-                  <Heart className="relative z-10 h-6 w-6 fill-current" />
+                  <div className="flex items-center justify-center h-full w-full bg-gradient-to-br from-pink-500 to-red-500">
+                    <Heart className="h-8 w-8 text-white fill-current" />
+                  </div>
                 )}
-              </Button>
+              </button>
             </TooltipTrigger>
             <TooltipContent side="right" className="font-medium shadow-lg">
               {ctaText}
