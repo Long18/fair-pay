@@ -35,9 +35,7 @@ import {
 } from "@refinedev/core";
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { FairPayIcon } from "@/components/ui/icons";
-
-import { ChevronRightIcon } from "@/components/ui/icons";
+import { FairPayIcon, ChevronRightIcon, ListIcon } from "@/components/ui/icons";
 export function Sidebar() {
   const { open } = useShadcnSidebar();
   const { menuItems, selectedKey } = useMenu();
@@ -303,16 +301,25 @@ type IconProps = {
 };
 
 function ItemIcon({ icon, isSelected }: IconProps) {
-  return (
-    <div
-      className={cn("w-5 h-5", {
-        "text-muted-foreground": !isSelected,
-        "text-primary": isSelected,
-      })}
-    >
-      {icon ?? <ListIcon />}
-    </div>
-  );
+  const iconClassName = cn("w-5 h-5", {
+    "text-muted-foreground": !isSelected,
+    "text-primary": isSelected,
+  });
+
+  if (!icon) {
+    return <ListIcon className={iconClassName} />;
+  }
+
+  // If icon is already a React element, clone it with the correct className
+  if (React.isValidElement(icon)) {
+    const existingClassName = (icon as React.ReactElement<any>).props?.className || "";
+    return React.cloneElement(icon as React.ReactElement<any>, {
+      className: cn(iconClassName, existingClassName),
+    });
+  }
+
+  // Fallback: render as-is
+  return <>{icon}</>;
 }
 
 type SidebarButtonProps = React.ComponentProps<typeof Button> & {

@@ -4,9 +4,10 @@ import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 import {
   HomeIcon,
-  CustomersIcon,
-  BalancesIcon,
-  AuditLogsIcon,
+  UsersIcon,
+  UserPlusIcon,
+  WalletIcon,
+  ReceiptIcon,
   FairPayIcon,
 } from "./components/ui/icons";
 
@@ -125,7 +126,7 @@ function App() {
                   meta: {
                     canDelete: true,
                     label: "Groups",
-                    icon: <CustomersIcon className="w-5 h-5" />,
+                    icon: <UsersIcon className="w-5 h-5" />,
                   },
                 },
                 {
@@ -133,7 +134,7 @@ function App() {
                   list: "/friends",
                   meta: {
                     label: "Friends",
-                    icon: <CustomersIcon className="w-5 h-5" />,
+                    icon: <UserPlusIcon className="w-5 h-5" />,
                   },
                 },
                 {
@@ -179,7 +180,7 @@ function App() {
                   list: "/balances",
                   meta: {
                     label: "Balances",
-                    icon: <AuditLogsIcon className="w-5 h-5" />,
+                    icon: <WalletIcon className="w-5 h-5" />,
                   },
                 },
                 {
@@ -187,7 +188,7 @@ function App() {
                   list: "/reports",
                   meta: {
                     label: "Reports",
-                    icon: <AuditLogsIcon className="w-5 h-5" />,
+                    icon: <ReceiptIcon className="w-5 h-5" />,
                   },
                 },
                 {

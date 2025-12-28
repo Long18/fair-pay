@@ -1,8 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { LucideIcon } from "lucide-react";
+import React from "react";
+import type { IconProps } from "@/components/ui/icons";
 
 interface PaymentMethodCardProps {
-  icon: LucideIcon;
+  icon: React.FC<IconProps>;
   title: string;
   description: string;
   onClick?: () => void;

@@ -14,9 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { generateVietQRDeeplink, findBankById, VIETQR_BANKS } from '@/lib/vietqr-banks';
 import { toast } from 'sonner';
-import { ExternalLink, Smartphone, Landmark } from 'lucide-react';
-
-import { HeartIcon } from "@/components/ui/icons";
+import { HeartIcon, ArrowUpRightIcon, BanknoteIcon } from "@/components/ui/icons";
 interface DonationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -32,14 +30,14 @@ export function DonationDialog({ open, onOpenChange, settings }: DonationDialogP
 
   const bankInfo = settings.bank_info;
   const hasBankInfo = bankInfo?.account && bankInfo?.bank;
-  
+
   // Use selected bank or default to admin's configured bank
   const activeBankId = selectedBankId || bankInfo?.app || '';
   const bankDetails = activeBankId ? findBankById(activeBankId) : null;
 
   const handleOpenBankApp = (bankId?: string) => {
     const targetBankId = bankId || activeBankId;
-    
+
     if (hasBankInfo && targetBankId && bankInfo.account && bankInfo.bank) {
       const deeplink = generateVietQRDeeplink(
         targetBankId,
@@ -50,7 +48,7 @@ export function DonationDialog({ open, onOpenChange, settings }: DonationDialogP
       window.location.href = deeplink;
       const bank = findBankById(targetBankId);
       toast.success(
-        t('settings.donation.openingBankApp', 'Opening bank app...') + 
+        t('settings.donation.openingBankApp', 'Opening bank app...') +
         (bank ? ` (${bank.name})` : '')
       );
     } else {
@@ -106,13 +104,13 @@ export function DonationDialog({ open, onOpenChange, settings }: DonationDialogP
                 <div className="w-full space-y-3">
                   <div className="space-y-2">
                     <Label htmlFor="bank-select" className="text-sm font-medium flex items-center gap-2">
-                      <Landmark className="h-4 w-4" />
+                      <BanknoteIcon className="h-4 w-4" />
                       {t('settings.donation.selectYourBank', 'Select Your Bank App')}
                     </Label>
                     <Select value={selectedBankId} onValueChange={setSelectedBankId}>
                       <SelectTrigger id="bank-select" className="w-full">
                         <SelectValue placeholder={
-                          bankInfo?.app && findBankById(bankInfo.app)?.name || 
+                          bankInfo?.app && findBankById(bankInfo.app)?.name ||
                           t('settings.donation.chooseBank', 'Choose your bank app')
                         } />
                       </SelectTrigger>
@@ -136,9 +134,9 @@ export function DonationDialog({ open, onOpenChange, settings }: DonationDialogP
                         size="lg"
                         className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md"
                       >
-                        <Smartphone className="mr-2 h-5 w-5" />
+                        <BanknoteIcon className="mr-2 h-5 w-5" />
                         {t('settings.donation.openBankApp', 'Open {{bankName}} App', { bankName: bankDetails.name })}
-                        <ExternalLink className="ml-2 h-4 w-4" />
+                        <ArrowUpRightIcon className="ml-2 h-4 w-4" />
                       </Button>
                       <p className="text-xs text-muted-foreground text-center">
                         {t('settings.donation.bankAppHint', 'Opens {{bankName}} app to complete payment', { bankName: bankDetails.shortName })}

@@ -3,7 +3,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-import { CheckIcon } from "@/components/ui/icons";
+import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "@/components/ui/icons";
 function Select({
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Root>) {

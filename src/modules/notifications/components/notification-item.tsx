@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { Notification } from "../types";
 import { formatDistanceToNow } from "date-fns";
 
-import { ReceiptIcon, HandCoinsIcon, UserPlusIcon, UsersIcon, Trash2Icon } from "@/components/ui/icons";
+import { ReceiptIcon, HandCoinsIcon, UserPlusIcon, UsersIcon, Trash2Icon, PencilIcon } from "@/components/ui/icons";
 interface NotificationItemProps {
   notification: Notification;
   onMarkAsRead: (id: string) => void;
