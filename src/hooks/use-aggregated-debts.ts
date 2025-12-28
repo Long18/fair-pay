@@ -100,6 +100,8 @@ export const useAggregatedDebts = () => {
     useEffect(() => {
         if (!identity?.id) return;
 
+        console.log('Setting up real-time subscriptions for user:', identity.id);
+
         // Subscribe to changes in expenses table
         const expensesChannel = supabaseClient
             .channel('expenses-changes')
@@ -110,12 +112,14 @@ export const useAggregatedDebts = () => {
                     schema: 'public',
                     table: 'expenses',
                 },
-                () => {
-                    console.log('Expense changed, refetching debts...');
+                (payload) => {
+                    console.log('Expense changed, refetching debts...', payload);
                     fetchDebts();
                 }
             )
-            .subscribe();
+            .subscribe((status) => {
+                console.log('Expenses subscription status:', status);
+            });
 
         // Subscribe to changes in expense_splits table
         const splitsChannel = supabaseClient
@@ -127,15 +131,18 @@ export const useAggregatedDebts = () => {
                     schema: 'public',
                     table: 'expense_splits',
                 },
-                () => {
-                    console.log('Expense split changed, refetching debts...');
+                (payload) => {
+                    console.log('Expense split changed, refetching debts...', payload);
                     fetchDebts();
                 }
             )
-            .subscribe();
+            .subscribe((status) => {
+                console.log('Expense splits subscription status:', status);
+            });
 
         // Cleanup subscriptions on unmount
         return () => {
+            console.log('Cleaning up real-time subscriptions');
             supabaseClient.removeChannel(expensesChannel);
             supabaseClient.removeChannel(splitsChannel);
         };
