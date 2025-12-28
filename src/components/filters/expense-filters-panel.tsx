@@ -18,12 +18,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Filter, X } from "lucide-react";
 import { ExpenseFilters, DateFilterOption } from "./types";
 import { EXPENSE_CATEGORIES } from "@/modules/expenses/types";
 import { getCategoryMeta } from "@/modules/expenses/lib/categories";
 import { format } from "date-fns";
 
+import { FilterIcon, XIcon } from "@/components/ui/icons";
 interface ExpenseFiltersPanelProps {
   filters: ExpenseFilters;
   onFiltersChange: (filters: Partial<ExpenseFilters>) => void;
@@ -133,7 +133,7 @@ export const ExpenseFiltersPanel = ({
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
-          <Filter className="h-4 w-4" />
+          <FilterIcon className="h-4 w-4" />
           Filters
         </Button>
       </SheetTrigger>
@@ -292,7 +292,7 @@ export const ExpenseFiltersPanel = ({
             className="flex-1"
             onClick={handleClear}
           >
-            <X className="h-4 w-4 mr-2" />
+            <XIcon className="h-4 w-4 mr-2" />
             Clear All
           </Button>
           <Button

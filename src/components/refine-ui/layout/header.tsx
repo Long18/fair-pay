@@ -20,11 +20,11 @@ import {
   useGo,
   useGetIdentity,
 } from "@refinedev/core";
-import { LogOutIcon, UserIcon, Search, Settings, Heart } from "lucide-react";
 import { NotificationPanel } from "@/modules/notifications";
 import { SearchModal, useSearchShortcut } from "@/components/global-search";
 import { Profile } from "@/modules/profile/types";
 
+import { LogOutIcon, UserIcon, SearchIcon, SettingsIcon, HeartIcon } from "@/components/ui/icons";
 export const Header = () => {
   const { isMobile } = useSidebar();
 
@@ -76,7 +76,7 @@ function DesktopHeader() {
               className="w-full justify-start text-muted-foreground bg-muted/50 rounded-full h-9 px-5 hover:bg-muted/80 border-none"
               onClick={() => setSearchOpen(true)}
             >
-              <Search className="h-4 w-4 mr-2" />
+              <SearchIcon className="h-4 w-4 mr-2" />
               <span className="text-sm">{t('header.search')}</span>
             </Button>
           </div>
@@ -157,7 +157,7 @@ function MobileHeader() {
             onClick={() => setSearchOpen(true)}
             aria-label="Search"
           >
-            <Search className="h-4 w-4" />
+            <SearchIcon className="h-4 w-4" />
           </Button>
           <NotificationPanel />
           <ThemeToggle className={cn("h-8", "w-8")} />
@@ -233,7 +233,7 @@ const UserDropdown = () => {
             go({ to: "/settings" });
           }}
         >
-          <Settings className="h-4 w-4" />
+          <SettingsIcon className="h-4 w-4" />
           <span>{t('settings.title')}</span>
         </DropdownMenuItem>
         {isAdmin && (
@@ -242,7 +242,7 @@ const UserDropdown = () => {
               go({ to: "/settings/donation" });
             }}
           >
-            <Heart className="h-4 w-4" />
+            <HeartIcon className="h-4 w-4" />
             <span>{t('settings.donationSetup')}</span>
           </DropdownMenuItem>
         )}

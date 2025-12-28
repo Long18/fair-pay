@@ -3,8 +3,7 @@
 import { useTheme } from "@/components/refine-ui/theme/theme-provider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Monitor, Moon, Sun } from "lucide-react";
-
+import { MonitorIcon, MoonIcon, SunIcon } from "@/components/ui/icons";
 type ThemeToggleProps = {
   className?: string;
 };
@@ -42,7 +41,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
         "w-10"
       )}
     >
-      <Sun
+      <SunIcon
         className={cn(
           "h-[1.2rem]",
           "w-[1.2rem]",
@@ -55,7 +54,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
           }
         )}
       />
-      <Moon
+      <MoonIcon
         className={cn(
           "absolute",
           "h-[1.2rem]",
@@ -70,7 +69,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
           }
         )}
       />
-      <Monitor
+      <MonitorIcon
         className={cn(
           "absolute",
           "h-[1.2rem]",

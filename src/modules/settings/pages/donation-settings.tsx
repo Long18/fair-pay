@@ -11,9 +11,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Loader2, Upload, Image as ImageIcon } from 'lucide-react';
 import { VIETQR_BANKS } from '@/lib/vietqr-banks';
 
+import { Loader2Icon, UploadIcon } from "@/components/ui/icons";
 export const DonationSettings = () => {
   const { t, i18n } = useTranslation();
   const { data: settings, isLoading } = useDonationSettings();
@@ -123,7 +123,7 @@ export const DonationSettings = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <Loader2Icon className="h-8 w-8 animate-spin" />
       </div>
     );
   }
@@ -330,7 +330,7 @@ export const DonationSettings = () => {
         >
           {uploading || updateSettings.isPending ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
               {t('common.saving', 'Saving...')}
             </>
           ) : (

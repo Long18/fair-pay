@@ -5,8 +5,7 @@ import { RecurringExpense } from '../types/recurring';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { EmptyState } from '@/components/refine-ui/empty-state';
-import { Repeat, Info } from 'lucide-react';
-
+import { RepeatIcon, InfoIcon } from "@/components/ui/icons";
 interface RecurringExpenseListProps {
   groupId?: string;
   friendshipId?: string;
@@ -41,7 +40,7 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
   if (recurring.length === 0) {
     return (
       <EmptyState
-        icon={<Repeat />}
+        icon={<RepeatIcon />}
         title="Chưa có chi phí định kỳ"
         description="Khi tạo chi phí, chọn 'Chi phí định kỳ' để tự động tạo chi phí theo lịch"
       />
@@ -51,7 +50,7 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
   return (
     <div className="space-y-4">
       <Alert>
-        <Info className="h-4 w-4" />
+        <InfoIcon className="h-4 w-4" />
         <AlertDescription>
           Chi phí định kỳ được tạo tự động vào 00:00 UTC mỗi ngày. Bạn có thể tạm dừng hoặc xóa
           bất kỳ lúc nào.

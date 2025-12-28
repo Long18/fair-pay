@@ -3,8 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Column } from "@tanstack/react-table";
-import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
-
+import { ArrowDownIcon, ArrowUpIcon, ChevronsUpDownIcon } from "@/components/ui/icons";
 export type DataTableSorterProps<TData> = {
   column: Column<TData>;
 } & React.ComponentProps<typeof Button>;
@@ -32,11 +31,11 @@ export function DataTableSorter<TData>({
       className={cn("data-[state=open]:bg-accent", "w-5 h-5", className)}
     >
       {column.getIsSorted() === "desc" ? (
-        <ArrowDown className={cn("text-primary", "!w-3", "!h-3")} />
+        <ArrowDownIcon className={cn("text-primary", "!w-3", "!h-3")} />
       ) : column.getIsSorted() === "asc" ? (
-        <ArrowUp className={cn("text-primary", "!w-3", "!h-3")} />
+        <ArrowUpIcon className={cn("text-primary", "!w-3", "!h-3")} />
       ) : (
-        <ChevronsUpDown
+        <ChevronsUpDownIcon
           className={cn("text-muted-foreground", "!w-3", "!h-3")}
         />
       )}

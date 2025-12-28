@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-
+import { PlusIcon } from "@/components/ui/icons";
 interface Note {
   date: string;
   year: string;
@@ -29,7 +28,7 @@ export const AccountingNotes = ({ notes, onAddNote }: AccountingNotesProps) => {
             onClick={onAddNote}
             className="text-sm text-red-400 hover:text-red-500 hover:bg-red-50"
           >
-            <Plus className="h-4 w-4 mr-1" />
+            <PlusIcon className="h-4 w-4 mr-1" />
             New note
           </Button>
         )}

@@ -82,4 +82,3 @@ export function findBankById(id: string): VietQRBank | undefined {
 export function findBankByCode(code: string): VietQRBank | undefined {
   return VIETQR_BANKS.find(bank => bank.code === code);
 }
-

@@ -2,7 +2,6 @@ import { useOne, useList, useGo, useGetIdentity } from "@refinedev/core";
 import { useParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Plus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Profile } from "@/modules/profile/types";
@@ -12,6 +11,7 @@ import { SimplifiedBalanceView, PaymentList, useBalanceCalculation } from "@/mod
 import { useMemo } from "react";
 import { formatDateShort } from "@/lib/locale-utils";
 
+import { ArrowLeftIcon, PlusIcon } from "@/components/ui/icons";
 export const FriendShow = () => {
   const { id } = useParams<{ id: string }>();
   const go = useGo();
@@ -164,7 +164,7 @@ export const FriendShow = () => {
         className="mb-4"
         onClick={() => go({ to: "/friends" })}
       >
-        <ArrowLeft className="h-4 w-4 mr-2" />
+        <ArrowLeftIcon className="h-4 w-4 mr-2" />
         <span className="hidden sm:inline">Back to Friends</span>
         <span className="sm:hidden">Back</span>
       </Button>
@@ -198,7 +198,7 @@ export const FriendShow = () => {
                 onClick={handleAddExpense}
                 className="w-full sm:w-auto"
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <PlusIcon className="h-4 w-4 mr-2" />
                 Add Expense
               </Button>
             </div>

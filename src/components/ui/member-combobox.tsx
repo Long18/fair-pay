@@ -1,7 +1,7 @@
 import * as React from "react";
-import { Check, ChevronsUpDown, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { CheckIcon, ChevronsUpDownIcon, SearchIcon } from "@/components/ui/icons";
 import {
   Command,
   CommandEmpty,
@@ -54,10 +54,10 @@ export function MemberCombobox({
           className="w-full justify-between"
         >
           <div className="flex items-center gap-2">
-            <Search className="h-4 w-4 opacity-50" />
+            <SearchIcon className="h-4 w-4 opacity-50" />
             <span className="text-muted-foreground">{placeholder}</span>
           </div>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
@@ -76,7 +76,7 @@ export function MemberCombobox({
                   }}
                   className="cursor-pointer"
                 >
-                  <Check
+                  <CheckIcon
                     className={cn(
                       "mr-2 h-4 w-4",
                       selectedIds.includes(member.id) ? "opacity-100" : "opacity-0"

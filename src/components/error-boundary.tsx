@@ -1,9 +1,9 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import { Sentry } from "@/lib/sentry";
 
+import { AlertTriangleIcon, RefreshCwIcon, HomeIcon } from "@/components/ui/icons";
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
@@ -107,7 +107,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <CardHeader>
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-destructive/10 rounded-full">
-                  <AlertTriangle className="h-6 w-6 text-destructive" />
+                  <AlertTriangleIcon className="h-6 w-6 text-destructive" />
                 </div>
                 <CardTitle>Something went wrong</CardTitle>
               </div>
@@ -148,14 +148,14 @@ export class ErrorBoundary extends Component<Props, State> {
                   className="gap-2"
                   disabled={this.state.retryCount >= this.maxRetries}
                 >
-                  <RefreshCw className="h-4 w-4" />
+                  <RefreshCwIcon className="h-4 w-4" />
                   {this.state.retryCount >= this.maxRetries
                     ? 'Max Retries Reached'
                     : `Try Again (${this.state.retryCount}/${this.maxRetries})`
                   }
                 </Button>
                 <Button onClick={() => (window.location.href = '/')} className="gap-2">
-                  <Home className="h-4 w-4" />
+                  <HomeIcon className="h-4 w-4" />
                   Go to Dashboard
                 </Button>
               </div>

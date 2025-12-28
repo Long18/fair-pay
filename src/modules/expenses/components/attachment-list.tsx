@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Trash2, FileImage, File as FileIcon, Eye } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +17,7 @@ import { useAttachments } from "../hooks/use-attachments";
 import { useState } from "react";
 import { formatDate } from "@/lib/locale-utils";
 
+import { DownloadIcon, Trash2Icon, FileImageIcon, EyeIcon } from "@/components/ui/icons";
 interface AttachmentListProps {
   attachments: Attachment[];
   canDelete?: boolean;
@@ -67,7 +67,7 @@ export const AttachmentList = ({
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <FileImage className="h-5 w-5" />
+            <FileImageIcon className="h-5 w-5" />
             Attachments ({attachments.length})
           </CardTitle>
         </CardHeader>
@@ -95,7 +95,7 @@ export const AttachmentList = ({
                           variant="secondary"
                           onClick={() => setViewingUrl(getAttachmentUrl(attachment.storage_path))}
                         >
-                          <Eye className="h-4 w-4" />
+                          <EyeIcon className="h-4 w-4" />
                         </Button>
                       )}
                       <Button
@@ -103,7 +103,7 @@ export const AttachmentList = ({
                         variant="secondary"
                         onClick={() => downloadAttachment(attachment)}
                       >
-                        <Download className="h-4 w-4" />
+                        <DownloadIcon className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
@@ -140,7 +140,7 @@ export const AttachmentList = ({
                         className="flex-1"
                         onClick={() => downloadAttachment(attachment)}
                       >
-                        <Download className="h-4 w-4 mr-1" />
+                        <DownloadIcon className="h-4 w-4 mr-1" />
                         Download
                       </Button>
                       {canDelete && (
@@ -151,7 +151,7 @@ export const AttachmentList = ({
                               variant="destructive"
                               disabled={deletingId === attachment.id}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2Icon className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>

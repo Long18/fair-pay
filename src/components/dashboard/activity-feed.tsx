@@ -1,11 +1,11 @@
 import { useGo } from "@refinedev/core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Receipt, HandCoins, Activity } from "lucide-react";
 import { ActivityItem } from "@/hooks/use-recent-activity";
 import { formatDistanceToNow } from "date-fns";
 import { formatNumber } from "@/lib/locale-utils";
 
+import { ReceiptIcon, HandCoinsIcon, ActivityIcon } from "@/components/ui/icons";
 interface ActivityFeedProps {
   items: ActivityItem[];
   isLoading: boolean;
@@ -31,7 +31,7 @@ export const ActivityFeed = ({ items, isLoading }: ActivityFeedProps) => {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Activity className="h-5 w-5" />
+            <ActivityIcon className="h-5 w-5" />
             Recent Activity
           </CardTitle>
         </CardHeader>
@@ -51,13 +51,13 @@ export const ActivityFeed = ({ items, isLoading }: ActivityFeedProps) => {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Activity className="h-5 w-5" />
+            <ActivityIcon className="h-5 w-5" />
             Recent Activity
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-12">
-            <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <ActivityIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-foreground font-medium">No activity yet</p>
             <p className="text-sm text-muted-foreground mt-2">
               Create your first expense to get started
@@ -72,7 +72,7 @@ export const ActivityFeed = ({ items, isLoading }: ActivityFeedProps) => {
     <Card>
       <CardHeader>
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <Activity className="h-5 w-5" />
+          <ActivityIcon className="h-5 w-5" />
           Recent Activity
           <span className="text-sm font-normal text-muted-foreground">({items.length})</span>
         </CardTitle>
@@ -91,9 +91,9 @@ export const ActivityFeed = ({ items, isLoading }: ActivityFeedProps) => {
                   : "bg-green-100"
               }`}>
                 {item.type === "expense" ? (
-                  <Receipt className="h-4 w-4 text-destructive" />
+                  <ReceiptIcon className="h-4 w-4 text-destructive" />
                 ) : (
-                  <HandCoins className="h-4 w-4 text-green-600" />
+                  <HandCoinsIcon className="h-4 w-4 text-green-600" />
                 )}
               </div>
               <div className="flex-1 min-w-0">

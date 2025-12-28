@@ -2,9 +2,9 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Upload, X, FileImage, File as FileIcon } from "lucide-react";
 import { toast } from "sonner";
 
+import { UploadIcon, XIcon, FileImageIcon } from "@/components/ui/icons";
 export interface AttachmentFile {
   file: File;
   preview?: string;
@@ -129,7 +129,7 @@ export const AttachmentUpload = ({
         onDragLeave={handleDragLeave}
       >
         <CardContent className="flex flex-col items-center justify-center py-8 px-6 text-center">
-          <Upload className="h-10 w-10 text-muted-foreground mb-4" />
+          <UploadIcon className="h-10 w-10 text-muted-foreground mb-4" />
           <p className="text-sm font-medium mb-2">
             Drop receipt images or PDFs here
           </p>
@@ -178,7 +178,7 @@ export const AttachmentUpload = ({
                         {attachment.file.type === "application/pdf" ? (
                           <FileIcon className="h-8 w-8 text-red-500" />
                         ) : (
-                          <FileImage className="h-8 w-8 text-muted-foreground" />
+                          <FileImageIcon className="h-8 w-8 text-muted-foreground" />
                         )}
                       </div>
                     )}
@@ -213,7 +213,7 @@ export const AttachmentUpload = ({
                       className="h-8 w-8 shrink-0"
                       onClick={() => removeAttachment(index)}
                     >
-                      <X className="h-4 w-4" />
+                      <XIcon className="h-4 w-4" />
                     </Button>
                   </div>
                 </CardContent>

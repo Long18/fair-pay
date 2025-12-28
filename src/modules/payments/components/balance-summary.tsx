@@ -2,10 +2,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ArrowDown, ArrowUp } from "lucide-react";
 import { UserBalance } from "../types";
 import { formatCurrency as formatCurrencyUtil } from "@/lib/locale-utils";
 
+import { ArrowDownIcon, ArrowUpIcon } from "@/components/ui/icons";
 interface BalanceSummaryProps {
   balances: UserBalance[];
   currentUserId: string;
@@ -51,7 +51,7 @@ export const BalanceSummary = ({
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-green-100 rounded-full">
-                <ArrowDown className="h-5 w-5 text-green-600" />
+                <ArrowDownIcon className="h-5 w-5 text-green-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">You are owed</p>
@@ -67,7 +67,7 @@ export const BalanceSummary = ({
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-red-100 rounded-full">
-                <ArrowUp className="h-5 w-5 text-red-600" />
+                <ArrowUpIcon className="h-5 w-5 text-red-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">You owe</p>

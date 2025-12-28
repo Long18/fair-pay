@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { PlusCircle, Banknote, Users, UserPlus, Plus, X } from "lucide-react";
 import { useGo } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
+import { PlusCircleIcon, BanknoteIcon, UsersIcon, UserPlusIcon, PlusIcon, XIcon } from "@/components/ui/icons";
 interface FloatingActionButtonProps {
   disabled?: boolean;
 }
@@ -22,28 +22,28 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
 
   const actions = [
     {
-      icon: PlusCircle,
+      icon: PlusCircleIcon,
       title: t('dashboard.addExpense'),
       path: "/expenses/create",
       color: "bg-emerald-600 hover:bg-emerald-700",
       hoverRing: "hover:ring-emerald-500/30",
     },
     {
-      icon: Banknote,
+      icon: BanknoteIcon,
       title: t('dashboard.settleUp'),
       path: "/payments/create",
       color: "bg-green-600 hover:bg-green-700",
       hoverRing: "hover:ring-green-500/30",
     },
     {
-      icon: Users,
+      icon: UsersIcon,
       title: t('dashboard.createGroup'),
       path: "/groups/create",
       color: "bg-blue-600 hover:bg-blue-700",
       hoverRing: "hover:ring-blue-500/30",
     },
     {
-      icon: UserPlus,
+      icon: UserPlusIcon,
       title: t('dashboard.inviteFriend'),
       path: "/friends",
       color: "bg-purple-600 hover:bg-purple-700",
@@ -150,9 +150,9 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
                 {/* Icon with smooth transition */}
                 <div className="relative z-10 transition-transform duration-200">
                   {isOpen ? (
-                    <X className="h-6 w-6" />
+                    <XIcon className="h-6 w-6" />
                   ) : (
-                    <Plus className="h-6 w-6" />
+                    <PlusIcon className="h-6 w-6" />
                   )}
                 </div>
               </Button>

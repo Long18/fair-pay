@@ -1,9 +1,9 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
 import * as React from "react";
 
+import { Loader2Icon } from "@/components/ui/icons";
 interface LoadingOverlayProps extends React.HTMLAttributes<HTMLDivElement> {
   loading?: boolean;
   children: React.ReactNode;
@@ -26,7 +26,7 @@ export const LoadingOverlay = React.forwardRef<
         )}
       >
         <div className="flex flex-col items-center gap-2">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2Icon className="h-8 w-8 animate-spin text-primary" />
         </div>
       </div>
     </div>

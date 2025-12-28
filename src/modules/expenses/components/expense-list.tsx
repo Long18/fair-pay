@@ -3,7 +3,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, X } from "lucide-react";
 import { ExpenseWithSplits } from "../types";
 import { CategoryIcon } from "./category-icon";
 import { formatDateShort, formatNumber } from "@/lib/locale-utils";
@@ -15,6 +14,7 @@ import {
 import { PaginationControls, PaginationMetadata } from "@/components/ui/pagination-controls";
 import { useState } from "react";
 
+import { EyeIcon, XIcon } from "@/components/ui/icons";
 interface ExpenseListProps {
   groupId?: string;
   friendshipId?: string;
@@ -106,7 +106,7 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
               className="h-7 px-2 text-xs"
               onClick={clearAllFilters}
             >
-              <X className="h-3 w-3 mr-1" />
+              <XIcon className="h-3 w-3 mr-1" />
               Clear All
             </Button>
           </div>
@@ -169,7 +169,7 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
                   size="sm"
                   onClick={() => go({ to: `/expenses/show/${expense.id}` })}
                 >
-                  <Eye className="h-4 w-4" />
+                  <EyeIcon className="h-4 w-4" />
                 </Button>
               </div>
             </div>

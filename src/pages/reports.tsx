@@ -5,7 +5,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Download, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -16,6 +15,7 @@ import { CategoryPieChart, SpendingTrendChart, SpendingSummaryStats } from '@/co
 import { Group } from '@/modules/groups/types';
 import { DateRange } from 'react-day-picker';
 
+import { DownloadIcon, Loader2Icon } from "@/components/ui/icons";
 export function ReportsPage() {
   const [preset, setPreset] = useState<DateRangePreset>('this_month');
   const [customRange, setCustomRange] = useState<DateRange>();
@@ -97,7 +97,7 @@ export function ReportsPage() {
         </div>
 
         <Button onClick={handleExportCSV} variant="outline" disabled={isLoading || breakdown.length === 0}>
-          <Download className="mr-2 h-4 w-4" />
+          <DownloadIcon className="mr-2 h-4 w-4" />
           Xuất CSV
         </Button>
       </div>
@@ -193,7 +193,7 @@ export function ReportsPage() {
       {/* Loading State */}
       {isLoading && (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <Loader2Icon className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       )}
 

@@ -2,7 +2,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Info } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -13,6 +12,7 @@ import { useSimplifiedBalances, useMySimplifiedDebts } from "../hooks/use-simpli
 import { UserBalance } from "../types";
 import { formatCurrency as formatCurrencyUtil } from "@/lib/locale-utils";
 
+import { ArrowRightIcon, InfoIcon } from "@/components/ui/icons";
 interface SimplifiedBalanceViewProps {
   balances: UserBalance[];
   currentUserId: string;
@@ -50,7 +50,7 @@ export const SimplifiedBalanceView = ({
         <Card className="border-blue-200 bg-blue-50">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
-              <Info className="h-5 w-5 text-blue-600 mt-0.5" />
+              <InfoIcon className="h-5 w-5 text-blue-600 mt-0.5" />
               <div>
                 <p className="font-medium text-blue-900">
                   Debts Simplified
@@ -156,7 +156,7 @@ export const SimplifiedBalanceView = ({
                     </Avatar>
                     <div className="flex items-center gap-2 flex-1">
                       <span className="text-sm text-muted-foreground">You</span>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                      <ArrowRightIcon className="h-4 w-4 text-muted-foreground" />
                       <span className="font-medium">{debt.to_user_name}</span>
                     </div>
                     <div className="text-right">
@@ -213,7 +213,7 @@ export const SimplifiedBalanceView = ({
                     </Avatar>
                     <div className="flex items-center gap-2 flex-1">
                       <span className="font-medium">{debt.from_user_name}</span>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                      <ArrowRightIcon className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm text-muted-foreground">You</span>
                     </div>
                     <div className="text-right">

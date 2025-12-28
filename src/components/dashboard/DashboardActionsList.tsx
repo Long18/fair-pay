@@ -1,6 +1,6 @@
-import { PlusCircle, Banknote, Users, UserPlus, ChevronRight } from "lucide-react";
 import { useGo } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
+import { PlusCircleIcon, BanknoteIcon, UsersIcon, UserPlusIcon, ChevronRightIcon } from "@/components/ui/icons";
 import {
   Tooltip,
   TooltipContent,
@@ -17,10 +17,10 @@ export function DashboardActionsList({ disabled = false }: DashboardActionsListP
   const { t } = useTranslation();
 
   const actions = [
-    { icon: PlusCircle, title: t('dashboard.addExpense'), desc: t('dashboard.recordNewExpense'), path: "/expenses/create" },
-    { icon: Banknote, title: t('dashboard.settleUp'), desc: t('dashboard.recordPaymentToSettle'), path: "/payments/create" },
-    { icon: Users, title: t('dashboard.createGroup'), desc: t('dashboard.startNewExpenseGroup'), path: "/groups/create" },
-    { icon: UserPlus, title: t('dashboard.inviteFriend'), desc: t('dashboard.addFriendsToSplit'), path: "/friends" },
+    { icon: PlusCircleIcon, title: t('dashboard.addExpense'), desc: t('dashboard.recordNewExpense'), path: "/expenses/create" },
+    { icon: BanknoteIcon, title: t('dashboard.settleUp'), desc: t('dashboard.recordPaymentToSettle'), path: "/payments/create" },
+    { icon: UsersIcon, title: t('dashboard.createGroup'), desc: t('dashboard.startNewExpenseGroup'), path: "/groups/create" },
+    { icon: UserPlusIcon, title: t('dashboard.inviteFriend'), desc: t('dashboard.addFriendsToSplit'), path: "/friends" },
   ];
 
   const handleClick = (path: string) => {
@@ -53,7 +53,7 @@ export function DashboardActionsList({ disabled = false }: DashboardActionsListP
                       <p className="text-xs text-muted-foreground mt-1.5">{action.desc}</p>
                     </div>
                   </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-transform group-hover:translate-x-1" />
+                  <ChevronRightIcon className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-transform group-hover:translate-x-1" />
                 </button>
               </TooltipTrigger>
               {disabled && (

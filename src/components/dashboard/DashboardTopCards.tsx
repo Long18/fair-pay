@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowUpRight, Wallet, AlertCircle } from "lucide-react";
 import { useGlobalBalance } from "@/hooks/use-global-balance";
+import { ArrowUpRightIcon, WalletIcon, AlertCircleIcon } from "@/components/ui/icons";
 import {
   Tooltip,
   TooltipContent,
@@ -54,14 +54,14 @@ export function DashboardTopCards({ disabled = false }: DashboardTopCardsProps) 
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-3">
               <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center text-primary">
-                <Wallet className="h-5 w-5" />
+                <WalletIcon className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-sm font-medium leading-none">Next Settlement</p>
                 <p className="text-xs text-muted-foreground mt-1">Pending actions</p>
               </div>
             </div>
-            {totalOwed > 0 && <AlertCircle className="h-4 w-4 text-orange-500" />}
+            {totalOwed > 0 && <AlertCircleIcon className="h-4 w-4 text-orange-500" />}
           </div>
           <div className="flex items-center gap-3 mt-4">
             <TooltipProvider delayDuration={0}>
@@ -97,7 +97,7 @@ export function DashboardTopCards({ disabled = false }: DashboardTopCardsProps) 
       {/* 3. Highlight Card (Net Balance) */}
       <Card className="bg-primary/5 border-primary/20 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 p-4 opacity-10">
-          <ArrowUpRight className="h-24 w-24 text-primary" />
+          <ArrowUpRightIcon className="h-24 w-24 text-primary" />
         </div>
         <CardContent className="p-6 relative z-10">
           <div className="space-y-2">

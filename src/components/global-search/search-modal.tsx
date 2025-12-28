@@ -6,20 +6,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Search,
-  Receipt,
-  Users,
-  UserCircle,
-  Clock,
-  X,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGlobalSearch } from "./use-global-search";
 import { SearchResult } from "./types";
 import { getCategoryMeta } from "@/modules/expenses/lib/categories";
 import { formatNumber } from "@/lib/locale-utils";
 
+import { SearchIcon, ReceiptIcon, UsersIcon, XIcon, CalendarIcon, UserIcon } from "@/components/ui/icons";
 interface SearchModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -115,11 +108,11 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
   const getResultIcon = (type: SearchResult["type"]) => {
     switch (type) {
       case "expense":
-        return Receipt;
+        return ReceiptIcon;
       case "group":
-        return Users;
+        return UsersIcon;
       case "friend":
-        return UserCircle;
+        return UserIcon;
     }
   };
 
@@ -128,7 +121,7 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
       <DialogContent className="max-w-2xl p-0 gap-0">
         {/* Search Input */}
         <div className="flex items-center gap-3 px-4 py-3 border-b">
-          <Search className="h-5 w-5 text-muted-foreground" />
+          <SearchIcon className="h-5 w-5 text-muted-foreground" />
           <Input
             placeholder="Search expenses, groups, friends..."
             value={query}
@@ -170,7 +163,7 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
                         className="h-auto px-3 py-1.5 text-sm"
                         onClick={() => handleSelectRecentSearch(search)}
                       >
-                        <Clock className="h-3 w-3 mr-1.5" />
+                        <CalendarIcon className="h-3 w-3 mr-1.5" />
                         {search}
                       </Button>
                     ))}
@@ -180,7 +173,7 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
 
               {/* Empty State */}
               <div className="text-center py-12">
-                <Search className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                <SearchIcon className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                 <p className="text-sm text-muted-foreground">
                   Start typing to search expenses, groups, and friends
                 </p>
@@ -192,7 +185,7 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
             </div>
           ) : totalResults === 0 ? (
             <div className="p-8 text-center">
-              <Search className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+              <SearchIcon className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
               <p className="text-sm font-medium mb-1">No results found</p>
               <p className="text-xs text-muted-foreground">
                 Try adjusting your search or filters

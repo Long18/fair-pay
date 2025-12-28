@@ -20,8 +20,7 @@ import {
 } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { UserSettings, CURRENCIES, DATE_FORMATS, THEMES, Theme, DateFormat } from '../types';
-import { Loader2 } from 'lucide-react';
-
+import { Loader2Icon } from "@/components/ui/icons";
 const displaySettingsSchema = z.object({
   default_currency: z.string(),
   date_format: z.enum(['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']),
@@ -142,7 +141,7 @@ export function DisplaySettingsForm({ settings, onSave, isUpdating }: DisplaySet
         />
 
         <Button type="submit" disabled={isUpdating}>
-          {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isUpdating && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
           Lưu cài đặt
         </Button>
       </form>

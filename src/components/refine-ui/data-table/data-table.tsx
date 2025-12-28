@@ -4,7 +4,6 @@ import type { BaseRecord, HttpError } from "@refinedev/core";
 import type { UseTableReturnType } from "@refinedev/react-table";
 import type { Column } from "@tanstack/react-table";
 import { flexRender } from "@tanstack/react-table";
-import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
@@ -18,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
+import { Loader2Icon } from "@/components/ui/icons";
 type DataTableProps<TData extends BaseRecord> = {
   table: UseTableReturnType<TData, HttpError>;
 };
@@ -143,7 +143,7 @@ export function DataTable<TData extends BaseRecord>({
                     colSpan={columns.length}
                     className={cn("absolute", "inset-0", "pointer-events-none")}
                   >
-                    <Loader2
+                    <Loader2Icon
                       className={cn(
                         "absolute",
                         "top-1/2",

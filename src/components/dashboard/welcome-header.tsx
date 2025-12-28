@@ -1,5 +1,5 @@
-import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ChevronDownIcon } from "@/components/ui/icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,7 +39,7 @@ export const WelcomeHeader = ({
                 className="min-w-[200px] justify-between border-2 border-green-500 text-gray-900 hover:bg-green-50 font-medium"
               >
                 {selectedCreditor || "Select creditor"}
-                <ChevronDown className="ml-2 h-4 w-4" />
+                <ChevronDownIcon className="ml-2 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-[200px]">

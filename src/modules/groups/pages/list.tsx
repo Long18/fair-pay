@@ -3,10 +3,10 @@ import { useTable } from "@refinedev/react-table";
 import { DataTable } from "@/components/refine-ui/data-table/data-table";
 import { EmptyState } from "@/components/refine-ui/empty-state";
 import { Button } from "@/components/ui/button";
-import { Plus, Users } from "lucide-react";
 import { useGroupColumns } from "../components/group-table-columns";
 import { Group } from "../types";
 
+import { PlusIcon, UsersIcon } from "@/components/ui/icons";
 export const GroupList = () => {
   const go = useGo();
   const columns = useGroupColumns();
@@ -33,7 +33,7 @@ export const GroupList = () => {
           </p>
         </div>
         <Button onClick={() => go({ to: "/groups/create" })}>
-          <Plus className="h-4 w-4 mr-2" />
+          <PlusIcon className="h-4 w-4 mr-2" />
           Create Group
         </Button>
       </div>
@@ -42,7 +42,7 @@ export const GroupList = () => {
         <DataTable table={table} />
       ) : (
         <EmptyState
-          icon={<Users />}
+          icon={<UsersIcon />}
           title="No groups yet"
           description="Create your first group to start splitting expenses with friends and family."
           action={{

@@ -1,7 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, MoreVertical } from "lucide-react";
-
+import { AlertCircleIcon, MoreVerticalIcon } from "@/components/ui/icons";
 interface CreditorCardProps {
   name: string;
   logo?: string;
@@ -52,13 +51,13 @@ export const CreditorCard = ({
             onClick={onMenuClick}
             className="h-8 w-8 text-gray-500 hover:text-gray-700"
           >
-            <MoreVertical className="h-4 w-4" />
+            <MoreVerticalIcon className="h-4 w-4" />
           </Button>
         </div>
 
         {hasIssue && (
           <div className="flex items-center gap-2 mb-4 p-2 bg-red-50 rounded-lg">
-            <AlertCircle className="h-4 w-4 text-red-500" />
+            <AlertCircleIcon className="h-4 w-4 text-red-500" />
             <span className="text-sm font-medium text-red-700">Payment issue</span>
           </div>
         )}

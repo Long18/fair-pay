@@ -33,11 +33,11 @@ import {
   useRefineOptions,
   type TreeMenuItem,
 } from "@refinedev/core";
-import { ChevronRight, ListIcon } from "lucide-react";
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { FairPayIcon } from "@/components/ui/icons";
 
+import { ChevronRightIcon } from "@/components/ui/icons";
 export function Sidebar() {
   const { open } = useShadcnSidebar();
   const { menuItems, selectedKey } = useMenu();
@@ -143,7 +143,7 @@ function SidebarItemCollapsible({ item, selectedKey }: MenuItemProps) {
   const { name, children } = item;
 
   const chevronIcon = (
-    <ChevronRight
+    <ChevronRightIcon
       className={cn(
         "h-4",
         "w-4",

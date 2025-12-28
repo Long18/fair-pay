@@ -2,7 +2,6 @@ import { useOne, useGo, useGetIdentity } from "@refinedev/core";
 import { useParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Profile } from "../types";
 import { supabaseClient } from "@/utility/supabaseClient";
@@ -37,6 +36,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
+import { ArrowLeftIcon, CheckCircle2Icon, XCircleIcon } from "@/components/ui/icons";
 interface DebtSummary {
   counterparty_id: string;
   counterparty_name: string;
@@ -309,7 +309,7 @@ export const ProfileShow = () => {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => go({ to: "/" })} className="hover:scale-110 transition-transform">
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeftIcon className="h-4 w-4" />
         </Button>
         <div className="flex items-center gap-6">
           <Avatar className="h-20 w-20 border-4 border-background shadow-lg ring-4 ring-primary/10">
@@ -363,7 +363,7 @@ export const ProfileShow = () => {
                 }
               }}
             >
-              <CheckCircle2 className="h-4 w-4 mr-2" />
+              <CheckCircle2Icon className="h-4 w-4 mr-2" />
               {t('dashboard.settleAll', 'Settle All')}
             </Button>
           )}
@@ -431,7 +431,7 @@ export const ProfileShow = () => {
                                     setSettleDialogOpen(true);
                                   }}
                                 >
-                                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                                  <CheckCircle2Icon className="h-4 w-4 mr-1" />
                                   {t('dashboard.settleAll', 'Settle')}
                                 </Button>
                               )}
@@ -481,7 +481,7 @@ export const ProfileShow = () => {
                     className="bg-green-600 hover:bg-green-700"
                     onClick={() => setSettleActivitiesDialogOpen(true)}
                   >
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    <CheckCircle2Icon className="h-4 w-4 mr-2" />
                     {t('profile.settleSelected', `Settle ${selectedActivities.size}`)}
                   </Button>
                 </>
@@ -657,7 +657,7 @@ export const ProfileShow = () => {
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  <CheckCircle2Icon className="h-4 w-4 mr-2" />
                   {t('dashboard.confirmSettle', 'Confirm Settle')}
                 </>
               )}
@@ -696,7 +696,7 @@ export const ProfileShow = () => {
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  <CheckCircle2Icon className="h-4 w-4 mr-2" />
                   {t('profile.confirmSettleActivities', 'Confirm')}
                 </>
               )}

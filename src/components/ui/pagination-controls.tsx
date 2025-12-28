@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { ChevronLeftIcon, ChevronRightIcon, ChevronsLeftIcon, ChevronsRightIcon } from "@/components/ui/icons";
 export interface PaginationMetadata {
   totalItems: number;
   totalPages: number;
@@ -99,7 +99,7 @@ export function PaginationControls({
             className="h-9 w-9"
             aria-label={t('pagination.firstPage', 'First page')}
           >
-            <ChevronsLeft className="h-4 w-4" />
+            <ChevronsLeftIcon className="h-4 w-4" />
           </Button>
         )}
 
@@ -112,7 +112,7 @@ export function PaginationControls({
           className="h-9 w-9"
           aria-label={t('pagination.previousPage', 'Previous page')}
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeftIcon className="h-4 w-4" />
         </Button>
 
         {/* Page numbers */}
@@ -150,7 +150,7 @@ export function PaginationControls({
           className="h-9 w-9"
           aria-label={t('pagination.nextPage', 'Next page')}
         >
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRightIcon className="h-4 w-4" />
         </Button>
 
         {/* Last page button */}
@@ -163,7 +163,7 @@ export function PaginationControls({
             className="h-9 w-9"
             aria-label={t('pagination.lastPage', 'Last page')}
           >
-            <ChevronsRight className="h-4 w-4" />
+            <ChevronsRightIcon className="h-4 w-4" />
           </Button>
         )}
       </div>

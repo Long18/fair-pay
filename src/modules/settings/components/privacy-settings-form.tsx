@@ -13,8 +13,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { UserSettings, PROFILE_VISIBILITY_OPTIONS, ProfileVisibility } from '../types';
-import { Loader2 } from 'lucide-react';
-
+import { Loader2Icon } from "@/components/ui/icons";
 const privacySettingsSchema = z.object({
   allow_friend_requests: z.boolean(),
   allow_group_invites: z.boolean(),
@@ -127,7 +126,7 @@ export function PrivacySettingsForm({ settings, onSave, isUpdating }: PrivacySet
         />
 
         <Button type="submit" disabled={isUpdating}>
-          {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isUpdating && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
           Lưu cài đặt
         </Button>
       </form>

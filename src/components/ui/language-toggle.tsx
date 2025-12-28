@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next';
 import { Button } from './button';
-import { Globe, Check } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,6 +8,7 @@ import {
 } from './dropdown-menu';
 import { cn } from '@/lib/utils';
 
+import { GlobeIcon, CheckIcon } from "@/components/ui/icons";
 interface LanguageToggleProps {
   className?: string;
 }
@@ -25,7 +25,7 @@ export const LanguageToggle = ({ className }: LanguageToggleProps) => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className={cn(className)}>
-          <Globe className="h-[1.2rem] w-[1.2rem]" />
+          <GlobeIcon className="h-[1.2rem] w-[1.2rem]" />
           <span className="sr-only">Toggle language</span>
         </Button>
       </DropdownMenuTrigger>
@@ -34,7 +34,7 @@ export const LanguageToggle = ({ className }: LanguageToggleProps) => {
           <span className="flex items-center gap-2 w-full">
             English
             {(currentLanguage === 'en' || currentLanguage.startsWith('en')) && (
-              <Check className="h-4 w-4 ml-auto" />
+              <CheckIcon className="h-4 w-4 ml-auto" />
             )}
           </span>
         </DropdownMenuItem>
@@ -42,7 +42,7 @@ export const LanguageToggle = ({ className }: LanguageToggleProps) => {
           <span className="flex items-center gap-2 w-full">
             Tiếng Việt
             {(currentLanguage === 'vi' || currentLanguage.startsWith('vi')) && (
-              <Check className="h-4 w-4 ml-auto" />
+              <CheckIcon className="h-4 w-4 ml-auto" />
             )}
           </span>
         </DropdownMenuItem>

@@ -1,8 +1,7 @@
 import { useGo } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Plus, Users } from "lucide-react";
-
+import { PlusIcon, UsersIcon } from "@/components/ui/icons";
 export const QuickActions = () => {
   const { t } = useTranslation();
   const go = useGo();
@@ -14,7 +13,7 @@ export const QuickActions = () => {
         onClick={() => go({ to: "/groups/create" })}
         className="flex-1"
       >
-        <Users className="mr-2 h-5 w-5" />
+        <UsersIcon className="mr-2 h-5 w-5" />
         {t('dashboard.newGroup')}
       </Button>
       <Button
@@ -23,7 +22,7 @@ export const QuickActions = () => {
         variant="outline"
         className="flex-1"
       >
-        <Plus className="mr-2 h-5 w-5" />
+        <PlusIcon className="mr-2 h-5 w-5" />
         {t('dashboard.addExpense')}
       </Button>
     </div>

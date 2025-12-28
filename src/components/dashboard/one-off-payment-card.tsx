@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Wallet } from "lucide-react";
-
+import { WalletIcon } from "@/components/ui/icons";
 interface OneOffPaymentCardProps {
   discountPercentage: number;
   discountedAmount: number;
@@ -23,7 +22,7 @@ export const OneOffPaymentCard = ({
     <Card className="border-green-200 bg-gradient-to-br from-green-50 to-green-100 shadow-sm">
       <CardHeader>
         <CardTitle className="text-sm font-medium text-gray-700 flex items-center gap-2">
-          <Wallet className="h-5 w-5" />
+          <WalletIcon className="h-5 w-5" />
           One Off Payment
         </CardTitle>
       </CardHeader>

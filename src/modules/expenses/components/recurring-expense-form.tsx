@@ -16,10 +16,10 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { InfoIcon } from "@/components/ui/icons";
 import {
   RecurringExpenseFormValues,
   RECURRING_FREQUENCY_LABELS,
@@ -45,7 +45,7 @@ export function RecurringExpenseForm({ control, isRecurring }: RecurringExpenseF
   return (
     <div className="space-y-4 border-t pt-4 mt-4">
       <div className="flex items-center gap-2 mb-4">
-        <Info className="h-4 w-4 text-muted-foreground" />
+        <InfoIcon className="h-4 w-4 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">
           Cấu hình chi phí định kỳ - hệ thống sẽ tự động tạo chi phí theo lịch
         </p>
@@ -227,7 +227,7 @@ export function RecurringExpenseForm({ control, isRecurring }: RecurringExpenseF
                 control={control}
                 render={({ field: intervalField }) => {
                   if (!startField.value) return <></>;
-                  
+
                   const nextDate = calculateNextOccurrence(
                     startField.value,
                     freqField.value as RecurringFrequency,
@@ -236,7 +236,7 @@ export function RecurringExpenseForm({ control, isRecurring }: RecurringExpenseF
 
                   return (
                     <Alert>
-                      <Info className="h-4 w-4" />
+                      <InfoIcon className="h-4 w-4" />
                       <AlertDescription>
                         <strong>Xem trước:</strong> Chi phí đầu tiên sẽ được tạo vào{' '}
                         <strong>{format(startField.value, 'PPP', { locale: vi })}</strong>.

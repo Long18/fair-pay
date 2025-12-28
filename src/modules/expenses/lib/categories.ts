@@ -1,19 +1,10 @@
-import {
-  UtensilsCrossed,
-  Car,
-  Home,
-  Tv,
-  ShoppingBag,
-  Zap,
-  Heart,
-  GraduationCap,
-  MoreHorizontal,
-  LucideIcon
-} from "lucide-react";
+import { CarIcon, HomeIcon, ZapIcon, HeartIcon, MoreHorizontalIcon, UtensilsIcon, MonitorIcon, ShoppingCartIcon, BriefcaseIcon } from "@/components/ui/icons";
+import type { IconProps } from "@/components/ui/icons";
+import React from "react";
 
 export interface CategoryMeta {
   name: string;
-  icon: LucideIcon;
+  icon: React.FC<IconProps>;
   color: string;
   bgColor: string;
 }
@@ -34,55 +25,55 @@ export interface CategoryMeta {
 export const CATEGORY_CONFIG: Record<string, CategoryMeta> = {
   'Food & Drink': {
     name: 'Food & Drink',
-    icon: UtensilsCrossed,
+    icon: UtensilsIcon,
     color: 'text-orange-600',
     bgColor: 'bg-orange-100',
   },
   'Transportation': {
     name: 'Transportation',
-    icon: Car,
+    icon: CarIcon,
     color: 'text-blue-600',
     bgColor: 'bg-blue-100',
   },
   'Accommodation': {
     name: 'Accommodation',
-    icon: Home,
+    icon: HomeIcon,
     color: 'text-purple-600',
     bgColor: 'bg-purple-100',
   },
   'Entertainment': {
     name: 'Entertainment',
-    icon: Tv,
+    icon: MonitorIcon,
     color: 'text-pink-600',
     bgColor: 'bg-pink-100',
   },
   'Shopping': {
     name: 'Shopping',
-    icon: ShoppingBag,
+    icon: ShoppingCartIcon,
     color: 'text-green-600',
     bgColor: 'bg-green-100',
   },
   'Utilities': {
     name: 'Utilities',
-    icon: Zap,
+    icon: ZapIcon,
     color: 'text-yellow-600',
     bgColor: 'bg-yellow-100',
   },
   'Healthcare': {
     name: 'Healthcare',
-    icon: Heart,
+    icon: HeartIcon,
     color: 'text-red-600',
     bgColor: 'bg-red-100',
   },
   'Education': {
     name: 'Education',
-    icon: GraduationCap,
+    icon: BriefcaseIcon,
     color: 'text-indigo-600',
     bgColor: 'bg-indigo-100',
   },
   'Other': {
     name: 'Other',
-    icon: MoreHorizontal,
+    icon: MoreHorizontalIcon,
     color: 'text-gray-600',
     bgColor: 'bg-gray-100',
   },

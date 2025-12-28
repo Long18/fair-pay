@@ -4,12 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, Trash2, ChevronRight } from "lucide-react";
 import { Profile } from "@/modules/profile/types";
 import { Friendship, Friend } from "../types";
 import { AddFriendModal } from "../components/add-friend-modal";
 import { toast } from "sonner";
 
+import { CheckIcon, XIcon, Trash2Icon, ChevronRightIcon } from "@/components/ui/icons";
 export const FriendList = () => {
   const { data: identity } = useGetIdentity<Profile>();
   const updateMutation = useUpdate();
@@ -168,7 +168,7 @@ export const FriendList = () => {
                         className="flex-1 sm:flex-none"
                         onClick={() => handleAccept(friend.friendship_id)}
                       >
-                        <Check className="h-4 w-4 sm:mr-1" />
+                        <CheckIcon className="h-4 w-4 sm:mr-1" />
                         <span className="hidden sm:inline">Accept</span>
                       </Button>
                       <Button
@@ -177,7 +177,7 @@ export const FriendList = () => {
                         className="flex-1 sm:flex-none"
                         onClick={() => handleReject(friend.friendship_id)}
                       >
-                        <X className="h-4 w-4 sm:mr-1" />
+                        <XIcon className="h-4 w-4 sm:mr-1" />
                         <span className="hidden sm:inline">Reject</span>
                       </Button>
                     </div>
@@ -273,10 +273,10 @@ export const FriendList = () => {
                           handleRemoveFriend(friend.friendship_id, friend.full_name);
                         }}
                       >
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                        <Trash2Icon className="h-4 w-4 text-destructive" />
                         <span className="hidden sm:inline ml-1">Remove</span>
                       </Button>
-                      <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
+                      <ChevronRightIcon className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
                     </div>
                   </div>
                 ))}

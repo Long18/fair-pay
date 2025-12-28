@@ -2,7 +2,6 @@ import { useOne, useGo, useGetIdentity } from "@refinedev/core";
 import { useParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, HandCoins } from "lucide-react";
 import { PaymentWithProfiles } from "../types";
 import { Profile } from "@/modules/profile/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
 import { useTranslation } from "react-i18next";
 
+import { ArrowLeftIcon, HandCoinsIcon } from "@/components/ui/icons";
 interface PaymentExtended extends PaymentWithProfiles {
   groups?: { id: string; name: string };
   friendships?: { id: string };
@@ -68,7 +68,7 @@ export const PaymentShow = () => {
           size="icon"
           onClick={() => go({ to: "/" })}
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeftIcon className="h-5 w-5" />
         </Button>
         <div>
           <h1 className="text-2xl font-bold">Payment Details</h1>
@@ -82,7 +82,7 @@ export const PaymentShow = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <HandCoins className="h-5 w-5 text-green-600" />
+            <HandCoinsIcon className="h-5 w-5 text-green-600" />
             Payment Amount
           </CardTitle>
         </CardHeader>

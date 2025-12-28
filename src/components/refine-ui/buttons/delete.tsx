@@ -7,9 +7,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { type BaseKey, useDeleteButton } from "@refinedev/core";
-import { Loader2, Trash } from "lucide-react";
 import React from "react";
 
+import { Loader2Icon, TrashIcon } from "@/components/ui/icons";
 type DeleteButtonProps = {
   /**
    * Resource name for API data interactions. `identifier` of the resource can be used instead of the `name` of the resource.
@@ -75,10 +75,10 @@ export const DeleteButton = React.forwardRef<
             ref={ref}
             disabled={isDisabled}
           >
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {loading && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
             {children ?? (
               <div className="flex items-center gap-2 font-semibold">
-                <Trash className="h-4 w-4" />
+                <TrashIcon className="h-4 w-4" />
                 <span>{label}</span>
               </div>
             )}

@@ -1,8 +1,8 @@
-import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+import { XIcon } from "@/components/ui/icons";
 interface FilterChipProps {
   label: string;
   value: string;
@@ -30,7 +30,7 @@ export const FilterChip = ({ label, value, onRemove, className }: FilterChipProp
           onRemove();
         }}
       >
-        <X className="h-3 w-3" />
+        <XIcon className="h-3 w-3" />
       </Button>
     </Badge>
   );

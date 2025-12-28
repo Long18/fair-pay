@@ -7,9 +7,9 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useGo, useResourceParams, useTranslate } from "@refinedev/core";
-import { ChevronLeft, InfoIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { ChevronLeftIcon } from "@/components/ui/icons";
 /**
  * When the app is navigated to a non-existent route, refine shows a default error page.
  * A custom error component can be used for this error page.
@@ -123,7 +123,7 @@ export function ErrorComponent() {
           }}
           className={cn("flex", "items-center", "gap-2", "mx-auto")}
         >
-          <ChevronLeft className={cn("h-4", "w-4")} />
+          <ChevronLeftIcon className={cn("h-4", "w-4")} />
           {translate("pages.error.backHome", "Back to homepage")}
         </Button>
       </div>
