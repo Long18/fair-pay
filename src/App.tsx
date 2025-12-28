@@ -42,11 +42,13 @@ import { PrivacyPage } from "./pages/privacy";
 import { TermsPage } from "./pages/terms";
 import { ErrorBoundary } from "./components/error-boundary";
 import { supabaseClient } from "./utility";
+import { DonationWidget } from "./components/donation-widget";
 
 // Lazy loaded components (code splitting)
 const BalancesPage = lazy(() => import("./pages/balances").then(m => ({ default: m.BalancesPage })));
 const ReportsPage = lazy(() => import("./pages/reports").then(m => ({ default: m.ReportsPage })));
 const SettingsPage = lazy(() => import("./modules/settings").then(m => ({ default: m.SettingsPage })));
+const DonationSettings = lazy(() => import("./modules/settings").then(m => ({ default: m.DonationSettings })));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -305,6 +307,11 @@ function App() {
                       <SettingsPage />
                     </Suspense>
                   } />
+                  <Route path="/settings/donation" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <DonationSettings />
+                    </Suspense>
+                  } />
                   <Route path="/profile/edit" element={<ProfileEdit />} />
                   <Route path="*" element={<ErrorComponent />} />
                 </Route>
@@ -328,6 +335,7 @@ function App() {
               <RefineKbar />
               <UnsavedChangesNotifier />
               <DocumentTitle />
+              <DonationWidget />
             </Refine>
             <DevtoolsPanel />
           </DevtoolsProvider>
