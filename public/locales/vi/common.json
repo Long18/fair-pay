@@ -67,12 +67,23 @@
       "imagesDescription": "Tải lên ảnh đại diện và mã QR",
       "avatar": "Ảnh Đại Diện",
       "qrCode": "Ảnh Mã QR",
+      "bankInfo": "Thông Tin Ngân Hàng",
+      "bankInfoDescription": "Cấu hình thông tin ngân hàng VietQR để mở ứng dụng trực tiếp",
+      "bankApp": "Ứng Dụng Ngân Hàng",
+      "selectBank": "Chọn ứng dụng ngân hàng",
+      "accountName": "Tên Chủ Tài Khoản",
+      "bankAccount": "Số Tài Khoản",
+      "bankCode": "Mã Ngân Hàng",
       "text": "Nội Dung Văn Bản",
       "textDescription": "Tùy chỉnh văn bản theo ngôn ngữ",
       "ctaText": "Văn Bản Kêu Gọi",
       "donateMessage": "Tin Nhắn Ủng Hộ",
       "saved": "Lưu cài đặt ủng hộ thành công",
-      "error": "Không thể lưu cài đặt ủng hộ"
+      "error": "Không thể lưu cài đặt ủng hộ",
+      "openingBankApp": "Đang mở ứng dụng ngân hàng...",
+      "scanQRCode": "Vui lòng quét mã QR bằng ứng dụng ngân hàng",
+      "tapToOpenBank": "Chạm để mở ứng dụng ngân hàng",
+      "tapHint": "Chạm vào mã QR để mở ứng dụng ngân hàng trực tiếp"
     }
   }
 }

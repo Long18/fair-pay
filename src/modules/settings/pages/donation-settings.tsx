@@ -6,11 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { Loader2, Upload, Image as ImageIcon } from 'lucide-react';
+import { VIETQR_BANKS } from '@/lib/vietqr-banks';
 
 export const DonationSettings = () => {
   const { t, i18n } = useTranslation();
@@ -28,6 +30,12 @@ export const DonationSettings = () => {
   const [qrCodeFile, setQrCodeFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
+  // Bank info state
+  const [bankApp, setBankApp] = useState('');
+  const [bankAccount, setBankAccount] = useState('');
+  const [bankCode, setBankCode] = useState('');
+  const [accountName, setAccountName] = useState('');
+
   useEffect(() => {
     if (settings) {
       setIsEnabled(settings.is_enabled);
@@ -37,6 +45,14 @@ export const DonationSettings = () => {
       setDonateMessageVi(settings.donate_message.vi);
       setAvatarUrl(settings.avatar_image_url || '');
       setQrCodeUrl(settings.qr_code_image_url || '');
+
+      // Load bank info
+      if (settings.bank_info) {
+        setBankApp(settings.bank_info.app || '');
+        setBankAccount(settings.bank_info.account || '');
+        setBankCode(settings.bank_info.bank || '');
+        setAccountName(settings.bank_info.accountName || '');
+      }
     }
   }, [settings]);
 
@@ -85,6 +101,12 @@ export const DonationSettings = () => {
         qr_code_image_url: newQrCodeUrl || null,
         cta_text: { en: ctaTextEn, vi: ctaTextVi },
         donate_message: { en: donateMessageEn, vi: donateMessageVi },
+        bank_info: {
+          app: bankApp || undefined,
+          account: bankAccount || undefined,
+          bank: bankCode || undefined,
+          accountName: accountName || undefined,
+        },
       });
 
       toast.success(t('settings.donation.saved', 'Donation settings saved successfully'));
@@ -179,6 +201,62 @@ export const DonationSettings = () => {
                 />
               </div>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('settings.donation.bankInfo', 'Bank Information')}</CardTitle>
+          <CardDescription>
+            {t('settings.donation.bankInfoDescription', 'Configure VietQR bank information for direct app deeplinks')}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="bankApp">{t('settings.donation.bankApp', 'Bank App')}</Label>
+            <Select value={bankApp} onValueChange={setBankApp}>
+              <SelectTrigger>
+                <SelectValue placeholder={t('settings.donation.selectBank', 'Select bank app')} />
+              </SelectTrigger>
+              <SelectContent>
+                {VIETQR_BANKS.map((bank) => (
+                  <SelectItem key={bank.id} value={bank.id}>
+                    {bank.name} ({bank.code})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="accountName">{t('settings.donation.accountName', 'Account Holder Name')}</Label>
+            <Input
+              id="accountName"
+              value={accountName}
+              onChange={(e) => setAccountName(e.target.value)}
+              placeholder="NGUYEN VAN A"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="bankAccount">{t('settings.donation.bankAccount', 'Account Number')}</Label>
+            <Input
+              id="bankAccount"
+              value={bankAccount}
+              onChange={(e) => setBankAccount(e.target.value)}
+              placeholder="1234567890"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="bankCode">{t('settings.donation.bankCode', 'Bank Code')}</Label>
+            <Input
+              id="bankCode"
+              value={bankCode}
+              onChange={(e) => setBankCode(e.target.value)}
+              placeholder="VCB"
+            />
           </div>
         </CardContent>
       </Card>
