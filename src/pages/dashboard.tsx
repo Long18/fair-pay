@@ -17,7 +17,12 @@ export const Dashboard = () => {
   const { t } = useTranslation();
   const globalBalance = useGlobalBalance();
   const { data: debts = [], isLoading: debtsLoading } = useAggregatedDebts();
-  const { items: activities, isLoading: activitiesLoading } = usePaginatedActivities({ pageSize: 50 });
+  const {
+    items: activities,
+    metadata: activitiesMetadata,
+    setPage: setActivitiesPage,
+    isLoading: activitiesLoading
+  } = usePaginatedActivities({ pageSize: 10 });
 
   const [loading, setLoading] = useState(true);
 
@@ -57,7 +62,12 @@ export const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="activity" className="space-y-4">
-            <ActivityTable activities={activities} disabled={!isAuthenticated} />
+            <ActivityTable
+              activities={activities}
+              metadata={activitiesMetadata}
+              onPageChange={setActivitiesPage}
+              disabled={!isAuthenticated}
+            />
           </TabsContent>
         </Tabs>
       )}
