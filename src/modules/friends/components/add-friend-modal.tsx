@@ -183,12 +183,12 @@ export const AddFriendModal = () => {
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogTrigger asChild>
-        <Button size="lg">
+        <Button size="lg" className="w-full sm:w-auto">
           <UserPlus className="mr-2 h-5 w-5" />
           Add Friend
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md w-[calc(100vw-2rem)] sm:w-full">
         <DialogHeader>
           <DialogTitle>Add Friend</DialogTitle>
           <DialogDescription>
@@ -215,8 +215,8 @@ export const AddFriendModal = () => {
                           )}
                         >
                           {selectedUser ? (
-                            <div className="flex items-center gap-2">
-                              <Avatar className="h-5 w-5">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <Avatar className="h-5 w-5 shrink-0">
                                 <AvatarImage src={selectedUser.avatar_url || undefined} alt={selectedUser.full_name} />
                                 <AvatarFallback className="text-xs">
                                   {selectedUser.full_name
@@ -226,7 +226,7 @@ export const AddFriendModal = () => {
                                     .toUpperCase() || "?"}
                                 </AvatarFallback>
                               </Avatar>
-                              <span>{selectedUser.full_name}</span>
+                              <span className="truncate">{selectedUser.full_name}</span>
                             </div>
                           ) : (
                             <span>Search by name...</span>
@@ -256,8 +256,8 @@ export const AddFriendModal = () => {
                                 onSelect={() => handleSelectUser(user.id)}
                                 keywords={user.full_name?.split(" ") || []}
                               >
-                                <div className="flex items-center gap-2 w-full">
-                                  <Avatar className="h-6 w-6">
+                                <div className="flex items-center gap-2 w-full min-w-0">
+                                  <Avatar className="h-6 w-6 shrink-0">
                                     <AvatarImage src={user.avatar_url || undefined} alt={user.full_name} />
                                     <AvatarFallback className="text-xs">
                                       {user.full_name
@@ -267,10 +267,10 @@ export const AddFriendModal = () => {
                                         .toUpperCase() || "?"}
                                     </AvatarFallback>
                                   </Avatar>
-                                  <span className="flex-1">{user.full_name}</span>
+                                  <span className="flex-1 truncate min-w-0">{user.full_name}</span>
                                   <Check
                                     className={cn(
-                                      "h-4 w-4",
+                                      "h-4 w-4 shrink-0",
                                       field.value === user.id
                                         ? "opacity-100"
                                         : "opacity-0"

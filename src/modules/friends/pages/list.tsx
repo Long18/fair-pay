@@ -119,12 +119,12 @@ export const FriendList = () => {
   }
 
   return (
-    <div className="container max-w-4xl py-8">
+    <div className="container max-w-7xl px-4 sm:px-6 py-4 sm:py-8">
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold tracking-tight">Friends</h1>
-            <p className="text-muted-foreground mt-2">
+            <h1 className="text-2xl sm:text-4xl font-bold tracking-tight">Friends</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-2">
               Manage your friends and split expenses 1-on-1
             </p>
           </div>
@@ -142,12 +142,12 @@ export const FriendList = () => {
                 {pendingRequests.map((friend) => (
                   <div
                     key={friend.friendship_id}
-                    className="flex items-center justify-between p-3 border rounded-lg"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border rounded-lg"
                   >
-                    <div className="flex items-center gap-3">
-                      <Avatar>
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <Avatar className="h-10 w-10 sm:h-12 sm:w-12 shrink-0">
                         <AvatarImage src={friend.avatar_url || undefined} alt={friend.full_name} />
-                        <AvatarFallback>
+                        <AvatarFallback className="text-xs sm:text-sm">
                           {friend.full_name
                             ?.split(" ")
                             .map((n) => n[0])
@@ -155,28 +155,30 @@ export const FriendList = () => {
                             .toUpperCase() || "?"}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
-                        <div className="font-medium">{friend.full_name}</div>
-                        <div className="text-sm text-muted-foreground">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-sm sm:text-base truncate">{friend.full_name}</div>
+                        <div className="text-xs sm:text-sm text-muted-foreground">
                           Sent you a friend request
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 shrink-0">
                       <Button
                         size="sm"
+                        className="flex-1 sm:flex-none"
                         onClick={() => handleAccept(friend.friendship_id)}
                       >
-                        <Check className="h-4 w-4 mr-1" />
-                        Accept
+                        <Check className="h-4 w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Accept</span>
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
+                        className="flex-1 sm:flex-none"
                         onClick={() => handleReject(friend.friendship_id)}
                       >
-                        <X className="h-4 w-4 mr-1" />
-                        Reject
+                        <X className="h-4 w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Reject</span>
                       </Button>
                     </div>
                   </div>
@@ -197,12 +199,12 @@ export const FriendList = () => {
                 {sentRequests.map((friend) => (
                   <div
                     key={friend.friendship_id}
-                    className="flex items-center justify-between p-3 border rounded-lg"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border rounded-lg"
                   >
-                    <div className="flex items-center gap-3">
-                      <Avatar>
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <Avatar className="h-10 w-10 sm:h-12 sm:w-12 shrink-0">
                         <AvatarImage src={friend.avatar_url || undefined} alt={friend.full_name} />
-                        <AvatarFallback>
+                        <AvatarFallback className="text-xs sm:text-sm">
                           {friend.full_name
                             ?.split(" ")
                             .map((n) => n[0])
@@ -210,14 +212,15 @@ export const FriendList = () => {
                             .toUpperCase() || "?"}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
-                        <div className="font-medium">{friend.full_name}</div>
-                        <Badge variant="secondary">Pending</Badge>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-sm sm:text-base truncate">{friend.full_name}</div>
+                        <Badge variant="secondary" className="text-xs mt-1">Pending</Badge>
                       </div>
                     </div>
                     <Button
                       size="sm"
                       variant="ghost"
+                      className="w-full sm:w-auto shrink-0"
                       onClick={() => handleReject(friend.friendship_id)}
                     >
                       Cancel
@@ -244,13 +247,13 @@ export const FriendList = () => {
                 {acceptedFriends.map((friend) => (
                   <div
                     key={friend.friendship_id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={() => go({ to: `/friends/show/${friend.friendship_id}` })}
+                    className="flex items-center justify-between gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                    onClick={() => go({ to: `/friends/${friend.user_id}` })}
                   >
-                    <div className="flex items-center gap-3">
-                      <Avatar>
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                      <Avatar className="h-10 w-10 sm:h-12 sm:w-12 shrink-0">
                         <AvatarImage src={friend.avatar_url || undefined} alt={friend.full_name} />
-                        <AvatarFallback>
+                        <AvatarFallback className="text-xs sm:text-sm">
                           {friend.full_name
                             ?.split(" ")
                             .map((n) => n[0])
@@ -258,20 +261,22 @@ export const FriendList = () => {
                             .toUpperCase() || "?"}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="font-medium">{friend.full_name}</div>
+                      <div className="font-medium text-sm sm:text-base truncate min-w-0 flex-1">{friend.full_name}</div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                       <Button
                         size="sm"
                         variant="ghost"
+                        className="h-8 w-8 sm:h-auto sm:w-auto p-0 sm:px-2"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleRemoveFriend(friend.friendship_id, friend.full_name);
                         }}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
+                        <span className="hidden sm:inline ml-1">Remove</span>
                       </Button>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                      <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
                     </div>
                   </div>
                 ))}

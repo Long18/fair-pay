@@ -17,37 +17,85 @@ export const FriendShow = () => {
   const go = useGo();
   const { data: identity } = useGetIdentity<Profile>();
 
+  // First, try to fetch as friendship ID
   const { query: friendshipQuery } = useOne<Friendship>({
     resource: "friendships",
     id: id!,
     meta: {
       select: "*, user_a_profile:profiles!user_a(id, full_name, avatar_url), user_b_profile:profiles!user_b(id, full_name, avatar_url)",
     },
+    queryOptions: {
+      retry: false, // Don't retry if it fails (might be a user ID)
+    },
   });
+
+  // If friendship query fails (might be a user ID), find friendship by user ID
+  const { query: friendshipsQuery } = useList<Friendship>({
+    resource: "friendships",
+    filters: identity?.id ? [
+      {
+        field: "user_a",
+        operator: "eq",
+        value: identity.id < id! ? identity.id : id!,
+      },
+      {
+        field: "user_b",
+        operator: "eq",
+        value: identity.id < id! ? id! : identity.id,
+      },
+    ] : [],
+    meta: {
+      select: "*, user_a_profile:profiles!user_a(id, full_name, avatar_url), user_b_profile:profiles!user_b(id, full_name, avatar_url)",
+    },
+    queryOptions: {
+      enabled: !friendshipQuery.data?.data && !!identity?.id, // Only run if friendship query didn't find anything
+    },
+  });
+
+  const { data: friendshipData, isLoading: isLoadingFriendshipDirect } = friendshipQuery;
+  const { data: friendshipsData, isLoading: isLoadingFriendshipList } = friendshipsQuery;
+
+  // Get friendship from either direct query or list query
+  const friendship: any = useMemo(() => {
+    if (friendshipData?.data) {
+      return friendshipData.data;
+    }
+    // If direct query didn't work, try to find in list (user ID case)
+    if (friendshipsData?.data && friendshipsData.data.length > 0) {
+      return friendshipsData.data[0];
+    }
+    return null;
+  }, [friendshipData, friendshipsData]);
+
+  const isLoadingFriendship = isLoadingFriendshipDirect || isLoadingFriendshipList;
 
   // Fetch expenses for this friendship
   const { query: expensesQuery } = useList({
     resource: "expenses",
-    filters: [{ field: "friendship_id", operator: "eq", value: id }],
+    filters: friendship?.id ? [{ field: "friendship_id", operator: "eq", value: friendship.id }] : [],
     meta: {
       select: "*, expense_splits!expense_id(*)",
     },
     pagination: {
       mode: "off",
     },
+    queryOptions: {
+      enabled: !!friendship?.id,
+    },
   });
 
   // Fetch payments for this friendship
   const { query: paymentsQuery } = useList({
     resource: "payments",
-    filters: [{ field: "friendship_id", operator: "eq", value: id }],
+    filters: friendship?.id ? [{ field: "friendship_id", operator: "eq", value: friendship.id }] : [],
     pagination: {
       mode: "off",
     },
+    queryOptions: {
+      enabled: !!friendship?.id,
+    },
   });
 
-  const { data: friendshipData, isLoading: isLoadingFriendship } = friendshipQuery;
-  const friendship: any = friendshipData?.data;
   const expenses: any[] = expensesQuery.data?.data || [];
   const payments: any[] = paymentsQuery.data?.data || [];
 
@@ -55,7 +103,7 @@ export const FriendShow = () => {
   const friendProfile = useMemo(() => {
     if (!friendship || !identity?.id) return null;
 
-    const isUserA = friendship.user_a_id === identity.id;
+    const isUserA = friendship.user_a === identity.id;
     return isUserA ? friendship.user_b_profile : friendship.user_a_profile;
   }, [friendship, identity]);
 
@@ -109,7 +157,7 @@ export const FriendShow = () => {
   }
 
   return (
-    <div className="container max-w-6xl py-8">
+    <div className="container max-w-7xl px-4 sm:px-6 py-4 sm:py-8">
       <Button
         variant="ghost"
         size="sm"
@@ -117,18 +165,19 @@ export const FriendShow = () => {
         onClick={() => go({ to: "/friends" })}
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Friends
+        <span className="hidden sm:inline">Back to Friends</span>
+        <span className="sm:hidden">Back</span>
       </Button>
 
       <div className="space-y-6">
         {/* Friend Header */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <Avatar className="h-12 w-12 sm:h-16 sm:w-16">
                   <AvatarImage src={friendProfile.avatar_url || undefined} alt={friendProfile.full_name} />
-                  <AvatarFallback className="text-2xl">
+                  <AvatarFallback className="text-lg sm:text-2xl">
                     {friendProfile.full_name
                       ?.split(" ")
                       .map((n: string) => n[0])
@@ -137,15 +186,18 @@ export const FriendShow = () => {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <CardTitle className="text-3xl">
+                  <CardTitle className="text-2xl sm:text-3xl">
                     {friendProfile.full_name}
                   </CardTitle>
-                  <p className="text-muted-foreground mt-1">
+                  <p className="text-sm sm:text-base text-muted-foreground mt-1">
                     Friends since {formatDateShort(friendship.created_at)}
                   </p>
                 </div>
               </div>
-              <Button onClick={handleAddExpense}>
+              <Button
+                onClick={handleAddExpense}
+                className="w-full sm:w-auto"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Expense
               </Button>
@@ -154,37 +206,41 @@ export const FriendShow = () => {
         </Card>
 
         {/* Tabs for Expenses and Balances */}
-        <Tabs defaultValue="expenses" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
-            <TabsTrigger value="expenses">Expenses</TabsTrigger>
-            <TabsTrigger value="balances">Balances</TabsTrigger>
-            <TabsTrigger value="recurring">Recurring</TabsTrigger>
+        <Tabs defaultValue="expenses" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-3">
+            <TabsTrigger value="expenses" className="text-xs sm:text-sm">Expenses</TabsTrigger>
+            <TabsTrigger value="balances" className="text-xs sm:text-sm">Balances</TabsTrigger>
+            <TabsTrigger value="recurring" className="text-xs sm:text-sm">Recurring</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="expenses" className="mt-6">
+          <TabsContent value="expenses" className="mt-6 focus-visible:outline-none">
             <ExpenseList friendshipId={friendship.id} members={members} />
           </TabsContent>
 
-          <TabsContent value="balances" className="mt-6">
-            <SimplifiedBalanceView
-              balances={balances}
-              currentUserId={identity?.id || ""}
-              simplifyDebts={false}  // Friend expenses don't need simplification (only 2 people)
-              onSettleUp={handleSettleUp}
-              currency="VND"
-            />
-
-            {payments.length > 0 && (
-              <div className="mt-6">
-                <PaymentList
-                  friendshipId={friendship.id}
+          <TabsContent value="balances" className="mt-6 focus-visible:outline-none">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+              <div>
+                <SimplifiedBalanceView
+                  balances={balances}
+                  currentUserId={identity?.id || ""}
+                  simplifyDebts={false}  // Friend expenses don't need simplification (only 2 people)
+                  onSettleUp={handleSettleUp}
                   currency="VND"
                 />
               </div>
-            )}
+              {payments.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Payment History</h3>
+                  <PaymentList
+                    friendshipId={friendship.id}
+                    currency="VND"
+                  />
+                </div>
+              )}
+            </div>
           </TabsContent>
 
-          <TabsContent value="recurring" className="mt-6">
+          <TabsContent value="recurring" className="mt-6 focus-visible:outline-none">
             <RecurringExpenseList friendshipId={friendship.id} />
           </TabsContent>
         </Tabs>
