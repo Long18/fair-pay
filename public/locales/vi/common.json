@@ -56,6 +56,8 @@
     "remember_me": "Ghi nhớ đăng nhập"
   },
   "settings": {
+    "title": "Cài đặt",
+    "donationSetup": "Cài Đặt Ủng Hộ",
     "donation": {
       "title": "Cài Đặt Widget Ủng Hộ",
       "description": "Cấu hình widget ủng hộ cho FairPay của bạn",
