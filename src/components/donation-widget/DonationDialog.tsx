@@ -81,6 +81,9 @@ export function DonationDialog({ open, onOpenChange, settings }: DonationDialogP
           <>
             <Separator />
             <div className="flex flex-col items-center py-4 gap-4">
+              <p className="text-xs text-muted-foreground text-center">
+                {t('settings.donation.includeMomo', 'Include Momo')}
+              </p>
               <button
                 onClick={handleQRClick}
                 className="relative w-64 h-64 rounded-lg border bg-white p-2 cursor-pointer hover:shadow-lg transition-shadow group"

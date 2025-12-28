@@ -89,6 +89,7 @@
       "bankAppHint": "Opens {{bankName}} app to complete payment",
       "scanQRCode": "Please scan the QR code with your banking app",
       "scanQRCodeHint": "Scan the QR code with your banking app",
+      "includeMomo": "Include Momo",
       "tapToOpenBank": "Tap to open bank app",
       "tapHint": "Tap QR code to open banking app directly"
     }
