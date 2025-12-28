@@ -249,9 +249,9 @@ export const ExpenseForm = ({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="VND">₫ VND</SelectItem>
-                    <SelectItem value="USD">$ USD</SelectItem>
-                    <SelectItem value="EUR">€ EUR</SelectItem>
+                    <SelectItem key="VND" value="VND">₫ VND</SelectItem>
+                    <SelectItem key="USD" value="USD">$ USD</SelectItem>
+                    <SelectItem key="EUR" value="EUR">€ EUR</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -363,8 +363,7 @@ export const ExpenseForm = ({
                 <SelectContent>
                   {members.map((member) => (
                     <SelectItem key={member.id} value={member.id}>
-                      {member.full_name}
-                      {member.id === currentUserId && " (You)"}
+                      {`${member.full_name}${member.id === currentUserId ? ' (You)' : ''}`}
                     </SelectItem>
                   ))}
                 </SelectContent>

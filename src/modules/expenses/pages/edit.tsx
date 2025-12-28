@@ -97,9 +97,30 @@ export const ExpenseEdit = () => {
     },
   });
 
+  // Fetch all user's friends (for adding to group expenses)
+  const { query: allFriendsQuery } = useList<Friendship>({
+    resource: "friendships",
+    filters: [
+      {
+        field: "status",
+        operator: "eq",
+        value: "accepted",
+      },
+    ],
+    meta: {
+      select: "*, user_a_profile:profiles!user_a(id, full_name), user_b_profile:profiles!user_b(id, full_name)",
+    },
+    pagination: {
+      mode: "off",
+    },
+    queryOptions: {
+      enabled: !!identity?.id,
+    },
+  });
+
   const updateMutation = useUpdate();
 
-  // Determine members based on context
+  // Determine members based on context (group members or friendship participants)
   const members = useMemo(() => {
     if (isGroupContext) {
       return membersQuery.data?.data?.map((m: any) => ({
@@ -127,6 +148,51 @@ export const ExpenseEdit = () => {
 
     return [];
   }, [isGroupContext, isFriendContext, membersQuery.data, friendshipQuery.data, identity]);
+
+  // Extract all friends from friendships (for adding to group expenses)
+  const allFriends = useMemo(() => {
+    if (!allFriendsQuery.data?.data || !identity?.id) return [];
+
+    return allFriendsQuery.data.data.map((friendship: any) => {
+      const isUserA = friendship.user_a_id === identity.id;
+      const friendProfile = isUserA ? friendship.user_b_profile : friendship.user_a_profile;
+      const friendId = isUserA ? friendship.user_b_id : friendship.user_a_id;
+
+      return {
+        id: friendId,
+        full_name: friendProfile?.full_name || "Friend",
+      };
+    });
+  }, [allFriendsQuery.data, identity]);
+
+  // Combine members + friends for group context (remove duplicates)
+  const allAvailableMembers = useMemo(() => {
+    const seenIds = new Set<string>();
+    const combined: { id: string; full_name: string }[] = [];
+
+    if (isGroupContext) {
+      // Add all group members first
+      members.forEach(m => {
+        if (!seenIds.has(m.id)) {
+          combined.push(m);
+          seenIds.add(m.id);
+        }
+      });
+
+      // Add friends who are not already in the group
+      allFriends.forEach(f => {
+        if (!seenIds.has(f.id)) {
+          combined.push(f);
+          seenIds.add(f.id);
+        }
+      });
+
+      return combined;
+    }
+
+    // In friend context: just the 2 people in the friendship (no duplicates possible)
+    return members;
+  }, [isGroupContext, members, allFriends]);
 
   const handleSubmit = async (values: ExpenseFormValues) => {
     const { splits, is_recurring, recurring, split_method, ...expenseData } = values;
@@ -218,12 +284,12 @@ export const ExpenseEdit = () => {
       open={true}
       onOpenChange={handleClose}
       title="Edit Expense"
-      className="max-w-2xl max-h-[90vh] overflow-y-auto"
+      className="sm:max-w-4xl max-h-[90vh] overflow-y-auto"
     >
       <div className="space-y-6">
         <ExpenseForm
           groupId={contextId!}
-          members={members}
+          members={allAvailableMembers}
           currentUserId={identity.id}
           onSubmit={handleSubmit}
           isLoading={false}

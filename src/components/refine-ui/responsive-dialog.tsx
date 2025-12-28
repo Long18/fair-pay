@@ -42,7 +42,7 @@ export function ResponsiveDialog({
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className={className}>
+        <DialogContent className={className} aria-describedby={description ? undefined : "dialog-content"}>
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             {description && <DialogDescription>{description}</DialogDescription>}
@@ -72,4 +72,3 @@ export function ResponsiveDialog({
     </Drawer>
   )
 }
-
