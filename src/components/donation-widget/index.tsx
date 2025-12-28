@@ -41,18 +41,39 @@ export function DonationWidget() {
             transform: translate(0, 0);
           }
           25% {
-            transform: translate(10px, -10px);
+            transform: translate(8px, -25px);
           }
           50% {
-            transform: translate(-5px, -15px);
+            transform: translate(-8px, -35px);
           }
           75% {
-            transform: translate(-10px, -5px);
+            transform: translate(-10px, -20px);
+          }
+        }
+
+        @keyframes float-mobile {
+          0%, 100% {
+            transform: translate(0, 0);
+          }
+          25% {
+            transform: translate(5px, -20px);
+          }
+          50% {
+            transform: translate(-5px, -28px);
+          }
+          75% {
+            transform: translate(-6px, -15px);
           }
         }
 
         .floating-widget {
-          animation: float 8s ease-in-out infinite;
+          animation: float-mobile 8s ease-in-out infinite;
+        }
+
+        @media (min-width: 640px) {
+          .floating-widget {
+            animation: float 8s ease-in-out infinite;
+          }
         }
       `}</style>
 
@@ -101,3 +122,4 @@ export function DonationWidget() {
     </>
   );
 }
+
