@@ -20,7 +20,7 @@ import {
   useGo,
   useGetIdentity,
 } from "@refinedev/core";
-import { LogOutIcon, UserIcon, Search, Settings } from "lucide-react";
+import { LogOutIcon, UserIcon, Search, Settings, Heart } from "lucide-react";
 import { NotificationPanel } from "@/modules/notifications";
 import { SearchModal, useSearchShortcut } from "@/components/global-search";
 import { Profile } from "@/modules/profile/types";
@@ -177,6 +177,9 @@ const UserDropdown = () => {
   const go = useGo();
 
   const authProvider = useActiveAuthProvider();
+  
+  // Check if user is admin
+  const isAdmin = identity?.email === import.meta.env.VITE_ADMIN_EMAIL;
 
   if (!authProvider?.getIdentity) {
     return null;
@@ -233,6 +236,16 @@ const UserDropdown = () => {
           <Settings className="h-4 w-4" />
           <span>{t('settings.title')}</span>
         </DropdownMenuItem>
+        {isAdmin && (
+          <DropdownMenuItem
+            onClick={() => {
+              go({ to: "/settings/donation" });
+            }}
+          >
+            <Heart className="h-4 w-4" />
+            <span>{t('settings.donationSetup')}</span>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => {

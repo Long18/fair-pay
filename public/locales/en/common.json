@@ -56,6 +56,8 @@
     "remember_me": "Remember me"
   },
   "settings": {
+    "title": "Settings",
+    "donationSetup": "Donation Setup",
     "donation": {
       "title": "Donation Widget Settings",
       "description": "Configure the donation widget for your FairPay instance",
