@@ -97,6 +97,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
               <Button
                 onClick={() => go({ to: "/friends" })}
                 variant="default"
+                className="w-full sm:w-auto"
               >
                 <UserPlus className="h-4 w-4 mr-2" />
                 Add Friend
@@ -104,6 +105,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
               <Button
                 onClick={() => go({ to: "/groups" })}
                 variant="outline"
+                className="w-full sm:w-auto"
               >
                 <Users2 className="h-4 w-4 mr-2" />
                 Join a Group
@@ -121,7 +123,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <Users2 className="h-5 w-5" />
             Friends
@@ -132,6 +134,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
           <Button
             variant="outline"
             size="sm"
+            className="w-full sm:w-auto"
             onClick={() => go({ to: "/friends" })}
           >
             <UserPlus className="h-4 w-4 mr-1" />
@@ -140,7 +143,71 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border">
+        {/* Mobile: Card Layout */}
+        <div className="block md:hidden space-y-3">
+          {friends.map((friend) => {
+            const BalanceIcon = getBalanceIcon(friend.i_owe_them);
+            return (
+              <Card
+                key={friend.counterparty_id}
+                className="hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => go({ to: `/friends/${friend.counterparty_id}` })}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <Avatar className="h-10 w-10 border-2 border-border shrink-0">
+                        <AvatarImage src={friend.counterparty_avatar_url || undefined} alt={friend.counterparty_name} />
+                        <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
+                          {friend.counterparty_name.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-foreground truncate">
+                          {friend.counterparty_name}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge
+                            variant={friend.i_owe_them ? "destructive" : "default"}
+                            className={`text-xs ${friend.i_owe_them
+                              ? "bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400"
+                              : "bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400"
+                            }`}
+                          >
+                            {friend.i_owe_them ? 'You owe' : 'Owes you'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <div className="flex items-center gap-1">
+                        <BalanceIcon className={`h-4 w-4 ${getBalanceColor(friend.i_owe_them)}`} />
+                        <span className={`font-semibold text-sm ${getBalanceColor(friend.i_owe_them)}`}>
+                          {friend.i_owe_them ? '-' : '+'}₫{formatCurrency(friend.amount)}
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          go({ to: `/friends/${friend.counterparty_id}` });
+                        }}
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        View
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Desktop: Table Layout */}
+        <div className="hidden md:block rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -157,7 +224,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
                   <TableRow
                     key={friend.counterparty_id}
                     className="hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={() => go({ to: `/profile/${friend.counterparty_id}` })}
+                    onClick={() => go({ to: `/friends/${friend.counterparty_id}` })}
                   >
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -202,7 +269,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          go({ to: `/profile/${friend.counterparty_id}` });
+                          go({ to: `/friends/${friend.counterparty_id}` });
                         }}
                       >
                         <Eye className="h-4 w-4 mr-1" />

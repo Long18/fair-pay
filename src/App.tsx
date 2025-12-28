@@ -259,6 +259,11 @@ function App() {
                         <FriendList />
                       </ErrorBoundary>
                     } />
+                    <Route path=":id" element={
+                      <ErrorBoundary context="Friend Show">
+                        <FriendShow />
+                      </ErrorBoundary>
+                    } />
                     <Route path=":friendshipId/expenses/create" element={<ExpenseCreate />} />
                     <Route path=":friendshipId/payments/create" element={<PaymentCreate />} />
                   </Route>
