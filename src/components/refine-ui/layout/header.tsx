@@ -102,85 +102,71 @@ function MobileHeader() {
   const { open, isMobile } = useSidebar();
   const { title } = useRefineOptions();
   const [searchOpen, setSearchOpen] = useState(false);
+  const { data: identity } = useGetIdentity<Profile>();
+  const { t } = useTranslation();
 
   useSearchShortcut(() => setSearchOpen(true));
 
-  return (
-    <header
-      className={cn(
-        "sticky",
-        "top-0",
-        "flex",
-        "h-12",
-        "shrink-0",
-        "items-center",
-        "gap-2",
-        "border-b",
-        "border-border",
-        "bg-sidebar",
-        "pr-3",
-        "justify-between",
-        "z-40"
-      )}
-    >
-      <SidebarTrigger
-        className={cn("text-muted-foreground", "rotate-180", "ml-1", {
-          "opacity-0": open,
-          "opacity-100": !open || isMobile,
-          "pointer-events-auto": !open || isMobile,
-          "pointer-events-none": open && !isMobile,
-        })}
-      />
+  const firstName = identity?.full_name?.split(" ")[0];
 
-      <div
+  return (
+    <>
+      <header
         className={cn(
-          "whitespace-nowrap",
+          "sticky",
+          "top-0",
           "flex",
-          "flex-row",
-          "h-full",
+          "h-12",
+          "shrink-0",
           "items-center",
-          "justify-start",
           "gap-2",
-          "transition-discrete",
-          "duration-200",
-          {
-            "pl-3": !open,
-            "pl-5": open,
-          }
+          "border-b",
+          "border-border",
+          "bg-sidebar",
+          "pr-3",
+          "justify-between",
+          "z-40"
         )}
       >
-        <div>{title.icon}</div>
-        <h2
-          className={cn(
-            "text-sm",
-            "font-bold",
-            "transition-opacity",
-            "duration-200",
-            {
-              "opacity-0": !open,
-              "opacity-100": open,
-            }
-          )}
-        >
-          {title.text}
-        </h2>
-      </div>
+        <SidebarTrigger
+          className={cn("text-muted-foreground", "rotate-180", "ml-1", {
+            "opacity-0": open,
+            "opacity-100": !open || isMobile,
+            "pointer-events-auto": !open || isMobile,
+            "pointer-events-none": open && !isMobile,
+          })}
+        />
 
-      <div className="flex items-center gap-1">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => setSearchOpen(true)}
-          aria-label="Search"
-        >
-          <Search className="h-4 w-4" />
-        </Button>
-        <NotificationPanel />
-        <ThemeToggle className={cn("h-8", "w-8")} />
-      </div>
+        <div className="flex flex-col justify-center flex-1 min-w-0 px-2">
+          <h1 className="text-sm font-semibold tracking-tight leading-none truncate">
+            {t('dashboard.title')}
+          </h1>
+          <span className="text-xs text-muted-foreground mt-0.5 truncate">
+            {firstName
+              ? t('header.welcomeBack', { name: firstName })
+              : t('header.welcomeGuest')
+            }
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setSearchOpen(true)}
+            aria-label="Search"
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+          <NotificationPanel />
+          <ThemeToggle className={cn("h-8", "w-8")} />
+          <LanguageToggle className={cn("h-8", "w-8")} />
+          <UserDropdown />
+        </div>
+      </header>
       <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
-    </header>
+    </>
   );
 }
 
