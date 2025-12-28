@@ -6,7 +6,6 @@ import { DashboardSkeleton } from "@/components/dashboard/DashboardStates";
 import { BalanceTable } from "@/components/dashboard/BalanceTable";
 import { ActivityTable } from "@/components/dashboard/ActivityTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
 import { useGlobalBalance } from "@/hooks/use-global-balance";
 import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
 import { usePaginatedActivities } from "@/hooks/use-paginated-activities";

@@ -83,6 +83,9 @@ export default defineConfig({
     // Optimize chunk size
     chunkSizeWarningLimit: 1000,
 
+    // CSS minification settings
+    cssMinify: 'lightningcss',
+
     // Minification
     minify: 'terser',
     terserOptions: {
