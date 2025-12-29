@@ -42,7 +42,7 @@ BEGIN
     -- #region agent log H8,H9
     RAISE NOTICE '[AGENT_LOG] Profile migration path: old_id=%, new_id=%', old_profile_id, NEW.id;
     -- #endregion
-    
+
     -- Profile exists with different ID - need to migrate to new ID
     -- Store old profile data BEFORE any changes
     SELECT full_name, avatar_url, created_at
@@ -52,7 +52,7 @@ BEGIN
 
     -- Temporarily change old profile email to avoid conflict
     temp_email := old_email || '.old.' || old_profile_id::text;
-    UPDATE public.profiles 
+    UPDATE public.profiles
     SET email = temp_email
     WHERE id = old_profile_id;
 
@@ -70,7 +70,7 @@ BEGIN
     -- #region agent log H8,H9
     RAISE NOTICE '[AGENT_LOG] Before FK updates: old_id=%, new_id=%', old_profile_id, NEW.id;
     -- #endregion
-    
+
     -- Update FK references (except friendships which needs special handling)
     UPDATE expenses SET paid_by_user_id = NEW.id WHERE paid_by_user_id = old_profile_id;
     UPDATE expenses SET created_by = NEW.id WHERE created_by = old_profile_id;
@@ -89,18 +89,18 @@ BEGIN
     -- #region agent log H8,H9
     RAISE NOTICE '[AGENT_LOG] Before friendships updates';
     -- #endregion
-    
+
     -- Handle friendships specially to maintain ordered_users constraint
     -- Update and swap if needed to maintain user_a < user_b
     UPDATE friendships
-    SET 
-      user_a = CASE 
-        WHEN user_a = old_profile_id THEN 
+    SET
+      user_a = CASE
+        WHEN user_a = old_profile_id THEN
           CASE WHEN NEW.id < user_b THEN NEW.id ELSE user_b END
-        ELSE user_a 
+        ELSE user_a
       END,
-      user_b = CASE 
-        WHEN user_a = old_profile_id THEN 
+      user_b = CASE
+        WHEN user_a = old_profile_id THEN
           CASE WHEN NEW.id < user_b THEN user_b ELSE NEW.id END
         ELSE NEW.id
       END,
@@ -110,10 +110,10 @@ BEGIN
     -- #region agent log H8,H9
     RAISE NOTICE '[AGENT_LOG] After friendships updates, before DELETE old profile';
     -- #endregion
-    
+
     -- Now safe to delete old profile
     DELETE FROM public.profiles WHERE id = old_profile_id;
-    
+
     -- #region agent log H8,H9
     RAISE NOTICE '[AGENT_LOG] After DELETE old profile';
     -- #endregion
@@ -121,7 +121,7 @@ BEGIN
     -- #region agent log H8
     RAISE NOTICE '[AGENT_LOG] New profile path: old_profile_id=%, NEW.id=%', old_profile_id, NEW.id;
     -- #endregion
-    
+
     -- No existing profile or ID matches - insert new profile
     INSERT INTO public.profiles (id, email, full_name)
     VALUES (

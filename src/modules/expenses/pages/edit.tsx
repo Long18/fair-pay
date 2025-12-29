@@ -239,7 +239,7 @@ export const ExpenseEdit = () => {
           const splitPromises = splits.map((split) => {
             // Find if this user had a split before (to preserve settlement status)
             const existingSplit = existingSplits.find(es => es.user_id === split.user_id);
-            
+
             return supabaseClient
               .from("expense_splits")
               .insert({
