@@ -6,7 +6,8 @@ export interface Attachment {
     mime_type: string;
     file_size: number;
     created_at: string;
-    created_by: string;
+    created_by?: string;
+    uploaded_by: string;
 }
 
 export interface Expense {
