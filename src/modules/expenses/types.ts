@@ -35,6 +35,9 @@ export interface ExpenseSplit {
     split_method: 'equal' | 'exact' | 'percentage';
     split_value: number | null;
     computed_amount: number;
+    is_settled?: boolean;
+    settled_amount?: number;
+    settled_at?: string;
     created_at: string;
 }
 

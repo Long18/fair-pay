@@ -64,14 +64,14 @@ export function DonationWidget() {
     // Set up random tooltip showing
     const scheduleRandomTooltip = () => {
       const delay = getRandomTooltipDelay();
-      
+
       if (tooltipTimeoutRef.current) {
         clearTimeout(tooltipTimeoutRef.current);
       }
 
       tooltipTimeoutRef.current = setTimeout(() => {
         setShowRandomTooltip(true);
-        
+
         // Hide tooltip after 3 seconds
         setTimeout(() => {
           setShowRandomTooltip(false);
