@@ -11,8 +11,8 @@ export interface SplitCalculation {
   totalSplit: number;
 }
 
-export const useSplitCalculation = (): SplitCalculation => {
-  const [participants, setParticipants] = useState<ParticipantSplit[]>([]);
+export const useSplitCalculation = (initialSplits?: ParticipantSplit[]): SplitCalculation => {
+  const [participants, setParticipants] = useState<ParticipantSplit[]>(initialSplits || []);
 
   const addParticipant = useCallback((userId: string) => {
     setParticipants(prev => {

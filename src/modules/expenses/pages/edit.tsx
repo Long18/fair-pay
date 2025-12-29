@@ -294,6 +294,7 @@ export const ExpenseEdit = () => {
           onSubmit={handleSubmit}
           isLoading={false}
           defaultValues={defaultValues}
+          isEdit={true}
         />
 
         <div className="border-t pt-6">
