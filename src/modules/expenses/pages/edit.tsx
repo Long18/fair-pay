@@ -4,13 +4,15 @@ import { useParams } from "react-router";
 import { ResponsiveDialog } from "@/components/refine-ui/responsive-dialog";
 import { ExpenseForm } from "../components/expense-form";
 import { AttachmentUpload, type AttachmentFile } from "../components/attachment-upload";
+import { AttachmentList } from "../components/attachment-list";
 import { useAttachments } from "../hooks/use-attachments";
-import { ExpenseFormValues, Expense } from "../types";
+import { ExpenseFormValues, Expense, Attachment } from "../types";
 import { Profile } from "@/modules/profile/types";
 import { GroupMember } from "@/modules/groups/types";
 import { Friendship } from "@/modules/friends/types";
 import { toast } from "sonner";
 import { supabaseClient } from "@/utility/supabaseClient";
+import { Separator } from "@/components/ui/separator";
 
 export const ExpenseEdit = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,7 +20,8 @@ export const ExpenseEdit = () => {
   const { data: identity } = useGetIdentity<Profile>();
   const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
   const [existingSplits, setExistingSplits] = useState<any[]>([]);
-  const { uploadAttachments } = useAttachments();
+  const [existingAttachments, setExistingAttachments] = useState<Attachment[]>([]);
+  const { uploadAttachments, deleteAttachment } = useAttachments();
 
   // Fetch expense data
   const { query: expenseQuery } = useOne<Expense>({
@@ -34,7 +37,7 @@ export const ExpenseEdit = () => {
   const isFriendContext = !!expense?.friendship_id;
   const contextId = expense?.group_id || expense?.friendship_id;
 
-  // Fetch existing splits
+  // Fetch existing splits (with settlement status)
   useEffect(() => {
     if (!id) return;
 
@@ -52,6 +55,9 @@ export const ExpenseEdit = () => {
             split_method: split.split_method,
             split_value: split.split_value,
             computed_amount: split.computed_amount,
+            is_settled: split.is_settled,
+            settled_amount: split.settled_amount,
+            settled_at: split.settled_at,
             created_at: split.created_at,
             profiles: {
               id: split.user_id,
@@ -60,6 +66,24 @@ export const ExpenseEdit = () => {
             },
           }));
           setExistingSplits(transformedSplits);
+        }
+      });
+  }, [id]);
+
+  // Fetch existing attachments
+  useEffect(() => {
+    if (!id) return;
+
+    supabaseClient
+      .from("attachments")
+      .select("*")
+      .eq("expense_id", id)
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Error fetching attachments:", error);
+          setExistingAttachments([]);
+        } else {
+          setExistingAttachments(data || []);
         }
       });
   }, [id]);
@@ -211,9 +235,12 @@ export const ExpenseEdit = () => {
             .delete()
             .eq("expense_id", id!);
 
-          // Create new splits
-          const splitPromises = splits.map((split) =>
-            supabaseClient
+          // Create new splits, preserving settlement status for existing participants
+          const splitPromises = splits.map((split) => {
+            // Find if this user had a split before (to preserve settlement status)
+            const existingSplit = existingSplits.find(es => es.user_id === split.user_id);
+            
+            return supabaseClient
               .from("expense_splits")
               .insert({
                 expense_id: id!,
@@ -221,8 +248,12 @@ export const ExpenseEdit = () => {
                 split_method: values.split_method,
                 split_value: split.split_value,
                 computed_amount: split.computed_amount,
-              })
-          );
+                // Preserve settlement status if user was already in the split
+                is_settled: existingSplit?.is_settled || false,
+                settled_amount: existingSplit?.settled_amount || 0,
+                settled_at: existingSplit?.settled_at || null,
+              });
+          });
 
           await Promise.all(splitPromises);
 
@@ -297,8 +328,25 @@ export const ExpenseEdit = () => {
           isEdit={true}
         />
 
-        <div className="border-t pt-6">
-          <h3 className="text-sm font-medium mb-4">Add More Receipts (Optional)</h3>
+        <Separator />
+
+        {/* Existing Receipts */}
+        {existingAttachments.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium">Existing Receipts ({existingAttachments.length})</h3>
+            <AttachmentList
+              attachments={existingAttachments}
+              canDelete={true}
+              onDelete={(attachmentId) => {
+                setExistingAttachments(prev => prev.filter(a => a.id !== attachmentId));
+              }}
+            />
+          </div>
+        )}
+
+        {/* Add New Receipts */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium">Add More Receipts (Optional)</h3>
           <AttachmentUpload
             attachments={attachments}
             onAttachmentsChange={setAttachments}
