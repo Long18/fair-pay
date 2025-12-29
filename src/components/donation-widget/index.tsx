@@ -110,31 +110,55 @@ export function DonationWidget() {
       <style>{`
         @keyframes float-fullscreen {
           0%, 100% {
-            transform: translate(0, 0);
+            transform: translate(0, 0) scaleX(1);
+          }
+          12.5% {
+            transform: translate(calc((100vw - 120px) * 0.5), -15px) scaleX(1);
           }
           25% {
-            transform: translate(calc(100vw - 120px), -30px);
+            transform: translate(calc(100vw - 120px), -30px) scaleX(-1);
+          }
+          37.5% {
+            transform: translate(calc((100vw - 120px) * 0.75), -40px) scaleX(-1);
           }
           50% {
-            transform: translate(calc(50vw - 60px), -50px);
+            transform: translate(calc(50vw - 60px), -50px) scaleX(-1);
+          }
+          62.5% {
+            transform: translate(calc((80vw - 100px) * 0.85), -37px) scaleX(-1);
           }
           75% {
-            transform: translate(calc(80vw - 100px), -25px);
+            transform: translate(calc(80vw - 100px), -25px) scaleX(1);
+          }
+          87.5% {
+            transform: translate(calc((80vw - 100px) * 0.4), -12px) scaleX(1);
           }
         }
 
         @keyframes float-mobile {
           0%, 100% {
-            transform: translate(0, 0);
+            transform: translate(0, 0) scaleX(1);
+          }
+          12.5% {
+            transform: translate(calc((100vw - 100px) * 0.5), -12px) scaleX(1);
           }
           25% {
-            transform: translate(calc(100vw - 100px), -25px);
+            transform: translate(calc(100vw - 100px), -25px) scaleX(-1);
+          }
+          37.5% {
+            transform: translate(calc((60vw - 80px) * 1.2), -32px) scaleX(-1);
           }
           50% {
-            transform: translate(calc(60vw - 80px), -40px);
+            transform: translate(calc(60vw - 80px), -40px) scaleX(-1);
+          }
+          62.5% {
+            transform: translate(calc((30vw - 60px) * 1.5), -30px) scaleX(-1);
           }
           75% {
-            transform: translate(calc(30vw - 60px), -20px);
+            transform: translate(calc(30vw - 60px), -20px) scaleX(1);
+          }
+          87.5% {
+            transform: translate(calc((30vw - 60px) * 0.5), -10px) scaleX(1);
           }
         }
 
@@ -153,7 +177,7 @@ export function DonationWidget() {
 
       <TooltipProvider delayDuration={300}>
         <div ref={animationRef} className="fixed bottom-6 left-6 z-50 floating-widget">
-          <Tooltip open={showRandomTooltip}>
+          <Tooltip open={showRandomTooltip ? true : undefined}>
             <TooltipTrigger asChild>
               <button
                 onClick={() => setIsDialogOpen(true)}
