@@ -26,6 +26,8 @@ import { supabaseClient } from "@/utility/supabaseClient";
 import { useTranslation } from "react-i18next";
 
 import { ArrowLeftIcon, PencilIcon, Trash2Icon, CheckCircle2Icon, XCircleIcon } from "@/components/ui/icons";
+import { SplitAttachmentGallery } from "../components/split-attachment-gallery";
+
 export const ExpenseShow = () => {
   const { id } = useParams<{ id: string }>();
   const go = useGo();
@@ -91,6 +93,9 @@ export const ExpenseShow = () => {
         value: id,
       },
     ],
+    meta: {
+      select: "*, uploaded_by",
+    },
   });
 
   const deleteMutation = useDelete();
@@ -142,6 +147,11 @@ export const ExpenseShow = () => {
 
   const handleAttachmentDelete = (attachmentId: string) => {
     setDisplayAttachments(prev => prev.filter(a => a.id !== attachmentId));
+  };
+
+  // Filter attachments by user for each split
+  const getAttachmentsForUser = (userId: string): Attachment[] => {
+    return displayAttachments.filter(att => att.uploaded_by === userId);
   };
 
   const handleDelete = () => {
@@ -328,17 +338,19 @@ export const ExpenseShow = () => {
                 {splits.map((split: any) => {
                   const isCurrentUserSplit = split.user_id === identity?.id;
                   const canSettle = isPayer && !isPaid && !isCurrentUserSplit;
+                  const userAttachments = getAttachmentsForUser(split.user_id);
 
                   return (
                     <div
                       key={split.id}
-                      className={`group flex items-center justify-between p-4 border-2 rounded-xl transition-all duration-200 ${
+                      className={`group flex flex-col p-4 border-2 rounded-xl transition-all duration-200 ${
                         isPaid
                           ? 'bg-green-50/50 border-green-200'
                           : 'hover:border-primary/50 hover:bg-accent/30'
                       }`}
                     >
-                      <div className="flex items-center gap-4 flex-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4 flex-1">
                         <Avatar className={`h-12 w-12 border-2 shadow-md ring-2 ring-offset-1 ring-offset-background transition-all duration-200 ${
                           isPaid
                             ? 'border-green-300 ring-green-200'
@@ -387,14 +399,21 @@ export const ExpenseShow = () => {
                             )}
                           </div>
                         </div>
-                      </div>
-                      <div className="text-right flex items-center gap-3">
-                        <div className={`font-bold text-lg transition-transform ${
-                          isPaid ? 'text-green-600' : 'group-hover:scale-110'
-                        }`}>
-                          {formatNumber(split.computed_amount)} {expense.currency}
+                        </div>
+                        <div className="text-right flex items-center gap-3">
+                          <div className={`font-bold text-lg transition-transform ${
+                            isPaid ? 'text-green-600' : 'group-hover:scale-110'
+                          }`}>
+                            {formatNumber(split.computed_amount)} {expense.currency}
+                          </div>
                         </div>
                       </div>
+                      {userAttachments.length > 0 && (
+                        <SplitAttachmentGallery
+                          attachments={userAttachments}
+                          userName={split.profiles?.full_name || t('profile.unknown')}
+                        />
+                      )}
                     </div>
                   );
                 })}
