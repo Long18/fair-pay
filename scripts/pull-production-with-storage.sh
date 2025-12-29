@@ -191,4 +191,3 @@ if [ "$STORAGE_SKIP" != "true" ]; then
     echo "   Storage files are in: supabase/backups/storage/"
 fi
 echo ""
-
