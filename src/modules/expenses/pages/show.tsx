@@ -27,6 +27,8 @@ import { useTranslation } from "react-i18next";
 
 import { ArrowLeftIcon, PencilIcon, Trash2Icon, CheckCircle2Icon, XCircleIcon } from "@/components/ui/icons";
 import { SplitAttachmentGallery } from "../components/split-attachment-gallery";
+import { SettleSplitDialog } from "../components/settle-split-dialog";
+import { Spinner } from "@/components/ui/spinner";
 
 export const ExpenseShow = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,6 +39,9 @@ export const ExpenseShow = () => {
   const [isLoadingSplits, setIsLoadingSplits] = useState(true);
   const [settlingExpense, setSettlingExpense] = useState(false);
   const [settleAllDialogOpen, setSettleAllDialogOpen] = useState(false);
+  const [settlingSplitId, setSettlingSplitId] = useState<string | null>(null);
+  const [settleSplitDialogOpen, setSettleSplitDialogOpen] = useState(false);
+  const [selectedSplit, setSelectedSplit] = useState<any>(null);
 
   const { query: expenseQuery } = useOne<Expense>({
     resource: "expenses",
@@ -71,6 +76,9 @@ export const ExpenseShow = () => {
               split_method: split.split_method,
               split_value: split.split_value,
               computed_amount: split.computed_amount,
+              is_settled: split.is_settled,
+              settled_amount: split.settled_amount,
+              settled_at: split.settled_at,
               created_at: split.created_at,
               profiles: {
                 id: split.user_id,
@@ -129,6 +137,32 @@ export const ExpenseShow = () => {
       }));
 
       refetchExpense();
+      // Refetch splits to update settlement status
+      if (id) {
+        setIsLoadingSplits(true);
+        const { data: splitsData } = await supabaseClient.rpc("get_expense_splits_public", { p_expense_id: id });
+        if (splitsData) {
+          const transformedSplits = splitsData.map((split: any) => ({
+            id: split.id,
+            expense_id: split.expense_id,
+            user_id: split.user_id,
+            split_method: split.split_method,
+            split_value: split.split_value,
+            computed_amount: split.computed_amount,
+            is_settled: split.is_settled,
+            settled_amount: split.settled_amount,
+            settled_at: split.settled_at,
+            created_at: split.created_at,
+            profiles: {
+              id: split.user_id,
+              full_name: split.user_full_name,
+              avatar_url: split.user_avatar_url,
+            },
+          }));
+          setSplits(transformedSplits);
+        }
+        setIsLoadingSplits(false);
+      }
       setSettleAllDialogOpen(false);
     } catch (error: any) {
       console.error('Error settling expense:', error);
@@ -138,6 +172,77 @@ export const ExpenseShow = () => {
     } finally {
       setSettlingExpense(false);
     }
+  };
+
+  // Handle settle individual split
+  const handleSettleSplit = async (amount: number) => {
+    if (!selectedSplit) return;
+
+    setSettlingSplitId(selectedSplit.id);
+    try {
+      const { data, error } = await supabaseClient.rpc('settle_split', {
+        p_split_id: selectedSplit.id,
+        p_amount: amount,
+      });
+
+      if (error) throw error;
+
+      const isPartial = amount < selectedSplit.computed_amount;
+      toast.success(
+        isPartial
+          ? t('expenses.partialSettleSuccess', {
+              userName: selectedSplit.profiles?.full_name,
+              amount: formatNumber(amount),
+              defaultValue: `Partial payment of ${formatNumber(amount)} ${expense.currency} from ${selectedSplit.profiles?.full_name} marked as received`,
+            })
+          : t('expenses.splitSettleSuccess', {
+              userName: selectedSplit.profiles?.full_name,
+              defaultValue: `Payment from ${selectedSplit.profiles?.full_name} marked as received`,
+            })
+      );
+
+      // Refetch splits
+      if (id) {
+        setIsLoadingSplits(true);
+        const { data: splitsData } = await supabaseClient.rpc("get_expense_splits_public", { p_expense_id: id });
+        if (splitsData) {
+          const transformedSplits = splitsData.map((split: any) => ({
+            id: split.id,
+            expense_id: split.expense_id,
+            user_id: split.user_id,
+            split_method: split.split_method,
+            split_value: split.split_value,
+            computed_amount: split.computed_amount,
+            is_settled: split.is_settled,
+            settled_amount: split.settled_amount,
+            settled_at: split.settled_at,
+            created_at: split.created_at,
+            profiles: {
+              id: split.user_id,
+              full_name: split.user_full_name,
+              avatar_url: split.user_avatar_url,
+            },
+          }));
+          setSplits(transformedSplits);
+        }
+        setIsLoadingSplits(false);
+      }
+      setSettleSplitDialogOpen(false);
+      setSelectedSplit(null);
+    } catch (error: any) {
+      console.error('Error settling split:', error);
+      toast.error(t('expenses.splitSettleError', {
+        defaultValue: `Failed to settle: ${error.message}`,
+      }));
+    } finally {
+      setSettlingSplitId(null);
+    }
+  };
+
+  // Open settle dialog for a split
+  const openSettleDialog = (split: any) => {
+    setSelectedSplit(split);
+    setSettleSplitDialogOpen(true);
   };
 
   // Sync displayAttachments with fetched attachments
@@ -176,14 +281,14 @@ export const ExpenseShow = () => {
 
   if (isLoadingExpense || isLoadingSplits || !expense) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Loading expense...</p>
+      <div className="container max-w-4xl py-8">
+        <Spinner size="lg" className="min-h-[400px]" />
       </div>
     );
   }
 
   return (
-      <div className="container max-w-4xl py-8">
+      <div className="container max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
       <Button
         variant="ghost"
         size="sm"
@@ -191,16 +296,17 @@ export const ExpenseShow = () => {
         onClick={() => go({ to: `/groups/show/${expense.group_id}` })}
       >
         <ArrowLeftIcon className="h-4 w-4 mr-2" />
-        Back to Group
+        <span className="hidden sm:inline">Back to Group</span>
+        <span className="sm:hidden">Back</span>
       </Button>
 
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <Card>
           <CardHeader>
-            <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-3xl">{expense.description}</CardTitle>
+            <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+              <div className="space-y-2 flex-1 min-w-0">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <CardTitle className="text-2xl sm:text-3xl break-words">{expense.description}</CardTitle>
                   {expense.category && (
                     <CategoryIcon category={expense.category} size="md" showLabel />
                   )}
@@ -214,20 +320,21 @@ export const ExpenseShow = () => {
                 </p>
               </div>
               {canEdit && (
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full sm:w-auto">
                   <Button
                     variant="outline"
                     size="sm"
+                    className="flex-1 sm:flex-none"
                     onClick={() => go({ to: `/expenses/edit/${expense.id}` })}
                   >
-                    <PencilIcon className="h-4 w-4 mr-2" />
-                    Edit
+                    <PencilIcon className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Edit</span>
                   </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="sm">
-                        <Trash2Icon className="h-4 w-4 mr-2" />
-                        Delete
+                      <Button variant="destructive" size="sm" className="flex-1 sm:flex-none">
+                        <Trash2Icon className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Delete</span>
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
@@ -252,11 +359,11 @@ export const ExpenseShow = () => {
               )}
             </div>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center gap-6 p-6 bg-gradient-to-br from-muted/50 to-muted rounded-xl shadow-sm">
-              <Avatar className="h-16 w-16 border-4 border-background shadow-lg ring-4 ring-primary/10">
+          <CardContent className="space-y-4 sm:space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 p-4 sm:p-6 bg-gradient-to-br from-muted/50 to-muted rounded-xl shadow-sm">
+              <Avatar className="h-12 w-12 sm:h-16 sm:w-16 border-4 border-background shadow-lg ring-4 ring-primary/10">
                 <AvatarImage src={expense.profiles?.avatar_url || undefined} alt={expense.profiles?.full_name} />
-                <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-primary/20 to-primary/10">
+                <AvatarFallback className="text-base sm:text-lg font-bold bg-gradient-to-br from-primary/20 to-primary/10">
                   {expense.profiles?.full_name
                     ?.split(" ")
                     .map((n: string) => n[0])
@@ -265,15 +372,15 @@ export const ExpenseShow = () => {
                     .slice(0, 2) || "?"}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground font-medium">{t('expenses.paidBy')}</p>
-                <p className="font-bold text-lg line-clamp-2 leading-tight max-w-[300px]" title={expense.profiles?.full_name || t('profile.unknown')}>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground font-medium">{t('expenses.paidBy')}</p>
+                <p className="font-bold text-base sm:text-lg line-clamp-2 leading-tight break-words" title={expense.profiles?.full_name || t('profile.unknown')}>
                   {expense.profiles?.full_name || t('profile.unknown')}
                 </p>
               </div>
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground font-medium">{t('expenses.totalAmount')}</p>
-                <p className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              <div className="text-left sm:text-right w-full sm:w-auto">
+                <p className="text-xs sm:text-sm text-muted-foreground font-medium">{t('expenses.totalAmount')}</p>
+                <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                   {formatNumber(expense.amount)} {expense.currency}
                 </p>
               </div>
@@ -283,12 +390,12 @@ export const ExpenseShow = () => {
 
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <CardTitle>{t('expenses.splitDetails')}</CardTitle>
               {isPayer && !isPaid && splits.length > 0 && (
                 <AlertDialog open={settleAllDialogOpen} onOpenChange={setSettleAllDialogOpen}>
                   <AlertDialogTrigger asChild>
-                    <Button variant="default" size="sm" className="bg-green-600 hover:bg-green-700">
+                    <Button variant="default" size="sm" className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
                       <CheckCircle2Icon className="h-4 w-4 mr-2" />
                       {t('expenses.settleAll', 'Settle All')}
                     </Button>
@@ -337,28 +444,30 @@ export const ExpenseShow = () => {
               <div className="space-y-3">
                 {splits.map((split: any) => {
                   const isCurrentUserSplit = split.user_id === identity?.id;
-                  const canSettle = isPayer && !isPaid && !isCurrentUserSplit;
+                  const isSplitSettled = split.is_settled || isPaid;
+                  const canSettle = isPayer && !isSplitSettled && !isCurrentUserSplit;
                   const userAttachments = getAttachmentsForUser(split.user_id);
+                  const isPartiallySettled = split.is_settled && split.settled_amount < split.computed_amount;
 
                   return (
                     <div
                       key={split.id}
-                      className={`group flex flex-col p-4 border-2 rounded-xl transition-all duration-200 ${
-                        isPaid
+                      className={`group flex flex-col p-3 sm:p-4 border-2 rounded-xl transition-all duration-200 ${
+                        isSplitSettled
                           ? 'bg-green-50/50 border-green-200'
                           : 'hover:border-primary/50 hover:bg-accent/30'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 flex-1">
-                        <Avatar className={`h-12 w-12 border-2 shadow-md ring-2 ring-offset-1 ring-offset-background transition-all duration-200 ${
-                          isPaid
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                        <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0 w-full sm:w-auto">
+                        <Avatar className={`h-10 w-10 sm:h-12 sm:w-12 border-2 shadow-md ring-2 ring-offset-1 ring-offset-background transition-all duration-200 flex-shrink-0 ${
+                          isSplitSettled
                             ? 'border-green-300 ring-green-200'
                             : 'border-background ring-primary/20 group-hover:ring-primary/50 group-hover:scale-105'
                         }`}>
                           <AvatarImage src={split.profiles?.avatar_url || undefined} alt={split.profiles?.full_name} />
-                          <AvatarFallback className={`text-sm font-semibold ${
-                            isPaid
+                          <AvatarFallback className={`text-xs sm:text-sm font-semibold ${
+                            isSplitSettled
                               ? 'bg-gradient-to-br from-green-100 to-green-50 text-green-700'
                               : 'bg-gradient-to-br from-muted to-muted/50'
                           }`}>
@@ -370,9 +479,9 @@ export const ExpenseShow = () => {
                               .slice(0, 2) || "?"}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="max-w-[250px] flex-1">
-                          <div className={`font-semibold text-base line-clamp-2 leading-tight transition-colors ${
-                            isPaid ? 'text-green-700' : 'group-hover:text-primary'
+                        <div className="flex-1 min-w-0">
+                          <div className={`font-semibold text-sm sm:text-base line-clamp-2 leading-tight transition-colors break-words ${
+                            isSplitSettled ? 'text-green-700' : 'group-hover:text-primary'
                           }`} title={split.profiles?.full_name || t('profile.unknown')}>
                             {split.profiles?.full_name || t('profile.unknown')}
                             {isCurrentUserSplit && (
@@ -381,17 +490,19 @@ export const ExpenseShow = () => {
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
                             <div className="text-xs text-muted-foreground font-medium">
                               {String(t(`expenses.${split.split_method}`, split.split_method))}
                             </div>
-                            {isPaid && (
+                            {isSplitSettled && (
                               <Badge variant="outline" className="text-xs bg-green-100 text-green-700 border-green-300">
                                 <CheckCircle2Icon className="h-3 w-3 mr-1" />
-                                {t('expenses.paid', 'Paid')}
+                                {isPartiallySettled
+                                  ? t('expenses.partiallyPaid', 'Partially Paid')
+                                  : t('expenses.paid', 'Paid')}
                               </Badge>
                             )}
-                            {!isPaid && !isCurrentUserSplit && (
+                            {!isSplitSettled && !isCurrentUserSplit && (
                               <Badge variant="outline" className="text-xs bg-red-100 text-red-700 border-red-300">
                                 <XCircleIcon className="h-3 w-3 mr-1" />
                                 {t('expenses.unpaid', 'Unpaid')}
@@ -400,12 +511,37 @@ export const ExpenseShow = () => {
                           </div>
                         </div>
                         </div>
-                        <div className="text-right flex items-center gap-3">
-                          <div className={`font-bold text-lg transition-transform ${
-                            isPaid ? 'text-green-600' : 'group-hover:scale-110'
-                          }`}>
-                            {formatNumber(split.computed_amount)} {expense.currency}
+                        <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
+                          <div className="flex flex-col items-start sm:items-end">
+                            <div className={`font-bold text-base sm:text-lg transition-transform ${
+                              isSplitSettled ? 'text-green-600' : 'group-hover:scale-110'
+                            }`}>
+                              {formatNumber(split.computed_amount)} {expense.currency}
+                            </div>
+                            {isPartiallySettled && (
+                              <div className="text-xs text-muted-foreground">
+                                {t('expenses.settled', 'Settled')}: {formatNumber(split.settled_amount)} {expense.currency}
+                              </div>
+                            )}
                           </div>
+                          {canSettle && (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              className="bg-green-600 hover:bg-green-700 flex-shrink-0"
+                              onClick={() => openSettleDialog(split)}
+                              disabled={settlingSplitId === split.id}
+                            >
+                              {settlingSplitId === split.id ? (
+                                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <>
+                                  <CheckCircle2Icon className="h-4 w-4 sm:mr-1" />
+                                  <span className="hidden sm:inline">{t('expenses.settle', 'Settle')}</span>
+                                </>
+                              )}
+                            </Button>
+                          )}
                         </div>
                       </div>
                       {userAttachments.length > 0 && (
@@ -430,6 +566,19 @@ export const ExpenseShow = () => {
           />
         )}
       </div>
+
+      {/* Settle Split Dialog */}
+      {selectedSplit && (
+        <SettleSplitDialog
+          open={settleSplitDialogOpen}
+          onOpenChange={setSettleSplitDialogOpen}
+          userName={selectedSplit.profiles?.full_name || t('profile.unknown')}
+          computedAmount={selectedSplit.computed_amount}
+          currency={expense.currency}
+          onConfirm={handleSettleSplit}
+          isSettling={settlingSplitId === selectedSplit.id}
+        />
+      )}
     </div>
   );
 };
