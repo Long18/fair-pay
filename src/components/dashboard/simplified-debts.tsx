@@ -76,18 +76,10 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
 
   return (
     <Card className="border-[#F2F2F2]">
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader>
         <CardTitle className="text-base font-bold text-[#333]">
           {t('dashboard.whoOwesWhom')}
         </CardTitle>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => go({ to: "/balances" })}
-          className="text-[#FFA14E] hover:text-[#FF8C2E]"
-        >
-          {t('dashboard.viewAll')}
-        </Button>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
@@ -145,16 +137,6 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
             </div>
           ))}
         </div>
-
-        {debts.length > 5 && (
-          <Button
-            variant="outline"
-            className="w-full mt-4 border-[#F2F2F2] text-[#828282] hover:text-[#FFA14E] hover:border-[#FFA14E]"
-            onClick={() => go({ to: "/balances" })}
-          >
-            {t('dashboard.viewMore', { count: debts.length - 5 })}
-          </Button>
-        )}
       </CardContent>
     </Card>
   );

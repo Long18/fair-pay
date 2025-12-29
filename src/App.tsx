@@ -6,7 +6,6 @@ import {
   HomeIcon,
   UsersIcon,
   UserPlusIcon,
-  WalletIcon,
   ReceiptIcon,
   FairPayIcon,
 } from "./components/ui/icons";
@@ -46,7 +45,6 @@ import { supabaseClient } from "./utility";
 import { DonationWidget } from "./components/donation-widget";
 
 // Lazy loaded components (code splitting)
-const BalancesPage = lazy(() => import("./pages/balances").then(m => ({ default: m.BalancesPage })));
 const ReportsPage = lazy(() => import("./pages/reports").then(m => ({ default: m.ReportsPage })));
 const SettingsPage = lazy(() => import("./modules/settings").then(m => ({ default: m.SettingsPage })));
 const DonationSettings = lazy(() => import("./modules/settings").then(m => ({ default: m.DonationSettings })));
@@ -176,14 +174,6 @@ function App() {
                   },
                 },
                 {
-                  name: "balances",
-                  list: "/balances",
-                  meta: {
-                    label: "Balances",
-                    icon: <WalletIcon className="w-5 h-5" />,
-                  },
-                },
-                {
                   name: "reports",
                   list: "/reports",
                   meta: {
@@ -293,11 +283,6 @@ function App() {
                     <Route path="create" element={<PaymentCreate />} />
                   </Route>
                   <Route path="/notifications" element={<NotificationList />} />
-                  <Route path="/balances" element={
-                    <Suspense fallback={<PageLoader />}>
-                      <BalancesPage />
-                    </Suspense>
-                  } />
                   <Route path="/reports" element={
                     <Suspense fallback={<PageLoader />}>
                       <ReportsPage />
