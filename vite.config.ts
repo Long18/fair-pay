@@ -11,7 +11,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-            includeAssets: ['favicon.ico'],
+            includeAssets: ['favicon.ico', 'google44489daa6fb5786d.html'],
       manifest: {
         name: 'FairPay - Expense Splitting Made Easy',
         short_name: 'FairPay',
@@ -65,7 +65,7 @@ export default defineConfig({
           // Vendor chunk for React and core libraries
           'react-vendor': ['react', 'react-dom'],
 
-          // FairPay framework dependencies (Refine core)
+          // Refine framework (core only - other packages auto-chunked)
           'refine': ['@refinedev/core'],
 
           // UI libraries
@@ -82,9 +82,6 @@ export default defineConfig({
 
     // Optimize chunk size
     chunkSizeWarningLimit: 1000,
-
-    // CSS minification settings
-    cssMinify: 'lightningcss',
 
     // Minification
     minify: 'terser',
