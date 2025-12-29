@@ -21,7 +21,7 @@ DECLARE
   old_email TEXT;
   temp_email TEXT;
 BEGIN
-  -- #region agent log H6,H7
+  -- #region agent log H8
   RAISE NOTICE '[AGENT_LOG] handle_new_user START: NEW.id=%, NEW.email=%', NEW.id, NEW.email;
   -- #endregion
 
@@ -29,24 +29,20 @@ BEGIN
   SET LOCAL row_security = off;
 
   -- Check if profile with this email already exists (from production data pull)
-  -- #region agent log H6
-  RAISE NOTICE '[AGENT_LOG] Before SELECT old_profile: email=%', NEW.email;
-  -- #endregion
-
   SELECT id, email INTO old_profile_id, old_email
   FROM public.profiles
   WHERE email = NEW.email
   FOR UPDATE; -- Lock the row to prevent concurrent modifications
 
-  -- #region agent log H6
+  -- #region agent log H8
   RAISE NOTICE '[AGENT_LOG] After SELECT: old_profile_id=%, old_email=%', old_profile_id, old_email;
   -- #endregion
 
   IF old_profile_id IS NOT NULL AND old_profile_id != NEW.id THEN
-    -- #region agent log H6,H7
+    -- #region agent log H8,H9
     RAISE NOTICE '[AGENT_LOG] Profile migration path: old_id=%, new_id=%', old_profile_id, NEW.id;
     -- #endregion
-
+    
     -- Profile exists with different ID - need to migrate to new ID
     -- Store old profile data BEFORE any changes
     SELECT full_name, avatar_url, created_at
@@ -54,27 +50,13 @@ BEGIN
     FROM public.profiles
     WHERE id = old_profile_id;
 
-    -- #region agent log H6
-    RAISE NOTICE '[AGENT_LOG] Stored old profile data: name=%, avatar=%, created=%', old_full_name, old_avatar_url, old_created_at;
-    -- #endregion
-
-    -- CRITICAL FIX: Temporarily change old profile email to avoid conflict
-    -- This prevents the unique constraint violation when inserting new profile
+    -- Temporarily change old profile email to avoid conflict
     temp_email := old_email || '.old.' || old_profile_id::text;
-
-    -- #region agent log H7
-    RAISE NOTICE '[AGENT_LOG] Before UPDATE old profile email to temp: %', temp_email;
-    -- #endregion
-
-    UPDATE public.profiles
+    UPDATE public.profiles 
     SET email = temp_email
     WHERE id = old_profile_id;
 
-    -- #region agent log H7
-    RAISE NOTICE '[AGENT_LOG] After UPDATE old profile email, before INSERT new profile';
-    -- #endregion
-
-    -- Now create new profile with the original email (no conflict now)
+    -- Create new profile with the original email
     INSERT INTO public.profiles (id, email, full_name, avatar_url, created_at, updated_at)
     VALUES (
       NEW.id,
@@ -85,24 +67,17 @@ BEGIN
       NOW()
     );
 
-    -- #region agent log H6,H7
-    RAISE NOTICE '[AGENT_LOG] After INSERT new profile: id=%', NEW.id;
-    -- #endregion
-
-    -- Now update all foreign key references to point to new profile ID
-    -- #region agent log H6,H7
+    -- #region agent log H8,H9
     RAISE NOTICE '[AGENT_LOG] Before FK updates: old_id=%, new_id=%', old_profile_id, NEW.id;
     -- #endregion
-
+    
+    -- Update FK references (except friendships which needs special handling)
     UPDATE expenses SET paid_by_user_id = NEW.id WHERE paid_by_user_id = old_profile_id;
     UPDATE expenses SET created_by = NEW.id WHERE created_by = old_profile_id;
     UPDATE expense_splits SET user_id = NEW.id WHERE user_id = old_profile_id;
     UPDATE payments SET from_user = NEW.id WHERE from_user = old_profile_id;
     UPDATE payments SET to_user = NEW.id WHERE to_user = old_profile_id;
     UPDATE payments SET created_by = NEW.id WHERE created_by = old_profile_id;
-    UPDATE friendships SET user_a = NEW.id WHERE user_a = old_profile_id;
-    UPDATE friendships SET user_b = NEW.id WHERE user_b = old_profile_id;
-    UPDATE friendships SET created_by = NEW.id WHERE created_by = old_profile_id;
     UPDATE groups SET created_by = NEW.id WHERE created_by = old_profile_id;
     UPDATE group_members SET user_id = NEW.id WHERE user_id = old_profile_id;
     UPDATE attachments SET uploaded_by = NEW.id WHERE uploaded_by = old_profile_id;
@@ -111,21 +86,42 @@ BEGIN
     UPDATE audit_logs SET user_id = NEW.id WHERE user_id = old_profile_id;
     UPDATE user_roles SET user_id = NEW.id WHERE user_id = old_profile_id;
 
-    -- #region agent log H6,H7
-    RAISE NOTICE '[AGENT_LOG] After all FK updates, before DELETE old profile';
+    -- #region agent log H8,H9
+    RAISE NOTICE '[AGENT_LOG] Before friendships updates';
     -- #endregion
+    
+    -- Handle friendships specially to maintain ordered_users constraint
+    -- Update and swap if needed to maintain user_a < user_b
+    UPDATE friendships
+    SET 
+      user_a = CASE 
+        WHEN user_a = old_profile_id THEN 
+          CASE WHEN NEW.id < user_b THEN NEW.id ELSE user_b END
+        ELSE user_a 
+      END,
+      user_b = CASE 
+        WHEN user_a = old_profile_id THEN 
+          CASE WHEN NEW.id < user_b THEN user_b ELSE NEW.id END
+        ELSE NEW.id
+      END,
+      created_by = CASE WHEN created_by = old_profile_id THEN NEW.id ELSE created_by END
+    WHERE user_a = old_profile_id OR user_b = old_profile_id;
 
-    -- Now safe to delete old profile (all FKs updated, CASCADE won't affect anything)
+    -- #region agent log H8,H9
+    RAISE NOTICE '[AGENT_LOG] After friendships updates, before DELETE old profile';
+    -- #endregion
+    
+    -- Now safe to delete old profile
     DELETE FROM public.profiles WHERE id = old_profile_id;
-
-    -- #region agent log H6,H7
+    
+    -- #region agent log H8,H9
     RAISE NOTICE '[AGENT_LOG] After DELETE old profile';
     -- #endregion
   ELSE
-    -- #region agent log H6
+    -- #region agent log H8
     RAISE NOTICE '[AGENT_LOG] New profile path: old_profile_id=%, NEW.id=%', old_profile_id, NEW.id;
     -- #endregion
-
+    
     -- No existing profile or ID matches - insert new profile
     INSERT INTO public.profiles (id, email, full_name)
     VALUES (
@@ -134,20 +130,16 @@ BEGIN
       COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(NEW.email, '@', 1))
     )
     ON CONFLICT (id) DO NOTHING;
-
-    -- #region agent log H6
-    RAISE NOTICE '[AGENT_LOG] After INSERT new profile (no migration)';
-    -- #endregion
   END IF;
 
-  -- #region agent log H6,H7
+  -- #region agent log H8,H9
   RAISE NOTICE '[AGENT_LOG] handle_new_user END: SUCCESS';
   -- #endregion
 
   RETURN NEW;
 EXCEPTION
   WHEN OTHERS THEN
-    -- #region agent log H6,H7
+    -- #region agent log H8,H9
     RAISE NOTICE '[AGENT_LOG] handle_new_user EXCEPTION: %, %', SQLERRM, SQLSTATE;
     -- #endregion
     RAISE;
@@ -162,4 +154,4 @@ CREATE TRIGGER on_auth_user_created
 
 -- Add comment
 COMMENT ON FUNCTION handle_new_user() IS
-  'Handles new user creation. If profile with same email exists (from production data), migrates by: 1) Temporarily changing old profile email, 2) Creating new profile with correct email, 3) Updating all FK references, 4) Deleting old profile. This preserves all related data.';
+  'Handles new user creation. If profile with same email exists (from production data), migrates by: 1) Temporarily changing old profile email, 2) Creating new profile, 3) Updating all FK references (with special handling for friendships ordered_users constraint), 4) Deleting old profile. Preserves all related data.';
