@@ -407,13 +407,13 @@ export const ProfileShow = () => {
                           <TableCell>
                             <Badge
                               variant={debt.i_owe_them ? "destructive" : "default"}
-                              className={`${debt.i_owe_them ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"} transition-all group-hover:scale-105`}
+                              className={`${debt.i_owe_them ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"} transition-all`}
                             >
                               {debt.i_owe_them ? t('profile.owes') : t('profile.isOwed')}
                             </Badge>
                           </TableCell>
                           <TableCell
-                            className={`text-right font-bold text-base transition-all group-hover:scale-105 ${
+                            className={`text-right font-bold text-base transition-all ${
                               debt.i_owe_them ? "text-red-600" : "text-green-600"
                             }`}
                           >
@@ -588,7 +588,7 @@ export const ProfileShow = () => {
                           <TableCell>
                             <Badge
                               variant={activity.is_borrower ? "destructive" : "default"}
-                              className={`transition-all group-hover:scale-105 ${
+                              className={`transition-all ${
                                 activity.is_borrower
                                   ? "bg-red-100 text-red-700"
                                   : activity.is_payment
@@ -605,7 +605,7 @@ export const ProfileShow = () => {
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">{formatDateShort(activity.date)}</TableCell>
                           <TableCell
-                            className={`text-right font-bold text-base transition-transform group-hover:scale-105 ${
+                            className={`text-right font-bold text-base transition-transform ${
                               activity.is_borrower ? "text-red-600" : "text-green-600"
                             }`}
                           >
