@@ -6,7 +6,9 @@ import { ExpenseForm } from "../components/expense-form";
 import { AttachmentUpload, type AttachmentFile } from "../components/attachment-upload";
 import { AttachmentList } from "../components/attachment-list";
 import { useAttachments } from "../hooks/use-attachments";
+import { useUpdateRecurringExpense, useDeleteRecurringExpense } from "../hooks/use-recurring-expenses";
 import { ExpenseFormValues, Expense, Attachment } from "../types";
+import { RecurringExpense } from "../types/recurring";
 import { Profile } from "@/modules/profile/types";
 import { GroupMember } from "@/modules/groups/types";
 import { Friendship } from "@/modules/friends/types";
@@ -21,7 +23,10 @@ export const ExpenseEdit = () => {
   const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
   const [existingSplits, setExistingSplits] = useState<any[]>([]);
   const [existingAttachments, setExistingAttachments] = useState<Attachment[]>([]);
+  const [recurringExpense, setRecurringExpense] = useState<RecurringExpense | null>(null);
   const { uploadAttachments, deleteAttachment } = useAttachments();
+  const { updateRecurring } = useUpdateRecurringExpense();
+  const { deleteRecurring } = useDeleteRecurringExpense();
 
   // Fetch expense data
   const { query: expenseQuery } = useOne<Expense>({
@@ -84,6 +89,25 @@ export const ExpenseEdit = () => {
           setExistingAttachments([]);
         } else {
           setExistingAttachments(data || []);
+        }
+      });
+  }, [id]);
+
+  // Fetch recurring expense data if exists
+  useEffect(() => {
+    if (!id) return;
+
+    supabaseClient
+      .from("recurring_expenses")
+      .select("*")
+      .eq("template_expense_id", id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Error fetching recurring expense:", error);
+          setRecurringExpense(null);
+        } else {
+          setRecurringExpense(data);
         }
       });
   }, [id]);
@@ -280,6 +304,38 @@ export const ExpenseEdit = () => {
             await uploadAttachments(files, id!, identity.id);
           }
 
+          // Handle recurring expense updates
+          try {
+            if (is_recurring && recurring) {
+              if (recurringExpense) {
+                // Update existing recurring expense
+                await updateRecurring(recurringExpense.id, {
+                  frequency: recurring.frequency,
+                  interval: recurring.interval,
+                  end_date: recurring.end_date,
+                });
+              } else {
+                // Create new recurring expense
+                await supabaseClient
+                  .from("recurring_expenses")
+                  .insert({
+                    template_expense_id: id!,
+                    frequency: recurring.frequency,
+                    interval: recurring.interval,
+                    next_occurrence: recurring.start_date.toISOString().split('T')[0],
+                    end_date: recurring.end_date ? recurring.end_date.toISOString().split('T')[0] : null,
+                    is_active: true,
+                  });
+              }
+            } else if (!is_recurring && recurringExpense) {
+              // Delete recurring expense if toggled off
+              await deleteRecurring(recurringExpense.id);
+            }
+          } catch (error) {
+            console.error("Error handling recurring expense:", error);
+            toast.error("Expense updated but failed to update recurring schedule");
+          }
+
           toast.success("Expense updated successfully");
 
           // Navigate back to expense detail
@@ -319,7 +375,14 @@ export const ExpenseEdit = () => {
     expense_date: expense.expense_date,
     paid_by_user_id: expense.paid_by_user_id,
     split_method: existingSplits[0]?.split_method || "equal",
-    is_recurring: false,
+    is_recurring: !!recurringExpense,
+    recurring: recurringExpense ? {
+      frequency: recurringExpense.frequency as any,
+      interval: recurringExpense.interval,
+      start_date: new Date(recurringExpense.next_occurrence),
+      end_date: recurringExpense.end_date ? new Date(recurringExpense.end_date) : null,
+      notify_before_days: 0, // Default value
+    } : undefined,
     splits: existingSplits.map((split: any) => ({
       user_id: split.user_id,
       split_value: split.split_value,
