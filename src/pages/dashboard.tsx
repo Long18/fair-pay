@@ -7,6 +7,8 @@ import { BalanceTable } from "@/components/dashboard/BalanceTable";
 import { ActivityTable } from "@/components/dashboard/ActivityTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Spinner } from "@/components/ui/spinner";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useGlobalBalance } from "@/hooks/use-global-balance";
 import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
 import { usePaginatedActivities } from "@/hooks/use-paginated-activities";
@@ -16,7 +18,10 @@ export const Dashboard = () => {
   const { data: identity } = useGetIdentity<Profile>();
   const { t } = useTranslation();
   const globalBalance = useGlobalBalance();
-  const { data: debts = [], isLoading: debtsLoading, refetch: refetchDebts } = useAggregatedDebts();
+  const [showHistory, setShowHistory] = useState(false);
+  const { data: debts = [], isLoading: debtsLoading, refetch: refetchDebts } = useAggregatedDebts({
+    includeHistory: showHistory
+  });
   const {
     items: activities,
     metadata: activitiesMetadata,
@@ -74,7 +79,19 @@ export const Dashboard = () => {
           </TabsList>
 
           <TabsContent value="balances" className="space-y-4">
-            <BalanceTable balances={balances} disabled={!isAuthenticated} />
+            {isAuthenticated && (
+              <div className="flex items-center justify-end space-x-2 mb-4">
+                <Switch
+                  id="show-history"
+                  checked={showHistory}
+                  onCheckedChange={setShowHistory}
+                />
+                <Label htmlFor="show-history" className="text-sm cursor-pointer">
+                  {t('dashboard.showAllTransactions', 'Show all transactions (including settled)')}
+                </Label>
+              </div>
+            )}
+            <BalanceTable balances={balances} disabled={!isAuthenticated} showHistory={showHistory} />
           </TabsContent>
 
           <TabsContent value="activity" className="space-y-4">
