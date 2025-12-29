@@ -142,6 +142,7 @@
         "db:pull": "supabase db pull",
         "db:remote:status": "supabase migration list --linked",
         "db:pull-data": "./scripts/pull-production-data.sh",
+        "db:pull-all": "./scripts/pull-production-with-storage.sh",
         "db:import-test": "./scripts/import-test-data.sh"
     },
     "browserslist": {
