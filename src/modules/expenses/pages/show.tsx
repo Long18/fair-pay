@@ -500,12 +500,16 @@ export const ExpenseShow = () => {
                             <div className="text-xs text-muted-foreground font-medium">
                               {String(t(`expenses.${split.split_method}`, split.split_method))}
                             </div>
-                            {isSplitSettled && (
+                            {isSplitSettled && !isPartiallySettled && (
                               <Badge variant="outline" className="text-xs bg-green-100 text-green-700 border-green-300">
                                 <CheckCircle2Icon className="h-3 w-3 mr-1" />
-                                {isPartiallySettled
-                                  ? t('expenses.partiallyPaid', 'Partially Paid')
-                                  : t('expenses.paid', 'Paid')}
+                                {t('expenses.paid', 'Paid')}
+                              </Badge>
+                            )}
+                            {isPartiallySettled && (
+                              <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-300">
+                                <CheckCircle2Icon className="h-3 w-3 mr-1" />
+                                {t('expenses.partiallyPaid', 'Partially Paid')}
                               </Badge>
                             )}
                             {!isSplitSettled && !isCurrentUserSplit && (
