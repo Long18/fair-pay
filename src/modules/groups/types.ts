@@ -25,6 +25,7 @@ export interface GroupFormValues {
   name: string;
   description?: string;
   simplify_debts?: boolean;
+  member_ids?: string[];
 }
 
 export interface AddMemberFormValues {

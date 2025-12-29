@@ -12,7 +12,7 @@ SELECT
   es.user_id as owes_user,
   e.paid_by_user_id as owed_user,
   SUM(
-    CASE 
+    CASE
       -- If fully settled, debt is 0
       WHEN es.is_settled = true AND es.settled_amount >= es.computed_amount THEN 0
       -- If partially settled, subtract settled amount from computed amount
@@ -27,12 +27,12 @@ WHERE e.is_payment = false
   AND es.user_id != e.paid_by_user_id
   -- Only include splits with remaining debt
   AND (
-    (es.is_settled = false) OR 
+    (es.is_settled = false) OR
     (es.is_settled = true AND es.settled_amount < es.computed_amount)
   )
 GROUP BY es.user_id, e.paid_by_user_id
 HAVING SUM(
-  CASE 
+  CASE
     WHEN es.is_settled = true AND es.settled_amount >= es.computed_amount THEN 0
     WHEN es.settled_amount > 0 THEN es.computed_amount - es.settled_amount
     ELSE es.computed_amount
@@ -46,4 +46,3 @@ COMMIT;
 
 -- Verification query (commented out for production)
 -- SELECT * FROM user_debts_summary LIMIT 10;
-
