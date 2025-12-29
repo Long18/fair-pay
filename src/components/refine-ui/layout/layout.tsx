@@ -1,6 +1,7 @@
 "use client";
 
 import { Header } from "@/components/refine-ui/layout/header";
+import { Footer } from "@/components/refine-ui/layout/footer";
 import { ThemeProvider } from "@/components/refine-ui/theme/theme-provider";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
@@ -12,7 +13,7 @@ export function Layout({ children }: PropsWithChildren) {
     <ThemeProvider>
       <SidebarProvider>
         <Sidebar />
-        <SidebarInset>
+        <SidebarInset className="flex flex-col min-h-screen">
           <Header />
           <main
             className={cn(
@@ -33,6 +34,7 @@ export function Layout({ children }: PropsWithChildren) {
           >
             {children}
           </main>
+          <Footer />
         </SidebarInset>
       </SidebarProvider>
     </ThemeProvider>

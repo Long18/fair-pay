@@ -244,6 +244,11 @@
         "welcomeBack": "Chào mừng trở lại, {{name}}",
         "welcomeGuest": "Chào mừng trở lại, Khách"
     },
+    "footer": {
+        "tagline": "Chia chi phí công bằng",
+        "privacy": "Chính sách bảo mật",
+        "terms": "Điều khoản dịch vụ"
+    },
     "profile": {
         "title": "Hồ sơ",
         "memberSince": "Thành viên từ",

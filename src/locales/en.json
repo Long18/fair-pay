@@ -245,6 +245,11 @@
         "welcomeBack": "Welcome back, {{name}}",
         "welcomeGuest": "Welcome back, Guest"
     },
+    "footer": {
+        "tagline": "Split expenses fairly",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Service"
+    },
     "profile": {
         "title": "Profile",
         "memberSince": "Member since",
