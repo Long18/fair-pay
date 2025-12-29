@@ -73,6 +73,7 @@ interface ExpenseFormProps {
   defaultValues?: Partial<ExpenseFormValues>;
   isLoading?: boolean;
   topPartnerIds?: string[];
+  isEdit?: boolean;
 }
 
 export const ExpenseForm = ({
@@ -83,6 +84,7 @@ export const ExpenseForm = ({
   defaultValues,
   isLoading,
   topPartnerIds = [],
+  isEdit = false,
 }: ExpenseFormProps) => {
   const form = useForm({
     resolver: zodResolver(expenseSchema),
@@ -107,16 +109,29 @@ export const ExpenseForm = ({
     recalculate,
     isValid: isSplitValid,
     totalSplit,
-  } = useSplitCalculation();
+  } = useSplitCalculation(defaultValues?.splits);
 
-  const [manualSplits, setManualSplits] = useState<Record<string, number>>({});
+  // Initialize manual splits from defaultValues
+  const [manualSplits, setManualSplits] = useState<Record<string, number>>(() => {
+    if (defaultValues?.splits) {
+      const initial: Record<string, number> = {};
+      defaultValues.splits.forEach(split => {
+        if (split.split_value !== undefined && split.split_value !== null) {
+          initial[split.user_id] = split.split_value;
+        }
+      });
+      return initial;
+    }
+    return {};
+  });
   const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   const amount = form.watch("amount");
   const splitMethod = form.watch("split_method");
 
   useEffect(() => {
-    if (members.length > 0 && participants.length === 0) {
+    // Only auto-select participants if not editing and no existing splits
+    if (members.length > 0 && participants.length === 0 && !defaultValues?.splits) {
       const defaultParticipants = [currentUserId, ...topPartnerIds.slice(0, 2)];
       const uniqueParticipants = Array.from(new Set(defaultParticipants));
       uniqueParticipants.forEach((memberId) => {
@@ -125,7 +140,7 @@ export const ExpenseForm = ({
         }
       });
     }
-  }, [members, participants.length, addParticipant, currentUserId, topPartnerIds]);
+  }, [members, participants.length, addParticipant, currentUserId, topPartnerIds, defaultValues?.splits]);
 
   useEffect(() => {
     if (amount > 0 && participants.length > 0) {
@@ -671,7 +686,7 @@ export const ExpenseForm = ({
         />
 
         <Button type="submit" disabled={isLoading || !isSplitValid} className="w-full">
-          {isLoading ? "Creating..." : "Create Expense"}
+          {isLoading ? (isEdit ? "Updating..." : "Creating...") : (isEdit ? "Update Expense" : "Create Expense")}
         </Button>
       </form>
     </Form>
