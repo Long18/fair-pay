@@ -108,7 +108,7 @@ export const AttachmentList = ({
                         <FileImageIcon className="h-12 w-12 text-muted-foreground/50" />
                       </div>
                     )}
-                    
+
                     <img
                       src={imageUrl}
                       alt={attachment.file_name}
