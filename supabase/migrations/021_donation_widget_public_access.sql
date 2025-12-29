@@ -10,4 +10,3 @@ CREATE POLICY "Anyone can read donation settings"
   FOR SELECT
   TO public
   USING (true);
-
