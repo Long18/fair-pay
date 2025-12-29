@@ -20,15 +20,21 @@ interface Balance {
   counterparty_avatar_url?: string | null;
   amount: string | number;
   i_owe_them: boolean;
+  total_amount?: number;
+  settled_amount?: number;
+  remaining_amount?: number;
+  transaction_count?: number;
+  last_transaction_date?: string;
 }
 
 interface BalanceTableProps {
   balances: Balance[];
   pageSize?: number;
   disabled?: boolean;
+  showHistory?: boolean;
 }
 
-export function BalanceTable({ balances, pageSize = 10, disabled = false }: BalanceTableProps) {
+export function BalanceTable({ balances, pageSize = 10, disabled = false, showHistory = false }: BalanceTableProps) {
   const go = useGo();
   const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState(1);
@@ -75,7 +81,15 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false }: Bala
             <TableHead className="w-[50px]"></TableHead>
             <TableHead>{t('profile.person', 'Person')}</TableHead>
             <TableHead>{t('profile.status', 'Status')}</TableHead>
-            <TableHead className="text-right">{t('profile.amount', 'Amount')}</TableHead>
+            {showHistory && (
+              <>
+                <TableHead className="text-right">{t('dashboard.totalAmount', 'Total')}</TableHead>
+                <TableHead className="text-right">{t('dashboard.settledAmount', 'Settled')}</TableHead>
+              </>
+            )}
+            <TableHead className="text-right">
+              {showHistory ? t('dashboard.remainingAmount', 'Remaining') : t('profile.amount', 'Amount')}
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -103,8 +117,18 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false }: Bala
                   {balance.i_owe_them ? t('dashboard.youOwe') : t('dashboard.userOwesYou')}
                 </Badge>
               </TableCell>
+              {showHistory && (
+                <>
+                  <TableCell className="text-right text-muted-foreground">
+                    ₫{formatCurrency(Number(balance.total_amount || balance.amount))}
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground">
+                    ₫{formatCurrency(Number(balance.settled_amount || 0))}
+                  </TableCell>
+                </>
+              )}
               <TableCell className="text-right font-semibold">
-                ₫{formatCurrency(Number(balance.amount))}
+                ₫{formatCurrency(Number(showHistory ? (balance.remaining_amount || balance.amount) : balance.amount))}
               </TableCell>
             </TableRow>
           ))}

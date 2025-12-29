@@ -11,15 +11,27 @@ export interface AggregatedDebt {
     i_owe_them: boolean;
     owed_to_name?: string; // Name of person who is owed (for public demo data)
     owed_to_id?: string; // ID of person who is owed (for public demo data)
+    total_amount?: number; // Total amount ever owed (for historical mode)
+    settled_amount?: number; // Amount already settled (for historical mode)
+    remaining_amount?: number; // Amount still outstanding (for historical mode)
+    transaction_count?: number; // Number of transactions (for historical mode)
+    last_transaction_date?: string; // Last transaction date (for historical mode)
+}
+
+export interface UseAggregatedDebtsOptions {
+    includeHistory?: boolean; // If true, includes settled debts in results
 }
 
 /**
  * Hook to fetch aggregated debts
- * - For authenticated users: Fetches their real debt data using get_user_debts_aggregated
+ * - For authenticated users: Fetches their real debt data using get_user_debts_aggregated or get_user_debts_history
  * - For unauthenticated users: Fetches public demo data using get_public_demo_debts
  * - All data comes from database, no hardcoded sample data
+ *
+ * @param options.includeHistory - If true, fetches all historical debts including settled ones
  */
-export const useAggregatedDebts = () => {
+export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
+    const { includeHistory = false } = options;
     const { data: identity } = useGetIdentity<Profile>();
     const [data, setData] = useState<AggregatedDebt[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -38,8 +50,12 @@ export const useAggregatedDebts = () => {
                 rpcError = response.error;
             } else {
                 // Authenticated: Fetch user's real data
+                const functionName = includeHistory
+                    ? "get_user_debts_history"
+                    : "get_user_debts_aggregated";
+
                 const response = await supabaseClient.rpc(
-                    "get_user_debts_aggregated",
+                    functionName,
                     {
                         p_user_id: identity.id,
                     }
@@ -90,7 +106,7 @@ export const useAggregatedDebts = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [identity?.id]);
+    }, [identity?.id, includeHistory]);
 
     useEffect(() => {
         fetchDebts();
