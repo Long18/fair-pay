@@ -104,6 +104,10 @@ export const ExpenseShow = () => {
     meta: {
       select: "*, uploaded_by",
     },
+    queryOptions: {
+      refetchOnWindowFocus: true,
+      refetchOnMount: "always",
+    },
   });
 
   const deleteMutation = useDelete();
@@ -515,14 +519,20 @@ export const ExpenseShow = () => {
                         </div>
                         <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
                           <div className="flex flex-col items-start sm:items-end">
-                            <div className={`font-bold text-base sm:text-lg transition-transform ${
-                              isSplitSettled ? 'text-green-600' : 'group-hover:scale-110'
-                            }`}>
-                              {formatNumber(split.computed_amount)} {expense.currency}
-                            </div>
-                            {isPartiallySettled && (
-                              <div className="text-xs text-muted-foreground">
-                                {t('expenses.settled', 'Settled')}: {formatNumber(split.settled_amount)} {expense.currency}
+                            {isPartiallySettled ? (
+                              <>
+                                <div className="font-bold text-base sm:text-lg text-amber-600">
+                                  {formatNumber(split.computed_amount - split.settled_amount)} {expense.currency}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {t('expenses.remaining', 'Remaining')} ({formatNumber(split.settled_amount)} / {formatNumber(split.computed_amount)} {t('expenses.paid', 'paid')})
+                                </div>
+                              </>
+                            ) : (
+                              <div className={`font-bold text-base sm:text-lg transition-transform ${
+                                isSplitSettled ? 'text-green-600' : 'group-hover:scale-110'
+                              }`}>
+                                {formatNumber(split.computed_amount)} {expense.currency}
                               </div>
                             )}
                           </div>
