@@ -469,7 +469,7 @@ export const ExpenseShow = () => {
                         <Avatar className={`h-10 w-10 sm:h-12 sm:w-12 border-2 shadow-md ring-2 ring-offset-1 ring-offset-background transition-all duration-200 flex-shrink-0 ${
                           isSplitSettled
                             ? 'border-green-300 ring-green-200'
-                            : 'border-background ring-primary/20 group-hover:ring-primary/50 group-hover:scale-105'
+                            : 'border-background ring-primary/20 group-hover:ring-primary/50'
                         }`}>
                           <AvatarImage src={split.profiles?.avatar_url || undefined} alt={split.profiles?.full_name} />
                           <AvatarFallback className={`text-xs sm:text-sm font-semibold ${
@@ -534,7 +534,7 @@ export const ExpenseShow = () => {
                               </>
                             ) : (
                               <div className={`font-bold text-base sm:text-lg transition-transform ${
-                                isSplitSettled ? 'text-green-600' : 'group-hover:scale-110'
+                                isSplitSettled ? 'text-green-600' : ''
                               }`}>
                                 {formatNumber(split.computed_amount)} {expense.currency}
                               </div>

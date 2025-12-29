@@ -233,7 +233,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                           onClick={() => go({ to: `/profile/${item.counterparty_id}` })}
                         >
                           <TableCell>
-                            <Avatar className="h-11 w-11 border-2 shadow-md ring-2 ring-offset-1 ring-offset-background transition-all duration-200 group-hover:scale-105 group-hover:shadow-lg border-muted ring-muted/20">
+                            <Avatar className="h-11 w-11 border-2 shadow-md ring-2 ring-offset-1 ring-offset-background transition-all duration-200 group-hover:shadow-lg border-muted ring-muted/20">
                               <AvatarImage src={item.counterparty_avatar_url || undefined} alt={item.counterparty_name} />
                               <AvatarFallback className={`text-sm font-semibold ${getAvatarGradient(item.i_owe_them)} ${getAvatarTextColor(item.i_owe_them)}`}>
                                 {item.counterparty_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
@@ -260,7 +260,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <span className={`text-lg font-bold ${getAmountColor(item.i_owe_them)} group-hover:scale-105 transition-transform inline-block`}>
+                            <span className={`text-lg font-bold ${getAmountColor(item.i_owe_them)} transition-transform inline-block`}>
                               ₫{formatCurrency(Number(item.amount))}
                             </span>
                           </TableCell>
@@ -373,7 +373,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                           }}
                         >
                           <TableCell>
-                            <Avatar className="h-11 w-11 border-2 shadow-md ring-2 ring-offset-1 ring-offset-background transition-all duration-200 group-hover:scale-105 group-hover:shadow-lg border-muted ring-muted/20">
+                            <Avatar className="h-11 w-11 border-2 shadow-md ring-2 ring-offset-1 ring-offset-background transition-all duration-200 group-hover:shadow-lg border-muted ring-muted/20">
                               <AvatarImage src={item.created_by_avatar_url || undefined} alt={item.created_by_name} />
                               <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-purple-100 to-indigo-100 text-purple-700">
                                 {item.created_by_name
@@ -406,7 +406,7 @@ export function DashboardDenseTable({ disabled = false }: DashboardDenseTablePro
                             </span>
                           </TableCell>
                           <TableCell className="text-right">
-                            <span className="text-lg font-bold text-primary group-hover:scale-105 transition-transform inline-block">
+                            <span className="text-lg font-bold text-primary transition-transform inline-block">
                               ₫{formatCurrency(Number(item.amount))}
                             </span>
                           </TableCell>
