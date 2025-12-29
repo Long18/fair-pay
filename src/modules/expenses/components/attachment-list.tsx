@@ -32,6 +32,8 @@ export const AttachmentList = ({
   const { downloadAttachment, deleteAttachment, getAttachmentUrl } = useAttachments();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [viewingUrl, setViewingUrl] = useState<string | null>(null);
+  const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
+  const [errorImages, setErrorImages] = useState<Set<string>>(new Set());
 
   if (attachments.length === 0) {
     return null;
@@ -44,6 +46,27 @@ export const AttachmentList = ({
       onDelete(attachment.id);
     }
     setDeletingId(null);
+  };
+
+  const handleImageLoad = (attachmentId: string) => {
+    setLoadingImages(prev => {
+      const next = new Set(prev);
+      next.delete(attachmentId);
+      return next;
+    });
+  };
+
+  const handleImageError = (attachmentId: string) => {
+    setLoadingImages(prev => {
+      const next = new Set(prev);
+      next.delete(attachmentId);
+      return next;
+    });
+    setErrorImages(prev => {
+      const next = new Set(prev);
+      next.add(attachmentId);
+      return next;
+    });
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -64,137 +87,176 @@ export const AttachmentList = ({
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <FileImageIcon className="h-5 w-5" />
-            Attachments ({attachments.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {attachments.map((attachment) => (
-              <Card key={attachment.id} className="overflow-hidden">
-                <CardContent className="p-0">
-                  {/* Preview */}
-                  <div className="aspect-video bg-muted flex items-center justify-center relative group">
-                    {isImage(attachment.mime_type) ? (
-                      <img
-                        src={getAttachmentUrl(attachment.storage_path)}
-                        alt={attachment.file_name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <FileIcon className="h-12 w-12 text-muted-foreground" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {attachments.map((attachment) => {
+          const isLoadingImage = loadingImages.has(attachment.id);
+          const hasErrorImage = errorImages.has(attachment.id);
+          const imageUrl = getAttachmentUrl(attachment.storage_path);
+
+          return (
+            <div
+              key={attachment.id}
+              className="group relative rounded-xl border-2 border-border bg-card overflow-hidden shadow-sm hover:shadow-md hover:border-primary/50 transition-all duration-200"
+            >
+              {/* Image Preview */}
+              <div className="relative bg-muted">
+                {isImage(attachment.mime_type) && !hasErrorImage ? (
+                  <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
+                    {/* Loading Skeleton */}
+                    {isLoadingImage && (
+                      <div className="absolute inset-0 animate-pulse bg-muted flex items-center justify-center">
+                        <FileImageIcon className="h-12 w-12 text-muted-foreground/50" />
+                      </div>
                     )}
-                    {/* Overlay with actions */}
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                      {isImage(attachment.mime_type) && (
+                    
+                    <img
+                      src={imageUrl}
+                      alt={attachment.file_name}
+                      className="w-full h-full object-contain bg-muted"
+                      loading="lazy"
+                      onLoad={() => handleImageLoad(attachment.id)}
+                      onError={() => handleImageError(attachment.id)}
+                      style={{ display: isLoadingImage ? 'none' : 'block' }}
+                    />
+
+                    {/* Hover Overlay with Actions */}
+                    {!isLoadingImage && (
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                         <Button
                           size="icon"
                           variant="secondary"
-                          onClick={() => setViewingUrl(getAttachmentUrl(attachment.storage_path))}
+                          onClick={() => setViewingUrl(imageUrl)}
+                          className="shadow-lg"
                         >
                           <EyeIcon className="h-4 w-4" />
                         </Button>
-                      )}
-                      <Button
-                        size="icon"
-                        variant="secondary"
-                        onClick={() => downloadAttachment(attachment)}
-                      >
-                        <DownloadIcon className="h-4 w-4" />
-                      </Button>
-                    </div>
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          onClick={() => downloadAttachment(attachment)}
+                          className="shadow-lg"
+                        >
+                          <DownloadIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
-
-                  {/* File Info */}
-                  <div className="p-3 space-y-2">
-                    <p className="text-sm font-medium truncate" title={attachment.file_name}>
-                      {attachment.file_name}
-                    </p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="secondary" className="text-xs">
-                        {formatFileSize(attachment.file_size)}
-                      </Badge>
-                      {attachment.mime_type === "application/pdf" && (
-                        <Badge variant="outline" className="text-xs">
-                          PDF
-                        </Badge>
-                      )}
-                      {isImage(attachment.mime_type) && (
-                        <Badge variant="outline" className="text-xs">
-                          Image
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {formatAttachmentDate(attachment.created_at)}
-                    </p>
-
-                    {/* Actions */}
-                    <div className="flex gap-2 pt-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => downloadAttachment(attachment)}
-                      >
-                        <DownloadIcon className="h-4 w-4 mr-1" />
-                        Download
-                      </Button>
-                      {canDelete && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              disabled={deletingId === attachment.id}
-                            >
-                              <Trash2Icon className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Attachment?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will permanently delete "{attachment.file_name}".
-                                This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(attachment)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
-                    </div>
+                ) : (
+                  <div className="aspect-video bg-muted flex flex-col items-center justify-center p-6">
+                    {hasErrorImage ? (
+                      <>
+                        <div className="rounded-full bg-destructive/10 p-4 mb-3">
+                          <FileIcon className="h-12 w-12 text-destructive" />
+                        </div>
+                        <p className="text-xs text-destructive font-medium text-center">
+                          Failed to load image
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <FileIcon className="h-12 w-12 text-muted-foreground mb-2" />
+                        {attachment.mime_type === "application/pdf" && (
+                          <Badge variant="outline" className="mt-2">PDF</Badge>
+                        )}
+                      </>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+                )}
+              </div>
+
+              {/* File Info */}
+              <div className="p-4 space-y-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium truncate leading-tight" title={attachment.file_name}>
+                    {attachment.file_name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatAttachmentDate(attachment.created_at)}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="secondary" className="text-xs">
+                    {formatFileSize(attachment.file_size)}
+                  </Badge>
+                  {isImage(attachment.mime_type) && !hasErrorImage && (
+                    <Badge variant="outline" className="text-xs">
+                      Image
+                    </Badge>
+                  )}
+                  {attachment.mime_type === "application/pdf" && (
+                    <Badge variant="outline" className="text-xs">
+                      PDF
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => downloadAttachment(attachment)}
+                  >
+                    <DownloadIcon className="h-4 w-4 mr-1" />
+                    Download
+                  </Button>
+                  {canDelete && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          disabled={deletingId === attachment.id}
+                        >
+                          {deletingId === attachment.id ? (
+                            <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Trash2Icon className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Attachment?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete "{attachment.file_name}".
+                            This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDelete(attachment)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
       {/* Image Viewer Modal */}
       {viewingUrl && (
         <AlertDialog open={!!viewingUrl} onOpenChange={() => setViewingUrl(null)}>
-          <AlertDialogContent className="max-w-4xl">
+          <AlertDialogContent className="max-w-4xl max-h-[90vh]">
             <AlertDialogHeader>
               <AlertDialogTitle>View Receipt</AlertDialogTitle>
             </AlertDialogHeader>
-            <div className="max-h-[70vh] overflow-auto">
+            <div className="max-h-[70vh] overflow-auto rounded-lg bg-muted p-2">
               <img
                 src={viewingUrl}
                 alt="Receipt"
                 className="w-full h-auto"
+                loading="eager"
               />
             </div>
             <AlertDialogFooter>
