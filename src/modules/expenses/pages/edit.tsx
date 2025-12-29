@@ -239,6 +239,24 @@ export const ExpenseEdit = () => {
           const splitPromises = splits.map((split) => {
             // Find if this user had a split before (to preserve settlement status)
             const existingSplit = existingSplits.find(es => es.user_id === split.user_id);
+            const isPayer = split.user_id === values.paid_by_user_id;
+
+            // Determine settlement status
+            let isSettled = false;
+            let settledAmount = 0;
+            let settledAt = null;
+
+            if (isPayer) {
+              // Auto-settle the payer's own split
+              isSettled = true;
+              settledAmount = split.computed_amount;
+              settledAt = new Date().toISOString();
+            } else if (existingSplit) {
+              // Preserve existing settlement status for non-payers
+              isSettled = existingSplit.is_settled;
+              settledAmount = existingSplit.settled_amount;
+              settledAt = existingSplit.settled_at;
+            }
 
             return supabaseClient
               .from("expense_splits")
@@ -248,10 +266,9 @@ export const ExpenseEdit = () => {
                 split_method: values.split_method,
                 split_value: split.split_value,
                 computed_amount: split.computed_amount,
-                // Preserve settlement status if user was already in the split
-                is_settled: existingSplit?.is_settled || false,
-                settled_amount: existingSplit?.settled_amount || 0,
-                settled_at: existingSplit?.settled_at || null,
+                is_settled: isSettled,
+                settled_amount: settledAmount,
+                settled_at: settledAt,
               });
           });
 
