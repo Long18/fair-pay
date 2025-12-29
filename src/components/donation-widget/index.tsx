@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useGetIdentity } from '@refinedev/core';
 import { Profile } from '@/modules/profile/types';
 import { useTranslation } from 'react-i18next';
@@ -16,9 +16,80 @@ export function DonationWidget() {
   const { i18n } = useTranslation();
   const { data: settings, isLoading } = useDonationSettings();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [showRandomTooltip, setShowRandomTooltip] = useState(false);
+  const [animationDuration, setAnimationDuration] = useState(60); // Default 60 seconds
+  const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const animationRef = useRef<HTMLDivElement>(null);
 
   const currentLang = i18n.language as 'en' | 'vi';
   const isAdmin = identity?.email === ADMIN_EMAIL;
+
+  // Generate random duration between 10 seconds (10000ms) and 2 minutes (120000ms)
+  const getRandomDuration = () => {
+    const min = 10; // 10 seconds
+    const max = 120; // 2 minutes
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  };
+
+  // Generate random delay for tooltip (10 seconds to 2 minutes)
+  const getRandomTooltipDelay = () => {
+    const min = 10000; // 10 seconds in ms
+    const max = 120000; // 2 minutes in ms
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  };
+
+  // Set random animation duration on mount
+  useEffect(() => {
+    const updateAnimationDuration = () => {
+      const duration = getRandomDuration();
+      setAnimationDuration(duration);
+
+      // Update CSS variable for animation duration
+      if (animationRef.current) {
+        const isDesktop = window.innerWidth >= 640;
+        // Desktop: use random duration (slower), Mobile: faster (20s)
+        const finalDuration = isDesktop ? duration : 20;
+        animationRef.current.style.setProperty('--animation-duration', `${finalDuration}s`);
+      }
+    };
+
+    updateAnimationDuration();
+
+    // Update on window resize
+    const handleResize = () => {
+      updateAnimationDuration();
+    };
+    window.addEventListener('resize', handleResize);
+
+    // Set up random tooltip showing
+    const scheduleRandomTooltip = () => {
+      const delay = getRandomTooltipDelay();
+      
+      if (tooltipTimeoutRef.current) {
+        clearTimeout(tooltipTimeoutRef.current);
+      }
+
+      tooltipTimeoutRef.current = setTimeout(() => {
+        setShowRandomTooltip(true);
+        
+        // Hide tooltip after 3 seconds
+        setTimeout(() => {
+          setShowRandomTooltip(false);
+          // Schedule next random tooltip
+          scheduleRandomTooltip();
+        }, 3000);
+      }, delay);
+    };
+
+    scheduleRandomTooltip();
+
+    return () => {
+      if (tooltipTimeoutRef.current) {
+        clearTimeout(tooltipTimeoutRef.current);
+      }
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   // Show widget if enabled OR if user is admin
   // Widget is now visible to all users (authenticated and anonymous)
@@ -68,19 +139,21 @@ export function DonationWidget() {
         }
 
         .floating-widget {
-          animation: float-mobile 12s ease-in-out infinite;
+          --animation-duration: 20s;
+          animation: float-mobile var(--animation-duration) ease-in-out infinite;
         }
 
         @media (min-width: 640px) {
           .floating-widget {
-            animation: float-fullscreen 12s ease-in-out infinite;
+            --animation-duration: 60s;
+            animation: float-fullscreen var(--animation-duration) ease-in-out infinite;
           }
         }
       `}</style>
 
       <TooltipProvider delayDuration={300}>
-        <div className="fixed bottom-6 left-6 z-50 floating-widget">
-          <Tooltip>
+        <div ref={animationRef} className="fixed bottom-6 left-6 z-50 floating-widget">
+          <Tooltip open={showRandomTooltip}>
             <TooltipTrigger asChild>
               <button
                 onClick={() => setIsDialogOpen(true)}
