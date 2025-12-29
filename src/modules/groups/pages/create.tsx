@@ -12,6 +12,7 @@ export const GroupCreate = () => {
   const go = useGo();
   const createMutation = useCreate();
   const { data: identity } = useGetIdentity<Profile>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch all user's friends
   const { query: allFriendsQuery } = useList<Friendship>({
@@ -56,6 +57,7 @@ export const GroupCreate = () => {
       return;
     }
 
+    setIsSubmitting(true);
     const { member_ids, ...groupData } = values;
 
     createMutation.mutate(
@@ -93,6 +95,7 @@ export const GroupCreate = () => {
         },
         onError: (error) => {
           toast.error(`Failed to create group: ${error.message}`);
+          setIsSubmitting(false);
         },
       }
     );
@@ -113,7 +116,7 @@ export const GroupCreate = () => {
       <div className="space-y-6 py-4">
         <GroupForm
           onSubmit={handleSubmit}
-          isLoading={createMutation.isLoading}
+          isLoading={isSubmitting}
           availableMembers={availableMembers}
           currentUserId={identity?.id}
         />
