@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Profile } from "@/modules/profile/types";
 import { formatNumber } from "@/lib/locale-utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { RefreshCwIcon, AlertCircleIcon } from "@/components/ui/icons";
 /**
@@ -143,32 +144,6 @@ export const BalancesPage = () => {
             </Card>
           </div>
 
-          {/* You Owe Section */}
-          {iOwe.length > 0 && (
-            <div>
-              <h2 className="text-lg font-bold text-foreground mb-3">
-                You Owe
-              </h2>
-              <SimplifiedDebts
-                debts={iOwe}
-                isLoading={isLoading}
-              />
-            </div>
-          )}
-
-          {/* Owed to You Section */}
-          {owedToMe.length > 0 && (
-            <div>
-              <h2 className="text-lg font-bold text-foreground mb-3">
-                Owed to You
-              </h2>
-              <SimplifiedDebts
-                debts={owedToMe}
-                isLoading={isLoading}
-              />
-            </div>
-          )}
-
           {/* Empty State */}
           {debts.length === 0 && !isLoading && !error && (
             <Card className="border-border">
@@ -198,6 +173,60 @@ export const BalancesPage = () => {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* Tabbed Debts View */}
+          {debts.length > 0 && !isLoading && !error && (
+            <Tabs defaultValue="you-owe" className="space-y-4">
+              <TabsList>
+                <TabsTrigger value="you-owe">
+                  You Owe {iOwe.length > 0 && `(${iOwe.length})`}
+                </TabsTrigger>
+                <TabsTrigger value="owed-to-you">
+                  Owed to You {owedToMe.length > 0 && `(${owedToMe.length})`}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="you-owe" className="space-y-4">
+                {iOwe.length > 0 ? (
+                  <SimplifiedDebts
+                    debts={iOwe}
+                    isLoading={isLoading}
+                  />
+                ) : (
+                  <Card className="border-border">
+                    <CardContent className="py-12 text-center">
+                      <div className="space-y-2">
+                        <div className="text-4xl">✅</div>
+                        <p className="text-muted-foreground">
+                          You don't owe anyone
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+
+              <TabsContent value="owed-to-you" className="space-y-4">
+                {owedToMe.length > 0 ? (
+                  <SimplifiedDebts
+                    debts={owedToMe}
+                    isLoading={isLoading}
+                  />
+                ) : (
+                  <Card className="border-border">
+                    <CardContent className="py-12 text-center">
+                      <div className="space-y-2">
+                        <div className="text-4xl">✅</div>
+                        <p className="text-muted-foreground">
+                          No one owes you
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+            </Tabs>
           )}
         </div>
       </div>
