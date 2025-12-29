@@ -36,18 +36,18 @@ export function DonationWidget() {
   return (
     <>
       <style>{`
-        @keyframes float {
+        @keyframes float-fullscreen {
           0%, 100% {
             transform: translate(0, 0);
           }
           25% {
-            transform: translate(8px, -25px);
+            transform: translate(calc(100vw - 120px), -30px);
           }
           50% {
-            transform: translate(-8px, -35px);
+            transform: translate(calc(50vw - 60px), -50px);
           }
           75% {
-            transform: translate(-10px, -20px);
+            transform: translate(calc(80vw - 100px), -25px);
           }
         }
 
@@ -56,23 +56,23 @@ export function DonationWidget() {
             transform: translate(0, 0);
           }
           25% {
-            transform: translate(5px, -20px);
+            transform: translate(calc(100vw - 100px), -25px);
           }
           50% {
-            transform: translate(-5px, -28px);
+            transform: translate(calc(60vw - 80px), -40px);
           }
           75% {
-            transform: translate(-6px, -15px);
+            transform: translate(calc(30vw - 60px), -20px);
           }
         }
 
         .floating-widget {
-          animation: float-mobile 8s ease-in-out infinite;
+          animation: float-mobile 12s ease-in-out infinite;
         }
 
         @media (min-width: 640px) {
           .floating-widget {
-            animation: float 8s ease-in-out infinite;
+            animation: float-fullscreen 12s ease-in-out infinite;
           }
         }
       `}</style>
