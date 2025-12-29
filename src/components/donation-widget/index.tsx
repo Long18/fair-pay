@@ -21,6 +21,7 @@ export function DonationWidget() {
   const isAdmin = identity?.email === ADMIN_EMAIL;
 
   // Show widget if enabled OR if user is admin
+  // Widget is now visible to all users (authenticated and anonymous)
   if (isLoading || !settings) {
     return null;
   }
