@@ -26,7 +26,6 @@ import { supabaseClient } from "@/utility/supabaseClient";
 import { useTranslation } from "react-i18next";
 
 import { ArrowLeftIcon, PencilIcon, Trash2Icon, CheckCircle2Icon, XCircleIcon } from "@/components/ui/icons";
-import { SplitAttachmentGallery } from "../components/split-attachment-gallery";
 import { SettleSplitDialog } from "../components/settle-split-dialog";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -42,6 +41,7 @@ export const ExpenseShow = () => {
   const [settlingSplitId, setSettlingSplitId] = useState<string | null>(null);
   const [settleSplitDialogOpen, setSettleSplitDialogOpen] = useState(false);
   const [selectedSplit, setSelectedSplit] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   const { query: expenseQuery } = useOne<Expense>({
     resource: "expenses",
@@ -250,13 +250,16 @@ export const ExpenseShow = () => {
     setDisplayAttachments(attachments);
   }, [attachments]);
 
+  // Handle loading state similar to dashboard
+  useEffect(() => {
+    if (!isLoadingExpense && !isLoadingSplits) {
+      const timer = setTimeout(() => setLoading(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoadingExpense, isLoadingSplits]);
+
   const handleAttachmentDelete = (attachmentId: string) => {
     setDisplayAttachments(prev => prev.filter(a => a.id !== attachmentId));
-  };
-
-  // Filter attachments by user for each split
-  const getAttachmentsForUser = (userId: string): Attachment[] => {
-    return displayAttachments.filter(att => att.uploaded_by === userId);
   };
 
   const handleDelete = () => {
@@ -279,9 +282,9 @@ export const ExpenseShow = () => {
     );
   };
 
-  if (isLoadingExpense || isLoadingSplits || !expense) {
+  if (isLoadingExpense || isLoadingSplits || !expense || loading) {
     return (
-      <div className="container max-w-4xl py-8">
+      <div className="container max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <Spinner size="lg" className="min-h-[400px]" />
       </div>
     );
@@ -446,7 +449,6 @@ export const ExpenseShow = () => {
                   const isCurrentUserSplit = split.user_id === identity?.id;
                   const isSplitSettled = split.is_settled || isPaid;
                   const canSettle = isPayer && !isSplitSettled && !isCurrentUserSplit;
-                  const userAttachments = getAttachmentsForUser(split.user_id);
                   const isPartiallySettled = split.is_settled && split.settled_amount < split.computed_amount;
 
                   return (
@@ -544,12 +546,6 @@ export const ExpenseShow = () => {
                           )}
                         </div>
                       </div>
-                      {userAttachments.length > 0 && (
-                        <SplitAttachmentGallery
-                          attachments={userAttachments}
-                          userName={split.profiles?.full_name || t('profile.unknown')}
-                        />
-                      )}
                     </div>
                   );
                 })}
@@ -557,14 +553,56 @@ export const ExpenseShow = () => {
           </CardContent>
         </Card>
 
-        {/* Attachments */}
-        {displayAttachments.length > 0 && (
-          <AttachmentList
-            attachments={displayAttachments}
-            canDelete={canEdit}
-            onDelete={handleAttachmentDelete}
-          />
-        )}
+        {/* Receipts/Bills */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              {t('expenses.receipts', 'Receipts & Bills')}
+              {displayAttachments.length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {displayAttachments.length}
+                </Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {displayAttachments.length > 0 ? (
+              <AttachmentList
+                attachments={displayAttachments}
+                canDelete={canEdit}
+                onDelete={handleAttachmentDelete}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="rounded-full bg-muted p-4 mb-4">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="48"
+                    height="48"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-muted-foreground"
+                  >
+                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="12" y1="18" x2="12" y2="12" />
+                    <line x1="9" y1="15" x2="15" y2="15" />
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-lg mb-2">
+                  {t('expenses.noReceipts', 'No receipts uploaded')}
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  {t('expenses.noReceiptsDescription', 'Receipts and bills can be uploaded when creating or editing this expense.')}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Settle Split Dialog */}
