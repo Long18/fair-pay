@@ -54,7 +54,7 @@ export const useAttachments = () => {
           file_name: file.name,
           mime_type: file.type,
           file_size: file.size,
-          created_by: userId,
+          uploaded_by: userId,
         })
         .select()
         .single();
