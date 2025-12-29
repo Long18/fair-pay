@@ -188,8 +188,10 @@ export const ExpenseCreate = () => {
           const expenseId = data.data.id as string;
 
           // Create splits using Supabase client
-          const splitPromises = splits.map((split) =>
-            supabaseClient
+          // Auto-mark the payer's split as fully settled
+          const splitPromises = splits.map((split) => {
+            const isPayer = split.user_id === values.paid_by_user_id;
+            return supabaseClient
               .from("expense_splits")
               .insert({
                 expense_id: expenseId,
@@ -197,8 +199,12 @@ export const ExpenseCreate = () => {
                 split_method: values.split_method,
                 split_value: split.split_value,
                 computed_amount: split.computed_amount,
-              })
-          );
+                // Auto-settle the payer's own split
+                is_settled: isPayer,
+                settled_amount: isPayer ? split.computed_amount : 0,
+                settled_at: isPayer ? new Date().toISOString() : null,
+              });
+          });
 
           await Promise.all(splitPromises);
 
