@@ -117,9 +117,9 @@ export default defineConfig({
             'react-router',
             '@supabase/supabase-js',
             '@refinedev/core',
+            '@refinedev/devtools', // Include devtools since we eagerly import it
             'date-fns',
         ],
-        exclude: ['@refinedev/devtools'], // Don't pre-bundle devtools
     },
     build: {
         // Target modern browsers for smaller bundles
@@ -154,9 +154,20 @@ export default defineConfig({
         // Rollup optimizations
         rollupOptions: {
             output: {
+                // Ensure proper chunk loading order
+                // React must load before any providers that use it
+                entryFileNames: 'assets/[name]-[hash].js',
+                chunkFileNames: (chunkInfo) => {
+                    // Ensure react-vendor loads first
+                    if (chunkInfo.name === 'react-vendor') {
+                        return 'assets/react-vendor-[hash].js';
+                    }
+                    return 'assets/[name]-[hash].js';
+                },
                 // Improved manual chunking strategy
                 manualChunks: (id) => {
-                    // React core
+                    // React core - Keep React and React-DOM together
+                    // This ensures React is fully initialized before providers use it
                     if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
                         return 'react-vendor';
                     }
@@ -218,8 +229,6 @@ export default defineConfig({
                 },
 
                 // Optimize asset naming
-                chunkFileNames: 'assets/[name]-[hash].js',
-                entryFileNames: 'assets/[name]-[hash].js',
                 assetFileNames: 'assets/[name]-[hash].[ext]',
             },
 

@@ -1,4 +1,4 @@
-import { lazy, Suspense, memo } from "react";
+import React, { lazy, Suspense, memo } from "react";
 import { Authenticated, Refine } from "@refinedev/core";
 import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
