@@ -1,6 +1,7 @@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { InfoIcon } from "@/components/ui/icons";
 import {
   Tooltip,
@@ -63,7 +64,13 @@ export function SimplifiedDebtsToggle({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto w-auto p-0 hover:bg-transparent"
+              >
+                <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
+              </Button>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
               <p className="text-sm">
