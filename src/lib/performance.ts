@@ -73,14 +73,14 @@ function reportMetric(name: string, value: number, reporter?: PerformanceReporte
  * Monitor Web Vitals using the web-vitals library (if available)
  * Falls back to manual PerformanceObserver if not available
  */
-export async function measureWebVitals(reporter?: PerformanceReporter) {
+export function measureWebVitals(reporter?: PerformanceReporter) {
     if (typeof window === 'undefined') return;
 
-    try {
-        // Try to use web-vitals library if available
-        const webVitals = await import('web-vitals').catch(() => null);
-
-        if (webVitals) {
+    // Use dynamic import but don't await - let it set up listeners asynchronously
+    // This is intentional: we want the function to return immediately and let
+    // the web-vitals library set up its observers in the background
+    import('web-vitals')
+        .then((webVitals) => {
             // web-vitals v5 removed onFID, use onINP as primary interactivity metric
             const { onCLS, onFCP, onLCP, onTTFB, onINP } = webVitals;
 
@@ -89,14 +89,11 @@ export async function measureWebVitals(reporter?: PerformanceReporter) {
             onLCP((metric: any) => reportMetric('LCP', metric.value, reporter));
             onTTFB((metric: any) => reportMetric('TTFB', metric.value, reporter));
             onINP((metric: any) => reportMetric('INP', metric.value, reporter));
-        } else {
-            // Fallback to manual measurement
+        })
+        .catch((error) => {
+            console.warn('[Performance] Failed to load web-vitals, using fallback:', error);
             measureWithPerformanceObserver(reporter);
-        }
-    } catch (error) {
-        console.warn('[Performance] Failed to measure Web Vitals:', error);
-        measureWithPerformanceObserver(reporter);
-    }
+        });
 }
 
 /**
