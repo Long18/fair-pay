@@ -74,4 +74,3 @@ export const useTopSpenders = (options: UseTopSpendersOptions) => {
 
   return { data, isLoading, error, refetch: fetchTopSpenders };
 };
-

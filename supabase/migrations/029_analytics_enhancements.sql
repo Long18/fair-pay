@@ -14,18 +14,18 @@ CREATE TABLE IF NOT EXISTS balance_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   snapshot_date DATE NOT NULL,
-  
+
   -- Balance breakdown by context
   total_owed NUMERIC(10,2) NOT NULL DEFAULT 0,
   total_lent NUMERIC(10,2) NOT NULL DEFAULT 0,
   net_balance NUMERIC(10,2) NOT NULL DEFAULT 0,
-  
+
   -- Currency tracking
   currency TEXT NOT NULL DEFAULT 'USD',
-  
+
   -- Metadata
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  
+
   -- Constraints
   CONSTRAINT balance_history_user_date_currency_unique UNIQUE (user_id, snapshot_date, currency)
 );
@@ -332,7 +332,7 @@ DECLARE
 BEGIN
   -- Calculate period length
   v_period_days := p_current_end - p_current_start;
-  
+
   -- Calculate previous period dates
   v_previous_end := p_current_start - INTERVAL '1 day';
   v_previous_start := v_previous_end - (v_period_days || ' days')::INTERVAL;
@@ -365,7 +365,7 @@ BEGIN
 
   -- Calculate difference and percentage change
   v_difference := v_current_total - v_previous_total;
-  
+
   IF v_previous_total > 0 THEN
     v_percentage_change := ROUND((v_difference / v_previous_total * 100)::NUMERIC, 2);
   ELSE
@@ -397,7 +397,7 @@ GRANT EXECUTE ON FUNCTION get_spending_comparison(DATE, DATE, UUID) TO authentic
 -- COMMENTS FOR DOCUMENTATION
 -- ============================================================================
 
-COMMENT ON TABLE balance_history IS 
+COMMENT ON TABLE balance_history IS
 'Stores daily snapshots of user balances for historical trend analysis and charts';
 
 COMMENT ON FUNCTION calculate_daily_balance(UUID, DATE, TEXT) IS
@@ -421,4 +421,3 @@ COMMIT;
 -- SELECT * FROM get_balance_history(auth.uid(), CURRENT_DATE - 30, CURRENT_DATE);
 -- SELECT * FROM get_top_categories(CURRENT_DATE - 30, CURRENT_DATE, NULL, 5);
 -- SELECT * FROM get_spending_comparison(CURRENT_DATE - 7, CURRENT_DATE);
-

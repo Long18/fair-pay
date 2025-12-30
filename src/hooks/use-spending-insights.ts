@@ -170,4 +170,3 @@ function getDateRangeForPreset(preset: DateRangePreset): DateRange {
       };
   }
 }
-
