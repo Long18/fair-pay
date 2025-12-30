@@ -98,15 +98,21 @@ export function ErrorComponent() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <InfoIcon
-                      className={cn(
-                        "h-4",
-                        "w-4",
-                        "text-muted-foreground",
-                        "cursor-help"
-                      )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto w-auto p-0 hover:bg-transparent"
                       data-testid="error-component-tooltip"
-                    />
+                    >
+                      <InfoIcon
+                        className={cn(
+                          "h-4",
+                          "w-4",
+                          "text-muted-foreground",
+                          "cursor-help"
+                        )}
+                      />
+                    </Button>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>{errorMessage}</p>
