@@ -12,6 +12,8 @@ import { ExpenseList, RecurringExpenseList } from "@/modules/expenses";
 import { SimplifiedBalanceView, PaymentList, useBalanceCalculation } from "@/modules/payments";
 import { SimplifiedDebtsToggle } from "@/components/dashboard/SimplifiedDebtsToggle";
 import { useSimplifiedDebts } from "@/hooks/use-simplified-debts";
+import { useSettleAllGroupDebts } from "@/hooks/use-bulk-operations";
+import { SettleAllDialog } from "@/components/bulk-operations/SettleAllDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { formatNumber } from "@/lib/locale-utils";
@@ -42,6 +44,7 @@ export const GroupShow = () => {
     const saved = localStorage.getItem(`group-${id}-use-server-simplification`);
     return saved === "true";
   });
+  const [settleAllDialogOpen, setSettleAllDialogOpen] = useState(false);
 
   const { query: groupQuery } = useOne<Group>({
     resource: "groups",
@@ -99,6 +102,9 @@ export const GroupShow = () => {
     enabled: useServerSimplification && !!id,
   });
 
+  // Bulk operations
+  const settleAllMutation = useSettleAllGroupDebts();
+
   const { data: groupData, isLoading: isLoadingGroup } = groupQuery;
   const { data: membersData, isLoading: isLoadingMembers } = membersQuery;
 
@@ -153,6 +159,34 @@ export const GroupShow = () => {
     // Save preference to localStorage
     localStorage.setItem(`group-${id}-use-server-simplification`, enabled.toString());
   };
+
+  const handleSettleAll = async () => {
+    if (!id) return;
+
+    await settleAllMutation.mutateAsync(
+      { groupId: id },
+      {
+        onSuccess: () => {
+          setSettleAllDialogOpen(false);
+          // Refetch all data
+          groupQuery.refetch();
+          membersQuery.refetch();
+          expensesQuery.refetch();
+          paymentsQuery.refetch();
+        },
+      }
+    );
+  };
+
+  // Calculate unsettled splits count and total
+  const unsettledSplits = expenses.flatMap((e: any) =>
+    (e.expense_splits || []).filter((s: any) => !s.is_settled)
+  );
+  const unsettledCount = unsettledSplits.length;
+  const unsettledTotal = unsettledSplits.reduce(
+    (sum: number, s: any) => sum + (s.computed_amount - (s.settled_amount || 0)),
+    0
+  );
 
   const handleDeleteGroup = () => {
     if (!group?.id) return;
@@ -298,18 +332,32 @@ export const GroupShow = () => {
           </TabsContent>
           <TabsContent value="balances" className="mt-6">
             <div className="space-y-6">
-              {/* Debt Simplification Toggle */}
-              {allMembers.length >= 3 && (
-                <div className="flex justify-end">
-                  <SimplifiedDebtsToggle
-                    isSimplified={useServerSimplification}
-                    onToggle={handleToggleSimplification}
-                    rawCount={balances.filter(b => b.balance !== 0).length}
-                    simplifiedCount={simplifiedCount}
-                    disabled={isLoadingSimplified}
-                  />
-                </div>
-              )}
+              {/* Action Bar */}
+              <div className="flex justify-between items-center">
+                {/* Settle All Button */}
+                {isAdmin && unsettledCount > 0 && (
+                  <Button
+                    variant="default"
+                    onClick={() => setSettleAllDialogOpen(true)}
+                    disabled={settleAllMutation.isPending}
+                  >
+                    {settleAllMutation.isPending ? "Settling..." : "Settle All Debts"}
+                  </Button>
+                )}
+
+                {/* Debt Simplification Toggle */}
+                {allMembers.length >= 3 && (
+                  <div className="ml-auto">
+                    <SimplifiedDebtsToggle
+                      isSimplified={useServerSimplification}
+                      onToggle={handleToggleSimplification}
+                      rawCount={balances.filter(b => b.balance !== 0).length}
+                      simplifiedCount={simplifiedCount}
+                      disabled={isLoadingSimplified}
+                    />
+                  </div>
+                )}
+              </div>
 
               {/* Server-Side Simplified Debts View */}
               {useServerSimplification && !isLoadingSimplified && simplifiedDebts.length > 0 && (
@@ -441,6 +489,16 @@ export const GroupShow = () => {
             />
           </TabsContent>
         </Tabs>
+
+        {/* Settle All Dialog */}
+        <SettleAllDialog
+          open={settleAllDialogOpen}
+          onOpenChange={setSettleAllDialogOpen}
+          onConfirm={handleSettleAll}
+          splitsCount={unsettledCount}
+          totalAmount={unsettledTotal}
+          isLoading={settleAllMutation.isPending}
+        />
       </div>
     </div>
   );
