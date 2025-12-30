@@ -1,0 +1,18 @@
+# robots.txt for FairPay
+# Allow all search engines to crawl the site
+
+User-agent: *
+Allow: /
+
+# Disallow admin/auth pages from indexing
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /oauth
+
+# Sitemap location
+Sitemap: https://long-pay.vercel.app/sitemap.xml
+
+# Crawl-delay for politeness (optional)
+Crawl-delay: 1
+

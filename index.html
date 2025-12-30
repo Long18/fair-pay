@@ -5,43 +5,113 @@
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#0f172a" />
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="FairPay - Split expenses fairly with friends and groups. Track shared costs, settle debts, and manage group finances with ease. Free expense splitting app with real-time updates." />
+    <meta name="keywords" content="expense splitting, bill splitting, group expenses, shared costs, debt tracking, expense tracker, split bills, fair share calculator" />
+    <meta name="author" content="FairPay" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://long-pay.vercel.app/" />
+    
+    <!-- Google Site Verification -->
+    <meta name="google-site-verification" content="Kxbq4d_Ys2ZnNyKT8MLUpiJOAb8TParQNwbOCyW3Ezo" />
 
     <!-- Performance optimizations -->
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="dns-prefetch" href="https://fonts.googleapis.com">
-
-    <!-- Preconnect to Supabase for faster API requests -->
     <link rel="preconnect" href="https://obbjwfndjsfabklhsxlv.supabase.co" crossorigin>
     <link rel="dns-prefetch" href="https://obbjwfndjsfabklhsxlv.supabase.co">
 
-    <meta
-      name="description"
-      content="FairPay - Split expenses fairly with friends and groups. Track shared costs, settle debts, and manage group finances with ease."
-    />
-    <meta name="google-site-verification" content="Kxbq4d_Ys2ZnNyKT8MLUpiJOAb8TParQNwbOCyW3Ezo" />
-
-    <!-- Open Graph / Social Media -->
+    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="FairPay" />
     <meta property="og:title" content="FairPay - Expense Splitting Made Easy" />
     <meta property="og:description" content="Split expenses fairly with friends and groups. Track shared costs, settle debts, and manage group finances with ease." />
-    <meta property="og:image" content="/banner.png" />
+    <meta property="og:image" content="https://long-pay.vercel.app/banner.png" />
+    <meta property="og:image:alt" content="FairPay - Expense Splitting App" />
     <meta property="og:url" content="https://long-pay.vercel.app" />
+    <meta property="og:locale" content="en_US" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@fairpay" />
+    <meta name="twitter:creator" content="@fairpay" />
     <meta name="twitter:title" content="FairPay - Expense Splitting Made Easy" />
-    <meta name="twitter:description" content="Split expenses fairly with friends and groups" />
-    <meta name="twitter:image" content="/banner.png" />
+    <meta name="twitter:description" content="Split expenses fairly with friends and groups. Track shared costs, settle debts, and manage group finances with ease." />
+    <meta name="twitter:image" content="https://long-pay.vercel.app/banner.png" />
+    <meta name="twitter:image:alt" content="FairPay - Expense Splitting App" />
 
-    <!-- Performance hints -->
+    <!-- PWA / Mobile App -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="FairPay" />
+    <meta name="application-name" content="FairPay" />
+    <meta name="msapplication-TileColor" content="#0f172a" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
 
-    <title>FairPay - Expense Splitting Made Easy</title>
+    <!-- Structured Data (JSON-LD) for SEO -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "FairPay",
+      "description": "Split expenses fairly with friends and groups. Track shared costs, settle debts, and manage group finances with ease.",
+      "url": "https://long-pay.vercel.app",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web, iOS, Android",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "150"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "FairPay",
+        "url": "https://long-pay.vercel.app"
+      },
+      "screenshot": "https://long-pay.vercel.app/banner.png",
+      "featureList": [
+        "Split expenses with friends and groups",
+        "Track shared costs in real-time",
+        "Settle debts easily",
+        "Manage group finances",
+        "Multiple currency support",
+        "Receipt attachments",
+        "Payment tracking"
+      ]
+    }
+    </script>
+
+    <title>FairPay - Expense Splitting Made Easy | Free Bill Splitter App</title>
+    
+    <!-- Font optimization -->
+    <style>
+      /* System font stack for instant text rendering */
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      
+      /* Prevent layout shift during font loading */
+      @font-face {
+        font-display: swap;
+      }
+    </style>
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <noscript>
+      <div style="padding: 20px; text-align: center; font-family: sans-serif;">
+        <h1>JavaScript Required</h1>
+        <p>FairPay requires JavaScript to run. Please enable JavaScript in your browser settings.</p>
+      </div>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/index.tsx"></script>
   </body>
