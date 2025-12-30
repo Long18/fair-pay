@@ -1,5 +1,5 @@
 import { useCustom } from "@refinedev/core";
-import { supabaseClient } from "@utility/supabaseClient";
+import { supabaseClient } from "@/utility/supabaseClient";
 
 export interface SimplifiedDebt {
   from_user_id: string;

@@ -56,4 +56,3 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
     </div>
   );
 };
-

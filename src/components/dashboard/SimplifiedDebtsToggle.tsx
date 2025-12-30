@@ -1,13 +1,13 @@
-import { Switch } from "@components/ui/switch";
-import { Label } from "@components/ui/label";
-import { Badge } from "@components/ui/badge";
-import { InfoCircledIcon } from "@radix-ui/react-icons";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { InfoIcon } from "@/components/ui/icons";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@components/ui/tooltip";
+} from "@/components/ui/tooltip";
 import { useTranslation } from "react-i18next";
 
 interface SimplifiedDebtsToggleProps {
@@ -63,7 +63,7 @@ export function SimplifiedDebtsToggle({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <InfoCircledIcon className="h-4 w-4 text-muted-foreground cursor-help" />
+              <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
               <p className="text-sm">

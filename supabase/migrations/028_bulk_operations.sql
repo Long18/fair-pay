@@ -25,7 +25,7 @@ DECLARE
 BEGIN
   -- Get current user
   v_user_id := auth.uid();
-  
+
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'User must be authenticated';
   END IF;
@@ -44,7 +44,7 @@ BEGIN
   END IF;
 
   -- Calculate total amount to be settled
-  SELECT 
+  SELECT
     COUNT(*),
     COALESCE(SUM(computed_amount - COALESCE(settled_amount, 0)), 0)
   INTO v_splits_count, v_total_amount
@@ -133,7 +133,7 @@ DECLARE
 BEGIN
   -- Get current user
   v_user_id := auth.uid();
-  
+
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'User must be authenticated';
   END IF;
@@ -144,7 +144,7 @@ BEGIN
   END IF;
 
   -- Check permissions for each expense
-  FOR v_expense IN 
+  FOR v_expense IN
     SELECT e.*, gm.role as user_role
     FROM expenses e
     LEFT JOIN group_members gm ON gm.group_id = e.group_id AND gm.user_id = v_user_id
@@ -152,7 +152,7 @@ BEGIN
   LOOP
     -- User can delete if they created it OR they are group admin
     v_can_delete := (v_expense.created_by = v_user_id) OR (v_expense.user_role = 'admin');
-    
+
     IF NOT v_can_delete THEN
       RAISE EXCEPTION 'Permission denied to delete expense %', v_expense.id;
     END IF;
@@ -221,7 +221,7 @@ DECLARE
 BEGIN
   -- Get current user
   v_user_id := auth.uid();
-  
+
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'User must be authenticated';
   END IF;
@@ -235,8 +235,8 @@ BEGIN
   FOR v_payment IN SELECT * FROM jsonb_array_elements(p_payments)
   LOOP
     -- Validate required fields
-    IF (v_payment->>'from_user_id') IS NULL OR 
-       (v_payment->>'to_user_id') IS NULL OR 
+    IF (v_payment->>'from_user_id') IS NULL OR
+       (v_payment->>'to_user_id') IS NULL OR
        (v_payment->>'amount') IS NULL THEN
       RAISE EXCEPTION 'Payment must have from_user_id, to_user_id, and amount';
     END IF;
@@ -350,4 +350,3 @@ Logs batch operation to audit_logs.
 Returns: {success, created_count, payment_ids, message}';
 
 COMMIT;
-
