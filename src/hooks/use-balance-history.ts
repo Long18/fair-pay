@@ -67,7 +67,7 @@ export const useBalanceHistory = (options: UseBalanceHistoryOptions = {}) => {
     } finally {
       setIsLoading(false);
     }
-  }, [identity?.id, providedUserId, startDate, endDate, currency]);
+  }, [identity?.id, providedUserId, startDate.toISOString(), endDate.toISOString(), currency]);
 
   useEffect(() => {
     fetchBalanceHistory();

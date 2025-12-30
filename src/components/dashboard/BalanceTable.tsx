@@ -12,7 +12,9 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { PaginationControls, PaginationMetadata } from "@/components/ui/pagination-controls";
+import { CheckIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 
 interface Balance {
   counterparty_id: string;
@@ -41,6 +43,21 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('vi-VN').format(Math.abs(value));
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '';
+    try {
+      return format(new Date(dateString), 'dd/MM/yyyy');
+    } catch {
+      return '';
+    }
+  };
+
+  const isFullySettled = (balance: Balance) => {
+    if (!showHistory) return false;
+    const remaining = Number(balance.remaining_amount || balance.amount);
+    return remaining === 0;
   };
 
   // Calculate pagination
@@ -85,6 +102,7 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
               <>
                 <TableHead className="text-right">{t('dashboard.totalAmount', 'Total')}</TableHead>
                 <TableHead className="text-right">{t('dashboard.settledAmount', 'Settled')}</TableHead>
+                <TableHead className="text-center">{t('dashboard.transactions', 'Txns')}</TableHead>
               </>
             )}
             <TableHead className="text-right">
@@ -93,45 +111,89 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
           </TableRow>
         </TableHeader>
         <TableBody>
-          {paginatedBalances.map((balance, index) => (
-            <TableRow
-              key={balance.counterparty_id}
-              className={cn(
-                "cursor-pointer",
-                index % 2 === 0 && "bg-muted/50 dark:bg-muted/30",
-                disabled && "opacity-50 cursor-not-allowed"
-              )}
-              onClick={() => !disabled && go({ to: `/profile/${balance.counterparty_id}` })}
-            >
-              <TableCell>
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={balance.counterparty_avatar_url || undefined} />
-                  <AvatarFallback className="text-xs">
-                    {balance.counterparty_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                  </AvatarFallback>
-                </Avatar>
-              </TableCell>
-              <TableCell className="font-medium">{balance.counterparty_name}</TableCell>
-              <TableCell>
-                <Badge variant={balance.i_owe_them ? "default" : "secondary"}>
-                  {balance.i_owe_them ? t('dashboard.youOwe') : t('dashboard.userOwesYou')}
-                </Badge>
-              </TableCell>
-              {showHistory && (
-                <>
-                  <TableCell className="text-right text-muted-foreground">
-                    ₫{formatCurrency(Number(balance.total_amount || balance.amount))}
-                  </TableCell>
-                  <TableCell className="text-right text-muted-foreground">
-                    ₫{formatCurrency(Number(balance.settled_amount || 0))}
-                  </TableCell>
-                </>
-              )}
-              <TableCell className="text-right font-semibold">
-                ₫{formatCurrency(Number(showHistory ? (balance.remaining_amount || balance.amount) : balance.amount))}
-              </TableCell>
-            </TableRow>
-          ))}
+          {paginatedBalances.map((balance, index) => {
+            const fullySettled = isFullySettled(balance);
+            return (
+              <TableRow
+                key={balance.counterparty_id}
+                className={cn(
+                  "cursor-pointer transition-colors",
+                  index % 2 === 0 && "bg-muted/50 dark:bg-muted/30",
+                  disabled && "opacity-50 cursor-not-allowed",
+                  fullySettled && "opacity-60 bg-green-50 dark:bg-green-950/20"
+                )}
+                onClick={() => !disabled && go({ to: `/profile/${balance.counterparty_id}` })}
+              >
+                <TableCell>
+                  <div className="relative">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={balance.counterparty_avatar_url || undefined} />
+                      <AvatarFallback className="text-xs">
+                        {balance.counterparty_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
+                    {fullySettled && (
+                      <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-0.5">
+                        <CheckIcon className="h-3 w-3 text-white" />
+                      </div>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-col">
+                    <span className={cn("font-medium", fullySettled && "line-through text-muted-foreground")}>
+                      {balance.counterparty_name}
+                    </span>
+                    {showHistory && balance.last_transaction_date && (
+                      <span className="text-xs text-muted-foreground">
+                        {t('dashboard.lastTransaction', 'Last: ')}
+                        {formatDate(balance.last_transaction_date)}
+                      </span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {fullySettled ? (
+                    <Badge variant="outline" className="bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700">
+                      {t('dashboard.settled', 'Settled')}
+                    </Badge>
+                  ) : (
+                    <Badge variant={balance.i_owe_them ? "default" : "secondary"}>
+                      {balance.i_owe_them ? t('dashboard.youOwe') : t('dashboard.userOwesYou')}
+                    </Badge>
+                  )}
+                </TableCell>
+                {showHistory && (
+                  <>
+                    <TableCell className="text-right text-muted-foreground">
+                      ₫{formatCurrency(Number(balance.total_amount || balance.amount))}
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      ₫{formatCurrency(Number(balance.settled_amount || 0))}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="outline" className="text-xs">
+                        {balance.transaction_count || 0}
+                      </Badge>
+                    </TableCell>
+                  </>
+                )}
+                <TableCell className={cn(
+                  "text-right font-semibold",
+                  fullySettled && "text-green-600 dark:text-green-400"
+                )}>
+                  {fullySettled ? (
+                    <span className="flex items-center justify-end gap-1">
+                      <CheckIcon className="h-4 w-4" />
+                      ₫0
+                    </span>
+                  ) : (
+                    `₫${formatCurrency(Number(showHistory ? (balance.remaining_amount || balance.amount) : balance.amount))}`
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
 

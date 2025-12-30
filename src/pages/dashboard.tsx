@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { HistoryIcon, Loader2Icon } from "@/components/ui/icons";
 import { useGlobalBalance } from "@/hooks/use-global-balance";
 import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
 import { usePaginatedActivities } from "@/hooks/use-paginated-activities";
@@ -19,7 +21,8 @@ export const Dashboard = () => {
   const { t } = useTranslation();
   const globalBalance = useGlobalBalance();
   const [showHistory, setShowHistory] = useState(false);
-  const { data: debts = [], isLoading: debtsLoading, refetch: refetchDebts } = useAggregatedDebts({
+  const [isTogglingHistory, setIsTogglingHistory] = useState(false);
+  const { data: debts = [], isLoading: debtsLoading, refetch: refetchDebts, error: debtsError } = useAggregatedDebts({
     includeHistory: showHistory
   });
   const {
@@ -30,6 +33,13 @@ export const Dashboard = () => {
   } = usePaginatedActivities({ pageSize: 10 });
 
   const [loading, setLoading] = useState(true);
+
+  // Handle history toggle with loading state
+  const handleHistoryToggle = async (checked: boolean) => {
+    setIsTogglingHistory(true);
+    setShowHistory(checked);
+    setTimeout(() => setIsTogglingHistory(false), 500);
+  };
 
   // Refetch data when component mounts or becomes visible
   useEffect(() => {
@@ -80,15 +90,38 @@ export const Dashboard = () => {
 
           <TabsContent value="balances" className="space-y-4">
             {isAuthenticated && (
-              <div className="flex items-center justify-end space-x-2 mb-4">
-                <Switch
-                  id="show-history"
-                  checked={showHistory}
-                  onCheckedChange={setShowHistory}
-                />
-                <Label htmlFor="show-history" className="text-sm cursor-pointer">
-                  {t('dashboard.showAllTransactions', 'Show all transactions (including settled)')}
-                </Label>
+              <div className="flex items-center justify-end space-x-2 mb-4 p-3 bg-muted/50 rounded-lg">
+                {isTogglingHistory && (
+                  <Loader2Icon className="h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center space-x-2">
+                        <HistoryIcon className="h-4 w-4 text-muted-foreground" />
+                        <Switch
+                          id="show-history"
+                          checked={showHistory}
+                          onCheckedChange={handleHistoryToggle}
+                          disabled={isTogglingHistory}
+                        />
+                        <Label htmlFor="show-history" className="text-sm cursor-pointer font-medium">
+                          {t('dashboard.showAllTransactions', 'Show all transactions (including settled)')}
+                        </Label>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-xs text-xs">
+                        {t('dashboard.showAllTransactionsTooltip', 'Toggle to view your complete transaction history, including debts that have been fully settled')}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            )}
+            {debtsError && (
+              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
+                {t('dashboard.errorLoadingDebts', 'Failed to load debts. Please try again.')}
               </div>
             )}
             <BalanceTable balances={balances} disabled={!isAuthenticated} showHistory={showHistory} />

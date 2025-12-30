@@ -66,7 +66,7 @@ export const useTopSpenders = (options: UseTopSpendersOptions) => {
     } finally {
       setIsLoading(false);
     }
-  }, [identity?.id, groupId, startDate, endDate, limit]);
+  }, [identity?.id, groupId, startDate.toISOString(), endDate.toISOString(), limit]);
 
   useEffect(() => {
     fetchTopSpenders();
