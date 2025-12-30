@@ -131,22 +131,9 @@ export default defineConfig({
         // Optimize chunk size
         chunkSizeWarningLimit: 1000,
 
-        // Use Terser for better compression (Oxc not available in current version)
-        minify: 'terser',
-        terserOptions: {
-            compress: {
-                drop_console: true,
-                drop_debugger: true,
-                pure_funcs: ['console.log', 'console.info', 'console.debug'],
-                passes: 2, // Multiple passes for better compression
-            },
-            mangle: {
-                safari10: true, // Safari 10 compatibility
-            },
-            format: {
-                comments: false, // Remove all comments
-            },
-        },
+        // Use esbuild for faster and safer minification
+        // Terser was too aggressive and broke React internals
+        minify: 'esbuild',
 
         // Disable source maps for production (reduce bundle size)
         sourcemap: false,
@@ -233,10 +220,10 @@ export default defineConfig({
             },
 
             // Tree shaking optimizations
+            // IMPORTANT: Don't be too aggressive with tree-shaking as it can break React internals
             treeshake: {
-                moduleSideEffects: false,
+                moduleSideEffects: 'no-external', // Preserve side effects for external modules
                 propertyReadSideEffects: false,
-                unknownGlobalSideEffects: false,
             },
         },
 
