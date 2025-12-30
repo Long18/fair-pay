@@ -117,9 +117,9 @@ export default defineConfig({
             'react-router',
             '@supabase/supabase-js',
             '@refinedev/core',
-            '@refinedev/devtools', // Include devtools since we eagerly import it
             'date-fns',
         ],
+        exclude: ['@refinedev/devtools'], // Exclude devtools - not used in production
     },
     build: {
         // Target modern browsers for smaller bundles
