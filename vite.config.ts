@@ -131,6 +131,12 @@ export default defineConfig({
         // Use esbuild for faster and safer minification
         // Terser was too aggressive and broke React internals
         minify: 'esbuild',
+        
+        // Esbuild minification options
+        esbuild: {
+            drop: ['console', 'debugger'], // Remove console.log in production
+            legalComments: 'none', // Remove comments
+        },
 
         // Disable source maps for production (reduce bundle size)
         sourcemap: false,
