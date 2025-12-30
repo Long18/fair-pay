@@ -33,36 +33,6 @@ export const BalancesPage = () => {
   const totalOwedToMe = owedToMe.reduce((sum: number, d: AggregatedDebt) => sum + d.amount, 0);
   const netBalance = totalOwedToMe - totalIOwe;
 
-  // Generate mock historical balance data for chart (last 7 days)
-  const balanceChartData = useMemo(() => {
-    const today = new Date();
-    const data = [];
-
-    // Generate 7 data points showing trend towards current balance
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-
-      // Create a gradual trend towards current balance
-      // Add some variation to make it look more realistic
-      const progress = (6 - i) / 6;
-      const variation = (Math.random() - 0.5) * (Math.abs(netBalance) * 0.2);
-      const balance = netBalance * progress + variation;
-
-      data.push({
-        date: `${date.getMonth() + 1}/${date.getDate()}`,
-        balance: Math.round(balance),
-      });
-    }
-
-    // Ensure last point is exactly the current balance
-    if (data.length > 0) {
-      data[data.length - 1].balance = netBalance;
-    }
-
-    return data;
-  }, [netBalance]);
-
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -108,10 +78,7 @@ export const BalancesPage = () => {
           {/* Balance Chart */}
           {debts.length > 0 && !isLoading && !error && (
             <div className="w-full">
-              <BalanceChart
-                data={balanceChartData}
-                currentBalance={netBalance}
-              />
+              <BalanceChart currentBalance={netBalance} />
             </div>
           )}
 
