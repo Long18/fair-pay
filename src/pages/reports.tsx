@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useList } from "@refinedev/core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -84,7 +84,10 @@ export function ReportsPage() {
     selectedGroupId
   );
 
-  const actualDateRange = dateRange || getDateRangeForPreset(preset);
+  const actualDateRange = useMemo(
+    () => dateRange || getDateRangeForPreset(preset),
+    [dateRange, preset]
+  );
 
   const { data: comparison, isLoading: comparisonLoading } = useSpendingComparison({
     currentStart: actualDateRange.start,
@@ -99,16 +102,12 @@ export function ReportsPage() {
     limit: 10,
   });
 
-  const { data: topSpenders, isLoading: topSpendersLoading } = useTopSpenders(
-    selectedGroupId
-      ? {
-          groupId: selectedGroupId,
-          startDate: actualDateRange.start,
-          endDate: actualDateRange.end,
-          limit: 10,
-        }
-      : { groupId: "", startDate: actualDateRange.start, endDate: actualDateRange.end }
-  );
+  const { data: topSpenders = [], isLoading: topSpendersLoading } = useTopSpenders({
+    groupId: selectedGroupId || "",
+    startDate: actualDateRange.start,
+    endDate: actualDateRange.end,
+    limit: 10,
+  });
 
   const { insights, isLoading: insightsLoading } = useSpendingInsights({
     preset,
