@@ -64,7 +64,7 @@ export const useTopCategories = (options: UseTopCategoriesOptions = {}) => {
     } finally {
       setIsLoading(false);
     }
-  }, [identity?.id, startDate, endDate, groupId, limit]);
+  }, [identity?.id, startDate.toISOString(), endDate.toISOString(), groupId, limit]);
 
   useEffect(() => {
     fetchTopCategories();

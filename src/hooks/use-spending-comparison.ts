@@ -57,7 +57,12 @@ export const useSpendingComparison = (options: UseSpendingComparisonOptions) => 
     } finally {
       setIsLoading(false);
     }
-  }, [identity?.id, currentStart, currentEnd, groupId]);
+  }, [
+    identity?.id,
+    currentStart.toISOString(),
+    currentEnd.toISOString(),
+    groupId,
+  ]);
 
   useEffect(() => {
     fetchComparison();
