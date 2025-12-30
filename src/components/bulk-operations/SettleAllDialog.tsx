@@ -89,4 +89,3 @@ export const SettleAllDialog: React.FC<SettleAllDialogProps> = ({
     </AlertDialog>
   );
 };
-

@@ -82,4 +82,3 @@ export const BulkDeleteDialog: React.FC<BulkDeleteDialogProps> = ({
     </AlertDialog>
   );
 };
-
