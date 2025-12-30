@@ -1,22 +1,21 @@
-import tailwindcss from "@tailwindcss/vite";
-import react from "@vitejs/plugin-react";
-import path from "path";
-import { defineConfig } from "vite";
+import tailwindcss from '@tailwindcss/vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import viteCompression from 'vite-plugin-compression';
 
-// https://vite.dev/config/
 export default defineConfig({
-    plugins: [
-        react(),
-        tailwindcss(),
-        VitePWA({
-            registerType: 'autoUpdate',
-            includeAssets: ['favicon.ico', 'google44489daa6fb5786d.html'],
-            manifest: {
-                name: 'FairPay - Expense Splitting Made Easy',
-                short_name: 'FairPay',
-                description: 'Split expenses fairly with friends and groups',
+  plugins: [
+    react(),
+    tailwindcss(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.ico', 'google44489daa6fb5786d.html'],
+      manifest: {
+        name: 'FairPay - Expense Splitting Made Easy',
+        short_name: 'FairPay',
+        description: 'Split expenses fairly with friends and groups',
                 theme_color: '#0f172a',
                 background_color: '#ffffff',
                 display: 'standalone',
@@ -24,18 +23,16 @@ export default defineConfig({
                     {
                         src: 'favicon.ico',
                         sizes: '64x64 32x32 24x24 16x16',
-                        type: 'image/x-icon'
-                    }
-                ]
+                        type: 'image/x-icon',
+                    },
+                ],
             },
             workbox: {
                 globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
                 navigateFallback: null,
                 maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // 4 MB
-                // Improved runtime caching strategies
                 runtimeCaching: [
                     {
-                        // Supabase API - Network First for real-time data
                         urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
                         handler: 'NetworkFirst',
                         options: {
@@ -48,7 +45,6 @@ export default defineConfig({
                         },
                     },
                     {
-                        // Supabase Storage - Stale While Revalidate for images
                         urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/i,
                         handler: 'StaleWhileRevalidate',
                         options: {
@@ -63,7 +59,6 @@ export default defineConfig({
                         },
                     },
                     {
-                        // External images - Cache First
                         urlPattern: /\.(png|jpg|jpeg|svg|gif|webp)$/i,
                         handler: 'CacheFirst',
                         options: {
@@ -77,7 +72,6 @@ export default defineConfig({
                 ],
             },
         }),
-        // Gzip compression
         viteCompression({
             verbose: true,
             disable: false,
@@ -86,7 +80,6 @@ export default defineConfig({
             ext: '.gz',
             deleteOriginFile: false,
         }),
-        // Brotli compression (better than gzip)
         viteCompression({
             verbose: true,
             disable: false,
@@ -103,10 +96,9 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            "@": path.resolve(__dirname, "./src"),
+            '@': path.resolve(__dirname, './src'),
         },
     },
-    // Optimize dependency pre-bundling
     optimizeDeps: {
         include: [
             'react',
@@ -116,55 +108,38 @@ export default defineConfig({
             '@refinedev/core',
             'date-fns',
         ],
-        exclude: ['@refinedev/devtools'], // Exclude devtools - not used in production
+        exclude: ['@refinedev/devtools'],
     },
     build: {
-        // Target modern browsers for smaller bundles
         target: 'esnext',
 
-        // Enable CSS code splitting
+        cssMinify: 'lightningcss',
         cssCodeSplit: true,
 
-        // Optimize chunk size
         chunkSizeWarningLimit: 1000,
 
-        // Use esbuild for faster and safer minification
-        // Terser was too aggressive and broke React internals
         minify: 'esbuild',
 
-        // Esbuild minification options
         esbuild: {
-            drop: ['console', 'debugger'], // Remove console.log in production
-            legalComments: 'none', // Remove comments
+            drop: ['console', 'debugger'],
+            legalComments: 'none',
         },
 
-        // Disable source maps for production (reduce bundle size)
         sourcemap: false,
 
-        // Rollup optimizations
         rollupOptions: {
             output: {
-                // Use consistent naming for all chunks
-                // Let Vite handle chunk splitting automatically for optimal loading
                 entryFileNames: 'assets/[name]-[hash].js',
                 chunkFileNames: 'assets/[name]-[hash].js',
                 assetFileNames: 'assets/[name]-[hash].[ext]',
-                
-                // NO manual chunking - let Vite handle it automatically
-                // Manual chunking was causing module loading order issues
-                // React needs to be available before any code that uses it
-                // See docs/95-Production-Bug-Root-Cause-Analysis.md and docs/96-Verification-Report-CRITICAL-BUG-FOUND.md
             },
 
-            // Tree shaking optimizations
-            // IMPORTANT: Don't be too aggressive with tree-shaking as it can break React internals
             treeshake: {
-                moduleSideEffects: true, // Preserve ALL side effects to be safe
+                moduleSideEffects: true,
                 propertyReadSideEffects: false,
             },
         },
 
-        // Report compressed size
         reportCompressedSize: true,
     },
 });
