@@ -106,3 +106,4 @@ COMMENT ON VIEW user_debts_history IS 'Historical view of all debt relationships
 COMMENT ON FUNCTION get_user_debts_history IS 'Returns all debt relationships for a user including settled debts, ordered by outstanding balance then recency';
 
 COMMIT;
+

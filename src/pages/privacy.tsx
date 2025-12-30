@@ -7,3 +7,4 @@ export const PrivacyPage = () => {
     </div>
   );
 };
+
