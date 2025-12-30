@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ExpenseWithSplits } from "../types";
 import { CategoryIcon } from "./category-icon";
 import { formatDateShort, formatNumber } from "@/lib/locale-utils";
@@ -13,8 +14,11 @@ import {
 } from "@/components/filters";
 import { PaginationControls, PaginationMetadata } from "@/components/ui/pagination-controls";
 import { useState } from "react";
+import { useBulkDeleteExpenses } from "@/hooks/use-bulk-operations";
+import { BulkActionBar } from "@/components/bulk-operations/BulkActionBar";
+import { BulkDeleteDialog } from "@/components/bulk-operations/BulkDeleteDialog";
 
-import { EyeIcon, XIcon } from "@/components/ui/icons";
+import { EyeIcon, XIcon, CheckSquareIcon } from "@/components/ui/icons";
 interface ExpenseListProps {
   groupId?: string;
   friendshipId?: string;
@@ -25,6 +29,11 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
   const go = useGo();
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedExpenseIds, setSelectedExpenseIds] = useState<string[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const bulkDeleteMutation = useBulkDeleteExpenses();
 
   const contextType = groupId ? 'group' : friendshipId ? 'friend' : undefined;
   const contextId = groupId || friendshipId;
@@ -75,12 +84,73 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
   const endIndex = startIndex + pageSize;
   const expenses = allExpenses.slice(startIndex, endIndex);
 
+  // Selection handlers
+  const handleToggleSelection = (expenseId: string) => {
+    setSelectedExpenseIds((prev) =>
+      prev.includes(expenseId)
+        ? prev.filter((id) => id !== expenseId)
+        : [...prev, expenseId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedExpenseIds.length === expenses.length) {
+      setSelectedExpenseIds([]);
+    } else {
+      setSelectedExpenseIds(expenses.map((e) => e.id));
+    }
+  };
+
+  const handleCancelSelection = () => {
+    setSelectedExpenseIds([]);
+    setSelectionMode(false);
+  };
+
+  const handleBulkDelete = async () => {
+    await bulkDeleteMutation.mutateAsync(
+      { expenseIds: selectedExpenseIds },
+      {
+        onSuccess: () => {
+          setDeleteDialogOpen(false);
+          setSelectedExpenseIds([]);
+          setSelectionMode(false);
+          query.refetch();
+        },
+      }
+    );
+  };
+
   if (isLoading) {
     return <div className="text-center py-8">Loading expenses...</div>;
   }
 
   return (
     <div className="space-y-4">
+      {/* Action Bar */}
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          {!selectionMode && expenses.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectionMode(true)}
+            >
+              <CheckSquareIcon className="h-4 w-4 mr-2" />
+              Select
+            </Button>
+          )}
+          {selectionMode && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSelectAll}
+            >
+              {selectedExpenseIds.length === expenses.length ? "Deselect All" : "Select All"}
+            </Button>
+          )}
+        </div>
+      </div>
+
       {/* Filters Section */}
       <div className="flex flex-col sm:flex-row gap-3">
         <ExpenseFiltersPanel
@@ -135,6 +205,13 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 flex-1">
+                {/* Selection Checkbox */}
+                {selectionMode && (
+                  <Checkbox
+                    checked={selectedExpenseIds.includes(expense.id)}
+                    onCheckedChange={() => handleToggleSelection(expense.id)}
+                  />
+                )}
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={expense.profiles?.avatar_url} alt={expense.profiles?.full_name} />
                   <AvatarFallback>
@@ -186,6 +263,23 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
           />
         </div>
       )}
+
+      {/* Bulk Action Bar */}
+      <BulkActionBar
+        selectedCount={selectedExpenseIds.length}
+        onDelete={() => setDeleteDialogOpen(true)}
+        onCancel={handleCancelSelection}
+        isDeleting={bulkDeleteMutation.isPending}
+      />
+
+      {/* Bulk Delete Dialog */}
+      <BulkDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleBulkDelete}
+        selectedCount={selectedExpenseIds.length}
+        isLoading={bulkDeleteMutation.isPending}
+      />
     </div>
   );
 };
