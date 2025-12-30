@@ -46,3 +46,4 @@ COMMIT;
 
 -- Verification query (commented out for production)
 -- SELECT * FROM user_debts_summary LIMIT 10;
+

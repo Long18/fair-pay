@@ -45,3 +45,4 @@ CREATE TRIGGER on_auth_user_created
 -- Add comment
 COMMENT ON POLICY "Users can insert their own profile" ON profiles IS
   'Allows users to create their own profile. The handle_new_user() trigger also bypasses RLS using SET LOCAL row_security = off';
+

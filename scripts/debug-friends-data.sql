@@ -60,3 +60,4 @@ FROM information_schema.columns
 WHERE table_name = 'expense_splits'
   AND column_name IN ('is_settled', 'settled_amount', 'settled_at', 'settled_by')
 ORDER BY column_name;
+
