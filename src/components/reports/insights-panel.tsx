@@ -4,7 +4,7 @@ import {
   TrendingUpIcon,
   TrendingDownIcon,
   AlertCircleIcon,
-  CheckCircleIcon,
+  CheckCircle2Icon,
   InfoIcon,
   AlertTriangleIcon,
   InboxIcon,
@@ -68,7 +68,7 @@ export function InsightsPanel({
       case "alert-triangle":
         return <AlertTriangleIcon {...iconProps} />;
       case "check-circle":
-        return <CheckCircleIcon {...iconProps} />;
+        return <CheckCircle2Icon {...iconProps} />;
       case "inbox":
         return <InboxIcon {...iconProps} />;
       case "minus":
@@ -77,7 +77,7 @@ export function InsightsPanel({
         return type === "warning" ? (
           <AlertCircleIcon {...iconProps} />
         ) : type === "success" ? (
-          <CheckCircleIcon {...iconProps} />
+          <CheckCircle2Icon {...iconProps} />
         ) : (
           <InfoIcon {...iconProps} />
         );
@@ -157,4 +157,3 @@ export function InsightsPanel({
     </Card>
   );
 }
-

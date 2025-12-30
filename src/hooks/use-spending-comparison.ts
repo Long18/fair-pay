@@ -65,4 +65,3 @@ export const useSpendingComparison = (options: UseSpendingComparisonOptions) => 
 
   return { data, isLoading, error, refetch: fetchComparison };
 };
-

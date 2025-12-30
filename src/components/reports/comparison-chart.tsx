@@ -131,4 +131,3 @@ export function ComparisonChart({
     </Card>
   );
 }
-

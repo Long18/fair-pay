@@ -72,4 +72,3 @@ export const useTopCategories = (options: UseTopCategoriesOptions = {}) => {
 
   return { data, isLoading, error, refetch: fetchTopCategories };
 };
-

@@ -141,4 +141,3 @@ export async function exportToPDF(options: PDFExportOptions): Promise<void> {
   const fileName = `${title.replace(/\s+/g, "_")}_${format(new Date(), "yyyy-MM-dd")}.pdf`;
   pdf.save(fileName);
 }
-

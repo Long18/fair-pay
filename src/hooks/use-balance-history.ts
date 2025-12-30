@@ -75,4 +75,3 @@ export const useBalanceHistory = (options: UseBalanceHistoryOptions = {}) => {
 
   return { data, isLoading, error, refetch: fetchBalanceHistory };
 };
-
