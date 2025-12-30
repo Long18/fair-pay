@@ -1,6 +1,5 @@
 import React, { lazy, Suspense, memo } from "react";
 import { Authenticated, Refine } from "@refinedev/core";
-import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 import {
   HomeIcon,
@@ -114,8 +113,7 @@ function App() {
     <BrowserRouter>
       <RefineKbarProvider>
         <ThemeProvider>
-          <DevtoolsProvider>
-              <Refine
+          <Refine
                 dataProvider={dataProvider(supabaseClient)}
                 liveProvider={liveProvider(supabaseClient)}
                 authProvider={authProvider}
@@ -425,8 +423,6 @@ function App() {
                   <DonationWidget />
                 </Suspense>
               </Refine>
-              <DevtoolsPanel />
-            </DevtoolsProvider>
         </ThemeProvider>
       </RefineKbarProvider>
     </BrowserRouter>
