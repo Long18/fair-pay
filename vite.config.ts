@@ -8,10 +8,7 @@ import viteCompression from 'vite-plugin-compression';
 // https://vite.dev/config/
 export default defineConfig({
     plugins: [
-        react({
-            // Enable Fast Refresh with optimizations
-            fastRefresh: true,
-        }),
+        react(),
         tailwindcss(),
         VitePWA({
             registerType: 'autoUpdate',
@@ -151,69 +148,11 @@ export default defineConfig({
                     }
                     return 'assets/[name]-[hash].js';
                 },
-                // Improved manual chunking strategy
-                manualChunks: (id) => {
-                    // React core - Keep React and React-DOM together
-                    // This ensures React is fully initialized before providers use it
-                    if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
-                        return 'react-vendor';
-                    }
-
-                    // React Router
-                    if (id.includes('node_modules/react-router')) {
-                        return 'react-router-vendor';
-                    }
-
-                    // Refine core framework
-                    if (id.includes('@refinedev/core')) {
-                        return 'refine-core';
-                    }
-
-                    // Refine providers (separate chunk)
-                    if (id.includes('@refinedev/') && !id.includes('@refinedev/core')) {
-                        return 'refine-providers';
-                    }
-
-                    // Supabase
-                    if (id.includes('@supabase/supabase-js')) {
-                        return 'supabase';
-                    }
-
-                    // Radix UI components (large library)
-                    if (id.includes('@radix-ui/')) {
-                        return 'radix-ui';
-                    }
-
-                    // TanStack libraries
-                    if (id.includes('@tanstack/')) {
-                        return 'tanstack';
-                    }
-
-                    // Form libraries
-                    if (id.includes('react-hook-form') || id.includes('zod') || id.includes('@hookform/')) {
-                        return 'forms';
-                    }
-
-                    // i18n
-                    if (id.includes('i18next') || id.includes('react-i18next')) {
-                        return 'i18n';
-                    }
-
-                    // Date libraries
-                    if (id.includes('date-fns') || id.includes('dayjs')) {
-                        return 'date-utils';
-                    }
-
-                    // UI utilities (icons, etc)
-                    if (id.includes('lucide-react') || id.includes('clsx') || id.includes('class-variance-authority')) {
-                        return 'ui-utils';
-                    }
-
-                    // Other large node_modules
-                    if (id.includes('node_modules/')) {
-                        return 'vendor';
-                    }
-                },
+                // NO manual chunking - let Vite handle it automatically
+                // Manual chunking was causing module loading order issues
+                // React needs to be available before any code that uses it
+                // See docs/95-Production-Bug-Root-Cause-Analysis.md and docs/96-Verification-Report-CRITICAL-BUG-FOUND.md
+                // manualChunks: undefined, // Let Vite decide
 
                 // Optimize asset naming
                 assetFileNames: 'assets/[name]-[hash].[ext]',
@@ -222,7 +161,7 @@ export default defineConfig({
             // Tree shaking optimizations
             // IMPORTANT: Don't be too aggressive with tree-shaking as it can break React internals
             treeshake: {
-                moduleSideEffects: 'no-external', // Preserve side effects for external modules
+                moduleSideEffects: true, // Preserve ALL side effects to be safe
                 propertyReadSideEffects: false,
             },
         },
