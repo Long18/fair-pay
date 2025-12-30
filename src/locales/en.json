@@ -287,6 +287,16 @@
         "total": "Total",
         "unknown": "Unknown"
     },
+    "debts": {
+        "simplify": "Simplify Debts",
+        "simplifyTooltip": "Combines multiple payments into fewer transactions using smart optimization. The total amount owed remains the same.",
+        "transactions": "transactions",
+        "fewer": "fewer",
+        "simplified": "Simplified",
+        "calculating": "Calculating simplified debts...",
+        "allSettled": "All settled up! No debts to simplify.",
+        "optimizedTransactions": "Optimized transactions using Min-Cost Max-Flow algorithm"
+    },
     "pagination": {
         "showing": "Showing {{start}}-{{end}} of {{total}}",
         "firstPage": "First page",

@@ -10,6 +10,11 @@ import { MemberList } from "../components/member-list";
 import { AddMemberModal } from "../components/add-member-modal";
 import { ExpenseList, RecurringExpenseList } from "@/modules/expenses";
 import { SimplifiedBalanceView, PaymentList, useBalanceCalculation } from "@/modules/payments";
+import { SimplifiedDebtsToggle } from "@/components/dashboard/SimplifiedDebtsToggle";
+import { useSimplifiedDebts } from "@/hooks/use-simplified-debts";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { formatNumber } from "@/lib/locale-utils";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -24,7 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { formatDate } from "@/lib/locale-utils";
 
-import { ArrowLeftIcon, PencilIcon, Trash2Icon, PlusIcon } from "@/components/ui/icons";
+import { ArrowLeftIcon, PencilIcon, Trash2Icon, PlusIcon, ArrowRightIcon } from "@/components/ui/icons";
 export const GroupShow = () => {
   const { id } = useParams<{ id: string }>();
   const go = useGo();
@@ -32,6 +37,11 @@ export const GroupShow = () => {
   const [addMemberModalOpen, setAddMemberModalOpen] = useState(false);
   const [currentMemberPage, setCurrentMemberPage] = useState(1);
   const memberPageSize = 10;
+  const [useServerSimplification, setUseServerSimplification] = useState(() => {
+    // Load preference from localStorage
+    const saved = localStorage.getItem(`group-${id}-use-server-simplification`);
+    return saved === "true";
+  });
 
   const { query: groupQuery } = useOne<Group>({
     resource: "groups",
@@ -77,6 +87,16 @@ export const GroupShow = () => {
   const { query: paymentsQuery } = useList({
     resource: "payments",
     filters: [{ field: "group_id", operator: "eq", value: id }],
+  });
+
+  // Fetch server-side simplified debts
+  const {
+    simplifiedDebts,
+    isLoading: isLoadingSimplified,
+    transactionCount: simplifiedCount,
+  } = useSimplifiedDebts({
+    groupId: id,
+    enabled: useServerSimplification && !!id,
   });
 
   const { data: groupData, isLoading: isLoadingGroup } = groupQuery;
@@ -126,6 +146,12 @@ export const GroupShow = () => {
     go({
       to: `/groups/${group.id}/payments/create?toUser=${toUserId}&amount=${amount}`,
     });
+  };
+
+  const handleToggleSimplification = (enabled: boolean) => {
+    setUseServerSimplification(enabled);
+    // Save preference to localStorage
+    localStorage.setItem(`group-${id}-use-server-simplification`, enabled.toString());
   };
 
   const handleDeleteGroup = () => {
@@ -271,20 +297,120 @@ export const GroupShow = () => {
             <ExpenseList groupId={group.id} members={membersList} />
           </TabsContent>
           <TabsContent value="balances" className="mt-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-              <div>
-                <SimplifiedBalanceView
-                  balances={balances}
-                  currentUserId={identity?.id || ""}
-                  simplifyDebts={group?.simplify_debts || false}
-                  onSettleUp={handleSettleUp}
-                  currency="VND"
-                />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Payment History</h3>
-                <PaymentList groupId={group.id} />
-              </div>
+            <div className="space-y-6">
+              {/* Debt Simplification Toggle */}
+              {allMembers.length >= 3 && (
+                <div className="flex justify-end">
+                  <SimplifiedDebtsToggle
+                    isSimplified={useServerSimplification}
+                    onToggle={handleToggleSimplification}
+                    rawCount={balances.filter(b => b.balance !== 0).length}
+                    simplifiedCount={simplifiedCount}
+                    disabled={isLoadingSimplified}
+                  />
+                </div>
+              )}
+
+              {/* Server-Side Simplified Debts View */}
+              {useServerSimplification && !isLoadingSimplified && simplifiedDebts.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Simplified Debts</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Optimized transactions using Min-Cost Max-Flow algorithm
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {simplifiedDebts.map((debt, index) => (
+                        <div
+                          key={`${debt.from_user_id}-${debt.to_user_id}-${index}`}
+                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-3 flex-1">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={debt.from_user_avatar || undefined} />
+                              <AvatarFallback>
+                                {debt.from_user_name.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{debt.from_user_name}</p>
+                              <p className="text-xs text-muted-foreground">Pays</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <Badge variant="secondary" className="text-base font-semibold px-3 py-1">
+                              {formatNumber(debt.amount)} ₫
+                            </Badge>
+                            <ArrowRightIcon className="h-5 w-5 text-muted-foreground" />
+                          </div>
+
+                          <div className="flex items-center gap-3 flex-1 justify-end">
+                            <div className="text-right">
+                              <p className="font-medium">{debt.to_user_name}</p>
+                              <p className="text-xs text-muted-foreground">Receives</p>
+                            </div>
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={debt.to_user_avatar || undefined} />
+                              <AvatarFallback>
+                                {debt.to_user_name.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Loading State for Simplified Debts */}
+              {useServerSimplification && isLoadingSimplified && (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <p className="text-muted-foreground">Calculating simplified debts...</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Empty State for Simplified Debts */}
+              {useServerSimplification && !isLoadingSimplified && simplifiedDebts.length === 0 && (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <div className="text-4xl mb-2">✅</div>
+                    <p className="text-muted-foreground">All settled up! No debts to simplify.</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Original Balance View (when not using server simplification) */}
+              {!useServerSimplification && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                  <div>
+                    <SimplifiedBalanceView
+                      balances={balances}
+                      currentUserId={identity?.id || ""}
+                      simplifyDebts={group?.simplify_debts || false}
+                      onSettleUp={handleSettleUp}
+                      currency="VND"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">Payment History</h3>
+                    <PaymentList groupId={group.id} />
+                  </div>
+                </div>
+              )}
+
+              {/* Payment History (always show when using server simplification) */}
+              {useServerSimplification && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Payment History</h3>
+                  <PaymentList groupId={group.id} />
+                </div>
+              )}
             </div>
           </TabsContent>
           <TabsContent value="recurring" className="mt-6">
