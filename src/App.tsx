@@ -1,5 +1,6 @@
 import { lazy, Suspense, memo } from "react";
 import { Authenticated, Refine } from "@refinedev/core";
+import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 import {
   HomeIcon,
@@ -38,9 +39,7 @@ import { OAuthConsent } from "./pages/oauth";
 // Dashboard (most common entry point)
 import { Dashboard } from "./pages/dashboard";
 
-// Lazy load everything else for better code splitting
-const DevtoolsPanel = lazy(() => import("@refinedev/devtools").then(m => ({ default: m.DevtoolsPanel })));
-const DevtoolsProvider = lazy(() => import("@refinedev/devtools").then(m => ({ default: m.DevtoolsProvider })));
+// Lazy load non-critical components for better code splitting
 
 // Profile module
 const ProfileEdit = lazy(() => import("./modules/profile").then(m => ({ default: m.ProfileEdit })));
@@ -115,8 +114,7 @@ function App() {
     <BrowserRouter>
       <RefineKbarProvider>
         <ThemeProvider>
-          <Suspense fallback={<PageLoader />}>
-            <DevtoolsProvider>
+          <DevtoolsProvider>
               <Refine
                 dataProvider={dataProvider(supabaseClient)}
                 liveProvider={liveProvider(supabaseClient)}
@@ -427,11 +425,8 @@ function App() {
                   <DonationWidget />
                 </Suspense>
               </Refine>
-              <Suspense fallback={null}>
-                <DevtoolsPanel />
-              </Suspense>
+              <DevtoolsPanel />
             </DevtoolsProvider>
-          </Suspense>
         </ThemeProvider>
       </RefineKbarProvider>
     </BrowserRouter>
