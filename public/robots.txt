@@ -15,4 +15,3 @@ Sitemap: https://long-pay.vercel.app/sitemap.xml
 
 # Crawl-delay for politeness (optional)
 Crawl-delay: 1
-

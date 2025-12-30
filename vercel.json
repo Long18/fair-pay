@@ -1,53 +1,53 @@
 {
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
+    "headers": [
         {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
+            "source": "/(.*)",
+            "headers": [
+                {
+                    "key": "X-Content-Type-Options",
+                    "value": "nosniff"
+                },
+                {
+                    "key": "X-Frame-Options",
+                    "value": "DENY"
+                },
+                {
+                    "key": "X-XSS-Protection",
+                    "value": "1; mode=block"
+                },
+                {
+                    "key": "Referrer-Policy",
+                    "value": "strict-origin-when-cross-origin"
+                },
+                {
+                    "key": "Permissions-Policy",
+                    "value": "camera=(), microphone=(), geolocation=()"
+                }
+            ]
         },
         {
-          "key": "X-Frame-Options",
-          "value": "DENY"
+            "source": "/assets/(.*)",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=31536000, immutable"
+                }
+            ]
         },
         {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        },
-        {
-          "key": "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        },
-        {
-          "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=()"
+            "source": "/(favicon.ico|robots.txt|sitemap.xml|browserconfig.xml)",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=86400"
+                }
+            ]
         }
-      ]
-    },
-    {
-      "source": "/assets/(.*)",
-      "headers": [
+    ],
+    "rewrites": [
         {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
+            "source": "/(.*)",
+            "destination": "/index.html"
         }
-      ]
-    },
-    {
-      "source": "/(favicon.ico|robots.txt|sitemap.xml|browserconfig.xml)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=86400"
-        }
-      ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ]
+    ]
 }

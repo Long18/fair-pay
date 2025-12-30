@@ -131,7 +131,7 @@ export default defineConfig({
         // Use esbuild for faster and safer minification
         // Terser was too aggressive and broke React internals
         minify: 'esbuild',
-        
+
         // Esbuild minification options
         esbuild: {
             drop: ['console', 'debugger'], // Remove console.log in production
@@ -144,24 +144,16 @@ export default defineConfig({
         // Rollup optimizations
         rollupOptions: {
             output: {
-                // Ensure proper chunk loading order
-                // React must load before any providers that use it
+                // Use consistent naming for all chunks
+                // Let Vite handle chunk splitting automatically for optimal loading
                 entryFileNames: 'assets/[name]-[hash].js',
-                chunkFileNames: (chunkInfo) => {
-                    // Ensure react-vendor loads first
-                    if (chunkInfo.name === 'react-vendor') {
-                        return 'assets/react-vendor-[hash].js';
-                    }
-                    return 'assets/[name]-[hash].js';
-                },
+                chunkFileNames: 'assets/[name]-[hash].js',
+                assetFileNames: 'assets/[name]-[hash].[ext]',
+                
                 // NO manual chunking - let Vite handle it automatically
                 // Manual chunking was causing module loading order issues
                 // React needs to be available before any code that uses it
                 // See docs/95-Production-Bug-Root-Cause-Analysis.md and docs/96-Verification-Report-CRITICAL-BUG-FOUND.md
-                // manualChunks: undefined, // Let Vite decide
-
-                // Optimize asset naming
-                assetFileNames: 'assets/[name]-[hash].[ext]',
             },
 
             // Tree shaking optimizations
