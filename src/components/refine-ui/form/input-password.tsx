@@ -26,9 +26,9 @@ export const InputPassword = ({ className, ...props }: InputPasswordProps) => {
         onClick={() => setShowPassword(!showPassword)}
       >
         {showPassword ? (
-          <EyeOffIcon size={18} className={cn("text-gray-500")} />
+          <EyeOffIcon size={18} className={cn("text-muted-foreground")} />
         ) : (
-          <EyeIcon size={18} className={cn("text-gray-500")} />
+          <EyeIcon size={18} className={cn("text-muted-foreground")} />
         )}
       </button>
     </div>

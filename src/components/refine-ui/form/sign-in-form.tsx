@@ -53,7 +53,7 @@ export const SignInForm = () => {
         "justify-center",
         "min-h-svh",
         "bg-gradient-to-br from-teal-50 via-background to-purple-50",
-        "dark:from-gray-900 dark:via-background dark:to-gray-800",
+        "dark:from-background dark:via-background dark:to-background",
         "relative",
         "overflow-hidden"
       )}

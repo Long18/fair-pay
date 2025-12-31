@@ -41,7 +41,7 @@ export const ForgotPasswordForm = () => {
         "justify-center",
         "min-h-svh",
         "bg-gradient-to-br from-teal-50 via-background to-purple-50",
-        "dark:from-gray-900 dark:via-background dark:to-gray-800"
+        "dark:from-background dark:via-background dark:to-background"
       )}
     >
       <Card className={cn("sm:w-[456px]", "p-8", "shadow-xl", "border", "bg-card/95", "backdrop-blur-sm")}>
