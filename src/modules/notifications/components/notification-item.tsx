@@ -85,7 +85,7 @@ export const NotificationItem = ({
     <div
       className={cn(
         "px-4 py-3 cursor-pointer transition-colors border-b last:border-b-0",
-        !notification.is_read ? "bg-blue-50/50 hover:bg-blue-100/50" : "hover:bg-muted/50"
+        !notification.is_read ? "bg-blue-50 dark:bg-blue-950/20 hover:bg-blue-100 dark:hover:bg-blue-950/30" : "hover:bg-muted/50"
       )}
       onClick={handleClick}
     >
@@ -93,9 +93,9 @@ export const NotificationItem = ({
         {/* Unread indicator dot */}
         <div className="flex-shrink-0 mt-1">
           {!notification.is_read ? (
-            <div className="w-2 h-2 rounded-full bg-blue-500" />
+            <div className="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400" />
           ) : (
-            <div className="w-2 h-2 rounded-full bg-gray-300" />
+            <div className="w-2 h-2 rounded-full bg-muted-foreground/30" />
           )}
         </div>
 

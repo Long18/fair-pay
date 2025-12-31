@@ -92,13 +92,13 @@ export const SettleSplitDialog = ({
               value={customAmount}
               onChange={(e) => handleAmountChange(e.target.value)}
               disabled={isSettling}
-              className={error ? "border-red-500" : ""}
+              className={error ? "border-red-500 dark:border-red-400" : ""}
             />
             {error && (
-              <p className="text-sm text-red-500">{error}</p>
+              <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
             )}
             {isPartialSettlement && !error && (
-              <p className="text-sm text-amber-600">
+              <p className="text-sm text-amber-600 dark:text-amber-400">
                 {t('expenses.partialSettlement', 'This is a partial settlement')}
               </p>
             )}
@@ -140,4 +140,3 @@ export const SettleSplitDialog = ({
     </AlertDialog>
   );
 };
-

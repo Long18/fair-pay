@@ -411,7 +411,7 @@ export const ProfileShow = () => {
             </div>
             <div className="text-center p-4 rounded-lg bg-green-50 dark:bg-green-950/20">
               <p className="text-sm text-muted-foreground mb-1">{t('profile.owedToYou', 'Owed to You')}</p>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                 {formatCurrency(totalOwedToMe, "VND")}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -420,7 +420,7 @@ export const ProfileShow = () => {
             </div>
             <div className="text-center p-4 rounded-lg bg-red-50 dark:bg-red-950/20">
               <p className="text-sm text-muted-foreground mb-1">{t('profile.youOweTotal', 'You Owe')}</p>
-              <p className="text-2xl font-bold text-red-600">
+              <p className="text-2xl font-bold text-red-600 dark:text-red-400">
                 {formatCurrency(totalIOwe, "VND")}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -489,10 +489,10 @@ export const ProfileShow = () => {
                           variant={activity.is_borrower ? "destructive" : "default"}
                           className={
                             activity.is_borrower
-                              ? "bg-red-100 text-red-700"
+                              ? "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-300"
                               : activity.is_payment
-                              ? "bg-gray-100 text-gray-700"
-                              : "bg-green-100 text-green-700"
+                              ? "bg-muted text-muted-foreground"
+                              : "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300"
                           }
                         >
                           {activity.is_payment
@@ -502,7 +502,7 @@ export const ProfileShow = () => {
                             : t('profile.paid')}
                         </Badge>
                         <p className={`text-base font-bold ${
-                          activity.is_borrower ? "text-red-600" : "text-green-600"
+                          activity.is_borrower ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
                         }`}>
                           {formatCurrency(activity.user_share, activity.currency)}
                         </p>

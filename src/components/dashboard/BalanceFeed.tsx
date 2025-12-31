@@ -53,15 +53,15 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
         {/* Summary Cards - All Zero */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Total Owed to Me */}
-          <Card className="border-gray-100">
+          <Card className="border-border">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-red-50 rounded-xl">
-                  <ArrowDownIcon className="h-6 w-6 text-red-600" />
+                <div className="p-3 bg-red-50 dark:bg-red-950/20 rounded-xl">
+                  <ArrowDownIcon className="h-6 w-6 text-red-600 dark:text-red-400" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-muted-foreground font-medium">Owed to you</p>
-                  <p className="text-2xl font-bold text-red-600 mt-1">
+                  <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
                     ₫0
                   </p>
                 </div>
@@ -70,15 +70,15 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
           </Card>
 
           {/* Total I Owe */}
-          <Card className="border-gray-100">
+          <Card className="border-border">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-green-50 rounded-xl">
-                  <ArrowUpIcon className="h-6 w-6 text-green-600" />
+                <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-xl">
+                  <ArrowUpIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-muted-foreground font-medium">You owe</p>
-                  <p className="text-2xl font-bold text-green-600 mt-1">
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
                     ₫0
                   </p>
                 </div>
@@ -87,15 +87,15 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
           </Card>
 
           {/* Net Balance */}
-          <Card className="border-gray-100">
+          <Card className="border-border">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-purple-50 rounded-xl">
-                  <WalletIcon className="h-6 w-6 text-purple-600" />
+                <div className="p-3 bg-purple-50 dark:bg-purple-950/20 rounded-xl">
+                  <WalletIcon className="h-6 w-6 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-muted-foreground font-medium">Net balance</p>
-                  <p className="text-2xl font-bold text-purple-600 mt-1">
+                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">
                     ₫0
                   </p>
                 </div>
@@ -119,15 +119,15 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Total Owed to Me */}
-        <Card className="border-gray-100">
+        <Card className="border-border">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-red-50 rounded-xl">
-                <ArrowDownIcon className="h-6 w-6 text-red-600" />
+              <div className="p-3 bg-red-50 dark:bg-red-950/20 rounded-xl">
+                <ArrowDownIcon className="h-6 w-6 text-red-600 dark:text-red-400" />
               </div>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground font-medium">Owed to you</p>
-                <p className="text-2xl font-bold text-red-600 mt-1">
+                <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
                   ₫{formatCurrency(totalOwedToMe)}
                 </p>
               </div>
@@ -136,15 +136,15 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
         </Card>
 
         {/* Total I Owe */}
-        <Card className="border-gray-100">
+        <Card className="border-border">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-50 rounded-xl">
-                <ArrowUpIcon className="h-6 w-6 text-green-600" />
+              <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-xl">
+                <ArrowUpIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground font-medium">You owe</p>
-                <p className="text-2xl font-bold text-green-600 mt-1">
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
                   ₫{formatCurrency(totalIOwe)}
                 </p>
               </div>
@@ -153,20 +153,20 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
         </Card>
 
         {/* Net Balance */}
-        <Card className="border-gray-100">
+        <Card className="border-border">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className={`p-3 rounded-xl ${
-                netBalance >= 0 ? "bg-purple-50" : "bg-orange-50"
+                netBalance >= 0 ? "bg-purple-50 dark:bg-purple-950/20" : "bg-orange-50 dark:bg-orange-950/20"
               }`}>
                 <WalletIcon className={`h-6 w-6 ${
-                  netBalance >= 0 ? "text-purple-600" : "text-orange-600"
+                  netBalance >= 0 ? "text-purple-600 dark:text-purple-400" : "text-orange-600 dark:text-orange-400"
                 }`} />
               </div>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground font-medium">Net balance</p>
                 <p className={`text-2xl font-bold mt-1 ${
-                  netBalance >= 0 ? "text-purple-600" : "text-orange-600"
+                  netBalance >= 0 ? "text-purple-600 dark:text-purple-400" : "text-orange-600 dark:text-orange-400"
                 }`}>
                   {netBalance >= 0 ? "+" : ""}₫{formatCurrency(netBalance)}
                 </p>
