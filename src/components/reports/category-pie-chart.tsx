@@ -1,8 +1,18 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+"use client";
+
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { PieChart, Pie, Cell, Label } from 'recharts';
 import { CategoryData } from '@/hooks/use-category-breakdown';
 import { getCategoryMeta } from '@/modules/expenses';
 import { formatNumber } from '@/lib/locale-utils';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  type ChartConfig,
+} from '@/components/ui/chart';
 
 interface CategoryPieChartProps {
   data: CategoryData[];
@@ -25,77 +35,73 @@ export function CategoryPieChart({ data, title = 'Chi tiêu theo danh mục' }: 
     );
   }
 
-  const chartData = data.map(item => {
+  const chartConfig: ChartConfig = data.reduce((config, item, index) => {
     const categoryMeta = getCategoryMeta(item.category);
+    const categoryKey = item.category.toLowerCase().replace(/\s+/g, '_');
+    config[categoryKey] = {
+      label: categoryMeta?.name || item.category,
+      color: categoryMeta?.color || `var(--chart-${(index % 5) + 1})`,
+    };
+    return config;
+  }, {} as ChartConfig);
+
+  const chartData = data.map(item => {
+    const categoryKey = item.category.toLowerCase().replace(/\s+/g, '_');
     return {
-      name: categoryMeta?.name || item.category,
+      category: categoryKey,
       value: item.amount,
       count: item.count,
-      fill: categoryMeta?.color || '#gray',
+      fill: `var(--color-${categoryKey})`,
     };
   });
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-background border rounded-lg p-3 shadow-lg">
-          <p className="font-medium">{data.name}</p>
-          <p className="text-sm text-muted-foreground">
-            {formatNumber(data.value)} ₫
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {data.count} chi tiêu
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const renderLegend = (props: any) => {
-    const { payload } = props;
-    return (
-      <ul className="flex flex-wrap gap-3 justify-center mt-4">
-        {payload.map((entry: any, index: number) => (
-          <li key={`legend-${index}`} className="flex items-center gap-2 text-sm">
-            <span
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: entry.color }}
-            />
-            <span>{entry.value}</span>
-          </li>
-        ))}
-      </ul>
-    );
-  };
+  const totalAmount = data.reduce((sum, item) => sum + item.amount, 0);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
+        <CardDescription>
+          Tổng: {formatNumber(totalAmount)} ₫
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={350}>
+        <ChartContainer config={chartConfig} className="min-h-[350px] w-full">
           <PieChart>
+            <ChartTooltip
+              content={
+                <ChartTooltipContent
+                  labelKey="category"
+                  formatter={(value, _name, item) => (
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium">{formatNumber(Number(value))} ₫</span>
+                      <span className="text-xs text-muted-foreground">
+                        {item.payload.count} chi tiêu
+                      </span>
+                    </div>
+                  )}
+                />
+              }
+            />
             <Pie
               data={chartData}
+              dataKey="value"
+              nameKey="category"
               cx="50%"
               cy="50%"
-              labelLine={false}
-              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
               outerRadius={100}
-              fill="#8884d8"
-              dataKey="value"
+              label={({ payload, percent }) => {
+                const config = chartConfig[payload.category];
+                return `${config?.label} ${(percent * 100).toFixed(0)}%`;
+              }}
             >
               {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.fill} />
               ))}
             </Pie>
-            <Tooltip content={<CustomTooltip />} />
-            <Legend content={renderLegend} />
+            <ChartLegend content={<ChartLegendContent nameKey="category" />} />
           </PieChart>
-        </ResponsiveContainer>
+        </ChartContainer>
       </CardContent>
     </Card>
   );
