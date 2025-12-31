@@ -87,9 +87,9 @@ export const BalancesPage = () => {
             {/* Net Balance Card */}
             <Card className={`border-2 ${
               netBalance > 0
-                ? 'border-green-500/30 bg-green-50 dark:bg-green-950/20'
+                ? 'border-green-500/30 dark:border-green-700/30 bg-green-50 dark:bg-green-950/20'
                 : netBalance < 0
-                  ? 'border-red-500/30 bg-red-50 dark:bg-red-950/20'
+                  ? 'border-red-500/30 dark:border-red-700/30 bg-red-50 dark:bg-red-950/20'
                   : 'border-border bg-muted/20'
             }`}>
               <CardHeader className="pb-2 md:pb-3">
@@ -118,7 +118,7 @@ export const BalancesPage = () => {
             </Card>
 
             {/* You Owe Card */}
-            <Card className="border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-950/10">
+            <Card className="border-red-200 dark:border-red-800/30 bg-red-50 dark:bg-red-950/10">
               <CardHeader className="pb-2 md:pb-3">
                 <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
                   You Owe
@@ -135,7 +135,7 @@ export const BalancesPage = () => {
             </Card>
 
             {/* Owed to You Card */}
-            <Card className="border-green-200 dark:border-green-900/30 bg-green-50 dark:bg-green-950/10">
+            <Card className="border-green-200 dark:border-green-800/30 bg-green-50 dark:bg-green-950/10">
               <CardHeader className="pb-2 md:pb-3">
                 <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
                   Owed to You

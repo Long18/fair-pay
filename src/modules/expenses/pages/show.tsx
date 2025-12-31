@@ -460,7 +460,7 @@ export const ExpenseShow = () => {
                       key={split.id}
                       className={`group flex flex-col p-3 sm:p-4 border-2 rounded-xl transition-all duration-200 ${
                         isSplitSettled
-                          ? 'bg-green-50/50 border-green-200'
+                          ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800'
                           : 'hover:border-primary/50 hover:bg-accent/30'
                       }`}
                     >
@@ -468,13 +468,13 @@ export const ExpenseShow = () => {
                         <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0 w-full sm:w-auto">
                         <Avatar className={`h-10 w-10 sm:h-12 sm:w-12 border-2 shadow-md ring-2 ring-offset-1 ring-offset-background transition-all duration-200 flex-shrink-0 ${
                           isSplitSettled
-                            ? 'border-green-300 ring-green-200'
+                            ? 'border-green-300 dark:border-green-700 ring-green-200 dark:ring-green-800'
                             : 'border-background ring-primary/20 group-hover:ring-primary/50'
                         }`}>
                           <AvatarImage src={split.profiles?.avatar_url || undefined} alt={split.profiles?.full_name} />
                           <AvatarFallback className={`text-xs sm:text-sm font-semibold ${
                             isSplitSettled
-                              ? 'bg-gradient-to-br from-green-100 to-green-50 text-green-700'
+                              ? 'bg-gradient-to-br from-green-100 to-green-50 dark:from-green-950/40 dark:to-green-950/20 text-green-700 dark:text-green-300'
                               : 'bg-gradient-to-br from-muted to-muted/50'
                           }`}>
                             {split.profiles?.full_name
@@ -487,7 +487,7 @@ export const ExpenseShow = () => {
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <div className={`font-semibold text-sm sm:text-base line-clamp-2 leading-tight transition-colors break-words ${
-                            isSplitSettled ? 'text-green-700' : 'group-hover:text-primary'
+                            isSplitSettled ? 'text-green-700 dark:text-green-300' : 'group-hover:text-primary'
                           }`} title={split.profiles?.full_name || t('profile.unknown')}>
                             {split.profiles?.full_name || t('profile.unknown')}
                             {isCurrentUserSplit && (
@@ -501,19 +501,19 @@ export const ExpenseShow = () => {
                               {String(t(`expenses.${split.split_method}`, split.split_method))}
                             </div>
                             {isSplitSettled && !isPartiallySettled && (
-                              <Badge variant="outline" className="text-xs bg-green-100 text-green-700 border-green-300">
+                              <Badge variant="outline" className="text-xs bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700">
                                 <CheckCircle2Icon className="h-3 w-3 mr-1" />
                                 {t('expenses.paid', 'Paid')}
                               </Badge>
                             )}
                             {isPartiallySettled && (
-                              <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-300">
+                              <Badge variant="outline" className="text-xs bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700">
                                 <CheckCircle2Icon className="h-3 w-3 mr-1" />
                                 {t('expenses.partiallyPaid', 'Partially Paid')}
                               </Badge>
                             )}
                             {!isSplitSettled && !isCurrentUserSplit && (
-                              <Badge variant="outline" className="text-xs bg-red-100 text-red-700 border-red-300">
+                              <Badge variant="outline" className="text-xs bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700">
                                 <XCircleIcon className="h-3 w-3 mr-1" />
                                 {t('expenses.unpaid', 'Unpaid')}
                               </Badge>
@@ -525,7 +525,7 @@ export const ExpenseShow = () => {
                           <div className="flex flex-col items-start sm:items-end">
                             {isPartiallySettled ? (
                               <>
-                                <div className="font-bold text-base sm:text-lg text-amber-600">
+                                <div className="font-bold text-base sm:text-lg text-amber-600 dark:text-amber-400">
                                   {formatNumber(split.computed_amount - split.settled_amount)} {expense.currency}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
@@ -534,7 +534,7 @@ export const ExpenseShow = () => {
                               </>
                             ) : (
                               <div className={`font-bold text-base sm:text-lg transition-transform ${
-                                isSplitSettled ? 'text-green-600' : ''
+                                isSplitSettled ? 'text-green-600 dark:text-green-400' : ''
                               }`}>
                                 {formatNumber(split.computed_amount)} {expense.currency}
                               </div>

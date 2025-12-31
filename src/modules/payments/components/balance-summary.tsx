@@ -50,12 +50,12 @@ export const BalanceSummary = ({
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-green-100 rounded-full">
-                <ArrowDownIcon className="h-5 w-5 text-green-600" />
+              <div className="p-3 bg-green-100 dark:bg-green-950/30 rounded-full">
+                <ArrowDownIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">You are owed</p>
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                   {formatCurrency(totalOwedToMe)}
                 </p>
               </div>
@@ -66,8 +66,8 @@ export const BalanceSummary = ({
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-red-100 rounded-full">
-                <ArrowUpIcon className="h-5 w-5 text-red-600" />
+              <div className="p-3 bg-red-100 dark:bg-red-950/30 rounded-full">
+                <ArrowUpIcon className="h-5 w-5 text-red-600 dark:text-red-400" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">You owe</p>

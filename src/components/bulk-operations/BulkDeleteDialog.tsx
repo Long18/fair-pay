@@ -53,8 +53,8 @@ export const BulkDeleteDialog: React.FC<BulkDeleteDialogProps> = ({
               </div>
             </div>
 
-            <div className="bg-red-50 border border-red-200 p-3 rounded-lg">
-              <p className="text-sm text-red-800">
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 p-3 rounded-lg">
+              <p className="text-sm text-red-800 dark:text-red-200">
                 <strong>{t("common.warning", "Warning")}:</strong>{" "}
                 {t(
                   "bulk.deleteWarning",

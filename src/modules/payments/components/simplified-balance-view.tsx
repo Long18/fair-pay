@@ -47,15 +47,15 @@ export const SimplifiedBalanceView = ({
     <div className="space-y-6">
       {/* Simplification Info Banner */}
       {simplifyDebts && simplifiedBalances.transactionsSaved > 0 && (
-        <Card className="border-blue-200 bg-blue-50">
+        <Card className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
-              <InfoIcon className="h-5 w-5 text-blue-600 mt-0.5" />
+              <InfoIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
               <div>
-                <p className="font-medium text-blue-900">
+                <p className="font-medium text-blue-900 dark:text-blue-100">
                   Debts Simplified
                 </p>
-                <p className="text-sm text-blue-700 mt-1">
+                <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
                   {simplifiedBalances.transactionsSaved} transaction
                   {simplifiedBalances.transactionsSaved !== 1 ? "s" : ""} eliminated.
                   The payments below represent the most efficient way to settle all debts.
@@ -72,7 +72,7 @@ export const SimplifiedBalanceView = ({
           <CardContent className="pt-6">
             <div className="text-center">
               <p className="text-sm text-muted-foreground">You are owed</p>
-              <p className="text-2xl font-bold text-green-600 mt-1">
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
                 {formatCurrency(totalOwedToMe)}
               </p>
             </div>
@@ -83,7 +83,7 @@ export const SimplifiedBalanceView = ({
           <CardContent className="pt-6">
             <div className="text-center">
               <p className="text-sm text-muted-foreground">You owe</p>
-              <p className="text-2xl font-bold text-red-600 mt-1">
+              <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
                 {formatCurrency(totalIOwe)}
               </p>
             </div>
@@ -97,10 +97,10 @@ export const SimplifiedBalanceView = ({
               <p
                 className={`text-2xl font-bold mt-1 ${
                   netBalance > 0
-                    ? "text-green-600"
+                    ? "text-green-600 dark:text-green-400"
                     : netBalance < 0
-                    ? "text-red-600"
-                    : "text-gray-600"
+                    ? "text-red-600 dark:text-red-400"
+                    : "text-muted-foreground"
                 }`}
               >
                 {netBalance > 0 ? "+" : ""}
@@ -160,7 +160,7 @@ export const SimplifiedBalanceView = ({
                       <span className="font-medium">{debt.to_user_name}</span>
                     </div>
                     <div className="text-right">
-                      <div className="font-semibold text-red-600">
+                      <div className="font-semibold text-red-600 dark:text-red-400">
                         {formatCurrency(debt.amount)}
                       </div>
                     </div>
@@ -217,7 +217,7 @@ export const SimplifiedBalanceView = ({
                       <span className="text-sm text-muted-foreground">You</span>
                     </div>
                     <div className="text-right">
-                      <div className="font-semibold text-green-600">
+                      <div className="font-semibold text-green-600 dark:text-green-400">
                         {formatCurrency(debt.amount)}
                       </div>
                     </div>
@@ -237,7 +237,7 @@ export const SimplifiedBalanceView = ({
         <Card>
           <CardContent className="py-12 text-center">
             <div className="flex flex-col items-center gap-3">
-              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-950/30 flex items-center justify-center">
                 <span className="text-3xl">✓</span>
               </div>
               <p className="text-lg font-medium text-green-600">
