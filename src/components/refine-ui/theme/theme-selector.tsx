@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
 import { SunIcon, MoonIcon, MonitorIcon, PaletteIcon } from "@/components/ui/icons";
-import { getThemeVariantsByGroup, parseThemeVariant, themePalettes } from "@/lib/theme-palettes";
+import { getThemeVariantsByGroup, parseThemeVariant, themePalettes, type ThemeColors } from "@/lib/theme-palettes";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 
@@ -73,7 +73,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
     const isSelected = themeVariant === variantKey;
     const palette = themePalettes[variant.themeName];
     const mode = variant.mode === "system" ? "light" : variant.mode;
-    const colors = palette?.[mode];
+    const colors = palette?.[mode as keyof typeof palette] as ThemeColors | undefined;
     const themeName = palette?.displayName || variant.themeName;
     const isEven = index % 2 === 0;
 

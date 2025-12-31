@@ -105,8 +105,8 @@
     <!-- Dynamic theme-color based on user preference -->
     <script>
       (function() {
-        const theme = localStorage.getItem('refine-ui-theme') || 'system';
-        const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        const themeVariant = localStorage.getItem('refine-ui-theme-variant') || 'monokai-pro-light';
+        const isDark = themeVariant.includes('-dark');
         const themeColor = isDark ? '#252525' : '#f9fafb';
         document.querySelector('meta[name="theme-color"]').setAttribute('content', themeColor);
       })();
