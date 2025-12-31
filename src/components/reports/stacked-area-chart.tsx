@@ -1,15 +1,22 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+"use client";
+
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   AreaChart,
   Area,
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
 } from "recharts";
 import { formatNumber } from "@/lib/locale-utils";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 
 interface StackedAreaChartData {
   label: string;
@@ -42,32 +49,30 @@ export function StackedAreaChart({
     );
   }
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-background border rounded-lg p-3 shadow-lg">
-          <p className="font-medium mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.name}: {formatNumber(entry.value)} ₫
-            </p>
-          ))}
-          <p className="text-xs text-muted-foreground mt-2 pt-2 border-t">
-            Total: {formatNumber(payload.reduce((sum: number, p: any) => sum + p.value, 0))} ₫
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
+  const chartConfig = categories.reduce((config, category, index) => {
+    config[category.key] = {
+      label: category.name,
+      color: category.color || `var(--chart-${(index % 5) + 1})`,
+    };
+    return config;
+  }, {} as ChartConfig);
+
+  const totalAmount = data.reduce((sum, item) => {
+    return sum + categories.reduce((catSum, cat) => {
+      return catSum + (typeof item[cat.key] === 'number' ? (item[cat.key] as number) : 0);
+    }, 0);
+  }, 0);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
+        <CardDescription>
+          Total: {formatNumber(totalAmount)} ₫
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={350}>
+        <ChartContainer config={chartConfig} className="min-h-[350px] w-full">
           <AreaChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
             <defs>
               {categories.map((category) => (
@@ -84,19 +89,45 @@ export function StackedAreaChart({
                 </linearGradient>
               ))}
             </defs>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+            <CartesianGrid vertical={false} />
             <XAxis
               dataKey="label"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
               tick={{ fontSize: 12 }}
-              className="text-muted-foreground"
             />
             <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
               tick={{ fontSize: 12 }}
-              className="text-muted-foreground"
               tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
             />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend />
+            <ChartTooltip
+              content={
+                <ChartTooltipContent
+                  formatter={(value) => (
+                    <span className="font-medium">{formatNumber(Number(value))} ₫</span>
+                  )}
+                  labelFormatter={(label, payload) => {
+                    if (payload && payload.length > 0) {
+                      const total = payload.reduce((sum: number, p: any) => sum + (p.value || 0), 0);
+                      return (
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium">{label}</span>
+                          <span className="text-xs text-muted-foreground">
+                            Total: {formatNumber(total)} ₫
+                          </span>
+                        </div>
+                      );
+                    }
+                    return label;
+                  }}
+                />
+              }
+            />
+            <ChartLegend content={<ChartLegendContent />} />
             {categories.map((category) => (
               <Area
                 key={category.key}
@@ -105,11 +136,10 @@ export function StackedAreaChart({
                 stackId="1"
                 stroke={category.color}
                 fill={`url(#color-${category.key})`}
-                name={category.name}
               />
             ))}
           </AreaChart>
-        </ResponsiveContainer>
+        </ChartContainer>
       </CardContent>
     </Card>
   );

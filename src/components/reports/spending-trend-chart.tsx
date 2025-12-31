@@ -1,7 +1,17 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+"use client";
+
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { TrendDataPoint } from '@/hooks/use-spending-trend';
 import { formatNumber } from '@/lib/locale-utils';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  type ChartConfig,
+} from '@/components/ui/chart';
 
 interface SpendingTrendChartProps {
   data: TrendDataPoint[];
@@ -24,56 +34,74 @@ export function SpendingTrendChart({ data, title = 'Xu hướng chi tiêu' }: Sp
     );
   }
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-background border rounded-lg p-3 shadow-lg">
-          <p className="font-medium">{data.label}</p>
-          <p className="text-sm text-primary">
-            {formatNumber(data.amount)} ₫
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {data.count} chi tiêu
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
+  const chartConfig = {
+    amount: {
+      label: "Số tiền",
+      color: "var(--chart-1)",
+    },
+    count: {
+      label: "Số lượng",
+      color: "var(--chart-2)",
+    },
+  } satisfies ChartConfig;
+
+  const totalAmount = data.reduce((sum, item) => sum + item.amount, 0);
+  const totalCount = data.reduce((sum, item) => sum + item.count, 0);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
+        <CardDescription>
+          {totalCount} chi tiêu • {formatNumber(totalAmount)} ₫
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={350}>
-          <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+        <ChartContainer config={chartConfig} className="min-h-[350px] w-full">
+          <LineChart
+            data={data}
+            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          >
+            <CartesianGrid vertical={false} />
             <XAxis
               dataKey="label"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
               tick={{ fontSize: 12 }}
-              className="text-muted-foreground"
             />
             <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
               tick={{ fontSize: 12 }}
-              className="text-muted-foreground"
               tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
             />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend />
+            <ChartTooltip
+              content={
+                <ChartTooltipContent
+                  formatter={(value, _name, item) => (
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium">{formatNumber(Number(value))} ₫</span>
+                      <span className="text-xs text-muted-foreground">
+                        {item.payload.count} chi tiêu
+                      </span>
+                    </div>
+                  )}
+                />
+              }
+            />
+            <ChartLegend content={<ChartLegendContent />} />
             <Line
               type="monotone"
               dataKey="amount"
-              stroke="hsl(var(--primary))"
+              stroke="var(--color-amount)"
               strokeWidth={2}
               dot={{ r: 4 }}
               activeDot={{ r: 6 }}
-              name="Số tiền"
             />
           </LineChart>
-        </ResponsiveContainer>
+        </ChartContainer>
       </CardContent>
     </Card>
   );

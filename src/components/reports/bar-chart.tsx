@@ -1,15 +1,22 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+"use client";
+
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   BarChart as RechartsBarChart,
   Bar,
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
 } from "recharts";
 import { formatNumber } from "@/lib/locale-utils";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 
 interface BarChartData {
   label: string;
@@ -46,48 +53,58 @@ export function BarChart({
     );
   }
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-background border rounded-lg p-3 shadow-lg">
-          <p className="font-medium">{data.label}</p>
-          <p className="text-sm text-primary">
-            Current: {formatNumber(data.value)} ₫
-          </p>
-          {showComparison && data.comparisonValue !== undefined && (
-            <p className="text-sm text-muted-foreground">
-              Previous: {formatNumber(data.comparisonValue)} ₫
-            </p>
-          )}
-        </div>
-      );
-    }
-    return null;
-  };
+  const chartConfig = {
+    value: {
+      label: "Current",
+      color: "var(--chart-1)",
+    },
+    comparisonValue: {
+      label: "Previous",
+      color: "var(--chart-2)",
+    },
+  } satisfies ChartConfig;
 
-  const ChartComponent = horizontal ? RechartsBarChart : RechartsBarChart;
+  const totalValue = data.reduce((sum, item) => sum + item.value, 0);
+  const totalComparison = showComparison
+    ? data.reduce((sum, item) => sum + (item.comparisonValue || 0), 0)
+    : 0;
+
   const layout = horizontal ? "horizontal" : "vertical";
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
+        <CardDescription>
+          {showComparison
+            ? `Current: ${formatNumber(totalValue)} ₫ • Previous: ${formatNumber(totalComparison)} ₫`
+            : `Total: ${formatNumber(totalValue)} ₫`}
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={350}>
-          <ChartComponent
+        <ChartContainer config={chartConfig} className="min-h-[350px] w-full">
+          <RechartsBarChart
             data={data}
             layout={layout}
             margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
           >
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+            <CartesianGrid vertical={false} />
             {horizontal ? (
               <>
-                <XAxis type="number" tick={{ fontSize: 12 }} />
+                <XAxis
+                  type="number"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                />
                 <YAxis
                   type="category"
                   dataKey="label"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
                   tick={{ fontSize: 12 }}
                   width={100}
                 />
@@ -96,34 +113,44 @@ export function BarChart({
               <>
                 <XAxis
                   dataKey="label"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
                   tick={{ fontSize: 12 }}
-                  className="text-muted-foreground"
                 />
                 <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
                   tick={{ fontSize: 12 }}
-                  className="text-muted-foreground"
                   tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
                 />
               </>
             )}
-            <Tooltip content={<CustomTooltip />} />
-            <Legend />
+            <ChartTooltip
+              content={
+                <ChartTooltipContent
+                  formatter={(value) => (
+                    <span className="font-medium">{formatNumber(Number(value))} ₫</span>
+                  )}
+                />
+              }
+            />
+            <ChartLegend content={<ChartLegendContent />} />
             <Bar
               dataKey="value"
-              fill="hsl(var(--primary))"
-              name="Current"
-              radius={[4, 4, 0, 0]}
+              fill="var(--color-value)"
+              radius={4}
             />
             {showComparison && (
               <Bar
                 dataKey="comparisonValue"
-                fill="hsl(var(--muted-foreground))"
-                name="Previous"
-                radius={[4, 4, 0, 0]}
+                fill="var(--color-comparisonValue)"
+                radius={4}
               />
             )}
-          </ChartComponent>
-        </ResponsiveContainer>
+          </RechartsBarChart>
+        </ChartContainer>
       </CardContent>
     </Card>
   );
