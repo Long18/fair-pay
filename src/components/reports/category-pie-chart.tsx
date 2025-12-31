@@ -37,7 +37,7 @@ export function CategoryPieChart({ data, title = 'Chi tiêu theo danh mục' }: 
 
   const chartConfig: ChartConfig = data.reduce((config, item, index) => {
     const categoryMeta = getCategoryMeta(item.category);
-    const categoryKey = item.category.toLowerCase().replace(/\s+/g, '_');
+    const categoryKey = item.category.toLowerCase().replace(/[^a-z0-9]/g, '_');
     config[categoryKey] = {
       label: categoryMeta?.name || item.category,
       color: categoryMeta?.color || `var(--chart-${(index % 5) + 1})`,
@@ -46,7 +46,7 @@ export function CategoryPieChart({ data, title = 'Chi tiêu theo danh mục' }: 
   }, {} as ChartConfig);
 
   const chartData = data.map(item => {
-    const categoryKey = item.category.toLowerCase().replace(/\s+/g, '_');
+    const categoryKey = item.category.toLowerCase().replace(/[^a-z0-9]/g, '_');
     return {
       category: categoryKey,
       value: item.amount,
@@ -58,15 +58,15 @@ export function CategoryPieChart({ data, title = 'Chi tiêu theo danh mục' }: 
   const totalAmount = data.reduce((sum, item) => sum + item.amount, 0);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>
+    <Card className="flex flex-col">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg md:text-xl">{title}</CardTitle>
+        <CardDescription className="text-sm">
           Tổng: {formatNumber(totalAmount)} ₫
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig} className="min-h-[350px] w-full">
+      <CardContent className="flex-1 pb-6">
+        <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[300px] md:max-h-[350px] w-full">
           <PieChart>
             <ChartTooltip
               content={
@@ -89,11 +89,13 @@ export function CategoryPieChart({ data, title = 'Chi tiêu theo danh mục' }: 
               nameKey="category"
               cx="50%"
               cy="50%"
-              outerRadius={100}
+              innerRadius="0%"
+              outerRadius="80%"
               label={({ payload, percent }) => {
                 const config = chartConfig[payload.category];
                 return `${config?.label} ${(percent * 100).toFixed(0)}%`;
               }}
+              labelLine={false}
             >
               {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.fill} />

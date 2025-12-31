@@ -16,6 +16,35 @@
 BEGIN;
 
 -- ========================================
+-- SCHEMA VALIDATION: Check required columns exist
+-- ========================================
+-- Note: Schema changes should be done via migrations, not seed files
+-- This section only validates that required columns exist
+DO $$
+BEGIN
+  -- Validate avatar_url column exists in groups table
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'groups' AND column_name = 'avatar_url'
+  ) THEN
+    RAISE EXCEPTION 'Missing avatar_url column in groups table. Please run migration 032_add_avatar_url_to_groups.sql first.';
+  END IF;
+
+  -- Validate friendships table has correct structure (user_a, user_b)
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'friendships' AND column_name = 'user_a'
+  ) OR NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'friendships' AND column_name = 'user_b'
+  ) THEN
+    RAISE EXCEPTION 'Missing user_a or user_b columns in friendships table. Schema mismatch.';
+  END IF;
+
+  RAISE NOTICE 'Schema validation completed successfully';
+END $$;
+
+-- ========================================
 -- PART 0: CREATE TEST USER FOR LOGIN
 -- ========================================
 -- Create a test user that you can use to login immediately
@@ -208,13 +237,14 @@ BEGIN
     -- Select random creator from existing profiles
     SELECT id INTO creator_id FROM profiles ORDER BY RANDOM() LIMIT 1;
 
-    INSERT INTO groups (id, name, description, simplify_debts, created_by, created_at, updated_at)
+    INSERT INTO groups (id, name, description, simplify_debts, created_by, avatar_url, created_at, updated_at)
     VALUES (
       group_id,
       group_names[1 + ((i - 1) % array_length(group_names, 1))] || ' ' || i,
       'Group description for ' || group_names[1 + ((i - 1) % array_length(group_names, 1))] || ' ' || i,
       CASE WHEN random() < 0.3 THEN true ELSE false END,
       creator_id,
+      'https://api.dicebear.com/7.x/initials/svg?seed=' || group_names[1 + ((i - 1) % array_length(group_names, 1))],
       NOW() - (random() * INTERVAL '180 days'),
       NOW() - (random() * INTERVAL '180 days')
     );

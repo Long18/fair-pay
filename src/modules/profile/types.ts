@@ -10,4 +10,5 @@ export interface Profile {
 export interface ProfileFormValues {
   full_name: string;
   avatar_url?: string;
+  email?: string;
 }

@@ -13,74 +13,108 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { ProfileFormValues } from "../types";
+import { useTranslation } from "react-i18next";
 
 const profileSchema = z.object({
   full_name: z.string().min(1, "Name is required").max(100, "Name is too long"),
-  avatar_url: z.string().url("Invalid URL").optional().or(z.literal("")),
+  avatar_url: z.string().optional().or(z.literal("")),
+  email: z.string().email().optional(),
 });
 
 interface ProfileFormProps {
   onSubmit: (values: ProfileFormValues) => void;
   defaultValues?: Partial<ProfileFormValues>;
   isLoading?: boolean;
+  onChangePassword?: () => void;
 }
 
 export const ProfileForm = ({
   onSubmit,
   defaultValues,
   isLoading,
+  onChangePassword,
 }: ProfileFormProps) => {
+  const { t } = useTranslation();
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       full_name: defaultValues?.full_name || "",
       avatar_url: defaultValues?.avatar_url || "",
+      email: defaultValues?.email || "",
     },
   });
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Email (Read-only) */}
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('profile.email', 'Email')}</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  disabled
+                  className="bg-muted cursor-not-allowed"
+                />
+              </FormControl>
+              <FormDescription>
+                {t('profile.emailReadOnly', 'Email cannot be changed')}
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Full Name */}
         <FormField
           control={form.control}
           name="full_name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Full Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter your name" {...field} />
-              </FormControl>
-              <FormDescription>
-                This is how your name will appear to other users.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="avatar_url"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Avatar URL</FormLabel>
+              <FormLabel>{t('profile.fullName', 'Full Name')}</FormLabel>
               <FormControl>
                 <Input
-                  placeholder="https://example.com/avatar.jpg"
+                  placeholder={t('profile.enterFullName', 'Enter your name')}
                   {...field}
                 />
               </FormControl>
               <FormDescription>
-                Optional: Provide a URL to your profile picture.
+                {t('profile.fullNameDescription', 'This is how your name will appear to other users.')}
               </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Saving..." : "Save Profile"}
-        </Button>
+        {/* Avatar URL (Hidden - managed by upload) */}
+        <input type="hidden" {...form.register("avatar_url")} />
+
+        {/* Change Password Button */}
+        {onChangePassword && (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={onChangePassword}
+          >
+            {t('profile.changePassword', 'Change Password')}
+          </Button>
+        )}
+
+        {/* Submit Button */}
+        <div className="flex gap-3">
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="flex-1"
+          >
+            {isLoading ? t('common.saving', 'Saving...') : t('common.save', 'Save Profile')}
+          </Button>
+        </div>
       </form>
     </Form>
   );
