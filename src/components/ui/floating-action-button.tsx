@@ -38,10 +38,13 @@ export const FloatingActionButton: React.FC<FABProps> = ({
       onClick={handleClick}
       className={cn(
         "fixed bottom-20 right-4 z-50",
-        "h-14 w-14 rounded-full",
-        "bg-[#FFA14E] hover:bg-[#FF8C2E]",
-        "text-white shadow-lg hover:shadow-xl",
-        "transition-all duration-200",
+        "h-14 w-14 rounded-2xl",
+        "bg-primary hover:bg-primary/90",
+        "text-primary-foreground shadow-lg hover:shadow-xl",
+        "transition-all duration-150 ease-out",
+        "hover:scale-105 active:scale-95",
+        "hover:ring-4 hover:ring-primary/20",
+        "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/30 focus-visible:ring-offset-2",
         "flex items-center justify-center",
         "md:bottom-8 md:right-8 md:h-16 md:w-16",
         className

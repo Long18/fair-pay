@@ -32,6 +32,7 @@ export const LanguageToggle = ({ className }: LanguageToggleProps) => {
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => changeLanguage('en')}>
           <span className="flex items-center gap-2 w-full">
+            <span className="text-base">🇺🇸</span>
             English
             {(currentLanguage === 'en' || currentLanguage.startsWith('en')) && (
               <CheckIcon className="h-4 w-4 ml-auto" />
@@ -40,6 +41,7 @@ export const LanguageToggle = ({ className }: LanguageToggleProps) => {
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => changeLanguage('vi')}>
           <span className="flex items-center gap-2 w-full">
+            <span className="text-base">🇻🇳</span>
             Tiếng Việt
             {(currentLanguage === 'vi' || currentLanguage.startsWith('vi')) && (
               <CheckIcon className="h-4 w-4 ml-auto" />
