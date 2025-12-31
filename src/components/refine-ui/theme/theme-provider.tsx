@@ -1,60 +1,91 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-
-type Theme = "dark" | "light" | "system";
+import { getThemeColors, parseThemeVariant, createThemeVariant } from "@/lib/theme-palettes";
 
 type ThemeProviderProps = {
   children: React.ReactNode;
-  defaultTheme?: Theme;
+  defaultThemeVariant?: string;
   storageKey?: string;
 };
 
 type ThemeProviderState = {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
+  themeVariant: string;
+  setThemeVariant: (variant: string) => void;
 };
 
 const initialState: ThemeProviderState = {
-  theme: "system",
-  setTheme: () => null,
+  themeVariant: "monokai-pro-light",
+  setThemeVariant: () => null,
 };
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
 export function ThemeProvider({
   children,
-  defaultTheme = "system",
-  storageKey = "refine-ui-theme",
+  defaultThemeVariant = "monokai-pro-light",
+  storageKey = "refine-ui-theme-variant",
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
-  );
+  const [themeVariant, setThemeVariantState] = useState<string>(() => {
+    const stored = localStorage.getItem(storageKey);
+    if (stored) return stored;
+
+    const oldThemeName = localStorage.getItem("refine-ui-theme-name");
+    const oldTheme = localStorage.getItem("refine-ui-theme");
+
+    if (oldThemeName && oldTheme) {
+      const migrated = createThemeVariant(oldThemeName, oldTheme);
+      localStorage.setItem(storageKey, migrated);
+      localStorage.removeItem("refine-ui-theme-name");
+      localStorage.removeItem("refine-ui-theme");
+      return migrated;
+    }
+
+    return defaultThemeVariant;
+  });
 
   useEffect(() => {
     const root = window.document.documentElement;
+    const { themeName, mode } = parseThemeVariant(themeVariant);
 
     root.classList.remove("light", "dark");
 
-    if (theme === "system") {
+    let effectiveTheme: "light" | "dark";
+
+    if (mode === "system") {
       const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
         .matches
         ? "dark"
         : "light";
 
       root.classList.add(systemTheme);
-      return;
+      effectiveTheme = systemTheme;
+    } else {
+      root.classList.add(mode);
+      effectiveTheme = mode;
     }
 
-    root.classList.add(theme);
-  }, [theme]);
+    const themeColors = getThemeColors(themeName, effectiveTheme);
+    if (themeColors) {
+      Object.entries(themeColors).forEach(([key, value]) => {
+        const cssVarName = `--${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`;
+        root.style.setProperty(cssVarName, value);
+      });
+    }
+
+    const themeColor = effectiveTheme === "dark" ? "#252525" : "#f9fafb";
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute("content", themeColor);
+    }
+  }, [themeVariant]);
 
   const value = {
-    theme,
-    setTheme: (newTheme: Theme) => {
-      localStorage.setItem(storageKey, newTheme);
-      setTheme(newTheme);
+    themeVariant,
+    setThemeVariant: (newVariant: string) => {
+      localStorage.setItem(storageKey, newVariant);
+      setThemeVariantState(newVariant);
     },
   };
 

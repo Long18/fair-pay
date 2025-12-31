@@ -208,6 +208,12 @@
         "noFriends": "No friends yet",
         "addFirst": "Add your first friend to start splitting expenses"
     },
+    "theme": {
+        "selectTheme": "Select Theme",
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System"
+    },
     "settings": {
         "title": "Settings",
         "profile": "Profile",
@@ -219,6 +225,7 @@
         "light": "Light",
         "dark": "Dark",
         "system": "System",
+        "selectTheme": "Select Theme",
         "notifications": "Notifications",
         "privacy": "Privacy",
         "aboutFairPay": "About FairPay",

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { UserAvatar } from "@/components/refine-ui/layout/user-avatar";
-import { ThemeToggle } from "@/components/refine-ui/theme/theme-toggle";
+import { ThemeSelector } from "@/components/refine-ui/theme/theme-selector";
 import { LanguageToggle } from "@/components/ui/language-toggle";
 import {
   DropdownMenu,
@@ -83,7 +83,7 @@ function DesktopHeader() {
         </div>
 
         <div className="flex items-center gap-3">
-          <ThemeToggle />
+          <ThemeSelector />
           <LanguageToggle />
 
           <div className="relative">
@@ -160,7 +160,7 @@ function MobileHeader() {
             <SearchIcon className="h-4 w-4" />
           </Button>
           <NotificationPanel />
-          <ThemeToggle className={cn("h-8", "w-8")} />
+          <ThemeSelector className={cn("h-8", "w-8")} />
           <LanguageToggle className={cn("h-8", "w-8")} />
           <UserDropdown />
         </div>
