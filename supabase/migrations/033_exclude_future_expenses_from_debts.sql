@@ -79,4 +79,3 @@ COMMENT ON VIEW user_debts_summary IS 'Active debts summary excluding future-dat
 COMMENT ON VIEW user_debts_history IS 'Historical debts including settled debts, excluding future-dated expenses';
 
 COMMIT;
-

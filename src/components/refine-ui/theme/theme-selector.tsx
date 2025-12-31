@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { Palette, Check, Sun, Moon, Monitor } from "lucide-react";
+import { Check } from "lucide-react";
+import { SunIcon, MoonIcon, MonitorIcon, PaletteIcon } from "@/components/ui/icons";
 import { getThemeVariantsByGroup, parseThemeVariant, themePalettes } from "@/lib/theme-palettes";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
@@ -44,11 +45,11 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
   const getModeIcon = (mode: string) => {
     switch (mode) {
       case "light":
-        return <Sun className="h-3.5 w-3.5 text-[hsl(var(--warning))]" />;
+        return <SunIcon className="h-3.5 w-3.5 text-[hsl(var(--warning))]" />;
       case "dark":
-        return <Moon className="h-3.5 w-3.5 text-muted-foreground" />;
+        return <MoonIcon className="h-3.5 w-3.5 text-muted-foreground" />;
       case "system":
-        return <Monitor className="h-3.5 w-3.5 text-muted-foreground" />;
+        return <MonitorIcon className="h-3.5 w-3.5 text-muted-foreground" />;
       default:
         return null;
     }
@@ -149,7 +150,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
           )}
           title={currentVariant.displayName}
         >
-          <Palette className="h-[1.2rem] w-[1.2rem]" />
+          <PaletteIcon className="h-[1.2rem] w-[1.2rem]" />
           <span className="sr-only">Select color theme</span>
         </Button>
       </DropdownMenuTrigger>
@@ -160,15 +161,15 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full grid grid-cols-3 mb-2">
             <TabsTrigger value="light" className="gap-1.5">
-              <Sun className="h-3.5 w-3.5" />
+              <SunIcon className="h-3.5 w-3.5" />
               <span className="text-xs">{t("theme.light")}</span>
             </TabsTrigger>
             <TabsTrigger value="dark" className="gap-1.5">
-              <Moon className="h-3.5 w-3.5" />
+              <MoonIcon className="h-3.5 w-3.5" />
               <span className="text-xs">{t("theme.dark")}</span>
             </TabsTrigger>
             <TabsTrigger value="system" className="gap-1.5">
-              <Monitor className="h-3.5 w-3.5" />
+              <MonitorIcon className="h-3.5 w-3.5" />
               <span className="text-xs">{t("theme.system")}</span>
             </TabsTrigger>
           </TabsList>

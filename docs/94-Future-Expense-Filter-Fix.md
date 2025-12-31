@@ -1,7 +1,7 @@
 # Future Expense Filter Fix
 
-**Migration:** `033_exclude_future_expenses_from_debts.sql`  
-**Date:** December 31, 2025  
+**Migration:** `033_exclude_future_expenses_from_debts.sql`
+**Date:** December 31, 2025
 **Status:** ✅ Completed
 
 ## Problem Analysis
@@ -268,4 +268,3 @@ The added date filter (`expense_date <= CURRENT_DATE`) should not significantly 
 This fix ensures that the FairPay dashboard accurately reflects only current financial obligations by excluding future-dated expenses from debt calculations. The change is backward-compatible, non-breaking, and improves the user experience by preventing confusion about debts that haven't occurred yet.
 
 **Status:** ✅ Ready for production deployment
-
