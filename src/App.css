@@ -47,7 +47,7 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.75rem;
 
   /* shadcn/ui Base Colors - OKLCH Format for Better Color Consistency */
   --background: oklch(0.985 0 0);
