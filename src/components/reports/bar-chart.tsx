@@ -72,21 +72,21 @@ export function BarChart({
   const layout = horizontal ? "horizontal" : "vertical";
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>
+    <Card className="flex flex-col">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg md:text-xl">{title}</CardTitle>
+        <CardDescription className="text-sm">
           {showComparison
             ? `Current: ${formatNumber(totalValue)} ₫ • Previous: ${formatNumber(totalComparison)} ₫`
             : `Total: ${formatNumber(totalValue)} ₫`}
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig} className="min-h-[350px] w-full">
+      <CardContent className="flex-1 pb-6">
+        <ChartContainer config={chartConfig} className="h-[300px] md:h-[350px] w-full">
           <RechartsBarChart
             data={data}
             layout={layout}
-            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
           >
             <CartesianGrid vertical={false} />
             {horizontal ? (
@@ -96,7 +96,7 @@ export function BarChart({
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 11 }}
                   tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
                 />
                 <YAxis
@@ -105,8 +105,8 @@ export function BarChart({
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  tick={{ fontSize: 12 }}
-                  width={100}
+                  tick={{ fontSize: 11 }}
+                  width={80}
                 />
               </>
             ) : (
@@ -116,14 +116,16 @@ export function BarChart({
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 11 }}
+                  interval="preserveStartEnd"
                 />
                 <YAxis
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 11 }}
                   tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                  width={40}
                 />
               </>
             )}

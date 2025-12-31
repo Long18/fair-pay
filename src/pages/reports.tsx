@@ -197,7 +197,7 @@ export function ReportsPage() {
     insightsLoading;
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
+    <div className="space-y-4 md:space-y-6">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Spending Reports</h1>
@@ -362,16 +362,16 @@ export function ReportsPage() {
           <InsightsPanel insights={insights} isLoading={insightsLoading} />
 
           <div ref={chartsRef}>
-            <Tabs defaultValue="charts" className="space-y-6">
+            <Tabs defaultValue="charts" className="space-y-4 md:space-y-6">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="charts">Charts</TabsTrigger>
                 <TabsTrigger value="breakdown">Breakdown</TabsTrigger>
                 {selectedGroupId && <TabsTrigger value="spenders">Top Spenders</TabsTrigger>}
               </TabsList>
 
-              <TabsContent value="charts" className="space-y-6">
-                <div className="grid gap-6 lg:grid-cols-2">
-                  <div data-chart>
+              <TabsContent value="charts" className="space-y-4 md:space-y-6">
+                <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
+                  <div data-chart className="w-full">
                     {chartType === "pie" ? (
                       <CategoryPieChart data={breakdown} />
                     ) : (
@@ -384,7 +384,7 @@ export function ReportsPage() {
                       />
                     )}
                   </div>
-                  <div data-chart>
+                  <div data-chart className="w-full">
                     <SpendingTrendChart data={trend} />
                   </div>
                 </div>

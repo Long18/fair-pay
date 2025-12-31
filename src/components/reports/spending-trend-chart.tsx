@@ -49,18 +49,18 @@ export function SpendingTrendChart({ data, title = 'Xu hướng chi tiêu' }: Sp
   const totalCount = data.reduce((sum, item) => sum + item.count, 0);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>
+    <Card className="flex flex-col">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg md:text-xl">{title}</CardTitle>
+        <CardDescription className="text-sm">
           {totalCount} chi tiêu • {formatNumber(totalAmount)} ₫
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig} className="min-h-[350px] w-full">
+      <CardContent className="flex-1 pb-6">
+        <ChartContainer config={chartConfig} className="h-[300px] md:h-[350px] w-full">
           <LineChart
             data={data}
-            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
           >
             <CartesianGrid vertical={false} />
             <XAxis
@@ -68,14 +68,16 @@ export function SpendingTrendChart({ data, title = 'Xu hướng chi tiêu' }: Sp
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 11 }}
+              interval="preserveStartEnd"
             />
             <YAxis
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 11 }}
               tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+              width={40}
             />
             <ChartTooltip
               content={
@@ -97,8 +99,8 @@ export function SpendingTrendChart({ data, title = 'Xu hướng chi tiêu' }: Sp
               dataKey="amount"
               stroke="var(--color-amount)"
               strokeWidth={2}
-              dot={{ r: 4 }}
-              activeDot={{ r: 6 }}
+              dot={{ r: 3 }}
+              activeDot={{ r: 5 }}
             />
           </LineChart>
         </ChartContainer>
