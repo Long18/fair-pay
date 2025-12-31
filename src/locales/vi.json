@@ -207,6 +207,12 @@
         "noFriends": "Chưa có bạn bè nào",
         "addFirst": "Thêm bạn đầu tiên để bắt đầu chia sẻ chi tiêu"
     },
+    "theme": {
+        "selectTheme": "Chọn giao diện",
+        "light": "Sáng",
+        "dark": "Tối",
+        "system": "Hệ thống"
+    },
     "settings": {
         "title": "Cài đặt",
         "profile": "Hồ sơ",
@@ -218,6 +224,7 @@
         "light": "Sáng",
         "dark": "Tối",
         "system": "Hệ thống",
+        "selectTheme": "Chọn giao diện",
         "notifications": "Thông báo",
         "privacy": "Quyền riêng tư",
         "aboutFairPay": "Về FairPay",

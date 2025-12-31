@@ -4,7 +4,8 @@
     <meta charset="utf-8" />
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="theme-color" content="#f9fafb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#252525" media="(prefers-color-scheme: dark)" />
 
     <!-- SEO Meta Tags -->
     <meta name="description" content="FairPay - Split expenses fairly with friends and groups. Track shared costs, settle debts, and manage group finances with ease. Free expense splitting app with real-time updates." />
@@ -100,6 +101,16 @@
         font-display: swap;
       }
     </style>
+
+    <!-- Dynamic theme-color based on user preference -->
+    <script>
+      (function() {
+        const theme = localStorage.getItem('refine-ui-theme') || 'system';
+        const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        const themeColor = isDark ? '#252525' : '#f9fafb';
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', themeColor);
+      })();
+    </script>
   </head>
   <body>
     <noscript>
