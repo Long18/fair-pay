@@ -10,6 +10,7 @@ import {
 import { cn } from "@/lib/utils";
 import React from "react";
 import { useTheme } from "./theme-provider";
+import { parseThemeVariant, createThemeVariant } from "@/lib/theme-palettes";
 
 import { CheckIcon, ChevronDownIcon, MonitorIcon, MoonIcon, SunIcon } from "@/components/ui/icons";
 type ThemeOption = {
@@ -37,9 +38,15 @@ const themeOptions: ThemeOption[] = [
 ];
 
 export function ThemeSelect() {
-  const { theme, setTheme } = useTheme();
+  const { themeVariant, setThemeVariant } = useTheme();
+  const { themeName, mode } = parseThemeVariant(themeVariant);
 
-  const currentTheme = themeOptions.find((option) => option.value === theme);
+  const currentTheme = themeOptions.find((option) => option.value === mode);
+
+  const handleThemeChange = (newMode: "light" | "dark" | "system") => {
+    const newVariant = createThemeVariant(themeName, newMode);
+    setThemeVariant(newVariant);
+  };
 
   return (
     <DropdownMenu>
@@ -71,12 +78,12 @@ export function ThemeSelect() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-40 space-y-1">
         {themeOptions.map((option) => {
-          const isSelected = theme === option.value;
+          const isSelected = mode === option.value;
 
           return (
             <DropdownMenuItem
               key={option.value}
-              onClick={() => setTheme(option.value)}
+              onClick={() => handleThemeChange(option.value)}
               className={cn(
                 "flex items-center gap-2 cursor-pointer relative pr-8",
                 {

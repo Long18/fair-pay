@@ -54,7 +54,7 @@ export const ProfileEdit = () => {
   } = usePaginatedActivities({ pageSize: 10 });
 
   // Fetch user's groups
-  const { data: groupMembersData, isLoading: groupsLoading } = useList({
+  const { query: groupMembersQuery } = useList({
     resource: "group_members",
     filters: [
       {
@@ -74,12 +74,15 @@ export const ProfileEdit = () => {
     },
   });
 
+  const groupMembersData = groupMembersQuery.data;
+  const groupsLoading = groupMembersQuery.isLoading;
+
   const myGroups = (groupMembersData?.data || []).map((gm: any) => ({
     id: gm.groups?.id,
     name: gm.groups?.name,
     created_at: gm.groups?.created_at,
     avatar_url: gm.groups?.avatar_url,
-  })).filter(g => g.id);
+  })).filter((g: any) => g.id);
 
   // Fetch user's friends using custom query
   // Since friendships table uses user_a and user_b, we need to query both directions
@@ -138,7 +141,9 @@ export const ProfileEdit = () => {
     },
   });
 
-  const { mutate: updateProfile, isLoading: isUpdating } = useUpdate();
+  const updateProfileMutation = useUpdate();
+  const updateProfile = updateProfileMutation.mutate;
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const { data: profileData, isLoading: profileLoading, isError: profileError } = profileQuery;
   const profile = profileData?.data as Profile | undefined;
@@ -208,7 +213,7 @@ export const ProfileEdit = () => {
             toast.success(t('profile.avatarUploaded', 'Avatar uploaded successfully'));
             profileQuery.refetch();
           },
-          onError: (error: any) => {
+          onError: () => {
             toast.error(t('profile.avatarUploadError', 'Failed to upload avatar'));
           },
         }
@@ -227,6 +232,7 @@ export const ProfileEdit = () => {
       return;
     }
 
+    setIsUpdating(true);
     updateProfile(
       {
         resource: "profiles",
@@ -238,10 +244,12 @@ export const ProfileEdit = () => {
       },
       {
         onSuccess: () => {
+          setIsUpdating(false);
           toast.success("Profile updated successfully");
           go({ to: "/" });
         },
         onError: (error: any) => {
+          setIsUpdating(false);
           toast.error(`Failed to update profile: ${error.message}`);
         },
       }
@@ -617,7 +625,7 @@ export const ProfileEdit = () => {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {myGroups.map((group) => (
+                  {myGroups.map((group: any) => (
                     <div
                       key={group.id}
                       className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
