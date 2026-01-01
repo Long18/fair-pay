@@ -13,6 +13,7 @@ import { GroupMember } from "@/modules/groups/types";
 import { Friendship } from "@/modules/friends/types";
 import { toast } from "sonner";
 import { supabaseClient } from "@/utility/supabaseClient";
+import { ExpenseTracker, ErrorTracker } from "@/lib/analytics/index";
 
 export const ExpenseCreate = () => {
   const { groupId, friendshipId } = useParams<{ groupId?: string; friendshipId?: string }>();
@@ -214,6 +215,16 @@ export const ExpenseCreate = () => {
             await uploadAttachments(files, expenseId, identity.id);
           }
 
+          // Track expense creation
+          ExpenseTracker.created({
+            amount: values.amount,
+            currency: values.currency,
+            splitMethod: values.split_method,
+            participantCount: splits.length,
+            hasReceipt: attachments.length > 0,
+            context: isGroupContext ? 'group' : 'friend',
+          });
+
           // Create recurring expense if requested
           if (is_recurring && recurring) {
             try {
@@ -222,6 +233,10 @@ export const ExpenseCreate = () => {
               await createRecurring(expenseId, recurring, contextType, contextId);
               toast.success("Expense and recurring schedule created successfully");
             } catch (error) {
+              ErrorTracker.apiError({
+                endpoint: 'recurring_expenses',
+                errorMessage: error instanceof Error ? error.message : 'Failed to create recurring schedule',
+              });
               toast.error("Expense created but failed to set up recurring schedule");
               console.error("Failed to create recurring expense:", error);
             }
@@ -237,6 +252,10 @@ export const ExpenseCreate = () => {
           }
         },
         onError: (error) => {
+          ErrorTracker.apiError({
+            endpoint: 'expenses',
+            errorMessage: error.message,
+          });
           toast.error(`Failed to create expense: ${error.message}`);
         },
       }

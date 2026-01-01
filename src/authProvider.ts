@@ -1,9 +1,9 @@
 import { AuthProvider } from "@refinedev/core";
 import { supabaseClient } from "./utility";
+import { AuthTracker, analyticsManager, ErrorTracker } from "./lib/analytics/index";
 
 const authProvider: AuthProvider = {
     login: async ({ email, password, providerName }) => {
-        // sign in with oauth
         try {
             if (providerName) {
                 const { data, error } = await supabaseClient.auth.signInWithOAuth({
@@ -14,6 +14,10 @@ const authProvider: AuthProvider = {
                 });
 
                 if (error) {
+                    ErrorTracker.apiError({
+                        endpoint: 'auth/oauth',
+                        errorMessage: error.message,
+                    });
                     return {
                         success: false,
                         error,
@@ -21,6 +25,7 @@ const authProvider: AuthProvider = {
                 }
 
                 if (data?.url) {
+                    AuthTracker.login('oauth', providerName as 'google');
                     return {
                         success: true,
                         redirectTo: "/",
@@ -28,13 +33,16 @@ const authProvider: AuthProvider = {
                 }
             }
 
-            // sign in with email and password
             const { data, error } = await supabaseClient.auth.signInWithPassword({
                 email,
                 password,
             });
 
             if (error) {
+                ErrorTracker.apiError({
+                    endpoint: 'auth/login',
+                    errorMessage: error.message,
+                });
                 return {
                     success: false,
                     error,
@@ -42,12 +50,21 @@ const authProvider: AuthProvider = {
             }
 
             if (data?.user) {
+                AuthTracker.login('email');
+                analyticsManager.setUser(data.user.id, {
+                    email: data.user.email,
+                    createdAt: data.user.created_at,
+                });
                 return {
                     success: true,
                     redirectTo: "/",
                 };
             }
         } catch (error: any) {
+            ErrorTracker.apiError({
+                endpoint: 'auth/login',
+                errorMessage: error.message || 'Login failed',
+            });
             return {
                 success: false,
                 error,
@@ -70,6 +87,10 @@ const authProvider: AuthProvider = {
             });
 
             if (error) {
+                ErrorTracker.apiError({
+                    endpoint: 'auth/register',
+                    errorMessage: error.message,
+                });
                 return {
                     success: false,
                     error,
@@ -77,12 +98,23 @@ const authProvider: AuthProvider = {
             }
 
             if (data) {
+                AuthTracker.register('email');
+                if (data.user) {
+                    analyticsManager.setUser(data.user.id, {
+                        email: data.user.email,
+                        createdAt: data.user.created_at,
+                    });
+                }
                 return {
                     success: true,
                     redirectTo: "/",
                 };
             }
         } catch (error: any) {
+            ErrorTracker.apiError({
+                endpoint: 'auth/register',
+                errorMessage: error.message || 'Register failed',
+            });
             return {
                 success: false,
                 error,
@@ -170,11 +202,18 @@ const authProvider: AuthProvider = {
         const { error } = await supabaseClient.auth.signOut();
 
         if (error) {
+            ErrorTracker.apiError({
+                endpoint: 'auth/logout',
+                errorMessage: error.message,
+            });
             return {
                 success: false,
                 error,
             };
         }
+
+        AuthTracker.logout();
+        analyticsManager.clearUser();
 
         return {
             success: true,

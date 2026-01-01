@@ -7,6 +7,7 @@ import { PaymentFormValues } from "../types";
 import { Profile } from "@/modules/profile/types";
 import { Friendship } from "@/modules/friends/types";
 import { toast } from "sonner";
+import { PaymentTracker, ErrorTracker } from "@/lib/analytics/index";
 
 export const PaymentCreate = () => {
   const { groupId, friendshipId } = useParams<{ groupId?: string; friendshipId?: string }>();
@@ -99,6 +100,15 @@ export const PaymentCreate = () => {
         onSuccess: () => {
           toast.success("Payment recorded successfully");
 
+          // Track payment creation
+          PaymentTracker.recorded({
+            amount: values.amount,
+            currency: values.currency,
+            paymentMethod: 'cash',
+            hasProof: false,
+            context: isGroupContext ? 'group' : 'friend',
+          });
+
           if (isGroupContext) {
             go({ to: `/groups/show/${groupId}` });
           } else if (isFriendContext) {
@@ -106,6 +116,10 @@ export const PaymentCreate = () => {
           }
         },
         onError: (error) => {
+          ErrorTracker.apiError({
+            endpoint: 'payments',
+            errorMessage: error.message,
+          });
           toast.error(`Failed to record payment: ${error.message}`);
         },
       }

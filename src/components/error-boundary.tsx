@@ -2,6 +2,7 @@ import React, { Component, ErrorInfo, ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sentry } from "@/lib/sentry";
+import { ErrorTracker } from "@/lib/analytics/index";
 
 import { AlertTriangleIcon, RefreshCwIcon, HomeIcon } from "@/components/ui/icons";
 interface Props {
@@ -41,6 +42,13 @@ export class ErrorBoundary extends Component<Props, State> {
     });
 
     this.props.onError?.(error, errorInfo);
+
+    // Track error to analytics
+    ErrorTracker.boundaryCaught({
+      errorName: error.name,
+      errorMessage: error.message,
+      componentStack: errorInfo.componentStack || undefined,
+    });
 
     // Log to Sentry in production
     if (import.meta.env.PROD) {
