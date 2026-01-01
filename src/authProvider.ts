@@ -51,8 +51,17 @@ const authProvider: AuthProvider = {
 
             if (data?.user) {
                 AuthTracker.login('email');
+                
+                // Fetch profile to get full_name
+                const { data: profile } = await supabaseClient
+                    .from("profiles")
+                    .select("full_name")
+                    .eq("id", data.user.id)
+                    .single();
+
                 analyticsManager.setUser(data.user.id, {
                     email: data.user.email,
+                    name: profile?.full_name || data.user.email?.split("@")[0] || 'User',
                     createdAt: data.user.created_at,
                 });
                 return {
@@ -100,8 +109,16 @@ const authProvider: AuthProvider = {
             if (data) {
                 AuthTracker.register('email');
                 if (data.user) {
+                    // Fetch profile to get full_name (profile should be created via trigger)
+                    const { data: profile } = await supabaseClient
+                        .from("profiles")
+                        .select("full_name")
+                        .eq("id", data.user.id)
+                        .single();
+
                     analyticsManager.setUser(data.user.id, {
                         email: data.user.email,
+                        name: profile?.full_name || data.user.email?.split("@")[0] || 'User',
                         createdAt: data.user.created_at,
                     });
                 }
@@ -281,13 +298,27 @@ const authProvider: AuthProvider = {
 
         if (error || !profile) {
             // If profile doesn't exist, return basic auth user data
+            const fallbackName = authData.user.email?.split("@")[0] || "User";
+            
+            // Set analytics user even if profile fetch fails
+            analyticsManager.setUser(authData.user.id, {
+                email: authData.user.email,
+                name: fallbackName,
+            });
+
             return {
                 id: authData.user.id,
                 email: authData.user.email || "",
-                full_name: authData.user.email?.split("@")[0] || "User",
+                full_name: fallbackName,
                 avatar_url: null,
             };
         }
+
+        // Set analytics user with full profile data
+        analyticsManager.setUser(profile.id, {
+            email: profile.email,
+            name: profile.full_name,
+        });
 
         // Return full profile data
         return {
