@@ -1,5 +1,5 @@
-import React, { lazy, Suspense, memo } from "react";
-import { Authenticated, Refine } from "@refinedev/core";
+import React, { lazy, Suspense, memo, useEffect } from "react";
+import { Authenticated, Refine, useGetIdentity } from "@refinedev/core";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 import { Analytics } from "@vercel/analytics/react";
 import {
@@ -21,6 +21,7 @@ import "./App.css";
 import authProvider from "./authProvider";
 import { supabaseClient } from "./utility";
 import { useDocumentTitle } from "./hooks/use-document-title";
+import { analyticsManager } from "./lib/analytics/instance";
 
 // Core layout components (needed immediately)
 import { ErrorComponent } from "./components/refine-ui/layout/error-component";
@@ -82,6 +83,21 @@ const PageLoader = memo(() => (
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" aria-label="Loading..."></div>
   </div>
 ));
+
+// Analytics initializer component to set user identity
+const AnalyticsInitializer = memo(() => {
+  const { data: identity } = useGetIdentity();
+
+  useEffect(() => {
+    // If user is authenticated, identity will be set by authProvider.getIdentity()
+    // If not authenticated, track as anonymous user
+    if (!identity) {
+      analyticsManager.setUser('unknown', { anonymous: true });
+    }
+  }, [identity]);
+
+  return null;
+});
 
 // Configure QueryClient with optimized caching
 // Note: Refine internally uses its own QueryClient, so we configure via options
@@ -420,6 +436,7 @@ function App() {
                 <RefineKbar />
                 <UnsavedChangesNotifier />
                 <DocumentTitle />
+                <AnalyticsInitializer />
                 <Analytics />
                 <Suspense fallback={null}>
                   <DonationWidget />
