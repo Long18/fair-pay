@@ -26,6 +26,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
   const { t } = useTranslation();
   const currentVariant = parseThemeVariant(themeVariant);
   const [activeTab, setActiveTab] = useState<string>(currentVariant.mode);
+  const [open, setOpen] = useState(false);
 
   const variantGroups = getThemeVariantsByGroup();
 
@@ -77,10 +78,21 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
     const themeName = palette?.displayName || variant.themeName;
     const isEven = index % 2 === 0;
 
+    const handleClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
+      // Capture click coordinates for circular reveal animation
+      const { clientX, clientY } = event;
+
+      // Wait for animation to complete before closing dropdown
+      await setThemeVariant(variantKey, { x: clientX, y: clientY });
+
+      // Close dropdown after animation finishes
+      setOpen(false);
+    };
+
     return (
       <button
         key={variantKey}
-        onClick={() => setThemeVariant(variantKey)}
+        onClick={handleClick}
         className={cn(
           "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150",
           isSelected
@@ -135,7 +147,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
   };
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
