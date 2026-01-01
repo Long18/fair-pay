@@ -21,6 +21,11 @@ dist-ssr
 supabase/backups/
 *.sql.backup
 
+# Scripts - generated reports and production data
+scripts/production/production-data.sql
+scripts/production/*-report.txt
+scripts/verification/*-output.txt
+
 # Editor directories and files
 
 .vscode/_
