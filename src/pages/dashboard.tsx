@@ -15,6 +15,7 @@ import { useGlobalBalance } from "@/hooks/use-global-balance";
 import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
 import { usePaginatedActivities } from "@/hooks/use-paginated-activities";
 import { useTranslation } from "react-i18next";
+import { DashboardTracker } from "@/lib/analytics/index";
 
 export const Dashboard = () => {
   const { data: identity } = useGetIdentity<Profile>();
@@ -38,6 +39,10 @@ export const Dashboard = () => {
   const handleHistoryToggle = async (checked: boolean) => {
     setIsTogglingHistory(true);
     setShowHistory(checked);
+
+    // Track toggle event
+    DashboardTracker.viewToggled(`show_settled_${checked}`);
+
     setTimeout(() => setIsTogglingHistory(false), 500);
   };
 
@@ -59,10 +64,20 @@ export const Dashboard = () => {
 
   useEffect(() => {
     if (!globalBalance.isLoading && !debtsLoading && !activitiesLoading) {
-      const timer = setTimeout(() => setLoading(false), 300);
+      const timer = setTimeout(() => {
+        setLoading(false);
+
+        // Track balance check when data is loaded
+        if (identity?.id && debts.length > 0) {
+          DashboardTracker.balanceChecked({
+            hasDebts: true,
+            debtCount: debts.length,
+          });
+        }
+      }, 300);
       return () => clearTimeout(timer);
     }
-  }, [globalBalance.isLoading, debtsLoading, activitiesLoading]);
+  }, [globalBalance.isLoading, debtsLoading, activitiesLoading, identity?.id, debts.length]);
 
   const isAuthenticated = !!identity;
 

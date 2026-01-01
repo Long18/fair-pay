@@ -1,6 +1,7 @@
 import React, { lazy, Suspense, memo } from "react";
 import { Authenticated, Refine } from "@refinedev/core";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
+import { Analytics } from "@vercel/analytics/react";
 import {
   HomeIcon,
   UsersIcon,
@@ -419,6 +420,7 @@ function App() {
                 <RefineKbar />
                 <UnsavedChangesNotifier />
                 <DocumentTitle />
+                <Analytics />
                 <Suspense fallback={null}>
                   <DonationWidget />
                 </Suspense>

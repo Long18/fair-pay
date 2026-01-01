@@ -1,16 +1,24 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
+import { inject } from "@vercel/analytics";
 
 import "./i18n";
 import { initSentry } from "./lib/sentry";
 import { analytics } from "./lib/analytics";
+import { analyticsManager } from "./lib/analytics/instance";
 import { measureWebVitals } from "./lib/performance";
 import App from "./App";
+
+// Initialize Vercel Web Analytics (tracks page views and Web Vitals)
+inject();
 
 // Initialize Sentry (only in production with DSN configured)
 initSentry();
 
-// Initialize Analytics (only if provider configured)
+// Initialize new Analytics Manager (Vercel + future providers)
+analyticsManager.init();
+
+// Initialize legacy Analytics (GA4, Mixpanel, Amplitude - if configured)
 analytics.init();
 
 // Measure Web Vitals for performance monitoring (production only)
