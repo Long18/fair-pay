@@ -1,0 +1,112 @@
+============================================
+ Production vs Baseline Schema Comparison
+============================================
+
+## TABLES
+
+### Tables in Production but NOT in Baseline (BLOCKING):
+  - IF
+  - IF
+  - IF
+  - IF
+  - IF
+  - IF
+  - IF
+  - IF
+  - IF
+  - IF
+  - IF
+  - IF
+  - IF
+  - IF
+  - IF
+
+### Tables in Baseline but NOT in Production (BLOCKING):
+  - attachments
+  - audit_logs
+  - donation_settings
+  - expense_splits
+  - expenses
+  - friendships
+  - group_members
+  - groups
+  - notifications
+  - payments
+  - profiles
+  - recurring_expenses
+  - user_roles
+  - user_settings
+
+## FUNCTIONS
+
+### Functions in Baseline but NOT in Production (BLOCKING):
+  - add_creator_as_admin
+  - are_friends
+  - auto_create_friendships_from_group
+  - calculate_next_occurrence
+  - get_expense_splits_public
+  - get_friendship
+  - get_leaderboard_data
+  - get_user_balance
+  - get_user_debts_aggregated
+  - get_user_debts_history
+  - handle_new_user
+  - is_admin
+  - settle_expense
+  - settle_split
+  - simplify_group_debts
+  - unsettle_split
+  - update_donation_settings_updated_at
+  - update_updated_at_column
+  - user_is_group_member
+
+## VIEWS
+
+### Views in Production but NOT in Baseline (RISKY):
+  - VIEW
+
+### Views in Both:
+2 views match
+
+## RLS POLICIES
+
+### RLS Policies in Production but NOT in Baseline (BLOCKING):
+  - Anyone can read donation settings
+  - Public can view all expenses
+  - Public can view all groups
+  - Public can view all payments
+  - Public can view all profiles
+  - Users can view own balance history
+
+### RLS Policies in Baseline but NOT in Production (BLOCKING):
+  - Anonymous users can read donation settings
+  - Anonymous users can view all groups
+  - Anonymous users can view all profiles
+  - Anonymous users can view expense splits
+  - Authenticated users can delete donation images
+  - Authenticated users can read donation settings
+  - Authenticated users can update donation images
+  - Authenticated users can upload donation images
+  - Authenticated users can upload receipts
+  - Involved parties can view payments
+  - Participants can view expenses
+  - Public can view all avatars
+  - Public can view donation images
+  - Public can view receipts
+  - Users can delete their own avatars
+  - Users can delete their own receipts
+  - Users can update their own avatars
+  - Users can update their own receipts
+  - Users can upload their own avatars
+
+### RLS Policies in Both:
+44 policies match
+
+## SUMMARY
+
+Differences Found:
+  - BLOCKING: 73 (must fix before deploy)
+  - RISKY: 1 (should review)
+  - SAFE: 0 (informational only)
+
+❌ NOT READY - Blocking differences must be resolved
