@@ -2,59 +2,104 @@
 
 ## Current Approach
 
-**Use production data for local development:**
+**Active seed file for local development:**
 
 ```bash
-# Pull latest production data
+# Apply seed data to local database
+docker exec -i supabase_db_FairPay psql -U postgres -d postgres < supabase/seed/sample-data.sql
+```
+
+## Available Seed File
+
+**`sample-data.sql`** (122KB, 1,993 lines)
+- Comprehensive test data with realistic transactions
+- Multiple users, groups, expenses, and payments
+- Useful for development and testing scenarios
+- Safe to run on fresh or existing local databases
+
+## For Production-Like Testing
+
+For testing with real production data:
+
+```bash
+# 1. Pull latest production data
 cd scripts/production
 ./dump-production-schema.sh
 
-# Import to local Supabase
-docker exec -i supabase_db_FairPay psql -U postgres -d postgres < production-data.sql
+# 2. Reset local database
+cd ../..
+supabase db reset
+
+# 3. Import production data
+docker exec -i supabase_db_FairPay psql -U postgres -d postgres < scripts/production/production-data.sql
 ```
 
-## Archived Files
-
-- `archive-sample-data.sql` - Old fake seed data (122KB, 1993 lines)
-- `archive-correct-from-request.sql` - Old generated seed (94KB, 1055 lines)
-
-**Why archived:**
-- Production data now available via `scripts/production/production-data.sql`
-- Real user relationships and transactions provide better testing
-- Baseline.sql handles schema, no need for seed data in fresh environments
+**Production data advantages:**
+- Real user relationships and transaction patterns
+- Actual balances and debt calculations
+- Production-verified data integrity
+- 28 users, 156 expenses, 165 payments, 325 friendships
 
 ## For Fresh Environments
 
 ```bash
-# Reset local database to baseline
+# Reset to baseline + seed data
 supabase db reset
 
-# Import production data (optional, for realistic testing)
-docker exec -i supabase_db_FairPay psql -U postgres -d postgres < scripts/production/production-data.sql
+# Apply seed data
+docker exec -i supabase_db_FairPay psql -U postgres -d postgres < supabase/seed/sample-data.sql
 ```
 
-## If You Need Custom Seed Data
+## Seed Data Contents
 
-Create minimal test data if needed:
+The `sample-data.sql` includes:
+- **Users**: Multiple test users with profiles
+- **Groups**: Expense-sharing groups
+- **Friendships**: User relationships
+- **Expenses**: Various expense types and categories
+- **Payments**: Direct payment records
+- **Splits**: Expense split configurations
 
-```sql
--- supabase/seed/minimal.sql
--- Insert 2-3 test users for basic testing
-INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at, created_at, updated_at)
-VALUES
-  ('00000000-0000-0000-0000-000000000001', 'test1@example.com', '$2a$10$...', NOW(), NOW(), NOW()),
-  ('00000000-0000-0000-0000-000000000002', 'test2@example.com', '$2a$10$...', NOW(), NOW(), NOW());
+## When to Use Seed Data
 
-INSERT INTO profiles (id, full_name, email)
-VALUES
-  ('00000000-0000-0000-0000-000000000001', 'Test User 1', 'test1@example.com'),
-  ('00000000-0000-0000-0000-000000000002', 'Test User 2', 'test2@example.com');
+**Use `sample-data.sql` when:**
+- Setting up a new development environment
+- Testing features with controlled data
+- Creating reproducible test scenarios
+- Demonstrating the application
+
+**Use production data when:**
+- Testing with real-world patterns
+- Verifying production-like behavior
+- Debugging production issues locally
+- Performance testing with realistic volumes
+
+## Configuration
+
+The seed file path is configured in `supabase/config.toml`:
+
+```toml
+[db.seed]
+enabled = true
+sql_paths = ['./seed/sample-data.sql']
 ```
 
-## Documentation
+## Maintenance
 
-See `.serena/memories/production_database_sync.md` for:
-- Production data sync process
-- Data statistics and sample records
-- Development workflow guidance
+**To update seed data:**
+1. Edit `supabase/seed/sample-data.sql`
+2. Test by running `supabase db reset`
+3. Verify data integrity and relationships
+4. Commit changes
 
+**Best practices:**
+- Keep seed data minimal but realistic
+- Use UUIDs consistently
+- Maintain referential integrity
+- Document any special test scenarios
+
+---
+
+**Last Updated:** January 1, 2026  
+**Status:** ✅ Active seed file available  
+**Size:** 122KB, 1,993 lines
