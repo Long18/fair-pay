@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { getThemeColors, parseThemeVariant, createThemeVariant } from "@/lib/theme-palettes";
+import { withCircularReveal } from "@/lib/circular-reveal";
 
 type ThemeProviderProps = {
   children: React.ReactNode;
@@ -11,12 +12,12 @@ type ThemeProviderProps = {
 
 type ThemeProviderState = {
   themeVariant: string;
-  setThemeVariant: (variant: string) => void;
+  setThemeVariant: (variant: string, clickPosition?: { x: number; y: number }) => Promise<void>;
 };
 
 const initialState: ThemeProviderState = {
   themeVariant: "monokai-pro-light",
-  setThemeVariant: () => null,
+  setThemeVariant: async () => {},
 };
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
@@ -45,9 +46,9 @@ export function ThemeProvider({
     return defaultThemeVariant;
   });
 
-  useEffect(() => {
+  const applyThemeChanges = (variant: string) => {
     const root = window.document.documentElement;
-    const { themeName, mode } = parseThemeVariant(themeVariant);
+    const { themeName, mode } = parseThemeVariant(variant);
 
     root.classList.remove("light", "dark");
 
@@ -79,13 +80,30 @@ export function ThemeProvider({
     if (metaThemeColor) {
       metaThemeColor.setAttribute("content", themeColor);
     }
+  };
+
+  useEffect(() => {
+    applyThemeChanges(themeVariant);
   }, [themeVariant]);
 
   const value = {
     themeVariant,
-    setThemeVariant: (newVariant: string) => {
-      localStorage.setItem(storageKey, newVariant);
-      setThemeVariantState(newVariant);
+    setThemeVariant: async (newVariant: string, clickPosition?: { x: number; y: number }) => {
+      const applyTheme = () => {
+        // Apply theme changes immediately within the transition callback
+        applyThemeChanges(newVariant);
+        // Update state (will also trigger useEffect, but changes already applied)
+        localStorage.setItem(storageKey, newVariant);
+        setThemeVariantState(newVariant);
+      };
+
+      // If click position is provided, use circular reveal animation
+      if (clickPosition) {
+        await withCircularReveal(applyTheme, clickPosition);
+      } else {
+        // Fallback to instant change
+        applyTheme();
+      }
     },
   };
 
