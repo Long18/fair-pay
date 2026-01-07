@@ -75,6 +75,7 @@ interface ActivityItem {
   is_lender: boolean;
   is_borrower: boolean;
   is_payment: boolean;
+  comment?: string;
 }
 
 export const ProfileShow = () => {
@@ -174,6 +175,7 @@ export const ProfileShow = () => {
             is_lender: item.is_lender,
             is_borrower: item.is_borrower,
             is_payment: item.is_payment || false,  // Use value from database, not hardcoded false
+            comment: item.comment || undefined,
           }));
           setActivities(activities);
         })
@@ -466,7 +468,7 @@ export const ProfileShow = () => {
                   {activities.map((activity) => (
                     <div
                       key={activity.id}
-                      className="flex items-center justify-between p-4 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer"
+                      className="p-4 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer"
                       onClick={() => {
                         go({
                           to: activity.type === "expense"
@@ -475,42 +477,52 @@ export const ProfileShow = () => {
                         });
                       }}
                     >
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{activity.description}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          {activity.group_name && (
-                            <span className="text-xs text-muted-foreground truncate">
-                              {activity.group_name}
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{activity.description}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            {activity.group_name && (
+                              <span className="text-xs text-muted-foreground truncate">
+                                {activity.group_name}
+                              </span>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              {formatDateShort(activity.date)}
                             </span>
-                          )}
-                          <span className="text-xs text-muted-foreground">
-                            {formatDateShort(activity.date)}
-                          </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 ml-4">
+                          <Badge
+                            variant={activity.is_borrower ? "destructive" : "default"}
+                            className={
+                              activity.is_borrower
+                                ? "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-300"
+                                : activity.is_payment
+                                ? "bg-muted text-muted-foreground"
+                                : "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300"
+                            }
+                          >
+                            {activity.is_payment
+                              ? t('expenses.paid', 'Paid')
+                              : activity.is_borrower
+                              ? t('profile.owes')
+                              : t('profile.paid')}
+                          </Badge>
+                          <p className={`text-base font-bold ${
+                            activity.is_borrower ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
+                          }`}>
+                            {formatCurrency(activity.user_share, activity.currency)}
+                          </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 ml-4">
-                        <Badge
-                          variant={activity.is_borrower ? "destructive" : "default"}
-                          className={
-                            activity.is_borrower
-                              ? "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-300"
-                              : activity.is_payment
-                              ? "bg-muted text-muted-foreground"
-                              : "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300"
-                          }
-                        >
-                          {activity.is_payment
-                            ? t('expenses.paid', 'Paid')
-                            : activity.is_borrower
-                            ? t('profile.owes')
-                            : t('profile.paid')}
-                        </Badge>
-                        <p className={`text-base font-bold ${
-                          activity.is_borrower ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
-                        }`}>
-                          {formatCurrency(activity.user_share, activity.currency)}
-                        </p>
-                      </div>
+                      {activity.comment && (
+                        <div className="mt-3 pt-3 border-t border-border/50">
+                          <div className="text-xs text-muted-foreground mb-1">{t('expenses.comment', 'Comment')}</div>
+                          <p className="text-sm text-foreground/80 line-clamp-2">
+                            {activity.comment.replace(/[#*_`\[\]()]/g, '').trim()}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

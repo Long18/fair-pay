@@ -30,6 +30,7 @@ import { SettleSplitDialog } from "../components/settle-split-dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { MomoPaymentButton } from "@/modules/payments/components/momo-payment-button";
 import { MarkdownComment } from "../components/markdown-comment";
+import { Separator } from "@/components/ui/separator";
 
 export const ExpenseShow = () => {
   const { id } = useParams<{ id: string }>();
@@ -394,13 +395,6 @@ export const ExpenseShow = () => {
                 </p>
               </div>
             </div>
-
-            {expense.comment && (
-              <div className="p-4 md:p-6 bg-muted/50 rounded-xl border">
-                <h3 className="text-sm font-semibold text-muted-foreground mb-3">{t('expenses.comment', 'Comment')}</h3>
-                <MarkdownComment content={expense.comment} />
-              </div>
-            )}
           </CardContent>
         </Card>
 
@@ -602,11 +596,11 @@ export const ExpenseShow = () => {
           </CardContent>
         </Card>
 
-        {/* Receipts/Bills */}
+        {/* Receipts, Bills & Comments */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-              {t('expenses.receipts', 'Receipts & Bills')}
+              {t('expenses.receiptsBillsComments', 'Receipts, Bills & Comments')}
               {displayAttachments.length > 0 && (
                 <Badge variant="secondary" className="ml-2">
                   {displayAttachments.length}
@@ -614,14 +608,25 @@ export const ExpenseShow = () => {
               )}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4 md:space-y-6">
+            {expense.comment && (
+              <div className="p-4 md:p-6 bg-muted/50 rounded-xl border">
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3">{t('expenses.comment', 'Comment')}</h3>
+                <MarkdownComment content={expense.comment} />
+              </div>
+            )}
+
+            {expense.comment && displayAttachments.length > 0 && (
+              <Separator className="my-4 md:my-6" />
+            )}
+
             {displayAttachments.length > 0 ? (
               <AttachmentList
                 attachments={displayAttachments}
                 canDelete={canEdit}
                 onDelete={handleAttachmentDelete}
               />
-            ) : (
+            ) : !expense.comment ? (
               <div className="flex flex-col items-center justify-center py-8 md:py-12 text-center">
                 <div className="rounded-full bg-muted p-3 md:p-4 mb-3 md:mb-4">
                   <svg
@@ -649,7 +654,7 @@ export const ExpenseShow = () => {
                   {t('expenses.noReceiptsDescription', 'Receipts and bills can be uploaded when creating or editing this expense.')}
                 </p>
               </div>
-            )}
+            ) : null}
           </CardContent>
         </Card>
       </div>
