@@ -28,6 +28,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowLeftIcon, PencilIcon, Trash2Icon, CheckCircle2Icon, XCircleIcon } from "@/components/ui/icons";
 import { SettleSplitDialog } from "../components/settle-split-dialog";
 import { Spinner } from "@/components/ui/spinner";
+import { MomoPaymentButton } from "@/modules/payments/components/momo-payment-button";
 
 export const ExpenseShow = () => {
   const { id } = useParams<{ id: string }>();
@@ -557,6 +558,32 @@ export const ExpenseShow = () => {
                                 </>
                               )}
                             </Button>
+                          )}
+                          {/* MoMo payment button for the user who owes */}
+                          {isCurrentUserSplit && !isSplitSettled && !isPayer && (
+                            <MomoPaymentButton
+                              split={split}
+                              onPaymentComplete={() => {
+                                refetchExpense();
+                                // Reload splits
+                                setIsLoadingSplits(true);
+                                supabaseClient
+                                  .rpc("get_expense_splits_public", { p_expense_id: id })
+                                  .then(({ data, error }) => {
+                                    if (!error && data) {
+                                      setSplits(data.map((s: any) => ({
+                                        ...s,
+                                        profiles: {
+                                          id: s.user_id,
+                                          full_name: s.user_full_name,
+                                          avatar_url: s.user_avatar_url,
+                                        },
+                                      })));
+                                    }
+                                    setIsLoadingSplits(false);
+                                  });
+                              }}
+                            />
                           )}
                         </div>
                       </div>
