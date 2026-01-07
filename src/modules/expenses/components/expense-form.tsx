@@ -132,15 +132,16 @@ export const ExpenseForm = ({
   useEffect(() => {
     // Only auto-select participants if not editing and no existing splits
     if (members.length > 0 && participants.length === 0 && !defaultValues?.splits) {
-      const defaultParticipants = [currentUserId, ...topPartnerIds.slice(0, 2)];
+      const defaultParticipants = [currentUserId, ...topPartnerIds.slice(0, 2)]
+        .filter(id => id !== undefined && id !== null); // Filter out invalid IDs
       const uniqueParticipants = Array.from(new Set(defaultParticipants));
       uniqueParticipants.forEach((memberId) => {
-        if (members.some(m => m.id === memberId)) {
+        if (memberId && members.some(m => m.id === memberId)) {
           addParticipant(memberId);
         }
       });
     }
-  }, [members, participants.length, addParticipant, currentUserId, topPartnerIds, defaultValues?.splits]);
+  }, [members, participants.length, defaultValues?.splits, currentUserId, topPartnerIds, addParticipant]);
 
   useEffect(() => {
     if (amount > 0 && participants.length > 0) {
@@ -205,11 +206,29 @@ export const ExpenseForm = ({
   };
 
   const handleFormSubmit = (data: ExpenseFormSchema) => {
+    // Filter out invalid splits before submitting
+    const validSplits = participants.filter(p => {
+      if (!p.user_id) {
+        console.warn('[ExpenseForm] Filtered out split with missing user_id:', p);
+        return false;
+      }
+      if (p.computed_amount === undefined || p.computed_amount === null || isNaN(p.computed_amount)) {
+        console.warn('[ExpenseForm] Filtered out split with invalid computed_amount:', p);
+        return false;
+      }
+      return true;
+    });
+
+    if (validSplits.length === 0) {
+      console.error('[ExpenseForm] No valid splits to submit');
+      return;
+    }
+
     const formValues: ExpenseFormValues = {
       ...data,
       context_type: "group" as const,
       group_id: groupId,
-      splits: participants,
+      splits: validSplits,
     };
     onSubmit(formValues);
   };

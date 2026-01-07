@@ -155,23 +155,27 @@ export const ProfileShow = () => {
       supabaseClient
         .rpc("get_user_activities", { p_user_id: id, p_limit: 20 })
         .then(({ data, error }: { data: any; error: any }) => {
-          if (!error) {
-            const activities: ActivityItem[] = (data || []).map((item: any) => ({
-              id: item.id,
-              type: "expense" as const,
-              description: item.description,
-              total_amount: item.total_amount,
-              user_share: item.user_share,
-              currency: item.currency || "VND",
-              date: item.date,
-              group_name: item.group_name,
-              paid_by_name: item.paid_by_name,
-              is_lender: item.is_lender,
-              is_borrower: item.is_borrower,
-              is_payment: item.is_payment || false,  // Use value from database, not hardcoded false
-            }));
-            setActivities(activities);
+          if (error) {
+            console.error("Error fetching user activities:", error);
+            toast.error(t('profile.errorLoadingActivities', `Failed to load activities: ${error.message || 'Unknown error'}`));
+            setActivities([]);
+            return;
           }
+          const activities: ActivityItem[] = (data || []).map((item: any) => ({
+            id: item.id,
+            type: "expense" as const,
+            description: item.description,
+            total_amount: item.total_amount,
+            user_share: item.user_share,
+            currency: item.currency || "VND",
+            date: item.date,
+            group_name: item.group_name,
+            paid_by_name: item.paid_by_name,
+            is_lender: item.is_lender,
+            is_borrower: item.is_borrower,
+            is_payment: item.is_payment || false,  // Use value from database, not hardcoded false
+          }));
+          setActivities(activities);
         })
     ).finally(() => setIsLoadingActivities(false));
   };

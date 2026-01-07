@@ -115,7 +115,7 @@ export function MomoSettings() {
           <Input
             id="receiver-phone"
             type="tel"
-            placeholder="0931275909"
+            placeholder="0918399443"
             value={formData.receiver_phone}
             onChange={(e) =>
               setFormData(prev => ({ ...prev, receiver_phone: e.target.value }))
