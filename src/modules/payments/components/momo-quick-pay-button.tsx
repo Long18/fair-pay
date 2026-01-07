@@ -34,18 +34,25 @@ export function MomoQuickPayButton({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [unpaidSplits, setUnpaidSplits] = useState<any[]>([]);
   const [isLoadingSplits, setIsLoadingSplits] = useState(false);
+  const loadedRef = React.useRef(false);
 
   // Don't show if MoMo not configured
   if (!momoAPI.isConfigured()) {
     return null;
   }
 
-  // Load unpaid splits when dialog opens
+  // Load unpaid splits when dialog opens (only once)
   useEffect(() => {
-    if (dialogOpen && identity?.id) {
+    if (dialogOpen && identity?.id && !loadedRef.current) {
+      loadedRef.current = true;
       loadUnpaidSplits();
     }
-  }, [dialogOpen, identity?.id, counterpartyId]);
+    
+    // Reset when dialog closes
+    if (!dialogOpen) {
+      loadedRef.current = false;
+    }
+  }, [dialogOpen, identity?.id]);
 
   const loadUnpaidSplits = async () => {
     if (!identity?.id) return;

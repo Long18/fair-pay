@@ -47,23 +47,31 @@ export function MomoPaymentDialog({
   const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
   const [isRechecking, setIsRechecking] = useState(false);
+  const creationAttemptedRef = React.useRef(false);
 
   const {
     paymentRequest,
     isLoading,
     isCreating,
     status,
+    error,
     createPaymentRequest,
     recheckPayment,
     subscribeToUpdates,
   } = useMomoPayment(split.id);
 
-  // Create payment request when dialog opens
+  // Create payment request when dialog opens (only once)
   useEffect(() => {
-    if (open && !paymentRequest && !isLoading && !isCreating && identity?.id) {
+    if (open && !paymentRequest && !isLoading && !isCreating && identity?.id && !creationAttemptedRef.current) {
+      creationAttemptedRef.current = true;
       createPaymentRequest(amount);
     }
-  }, [open, paymentRequest, isLoading, isCreating, identity, amount, createPaymentRequest]);
+    
+    // Reset ref when dialog closes
+    if (!open) {
+      creationAttemptedRef.current = false;
+    }
+  }, [open, paymentRequest, isLoading, isCreating, identity?.id, amount]);
 
   // Subscribe to real-time updates
   useEffect(() => {
@@ -211,7 +219,7 @@ export function MomoPaymentDialog({
             <Alert variant="destructive">
               <AlertCircleIcon className="h-4 w-4" />
               <AlertDescription>
-                {t('payments.momo.error', 'Failed to create payment request')}
+                {error || t('payments.momo.error', 'Failed to create payment request')}
               </AlertDescription>
             </Alert>
           )}

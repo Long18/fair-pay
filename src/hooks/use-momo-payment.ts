@@ -10,6 +10,7 @@ export function useMomoPayment(expenseSplitId: string) {
     const [paymentRequest, setPaymentRequest] = useState<MomoPaymentRequest | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [status, setStatus] = useState<'pending' | 'verified' | 'failed' | 'expired'>('pending');
 
     // Load existing payment request
@@ -41,10 +42,18 @@ export function useMomoPayment(expenseSplitId: string) {
     // Create new payment request
     const createPaymentRequest = useCallback(async (amount: number) => {
         if (!expenseSplitId || !identity?.id || !momoAPI.isConfigured()) {
+            setError('Invalid configuration');
+            return null;
+        }
+
+        // Prevent concurrent requests
+        if (isCreating) {
             return null;
         }
 
         setIsCreating(true);
+        setError(null);
+        
         try {
             // Get MoMo settings
             const { data: settings, error: settingsError } = await supabaseClient
@@ -54,7 +63,9 @@ export function useMomoPayment(expenseSplitId: string) {
                 .single();
 
             if (settingsError || !settings) {
-                throw new Error('MoMo is not configured');
+                const errorMsg = 'MoMo is not configured. Please contact the administrator.';
+                setError(errorMsg);
+                throw new Error(errorMsg);
             }
 
             // Call the database function to create payment request
@@ -66,6 +77,8 @@ export function useMomoPayment(expenseSplitId: string) {
             });
 
             if (error) {
+                const errorMsg = error.message || 'Failed to create payment request';
+                setError(errorMsg);
                 throw error;
             }
 
@@ -82,18 +95,24 @@ export function useMomoPayment(expenseSplitId: string) {
                 if (newRequest) {
                     setPaymentRequest(newRequest);
                     setStatus(newRequest.status as any);
+                    setError(null);
                     return newRequest;
                 }
+            } else if (!result.success) {
+                const errorMsg = (result as any).error || 'Failed to create payment request';
+                setError(errorMsg);
             }
 
             return null;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error creating payment request:', error);
+            const errorMsg = error?.message || 'An unexpected error occurred';
+            setError(errorMsg);
             return null;
         } finally {
             setIsCreating(false);
         }
-    }, [expenseSplitId, identity?.id]);
+    }, [expenseSplitId, identity?.id, isCreating]);
 
     // Manual recheck payment
     const recheckPayment = useCallback(async () => {
@@ -181,6 +200,7 @@ export function useMomoPayment(expenseSplitId: string) {
         paymentRequest,
         isLoading,
         isCreating,
+        error,
         status,
         createPaymentRequest,
         recheckPayment,
