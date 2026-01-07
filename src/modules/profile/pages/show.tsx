@@ -130,12 +130,12 @@ export const ProfileShow = () => {
 
   // Refetch debts
   const refetchDebts = () => {
-    if (!id) return;
+    if (!identity?.id) return;
     setIsLoadingDebts(true);
     const functionName = showHistory ? "get_user_debts_history" : "get_user_debts_aggregated";
     Promise.resolve(
       supabaseClient
-        .rpc(functionName, { p_user_id: id })
+        .rpc(functionName, { p_user_id: identity.id }) // Use current user's ID, not profile ID
         .then(({ data, error }: { data: any; error: any }) => {
           if (error) {
             console.error("Error fetching debts:", error);
@@ -216,7 +216,7 @@ export const ProfileShow = () => {
 
   useEffect(() => {
     refetchDebts();
-  }, [id, showHistory]);
+  }, [identity?.id, showHistory]); // Changed dependency from id to identity.id
 
   useEffect(() => {
     refetchActivities();
