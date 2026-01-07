@@ -8,7 +8,7 @@ export function useMomoSettings() {
     const { data: identity } = useGetIdentity<Profile>();
     const [settings, setSettings] = useState<MomoSettings | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    
+
     // Check admin by email (consistent with header and donation widget)
     const isAdmin = identity?.email === import.meta.env.VITE_ADMIN_EMAIL;
 
