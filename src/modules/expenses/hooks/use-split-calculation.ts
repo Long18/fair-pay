@@ -20,7 +20,7 @@ export const useSplitCalculation = (initialSplits?: ParticipantSplit[]): SplitCa
       console.warn('[useSplitCalculation] Attempted to add participant with invalid userId:', userId);
       return;
     }
-    
+
     setParticipants(prev => {
       if (prev.find(p => p.user_id === userId)) {
         return prev;

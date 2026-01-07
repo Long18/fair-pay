@@ -411,29 +411,37 @@ export const ExpenseEdit = () => {
           isEdit={true}
         />
 
-        <Separator />
-
-        {/* Existing Receipts */}
-        {existingAttachments.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium">Existing Receipts ({existingAttachments.length})</h3>
-            <AttachmentList
-              attachments={existingAttachments}
-              canDelete={true}
-              onDelete={(attachmentId) => {
-                setExistingAttachments(prev => prev.filter(a => a.id !== attachmentId));
-              }}
-            />
-          </div>
-        )}
-
-        {/* Add New Receipts */}
+        {/* Receipts & Bills Section - Grouped with Comment */}
         <div className="space-y-4">
-          <h3 className="text-sm font-medium">Add More Receipts (Optional)</h3>
-          <AttachmentUpload
-            attachments={attachments}
-            onAttachmentsChange={setAttachments}
-          />
+          <div>
+            <h3 className="text-sm font-semibold mb-1">Receipts & Bills</h3>
+            <p className="text-xs text-muted-foreground mb-4">Attach receipts or bills for this expense (Optional)</p>
+
+            {/* Existing Receipts */}
+            {existingAttachments.length > 0 && (
+              <div className="space-y-4 mb-4">
+                <h4 className="text-xs font-medium text-muted-foreground">Existing Receipts ({existingAttachments.length})</h4>
+                <AttachmentList
+                  attachments={existingAttachments}
+                  canDelete={true}
+                  onDelete={(attachmentId) => {
+                    setExistingAttachments(prev => prev.filter(a => a.id !== attachmentId));
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Add New Receipts */}
+            <div className="space-y-2">
+              {existingAttachments.length > 0 && (
+                <h4 className="text-xs font-medium text-muted-foreground">Add More Receipts</h4>
+              )}
+              <AttachmentUpload
+                attachments={attachments}
+                onAttachmentsChange={setAttachments}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </ResponsiveDialog>
