@@ -1,8 +1,8 @@
--- Migration: Add comment field to get_user_activities function
+-- Migration: Remove comment field from get_user_activities function
 -- Created: 2026-01-10
--- Purpose: Include expense comment in user activities for preview display
+-- Purpose: Remove comment field as comment preview is not needed in activity items
 
--- Drop and recreate function with comment field
+-- Drop and recreate function without comment field
 DROP FUNCTION IF EXISTS get_user_activities(UUID, INTEGER);
 
 CREATE OR REPLACE FUNCTION get_user_activities(
@@ -21,8 +21,7 @@ RETURNS TABLE (
   paid_by_name TEXT,
   is_lender BOOLEAN,
   is_borrower BOOLEAN,
-  is_payment BOOLEAN,
-  comment TEXT
+  is_payment BOOLEAN
 )
 SECURITY DEFINER
 SET search_path = public, pg_temp
@@ -51,8 +50,7 @@ BEGIN
     CASE
       WHEN e.paid_by_user_id = p_user_id THEN false  -- Lender already paid
       ELSE COALESCE(es.is_settled, false)  -- Borrower: show settlement status (default to false/unpaid if NULL)
-    END as is_payment,
-    e.comment
+    END as is_payment
   FROM expenses e
   INNER JOIN expense_splits es ON e.id = es.expense_id AND es.user_id = p_user_id
   LEFT JOIN groups g ON e.group_id = g.id
@@ -69,4 +67,4 @@ $$;
 GRANT EXECUTE ON FUNCTION get_user_activities(UUID, INTEGER) TO authenticated;
 
 -- Add comment
-COMMENT ON FUNCTION get_user_activities IS 'Get activities (expenses and splits) for a specific user with settlement status. Shows all expenses including unpaid ones. Includes expense comment for preview.';
+COMMENT ON FUNCTION get_user_activities IS 'Get activities (expenses and splits) for a specific user with settlement status. Shows all expenses including unpaid ones.';
