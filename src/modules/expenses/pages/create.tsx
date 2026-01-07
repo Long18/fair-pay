@@ -230,7 +230,7 @@ export const ExpenseCreate = () => {
             });
 
             const splitResults = await Promise.all(splitPromises);
-            
+
             // Check for errors in split creation
             const splitErrors = splitResults.filter(r => r.error);
             if (splitErrors.length > 0) {
