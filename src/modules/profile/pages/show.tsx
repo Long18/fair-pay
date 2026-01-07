@@ -75,7 +75,6 @@ interface ActivityItem {
   is_lender: boolean;
   is_borrower: boolean;
   is_payment: boolean;
-  comment?: string;
 }
 
 export const ProfileShow = () => {
@@ -175,7 +174,6 @@ export const ProfileShow = () => {
             is_lender: item.is_lender,
             is_borrower: item.is_borrower,
             is_payment: item.is_payment || false,  // Use value from database, not hardcoded false
-            comment: item.comment || undefined,
           }));
           setActivities(activities);
         })
@@ -515,14 +513,6 @@ export const ProfileShow = () => {
                           </p>
                         </div>
                       </div>
-                      {activity.comment && (
-                        <div className="mt-3 pt-3 border-t border-border/50">
-                          <div className="text-xs text-muted-foreground mb-1">{t('expenses.comment', 'Comment')}</div>
-                          <p className="text-sm text-foreground/80 line-clamp-2">
-                            {activity.comment.replace(/[#*_`\[\]()]/g, '').trim()}
-                          </p>
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>
