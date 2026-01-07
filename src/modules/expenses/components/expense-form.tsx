@@ -53,6 +53,7 @@ const expenseSchema = z.object({
   expense_date: z.string(),
   paid_by_user_id: z.string().uuid("Please select who paid"),
   split_method: z.enum(["equal", "exact", "percentage"]),
+  comment: z.string().max(1000, "Comment is too long (max 1000 characters)").optional(),
   is_recurring: z.boolean(),
   recurring: z.object({
     frequency: z.enum(["weekly", "bi_weekly", "monthly", "quarterly", "yearly", "custom"]),
@@ -96,6 +97,7 @@ export const ExpenseForm = ({
       expense_date: defaultValues?.expense_date || new Date().toISOString().split("T")[0],
       paid_by_user_id: defaultValues?.paid_by_user_id || currentUserId,
       split_method: defaultValues?.split_method || "equal",
+      comment: defaultValues?.comment || "",
       is_recurring: false,
       recurring: DEFAULT_RECURRING_VALUES,
     },
@@ -269,6 +271,27 @@ export const ExpenseForm = ({
               <FormControl>
                 <Input placeholder="e.g., Dinner at restaurant" {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="comment"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Comment (Optional)</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Add any additional notes or details about this expense..."
+                  className="resize-none min-h-[80px]"
+                  {...field}
+                />
+              </FormControl>
+              <FormDescription>
+                Add extra details, context, or notes about this expense
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

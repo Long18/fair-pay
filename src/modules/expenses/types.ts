@@ -25,6 +25,7 @@ export interface Expense {
     created_by: string;
     created_at: string;
     updated_at: string;
+    comment?: string | null;
     attachments?: Attachment[];
 }
 
@@ -61,6 +62,7 @@ export interface ExpenseFormValues {
     friendship_id?: string;
     paid_by_user_id: string;
     split_method: 'equal' | 'exact' | 'percentage';
+    comment?: string;
     is_recurring?: boolean;
     recurring?: {
         frequency: 'weekly' | 'bi_weekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom';

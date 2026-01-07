@@ -393,6 +393,13 @@ export const ExpenseShow = () => {
                 </p>
               </div>
             </div>
+
+            {expense.comment && (
+              <div className="p-4 md:p-6 bg-muted/50 rounded-xl border">
+                <h3 className="text-sm font-semibold text-muted-foreground mb-2">{t('expenses.comment', 'Comment')}</h3>
+                <p className="text-sm md:text-base whitespace-pre-wrap break-words">{expense.comment}</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
