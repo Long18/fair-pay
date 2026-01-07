@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "@refinedev/react-hook-form";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -132,16 +132,29 @@ export const ExpenseForm = ({
   useEffect(() => {
     // Only auto-select participants if not editing and no existing splits
     if (members.length > 0 && participants.length === 0 && !defaultValues?.splits) {
-      const defaultParticipants = [currentUserId, ...topPartnerIds.slice(0, 2)]
-        .filter(id => id !== undefined && id !== null); // Filter out invalid IDs
-      const uniqueParticipants = Array.from(new Set(defaultParticipants));
-      uniqueParticipants.forEach((memberId) => {
-        if (memberId && members.some(m => m.id === memberId)) {
-          addParticipant(memberId);
-        }
-      });
+      // In friend context (only 2 people), auto-select both
+      if (members.length === 2 && groupId === undefined) {
+        console.log('[ExpenseForm] Friend context - auto-selecting both members:', members);
+        members.forEach(m => {
+          if (m.id) {
+            console.log('[ExpenseForm] Adding participant:', m.id, m.full_name);
+            addParticipant(m.id);
+          }
+        });
+      } else {
+        // In group context, use smart selection
+        const defaultParticipants = [currentUserId, ...topPartnerIds.slice(0, 2)]
+          .filter(id => id !== undefined && id !== null);
+        const uniqueParticipants = Array.from(new Set(defaultParticipants));
+        console.log('[ExpenseForm] Group context - auto-selecting:', uniqueParticipants);
+        uniqueParticipants.forEach((memberId) => {
+          if (memberId && members.some(m => m.id === memberId)) {
+            addParticipant(memberId);
+          }
+        });
+      }
     }
-  }, [members, participants.length, defaultValues?.splits, currentUserId, topPartnerIds, addParticipant]);
+  }, [members, participants.length, defaultValues?.splits, currentUserId, topPartnerIds, addParticipant, groupId]);
 
   useEffect(() => {
     if (amount > 0 && participants.length > 0) {
@@ -197,9 +210,20 @@ export const ExpenseForm = ({
     });
   };
 
-  const availableMembers = members.filter(
-    m => !participants.some(p => p.user_id === m.id)
-  );
+  const availableMembers = useMemo(() => {
+    const available = members.filter(m => !participants.some(p => p.user_id === m.id));
+
+    // Debug: Log when no members available in friend context
+    if (available.length === 0 && members.length === 2 && groupId === undefined) {
+      console.warn('[ExpenseForm] No available members in friend context:', {
+        members,
+        participants,
+        selectedIds: participants.map(p => p.user_id)
+      });
+    }
+
+    return available;
+  }, [members, participants, groupId]);
 
   const isParticipating = (userId: string) => {
     return participants.some(p => p.user_id === userId);
