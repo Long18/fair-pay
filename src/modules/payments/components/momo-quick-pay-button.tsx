@@ -47,7 +47,7 @@ export function MomoQuickPayButton({
       loadedRef.current = true;
       loadUnpaidSplits();
     }
-    
+
     // Reset when dialog closes
     if (!dialogOpen) {
       loadedRef.current = false;

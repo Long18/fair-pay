@@ -168,7 +168,7 @@ export const ProfileShow = () => {
               paid_by_name: item.paid_by_name,
               is_lender: item.is_lender,
               is_borrower: item.is_borrower,
-              is_payment: false,
+              is_payment: item.is_payment || false,  // Use value from database, not hardcoded false
             }));
             setActivities(activities);
           }
