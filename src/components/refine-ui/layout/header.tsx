@@ -24,7 +24,7 @@ import { NotificationPanel } from "@/modules/notifications";
 import { SearchModal, useSearchShortcut } from "@/components/global-search";
 import { Profile } from "@/modules/profile/types";
 
-import { LogOutIcon, UserIcon, SearchIcon, SettingsIcon, HeartIcon } from "@/components/ui/icons";
+import { LogOutIcon, UserIcon, SearchIcon, SettingsIcon, HeartIcon, BanknoteIcon } from "@/components/ui/icons";
 export const Header = () => {
   const { isMobile } = useSidebar();
 
@@ -237,14 +237,24 @@ const UserDropdown = () => {
           <span>{t('settings.title')}</span>
         </DropdownMenuItem>
         {isAdmin && (
-          <DropdownMenuItem
-            onClick={() => {
-              go({ to: "/settings/donation" });
-            }}
-          >
-            <HeartIcon className="h-4 w-4" />
-            <span>{t('settings.donationSetup')}</span>
-          </DropdownMenuItem>
+          <>
+            <DropdownMenuItem
+              onClick={() => {
+                go({ to: "/settings/donation" });
+              }}
+            >
+              <HeartIcon className="h-4 w-4" />
+              <span>{t('settings.donation.title', 'Donation Settings')}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                go({ to: "/settings/momo" });
+              }}
+            >
+              <BanknoteIcon className="h-4 w-4" />
+              <span>{t('settings.momo.title', 'MoMo Settings')}</span>
+            </DropdownMenuItem>
+          </>
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
