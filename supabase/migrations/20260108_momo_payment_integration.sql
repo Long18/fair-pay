@@ -15,11 +15,13 @@ CREATE TABLE IF NOT EXISTS momo_settings (
 ALTER TABLE momo_settings ENABLE ROW LEVEL SECURITY;
 
 -- Only authenticated users can read settings
+DROP POLICY IF EXISTS "momo_settings_read_policy" ON momo_settings;
 CREATE POLICY "momo_settings_read_policy" ON momo_settings
     FOR SELECT TO authenticated
     USING (true);
 
 -- Only admins can update settings
+DROP POLICY IF EXISTS "momo_settings_update_policy" ON momo_settings;
 CREATE POLICY "momo_settings_update_policy" ON momo_settings
     FOR UPDATE TO authenticated
     USING (
@@ -50,26 +52,29 @@ CREATE TABLE IF NOT EXISTS momo_payment_requests (
 );
 
 -- Add indexes for performance
-CREATE INDEX idx_momo_payment_requests_user_id ON momo_payment_requests(user_id);
-CREATE INDEX idx_momo_payment_requests_expense_split_id ON momo_payment_requests(expense_split_id);
-CREATE INDEX idx_momo_payment_requests_reference_code ON momo_payment_requests(reference_code);
-CREATE INDEX idx_momo_payment_requests_status ON momo_payment_requests(status);
-CREATE INDEX idx_momo_payment_requests_created_at ON momo_payment_requests(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_momo_payment_requests_user_id ON momo_payment_requests(user_id);
+CREATE INDEX IF NOT EXISTS idx_momo_payment_requests_expense_split_id ON momo_payment_requests(expense_split_id);
+CREATE INDEX IF NOT EXISTS idx_momo_payment_requests_reference_code ON momo_payment_requests(reference_code);
+CREATE INDEX IF NOT EXISTS idx_momo_payment_requests_status ON momo_payment_requests(status);
+CREATE INDEX IF NOT EXISTS idx_momo_payment_requests_created_at ON momo_payment_requests(created_at DESC);
 
 -- Add RLS policies for momo_payment_requests
 ALTER TABLE momo_payment_requests ENABLE ROW LEVEL SECURITY;
 
 -- Users can view their own payment requests
+DROP POLICY IF EXISTS "momo_payment_requests_read_own" ON momo_payment_requests;
 CREATE POLICY "momo_payment_requests_read_own" ON momo_payment_requests
     FOR SELECT TO authenticated
     USING (user_id = auth.uid());
 
 -- Users can create their own payment requests
+DROP POLICY IF EXISTS "momo_payment_requests_create_own" ON momo_payment_requests;
 CREATE POLICY "momo_payment_requests_create_own" ON momo_payment_requests
     FOR INSERT TO authenticated
     WITH CHECK (user_id = auth.uid());
 
 -- Users can update their own payment requests (for status changes)
+DROP POLICY IF EXISTS "momo_payment_requests_update_own" ON momo_payment_requests;
 CREATE POLICY "momo_payment_requests_update_own" ON momo_payment_requests
     FOR UPDATE TO authenticated
     USING (user_id = auth.uid());
@@ -91,14 +96,15 @@ CREATE TABLE IF NOT EXISTS momo_webhook_logs (
 );
 
 -- Add indexes for webhook logs
-CREATE INDEX idx_momo_webhook_logs_tran_id ON momo_webhook_logs(tran_id);
-CREATE INDEX idx_momo_webhook_logs_processed ON momo_webhook_logs(processed);
-CREATE INDEX idx_momo_webhook_logs_created_at ON momo_webhook_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_momo_webhook_logs_tran_id ON momo_webhook_logs(tran_id);
+CREATE INDEX IF NOT EXISTS idx_momo_webhook_logs_processed ON momo_webhook_logs(processed);
+CREATE INDEX IF NOT EXISTS idx_momo_webhook_logs_created_at ON momo_webhook_logs(created_at DESC);
 
 -- Add RLS policies for momo_webhook_logs
 ALTER TABLE momo_webhook_logs ENABLE ROW LEVEL SECURITY;
 
 -- Only admins can view webhook logs
+DROP POLICY IF EXISTS "momo_webhook_logs_admin_only" ON momo_webhook_logs;
 CREATE POLICY "momo_webhook_logs_admin_only" ON momo_webhook_logs
     FOR ALL TO authenticated
     USING (
@@ -118,6 +124,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_momo_settings_updated_at ON momo_settings;
 CREATE TRIGGER update_momo_settings_updated_at
     BEFORE UPDATE ON momo_settings
     FOR EACH ROW
@@ -131,6 +138,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_momo_payment_requests_updated_at ON momo_payment_requests;
 CREATE TRIGGER update_momo_payment_requests_updated_at
     BEFORE UPDATE ON momo_payment_requests
     FOR EACH ROW
@@ -210,6 +218,10 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 6. Function to create MoMo payment request
+-- Drop existing function first to avoid return type conflicts
+DROP FUNCTION IF EXISTS create_momo_payment_request(UUID, UUID, TEXT, DECIMAL);
+DROP FUNCTION IF EXISTS create_momo_payment_request(uuid, uuid, text, numeric);
+
 CREATE OR REPLACE FUNCTION create_momo_payment_request(
     p_expense_split_id UUID,
     p_user_id UUID,
@@ -273,7 +285,8 @@ BEGIN
         p_expense_split_id,
         p_user_id,
         p_receiver_phone,
-        p_amount
+        p_amount,
+        v_reference_code
     ) RETURNING id INTO v_payment_request_id;
 
     RETURN jsonb_build_object(
@@ -288,7 +301,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 7. Insert default MoMo settings (can be updated by admin)
 INSERT INTO momo_settings (receiver_phone, receiver_name, enabled)
-VALUES ('0931275909', 'FairPay', TRUE)
+VALUES ('0918399443', 'FairPay', TRUE)
 ON CONFLICT DO NOTHING;
 
 -- 8. Grant necessary permissions
@@ -297,5 +310,14 @@ GRANT ALL ON momo_payment_requests TO authenticated;
 GRANT EXECUTE ON FUNCTION verify_momo_payment TO authenticated;
 GRANT EXECUTE ON FUNCTION create_momo_payment_request TO authenticated;
 
--- Enable realtime for payment requests
-ALTER PUBLICATION supabase_realtime ADD TABLE momo_payment_requests;
+-- Enable realtime for payment requests (idempotent)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables
+        WHERE pubname = 'supabase_realtime'
+        AND tablename = 'momo_payment_requests'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE momo_payment_requests;
+    END IF;
+END $$;
