@@ -43,6 +43,7 @@ import { supabaseClient } from "@/utility/supabaseClient";
 import { toast } from "sonner";
 
 import { MoreHorizontalIcon, ReceiptIcon, BanknoteIcon, UsersIcon, TrendingUpIcon, TrendingDownIcon, CheckCircle2Icon } from "@/components/ui/icons";
+import { MomoPaymentButton } from "@/modules/payments/components/momo-payment-button";
 interface DashboardDenseTableProps {
   disabled?: boolean;
 }
