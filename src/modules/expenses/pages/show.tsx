@@ -289,14 +289,14 @@ export const ExpenseShow = () => {
 
   if (isLoadingExpense || isLoadingSplits || !expense || loading) {
     return (
-      <div className="container max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+      <div className="container max-w-4xl px-4 lg:px-8 py-4 md:py-8">
         <Spinner size="lg" className="min-h-[400px]" />
       </div>
     );
   }
 
   return (
-      <div className="container max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+      <div className="container max-w-4xl px-4 lg:px-8 py-4 md:py-8">
       <Button
         variant="ghost"
         size="sm"
@@ -308,7 +308,7 @@ export const ExpenseShow = () => {
         <span className="sm:hidden">Back</span>
       </Button>
 
-      <div className="space-y-4 sm:space-y-6">
+      <div className="space-y-4 md:space-y-6">
         <Card>
           <CardHeader>
             <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
@@ -367,8 +367,8 @@ export const ExpenseShow = () => {
               )}
             </div>
           </CardHeader>
-          <CardContent className="space-y-4 sm:space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 p-4 sm:p-6 bg-gradient-to-br from-muted/50 to-muted rounded-xl shadow-sm">
+          <CardContent className="space-y-4 md:space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-6 p-4 md:p-6 bg-gradient-to-br from-muted/50 to-muted rounded-xl shadow-sm">
               <Avatar className="h-12 w-12 sm:h-16 sm:w-16 border-4 border-background shadow-lg ring-4 ring-primary/10">
                 <AvatarImage src={expense.profiles?.avatar_url || undefined} alt={expense.profiles?.full_name} />
                 <AvatarFallback className="text-base sm:text-lg font-bold bg-gradient-to-br from-primary/20 to-primary/10">
@@ -398,8 +398,8 @@ export const ExpenseShow = () => {
 
         <Card>
           <CardHeader>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <CardTitle>{t('expenses.splitDetails')}</CardTitle>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 md:gap-4">
+              <CardTitle className="text-base md:text-lg">{t('expenses.splitDetails')}</CardTitle>
               {isPayer && !isPaid && splits.length > 0 && (
                 <AlertDialog open={settleAllDialogOpen} onOpenChange={setSettleAllDialogOpen}>
                   <AlertDialogTrigger asChild>
@@ -449,7 +449,7 @@ export const ExpenseShow = () => {
             </div>
           </CardHeader>
           <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-3 md:space-y-4">
                 {splits.map((split: any) => {
                   const isCurrentUserSplit = split.user_id === identity?.id;
                   const isSplitSettled = split.is_settled || isPaid;
@@ -459,14 +459,14 @@ export const ExpenseShow = () => {
                   return (
                     <div
                       key={split.id}
-                      className={`group flex flex-col p-3 sm:p-4 border-2 rounded-xl transition-all duration-200 ${
+                      className={`group flex flex-col p-3 md:p-4 border-2 rounded-xl transition-all duration-200 ${
                         isSplitSettled
                           ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800'
                           : 'hover:border-primary/50 hover:bg-accent/30'
                       }`}
                     >
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-                        <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0 w-full sm:w-auto">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 md:gap-4">
+                        <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 w-full sm:w-auto">
                         <Avatar className={`h-10 w-10 sm:h-12 sm:w-12 border-2 shadow-md ring-2 ring-offset-1 ring-offset-background transition-all duration-200 flex-shrink-0 ${
                           isSplitSettled
                             ? 'border-green-300 dark:border-green-700 ring-green-200 dark:ring-green-800'
@@ -597,7 +597,7 @@ export const ExpenseShow = () => {
         {/* Receipts/Bills */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
               {t('expenses.receipts', 'Receipts & Bills')}
               {displayAttachments.length > 0 && (
                 <Badge variant="secondary" className="ml-2">
@@ -614,8 +614,8 @@ export const ExpenseShow = () => {
                 onDelete={handleAttachmentDelete}
               />
             ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="rounded-full bg-muted p-4 mb-4">
+              <div className="flex flex-col items-center justify-center py-8 md:py-12 text-center">
+                <div className="rounded-full bg-muted p-3 md:p-4 mb-3 md:mb-4">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="48"
@@ -634,10 +634,10 @@ export const ExpenseShow = () => {
                     <line x1="9" y1="15" x2="15" y2="15" />
                   </svg>
                 </div>
-                <h3 className="font-semibold text-lg mb-2">
+                <h3 className="font-semibold text-base md:text-lg mb-2">
                   {t('expenses.noReceipts', 'No receipts uploaded')}
                 </h3>
-                <p className="text-sm text-muted-foreground max-w-sm">
+                <p className="text-xs md:text-sm text-muted-foreground max-w-sm">
                   {t('expenses.noReceiptsDescription', 'Receipts and bills can be uploaded when creating or editing this expense.')}
                 </p>
               </div>
