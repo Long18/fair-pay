@@ -37,24 +37,55 @@ export function useMomoSettings() {
             throw new Error('Only admins can update MoMo settings');
         }
 
-        const { data, error } = await supabaseClient
+        // First, check if any settings exist in database
+        const { data: existingSettings } = await supabaseClient
             .from('momo_settings')
-            .update({
-                ...updates,
-                updated_at: new Date().toISOString(),
-            })
-            .select()
+            .select('id')
+            .limit(1)
             .single();
 
-        if (error) {
-            throw error;
-        }
+        if (existingSettings?.id) {
+            // Update existing settings
+            const { data, error } = await supabaseClient
+                .from('momo_settings')
+                .update({
+                    ...updates,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('id', existingSettings.id)
+                .select()
+                .single();
 
-        if (data) {
-            setSettings(data);
-        }
+            if (error) {
+                throw error;
+            }
 
-        return data;
+            if (data) {
+                setSettings(data);
+            }
+
+            return data;
+        } else {
+            // Insert new settings if none exist
+            const { data, error } = await supabaseClient
+                .from('momo_settings')
+                .insert({
+                    ...updates,
+                    updated_at: new Date().toISOString(),
+                })
+                .select()
+                .single();
+
+            if (error) {
+                throw error;
+            }
+
+            if (data) {
+                setSettings(data);
+            }
+
+            return data;
+        }
     }, [isAdmin]);
 
     // Initial load
