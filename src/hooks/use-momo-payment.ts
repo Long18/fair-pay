@@ -53,7 +53,7 @@ export function useMomoPayment(expenseSplitId: string) {
 
         setIsCreating(true);
         setError(null);
-        
+
         try {
             // Get MoMo settings
             const { data: settings, error: settingsError } = await supabaseClient

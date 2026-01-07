@@ -66,7 +66,7 @@ export function MomoPaymentDialog({
       creationAttemptedRef.current = true;
       createPaymentRequest(amount);
     }
-    
+
     // Reset ref when dialog closes
     if (!open) {
       creationAttemptedRef.current = false;
