@@ -29,6 +29,7 @@ import { ArrowLeftIcon, PencilIcon, Trash2Icon, CheckCircle2Icon, XCircleIcon } 
 import { SettleSplitDialog } from "../components/settle-split-dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { MomoPaymentButton } from "@/modules/payments/components/momo-payment-button";
+import { MarkdownComment } from "../components/markdown-comment";
 
 export const ExpenseShow = () => {
   const { id } = useParams<{ id: string }>();
@@ -396,8 +397,8 @@ export const ExpenseShow = () => {
 
             {expense.comment && (
               <div className="p-4 md:p-6 bg-muted/50 rounded-xl border">
-                <h3 className="text-sm font-semibold text-muted-foreground mb-2">{t('expenses.comment', 'Comment')}</h3>
-                <p className="text-sm md:text-base whitespace-pre-wrap break-words">{expense.comment}</p>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3">{t('expenses.comment', 'Comment')}</h3>
+                <MarkdownComment content={expense.comment} />
               </div>
             )}
           </CardContent>
