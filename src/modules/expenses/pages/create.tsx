@@ -101,19 +101,41 @@ export const ExpenseCreate = () => {
 
     if (isFriendContext && friendshipQuery.data?.data) {
       const friendship: any = friendshipQuery.data.data;
-      const isUserA = friendship.user_a_id === identity?.id;
-      const friendProfile = isUserA ? friendship.user_b_profile : friendship.user_a_profile;
 
-      return [
+      // Use user_a/user_b (not user_a_id/user_b_id) - Supabase returns these fields
+      const userAId = friendship.user_a || friendship.user_a_id;
+      const userBId = friendship.user_b || friendship.user_b_id;
+      const isUserA = userAId === identity?.id;
+      const friendProfile = isUserA ? friendship.user_b_profile : friendship.user_a_profile;
+      const friendId = isUserA ? userBId : userAId;
+
+      console.log('[ExpenseCreate] Friend context data:', {
+        friendship,
+        userAId,
+        userBId,
+        currentUserId: identity?.id,
+        isUserA,
+        friendId,
+        friendProfile
+      });
+
+      const friendMembers = [
         {
           id: identity!.id,
           full_name: "You",
         },
         {
-          id: isUserA ? friendship.user_b_id : friendship.user_a_id,
+          id: friendId,
           full_name: friendProfile?.full_name || "Friend",
         },
-      ];
+      ].filter(m => m.id !== undefined && m.id !== null); // Ensure valid IDs
+
+      // Debug: Log to catch duplicate IDs
+      if (friendMembers.length < 2) {
+        console.warn('[ExpenseCreate] Friend context members issue - only got', friendMembers.length, 'members');
+      }
+
+      return friendMembers;
     }
 
     return [];
@@ -123,16 +145,18 @@ export const ExpenseCreate = () => {
   const allFriends = useMemo(() => {
     if (!allFriendsQuery.data?.data || !identity?.id) return [];
 
-    return allFriendsQuery.data.data.map((friendship: any) => {
-      const isUserA = friendship.user_a_id === identity.id;
-      const friendProfile = isUserA ? friendship.user_b_profile : friendship.user_a_profile;
-      const friendId = isUserA ? friendship.user_b_id : friendship.user_a_id;
+    return allFriendsQuery.data.data
+      .map((friendship: any) => {
+        const isUserA = friendship.user_a_id === identity.id;
+        const friendProfile = isUserA ? friendship.user_b_profile : friendship.user_a_profile;
+        const friendId = isUserA ? friendship.user_b_id : friendship.user_a_id;
 
-      return {
-        id: friendId,
-        full_name: friendProfile?.full_name || "Friend",
-      };
-    });
+        return {
+          id: friendId,
+          full_name: friendProfile?.full_name || "Friend",
+        };
+      })
+      .filter((friend) => friend.id !== undefined && friend.id !== null); // Filter out invalid friends
   }, [allFriendsQuery.data, identity]);
 
   // Combine members + friends for group context (remove duplicates, including current user)
@@ -143,7 +167,7 @@ export const ExpenseCreate = () => {
     if (isGroupContext) {
       // Add all group members first
       members.forEach(m => {
-        if (!seenIds.has(m.id)) {
+        if (m.id && !seenIds.has(m.id)) {
           combined.push(m);
           seenIds.add(m.id);
         }
@@ -151,7 +175,7 @@ export const ExpenseCreate = () => {
 
       // Add friends who are not already in the group
       allFriends.forEach(f => {
-        if (!seenIds.has(f.id)) {
+        if (f.id && !seenIds.has(f.id)) {
           combined.push(f);
           seenIds.add(f.id);
         }
@@ -160,8 +184,8 @@ export const ExpenseCreate = () => {
       return combined;
     }
 
-    // In friend context: just the 2 people in the friendship (no duplicates possible)
-    return members;
+    // In friend context: just the 2 people in the friendship (filter out invalid)
+    return members.filter(m => m.id !== undefined && m.id !== null);
   }, [isGroupContext, members, allFriends]);
 
   const handleSubmit = async (values: ExpenseFormValues) => {
@@ -282,12 +306,8 @@ export const ExpenseCreate = () => {
             toast.success("Expense created successfully");
           }
 
-          // Navigate back based on context
-          if (isGroupContext) {
-            go({ to: `/groups/show/${groupId}` });
-          } else if (isFriendContext) {
-            go({ to: `/friends/show/${friendshipId}` });
-          }
+          // Navigate to the created expense to show details
+          go({ to: `/expenses/show/${expenseId}` });
         },
         onError: (error) => {
           ErrorTracker.apiError({

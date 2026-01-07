@@ -201,16 +201,18 @@ export const ExpenseEdit = () => {
   const allFriends = useMemo(() => {
     if (!allFriendsQuery.data?.data || !identity?.id) return [];
 
-    return allFriendsQuery.data.data.map((friendship: any) => {
-      const isUserA = friendship.user_a_id === identity.id;
-      const friendProfile = isUserA ? friendship.user_b_profile : friendship.user_a_profile;
-      const friendId = isUserA ? friendship.user_b_id : friendship.user_a_id;
+    return allFriendsQuery.data.data
+      .map((friendship: any) => {
+        const isUserA = friendship.user_a_id === identity.id;
+        const friendProfile = isUserA ? friendship.user_b_profile : friendship.user_a_profile;
+        const friendId = isUserA ? friendship.user_b_id : friendship.user_a_id;
 
-      return {
-        id: friendId,
-        full_name: friendProfile?.full_name || "Friend",
-      };
-    });
+        return {
+          id: friendId,
+          full_name: friendProfile?.full_name || "Friend",
+        };
+      })
+      .filter((friend) => friend.id !== undefined && friend.id !== null); // Filter out invalid friends
   }, [allFriendsQuery.data, identity]);
 
   // Combine members + friends for group context (remove duplicates)
@@ -221,7 +223,7 @@ export const ExpenseEdit = () => {
     if (isGroupContext) {
       // Add all group members first
       members.forEach(m => {
-        if (!seenIds.has(m.id)) {
+        if (m.id && !seenIds.has(m.id)) {
           combined.push(m);
           seenIds.add(m.id);
         }
@@ -229,7 +231,7 @@ export const ExpenseEdit = () => {
 
       // Add friends who are not already in the group
       allFriends.forEach(f => {
-        if (!seenIds.has(f.id)) {
+        if (f.id && !seenIds.has(f.id)) {
           combined.push(f);
           seenIds.add(f.id);
         }
@@ -238,8 +240,8 @@ export const ExpenseEdit = () => {
       return combined;
     }
 
-    // In friend context: just the 2 people in the friendship (no duplicates possible)
-    return members;
+    // In friend context: just the 2 people in the friendship (filter out invalid)
+    return members.filter(m => m.id !== undefined && m.id !== null);
   }, [isGroupContext, members, allFriends]);
 
   const handleSubmit = async (values: ExpenseFormValues) => {
