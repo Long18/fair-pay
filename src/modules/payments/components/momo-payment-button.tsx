@@ -28,6 +28,7 @@ export function MomoPaymentButton({
 }: MomoPaymentButtonProps) {
   const { t } = useTranslation();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [isOpening, setIsOpening] = useState(false);
 
   // Don't show button if already settled or MoMo is not configured
   if (split.is_settled || !momoAPI.isConfigured()) {
@@ -36,7 +37,21 @@ export function MomoPaymentButton({
 
   const handlePaymentComplete = () => {
     setDialogOpen(false);
+    setIsOpening(false);
     onPaymentComplete?.();
+  };
+
+  const handleOpenDialog = () => {
+    if (isOpening) return;
+    setIsOpening(true);
+    setDialogOpen(true);
+  };
+
+  const handleCloseDialog = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setIsOpening(false);
+    }
   };
 
   const remainingAmount = split.computed_amount - (split.settled_amount || 0);
@@ -50,8 +65,8 @@ export function MomoPaymentButton({
       <Button
         variant="default"
         size="sm"
-        onClick={() => setDialogOpen(true)}
-        disabled={disabled}
+        onClick={handleOpenDialog}
+        disabled={disabled || isOpening}
         className={cn(
           "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white",
           className
@@ -63,7 +78,7 @@ export function MomoPaymentButton({
 
       <MomoPaymentDialog
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        onOpenChange={handleCloseDialog}
         split={split}
         amount={remainingAmount}
         onPaymentComplete={handlePaymentComplete}
