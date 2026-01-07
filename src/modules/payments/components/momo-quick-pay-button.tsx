@@ -158,7 +158,7 @@ export function MomoQuickPayButton({
                       {formatNumber(split.computed_amount)} VND
                     </Badge>
                   </div>
-                  
+
                   <MomoPaymentButton
                     split={split}
                     className="w-full"

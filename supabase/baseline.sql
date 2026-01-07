@@ -174,6 +174,7 @@ CREATE TABLE notifications (
   title TEXT NOT NULL,
   message TEXT NOT NULL,
   link TEXT,
+  related_id UUID, -- Reference to related entity (friendship, expense, payment, etc.)
   is_read BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
@@ -476,6 +477,79 @@ CREATE TRIGGER trigger_auto_create_friendships
   AFTER INSERT ON group_members
   FOR EACH ROW
   EXECUTE FUNCTION auto_create_friendships_from_group();
+
+-- Friendships - Notify friend request recipient
+CREATE OR REPLACE FUNCTION notify_friend_request()
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public, pg_temp
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_recipient_id UUID;
+  v_requester_id UUID;
+  v_requester_name TEXT;
+  v_notify_enabled BOOLEAN;
+BEGIN
+  -- Only create notification for pending friend requests
+  IF NEW.status != 'pending' THEN
+    RETURN NEW;
+  END IF;
+
+  -- Determine recipient (the user who did NOT create the request)
+  -- and requester (the user who created the request)
+  v_requester_id := NEW.created_by;
+
+  IF NEW.user_a = v_requester_id THEN
+    v_recipient_id := NEW.user_b;
+  ELSE
+    v_recipient_id := NEW.user_a;
+  END IF;
+
+  -- Get requester's full name from profiles
+  SELECT full_name INTO v_requester_name
+  FROM profiles
+  WHERE id = v_requester_id;
+
+  -- Check if recipient has friend request notifications enabled
+  SELECT COALESCE(notify_on_friend_request, TRUE) INTO v_notify_enabled
+  FROM user_settings
+  WHERE user_id = v_recipient_id;
+
+  -- If notifications are disabled, skip
+  IF v_notify_enabled = FALSE THEN
+    RETURN NEW;
+  END IF;
+
+  -- Create notification for recipient
+  INSERT INTO notifications (
+    user_id,
+    type,
+    title,
+    message,
+    link,
+    related_id,
+    is_read,
+    created_at
+  ) VALUES (
+    v_recipient_id,
+    'friend_request',
+    v_requester_name || ' sent you a friend request',
+    'Accept or reject this request on the Friends page',
+    '/friends',
+    NEW.id,
+    FALSE,
+    NOW()
+  );
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trigger_notify_friend_request
+  AFTER INSERT ON friendships
+  FOR EACH ROW
+  EXECUTE FUNCTION notify_friend_request();
 
 -- Friendships
 CREATE TRIGGER update_friendships_updated_at

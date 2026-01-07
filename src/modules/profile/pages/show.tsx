@@ -48,7 +48,6 @@ import {
   CameraIcon,
   Loader2Icon
 } from "@/components/ui/icons";
-import { MomoQuickPayButton } from "@/modules/payments/components/momo-quick-pay-button";
 
 interface DebtSummary {
   counterparty_id: string;
@@ -427,17 +426,6 @@ export const ProfileShow = () => {
               <p className="text-xs text-muted-foreground mt-1">
                 {debts.filter(d => d.i_owe_them).length} {t('profile.debts', 'debts')}
               </p>
-              {isOwnProfile && totalIOwe > 0 && (
-                <div className="mt-3">
-                  <MomoQuickPayButton
-                    counterpartyId={id!}
-                    counterpartyName={profile?.full_name || ''}
-                    counterpartyAvatar={profile?.avatar_url}
-                    totalAmount={totalIOwe}
-                    className="w-full"
-                  />
-                </div>
-              )}
             </div>
           </div>
         </CardContent>
