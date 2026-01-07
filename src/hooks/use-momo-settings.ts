@@ -8,26 +8,9 @@ export function useMomoSettings() {
     const { data: identity } = useGetIdentity<Profile>();
     const [settings, setSettings] = useState<MomoSettings | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [isAdmin, setIsAdmin] = useState(false);
-
-    // Check if user is admin
-    useEffect(() => {
-        const checkAdminStatus = async () => {
-            if (!identity?.id) return;
-
-            const { data, error } = await supabaseClient
-                .from('user_roles')
-                .select('role')
-                .eq('user_id', identity.id)
-                .single();
-
-            if (!error && data) {
-                setIsAdmin(data.role === 'admin');
-            }
-        };
-
-        checkAdminStatus();
-    }, [identity?.id]);
+    
+    // Check admin by email (consistent with header and donation widget)
+    const isAdmin = identity?.email === import.meta.env.VITE_ADMIN_EMAIL;
 
     // Load MoMo settings
     const loadSettings = useCallback(async () => {
