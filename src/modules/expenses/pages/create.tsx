@@ -191,7 +191,28 @@ export const ExpenseCreate = () => {
           // Create splits using Supabase client
           // Auto-mark the payer's split as fully settled
           try {
-            const splitPromises = splits.map((split) => {
+            // Filter out invalid splits (missing user_id or computed_amount)
+            const validSplits = splits.filter(split => {
+              if (!split.user_id) {
+                console.warn('Skipping split with missing user_id:', split);
+                return false;
+              }
+              if (split.computed_amount === undefined || split.computed_amount === null) {
+                console.warn('Skipping split with missing computed_amount:', split);
+                return false;
+              }
+              return true;
+            });
+
+            if (validSplits.length === 0) {
+              throw new Error('No valid splits to create. Please ensure all participants are selected.');
+            }
+
+            if (validSplits.length !== splits.length) {
+              console.warn(`Filtered out ${splits.length - validSplits.length} invalid split(s)`);
+            }
+
+            const splitPromises = validSplits.map((split) => {
               const isPayer = split.user_id === values.paid_by_user_id;
               return supabaseClient
                 .from("expense_splits")
@@ -199,7 +220,7 @@ export const ExpenseCreate = () => {
                   expense_id: expenseId,
                   user_id: split.user_id,
                   split_method: values.split_method,
-                  split_value: split.split_value,
+                  split_value: split.split_value ?? null,
                   computed_amount: split.computed_amount,
                   // Auto-settle the payer's own split
                   is_settled: isPayer,
