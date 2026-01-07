@@ -289,14 +289,14 @@ export const ExpenseShow = () => {
 
   if (isLoadingExpense || isLoadingSplits || !expense || loading) {
     return (
-      <div className="container max-w-4xl px-4 lg:px-8 py-4 md:py-8">
+      <div className="w-full max-w-4xl mx-auto">
         <Spinner size="lg" className="min-h-[400px]" />
       </div>
     );
   }
 
   return (
-      <div className="container max-w-4xl px-4 lg:px-8 py-4 md:py-8">
+      <div className="w-full max-w-4xl mx-auto">
       <Button
         variant="ghost"
         size="sm"
@@ -465,8 +465,8 @@ export const ExpenseShow = () => {
                           : 'hover:border-primary/50 hover:bg-accent/30'
                       }`}
                     >
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 md:gap-4">
-                        <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 w-full sm:w-auto">
+                      <div className="flex flex-row items-center justify-between gap-3 md:gap-4">
+                        <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
                         <Avatar className={`h-10 w-10 sm:h-12 sm:w-12 border-2 shadow-md ring-2 ring-offset-1 ring-offset-background transition-all duration-200 flex-shrink-0 ${
                           isSplitSettled
                             ? 'border-green-300 dark:border-green-700 ring-green-200 dark:ring-green-800'
@@ -522,8 +522,8 @@ export const ExpenseShow = () => {
                           </div>
                         </div>
                         </div>
-                        <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
-                          <div className="flex flex-col items-start sm:items-end">
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="flex flex-col items-end">
                             {isPartiallySettled ? (
                               <>
                                 <div className="font-bold text-base sm:text-lg text-amber-600 dark:text-amber-400">

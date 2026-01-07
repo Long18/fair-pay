@@ -15,6 +15,12 @@ export const useSplitCalculation = (initialSplits?: ParticipantSplit[]): SplitCa
   const [participants, setParticipants] = useState<ParticipantSplit[]>(initialSplits || []);
 
   const addParticipant = useCallback((userId: string) => {
+    // Guard against undefined/null userId
+    if (!userId) {
+      console.warn('[useSplitCalculation] Attempted to add participant with invalid userId:', userId);
+      return;
+    }
+    
     setParticipants(prev => {
       if (prev.find(p => p.user_id === userId)) {
         return prev;
