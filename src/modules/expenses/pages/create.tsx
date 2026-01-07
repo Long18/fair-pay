@@ -363,12 +363,16 @@ export const ExpenseCreate = () => {
           topPartnerIds={topPartnerIds}
         />
 
-        <div className="border-t pt-6">
-          <h3 className="text-sm font-medium mb-4">Attach Receipts (Optional)</h3>
-          <AttachmentUpload
-            attachments={attachments}
-            onAttachmentsChange={setAttachments}
-          />
+        {/* Receipts & Bills Section - Grouped with Comment */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold mb-1">Receipts & Bills</h3>
+            <p className="text-xs text-muted-foreground mb-4">Attach receipts or bills for this expense (Optional)</p>
+            <AttachmentUpload
+              attachments={attachments}
+              onAttachmentsChange={setAttachments}
+            />
+          </div>
         </div>
       </div>
     </ResponsiveDialog>

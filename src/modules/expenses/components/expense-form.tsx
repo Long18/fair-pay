@@ -46,6 +46,7 @@ import { RecurringExpenseForm } from "./recurring-expense-form";
 import { DEFAULT_RECURRING_VALUES } from "../types/recurring";
 
 import { RepeatIcon, PercentIcon, DollarSignIcon, UserPlusIcon, UserMinusIcon, XIcon, CalendarIcon } from "@/components/ui/icons";
+import { Bold, Italic, List, Link, Code } from "lucide-react";
 const expenseSchema = z.object({
   description: z.string().min(1, "Description is required").max(200),
   amount: z.number().positive("Amount must be positive"),
@@ -92,7 +93,7 @@ export const ExpenseForm = ({
     resolver: zodResolver(expenseSchema),
     defaultValues: {
       description: defaultValues?.description || "",
-      amount: defaultValues?.amount || 0,
+      amount: defaultValues?.amount,
       currency: defaultValues?.currency || "VND",
       category: defaultValues?.category || "",
       expense_date: defaultValues?.expense_date || new Date().toISOString().split("T")[0],
@@ -107,6 +108,33 @@ export const ExpenseForm = ({
   const commentValue = useWatch({ control: form.control, name: "comment" });
   const commentLength = commentValue?.length || 0;
   const maxCommentLength = 1000;
+  const [commentTextareaRef, setCommentTextareaRef] = useState<HTMLTextAreaElement | null>(null);
+
+  const insertMarkdown = (syntax: { prefix: string; suffix?: string; placeholder?: string }) => {
+    if (!commentTextareaRef) return;
+
+    const textarea = commentTextareaRef;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = commentValue || "";
+    const selectedText = text.substring(start, end);
+    const placeholder = syntax.placeholder || "text";
+
+    let newText: string;
+    if (selectedText) {
+      newText = text.substring(0, start) + syntax.prefix + selectedText + (syntax.suffix || "") + text.substring(end);
+    } else {
+      newText = text.substring(0, start) + syntax.prefix + placeholder + (syntax.suffix || "") + text.substring(end);
+    }
+
+    form.setValue("comment", newText);
+
+    setTimeout(() => {
+      const newCursorPos = start + syntax.prefix.length + (selectedText ? selectedText.length : placeholder.length) + (syntax.suffix?.length || 0);
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+      textarea.focus();
+    }, 0);
+  };
 
   const {
     participants,
@@ -164,7 +192,7 @@ export const ExpenseForm = ({
   }, [members, participants.length, defaultValues?.splits, currentUserId, topPartnerIds, addParticipant, groupId]);
 
   useEffect(() => {
-    if (amount > 0 && participants.length > 0) {
+    if (amount && amount > 0 && participants.length > 0) {
       recalculate(amount, splitMethod);
     }
   }, [amount, splitMethod, participants.length, recalculate]);
@@ -172,7 +200,7 @@ export const ExpenseForm = ({
   const handleSplitValueChange = (userId: string, value: number) => {
     setManualSplits(prev => ({ ...prev, [userId]: value }));
     setSplitValue(userId, value);
-    if (amount > 0) {
+    if (amount && amount > 0) {
       recalculate(amount, splitMethod);
     }
   };
@@ -281,45 +309,6 @@ export const ExpenseForm = ({
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="comment"
-          render={({ field }) => (
-            <FormItem>
-              <div className="flex items-center justify-between">
-                <FormLabel>Comment (Optional)</FormLabel>
-                <span
-                  className={cn(
-                    "text-xs text-muted-foreground",
-                    commentLength > maxCommentLength * 0.9 && "text-warning",
-                    commentLength > maxCommentLength && "text-destructive"
-                  )}
-                >
-                  {commentLength}/{maxCommentLength}
-                </span>
-              </div>
-              <FormControl>
-                <Textarea
-                  placeholder="Add notes, details, or context. Markdown supported: **bold**, *italic*, lists, links..."
-                  className={cn(
-                    "min-h-[100px] md:min-h-[120px] lg:min-h-[140px]",
-                    "resize-y max-h-[300px] md:max-h-[400px]",
-                    "transition-all duration-200"
-                  )}
-                  {...field}
-                  onChange={(e) => {
-                    field.onChange(e);
-                  }}
-                />
-              </FormControl>
-              <FormDescription>
-                Supports Markdown formatting: **bold**, *italic*, lists, links, code blocks
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -331,9 +320,12 @@ export const ExpenseForm = ({
                   <Input
                     type="number"
                     step="0.01"
-                    placeholder="0.00"
                     {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                    value={field.value || ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      field.onChange(value === "" ? undefined : parseFloat(value));
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -717,14 +709,14 @@ export const ExpenseForm = ({
                     <span className="font-bold">Total</span>
                     <span className={cn(
                       "font-bold text-lg",
-                      Math.abs(totalSplit - amount) > 1 && splitMethod !== "equal" ? "text-destructive" : "text-primary"
+                      amount && Math.abs(totalSplit - amount) > 1 && splitMethod !== "equal" ? "text-destructive" : "text-primary"
                     )}>
                       {formatNumber(totalSplit)} ₫
                     </span>
                   </div>
 
                   {/* Validation Messages */}
-                  {Math.abs(totalSplit - amount) > 1 && splitMethod !== "equal" && (
+                  {amount && Math.abs(totalSplit - amount) > 1 && splitMethod !== "equal" && (
                     <p className="text-sm text-destructive flex items-center gap-2 p-2 bg-destructive/10 rounded">
                       <span>⚠️</span>
                       <span>Total ({formatNumber(totalSplit)} ₫) doesn't match expense amount ({formatNumber(amount)} ₫)</span>
@@ -773,6 +765,103 @@ export const ExpenseForm = ({
           control={form.control}
           isRecurring={form.watch("is_recurring") || false}
         />
+
+        {/* Comment Field - Grouped with Receipts & Bills section */}
+        <div className="border-t pt-6">
+          <FormField
+            control={form.control}
+            name="comment"
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex items-center justify-between mb-2">
+                  <FormLabel className="text-sm font-semibold">Comment</FormLabel>
+                  <span
+                    className={cn(
+                      "text-xs text-muted-foreground",
+                      commentLength > maxCommentLength * 0.9 && "text-warning",
+                      commentLength > maxCommentLength && "text-destructive"
+                    )}
+                  >
+                    {commentLength}/{maxCommentLength}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-1 p-2 border rounded-md bg-muted/30">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => insertMarkdown({ prefix: "**", suffix: "**", placeholder: "bold text" })}
+                      title="Bold"
+                    >
+                      <Bold className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => insertMarkdown({ prefix: "*", suffix: "*", placeholder: "italic text" })}
+                      title="Italic"
+                    >
+                      <Italic className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => insertMarkdown({ prefix: "- ", placeholder: "list item" })}
+                      title="List"
+                    >
+                      <List className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => insertMarkdown({ prefix: "[", suffix: "](url)", placeholder: "link text" })}
+                      title="Link"
+                    >
+                      <Link className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => insertMarkdown({ prefix: "`", suffix: "`", placeholder: "code" })}
+                      title="Inline Code"
+                    >
+                      <Code className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      ref={(e) => {
+                        setCommentTextareaRef(e);
+                        field.ref(e);
+                      }}
+                      placeholder="Add notes, details, or context. Markdown supported: **bold**, *italic*, lists, links..."
+                      className={cn(
+                        "min-h-[100px] md:min-h-[120px] lg:min-h-[140px]",
+                        "resize-y max-h-[300px] md:max-h-[400px]",
+                        "transition-all duration-200"
+                      )}
+                      onChange={(e) => {
+                        field.onChange(e);
+                      }}
+                    />
+                  </FormControl>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <Button type="submit" disabled={isLoading || !isSplitValid} className="w-full">
           {isLoading ? (isEdit ? "Updating..." : "Creating...") : (isEdit ? "Update Expense" : "Create Expense")}
