@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "@refinedev/react-hook-form";
 import { useEffect, useState, useMemo } from "react";
 import { z } from "zod";
+import { useWatch } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -102,6 +103,10 @@ export const ExpenseForm = ({
       recurring: DEFAULT_RECURRING_VALUES,
     },
   });
+
+  const commentValue = useWatch({ control: form.control, name: "comment" });
+  const commentLength = commentValue?.length || 0;
+  const maxCommentLength = 1000;
 
   const {
     participants,
@@ -281,16 +286,34 @@ export const ExpenseForm = ({
           name="comment"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Comment (Optional)</FormLabel>
+              <div className="flex items-center justify-between">
+                <FormLabel>Comment (Optional)</FormLabel>
+                <span
+                  className={cn(
+                    "text-xs text-muted-foreground",
+                    commentLength > maxCommentLength * 0.9 && "text-warning",
+                    commentLength > maxCommentLength && "text-destructive"
+                  )}
+                >
+                  {commentLength}/{maxCommentLength}
+                </span>
+              </div>
               <FormControl>
                 <Textarea
-                  placeholder="Add any additional notes or details about this expense..."
-                  className="resize-none min-h-[80px]"
+                  placeholder="Add notes, details, or context. Markdown supported: **bold**, *italic*, lists, links..."
+                  className={cn(
+                    "min-h-[100px] md:min-h-[120px] lg:min-h-[140px]",
+                    "resize-y max-h-[300px] md:max-h-[400px]",
+                    "transition-all duration-200"
+                  )}
                   {...field}
+                  onChange={(e) => {
+                    field.onChange(e);
+                  }}
                 />
               </FormControl>
               <FormDescription>
-                Add extra details, context, or notes about this expense
+                Supports Markdown formatting: **bold**, *italic*, lists, links, code blocks
               </FormDescription>
               <FormMessage />
             </FormItem>

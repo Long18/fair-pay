@@ -377,6 +377,7 @@ export const ExpenseEdit = () => {
     expense_date: expense.expense_date,
     paid_by_user_id: expense.paid_by_user_id,
     split_method: existingSplits[0]?.split_method || "equal",
+    comment: expense.comment || "",
     is_recurring: !!recurringExpense,
     recurring: recurringExpense ? {
       frequency: recurringExpense.frequency as any,
