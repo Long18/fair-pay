@@ -190,24 +190,41 @@ export const ExpenseCreate = () => {
 
           // Create splits using Supabase client
           // Auto-mark the payer's split as fully settled
-          const splitPromises = splits.map((split) => {
-            const isPayer = split.user_id === values.paid_by_user_id;
-            return supabaseClient
-              .from("expense_splits")
-              .insert({
-                expense_id: expenseId,
-                user_id: split.user_id,
-                split_method: values.split_method,
-                split_value: split.split_value,
-                computed_amount: split.computed_amount,
-                // Auto-settle the payer's own split
-                is_settled: isPayer,
-                settled_amount: isPayer ? split.computed_amount : 0,
-                settled_at: isPayer ? new Date().toISOString() : null,
-              });
-          });
+          try {
+            const splitPromises = splits.map((split) => {
+              const isPayer = split.user_id === values.paid_by_user_id;
+              return supabaseClient
+                .from("expense_splits")
+                .insert({
+                  expense_id: expenseId,
+                  user_id: split.user_id,
+                  split_method: values.split_method,
+                  split_value: split.split_value,
+                  computed_amount: split.computed_amount,
+                  // Auto-settle the payer's own split
+                  is_settled: isPayer,
+                  settled_amount: isPayer ? split.computed_amount : 0,
+                  settled_at: isPayer ? new Date().toISOString() : null,
+                });
+            });
 
-          await Promise.all(splitPromises);
+            const splitResults = await Promise.all(splitPromises);
+            
+            // Check for errors in split creation
+            const splitErrors = splitResults.filter(r => r.error);
+            if (splitErrors.length > 0) {
+              console.error('Split creation errors:', splitErrors);
+              throw new Error(`Failed to create ${splitErrors.length} split(s): ${splitErrors[0].error?.message || 'Unknown error'}`);
+            }
+          } catch (error) {
+            console.error('Error creating expense splits:', error);
+            ErrorTracker.apiError({
+              endpoint: 'expense_splits',
+              errorMessage: error instanceof Error ? error.message : 'Failed to create expense splits',
+            });
+            toast.error(`Failed to create expense splits: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            throw error; // Re-throw to prevent further processing
+          }
 
           // Upload attachments if any
           if (attachments.length > 0 && identity?.id) {
