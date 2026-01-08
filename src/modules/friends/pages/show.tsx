@@ -4,18 +4,34 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { Profile } from "@/modules/profile/types";
 import { Friendship } from "../types";
 import { ExpenseList, RecurringExpenseList } from "@/modules/expenses";
 import { SimplifiedBalanceView, PaymentList, useBalanceCalculation } from "@/modules/payments";
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { formatDateShort } from "@/lib/locale-utils";
+import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import {
+  ArrowLeftIcon,
+  PlusIcon,
+  ReceiptIcon,
+  BanknoteIcon,
+  RepeatIcon,
+  Loader2Icon,
+  ShareIcon,
+} from "@/components/ui/icons";
+import { SwipeableTabs, PullToRefresh, EmptyBalances } from "@/modules/profile";
 
-import { ArrowLeftIcon, PlusIcon } from "@/components/ui/icons";
 export const FriendShow = () => {
   const { id } = useParams<{ id: string }>();
   const go = useGo();
+  const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
+  const [activeTab, setActiveTab] = useState("expenses");
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // First, try to fetch as friendship ID
   const { query: friendshipQuery } = useOne<Friendship>({
@@ -132,6 +148,24 @@ export const FriendShow = () => {
     members,
   });
 
+  // Refresh all data
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        friendshipQuery.refetch(),
+        expensesQuery.refetch(),
+        paymentsQuery.refetch(),
+      ]);
+      toast.success(t('common.refreshed', 'Data refreshed'));
+    } catch (error) {
+      console.error('Error refreshing:', error);
+      toast.error(t('common.refreshError', 'Failed to refresh'));
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [friendshipQuery, expensesQuery, paymentsQuery, t]);
+
   const handleAddExpense = () => {
     if (!friendship?.id) return;
     go({ to: `/friends/${friendship.id}/expenses/create` });
@@ -148,103 +182,251 @@ export const FriendShow = () => {
     });
   };
 
-  if (isLoadingFriendship || !friendship || !friendProfile) {
+  const handleShare = async () => {
+    const friendUrl = `${window.location.origin}/friends/${id}`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: friendProfile?.full_name || 'Friend',
+          text: t('friends.shareText', `Check out expenses with ${friendProfile?.full_name} on FairPay`),
+          url: friendUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(friendUrl);
+        toast.success(t('common.linkCopied', 'Link copied to clipboard'));
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
+
+  if (isLoadingFriendship) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Loading friend details...</p>
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="flex items-center justify-center h-64">
+          <Loader2Icon size={32} className="animate-spin text-muted-foreground" />
+        </div>
       </div>
     );
   }
 
-  return (
-    <div className="container max-w-7xl px-4 sm:px-6 py-4 sm:py-8">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="mb-4"
-        onClick={() => go({ to: "/friends" })}
-      >
-        <ArrowLeftIcon className="h-4 w-4 mr-2" />
-        <span className="hidden sm:inline">Back to Friends</span>
-        <span className="sm:hidden">Back</span>
-      </Button>
-
-      <div className="space-y-6">
-        {/* Friend Header */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <Avatar className="h-12 w-12 sm:h-16 sm:w-16">
-                  <AvatarImage src={friendProfile.avatar_url || undefined} alt={friendProfile.full_name} />
-                  <AvatarFallback className="text-lg sm:text-2xl">
-                    {friendProfile.full_name
-                      ?.split(" ")
-                      .map((n: string) => n[0])
-                      .join("")
-                      .toUpperCase() || "?"}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <CardTitle className="text-2xl sm:text-3xl">
-                    {friendProfile.full_name}
-                  </CardTitle>
-                  <p className="text-sm sm:text-base text-muted-foreground mt-1">
-                    Friends since {formatDateShort(friendship.created_at)}
-                  </p>
-                </div>
-              </div>
-              <Button
-                onClick={handleAddExpense}
-                className="w-full sm:w-auto"
-              >
-                <PlusIcon className="h-4 w-4 mr-2" />
-                Add Expense
-              </Button>
-            </div>
-          </CardHeader>
+  if (!friendship || !friendProfile) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <Card className="rounded-xl">
+          <CardContent className="p-8 text-center">
+            <p className="text-muted-foreground">{t('friends.friendNotFound', 'Friend not found')}</p>
+            <Button
+              onClick={() => go({ to: "/friends" })}
+              className="mt-4 rounded-lg"
+            >
+              <ArrowLeftIcon size={16} className="mr-2" />
+              {t('common.backToFriends', 'Back to Friends')}
+            </Button>
+          </CardContent>
         </Card>
-
-        {/* Tabs for Expenses and Balances */}
-        <Tabs defaultValue="expenses" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-3">
-            <TabsTrigger value="expenses" className="text-xs sm:text-sm">Expenses</TabsTrigger>
-            <TabsTrigger value="balances" className="text-xs sm:text-sm">Balances</TabsTrigger>
-            <TabsTrigger value="recurring" className="text-xs sm:text-sm">Recurring</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="expenses" className="mt-6 focus-visible:outline-none">
-            <ExpenseList friendshipId={friendship.id} members={members} />
-          </TabsContent>
-
-          <TabsContent value="balances" className="mt-6 focus-visible:outline-none">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-              <div>
-                <SimplifiedBalanceView
-                  balances={balances}
-                  currentUserId={identity?.id || ""}
-                  simplifyDebts={false}  // Friend expenses don't need simplification (only 2 people)
-                  onSettleUp={handleSettleUp}
-                  currency="VND"
-                />
-              </div>
-              {payments.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">Payment History</h3>
-                  <PaymentList
-                    friendshipId={friendship.id}
-                    currency="VND"
-                  />
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="recurring" className="mt-6 focus-visible:outline-none">
-            <RecurringExpenseList friendshipId={friendship.id} />
-          </TabsContent>
-        </Tabs>
       </div>
-    </div>
+    );
+  }
+
+  const tabs = ["expenses", "balances", "recurring"];
+
+  return (
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className="container mx-auto px-4 py-4 sm:py-8 max-w-4xl pb-20 sm:pb-8">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="space-y-6"
+        >
+          {/* Desktop Back Button */}
+          <div className="hidden sm:flex items-center justify-between">
+            <Button
+              variant="ghost"
+              onClick={() => go({ to: "/friends" })}
+              className="rounded-lg"
+            >
+              <ArrowLeftIcon size={16} className="mr-2" />
+              {t('common.back', 'Back')}
+            </Button>
+
+            <Button
+              onClick={handleShare}
+              variant="outline"
+              size="sm"
+              className="rounded-lg"
+            >
+              <ShareIcon size={16} className="mr-2 sm:mr-0" />
+              <span className="sm:sr-only">{t('common.share', 'Share')}</span>
+            </Button>
+          </div>
+
+          {/* Friend Header */}
+          <Card className="rounded-xl overflow-hidden">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              {/* Background gradient */}
+              <div className="absolute inset-0 h-32 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-xl" />
+
+              <div className="relative flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 p-6">
+                {/* Avatar */}
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="relative"
+                >
+                  <Avatar className="h-24 w-24 sm:h-32 sm:w-32 border-4 border-background shadow-xl">
+                    <AvatarImage src={friendProfile.avatar_url || undefined} />
+                    <AvatarFallback className="text-2xl sm:text-3xl bg-gradient-to-br from-primary/20 to-primary/10">
+                      {friendProfile.full_name
+                        ?.split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase() || "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                </motion.div>
+
+                {/* Friend Info */}
+                <div className="flex-1 text-center sm:text-left">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-4 mb-2">
+                    <h1 className="text-2xl sm:text-3xl font-bold">{friendProfile.full_name}</h1>
+                    <Badge variant="secondary" className="rounded-full">
+                      {t('friends.friendsSince', {
+                        date: formatDateShort(friendship.created_at),
+                        defaultValue: `Friends since ${formatDateShort(friendship.created_at)}`
+                      })}
+                    </Badge>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 justify-center sm:justify-start">
+                    <Button
+                      onClick={handleAddExpense}
+                      variant="default"
+                      size="sm"
+                      className="rounded-lg"
+                    >
+                      <PlusIcon size={16} className="mr-2" />
+                      {t('expenses.addExpense', 'Add Expense')}
+                    </Button>
+
+                    <Button
+                      onClick={handleShare}
+                      variant="outline"
+                      size="sm"
+                      className="rounded-lg"
+                    >
+                      <ShareIcon size={16} className="mr-2 sm:mr-0" />
+                      <span className="sm:sr-only">{t('common.share', 'Share')}</span>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </Card>
+
+          {/* Tabs for Expenses, Balances, and Recurring */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, type: "spring", stiffness: 100, damping: 15 }}
+            className="w-full"
+          >
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="w-full"
+            >
+              <TabsList className="grid w-full rounded-lg" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
+                <TabsTrigger value="expenses" className="rounded-lg">
+                  <ReceiptIcon size={16} className="mr-2 sm:mr-0 lg:mr-2" />
+                  <span className="hidden lg:inline">{t('expenses.title', 'Expenses')}</span>
+                </TabsTrigger>
+                <TabsTrigger value="balances" className="rounded-lg">
+                  <BanknoteIcon size={16} className="mr-2 sm:mr-0 lg:mr-2" />
+                  <span className="hidden lg:inline">{t('balances.title', 'Balances')}</span>
+                </TabsTrigger>
+                <TabsTrigger value="recurring" className="rounded-lg">
+                  <RepeatIcon size={16} className="mr-2 sm:mr-0 lg:mr-2" />
+                  <span className="hidden lg:inline">{t('expenses.recurring', 'Recurring')}</span>
+                </TabsTrigger>
+              </TabsList>
+
+              <SwipeableTabs
+                tabs={tabs}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                className="mt-4"
+              >
+                {/* Expenses Tab */}
+                <TabsContent value="expenses" className="mt-0">
+                  <Card className="rounded-xl">
+                    <CardHeader>
+                      <CardTitle>{t('expenses.title', 'Expenses')}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ExpenseList friendshipId={friendship.id} members={members} />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Balances Tab */}
+                <TabsContent value="balances" className="mt-0">
+                  <Card className="rounded-xl">
+                    <CardHeader>
+                      <CardTitle>{t('balances.title', 'Balances')}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {balances.length === 0 ? (
+                        <EmptyBalances onAction={handleAddExpense} />
+                      ) : (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                          <div>
+                            <SimplifiedBalanceView
+                              balances={balances}
+                              currentUserId={identity?.id || ""}
+                              simplifyDebts={false}
+                              onSettleUp={handleSettleUp}
+                              currency="VND"
+                            />
+                          </div>
+                          {payments.length > 0 && (
+                            <div>
+                              <h3 className="text-lg font-semibold mb-4">{t('payments.history', 'Payment History')}</h3>
+                              <PaymentList
+                                friendshipId={friendship.id}
+                                currency="VND"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Recurring Tab */}
+                <TabsContent value="recurring" className="mt-0">
+                  <Card className="rounded-xl">
+                    <CardHeader>
+                      <CardTitle>{t('expenses.recurring', 'Recurring Expenses')}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <RecurringExpenseList friendshipId={friendship.id} />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </SwipeableTabs>
+            </Tabs>
+          </motion.div>
+        </motion.div>
+      </div>
+    </PullToRefresh>
   );
 };
