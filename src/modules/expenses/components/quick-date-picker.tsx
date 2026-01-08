@@ -24,7 +24,7 @@ export const QuickDatePicker: React.FC<QuickDatePickerProps> = ({
   disabled = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   // Parse date string to Date object
   const parseDate = (dateString: string | undefined) => {
     if (!dateString) return undefined;
@@ -56,10 +56,10 @@ export const QuickDatePicker: React.FC<QuickDatePickerProps> = ({
 
   const getDisplayText = () => {
     if (!value) return "Select date";
-    
+
     const quickOption = quickOptions.find(opt => opt.value === value);
     if (quickOption) return quickOption.label;
-    
+
     const date = parseDate(value);
     return date ? format(date, "MMM d, yyyy") : "Select date";
   };

@@ -35,17 +35,17 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
               "min-h-[80px]"
             )}
           >
-            <div 
+            <div
               className={cn(
                 "rounded-md p-2 mb-2 transition-colors",
                 isSelected ? "bg-primary/20" : meta.bgColor
               )}
             >
-              <Icon 
+              <Icon
                 className={cn(
                   "h-5 w-5",
                   isSelected ? "text-primary" : meta.color
-                )} 
+                )}
               />
             </div>
             <span className="text-xs font-medium text-center line-clamp-2">

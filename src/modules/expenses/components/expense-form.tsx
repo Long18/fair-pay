@@ -13,7 +13,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +36,7 @@ import { AmountInput } from "./amount-input";
 import { QuickDatePicker } from "./quick-date-picker";
 import { ParticipantChips } from "./participant-chips";
 import { QuickTemplates } from "./quick-templates";
+import { MarkdownEditor } from "./markdown-editor";
 import {
   Collapsible,
   CollapsibleContent,
@@ -115,8 +115,8 @@ export const ExpenseForm = ({
     totalSplit,
   } = useSplitCalculation(defaultValues?.splits);
 
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [showComment, setShowComment] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(!!defaultValues?.comment || (attachments && attachments.length > 0));
+  const [showComment, setShowComment] = useState(!!defaultValues?.comment);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
 
   const amount = form.watch("amount");
@@ -215,8 +215,8 @@ export const ExpenseForm = ({
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="e.g., Lunch at restaurant" 
+                    <Input
+                      placeholder="e.g., Lunch at restaurant"
                       {...field}
                       className="h-11"
                     />
@@ -255,7 +255,7 @@ export const ExpenseForm = ({
                   <FormItem>
                     <FormLabel>Currency</FormLabel>
                     <FormControl>
-                      <select 
+                      <select
                         {...field}
                         className="w-full h-11 px-3 border border-input rounded-lg bg-background"
                       >
@@ -295,7 +295,7 @@ export const ExpenseForm = ({
                   <FormItem>
                     <FormLabel>Paid by</FormLabel>
                     <FormControl>
-                      <select 
+                      <select
                         {...field}
                         className="w-full h-11 px-3 border border-input rounded-lg bg-background"
                       >
@@ -426,7 +426,7 @@ export const ExpenseForm = ({
               className="w-full justify-between h-auto py-3 px-4 hover:bg-accent"
             >
               <span className="text-sm font-medium">Advanced Options</span>
-              <ChevronDownIcon 
+              <ChevronDownIcon
                 className={cn(
                   "h-4 w-4 transition-transform",
                   showAdvanced && "rotate-180"
@@ -499,7 +499,7 @@ export const ExpenseForm = ({
                         <MessageSquareIcon className="h-4 w-4" />
                         <span className="text-sm font-medium">Add Comment</span>
                       </div>
-                      <ChevronDownIcon 
+                      <ChevronDownIcon
                         className={cn(
                           "h-4 w-4 transition-transform",
                           showComment && "rotate-180"
@@ -514,18 +514,14 @@ export const ExpenseForm = ({
                       render={({ field }) => (
                         <FormItem>
                           <FormControl>
-                            <Textarea
+                            <MarkdownEditor
+                              value={field.value || ""}
+                              onChange={field.onChange}
                               placeholder="Add any notes or details about this expense..."
-                              className="min-h-[80px] resize-none"
-                              {...field}
+                              minHeight="min-h-[120px]"
                             />
                           </FormControl>
-                          <div className="flex justify-between mt-1">
-                            <FormMessage />
-                            <span className="text-xs text-muted-foreground">
-                              {field.value?.length || 0}/1000
-                            </span>
-                          </div>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
@@ -537,8 +533,8 @@ export const ExpenseForm = ({
         </Collapsible>
 
         {/* Submit Button */}
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           className="w-full h-12 font-medium text-base"
           disabled={isLoading || !isSplitValid}
         >

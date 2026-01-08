@@ -219,7 +219,7 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
         <p className="text-sm text-destructive flex items-start gap-2">
           <span>⚠️</span>
           <span>
-            Total split ({formatNumber(totalSplit)} {currencySymbol}) doesn't match 
+            Total split ({formatNumber(totalSplit)} {currencySymbol}) doesn't match
             expense amount ({formatNumber(amount)} {currencySymbol})
           </span>
         </p>

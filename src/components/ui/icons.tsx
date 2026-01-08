@@ -92,6 +92,10 @@ import {
   LogOut,
   Film,
   MessageSquare,
+  Bold,
+  Italic,
+  Link,
+  Code,
 } from "lucide-react";
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -763,6 +767,22 @@ export const FilmIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
 
 export const MessageSquareIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
   <MessageSquare size={size} fill="currentColor" {...props} />
+);
+
+export const BoldIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Bold size={size} fill="currentColor" {...props} />
+);
+
+export const ItalicIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Italic size={size} fill="currentColor" {...props} />
+);
+
+export const LinkIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Link size={size} fill="currentColor" {...props} />
+);
+
+export const CodeIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Code size={size} fill="currentColor" {...props} />
 );
 
 // ============ Additional Icons ============
