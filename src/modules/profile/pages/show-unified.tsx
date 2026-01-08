@@ -72,6 +72,7 @@ interface DebtSummary {
   remaining_amount?: number;
   transaction_count?: number;
   last_transaction_date?: string;
+  is_public_view?: boolean;
 }
 
 interface ActivityItem {
@@ -229,23 +230,44 @@ export const ProfileShowUnified = () => {
 
     setIsLoadingDebts(true);
     try {
-      // Use existing database function names
-      const functionName = includeHistory
-        ? "get_user_debts_history"
-        : "get_user_debts_aggregated";
+      // If not logged in or viewing someone else's profile, fetch public view
+      const isPublicView = !identity?.id || !isOwnProfile;
 
-      const { data, error } = await supabaseClient
-        .rpc(functionName, { p_user_id: profileId });
+      if (isPublicView && !identity?.id) {
+        // For unauthenticated users, use public endpoint
+        const { data, error } = await supabaseClient
+          .rpc("get_user_debts_public");
 
-      if (error) throw error;
+        if (error) throw error;
 
-      // Add currency fallback if not present
-      const debtsWithCurrency = (data || []).map((debt: any) => ({
-        ...debt,
-        currency: debt.currency || "VND"
-      }));
+        // Mark as public view for UI censoring
+        const publicDebts = (data || []).map((debt: any) => ({
+          ...debt,
+          currency: debt.currency || "VND",
+          is_public_view: true
+        }));
 
-      setDebts(debtsWithCurrency);
+        setDebts(publicDebts);
+      } else {
+        // For authenticated users viewing their own profile
+        const functionName = includeHistory
+          ? "get_user_debts_history"
+          : "get_user_debts_aggregated";
+
+        const { data, error } = await supabaseClient
+          .rpc(functionName, { p_user_id: profileId });
+
+        if (error) throw error;
+
+        // Add is_public_view flag if viewing someone else's profile
+        const debtsWithCurrency = (data || []).map((debt: any) => ({
+          ...debt,
+          currency: debt.currency || "VND",
+          is_public_view: !isOwnProfile
+        }));
+
+        setDebts(debtsWithCurrency);
+      }
     } catch (error) {
       console.error("Error fetching debts:", error);
       toast.error(t('profile.errorLoadingDebts', 'Failed to load balances'));
@@ -535,9 +557,21 @@ export const ProfileShowUnified = () => {
     );
   }
 
-  const netBalance = debts.reduce((sum, d) => {
-    return sum + (d.i_owe_them ? -Math.abs(d.amount) : Math.abs(d.amount));
-  }, 0);
+  // Calculate net balance - only include unsettled debts when showHistory is false
+  const netBalance = debts
+    .filter(d => {
+      // When showHistory is false, filter out fully settled debts
+      if (!showHistory) {
+        const amount = Number(d.amount || 0);
+        const remainingAmount = Number(d.remaining_amount || d.amount || 0);
+        return amount !== 0 && remainingAmount !== 0;
+      }
+      // When showHistory is true, include all debts
+      return true;
+    })
+    .reduce((sum, d) => {
+      return sum + (d.i_owe_them ? -Math.abs(d.amount) : Math.abs(d.amount));
+    }, 0);
 
   return (
     <>
@@ -647,6 +681,7 @@ export const ProfileShowUnified = () => {
                 >
                   <ProfileBalanceSummary
                     debts={debts}
+                    showHistory={showHistory}
                   />
                 </motion.div>
               )}

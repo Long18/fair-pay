@@ -13,23 +13,47 @@ interface DebtSummary {
   amount: number;
   currency: string;
   i_owe_them: boolean;
+  is_public_view?: boolean;
+  remaining_amount?: number; // For filtering settled debts
 }
 
 interface ProfileBalanceSummaryProps {
   debts: DebtSummary[];
   className?: string;
   variant?: "compact" | "detailed";
+  showHistory?: boolean; // If false, only show unsettled debts in totals
 }
 
 export const ProfileBalanceSummary = ({
   debts,
   className,
   variant = "detailed",
+  showHistory = false,
 }: ProfileBalanceSummaryProps) => {
   const { t } = useTranslation();
 
-  // Group debts by currency
-  const debtsByCurrency = debts.reduce((acc, debt) => {
+  // Filter out settled debts when showHistory is false
+  const activeDebts = showHistory 
+    ? debts 
+    : debts.filter(debt => {
+        const amount = Number(debt.amount || 0);
+        const remainingAmount = Number(debt.remaining_amount || debt.amount || 0);
+        return amount !== 0 && remainingAmount !== 0;
+      });
+
+  // Check if any debt has public view flag (for censoring amounts)
+  const isPublicView = activeDebts.some(debt => debt.is_public_view);
+
+  // Helper to format or censor amounts
+  const displayAmount = (amount: number, currency: string) => {
+    if (isPublicView) {
+      return "•••••";
+    }
+    return formatCurrency(amount, currency);
+  };
+
+  // Group debts by currency (using filtered activeDebts)
+  const debtsByCurrency = activeDebts.reduce((acc, debt) => {
     const currency = debt.currency || "USD"; // Fallback to USD for legacy data
     if (!acc[currency]) {
       acc[currency] = [];
@@ -85,8 +109,8 @@ export const ProfileBalanceSummary = ({
     };
   });
 
-  // If no debts, show empty state
-  if (debts.length === 0) {
+  // If no active debts, show empty state
+  if (activeDebts.length === 0) {
     return (
       <Card className={cn("rounded-lg p-6 text-center", className)}>
         <CheckCircle2Icon size={48} className="mx-auto mb-4 text-muted-foreground/50" />
@@ -123,7 +147,7 @@ export const ProfileBalanceSummary = ({
                   netBalance < 0 ? "text-red-600 dark:text-red-400" :
                   "text-muted-foreground"
                 )}>
-                  {formatCurrency(Math.abs(netBalance), currency)}
+                  {displayAmount(Math.abs(netBalance), currency)}
                 </p>
                 <Badge
                   variant={netBalance > 0 ? "default" : netBalance < 0 ? "destructive" : "secondary"}
@@ -143,7 +167,7 @@ export const ProfileBalanceSummary = ({
                   {t('profile.owedToYou', 'Owed to You')}
                 </p>
                 <p className="font-bold text-lg text-green-600 dark:text-green-400">
-                  {formatCurrency(totalOwedToMe, currency)}
+                  {displayAmount(totalOwedToMe, currency)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {owedToMeCount} {t('profile.debts', 'debts')}
@@ -155,7 +179,7 @@ export const ProfileBalanceSummary = ({
                   {t('profile.youOweTotal', 'You Owe')}
                 </p>
                 <p className="font-bold text-lg text-red-600 dark:text-red-400">
-                  {formatCurrency(totalIOwe, currency)}
+                  {displayAmount(totalIOwe, currency)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {iOweCount} {t('profile.debts', 'debts')}
@@ -216,7 +240,7 @@ export const ProfileBalanceSummary = ({
                     netBalance < 0 ? "text-red-600 dark:text-red-400" :
                     "text-muted-foreground"
                   )}>
-                    {formatCurrency(Math.abs(netBalance), currency)}
+                    {displayAmount(Math.abs(netBalance), currency)}
                   </p>
                   <Badge
                     variant={netBalance > 0 ? "default" : netBalance < 0 ? "destructive" : "secondary"}
@@ -248,7 +272,7 @@ export const ProfileBalanceSummary = ({
                     </div>
                   </div>
                   <p className="text-2xl font-bold text-green-600 dark:text-green-400 mb-2">
-                    {formatCurrency(totalOwedToMe, currency)}
+                    {displayAmount(totalOwedToMe, currency)}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {owedToMeCount === 0
@@ -278,7 +302,7 @@ export const ProfileBalanceSummary = ({
                     </div>
                   </div>
                   <p className="text-2xl font-bold text-red-600 dark:text-red-400 mb-2">
-                    {formatCurrency(totalIOwe, currency)}
+                    {displayAmount(totalIOwe, currency)}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {iOweCount === 0
