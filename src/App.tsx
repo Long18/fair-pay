@@ -7,6 +7,7 @@ import {
   UsersIcon,
   UserPlusIcon,
   ReceiptIcon,
+  WalletIcon,
   FairPayIcon,
 } from "./components/ui/icons";
 
@@ -39,6 +40,7 @@ import { OAuthConsent } from "./pages/oauth";
 
 // Dashboard (most common entry point)
 import { Dashboard } from "./pages/dashboard";
+import { BalancesPage } from "./pages/balances";
 
 // Lazy load non-critical components for better code splitting
 
@@ -244,6 +246,14 @@ function App() {
                     },
                   },
                   {
+                    name: "balances",
+                    list: "/balances",
+                    meta: {
+                      label: "Balances",
+                      icon: <WalletIcon className="w-5 h-5" />,
+                    },
+                  },
+                  {
                     name: "user_settings",
                     meta: {
                       label: "User Settings",
@@ -410,6 +420,13 @@ function App() {
                     <Route path="/reports" element={
                       <Suspense fallback={<PageLoader />}>
                         <ReportsPage />
+                      </Suspense>
+                    } />
+                    <Route path="/balances" element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ErrorBoundary context="Balances Page">
+                          <BalancesPage />
+                        </ErrorBoundary>
                       </Suspense>
                     } />
                     <Route path="/settings" element={
