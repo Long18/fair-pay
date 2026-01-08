@@ -81,13 +81,13 @@ const TermsPage = lazy(() => import("./pages/terms").then(m => ({ default: m.Ter
 // Profile Edit Redirect Component
 const ProfileEditRedirect = () => {
   const { data: identity } = useGetIdentity();
-  
+
   React.useEffect(() => {
     if (identity?.id) {
       window.location.href = `/profile/${identity.id}?edit=true`;
     }
   }, [identity]);
-  
+
   return <PageLoader />;
 };
 
