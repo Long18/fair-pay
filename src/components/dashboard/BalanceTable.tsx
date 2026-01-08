@@ -123,7 +123,7 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
   }
 
   return (
-    <div className="space-y-4">
+    <div className="p-6 space-y-4">
       {/* Mobile: Card Layout */}
       <div className="block md:hidden space-y-3">
         {paginatedBalances.map((balance) => {
