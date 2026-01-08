@@ -83,13 +83,13 @@ export const BalanceChart = ({
 
   return (
     <Card className="border-border shadow-sm">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-3 px-4 sm:px-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <CardTitle className="text-base font-semibold text-foreground">
+          <CardTitle className="text-base sm:text-lg font-semibold text-foreground">
             Balance Trend
           </CardTitle>
           <Select value={dateRange} onValueChange={(value) => setDateRange(value as DateRangeOption)}>
-            <SelectTrigger className="w-[120px] sm:w-[140px] h-8 text-xs" aria-label="Select date range for balance chart">
+            <SelectTrigger className="w-full sm:w-[140px] h-9 text-xs sm:text-sm" aria-label="Select date range for balance chart">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -101,11 +101,11 @@ export const BalanceChart = ({
           </Select>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+      <CardContent className="px-4 sm:px-6">
+        <div className="space-y-3 sm:space-y-4">
           <div>
             <div
-              className={`text-2xl md:text-3xl font-bold ${
+              className={`text-xl sm:text-2xl md:text-3xl font-bold ${
                 isPositive
                   ? "text-green-600 dark:text-green-400"
                   : "text-red-600 dark:text-red-400"
@@ -114,13 +114,13 @@ export const BalanceChart = ({
               {isPositive ? "+" : ""}
               {formatNumber(currentBalance)} ₫
             </div>
-            <div className="text-xs text-muted-foreground mt-1">
+            <div className="text-xs sm:text-sm text-muted-foreground mt-1">
               {chartData.length > 0
                 ? `From ${chartData[0].date} to ${chartData[chartData.length - 1].date}`
                 : "Current balance"}
             </div>
           </div>
-          <div className="h-[120px] md:h-[150px] w-full">
+          <div className="h-[150px] sm:h-[180px] md:h-[200px] w-full">
             {chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>

@@ -78,20 +78,20 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
 
   if (debts.length === 0) {
     return (
-      <Card className="border-[#F2F2F2]">
-        <CardHeader>
-          <CardTitle className="text-base font-bold text-[#333]">
+      <Card className="border-border shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base sm:text-lg font-bold text-foreground">
             {t('dashboard.whoOwesWhom')}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 space-y-3">
+          <div className="text-center py-8 sm:py-12 space-y-3">
             <div className="flex justify-center">
-              <div className="h-16 w-16 rounded-full bg-[#6FCF97]/10 flex items-center justify-center">
-                <CheckIcon className="h-8 w-8 text-[#6FCF97]" />
+              <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-green-100 dark:bg-green-950/20 flex items-center justify-center">
+                <CheckIcon className="h-8 w-8 sm:h-10 sm:w-10 text-green-600 dark:text-green-400" />
               </div>
             </div>
-            <p className="text-[#828282]">
+            <p className="text-sm sm:text-base text-muted-foreground">
               {t('dashboard.allSettledUpNoDebts')}
             </p>
           </div>
@@ -101,18 +101,18 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
   }
 
   return (
-    <Card className="border-[#F2F2F2]">
-      <CardHeader>
-        <CardTitle className="text-base font-bold text-[#333]">
+    <Card className="border-border shadow-sm">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base sm:text-lg font-bold text-foreground">
           {t('dashboard.whoOwesWhom')}
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
+      <CardContent className="px-3 sm:px-6">
+        <div className="space-y-2 sm:space-y-3">
           {paginatedDebts.map((debt) => (
             <div
               key={debt.counterparty_id}
-              className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 dark:hover:bg-muted/30 transition-colors cursor-pointer group"
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-muted/50 dark:hover:bg-muted/30 transition-colors cursor-pointer group border border-transparent hover:border-border"
               onClick={() => {
                 go({ to: `/profile/${debt.counterparty_id}` });
               }}
@@ -126,31 +126,31 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
               }}
               aria-label={`${debt.i_owe_them ? t('dashboard.youOweUser') : t('dashboard.userOwesYou')} ${debt.counterparty_name}, ${formatNumber(debt.amount)} ₫`}
             >
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <Avatar className="h-10 w-10">
+              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                <Avatar className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0">
                   <AvatarImage src={debt.counterparty_avatar_url || undefined} alt={debt.counterparty_name} />
-                  <AvatarFallback className="bg-[#FFA14E] text-white text-sm">
+                  <AvatarFallback className="bg-[#FFA14E] text-white text-xs sm:text-sm">
                     {debt.counterparty_name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
+                  <p className="text-sm sm:text-base font-medium text-foreground truncate">
                     {debt.i_owe_them ? (
                       <>{t('dashboard.youOweUser')} <span className="font-bold">{debt.counterparty_name}</span></>
                     ) : (
                       <><span className="font-bold">{debt.counterparty_name}</span> {t('dashboard.userOwesYou')}</>
                     )}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5 hidden sm:block">
                     {t('dashboard.tapToSettleUp')}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-2" onClick={(e) => e.stopPropagation()}>
                 <Badge
                   variant="outline"
                   className={cn(
-                    "font-semibold",
+                    "font-semibold text-xs sm:text-sm px-2 sm:px-3 py-1",
                     debt.i_owe_them
                       ? "text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/30 bg-red-50 dark:bg-red-950/10"
                       : "text-green-600 dark:text-green-400 border-green-200 dark:border-green-800/30 bg-green-50 dark:bg-green-950/10"
@@ -158,11 +158,11 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
                 >
                   {formatNumber(debt.amount)} ₫
                 </Badge>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    className="h-8 w-8 sm:h-9 sm:w-9 text-muted-foreground hover:text-foreground"
                     onClick={() => {
                       go({ to: `/profile/${debt.counterparty_id}` });
                     }}
@@ -173,7 +173,7 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    className="h-8 w-8 sm:h-9 sm:w-9 text-muted-foreground hover:text-primary"
                     onClick={() => {
                       go({
                         to: `/payments/create?userId=${debt.counterparty_id}&amount=${debt.amount}`,
