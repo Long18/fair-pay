@@ -41,6 +41,9 @@ import { DateRange } from "react-day-picker";
 import { exportEnhancedReportToCSV } from "@/utils/export-csv-enhanced";
 import { exportToPDF } from "@/utils/export-pdf";
 import { DownloadIcon, Loader2Icon, CalendarIcon, FileTextIcon } from "@/components/ui/icons";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function ReportsPage() {
   const [preset, setPreset] = useState<DateRangePreset>("this_month");
@@ -197,49 +200,52 @@ export function ReportsPage() {
     insightsLoading;
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Spending Reports</h1>
-          <p className="text-sm md:text-base text-muted-foreground">
-            Analyze your spending patterns and trends
-          </p>
+    <div className="container max-w-7xl mx-auto py-4 md:py-6 lg:py-8 px-4 sm:px-6 lg:px-8">
+      <div className="space-y-4 md:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Spending Reports</h1>
+            <p className="text-xs sm:text-sm md:text-base text-muted-foreground mt-1">
+              Analyze your spending patterns and trends
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={handleExportCSV}
+              variant="outline"
+              size="sm"
+              disabled={isLoading || breakdown.length === 0}
+              className="w-full sm:w-auto"
+            >
+              <DownloadIcon className="mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">Export CSV</span>
+              <span className="sm:hidden">CSV</span>
+            </Button>
+            <Button
+              onClick={handleExportPDF}
+              variant="outline"
+              size="sm"
+              disabled={isLoading || breakdown.length === 0}
+              className="w-full sm:w-auto"
+            >
+              <FileTextIcon className="mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">Export PDF</span>
+              <span className="sm:hidden">PDF</span>
+            </Button>
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Button
-            onClick={handleExportCSV}
-            variant="outline"
-            size="sm"
-            disabled={isLoading || breakdown.length === 0}
-          >
-            <DownloadIcon className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Export CSV</span>
-            <span className="sm:hidden">CSV</span>
-          </Button>
-          <Button
-            onClick={handleExportPDF}
-            variant="outline"
-            size="sm"
-            disabled={isLoading || breakdown.length === 0}
-          >
-            <FileTextIcon className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Export PDF</span>
-            <span className="sm:hidden">PDF</span>
-          </Button>
-        </div>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
+      <Card className="border-border shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base sm:text-lg">Filters</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Time Period</label>
+              <Label htmlFor="time-period" className="text-xs sm:text-sm font-medium">Time Period</Label>
               <Select value={preset} onValueChange={handlePresetChange}>
-                <SelectTrigger>
+                <SelectTrigger id="time-period" className="h-9 text-xs sm:text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -255,13 +261,14 @@ export function ReportsPage() {
 
             {preset === "custom" && (
               <div className="space-y-2">
-                <label className="text-sm font-medium">Date Range</label>
+                <Label htmlFor="date-range" className="text-xs sm:text-sm font-medium">Date Range</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
+                      id="date-range"
                       variant="outline"
                       className={cn(
-                        "w-full justify-start text-left font-normal",
+                        "w-full justify-start text-left font-normal h-9 text-xs sm:text-sm",
                         !customRange && "text-muted-foreground"
                       )}
                     >
@@ -288,6 +295,7 @@ export function ReportsPage() {
                       selected={customRange}
                       onSelect={setCustomRange}
                       numberOfMonths={2}
+                      captionLayout="dropdown"
                     />
                   </PopoverContent>
                 </Popover>
@@ -295,14 +303,14 @@ export function ReportsPage() {
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Group</label>
+              <Label htmlFor="group-select" className="text-xs sm:text-sm font-medium">Group</Label>
               <Select
                 value={selectedGroupId || "all"}
                 onValueChange={(value) =>
                   setSelectedGroupId(value === "all" ? undefined : value)
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger id="group-select" className="h-9 text-xs sm:text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -317,9 +325,9 @@ export function ReportsPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Chart Type</label>
+              <Label htmlFor="chart-type" className="text-xs sm:text-sm font-medium">Chart Type</Label>
               <Select value={chartType} onValueChange={(v) => setChartType(v as "pie" | "bar")}>
-                <SelectTrigger>
+                <SelectTrigger id="chart-type" className="h-9 text-xs sm:text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -330,25 +338,60 @@ export function ReportsPage() {
             </div>
           </div>
 
-          <div className="mt-4 flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="show-comparison"
-              checked={showComparison}
-              onChange={(e) => setShowComparison(e.target.checked)}
-              className="rounded border-gray-300"
-            />
-            <label htmlFor="show-comparison" className="text-sm font-medium cursor-pointer">
-              Show period comparison
-            </label>
+          <div className="pt-2 border-t">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="show-comparison" className="text-xs sm:text-sm font-medium cursor-pointer">
+                Show period comparison
+              </Label>
+              <Switch
+                id="show-comparison"
+                checked={showComparison}
+                onCheckedChange={setShowComparison}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {isLoading && (
-        <div className="flex items-center justify-center py-12">
-          <Loader2Icon className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
+        <>
+          {/* Summary Stats Skeleton */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="border-border animate-pulse">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-4 rounded" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-32 mb-2" />
+                  <Skeleton className="h-3 w-24" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {/* Charts Skeleton */}
+          <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
+            <Card className="border-border animate-pulse">
+              <CardHeader className="pb-4">
+                <Skeleton className="h-5 w-40 mb-2" />
+                <Skeleton className="h-4 w-32" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-[300px] w-full rounded" />
+              </CardContent>
+            </Card>
+            <Card className="border-border animate-pulse">
+              <CardHeader className="pb-4">
+                <Skeleton className="h-5 w-40 mb-2" />
+                <Skeleton className="h-4 w-32" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-[300px] w-full rounded" />
+              </CardContent>
+            </Card>
+          </div>
+        </>
       )}
 
       {!isLoading && (
@@ -364,13 +407,13 @@ export function ReportsPage() {
           <div ref={chartsRef}>
             <Tabs defaultValue="charts" className="space-y-4 md:space-y-6">
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="charts">Charts</TabsTrigger>
-                <TabsTrigger value="breakdown">Breakdown</TabsTrigger>
-                {selectedGroupId && <TabsTrigger value="spenders">Top Spenders</TabsTrigger>}
+                <TabsTrigger value="charts" className="text-xs sm:text-sm">Charts</TabsTrigger>
+                <TabsTrigger value="breakdown" className="text-xs sm:text-sm">Breakdown</TabsTrigger>
+                {selectedGroupId && <TabsTrigger value="spenders" className="text-xs sm:text-sm">Top Spenders</TabsTrigger>}
               </TabsList>
 
-              <TabsContent value="charts" className="space-y-4 md:space-y-6">
-                <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
+              <TabsContent value="charts" className="space-y-4 md:space-y-6 mt-4">
+                <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
                   <div data-chart className="w-full">
                     {chartType === "pie" ? (
                       <CategoryPieChart data={breakdown} />
@@ -390,12 +433,12 @@ export function ReportsPage() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="breakdown">
+              <TabsContent value="breakdown" className="mt-4">
                 <CategoryBreakdownTable data={topCategories} isLoading={topCategoriesLoading} />
               </TabsContent>
 
               {selectedGroupId && (
-                <TabsContent value="spenders">
+                <TabsContent value="spenders" className="mt-4">
                   <TopSpenders data={topSpenders} isLoading={topSpendersLoading} />
                 </TabsContent>
               )}
@@ -403,6 +446,7 @@ export function ReportsPage() {
           </div>
         </>
       )}
+      </div>
     </div>
   );
 }

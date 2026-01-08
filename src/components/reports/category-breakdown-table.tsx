@@ -101,35 +101,35 @@ export function CategoryBreakdownTable({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
+    <Card className="border-border shadow-sm">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base sm:text-lg">{title}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="rounded-md border">
+      <CardContent className="px-3 sm:px-6">
+        <div className="rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead
-                  className="cursor-pointer hover:bg-muted/50"
+                  className="cursor-pointer hover:bg-muted/50 text-xs sm:text-sm"
                   onClick={() => handleSort("category")}
                 >
                   Category <SortIcon field="category" />
                 </TableHead>
                 <TableHead
-                  className="cursor-pointer hover:bg-muted/50 text-right"
+                  className="cursor-pointer hover:bg-muted/50 text-right text-xs sm:text-sm"
                   onClick={() => handleSort("total_amount")}
                 >
                   Amount <SortIcon field="total_amount" />
                 </TableHead>
                 <TableHead
-                  className="cursor-pointer hover:bg-muted/50 text-right"
+                  className="cursor-pointer hover:bg-muted/50 text-right text-xs sm:text-sm"
                   onClick={() => handleSort("expense_count")}
                 >
                   Count <SortIcon field="expense_count" />
                 </TableHead>
                 <TableHead
-                  className="cursor-pointer hover:bg-muted/50 text-right"
+                  className="cursor-pointer hover:bg-muted/50 text-right text-xs sm:text-sm"
                   onClick={() => handleSort("percentage")}
                 >
                   % <SortIcon field="percentage" />
@@ -141,24 +141,24 @@ export function CategoryBreakdownTable({
                 const categoryMeta = getCategoryMeta(category.category);
                 return (
                   <TableRow key={category.category}>
-                    <TableCell>
+                    <TableCell className="text-xs sm:text-sm">
                       <div className="flex items-center gap-2">
                         <div
-                          className="w-3 h-3 rounded-full"
+                          className="w-3 h-3 rounded-full flex-shrink-0"
                           style={{ backgroundColor: categoryMeta?.color || "#gray" }}
                         />
-                        <span className="font-medium">
+                        <span className="font-medium truncate">
                           {categoryMeta?.name || category.category}
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-right font-medium">
+                    <TableCell className="text-right font-medium text-xs sm:text-sm">
                       {formatNumber(category.total_amount)} ₫
                     </TableCell>
-                    <TableCell className="text-right text-muted-foreground">
+                    <TableCell className="text-right text-muted-foreground text-xs sm:text-sm">
                       {category.expense_count}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right text-xs sm:text-sm">
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
                         {category.percentage.toFixed(1)}%
                       </span>

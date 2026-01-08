@@ -118,29 +118,29 @@ export function InsightsPanel({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
+    <Card className="border-border shadow-sm">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base sm:text-lg">{title}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
+      <CardContent className="px-3 sm:px-6">
+        <div className="space-y-2 sm:space-y-3">
           {insights.map((insight) => {
             const colors = getColorClasses(insight.type);
             return (
               <div
                 key={insight.id}
-                className={`flex items-start gap-3 p-3 rounded-lg border ${colors.bg} ${colors.border}`}
+                className={`flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border ${colors.bg} ${colors.border}`}
               >
-                <div className={`mt-0.5 ${colors.icon}`}>
+                <div className={`mt-0.5 flex-shrink-0 ${colors.icon}`}>
                   {getIcon(insight.icon, insight.type)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <h4 className={`font-medium text-sm ${colors.text}`}>
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2">
+                    <h4 className={`font-medium text-xs sm:text-sm ${colors.text}`}>
                       {insight.title}
                     </h4>
                     {insight.value && (
-                      <span className={`text-sm font-semibold whitespace-nowrap ${colors.icon}`}>
+                      <span className={`text-xs sm:text-sm font-semibold whitespace-nowrap ${colors.icon}`}>
                         {insight.value}
                       </span>
                     )}

@@ -58,15 +58,15 @@ export function CategoryPieChart({ data, title = 'Chi tiêu theo danh mục' }: 
   const totalAmount = data.reduce((sum, item) => sum + item.amount, 0);
 
   return (
-    <Card className="flex flex-col">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-lg md:text-xl">{title}</CardTitle>
-        <CardDescription className="text-sm">
+    <Card className="flex flex-col border-border shadow-sm">
+      <CardHeader className="pb-3 px-4 sm:px-6">
+        <CardTitle className="text-base sm:text-lg md:text-xl">{title}</CardTitle>
+        <CardDescription className="text-xs sm:text-sm mt-1">
           Tổng: {formatNumber(totalAmount)} ₫
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 pb-6">
-        <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[300px] md:max-h-[350px] w-full">
+      <CardContent className="flex-1 pb-4 sm:pb-6 px-4 sm:px-6">
+        <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[250px] sm:max-h-[300px] md:max-h-[350px] w-full">
           <PieChart>
             <ChartTooltip
               content={

@@ -67,44 +67,44 @@ export function ComparisonChart({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
+    <Card className="border-border shadow-sm">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base sm:text-lg">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-6">
-          <div className="flex items-center justify-center gap-8">
+        <div className="space-y-4 sm:space-y-6">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
             <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-2">Previous Period</p>
-              <p className="text-2xl font-bold">{formatNumber(data.previous_total)} ₫</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-2">Previous Period</p>
+              <p className="text-xl sm:text-2xl font-bold">{formatNumber(data.previous_total)} ₫</p>
             </div>
 
             <div className="flex flex-col items-center">
               {getTrendIcon()}
-              <p className={`text-lg font-semibold mt-2 ${getTrendColor()}`}>
+              <p className={`text-base sm:text-lg font-semibold mt-2 ${getTrendColor()}`}>
                 {data.percentage_change > 0 ? "+" : ""}
                 {data.percentage_change.toFixed(1)}%
               </p>
             </div>
 
             <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-2">Current Period</p>
-              <p className="text-2xl font-bold">{formatNumber(data.current_total)} ₫</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-2">Current Period</p>
+              <p className="text-xl sm:text-2xl font-bold">{formatNumber(data.current_total)} ₫</p>
             </div>
           </div>
 
           <div className="border-t pt-4">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Difference</span>
-              <span className={`text-lg font-semibold ${getTrendColor()}`}>
+              <span className="text-xs sm:text-sm text-muted-foreground">Difference</span>
+              <span className={`text-base sm:text-lg font-semibold ${getTrendColor()}`}>
                 {data.difference > 0 ? "+" : ""}
                 {formatNumber(data.difference)} ₫
               </span>
             </div>
           </div>
 
-          <div className="bg-muted rounded-lg p-4">
-            <p className="text-sm text-center">
+          <div className="bg-muted rounded-lg p-3 sm:p-4">
+            <p className="text-xs sm:text-sm text-center">
               {data.trend === "increasing" && (
                 <>
                   Your spending has <span className="font-semibold text-orange-500">increased</span>{" "}
