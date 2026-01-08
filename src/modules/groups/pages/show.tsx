@@ -31,7 +31,23 @@ import {
 } from "@/components/ui/alert-dialog";
 import { formatDate } from "@/lib/locale-utils";
 
-import { ArrowLeftIcon, PencilIcon, Trash2Icon, PlusIcon, ArrowRightIcon } from "@/components/ui/icons";
+import {
+  ArrowLeftIcon,
+  PencilIcon,
+  Trash2Icon,
+  PlusIcon,
+  ArrowRightIcon,
+  ReceiptIcon,
+  BanknoteIcon,
+  RepeatIcon,
+  UsersIcon,
+  Users2Icon,
+  CalendarIcon,
+  SparklesIcon,
+  CheckCircle2Icon,
+  HistoryIcon
+} from "@/components/ui/icons";
+import { cn } from "@/lib/utils";
 export const GroupShow = () => {
   const { id } = useParams<{ id: string }>();
   const go = useGo();
@@ -229,17 +245,29 @@ export const GroupShow = () => {
   if (isLoadingGroup || !group) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p>Loading group...</p>
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading group...</p>
+        </div>
       </div>
     );
   }
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "?";
+  };
 
   return (
     <div className="container px-4 sm:px-6 py-4 sm:py-8 max-w-7xl">
       <Button
         variant="ghost"
         size="sm"
-        className="mb-4"
+        className="mb-4 sm:mb-6"
         onClick={() => go({ to: "/groups" })}
       >
         <ArrowLeftIcon className="h-4 w-4 mr-2" />
@@ -248,28 +276,50 @@ export const GroupShow = () => {
       </Button>
 
       <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col gap-4">
-              <div>
-                <CardTitle className="text-2xl sm:text-3xl">{group.name}</CardTitle>
-                {group.description && (
-                  <p className="text-muted-foreground mt-2 text-sm sm:text-base">
-                    {group.description}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground mt-2">
-                  Created{" "}
-                  {formatDate(group.created_at, {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </p>
+        {/* Group Header Card */}
+        <Card className="border-2">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col gap-6">
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="p-2 rounded-lg bg-primary/10 shrink-0">
+                      <Users2Icon className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <CardTitle className="text-2xl sm:text-3xl font-bold truncate">
+                        {group.name}
+                      </CardTitle>
+                      {group.description && (
+                        <p className="text-muted-foreground mt-2 text-sm sm:text-base line-clamp-2">
+                          {group.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 text-xs sm:text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <CalendarIcon className="h-4 w-4" />
+                    <span>
+                      Created{" "}
+                      {formatDate(group.created_at, {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <UsersIcon className="h-4 w-4" />
+                    <span>{totalMembers} {totalMembers === 1 ? 'member' : 'members'}</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t">
                 <Button
                   className="w-full sm:w-auto"
+                  size="lg"
                   onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
                 >
                   <PlusIcon className="h-4 w-4 mr-2" />
@@ -279,20 +329,22 @@ export const GroupShow = () => {
                   {isAdmin && (
                     <Button
                       variant="outline"
-                      size="sm"
+                      size="lg"
                       className="flex-1 sm:flex-none"
                       onClick={() => go({ to: `/groups/edit/${group.id}` })}
                     >
                       <PencilIcon className="h-4 w-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Edit</span>
+                      <span className="hidden sm:inline">Edit Group</span>
+                      <span className="sm:hidden">Edit</span>
                     </Button>
                   )}
                   {isCreator && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm" className="flex-1 sm:flex-none">
+                        <Button variant="destructive" size="lg" className="flex-1 sm:flex-none">
                           <Trash2Icon className="h-4 w-4 sm:mr-2" />
-                          <span className="hidden sm:inline">Delete</span>
+                          <span className="hidden sm:inline">Delete Group</span>
+                          <span className="sm:hidden">Delete</span>
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
@@ -321,11 +373,39 @@ export const GroupShow = () => {
         </Card>
 
         <Tabs defaultValue="expenses" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-4">
-            <TabsTrigger value="expenses" className="text-xs sm:text-sm">Expenses</TabsTrigger>
-            <TabsTrigger value="balances" className="text-xs sm:text-sm">Balances</TabsTrigger>
-            <TabsTrigger value="recurring" className="text-xs sm:text-sm">Recurring</TabsTrigger>
-            <TabsTrigger value="members" className="text-xs sm:text-sm">Members</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 h-auto p-1 bg-muted/50">
+            <TabsTrigger
+              value="expenses"
+              className="text-xs sm:text-sm flex items-center gap-2 data-[state=active]:bg-background"
+            >
+              <ReceiptIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">Expenses</span>
+              <span className="sm:hidden">Exp</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="balances"
+              className="text-xs sm:text-sm flex items-center gap-2 data-[state=active]:bg-background"
+            >
+              <BanknoteIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">Balances</span>
+              <span className="sm:hidden">Bal</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="recurring"
+              className="text-xs sm:text-sm flex items-center gap-2 data-[state=active]:bg-background"
+            >
+              <RepeatIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">Recurring</span>
+              <span className="sm:hidden">Rec</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="members"
+              className="text-xs sm:text-sm flex items-center gap-2 data-[state=active]:bg-background"
+            >
+              <UsersIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">Members</span>
+              <span className="sm:hidden">Mem</span>
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="expenses" className="mt-6">
             <ExpenseList groupId={group.id} members={membersList} />
@@ -333,77 +413,100 @@ export const GroupShow = () => {
           <TabsContent value="balances" className="mt-6">
             <div className="space-y-6">
               {/* Action Bar */}
-              <div className="flex justify-between items-center">
-                {/* Settle All Button */}
-                {isAdmin && unsettledCount > 0 && (
-                  <Button
-                    variant="default"
-                    onClick={() => setSettleAllDialogOpen(true)}
-                    disabled={settleAllMutation.isPending}
-                  >
-                    {settleAllMutation.isPending ? "Settling..." : "Settle All Debts"}
-                  </Button>
-                )}
+              <Card className="border-2">
+                <CardContent className="pt-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    {/* Settle All Button */}
+                    {isAdmin && unsettledCount > 0 && (
+                      <Button
+                        variant="default"
+                        size="lg"
+                        onClick={() => setSettleAllDialogOpen(true)}
+                        disabled={settleAllMutation.isPending}
+                        className="w-full sm:w-auto"
+                      >
+                        {settleAllMutation.isPending ? (
+                          <>
+                            <span className="animate-spin mr-2">⏳</span>
+                            Settling...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2Icon className="h-4 w-4 mr-2" />
+                            Settle All Debts ({unsettledCount} {unsettledCount === 1 ? 'split' : 'splits'})
+                          </>
+                        )}
+                      </Button>
+                    )}
 
-                {/* Debt Simplification Toggle */}
-                {allMembers.length >= 3 && (
-                  <div className="ml-auto">
-                    <SimplifiedDebtsToggle
-                      isSimplified={useServerSimplification}
-                      onToggle={handleToggleSimplification}
-                      rawCount={balances.filter(b => b.balance !== 0).length}
-                      simplifiedCount={simplifiedCount}
-                      disabled={isLoadingSimplified}
-                    />
+                    {/* Debt Simplification Toggle */}
+                    {allMembers.length >= 3 && (
+                      <div className={cn("w-full sm:w-auto", isAdmin && unsettledCount > 0 && "sm:ml-auto")}>
+                        <SimplifiedDebtsToggle
+                          isSimplified={useServerSimplification}
+                          onToggle={handleToggleSimplification}
+                          rawCount={balances.filter(b => b.balance !== 0).length}
+                          simplifiedCount={simplifiedCount}
+                          disabled={isLoadingSimplified}
+                        />
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </CardContent>
+              </Card>
 
               {/* Server-Side Simplified Debts View */}
               {useServerSimplification && !isLoadingSimplified && simplifiedDebts.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Simplified Debts</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      Optimized transactions using Min-Cost Max-Flow algorithm
-                    </p>
+                <Card className="border-2">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <SparklesIcon className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg font-semibold">Simplified Debts</CardTitle>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Optimized transactions using Min-Cost Max-Flow algorithm
+                        </p>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       {simplifiedDebts.map((debt, index) => (
                         <div
                           key={`${debt.from_user_id}-${debt.to_user_id}-${index}`}
-                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                          className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-2 rounded-lg bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 hover:from-primary/10 hover:via-primary/15 hover:to-primary/10 transition-all duration-200"
                         >
-                          <div className="flex items-center gap-3 flex-1">
-                            <Avatar className="h-10 w-10">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <Avatar className="h-12 w-12 shrink-0 border-2 border-background">
                               <AvatarImage src={debt.from_user_avatar || undefined} />
-                              <AvatarFallback>
-                                {debt.from_user_name.charAt(0).toUpperCase()}
+                              <AvatarFallback className="text-sm font-semibold">
+                                {getInitials(debt.from_user_name)}
                               </AvatarFallback>
                             </Avatar>
-                            <div>
-                              <p className="font-medium">{debt.from_user_name}</p>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-base truncate">{debt.from_user_name}</p>
                               <p className="text-xs text-muted-foreground">Pays</p>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-3">
-                            <Badge variant="secondary" className="text-base font-semibold px-3 py-1">
+                          <div className="flex items-center gap-3 shrink-0">
+                            <Badge variant="secondary" className="text-base font-bold px-4 py-1.5 bg-background border-2">
                               {formatNumber(debt.amount)} ₫
                             </Badge>
-                            <ArrowRightIcon className="h-5 w-5 text-muted-foreground" />
+                            <ArrowRightIcon className="h-6 w-6 text-primary shrink-0" />
                           </div>
 
-                          <div className="flex items-center gap-3 flex-1 justify-end">
-                            <div className="text-right">
-                              <p className="font-medium">{debt.to_user_name}</p>
+                          <div className="flex items-center gap-3 flex-1 min-w-0 justify-end">
+                            <div className="text-right min-w-0 flex-1">
+                              <p className="font-semibold text-base truncate">{debt.to_user_name}</p>
                               <p className="text-xs text-muted-foreground">Receives</p>
                             </div>
-                            <Avatar className="h-10 w-10">
+                            <Avatar className="h-12 w-12 shrink-0 border-2 border-background">
                               <AvatarImage src={debt.to_user_avatar || undefined} />
-                              <AvatarFallback>
-                                {debt.to_user_name.charAt(0).toUpperCase()}
+                              <AvatarFallback className="text-sm font-semibold">
+                                {getInitials(debt.to_user_name)}
                               </AvatarFallback>
                             </Avatar>
                           </div>
@@ -416,19 +519,32 @@ export const GroupShow = () => {
 
               {/* Loading State for Simplified Debts */}
               {useServerSimplification && isLoadingSimplified && (
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <p className="text-muted-foreground">Calculating simplified debts...</p>
+                <Card className="border-2">
+                  <CardContent className="py-16 text-center">
+                    <div className="space-y-4">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                      <div>
+                        <p className="font-medium text-base">Calculating simplified debts...</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Optimizing transactions using Min-Cost Max-Flow algorithm
+                        </p>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               )}
 
               {/* Empty State for Simplified Debts */}
               {useServerSimplification && !isLoadingSimplified && simplifiedDebts.length === 0 && (
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <div className="text-4xl mb-2">✅</div>
-                    <p className="text-muted-foreground">All settled up! No debts to simplify.</p>
+                <Card className="border-2 border-dashed">
+                  <CardContent className="py-16 text-center">
+                    <div className="space-y-4">
+                      <div className="text-6xl mb-2">✅</div>
+                      <div>
+                        <p className="font-semibold text-lg">All settled up!</p>
+                        <p className="text-muted-foreground mt-1">No debts to simplify.</p>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               )}
@@ -436,28 +552,50 @@ export const GroupShow = () => {
               {/* Original Balance View (when not using server simplification) */}
               {!useServerSimplification && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-                  <div>
-                    <SimplifiedBalanceView
-                      balances={balances}
-                      currentUserId={identity?.id || ""}
-                      simplifyDebts={group?.simplify_debts || false}
-                      onSettleUp={handleSettleUp}
-                      currency="VND"
-                    />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4">Payment History</h3>
-                    <PaymentList groupId={group.id} />
-                  </div>
+                  <Card className="border-2">
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <BanknoteIcon className="h-5 w-5 text-primary" />
+                        Balances
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <SimplifiedBalanceView
+                        balances={balances}
+                        currentUserId={identity?.id || ""}
+                        simplifyDebts={group?.simplify_debts || false}
+                        onSettleUp={handleSettleUp}
+                        currency="VND"
+                      />
+                    </CardContent>
+                  </Card>
+                  <Card className="border-2">
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <HistoryIcon className="h-5 w-5 text-primary" />
+                        Payment History
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <PaymentList groupId={group.id} />
+                    </CardContent>
+                  </Card>
                 </div>
               )}
 
               {/* Payment History (always show when using server simplification) */}
               {useServerSimplification && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">Payment History</h3>
-                  <PaymentList groupId={group.id} />
-                </div>
+                <Card className="border-2">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <HistoryIcon className="h-5 w-5 text-primary" />
+                      Payment History
+                    </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <PaymentList groupId={group.id} />
+                    </CardContent>
+                  </Card>
               )}
             </div>
           </TabsContent>
