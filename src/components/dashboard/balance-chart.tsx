@@ -2,9 +2,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { formatNumber } from "@/lib/locale-utils";
 import { useBalanceHistory } from "@/hooks/use-balance-history";
-import { format } from "date-fns";
-import { useMemo } from "react";
+import { format, subDays } from "date-fns";
+import { useMemo, useState } from "react";
 import { Loader2Icon } from "@/components/ui/icons";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface BalanceChartProps {
   currentBalance: number;
@@ -13,12 +14,40 @@ interface BalanceChartProps {
   currency?: string;
 }
 
+type DateRangeOption = '7d' | '30d' | '90d' | 'all';
+
 export const BalanceChart = ({
   currentBalance,
-  startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-  endDate = new Date(),
+  startDate: initialStartDate,
+  endDate: initialEndDate,
   currency = "USD",
 }: BalanceChartProps) => {
+  const [dateRange, setDateRange] = useState<DateRangeOption>('30d');
+
+  const { startDate, endDate } = useMemo(() => {
+    const end = initialEndDate || new Date();
+    let start: Date;
+
+    switch (dateRange) {
+      case '7d':
+        start = subDays(end, 7);
+        break;
+      case '30d':
+        start = subDays(end, 30);
+        break;
+      case '90d':
+        start = subDays(end, 90);
+        break;
+      case 'all':
+        start = initialStartDate || subDays(end, 365);
+        break;
+      default:
+        start = subDays(end, 30);
+    }
+
+    return { startDate: start, endDate: end };
+  }, [dateRange, initialStartDate, initialEndDate]);
+
   const { data: historyData, isLoading } = useBalanceHistory({
     startDate,
     endDate,
@@ -55,9 +84,22 @@ export const BalanceChart = ({
   return (
     <Card className="border-border shadow-sm">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-semibold text-foreground">
-          Balance Trend
-        </CardTitle>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <CardTitle className="text-base font-semibold text-foreground">
+            Balance Trend
+          </CardTitle>
+          <Select value={dateRange} onValueChange={(value) => setDateRange(value as DateRangeOption)}>
+            <SelectTrigger className="w-[120px] sm:w-[140px] h-8 text-xs" aria-label="Select date range for balance chart">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7d">Last 7 days</SelectItem>
+              <SelectItem value="30d">Last 30 days</SelectItem>
+              <SelectItem value="90d">Last 90 days</SelectItem>
+              <SelectItem value="all">All time</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
