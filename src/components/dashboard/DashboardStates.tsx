@@ -7,7 +7,8 @@ import { FilePlusIcon } from "@/components/ui/icons";
 export function DashboardSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center py-4">
+      {/* Hero Section Skeleton */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 py-4">
         <div className="space-y-2">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-4 w-64" />
@@ -15,19 +16,20 @@ export function DashboardSkeleton() {
         <Skeleton className="h-10 w-[180px]" />
       </div>
 
+      {/* Balance Summary Cards Skeleton */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-24 w-full rounded-lg" />
+        <Skeleton className="h-24 w-full rounded-lg" />
+        <Skeleton className="h-24 w-full rounded-lg" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-5 xl:col-span-4">
-          <Skeleton className="h-64 w-full" />
+      {/* Tabs Skeleton */}
+      <div className="space-y-4">
+        <div className="flex gap-2">
+          <Skeleton className="h-10 w-24 rounded-md" />
+          <Skeleton className="h-10 w-24 rounded-md" />
         </div>
-        <div className="lg:col-span-7 xl:col-span-8">
-          <Skeleton className="h-64 w-full" />
-        </div>
+        <Skeleton className="h-96 w-full rounded-lg" />
       </div>
     </div>
   );
