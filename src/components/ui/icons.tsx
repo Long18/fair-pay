@@ -26,6 +26,7 @@ import {
   RefreshCw,
   List,
   Copy,
+  Share2,
   ArrowLeft,
   ArrowRight,
   ArrowUp,
@@ -529,6 +530,10 @@ export const RefreshCwIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
 
 export const CopyIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
   <Copy size={size} fill="currentColor" {...props} />
+);
+
+export const ShareIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Share2 size={size} fill="currentColor" {...props} />
 );
 
 // ============ Arrow Icons ============
