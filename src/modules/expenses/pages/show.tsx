@@ -294,7 +294,7 @@ export const ExpenseShow = () => {
           } else if (expense.friendship_id) {
             go({ to: `/friends/${expense.friendship_id}` });
           } else {
-            go({ to: `/dashboard` });
+            go({ to: `/` });
           }
         },
         onError: (error) => {
