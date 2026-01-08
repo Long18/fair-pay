@@ -22,13 +22,13 @@ BEGIN
     RETURN QUERY
     WITH expense_balances AS (
         -- Get balances from expenses where user is involved
-        SELECT 
-            CASE 
+        SELECT
+            CASE
                 WHEN es.user_id = p_user_id THEN e.paid_by_user_id
                 ELSE es.user_id
             END AS counterparty_id,
             e.currency,
-            CASE 
+            CASE
                 WHEN es.user_id = p_user_id AND e.paid_by_user_id != p_user_id THEN es.computed_amount
                 WHEN es.user_id != p_user_id AND e.paid_by_user_id = p_user_id THEN -es.computed_amount
                 ELSE 0
@@ -41,13 +41,13 @@ BEGIN
     ),
     payment_balances AS (
         -- Get balances from payments
-        SELECT 
-            CASE 
+        SELECT
+            CASE
                 WHEN p.from_user = p_user_id THEN p.to_user
                 ELSE p.from_user
             END AS counterparty_id,
             p.currency,
-            CASE 
+            CASE
                 WHEN p.from_user = p_user_id THEN p.amount
                 ELSE -p.amount
             END AS amount
@@ -60,7 +60,7 @@ BEGIN
         SELECT counterparty_id, currency, amount FROM payment_balances
     ),
     aggregated AS (
-        SELECT 
+        SELECT
             ab.counterparty_id,
             ab.currency,
             SUM(ab.amount) AS net_amount
@@ -69,7 +69,7 @@ BEGIN
         GROUP BY ab.counterparty_id, ab.currency
         HAVING SUM(ab.amount) != 0
     )
-    SELECT 
+    SELECT
         a.counterparty_id,
         p.full_name AS counterparty_name,
         ABS(a.net_amount) AS amount,
@@ -99,13 +99,13 @@ BEGIN
     RETURN QUERY
     WITH all_transactions AS (
         -- Get all expense transactions
-        SELECT 
-            CASE 
+        SELECT
+            CASE
                 WHEN es.user_id = p_user_id THEN e.paid_by_user_id
                 ELSE es.user_id
             END AS counterparty_id,
             e.currency,
-            CASE 
+            CASE
                 WHEN es.user_id = p_user_id AND e.paid_by_user_id != p_user_id THEN es.computed_amount
                 WHEN es.user_id != p_user_id AND e.paid_by_user_id = p_user_id THEN -es.computed_amount
                 ELSE 0
@@ -116,17 +116,17 @@ BEGIN
         JOIN expenses e ON es.expense_id = e.id
         WHERE (es.user_id = p_user_id OR e.paid_by_user_id = p_user_id)
             AND NOT e.is_payment
-        
+
         UNION ALL
-        
+
         -- Get all payment transactions
-        SELECT 
-            CASE 
+        SELECT
+            CASE
                 WHEN p.from_user = p_user_id THEN p.to_user
                 ELSE p.from_user
             END AS counterparty_id,
             p.currency,
-            CASE 
+            CASE
                 WHEN p.from_user = p_user_id THEN p.amount
                 ELSE -p.amount
             END AS amount,
@@ -136,7 +136,7 @@ BEGIN
         WHERE (p.from_user = p_user_id OR p.to_user = p_user_id)
     ),
     aggregated AS (
-        SELECT 
+        SELECT
             at.counterparty_id,
             at.currency,
             SUM(CASE WHEN NOT at.is_settled THEN at.amount ELSE 0 END) AS current_balance,
@@ -148,7 +148,7 @@ BEGIN
         WHERE at.counterparty_id != p_user_id
         GROUP BY at.counterparty_id, at.currency
     )
-    SELECT 
+    SELECT
         a.counterparty_id,
         p.full_name AS counterparty_name,
         ABS(a.current_balance) AS amount,
@@ -200,7 +200,7 @@ RETURNS TABLE (
 ) AS $$
 BEGIN
     RETURN QUERY
-    SELECT 
+    SELECT
         '00000000-0000-0000-0000-000000000001'::UUID AS counterparty_id,
         'Alice Johnson' AS counterparty_name,
         150.00 AS amount,
@@ -209,7 +209,7 @@ BEGIN
         'Demo User' AS owed_to_name,
         '00000000-0000-0000-0000-000000000000'::UUID AS owed_to_id
     UNION ALL
-    SELECT 
+    SELECT
         '00000000-0000-0000-0000-000000000002'::UUID,
         'Bob Smith',
         75.50,
@@ -218,7 +218,7 @@ BEGIN
         'Demo User',
         '00000000-0000-0000-0000-000000000000'::UUID
     UNION ALL
-    SELECT 
+    SELECT
         '00000000-0000-0000-0000-000000000003'::UUID,
         'Charlie Brown',
         200.00,
@@ -227,7 +227,7 @@ BEGIN
         'Demo User',
         '00000000-0000-0000-0000-000000000000'::UUID
     UNION ALL
-    SELECT 
+    SELECT
         '00000000-0000-0000-0000-000000000004'::UUID,
         'Diana Prince',
         50.00,
@@ -236,7 +236,7 @@ BEGIN
         'Demo User',
         '00000000-0000-0000-0000-000000000000'::UUID
     UNION ALL
-    SELECT 
+    SELECT
         '00000000-0000-0000-0000-000000000005'::UUID,
         'Eve Wilson',
         120000.00,
@@ -244,6 +244,21 @@ BEGIN
         TRUE,
         'Demo User',
         '00000000-0000-0000-0000-000000000000'::UUID;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create the get_user_debts_aggregated function that the frontend expects
+CREATE OR REPLACE FUNCTION get_user_debts_aggregated(p_user_id UUID)
+RETURNS TABLE (
+    counterparty_id UUID,
+    counterparty_name TEXT,
+    amount NUMERIC,
+    currency TEXT,
+    i_owe_them BOOLEAN
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT * FROM get_user_balances(p_user_id);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

@@ -222,7 +222,7 @@ const UserDropdown = () => {
         </div>
         <DropdownMenuItem
           onClick={() => {
-            go({ to: "/profile/edit" });
+            go({ to: `/profile/${identity.id}?edit=true` });
           }}
         >
           <UserIcon className="h-4 w-4" />

@@ -96,7 +96,7 @@ export const ProfileShowUnified = () => {
   const go = useGo();
   const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
-  
+
   // State management
   const [debts, setDebts] = useState<DebtSummary[]>([]);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
@@ -277,17 +277,17 @@ export const ProfileShowUnified = () => {
       const processedActivities = (data || []).map((activity: any) => {
         // Check if viewing own profile
         const isOwnProfile = profileId === identity?.id;
-        
+
         // For own profile, show everything
         if (isOwnProfile) {
           return activity;
         }
-        
+
         // For other's profiles, need to check if current viewer is involved
         // We need to fetch activities for the current viewer to check involvement
         // For now, we'll hide all financial details on other people's profiles
         // unless the activity indicates the viewer is involved
-        
+
         // Since we're viewing someone else's profile, check if the current
         // viewer is the paid_by user or involved in the transaction
         const viewerId = identity?.id;
@@ -297,7 +297,7 @@ export const ProfileShowUnified = () => {
           // For now, mark as private for all activities on other's profiles
           false
         );
-        
+
         if (!isViewerInvolved) {
           return {
             ...activity,
@@ -305,7 +305,7 @@ export const ProfileShowUnified = () => {
             is_private: true,
           };
         }
-        
+
         return activity;
       });
 
@@ -559,7 +559,7 @@ export const ProfileShowUnified = () => {
                 <ArrowLeftIcon size={16} className="mr-2" />
                 {t('common.back', 'Back')}
               </Button>
-              
+
               {isOwnProfile && !isEditMode && (
                 <Button
                   onClick={() => setEditMode(true)}
@@ -575,63 +575,98 @@ export const ProfileShowUnified = () => {
 
             {/* Profile Header */}
             <Card className="rounded-xl overflow-hidden">
-              {isEditMode ? (
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold">{t('profile.editProfile', 'Edit Profile')}</h2>
-                    <Button
-                      onClick={() => setEditMode(false)}
-                      variant="ghost"
-                      size="sm"
-                    >
-                      {t('common.cancel', 'Cancel')}
-                    </Button>
-                  </div>
-                  
-                  <div className="space-y-6">
-                    <div className="flex justify-center">
-                      <ProfileAvatarUpload
-                        currentAvatarUrl={editForm.avatar_url}
-                        fullName={editForm.full_name}
-                        onUpload={handleAvatarUpload}
-                        size="lg"
-                      />
-                    </div>
-                    
-                    <ProfileForm
-                      onSubmit={handleSaveProfile}
-                      defaultValues={editForm}
-                      isLoading={isSaving}
-                      onChangePassword={() => setChangePasswordDialogOpen(true)}
+              <AnimatePresence mode="wait">
+                {isEditMode ? (
+                  <motion.div
+                    key="edit-mode"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3, type: "spring", stiffness: 100, damping: 15 }}
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-semibold">{t('profile.editProfile', 'Edit Profile')}</h2>
+                        <Button
+                          onClick={() => setEditMode(false)}
+                          variant="ghost"
+                          size="sm"
+                        >
+                          {t('common.cancel', 'Cancel')}
+                        </Button>
+                      </div>
+
+                      <div className="space-y-6">
+                        <div className="flex justify-center">
+                          <ProfileAvatarUpload
+                            currentAvatarUrl={editForm.avatar_url}
+                            fullName={editForm.full_name}
+                            onUpload={handleAvatarUpload}
+                            size="lg"
+                          />
+                        </div>
+
+                        <ProfileForm
+                          onSubmit={handleSaveProfile}
+                          defaultValues={editForm}
+                          isLoading={isSaving}
+                          onChangePassword={() => setChangePasswordDialogOpen(true)}
+                        />
+                      </div>
+                    </CardContent>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="view-mode"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3, type: "spring", stiffness: 100, damping: 15 }}
+                  >
+                    <ProfileHeader
+                      profile={profile}
+                      isOwnProfile={isOwnProfile}
+                      onEditClick={() => setEditMode(true)}
+                      onAvatarClick={() => document.getElementById('avatar-input')?.click()}
+                      onShareClick={handleShareProfile}
+                      isUploadingAvatar={isUploadingAvatar}
                     />
-                  </div>
-                </CardContent>
-              ) : (
-                <ProfileHeader
-                  profile={profile}
-                  isOwnProfile={isOwnProfile}
-                  onEditClick={() => setEditMode(true)}
-                  onAvatarClick={() => document.getElementById('avatar-input')?.click()}
-                  onShareClick={handleShareProfile}
-                  isUploadingAvatar={isUploadingAvatar}
-                />
-              )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </Card>
 
             {/* Balance Summary - Only show in view mode */}
-            {!isEditMode && (
-              <ProfileBalanceSummary
-                debts={debts}
-              />
-            )}
+            <AnimatePresence>
+              {!isEditMode && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                >
+                  <ProfileBalanceSummary
+                    debts={debts}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Tabs for Activities, Balances, Groups, Friends */}
-            {!isEditMode && (
-              <Tabs 
-                value={activeTab} 
-                onValueChange={setActiveTab}
-                className="w-full"
-              >
+            <AnimatePresence>
+              {!isEditMode && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3, type: "spring", stiffness: 100, damping: 15 }}
+                  className="w-full"
+                >
+                  <Tabs
+                    value={activeTab}
+                    onValueChange={setActiveTab}
+                    className="w-full"
+                  >
                 <TabsList className="grid w-full rounded-lg" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
                   <TabsTrigger value="activity" className="rounded-lg">
                     <ActivityIcon size={16} className="mr-2" />
@@ -776,8 +811,10 @@ export const ProfileShowUnified = () => {
                     </TabsContent>
                   )}
                 </SwipeableTabs>
-              </Tabs>
-            )}
+                  </Tabs>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         </div>
       </PullToRefresh>
