@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CheckIcon, ChevronsUpDownIcon, SearchIcon } from "@/components/ui/icons";
 import {
   Command,
@@ -19,6 +20,7 @@ import {
 export interface Member {
   id: string;
   full_name: string;
+  avatar_url?: string | null;
 }
 
 interface MemberComboboxProps {
@@ -66,28 +68,48 @@ export function MemberCombobox({
           <CommandList>
             <CommandEmpty>{emptyMessage}</CommandEmpty>
             <CommandGroup>
-              {availableMembers.map((member) => (
-                <CommandItem
-                  key={member.id}
-                  value={member.full_name}
-                  onSelect={() => {
-                    onSelect(member.id);
-                    setOpen(false);
-                  }}
-                  className="cursor-pointer"
-                >
-                  <CheckIcon
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      selectedIds.includes(member.id) ? "opacity-100" : "opacity-0"
+              {availableMembers.map((member) => {
+                const getInitials = (name: string) => {
+                  return name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .toUpperCase()
+                    .slice(0, 2) || "?";
+                };
+
+                return (
+                  <CommandItem
+                    key={member.id}
+                    value={member.full_name}
+                    onSelect={() => {
+                      onSelect(member.id);
+                      setOpen(false);
+                    }}
+                    className="cursor-pointer flex items-center gap-2"
+                  >
+                    <CheckIcon
+                      className={cn(
+                        "h-4 w-4 shrink-0",
+                        selectedIds.includes(member.id) ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <Avatar className="h-6 w-6 shrink-0">
+                      <AvatarImage
+                        src={member.avatar_url || undefined}
+                        alt={member.full_name}
+                      />
+                      <AvatarFallback className="text-[10px]">
+                        {getInitials(member.full_name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="flex-1">{member.full_name}</span>
+                    {member.id === currentUserId && (
+                      <span className="text-xs text-muted-foreground">(You)</span>
                     )}
-                  />
-                  {member.full_name}
-                  {member.id === currentUserId && (
-                    <span className="ml-2 text-xs text-muted-foreground">(You)</span>
-                  )}
-                </CommandItem>
-              ))}
+                  </CommandItem>
+                );
+              })}
             </CommandGroup>
           </CommandList>
         </Command>
