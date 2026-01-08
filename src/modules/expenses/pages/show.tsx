@@ -25,7 +25,7 @@ import { formatDate, formatNumber } from "@/lib/locale-utils";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { useTranslation } from "react-i18next";
 
-import { ArrowLeftIcon, PencilIcon, Trash2Icon, CheckCircle2Icon, XCircleIcon } from "@/components/ui/icons";
+import { ArrowLeftIcon, PencilIcon, Trash2Icon, CheckCircle2Icon, XCircleIcon, PlusIcon } from "@/components/ui/icons";
 import { SettleSplitDialog } from "../components/settle-split-dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { MomoPaymentButton } from "@/modules/payments/components/momo-payment-button";
@@ -608,25 +608,38 @@ export const ExpenseShow = () => {
               )}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 md:space-y-6">
+          <CardContent className="space-y-6">
+            {/* Comment Section */}
             {expense.comment && (
-              <div className="p-4 md:p-6 bg-muted/50 rounded-xl border">
-                <h3 className="text-sm font-semibold text-muted-foreground mb-3">{t('expenses.comment', 'Comment')}</h3>
-                <MarkdownComment content={expense.comment} />
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-muted-foreground">{t('expenses.comment', 'Comment')}</h3>
+                <div className="p-4 md:p-6 bg-muted/50 rounded-xl border">
+                  <MarkdownComment content={expense.comment} />
+                </div>
               </div>
             )}
 
+            {/* Separator between sections */}
             {expense.comment && displayAttachments.length > 0 && (
-              <Separator className="my-4 md:my-6" />
+              <Separator />
             )}
 
-            {displayAttachments.length > 0 ? (
-              <AttachmentList
-                attachments={displayAttachments}
-                canDelete={canEdit}
-                onDelete={handleAttachmentDelete}
-              />
-            ) : !expense.comment ? (
+            {/* Attachments Section */}
+            {displayAttachments.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-muted-foreground">
+                  {t('expenses.receiptsAndBills', 'Receipts & Bills')} ({displayAttachments.length})
+                </h3>
+                <AttachmentList
+                  attachments={displayAttachments}
+                  canDelete={canEdit}
+                  onDelete={handleAttachmentDelete}
+                />
+              </div>
+            )}
+
+            {/* Empty State - only show when both are empty */}
+            {!expense.comment && displayAttachments.length === 0 && (
               <div className="flex flex-col items-center justify-center py-8 md:py-12 text-center">
                 <div className="rounded-full bg-muted p-3 md:p-4 mb-3 md:mb-4">
                   <svg
@@ -654,7 +667,7 @@ export const ExpenseShow = () => {
                   {t('expenses.noReceiptsDescription', 'Receipts and bills can be uploaded when creating or editing this expense.')}
                 </p>
               </div>
-            ) : null}
+            )}
           </CardContent>
         </Card>
       </div>
@@ -671,6 +684,15 @@ export const ExpenseShow = () => {
           isSettling={settlingSplitId === selectedSplit.id}
         />
       )}
+
+      {/* Floating Action Button - Create Expense */}
+      <Button
+        size="lg"
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 z-50"
+        onClick={() => go({ to: `/expenses/create?groupId=${expense.group_id}` })}
+      >
+        <PlusIcon className="h-6 w-6" />
+      </Button>
     </div>
   );
 };
