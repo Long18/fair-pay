@@ -335,48 +335,34 @@ RETURNS TABLE (
 ) AS $$
 BEGIN
     RETURN QUERY
-    -- Get real recent participants but hide amounts for privacy
-    WITH recent_participants AS (
-        -- Get recent expense participants from last 30 days
-        SELECT DISTINCT
-            CASE 
-                WHEN es.user_id != e.paid_by_user_id THEN es.user_id
-                ELSE e.paid_by_user_id
-            END AS counterparty_id,
-            e.currency,
-            CASE
-                WHEN es.user_id = e.paid_by_user_id THEN FALSE
-                ELSE TRUE
-            END AS i_owe_them,
-            e.created_at
-        FROM expenses e
-        JOIN expense_splits es ON es.expense_id = e.id
-        WHERE e.created_at > CURRENT_DATE - INTERVAL '30 days'
-            AND NOT e.is_payment
-        ORDER BY e.created_at DESC
-        LIMIT 20
-    ),
-    unique_participants AS (
-        SELECT DISTINCT ON (rp.counterparty_id)
-            rp.counterparty_id,
-            p.full_name AS counterparty_name,
+    -- Get actual outstanding debts from a sample user, but hide amounts
+    WITH sample_debts AS (
+        -- Get debts from a user with recent activity
+        SELECT 
+            gb.counterparty_id,
+            gb.counterparty_name,
             0::NUMERIC AS amount, -- Hide actual amounts for privacy
-            COALESCE(rp.currency, 'VND') AS currency,
-            rp.i_owe_them,
-            TRUE AS is_real_data
-        FROM recent_participants rp
-        JOIN profiles p ON p.id = rp.counterparty_id
-        WHERE rp.counterparty_id IS NOT NULL
+            gb.currency,
+            gb.i_owe_them
+        FROM get_user_balances(
+            -- Get a sample user ID who has outstanding debts
+            (SELECT es.user_id 
+             FROM expense_splits es
+             JOIN expenses e ON es.expense_id = e.id
+             WHERE NOT es.is_settled 
+                AND e.created_at > CURRENT_DATE - INTERVAL '30 days'
+             LIMIT 1)
+        ) gb
+        WHERE gb.amount > 0 -- Only show users with outstanding balances
     )
-    SELECT 
-        up.counterparty_id,
-        up.counterparty_name,
-        up.amount,
-        up.currency,
-        up.i_owe_them,
-        up.is_real_data
-    FROM unique_participants up
-    WHERE up.counterparty_name IS NOT NULL
+    SELECT
+        sd.counterparty_id,
+        sd.counterparty_name,
+        sd.amount,
+        sd.currency,
+        sd.i_owe_them,
+        TRUE AS is_real_data
+    FROM sample_debts sd
     LIMIT 10;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -406,42 +392,46 @@ RETURNS TABLE (
 ) AS $$
 BEGIN
     RETURN QUERY
-    -- Return demo activities for public/unauthorized users
-    SELECT
-        gen_random_uuid() AS id,
-        'expense'::TEXT AS type,
-        'Coffee Meeting'::TEXT AS description,
-        50000::NUMERIC AS amount,
-        'VND'::TEXT AS currency,
-        (CURRENT_DATE - INTERVAL '1 day')::DATE AS date,
-        NULL::UUID AS group_id,
-        'Team Lunch'::TEXT AS group_name,
-        '00000000-0000-0000-0000-000000000001'::UUID AS created_by_id,
-        'Alice'::TEXT AS created_by_name
-    UNION ALL
-    SELECT
-        gen_random_uuid(),
-        'expense'::TEXT,
-        'Lunch at Restaurant'::TEXT,
-        150000::NUMERIC,
-        'VND'::TEXT,
-        (CURRENT_DATE - INTERVAL '2 days')::DATE,
-        NULL::UUID,
-        'Office Group'::TEXT,
-        '00000000-0000-0000-0000-000000000002'::UUID,
-        'Bob'::TEXT
-    UNION ALL
-    SELECT
-        gen_random_uuid(),
-        'payment'::TEXT,
-        'Payment for lunch'::TEXT,
-        75000::NUMERIC,
-        'VND'::TEXT,
-        (CURRENT_DATE - INTERVAL '3 days')::DATE,
-        NULL::UUID,
-        NULL::TEXT,
-        '00000000-0000-0000-0000-000000000003'::UUID,
-        'Charlie'::TEXT
+    -- Return real recent activities with hidden amounts for public users
+    WITH recent_activities AS (
+        -- Get recent expenses
+        SELECT
+            e.id,
+            'expense'::TEXT AS type,
+            e.description,
+            0::NUMERIC AS amount, -- Hide actual amount for privacy
+            COALESCE(e.currency, 'VND') AS currency,
+            e.expense_date AS date,
+            e.group_id,
+            g.name AS group_name,
+            e.created_by AS created_by_id,
+            p.full_name AS created_by_name
+        FROM expenses e
+        LEFT JOIN groups g ON e.group_id = g.id
+        LEFT JOIN profiles p ON e.created_by = p.id
+        WHERE e.created_at > CURRENT_DATE - INTERVAL '30 days'
+            AND NOT e.is_payment
+            
+        UNION ALL
+        
+        -- Get recent payments
+        SELECT
+            pay.id,
+            'payment'::TEXT AS type,
+            COALESCE(pay.note, 'Payment') AS description,
+            0::NUMERIC AS amount, -- Hide actual amount for privacy
+            COALESCE(pay.currency, 'VND') AS currency,
+            pay.payment_date AS date,
+            pay.group_id,
+            g.name AS group_name,
+            pay.from_user AS created_by_id,
+            p.full_name AS created_by_name
+        FROM payments pay
+        LEFT JOIN groups g ON pay.group_id = g.id
+        LEFT JOIN profiles p ON pay.from_user = p.id
+        WHERE pay.created_at > CURRENT_DATE - INTERVAL '30 days'
+    )
+    SELECT * FROM recent_activities
     ORDER BY date DESC
     LIMIT p_limit
     OFFSET p_offset;
