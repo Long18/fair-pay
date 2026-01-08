@@ -49,7 +49,7 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
                 const response = await supabaseClient.rpc("get_user_debts_public");
                 result = response.data;
                 rpcError = response.error;
-                
+
                 // For unauthorized users, ensure amounts stay hidden
                 if (result) {
                     result = result.map((debt: any) => ({

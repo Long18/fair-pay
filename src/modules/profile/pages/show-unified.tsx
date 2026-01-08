@@ -242,7 +242,7 @@ export const ProfileShowUnified = () => {
       // Add currency fallback if not present
       const debtsWithCurrency = (data || []).map((debt: any) => ({
         ...debt,
-        currency: debt.currency || "USD"
+        currency: debt.currency || "VND"
       }));
 
       setDebts(debtsWithCurrency);

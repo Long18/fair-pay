@@ -166,14 +166,14 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                 {showHistory && (
                   <>
                     <TableCell className="text-right text-muted-foreground">
-                      {balance.is_public_view 
+                      {balance.is_public_view
                         ? <span className="italic">{t('dashboard.amountHidden', 'Hidden')}</span>
-                        : formatCurrency(Number(balance.total_amount || balance.amount), balance.currency || "USD")}
+                        : formatCurrency(Number(balance.total_amount || balance.amount), balance.currency || "VND")}
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
-                      {balance.is_public_view 
+                      {balance.is_public_view
                         ? <span className="italic">{t('dashboard.amountHidden', 'Hidden')}</span>
-                        : formatCurrency(Number(balance.settled_amount || 0), balance.currency || "USD")}
+                        : formatCurrency(Number(balance.settled_amount || 0), balance.currency || "VND")}
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge variant="outline" className="text-xs">
@@ -193,10 +193,10 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                   ) : fullySettled ? (
                     <span className="flex items-center justify-end gap-1">
                       <CheckIcon className="h-4 w-4" />
-                      {formatCurrency(0, balance.currency || "USD")}
+                      {formatCurrency(0, balance.currency || "VND")}
                     </span>
                   ) : (
-                    formatCurrency(Number(showHistory ? (balance.remaining_amount || balance.amount) : balance.amount), balance.currency || "USD")
+                    formatCurrency(Number(showHistory ? (balance.remaining_amount || balance.amount) : balance.amount), balance.currency || "VND")
                   )}
                 </TableCell>
               </TableRow>
