@@ -335,21 +335,21 @@ RETURNS TABLE (
 ) AS $$
 BEGIN
     RETURN QUERY
-    -- Get actual outstanding debts from a sample user, but hide amounts
+    -- Get actual outstanding debts from a sample user for display (amounts will be censored in UI)
     WITH sample_debts AS (
         -- Get debts from a user with recent activity
-        SELECT 
+        SELECT
             gb.counterparty_id,
             gb.counterparty_name,
-            0::NUMERIC AS amount, -- Hide actual amounts for privacy
+            gb.amount, -- Return actual amounts (UI will censor for privacy)
             gb.currency,
             gb.i_owe_them
         FROM get_user_balances(
             -- Get a sample user ID who has outstanding debts
-            (SELECT es.user_id 
+            (SELECT es.user_id
              FROM expense_splits es
              JOIN expenses e ON es.expense_id = e.id
-             WHERE NOT es.is_settled 
+             WHERE NOT es.is_settled
                 AND e.created_at > CURRENT_DATE - INTERVAL '30 days'
              LIMIT 1)
         ) gb
@@ -411,9 +411,9 @@ BEGIN
         LEFT JOIN profiles p ON e.created_by = p.id
         WHERE e.created_at > CURRENT_DATE - INTERVAL '30 days'
             AND NOT e.is_payment
-            
+
         UNION ALL
-        
+
         -- Get recent payments
         SELECT
             pay.id,

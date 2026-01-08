@@ -9,6 +9,7 @@ interface BalanceRowProps {
   iOweThemFlag: boolean;
   onClick?: () => void;
   disabled?: boolean;
+  isPublicView?: boolean;
 }
 
 export function BalanceRow({
@@ -18,10 +19,14 @@ export function BalanceRow({
   iOweThemFlag,
   onClick,
   disabled = false,
+  isPublicView = false,
 }: BalanceRowProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('vi-VN').format(Math.abs(value));
   };
+
+  // Display amount text - censored for public view
+  const displayAmount = isPublicView ? "•••••" : `₫${formatCurrency(amount)}`;
 
   return (
     <div
@@ -55,7 +60,7 @@ export function BalanceRow({
             : "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/30"
         )}
       >
-        ₫{formatCurrency(amount)}
+        {displayAmount}
       </Badge>
     </div>
   );
