@@ -102,6 +102,97 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION get_user_debts_aggregated(UUID) TO authenticated;
 
 -- =============================================
+-- 3. Create get_user_debts_history function
+-- =============================================
+DROP FUNCTION IF EXISTS get_user_debts_history(UUID) CASCADE;
+
+CREATE OR REPLACE FUNCTION get_user_debts_history(p_user_id UUID)
+RETURNS TABLE (
+    counterparty_id UUID,
+    counterparty_name TEXT,
+    amount NUMERIC,
+    currency TEXT,
+    i_owe_them BOOLEAN,
+    total_amount NUMERIC,
+    settled_amount NUMERIC,
+    remaining_amount NUMERIC,
+    transaction_count INTEGER,
+    last_transaction_date TIMESTAMPTZ
+) AS $$
+BEGIN
+    RETURN QUERY
+    WITH all_transactions AS (
+        -- Get all expense transactions (including settled)
+        SELECT
+            CASE
+                WHEN es.user_id = p_user_id THEN e.paid_by_user_id
+                ELSE es.user_id
+            END AS balance_counterparty_id,
+            e.currency AS balance_currency,
+            CASE
+                WHEN es.user_id = p_user_id AND e.paid_by_user_id != p_user_id THEN es.computed_amount
+                WHEN es.user_id != p_user_id AND e.paid_by_user_id = p_user_id THEN -es.computed_amount
+                ELSE 0
+            END AS balance_amount,
+            es.is_settled,
+            e.created_at
+        FROM expense_splits es
+        JOIN expenses e ON es.expense_id = e.id
+        WHERE (es.user_id = p_user_id OR e.paid_by_user_id = p_user_id)
+            AND NOT e.is_payment
+
+        UNION ALL
+
+        -- Get all payment transactions
+        SELECT
+            CASE
+                WHEN pay.from_user = p_user_id THEN pay.to_user
+                ELSE pay.from_user
+            END AS balance_counterparty_id,
+            pay.currency AS balance_currency,
+            CASE
+                WHEN pay.from_user = p_user_id THEN pay.amount
+                ELSE -pay.amount
+            END AS balance_amount,
+            TRUE AS is_settled, -- Payments are considered settled
+            pay.created_at
+        FROM payments pay
+        WHERE (pay.from_user = p_user_id OR pay.to_user = p_user_id)
+    ),
+    aggregated AS (
+        SELECT
+            at.balance_counterparty_id,
+            at.balance_currency,
+            SUM(CASE WHEN NOT at.is_settled THEN at.balance_amount ELSE 0 END) AS current_balance,
+            SUM(ABS(at.balance_amount)) AS total_amount,
+            SUM(CASE WHEN at.is_settled THEN ABS(at.balance_amount) ELSE 0 END) AS settled_amount,
+            COUNT(*) AS transaction_count,
+            MAX(at.created_at) AS last_transaction_date
+        FROM all_transactions at
+        WHERE at.balance_counterparty_id != p_user_id
+        GROUP BY at.balance_counterparty_id, at.balance_currency
+    )
+    SELECT
+        a.balance_counterparty_id AS counterparty_id,
+        p.full_name AS counterparty_name,
+        ABS(a.current_balance) AS amount,
+        a.balance_currency AS currency,
+        a.current_balance > 0 AS i_owe_them,
+        a.total_amount,
+        a.settled_amount,
+        ABS(a.current_balance) AS remaining_amount,
+        a.transaction_count::INTEGER,
+        a.last_transaction_date
+    FROM aggregated a
+    JOIN profiles p ON a.balance_counterparty_id = p.id
+    WHERE a.total_amount > 0  -- Include all transactions even if fully settled
+    ORDER BY a.balance_currency, a.last_transaction_date DESC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION get_user_debts_history(UUID) TO authenticated;
+
+-- =============================================
 -- 3. Fix get_user_activities function
 -- =============================================
 DROP FUNCTION IF EXISTS get_user_activities(UUID, INTEGER, INTEGER) CASCADE;
@@ -229,7 +320,71 @@ VALUES
 ON CONFLICT (version) DO NOTHING;
 
 -- =============================================
--- 5. Create get_public_recent_activities function
+-- 5. Create get_user_debts_public function
+-- =============================================
+DROP FUNCTION IF EXISTS get_user_debts_public() CASCADE;
+
+CREATE OR REPLACE FUNCTION get_user_debts_public()
+RETURNS TABLE (
+    counterparty_id UUID,
+    counterparty_name TEXT,
+    amount NUMERIC,
+    currency TEXT,
+    i_owe_them BOOLEAN,
+    is_real_data BOOLEAN
+) AS $$
+BEGIN
+    RETURN QUERY
+    -- Get real recent participants but hide amounts for privacy
+    WITH recent_participants AS (
+        -- Get recent expense participants from last 30 days
+        SELECT DISTINCT
+            CASE 
+                WHEN es.user_id != e.paid_by_user_id THEN es.user_id
+                ELSE e.paid_by_user_id
+            END AS counterparty_id,
+            e.currency,
+            CASE
+                WHEN es.user_id = e.paid_by_user_id THEN FALSE
+                ELSE TRUE
+            END AS i_owe_them,
+            e.created_at
+        FROM expenses e
+        JOIN expense_splits es ON es.expense_id = e.id
+        WHERE e.created_at > CURRENT_DATE - INTERVAL '30 days'
+            AND NOT e.is_payment
+        ORDER BY e.created_at DESC
+        LIMIT 20
+    ),
+    unique_participants AS (
+        SELECT DISTINCT ON (rp.counterparty_id)
+            rp.counterparty_id,
+            p.full_name AS counterparty_name,
+            0::NUMERIC AS amount, -- Hide actual amounts for privacy
+            COALESCE(rp.currency, 'VND') AS currency,
+            rp.i_owe_them,
+            TRUE AS is_real_data
+        FROM recent_participants rp
+        JOIN profiles p ON p.id = rp.counterparty_id
+        WHERE rp.counterparty_id IS NOT NULL
+    )
+    SELECT 
+        up.counterparty_id,
+        up.counterparty_name,
+        up.amount,
+        up.currency,
+        up.i_owe_them,
+        up.is_real_data
+    FROM unique_participants up
+    WHERE up.counterparty_name IS NOT NULL
+    LIMIT 10;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION get_user_debts_public() TO anon, authenticated;
+
+-- =============================================
+-- 6. Create get_public_recent_activities function
 -- =============================================
 DROP FUNCTION IF EXISTS get_public_recent_activities(INTEGER, INTEGER) CASCADE;
 
@@ -252,7 +407,7 @@ RETURNS TABLE (
 BEGIN
     RETURN QUERY
     -- Return demo activities for public/unauthorized users
-    SELECT 
+    SELECT
         gen_random_uuid() AS id,
         'expense'::TEXT AS type,
         'Coffee Meeting'::TEXT AS description,

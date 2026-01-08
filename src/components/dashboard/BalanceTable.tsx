@@ -29,6 +29,8 @@ interface Balance {
   remaining_amount?: number;
   transaction_count?: number;
   last_transaction_date?: string;
+  is_public_view?: boolean;
+  display_amount?: string;
 }
 
 interface BalanceTableProps {
@@ -164,10 +166,14 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                 {showHistory && (
                   <>
                     <TableCell className="text-right text-muted-foreground">
-                      {formatCurrency(Number(balance.total_amount || balance.amount), balance.currency || "USD")}
+                      {balance.is_public_view 
+                        ? <span className="italic">{t('dashboard.amountHidden', 'Hidden')}</span>
+                        : formatCurrency(Number(balance.total_amount || balance.amount), balance.currency || "USD")}
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
-                      {formatCurrency(Number(balance.settled_amount || 0), balance.currency || "USD")}
+                      {balance.is_public_view 
+                        ? <span className="italic">{t('dashboard.amountHidden', 'Hidden')}</span>
+                        : formatCurrency(Number(balance.settled_amount || 0), balance.currency || "USD")}
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge variant="outline" className="text-xs">
@@ -180,7 +186,11 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                   "text-right font-semibold",
                   fullySettled && "text-green-600 dark:text-green-400"
                 )}>
-                  {fullySettled ? (
+                  {balance.is_public_view ? (
+                    <span className="text-muted-foreground italic">
+                      {t('dashboard.amountHidden', 'Amount hidden')}
+                    </span>
+                  ) : fullySettled ? (
                     <span className="flex items-center justify-end gap-1">
                       <CheckIcon className="h-4 w-4" />
                       {formatCurrency(0, balance.currency || "USD")}

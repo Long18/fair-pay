@@ -45,10 +45,20 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
             let rpcError;
 
             if (!identity?.id) {
-                // Unauthenticated: Fetch public demo data from database
-                const response = await supabaseClient.rpc("get_public_demo_debts");
+                // Unauthenticated: Fetch real data but with amounts hidden
+                const response = await supabaseClient.rpc("get_user_debts_public");
                 result = response.data;
                 rpcError = response.error;
+                
+                // For unauthorized users, ensure amounts stay hidden
+                if (result) {
+                    result = result.map((debt: any) => ({
+                        ...debt,
+                        amount: 0, // Hide actual amounts for privacy
+                        display_amount: "Hidden", // Add display field for UI
+                        is_public_view: true
+                    }));
+                }
             } else {
                 // Authenticated: Fetch user's real data
                 const functionName = includeHistory
