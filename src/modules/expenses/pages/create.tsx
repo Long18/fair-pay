@@ -351,7 +351,7 @@ export const ExpenseCreate = () => {
       open={true}
       onOpenChange={handleClose}
       title={isGroupContext ? "Add Group Expense" : "Add Expense with Friend"}
-      className="sm:max-w-4xl max-h-[90vh] overflow-y-auto"
+      className="sm:max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden"
     >
       <ExpenseForm
         groupId={contextId}
