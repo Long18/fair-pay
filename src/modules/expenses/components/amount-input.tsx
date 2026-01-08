@@ -37,7 +37,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
-    
+
     // Allow empty string
     if (inputValue === "") {
       setDisplayValue("");

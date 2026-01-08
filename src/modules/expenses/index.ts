@@ -9,6 +9,7 @@ export { AmountInput } from "./components/amount-input";
 export { QuickDatePicker } from "./components/quick-date-picker";
 export { ParticipantChips } from "./components/participant-chips";
 export { QuickTemplates } from "./components/quick-templates";
+export { MarkdownEditor } from "./components/markdown-editor";
 export { ExpenseList } from "./components/expense-list";
 export { AttachmentUpload } from "./components/attachment-upload";
 export { AttachmentList } from "./components/attachment-list";
