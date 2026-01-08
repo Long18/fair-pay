@@ -120,13 +120,20 @@ export const BalancesPage = () => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    window.location.reload();
+    try {
+      await refetch();
+      toast.success(t('balances.refreshSuccess', 'Balances refreshed successfully'));
+    } catch (err) {
+      console.error('Failed to refresh balances:', err);
+      toast.error(t('balances.refreshError', 'Failed to refresh balances'));
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-6xl py-4 md:py-8 px-4 lg:px-8">
+      <div className="container max-w-7xl mx-auto py-4 md:py-6 lg:py-8 px-4 sm:px-6 lg:px-8">
         <div className="space-y-4 md:space-y-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -162,15 +169,15 @@ export const BalancesPage = () => {
             </Alert>
           )}
 
-          {/* Balance Chart */}
-          {debts.length > 0 && !isLoading && !error && (
+          {/* Balance Chart - Always show, even when no debts */}
+          {!isLoading && !error && (
             <div className="w-full">
               <BalanceChart currentBalance={netBalance} />
             </div>
           )}
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4" role="region" aria-label={t('balances.summaryCards', 'Balance summary')}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4" role="region" aria-label={t('balances.summaryCards', 'Balance summary')}>
             {/* Net Balance Card */}
             <Card className={`border-2 ${
               netBalance > 0
@@ -323,29 +330,30 @@ export const BalancesPage = () => {
           )}
 
           {/* Tabbed Debts View */}
-          {debts.length > 0 && !isLoading && !error && (
+          {!isLoading && !error && (
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'you-owe' | 'owed-to-you')} className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <TabsList className="grid w-full sm:w-auto grid-cols-2">
-                  <TabsTrigger value="you-owe" className="text-xs md:text-sm">
-                    {t('balances.youOwe', 'You Owe')} {iOwe.length > 0 && `(${iOwe.length})`}
-                  </TabsTrigger>
-                  <TabsTrigger value="owed-to-you" className="text-xs md:text-sm">
-                    {t('balances.owedToYou', 'Owed to You')} {owedToMe.length > 0 && `(${owedToMe.length})`}
-                  </TabsTrigger>
-                </TabsList>
-              <div className="flex items-center gap-2">
-                <Select
-                  value={`${sortField}-${sortDirection}`}
-                  onValueChange={(value) => {
-                    const [field, direction] = value.split('-') as [SortField, SortDirection];
-                    setSortField(field);
-                    setSortDirection(direction);
-                  }}
-                >
-                  <SelectTrigger className="w-[140px] sm:w-[180px] h-9 text-xs sm:text-sm" aria-label={t('balances.sortBy', 'Sort by')}>
-                    <SelectValue />
-                  </SelectTrigger>
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <TabsList className="grid w-full sm:w-auto grid-cols-2">
+                    <TabsTrigger value="you-owe" className="text-xs sm:text-sm">
+                      {t('balances.youOwe', 'You Owe')} {iOwe.length > 0 && `(${iOwe.length})`}
+                    </TabsTrigger>
+                    <TabsTrigger value="owed-to-you" className="text-xs sm:text-sm">
+                      {t('balances.owedToYou', 'Owed to You')} {owedToMe.length > 0 && `(${owedToMe.length})`}
+                    </TabsTrigger>
+                  </TabsList>
+                  <div className="flex items-center justify-end">
+                    <Select
+                      value={`${sortField}-${sortDirection}`}
+                      onValueChange={(value) => {
+                        const [field, direction] = value.split('-') as [SortField, SortDirection];
+                        setSortField(field);
+                        setSortDirection(direction);
+                      }}
+                    >
+                      <SelectTrigger className="w-full sm:w-[160px] h-9 text-xs sm:text-sm" aria-label={t('balances.sortBy', 'Sort by')}>
+                        <SelectValue />
+                      </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="amount-desc">
                         <div className="flex items-center gap-2">
@@ -372,11 +380,12 @@ export const BalancesPage = () => {
                         </div>
                       </SelectItem>
                     </SelectContent>
-                  </Select>
+                    </Select>
+                  </div>
                 </div>
               </div>
 
-              <TabsContent value="you-owe" className="space-y-4">
+              <TabsContent value="you-owe" className="space-y-4 mt-4">
                 {iOwe.length > 0 ? (
                   <>
                     <div className="flex justify-end">
@@ -384,7 +393,7 @@ export const BalancesPage = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => setSettleAllDialogOpen(true)}
-                        className="gap-2"
+                        className="gap-2 w-full sm:w-auto"
                         aria-label={t('balances.settleAll', 'Settle All')}
                       >
                         <CheckCircle2Icon className="h-4 w-4" />
@@ -414,7 +423,7 @@ export const BalancesPage = () => {
                 )}
               </TabsContent>
 
-              <TabsContent value="owed-to-you" className="space-y-4">
+              <TabsContent value="owed-to-you" className="space-y-4 mt-4">
                 {owedToMe.length > 0 ? (
                   <SimplifiedDebts
                     debts={owedToMe}
