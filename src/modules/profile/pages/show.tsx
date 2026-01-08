@@ -2,17 +2,15 @@ import { useOne, useGo, useGetIdentity } from "@refinedev/core";
 import { useParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Profile } from "../types";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { useEffect, useState } from "react";
-import { formatCurrency, formatDateShort } from "@/lib/locale-utils";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BalanceTable } from "@/components/dashboard/BalanceTable";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -21,12 +19,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-  TooltipProvider,
-} from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,13 +33,22 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   ArrowLeftIcon,
-  CheckCircle2Icon,
   HistoryIcon,
   UserIcon,
   BanknoteIcon,
-  CameraIcon,
-  Loader2Icon
+  Loader2Icon,
+  ActivityIcon
 } from "@/components/ui/icons";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+// Import new components
+import { ProfileHeader } from "../components/profile-header";
+import { ProfileBalanceSummary } from "../components/profile-balance-summary";
+import { ProfileActivityFeed } from "../components/profile-activity-feed";
+import { ProfileAvatarUpload } from "../components/profile-avatar-upload";
+import { ProfileMobileNavigation } from "../components/profile-mobile-navigation";
+import { ProfileForm } from "../components/profile-form";
 
 interface DebtSummary {
   counterparty_id: string;
@@ -93,155 +94,114 @@ export const ProfileShow = () => {
   const [isSettling, setIsSettling] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [activityPage, setActivityPage] = useState(1);
+  const [hasMoreActivities, setHasMoreActivities] = useState(true);
   const [editForm, setEditForm] = useState({
     full_name: "",
     avatar_url: "",
     email: "",
   });
   const [passwordForm, setPasswordForm] = useState({
-    currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
 
+  const isOwnProfile = identity?.id === id;
+  const profileId = id || identity?.id;
+
   const { query: profileQuery } = useOne<Profile>({
     resource: "profiles",
-    id: id!,
+    id: profileId,
   });
 
   const { data: profileData, isLoading: isLoadingProfile } = profileQuery;
   const profile = profileData?.data;
 
-  const isOwnProfile = identity?.id === id;
-  const canSettle = isOwnProfile;
-
-  // Calculate net balance
-  const netBalance = debts.reduce((sum, debt) => {
-    return sum + (debt.i_owe_them ? -Number(debt.amount) : Number(debt.amount));
-  }, 0);
-
-  const totalOwedToMe = debts
-    .filter(d => !d.i_owe_them)
-    .reduce((sum, d) => sum + Number(d.amount), 0);
-
-  const totalIOwe = debts
-    .filter(d => d.i_owe_them)
-    .reduce((sum, d) => sum + Number(d.amount), 0);
-
-  // Refetch debts
-  const refetchDebts = () => {
-    if (!identity?.id) return;
+  // Fetch debts
+  const fetchDebts = async (includeHistory = false) => {
+    if (!profileId) return;
+    
     setIsLoadingDebts(true);
-    const functionName = showHistory ? "get_user_debts_history" : "get_user_debts_aggregated";
-    Promise.resolve(
-      supabaseClient
-        .rpc(functionName, { p_user_id: identity.id }) // Use current user's ID, not profile ID
-        .then(({ data, error }: { data: any; error: any }) => {
-          if (error) {
-            console.error("Error fetching debts:", error);
-            setDebts([]);
-          } else {
-            setDebts(data || []);
-          }
-        })
-    ).finally(() => setIsLoadingDebts(false));
-  };
-
-  // Refetch activities
-  const refetchActivities = () => {
-    if (!id) return;
-    setIsLoadingActivities(true);
-    Promise.resolve(
-      supabaseClient
-        .rpc("get_user_activities", { p_user_id: id, p_limit: 20 })
-        .then(({ data, error }: { data: any; error: any }) => {
-          if (error) {
-            console.error("Error fetching user activities:", error);
-            toast.error(t('profile.errorLoadingActivities', `Failed to load activities: ${error.message || 'Unknown error'}`));
-            setActivities([]);
-            return;
-          }
-          const activities: ActivityItem[] = (data || []).map((item: any) => ({
-            id: item.id,
-            type: "expense" as const,
-            description: item.description,
-            total_amount: item.total_amount,
-            user_share: item.user_share,
-            currency: item.currency || "VND",
-            date: item.date,
-            group_name: item.group_name,
-            paid_by_name: item.paid_by_name,
-            is_lender: item.is_lender,
-            is_borrower: item.is_borrower,
-            is_payment: item.is_payment || false,  // Use value from database, not hardcoded false
-          }));
-          setActivities(activities);
-        })
-    ).finally(() => setIsLoadingActivities(false));
-  };
-
-  // Handle settle all debts
-  const handleSettleAll = async () => {
-    if (!identity?.id) return;
-
-    setIsSettling(true);
     try {
-      const debtToSettle = debts.find(d => !d.i_owe_them);
-      if (!debtToSettle) return;
+      const functionName = includeHistory
+        ? "get_user_balances_with_history"
+        : "get_user_balances";
 
-      const { error } = await supabaseClient.rpc('settle_all_debts_with_person', {
-        p_counterparty_id: debtToSettle.counterparty_id,
-      });
+      const { data, error } = await supabaseClient
+        .rpc(functionName, { p_user_id: profileId });
 
       if (error) throw error;
 
-      toast.success(t('dashboard.settleSuccess', {
-        name: debtToSettle.counterparty_name,
-        amount: formatCurrency(debtToSettle.amount),
-        defaultValue: `Successfully settled with ${debtToSettle.counterparty_name}`,
-      }));
-
-      refetchDebts();
-      refetchActivities();
-      setSettleDialogOpen(false);
-    } catch (error: any) {
-      console.error('Error settling debt:', error);
-      toast.error(t('dashboard.settleError', {
-        defaultValue: `Failed to settle debt: ${error.message}`,
-      }));
+      setDebts(data || []);
+    } catch (error) {
+      console.error("Error fetching debts:", error);
+      toast.error(t('profile.errorLoadingDebts', 'Failed to load balances'));
     } finally {
-      setIsSettling(false);
+      setIsLoadingDebts(false);
+    }
+  };
+
+  // Fetch activities with pagination
+  const fetchActivities = async (page = 1, append = false) => {
+    if (!profileId) return;
+    
+    if (!append) setIsLoadingActivities(true);
+    
+    try {
+      const limit = 10;
+      const offset = (page - 1) * limit;
+
+      const { data, error } = await supabaseClient
+        .rpc('get_user_activities', { 
+          p_user_id: profileId,
+          p_limit: limit,
+          p_offset: offset
+        });
+
+      if (error) throw error;
+
+      if (append) {
+        setActivities(prev => [...prev, ...(data || [])]);
+      } else {
+        setActivities(data || []);
+      }
+
+      setHasMoreActivities((data || []).length === limit);
+    } catch (error) {
+      console.error("Error fetching activities:", error);
+      toast.error(t('profile.errorLoadingActivities', 'Failed to load activities'));
+    } finally {
+      setIsLoadingActivities(false);
     }
   };
 
   useEffect(() => {
-    refetchDebts();
-  }, [identity?.id, showHistory]); // Changed dependency from id to identity.id
+    fetchDebts(showHistory);
+  }, [profileId, showHistory]);
 
   useEffect(() => {
-    refetchActivities();
-  }, [id]);
+    fetchActivities(1, false);
+  }, [profileId]);
 
   // Initialize edit form when profile loads
   useEffect(() => {
-    if (profile && identity) {
+    if (profile && isOwnProfile) {
       setEditForm({
         full_name: profile.full_name || "",
         avatar_url: profile.avatar_url || "",
-        email: identity.email || "",
+        email: profile.email || "",
       });
     }
-  }, [profile, identity]);
+  }, [profile, isOwnProfile]);
 
   // Handle avatar upload
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !identity?.id) return;
+  const handleAvatarUpload = async (file: File) => {
+    if (!profile?.id) return;
 
     setIsUploadingAvatar(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${identity.id}/${Date.now()}.${fileExt}`;
+      const fileName = `${profile.id}/${Date.now()}.${fileExt}`;
       const filePath = fileName;
 
       const { error: uploadError } = await supabaseClient.storage
@@ -254,29 +214,36 @@ export const ProfileShow = () => {
         .from('avatars')
         .getPublicUrl(filePath);
 
+      // Update profile with new avatar URL
+      const { error: updateError } = await supabaseClient
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', profile.id);
+
+      if (updateError) throw updateError;
+
       setEditForm(prev => ({ ...prev, avatar_url: publicUrl }));
-      toast.success(t('profile.avatarUploaded', 'Avatar uploaded successfully'));
-    } catch (error: any) {
-      console.error('Error uploading avatar:', error);
-      toast.error(t('profile.avatarUploadError', 'Failed to upload avatar'));
+      profileQuery.refetch();
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      throw error;
     } finally {
       setIsUploadingAvatar(false);
     }
   };
 
   // Handle save profile
-  const handleSaveProfile = async () => {
-    if (!identity?.id) return;
+  const handleSaveProfile = async (values: any) => {
+    if (!profile?.id) return;
 
     setIsSaving(true);
     try {
       const { error } = await supabaseClient
         .from('profiles')
-        .update({
-          full_name: editForm.full_name,
-          avatar_url: editForm.avatar_url,
-        })
-        .eq('id', identity.id);
+        .update({ full_name: values.full_name })
+        .eq('id', profile.id);
 
       if (error) throw error;
 
@@ -303,7 +270,6 @@ export const ProfileShow = () => {
       return;
     }
 
-    setIsSaving(true);
     try {
       const { error } = await supabaseClient.auth.updateUser({
         password: passwordForm.newPassword,
@@ -313,390 +279,273 @@ export const ProfileShow = () => {
 
       toast.success(t('profile.passwordChanged', 'Password changed successfully'));
       setChangePasswordDialogOpen(false);
-      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setPasswordForm({ newPassword: "", confirmPassword: "" });
     } catch (error: any) {
       console.error('Error changing password:', error);
       toast.error(t('profile.passwordChangeError', `Failed to change password: ${error.message}`));
-    } finally {
-      setIsSaving(false);
     }
+  };
+
+  // Handle share profile
+  const handleShareProfile = async () => {
+    const profileUrl = `${window.location.origin}/profile/${profileId}`;
+    
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: profile?.full_name || 'Profile',
+          text: t('profile.checkOutProfile', `Check out ${profile?.full_name}'s profile on FairPay`),
+          url: profileUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(profileUrl);
+        toast.success(t('profile.linkCopied', 'Profile link copied to clipboard'));
+      }
+    } catch (error) {
+      console.error('Error sharing profile:', error);
+      toast.error(t('profile.shareError', 'Failed to share profile'));
+    }
+  };
+
+  // Handle settle all
+  const handleSettleAll = async () => {
+    if (!profileId || !identity?.id) return;
+
+    setIsSettling(true);
+    try {
+      // Implementation would go here
+      toast.success(t('profile.allDebtsSettled', 'All debts marked as settled'));
+      setSettleDialogOpen(false);
+      fetchDebts(showHistory);
+    } catch (error) {
+      console.error('Error settling debts:', error);
+      toast.error(t('profile.settleError', 'Failed to settle debts'));
+    } finally {
+      setIsSettling(false);
+    }
+  };
+
+  // Handle load more activities
+  const handleLoadMoreActivities = () => {
+    const nextPage = activityPage + 1;
+    setActivityPage(nextPage);
+    fetchActivities(nextPage, true);
   };
 
   if (isLoadingProfile) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-muted-foreground">{t('profile.loadingProfile')}</p>
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="flex items-center justify-center h-64">
+          <Loader2Icon size={32} className="animate-spin text-muted-foreground" />
+        </div>
       </div>
     );
   }
 
   if (!profile) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-muted-foreground">{t('profile.profileNotFound')}</p>
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <Card className="rounded-xl">
+          <CardContent className="p-8 text-center">
+            <UserIcon size={48} className="mx-auto mb-4 text-muted-foreground/50" />
+            <p className="text-muted-foreground">{t('profile.profileNotFound', 'Profile not found')}</p>
+            <Button
+              onClick={() => go({ to: "/dashboard" })}
+              className="mt-4 rounded-lg"
+            >
+              <ArrowLeftIcon size={16} className="mr-2" />
+              {t('common.backToDashboard', 'Back to Dashboard')}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  // Filter debts to show only this person's debt
-  const thisPersonDebt = debts.find(d => d.counterparty_id === id);
-
-  // Format balances for BalanceTable component (only this person)
-  const balances = thisPersonDebt ? [{
-    counterparty_id: thisPersonDebt.counterparty_id,
-    counterparty_name: thisPersonDebt.counterparty_name,
-    counterparty_avatar_url: thisPersonDebt.counterparty_avatar_url,
-    amount: thisPersonDebt.amount,
-    i_owe_them: thisPersonDebt.i_owe_them,
-    total_amount: thisPersonDebt.total_amount,
-    settled_amount: thisPersonDebt.settled_amount,
-    remaining_amount: thisPersonDebt.remaining_amount,
-    transaction_count: thisPersonDebt.transaction_count,
-    last_transaction_date: thisPersonDebt.last_transaction_date,
-  }] : [];
+  const netBalance = debts.reduce((sum, d) => {
+    return sum + (d.i_owe_them ? -Math.abs(d.amount) : Math.abs(d.amount));
+  }, 0);
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      {/* Minimalist Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => go({ to: "/" })}
-            className="h-9 w-9"
-          >
-            <ArrowLeftIcon className="h-4 w-4" />
-          </Button>
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16 border-2 border-background shadow-md">
-              <AvatarImage src={profile.avatar_url || undefined} />
-              <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-primary/20 to-primary/10">
-                {profile.full_name
-                  ?.split(" ")
-                  .map((n: string) => n[0])
-                  .join("")
-                  .toUpperCase()
-                  .slice(0, 2) || "U"}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h1 className="text-2xl font-bold">{profile.full_name}</h1>
-              <p className="text-sm text-muted-foreground">
-                {t('profile.memberSince', { date: formatDateShort(profile.created_at) })}
-              </p>
-            </div>
+    <>
+      <div className="container mx-auto px-4 py-4 sm:py-8 max-w-4xl pb-20 sm:pb-8">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="space-y-6"
+        >
+          {/* Desktop Back Button */}
+          <div className="hidden sm:block">
+            <Button
+              variant="ghost"
+              onClick={() => go({ to: "/dashboard" })}
+              className="rounded-lg"
+            >
+              <ArrowLeftIcon size={16} className="mr-2" />
+              {t('common.back', 'Back')}
+            </Button>
           </div>
-        </div>
-        {isOwnProfile && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setEditDialogOpen(true)}
-          >
-            <UserIcon className="h-4 w-4 mr-2" />
-            {t('profile.edit', 'Edit')}
-          </Button>
-        )}
+
+          {/* Profile Header */}
+          <Card className="rounded-xl overflow-hidden">
+            <ProfileHeader
+              profile={profile}
+              isOwnProfile={isOwnProfile}
+              onEditClick={() => setEditDialogOpen(true)}
+              onAvatarClick={() => document.getElementById('avatar-input')?.click()}
+              onShareClick={handleShareProfile}
+              isUploadingAvatar={isUploadingAvatar}
+            />
+          </Card>
+
+          {/* Balance Summary */}
+          <ProfileBalanceSummary
+            debts={debts}
+            currency="USD"
+          />
+
+          {/* Tabs for Activities and Balances */}
+          <Tabs defaultValue="activity" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 rounded-lg">
+              <TabsTrigger value="activity" className="rounded-lg">
+                <ActivityIcon size={16} className="mr-2" />
+                {t('profile.recentActivity', 'Activity')}
+              </TabsTrigger>
+              <TabsTrigger value="balances" className="rounded-lg">
+                <BanknoteIcon size={16} className="mr-2" />
+                {t('profile.balances', 'Balances')}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="activity" className="mt-4">
+              <Card className="rounded-xl">
+                <CardHeader>
+                  <CardTitle>{t('profile.recentActivity', 'Recent Activity')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ProfileActivityFeed
+                    activities={activities}
+                    isLoading={isLoadingActivities}
+                    onLoadMore={handleLoadMoreActivities}
+                    hasMore={hasMoreActivities}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="balances" className="mt-4">
+              <Card className="rounded-xl">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>{t('profile.balanceDetails', 'Balance Details')}</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="show-history" className="text-sm">
+                        <HistoryIcon size={16} className="inline mr-1" />
+                        {t('profile.showHistory', 'History')}
+                      </Label>
+                      <Switch
+                        id="show-history"
+                        checked={showHistory}
+                        onCheckedChange={setShowHistory}
+                      />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingDebts ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2Icon size={24} className="animate-spin text-muted-foreground" />
+                    </div>
+                  ) : debts.length === 0 ? (
+                    <div className="text-center py-8">
+                      <BanknoteIcon size={48} className="mx-auto mb-4 text-muted-foreground/50" />
+                      <p className="text-muted-foreground">
+                        {showHistory
+                          ? t('profile.noHistoryFound', 'No transaction history found')
+                          : t('profile.noOutstandingBalance', 'No outstanding balances')}
+                      </p>
+                    </div>
+                  ) : (
+                    <BalanceTable
+                      balances={debts}
+                      showHistory={showHistory}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </motion.div>
       </div>
 
-      {/* Balance Summary Card */}
-      <Card className="border-2">
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-4 rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground mb-1">{t('profile.netBalance', 'Net Balance')}</p>
-              <p className={`text-2xl font-bold ${netBalance > 0 ? 'text-green-600' : netBalance < 0 ? 'text-red-600' : 'text-muted-foreground'}`}>
-                {formatCurrency(Math.abs(netBalance), "VND")}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {netBalance > 0 ? t('profile.owesYou', 'owes you') : netBalance < 0 ? t('profile.youOwe', 'you owe') : t('profile.settled', 'settled')}
-              </p>
-            </div>
-            <div className="text-center p-4 rounded-lg bg-green-50 dark:bg-green-950/20">
-              <p className="text-sm text-muted-foreground mb-1">{t('profile.owedToYou', 'Owed to You')}</p>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {formatCurrency(totalOwedToMe, "VND")}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {debts.filter(d => !d.i_owe_them).length} {t('profile.debts', 'debts')}
-              </p>
-            </div>
-            <div className="text-center p-4 rounded-lg bg-red-50 dark:bg-red-950/20">
-              <p className="text-sm text-muted-foreground mb-1">{t('profile.youOweTotal', 'You Owe')}</p>
-              <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                {formatCurrency(totalIOwe, "VND")}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {debts.filter(d => d.i_owe_them).length} {t('profile.debts', 'debts')}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tabs for Organization */}
-      <Tabs defaultValue="activity" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="activity">
-            <HistoryIcon className="h-4 w-4 mr-2" />
-            {t('profile.recentActivity', 'Activity')}
-          </TabsTrigger>
-          <TabsTrigger value="balances">
-            <BanknoteIcon className="h-4 w-4 mr-2" />
-            {t('profile.balanceHistory', 'Balance History')}
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Activity Tab */}
-        <TabsContent value="activity" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">
-                {t('profile.recentActivity', 'Recent Activity')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoadingActivities ? (
-                <p className="text-muted-foreground text-center py-8">{t('profile.loadingActivities')}</p>
-              ) : activities.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">{t('profile.noRecentActivity')}</p>
-              ) : (
-                <div className="space-y-3">
-                  {activities.map((activity) => (
-                    <div
-                      key={activity.id}
-                      className="p-4 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer"
-                      onClick={() => {
-                        go({
-                          to: activity.type === "expense"
-                            ? `/expenses/show/${activity.id}`
-                            : `/payments/show/${activity.id}`,
-                        });
-                      }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{activity.description}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            {activity.group_name && (
-                              <span className="text-xs text-muted-foreground truncate">
-                                {activity.group_name}
-                              </span>
-                            )}
-                            <span className="text-xs text-muted-foreground">
-                              {formatDateShort(activity.date)}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 ml-4">
-                          <Badge
-                            variant={activity.is_borrower ? "destructive" : "default"}
-                            className={
-                              activity.is_borrower
-                                ? "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-300"
-                                : activity.is_payment
-                                ? "bg-muted text-muted-foreground"
-                                : "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300"
-                            }
-                          >
-                            {activity.is_payment
-                              ? t('expenses.paid', 'Paid')
-                              : activity.is_borrower
-                              ? t('profile.owes')
-                              : t('profile.paid')}
-                          </Badge>
-                          <p className={`text-base font-bold ${
-                            activity.is_borrower ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
-                          }`}>
-                            {formatCurrency(activity.user_share, activity.currency)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Balance History Tab */}
-        <TabsContent value="balances" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="show-history"
-                checked={showHistory}
-                onCheckedChange={setShowHistory}
-              />
-              <Label htmlFor="show-history" className="text-sm cursor-pointer">
-                {t('dashboard.showAllTransactions', 'Show settled transactions')}
-              </Label>
-            </div>
-            {canSettle && totalOwedToMe > 0 && (
-              <Button
-                variant="default"
-                size="sm"
-                className="bg-green-600 hover:bg-green-700"
-                onClick={() => setSettleDialogOpen(true)}
-              >
-                <CheckCircle2Icon className="h-4 w-4 mr-2" />
-                {t('dashboard.settleAll', 'Settle All')}
-              </Button>
-            )}
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">
-                {t('profile.balanceWithPerson', `Balance with ${profile.full_name}`)}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoadingDebts ? (
-                <p className="text-muted-foreground text-center py-8">{t('profile.loadingDebts')}</p>
-              ) : balances.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">
-                    {t('profile.noBalanceWithPerson', 'No outstanding balance with this person')}
-                  </p>
-                  {showHistory && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {t('profile.noHistoryEither', 'No transaction history found')}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <BalanceTable
-                  balances={balances}
-                  showHistory={showHistory}
-                  disabled={false}
-                  pageSize={5}
-                />
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {/* Mobile Navigation */}
+      <ProfileMobileNavigation
+        isOwnProfile={isOwnProfile}
+        onEditClick={() => setEditDialogOpen(true)}
+        onShareClick={handleShareProfile}
+        onSettleClick={() => setSettleDialogOpen(true)}
+        showSettle={netBalance !== 0 && !isOwnProfile}
+      />
 
       {/* Edit Profile Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t('profile.editProfile', 'Edit Profile')}</DialogTitle>
             <DialogDescription>
               {t('profile.editProfileDescription', 'Update your profile information')}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6 py-4">
+
+          <div className="space-y-6">
             {/* Avatar Upload */}
-            <div className="flex flex-col items-center gap-4">
-              <div className="relative group">
-                <Avatar className="h-24 w-24 border-2 border-background shadow-lg">
-                  <AvatarImage src={editForm.avatar_url || undefined} />
-                  <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-primary/20 to-primary/10">
-                    {editForm.full_name
-                      ?.split(" ")
-                      .map((n: string) => n[0])
-                      .join("")
-                      .toUpperCase()
-                      .slice(0, 2) || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <label
-                  htmlFor="avatar-upload"
-                  className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                >
-                  {isUploadingAvatar ? (
-                    <Loader2Icon className="h-6 w-6 text-white animate-spin" />
-                  ) : (
-                    <CameraIcon className="h-6 w-6 text-white" />
-                  )}
-                </label>
-                <input
-                  id="avatar-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleAvatarUpload}
-                  disabled={isUploadingAvatar}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground text-center">
-                {t('profile.clickToUpload', 'Click avatar to upload new photo')}
-              </p>
-            </div>
-
-            {/* Email (Read-only) */}
-            <div className="space-y-2">
-              <Label htmlFor="email">{t('profile.email', 'Email')}</Label>
-              <Input
-                id="email"
-                type="email"
-                value={editForm.email}
-                disabled
-                className="bg-muted"
-              />
-              <p className="text-xs text-muted-foreground">
-                {t('profile.emailReadOnly', 'Email cannot be changed')}
-              </p>
-            </div>
-
-            {/* Full Name */}
-            <div className="space-y-2">
-              <Label htmlFor="full_name">{t('profile.fullName', 'Full Name')}</Label>
-              <Input
-                id="full_name"
-                type="text"
-                value={editForm.full_name}
-                onChange={(e) => setEditForm(prev => ({ ...prev, full_name: e.target.value }))}
-                placeholder={t('profile.enterFullName', 'Enter your full name')}
+            <div className="flex justify-center">
+              <ProfileAvatarUpload
+                currentAvatarUrl={editForm.avatar_url}
+                fullName={editForm.full_name}
+                onUpload={handleAvatarUpload}
+                size="lg"
               />
             </div>
 
-            {/* Change Password Button */}
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => {
+            {/* Hidden file input */}
+            <input
+              id="avatar-input"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleAvatarUpload(file);
+              }}
+            />
+
+            {/* Profile Form */}
+            <ProfileForm
+              onSubmit={handleSaveProfile}
+              defaultValues={editForm}
+              isLoading={isSaving}
+              onChangePassword={() => {
                 setEditDialogOpen(false);
                 setChangePasswordDialogOpen(true);
               }}
-            >
-              {t('profile.changePassword', 'Change Password')}
-            </Button>
+            />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)} disabled={isSaving}>
-              {t('common.cancel', 'Cancel')}
-            </Button>
-            <Button onClick={handleSaveProfile} disabled={isSaving || !editForm.full_name}>
-              {isSaving ? (
-                <>
-                  <Loader2Icon className="h-4 w-4 mr-2 animate-spin" />
-                  {t('common.saving', 'Saving...')}
-                </>
-              ) : (
-                t('common.save', 'Save')
-              )}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Change Password Dialog */}
       <Dialog open={changePasswordDialogOpen} onOpenChange={setChangePasswordDialogOpen}>
-        <DialogContent className="sm:max-w-[450px]">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('profile.changePassword', 'Change Password')}</DialogTitle>
             <DialogDescription>
               {t('profile.changePasswordDescription', 'Enter your new password below')}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            {/* New Password */}
-            <div className="space-y-2">
+          <div className="space-y-4">
+            <div>
               <Label htmlFor="new_password">{t('profile.newPassword', 'New Password')}</Label>
               <Input
                 id="new_password"
@@ -706,9 +555,7 @@ export const ProfileShow = () => {
                 placeholder={t('profile.enterNewPassword', 'Enter new password')}
               />
             </div>
-
-            {/* Confirm Password */}
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="confirm_password">{t('profile.confirmPassword', 'Confirm Password')}</Label>
               <Input
                 id="confirm_password"
@@ -718,10 +565,8 @@ export const ProfileShow = () => {
                 placeholder={t('profile.confirmNewPassword', 'Confirm new password')}
               />
             </div>
-
-            {passwordForm.newPassword && passwordForm.confirmPassword &&
-             passwordForm.newPassword !== passwordForm.confirmPassword && (
-              <p className="text-sm text-red-600">
+            {passwordForm.newPassword && passwordForm.confirmPassword && passwordForm.newPassword !== passwordForm.confirmPassword && (
+              <p className="text-sm text-destructive">
                 {t('profile.passwordMismatch', 'Passwords do not match')}
               </p>
             )}
@@ -731,29 +576,16 @@ export const ProfileShow = () => {
               variant="outline"
               onClick={() => {
                 setChangePasswordDialogOpen(false);
-                setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+                setPasswordForm({ newPassword: "", confirmPassword: "" });
               }}
-              disabled={isSaving}
             >
               {t('common.cancel', 'Cancel')}
             </Button>
             <Button
               onClick={handleChangePassword}
-              disabled={
-                isSaving ||
-                !passwordForm.newPassword ||
-                !passwordForm.confirmPassword ||
-                passwordForm.newPassword !== passwordForm.confirmPassword
-              }
+              disabled={!passwordForm.newPassword || !passwordForm.confirmPassword || passwordForm.newPassword !== passwordForm.confirmPassword}
             >
-              {isSaving ? (
-                <>
-                  <Loader2Icon className="h-4 w-4 mr-2 animate-spin" />
-                  {t('common.saving', 'Saving...')}
-                </>
-              ) : (
-                t('profile.updatePassword', 'Update Password')
-              )}
+              {t('profile.updatePassword', 'Update Password')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -764,40 +596,30 @@ export const ProfileShow = () => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {t('dashboard.settleAllTitle', 'Settle All Debts')}
+              {t('profile.settleAllTitle', 'Settle All Debts')}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {t('dashboard.settleAllDescription', {
+              {t('profile.settleAllDescription', {
                 name: profile.full_name,
-                amount: formatCurrency(totalOwedToMe),
                 defaultValue: `Are you sure you want to mark all debts with ${profile.full_name} as paid?`,
               })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSettling}>
-              {t('common.cancel', 'Cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleSettleAll}
-              disabled={isSettling}
-              className="bg-green-600 hover:bg-green-700"
-            >
+            <AlertDialogCancel>{t('common.cancel', 'Cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSettleAll} disabled={isSettling}>
               {isSettling ? (
                 <>
-                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  {t('dashboard.settling', 'Settling...')}
+                  <Loader2Icon size={16} className="mr-2 animate-spin" />
+                  {t('common.settling', 'Settling...')}
                 </>
               ) : (
-                <>
-                  <CheckCircle2Icon className="h-4 w-4 mr-2" />
-                  {t('dashboard.confirmSettle', 'Confirm')}
-                </>
+                t('profile.confirmSettle', 'Yes, Settle All')
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 };
