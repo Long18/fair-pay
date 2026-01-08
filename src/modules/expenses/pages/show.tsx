@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Expense, ExpenseSplit, Attachment } from "../types";
 import { AttachmentList } from "../components/attachment-list";
-import { CategoryIcon } from "../components/category-icon";
+import { ExpenseHeader } from "../components/expense-header";
+import { ExpenseAmountDisplay } from "../components/expense-amount-display";
+import { ExpenseSplitCard } from "../components/expense-split-card";
 import { Profile } from "@/modules/profile/types";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
@@ -21,16 +22,23 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { formatDate, formatNumber } from "@/lib/locale-utils";
+import { formatNumber } from "@/lib/locale-utils";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { useTranslation } from "react-i18next";
-
-import { ArrowLeftIcon, PencilIcon, Trash2Icon, CheckCircle2Icon, XCircleIcon, PlusIcon } from "@/components/ui/icons";
+import { ArrowLeftIcon, CheckCircle2Icon, PlusIcon, HomeIcon, PencilIcon } from "@/components/ui/icons";
 import { SettleSplitDialog } from "../components/settle-split-dialog";
 import { Spinner } from "@/components/ui/spinner";
-import { MomoPaymentButton } from "@/modules/payments/components/momo-payment-button";
 import { MarkdownComment } from "../components/markdown-comment";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { motion, AnimatePresence } from "framer-motion";
 
 export const ExpenseShow = () => {
   const { id } = useParams<{ id: string }>();
@@ -280,7 +288,14 @@ export const ExpenseShow = () => {
       {
         onSuccess: () => {
           toast.success("Expense deleted successfully");
-          go({ to: `/groups/show/${expense.group_id}` });
+          // Navigate back to appropriate context
+          if (expense.group_id) {
+            go({ to: `/groups/show/${expense.group_id}` });
+          } else if (expense.friendship_id) {
+            go({ to: `/friends/${expense.friendship_id}` });
+          } else {
+            go({ to: `/dashboard` });
+          }
         },
         onError: (error) => {
           toast.error(`Failed to delete expense: ${error.message}`);
@@ -289,128 +304,159 @@ export const ExpenseShow = () => {
     );
   };
 
+  // Skeleton loading state
   if (isLoadingExpense || isLoadingSplits || !expense || loading) {
     return (
-      <div className="w-full max-w-4xl mx-auto">
-        <Spinner size="lg" className="min-h-[400px]" />
+      <div className="w-full max-w-4xl mx-auto px-4 md:px-6">
+        <Skeleton className="h-8 w-32 mb-4" />
+        <div className="space-y-4 md:space-y-6">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-8 w-3/4 mb-2" />
+              <Skeleton className="h-4 w-1/4" />
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-16 w-16 rounded-full" />
+                <div className="flex-1">
+                  <Skeleton className="h-4 w-24 mb-2" />
+                  <Skeleton className="h-6 w-32" />
+                </div>
+                <div>
+                  <Skeleton className="h-4 w-20 mb-2" />
+                  <Skeleton className="h-8 w-28" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-20 w-full rounded-lg" />
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   return (
-      <div className="w-full max-w-4xl mx-auto">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="mb-4"
-        onClick={() => go({ to: `/groups/show/${expense.group_id}` })}
-      >
-        <ArrowLeftIcon className="h-4 w-4 mr-2" />
-        <span className="hidden sm:inline">Back to Group</span>
-        <span className="sm:hidden">Back</span>
-      </Button>
+    <div className="w-full max-w-4xl mx-auto px-4 md:px-6 pb-20 md:pb-8">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb className="mb-4 md:mb-6">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink
+              href="/dashboard"
+              onClick={(e) => {
+                e.preventDefault();
+                go({ to: "/dashboard" });
+              }}
+            >
+              <HomeIcon className="h-4 w-4" />
+              <span className="sr-only">Home</span>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                if (expense.group_id) {
+                  go({ to: `/groups/show/${expense.group_id}` });
+                } else if (expense.friendship_id) {
+                  go({ to: `/friends/${expense.friendship_id}` });
+                }
+              }}
+            >
+              {expense.group_id ? t('common.group', 'Group') : t('common.friend', 'Friend')}
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <span className="text-muted-foreground">
+              {expense.description}
+            </span>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
 
-      <div className="space-y-4 md:space-y-6">
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-              <div className="space-y-2 flex-1 min-w-0">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                  <CardTitle className="text-2xl sm:text-3xl break-words">{expense.description}</CardTitle>
-                  {expense.category && (
-                    <CategoryIcon category={expense.category} size="md" showLabel />
-                  )}
-                </div>
-                <p className="text-muted-foreground">
-                  {formatDate(expense.expense_date, {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </p>
-              </div>
-              {canEdit && (
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 sm:flex-none"
-                    onClick={() => go({ to: `/expenses/edit/${expense.id}` })}
-                  >
-                    <PencilIcon className="h-4 w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Edit</span>
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="sm" className="flex-1 sm:flex-none">
-                        <Trash2Icon className="h-4 w-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Delete</span>
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Expense?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete
-                          this expense and all associated splits.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={handleDelete}
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              )}
-            </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="space-y-4 md:space-y-6"
+      >
+        {/* Main Expense Card */}
+        <Card className="rounded-xl border-2 shadow-sm hover:shadow-md transition-shadow duration-200">
+          <CardHeader className="pb-0">
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog>
+              <ExpenseHeader
+                expense={expense}
+                canEdit={canEdit}
+                onEdit={() => go({ to: `/expenses/edit/${expense.id}` })}
+                onDelete={() => {
+                  const dialog = document.querySelector('[role="alertdialog"]');
+                  if (!dialog) {
+                    // Trigger the alert dialog programmatically
+                    const trigger = document.querySelector('[data-delete-trigger]') as HTMLElement;
+                    trigger?.click();
+                  }
+                }}
+              />
+              <AlertDialogTrigger asChild>
+                <button data-delete-trigger className="hidden" />
+              </AlertDialogTrigger>
+              <AlertDialogContent className="rounded-xl">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t('expenses.deleteTitle', 'Delete Expense?')}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {t('expenses.deleteDescription', 'This action cannot be undone. This will permanently delete this expense and all associated splits.')}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t('common.cancel', 'Cancel')}</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete}>
+                    {t('common.delete', 'Delete')}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </CardHeader>
-          <CardContent className="space-y-4 md:space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-6 p-4 md:p-6 bg-gradient-to-br from-muted/50 to-muted rounded-xl shadow-sm">
-              <Avatar className="h-12 w-12 sm:h-16 sm:w-16 border-4 border-background shadow-lg ring-4 ring-primary/10">
-                <AvatarImage src={expense.profiles?.avatar_url || undefined} alt={expense.profiles?.full_name} />
-                <AvatarFallback className="text-base sm:text-lg font-bold bg-gradient-to-br from-primary/20 to-primary/10">
-                  {expense.profiles?.full_name
-                    ?.split(" ")
-                    .map((n: string) => n[0])
-                    .join("")
-                    .toUpperCase()
-                    .slice(0, 2) || "?"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm text-muted-foreground font-medium">{t('expenses.paidBy')}</p>
-                <p className="font-bold text-base sm:text-lg line-clamp-2 leading-tight break-words" title={expense.profiles?.full_name || t('profile.unknown')}>
-                  {expense.profiles?.full_name || t('profile.unknown')}
-                </p>
-              </div>
-              <div className="text-left sm:text-right w-full sm:w-auto">
-                <p className="text-xs sm:text-sm text-muted-foreground font-medium">{t('expenses.totalAmount')}</p>
-                <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                  {formatNumber(expense.amount)} {expense.currency}
-                </p>
-              </div>
-            </div>
+          <CardContent className="space-y-4 md:space-y-6 pt-6">
+            <ExpenseAmountDisplay expense={expense} />
           </CardContent>
         </Card>
 
-        <Card>
+        {/* Split Details Card */}
+        <Card className="rounded-xl border-2 shadow-sm hover:shadow-md transition-shadow duration-200">
           <CardHeader>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 md:gap-4">
-              <CardTitle className="text-base md:text-lg">{t('expenses.splitDetails')}</CardTitle>
-              {isPayer && !isPaid && splits.length > 0 && (
+              <CardTitle className="text-base md:text-lg flex items-center gap-2">
+                {t('expenses.splitDetails')}
+                <Badge variant="secondary" className="ml-1">
+                  {splits.length}
+                </Badge>
+              </CardTitle>
+              {isPayer && !isPaid && splits.some(s => !s.is_settled && s.user_id !== identity?.id) && (
                 <AlertDialog open={settleAllDialogOpen} onOpenChange={setSettleAllDialogOpen}>
                   <AlertDialogTrigger asChild>
-                    <Button variant="default" size="sm" className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 w-full sm:w-auto shadow-sm"
+                    >
                       <CheckCircle2Icon className="h-4 w-4 mr-2" />
                       {t('expenses.settleAll', 'Settle All')}
                     </Button>
                   </AlertDialogTrigger>
-                  <AlertDialogContent>
+                  <AlertDialogContent className="rounded-xl">
                     <AlertDialogHeader>
                       <AlertDialogTitle>
                         {t('expenses.settleAllTitle', 'Mark as Paid')}
@@ -419,6 +465,7 @@ export const ExpenseShow = () => {
                         {t('expenses.settleAllDescription', {
                           description: expense.description,
                           amount: formatNumber(expense.amount),
+                          currency: expense.currency,
                           defaultValue: `Mark "${expense.description}" (${formatNumber(expense.amount)} ${expense.currency}) as paid? All participants will be marked as settled.`,
                         })}
                       </AlertDialogDescription>
@@ -451,159 +498,65 @@ export const ExpenseShow = () => {
             </div>
           </CardHeader>
           <CardContent>
-              <div className="space-y-3 md:space-y-4">
-                {splits.map((split: any) => {
+            <AnimatePresence mode="popLayout">
+              <div className="space-y-3">
+                {splits.map((split: any, index: number) => {
                   const isCurrentUserSplit = split.user_id === identity?.id;
                   const isSplitSettled = split.is_settled || isPaid;
                   const canSettle = isPayer && !isSplitSettled && !isCurrentUserSplit;
-                  const isPartiallySettled = split.is_settled && split.settled_amount < split.computed_amount;
 
                   return (
-                    <div
+                    <motion.div
                       key={split.id}
-                      className={`group flex flex-col p-3 md:p-4 border-2 rounded-xl transition-all duration-200 ${
-                        isSplitSettled
-                          ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800'
-                          : 'hover:border-primary/50 hover:bg-accent/30'
-                      }`}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
                     >
-                      <div className="flex flex-row items-center justify-between gap-3 md:gap-4">
-                        <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
-                        <Avatar className={`h-10 w-10 sm:h-12 sm:w-12 border-2 shadow-md ring-2 ring-offset-1 ring-offset-background transition-all duration-200 flex-shrink-0 ${
-                          isSplitSettled
-                            ? 'border-green-300 dark:border-green-700 ring-green-200 dark:ring-green-800'
-                            : 'border-background ring-primary/20 group-hover:ring-primary/50'
-                        }`}>
-                          <AvatarImage src={split.profiles?.avatar_url || undefined} alt={split.profiles?.full_name} />
-                          <AvatarFallback className={`text-xs sm:text-sm font-semibold ${
-                            isSplitSettled
-                              ? 'bg-gradient-to-br from-green-100 to-green-50 dark:from-green-950/40 dark:to-green-950/20 text-green-700 dark:text-green-300'
-                              : 'bg-gradient-to-br from-muted to-muted/50'
-                          }`}>
-                            {split.profiles?.full_name
-                              ?.split(" ")
-                              .map((n: string) => n[0])
-                              .join("")
-                              .toUpperCase()
-                              .slice(0, 2) || "?"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className={`font-semibold text-sm sm:text-base line-clamp-2 leading-tight transition-colors break-words ${
-                            isSplitSettled ? 'text-green-700 dark:text-green-300' : 'group-hover:text-primary'
-                          }`} title={split.profiles?.full_name || t('profile.unknown')}>
-                            {split.profiles?.full_name || t('profile.unknown')}
-                            {isCurrentUserSplit && (
-                              <span className="text-xs text-muted-foreground ml-2 font-normal">
-                                ({t('common.you')})
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            <div className="text-xs text-muted-foreground font-medium">
-                              {String(t(`expenses.${split.split_method}`, split.split_method))}
-                            </div>
-                            {isSplitSettled && !isPartiallySettled && (
-                              <Badge variant="outline" className="text-xs bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700">
-                                <CheckCircle2Icon className="h-3 w-3 mr-1" />
-                                {t('expenses.paid', 'Paid')}
-                              </Badge>
-                            )}
-                            {isPartiallySettled && (
-                              <Badge variant="outline" className="text-xs bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700">
-                                <CheckCircle2Icon className="h-3 w-3 mr-1" />
-                                {t('expenses.partiallyPaid', 'Partially Paid')}
-                              </Badge>
-                            )}
-                            {!isSplitSettled && !isCurrentUserSplit && (
-                              <Badge variant="outline" className="text-xs bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700">
-                                <XCircleIcon className="h-3 w-3 mr-1" />
-                                {t('expenses.unpaid', 'Unpaid')}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <div className="flex flex-col items-end">
-                            {isPartiallySettled ? (
-                              <>
-                                <div className="font-bold text-base sm:text-lg text-amber-600 dark:text-amber-400">
-                                  {formatNumber(split.computed_amount - split.settled_amount)} {expense.currency}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {t('expenses.remaining', 'Remaining')} ({formatNumber(split.settled_amount)} / {formatNumber(split.computed_amount)} {t('expenses.paid', 'paid')})
-                                </div>
-                              </>
-                            ) : (
-                              <div className={`font-bold text-base sm:text-lg transition-transform ${
-                                isSplitSettled ? 'text-green-600 dark:text-green-400' : ''
-                              }`}>
-                                {formatNumber(split.computed_amount)} {expense.currency}
-                              </div>
-                            )}
-                          </div>
-                          {canSettle && (
-                            <Button
-                              size="sm"
-                              variant="default"
-                              className="bg-green-600 hover:bg-green-700 flex-shrink-0"
-                              onClick={() => openSettleDialog(split)}
-                              disabled={settlingSplitId === split.id}
-                            >
-                              {settlingSplitId === split.id ? (
-                                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                              ) : (
-                                <>
-                                  <CheckCircle2Icon className="h-4 w-4 sm:mr-1" />
-                                  <span className="hidden sm:inline">{t('expenses.settle', 'Settle')}</span>
-                                </>
-                              )}
-                            </Button>
-                          )}
-                          {/* MoMo payment button for the user who owes */}
-                          {isCurrentUserSplit && !isSplitSettled && !isPayer && (
-                            <MomoPaymentButton
-                              split={split}
-                              onPaymentComplete={() => {
-                                refetchExpense();
-                                // Reload splits
-                                setIsLoadingSplits(true);
-                                supabaseClient
-                                  .rpc("get_expense_splits_public", { p_expense_id: id })
-                                  .then(({ data, error }) => {
-                                    if (!error && data) {
-                                      setSplits(data.map((s: any) => ({
-                                        ...s,
-                                        profiles: {
-                                          id: s.user_id,
-                                          full_name: s.user_full_name,
-                                          avatar_url: s.user_avatar_url,
-                                        },
-                                      })));
-                                    }
-                                    setIsLoadingSplits(false);
-                                  });
-                              }}
-                            />
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                      <ExpenseSplitCard
+                        split={split}
+                        expense={expense}
+                        isCurrentUser={isCurrentUserSplit}
+                        isPayer={isPayer}
+                        canSettle={canSettle}
+                        isSettling={settlingSplitId === split.id}
+                        onSettle={openSettleDialog}
+                        onPaymentComplete={() => {
+                          refetchExpense();
+                          // Reload splits
+                          setIsLoadingSplits(true);
+                          supabaseClient
+                            .rpc("get_expense_splits_public", { p_expense_id: id })
+                            .then(({ data, error }) => {
+                              if (!error && data) {
+                                setSplits(data.map((s: any) => ({
+                                  ...s,
+                                  profiles: {
+                                    id: s.user_id,
+                                    full_name: s.user_full_name,
+                                    avatar_url: s.user_avatar_url,
+                                  },
+                                })));
+                              }
+                              setIsLoadingSplits(false);
+                            });
+                        }}
+                      />
+                    </motion.div>
                   );
                 })}
               </div>
+            </AnimatePresence>
           </CardContent>
         </Card>
 
         {/* Receipts, Bills & Comments */}
-        <Card>
+        <Card className="rounded-xl border-2 shadow-sm hover:shadow-md transition-shadow duration-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base md:text-lg">
               {t('expenses.receiptsBillsComments', 'Receipts, Bills & Comments')}
-              {displayAttachments.length > 0 && (
-                <Badge variant="secondary" className="ml-2">
-                  {displayAttachments.length}
+              {(displayAttachments.length > 0 || expense.comment) && (
+                <Badge variant="secondary" className="ml-1">
+                  {displayAttachments.length + (expense.comment ? 1 : 0)}
                 </Badge>
               )}
             </CardTitle>
@@ -611,37 +564,89 @@ export const ExpenseShow = () => {
           <CardContent className="space-y-6">
             {/* Comment Section */}
             {expense.comment && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-muted-foreground">{t('expenses.comment', 'Comment')}</h3>
-                <div className="p-4 md:p-6 bg-muted/50 rounded-xl border">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-3"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-primary"
+                    >
+                      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-sm font-semibold">{t('expenses.comment', 'Comment')}</h3>
+                </div>
+                <div className="p-4 md:p-5 bg-muted/30 rounded-lg border backdrop-blur-sm">
                   <MarkdownComment content={expense.comment} />
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* Separator between sections */}
             {expense.comment && displayAttachments.length > 0 && (
-              <Separator />
+              <Separator className="my-4" />
             )}
 
             {/* Attachments Section */}
             {displayAttachments.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-muted-foreground">
-                  {t('expenses.receiptsAndBills', 'Receipts & Bills')} ({displayAttachments.length})
-                </h3>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+                className="space-y-3"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-primary"
+                    >
+                      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                  </div>
+                  <h3 className="text-sm font-semibold">
+                    {t('expenses.receiptsAndBills', 'Receipts & Bills')} ({displayAttachments.length})
+                  </h3>
+                </div>
                 <AttachmentList
                   attachments={displayAttachments}
                   canDelete={canEdit}
                   onDelete={handleAttachmentDelete}
                 />
-              </div>
+              </motion.div>
             )}
 
             {/* Empty State - only show when both are empty */}
             {!expense.comment && displayAttachments.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-8 md:py-12 text-center">
-                <div className="rounded-full bg-muted p-3 md:p-4 mb-3 md:mb-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4 }}
+                className="flex flex-col items-center justify-center py-8 md:py-12 text-center"
+              >
+                <div className="rounded-full bg-muted/50 p-4 mb-4 backdrop-blur-sm">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="48"
@@ -649,10 +654,10 @@ export const ExpenseShow = () => {
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="2"
+                    strokeWidth="1.5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    className="text-muted-foreground"
+                    className="text-muted-foreground/70"
                   >
                     <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
                     <polyline points="14 2 14 8 20 8" />
@@ -661,16 +666,27 @@ export const ExpenseShow = () => {
                   </svg>
                 </div>
                 <h3 className="font-semibold text-base md:text-lg mb-2">
-                  {t('expenses.noReceipts', 'No receipts uploaded')}
+                  {t('expenses.noDocuments', 'No documents attached')}
                 </h3>
-                <p className="text-xs md:text-sm text-muted-foreground max-w-sm">
-                  {t('expenses.noReceiptsDescription', 'Receipts and bills can be uploaded when creating or editing this expense.')}
+                <p className="text-xs md:text-sm text-muted-foreground max-w-sm mb-4">
+                  {t('expenses.noDocumentsDescription', 'Add receipts, bills, or comments when editing this expense to keep better records.')}
                 </p>
-              </div>
+                {canEdit && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => go({ to: `/expenses/edit/${expense.id}` })}
+                    className="mt-2"
+                  >
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    {t('expenses.addDocuments', 'Add Documents')}
+                  </Button>
+                )}
+              </motion.div>
             )}
           </CardContent>
         </Card>
-      </div>
+      </motion.div>
 
       {/* Settle Split Dialog */}
       {selectedSplit && (
@@ -685,11 +701,83 @@ export const ExpenseShow = () => {
         />
       )}
 
-      {/* Floating Action Button - Create Expense */}
+      {/* Settle Split Dialog */}
+      {selectedSplit && (
+        <SettleSplitDialog
+          open={settleSplitDialogOpen}
+          onOpenChange={setSettleSplitDialogOpen}
+          userName={selectedSplit.profiles?.full_name || t('profile.unknown')}
+          computedAmount={selectedSplit.computed_amount - (selectedSplit.settled_amount || 0)}
+          currency={expense.currency}
+          onConfirm={handleSettleSplit}
+          isSettling={settlingSplitId === selectedSplit.id}
+        />
+      )}
+
+      {/* Mobile Bottom Navigation - Fixed at bottom on mobile only */}
+      <div className="fixed bottom-0 left-0 right-0 md:hidden bg-background/95 backdrop-blur-md border-t shadow-lg z-40">
+        <div className="grid grid-cols-3 gap-1 p-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex flex-col gap-1 h-auto py-2"
+            onClick={() => {
+              if (expense.group_id) {
+                go({ to: `/groups/show/${expense.group_id}` });
+              } else if (expense.friendship_id) {
+                go({ to: `/friends/${expense.friendship_id}` });
+              } else {
+                go({ to: `/dashboard` });
+              }
+            }}
+          >
+            <ArrowLeftIcon className="h-5 w-5" />
+            <span className="text-xs">{t('common.back', 'Back')}</span>
+          </Button>
+
+          {canEdit && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex flex-col gap-1 h-auto py-2"
+              onClick={() => go({ to: `/expenses/edit/${expense.id}` })}
+            >
+              <PencilIcon className="h-5 w-5" />
+              <span className="text-xs">{t('common.edit', 'Edit')}</span>
+            </Button>
+          )}
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex flex-col gap-1 h-auto py-2"
+            onClick={() => {
+              const url = expense.group_id
+                ? `/expenses/create?groupId=${expense.group_id}`
+                : expense.friendship_id
+                  ? `/expenses/create?friendshipId=${expense.friendship_id}`
+                  : `/expenses/create`;
+              go({ to: url });
+            }}
+          >
+            <PlusIcon className="h-5 w-5" />
+            <span className="text-xs">{t('expenses.newExpense', 'New')}</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Desktop Floating Action Button */}
       <Button
         size="lg"
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 z-50"
-        onClick={() => go({ to: `/expenses/create?groupId=${expense.group_id}` })}
+        className="hidden md:flex fixed bottom-6 right-6 h-14 w-14 rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 z-50 items-center justify-center"
+        onClick={() => {
+          const url = expense.group_id
+            ? `/expenses/create?groupId=${expense.group_id}`
+            : expense.friendship_id
+              ? `/expenses/create?friendshipId=${expense.friendship_id}`
+              : `/expenses/create`;
+          go({ to: url });
+        }}
       >
         <PlusIcon className="h-6 w-6" />
       </Button>

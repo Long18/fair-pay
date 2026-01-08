@@ -213,10 +213,10 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             <span
               className={cn(
                 "absolute bottom-2 right-2 text-xs",
-                value.length > maxLength * 0.9 
-                  ? "text-warning" 
-                  : value.length >= maxLength 
-                  ? "text-destructive" 
+                value.length > maxLength * 0.9
+                  ? "text-warning"
+                  : value.length >= maxLength
+                  ? "text-destructive"
                   : "text-muted-foreground"
               )}
             >
