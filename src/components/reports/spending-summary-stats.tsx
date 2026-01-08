@@ -9,62 +9,62 @@ interface SpendingSummaryStatsProps {
 
 export function SpendingSummaryStats({ summary }: SpendingSummaryStatsProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
+    <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <Card className="border-border shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Tổng chi</CardTitle>
+          <CardTitle className="text-xs sm:text-sm font-medium">Tổng chi</CardTitle>
           <TrendingDownIcon className="h-4 w-4 text-destructive" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-destructive">
+          <div className="text-xl sm:text-2xl font-bold text-destructive">
             {formatNumber(summary.totalSpent)} ₫
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground mt-1">
             {summary.expenseCount} chi tiêu
           </p>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border-border shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Tổng thu</CardTitle>
-          <TrendingUpIcon className="h-4 w-4 text-green-600" />
+          <CardTitle className="text-xs sm:text-sm font-medium">Tổng thu</CardTitle>
+          <TrendingUpIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600">
+          <div className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">
             {formatNumber(summary.totalReceived)} ₫
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground mt-1">
             {summary.paymentCount} thanh toán
           </p>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border-border shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Cân bằng</CardTitle>
+          <CardTitle className="text-xs sm:text-sm font-medium">Cân bằng</CardTitle>
           <ArrowUpDownIcon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className={`text-2xl font-bold ${summary.netBalance >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+          <div className={`text-xl sm:text-2xl font-bold ${summary.netBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
             {summary.netBalance >= 0 ? '+' : ''}{formatNumber(summary.netBalance)} ₫
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground mt-1">
             {summary.netBalance >= 0 ? 'Bạn đang được nợ' : 'Bạn đang nợ'}
           </p>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border-border shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Trung bình</CardTitle>
+          <CardTitle className="text-xs sm:text-sm font-medium">Trung bình</CardTitle>
           <ReceiptIcon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">
+          <div className="text-xl sm:text-2xl font-bold">
             {formatNumber(summary.averageExpense)} ₫
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground mt-1">
             Mỗi chi tiêu
           </p>
         </CardContent>

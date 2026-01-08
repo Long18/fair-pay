@@ -59,27 +59,27 @@ export function TopSpenders({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <TrophyIcon className="h-5 w-5" />
+    <Card className="border-border shadow-sm">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+          <TrophyIcon className="h-4 w-4 sm:h-5 sm:w-5" />
           {title}
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
+      <CardContent className="px-3 sm:px-6">
+        <div className="space-y-2 sm:space-y-3">
           {data.map((spender, index) => (
             <div
               key={spender.user_id}
-              className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+              className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
             >
-              <div className={`text-xl font-bold ${getMedalColor(index)} min-w-[24px] text-center`}>
+              <div className={`text-base sm:text-xl font-bold ${getMedalColor(index)} min-w-[20px] sm:min-w-[24px] text-center flex-shrink-0`}>
                 {index < 3 ? "🏆" : `#${index + 1}`}
               </div>
 
-              <Avatar className="h-10 w-10">
+              <Avatar className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0">
                 <AvatarImage src={spender.user_avatar || undefined} alt={spender.user_name} />
-                <AvatarFallback>
+                <AvatarFallback className="text-xs sm:text-sm">
                   {spender.user_name
                     .split(" ")
                     .map((n) => n[0])
@@ -90,14 +90,14 @@ export function TopSpenders({
               </Avatar>
 
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm truncate">{spender.user_name}</p>
+                <p className="font-medium text-xs sm:text-sm truncate">{spender.user_name}</p>
                 <p className="text-xs text-muted-foreground">
                   {spender.expense_count} expenses
                 </p>
               </div>
 
-              <div className="text-right">
-                <p className="font-semibold text-sm">{formatNumber(spender.total_spent)} ₫</p>
+              <div className="text-right flex-shrink-0">
+                <p className="font-semibold text-xs sm:text-sm">{formatNumber(spender.total_spent)} ₫</p>
                 <p className="text-xs text-muted-foreground">{spender.percentage.toFixed(1)}%</p>
               </div>
             </div>
