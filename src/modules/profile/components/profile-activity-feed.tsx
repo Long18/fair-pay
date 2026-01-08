@@ -27,6 +27,7 @@ interface ActivityItem {
   is_lender: boolean;
   is_borrower: boolean;
   is_payment: boolean;
+  is_private?: boolean; // For privacy control
 }
 
 interface ProfileActivityFeedProps {
@@ -48,6 +49,11 @@ export const ProfileActivityFeed = ({
   const go = useGo();
 
   const handleActivityClick = (activity: ActivityItem) => {
+    // Prevent navigation for private activities (non-involved users)
+    if (activity.is_private) {
+      return;
+    }
+    
     if (activity.type === "expense") {
       go({ to: `/expenses/show/${activity.id}` });
     } else if (activity.type === "payment") {
@@ -138,7 +144,12 @@ export const ProfileActivityFeed = ({
               whileTap={{ scale: 0.99 }}
             >
               <Card
-                className="rounded-lg overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                className={cn(
+                  "rounded-lg overflow-hidden transition-shadow",
+                  activity.is_private 
+                    ? "cursor-not-allowed opacity-75" 
+                    : "cursor-pointer hover:shadow-md"
+                )}
                 onClick={() => handleActivityClick(activity)}
               >
                 <CardContent className="p-4">
@@ -177,7 +188,7 @@ export const ProfileActivityFeed = ({
                           </>
                         )}
 
-                        {activity.paid_by_name && (
+                        {activity.paid_by_name && !activity.is_private && (
                           <>
                             <span className="text-muted-foreground">•</span>
                             <span className="text-sm text-muted-foreground">
@@ -194,30 +205,40 @@ export const ProfileActivityFeed = ({
                       </div>
                     </div>
 
-                    {/* Amount and Status */}
-                    <div className="text-right">
-                      <p className={cn(
-                        "font-bold",
-                        activity.is_lender ? "text-green-600 dark:text-green-400" :
-                        activity.is_borrower ? "text-red-600 dark:text-red-400" :
-                        "text-foreground"
-                      )}>
-                        {activity.is_lender && "+"}
-                        {activity.is_borrower && "-"}
-                        {formatCurrency(Math.abs(activity.user_share), activity.currency)}
-                      </p>
-
-                      {activity.user_share !== activity.total_amount && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {t('profile.ofTotal', {
-                            amount: formatCurrency(activity.total_amount, activity.currency),
-                            defaultValue: `of ${formatCurrency(activity.total_amount, activity.currency)}`
-                          })}
+                    {/* Amount and Status - Hide for private activities */}
+                    {!activity.is_private ? (
+                      <div className="text-right">
+                        <p className={cn(
+                          "font-bold",
+                          activity.is_lender ? "text-green-600 dark:text-green-400" :
+                          activity.is_borrower ? "text-red-600 dark:text-red-400" :
+                          "text-foreground"
+                        )}>
+                          {activity.is_lender && "+"}
+                          {activity.is_borrower && "-"}
+                          {formatCurrency(Math.abs(activity.user_share), activity.currency)}
                         </p>
-                      )}
-                    </div>
 
-                    <ChevronRightIcon size={16} className="text-muted-foreground mt-1" />
+                        {activity.user_share !== activity.total_amount && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {t('profile.ofTotal', {
+                              amount: formatCurrency(activity.total_amount, activity.currency),
+                              defaultValue: `of ${formatCurrency(activity.total_amount, activity.currency)}`
+                            })}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-right">
+                        <Badge variant="secondary" className="text-xs">
+                          {t('profile.private', 'Private')}
+                        </Badge>
+                      </div>
+                    )}
+
+                    {!activity.is_private && (
+                      <ChevronRightIcon size={16} className="text-muted-foreground mt-1" />
+                    )}
                   </div>
                 </CardContent>
               </Card>

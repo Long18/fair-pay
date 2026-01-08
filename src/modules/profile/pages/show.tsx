@@ -77,6 +77,7 @@ interface ActivityItem {
   is_lender: boolean;
   is_borrower: boolean;
   is_payment: boolean;
+  is_private?: boolean; // For privacy control
 }
 
 export const ProfileShow = () => {
@@ -124,16 +125,23 @@ export const ProfileShow = () => {
 
     setIsLoadingDebts(true);
     try {
+      // Use existing database function names
       const functionName = includeHistory
-        ? "get_user_balances_with_history"
-        : "get_user_balances";
+        ? "get_user_debts_history"
+        : "get_user_debts_aggregated";
 
       const { data, error } = await supabaseClient
         .rpc(functionName, { p_user_id: profileId });
 
       if (error) throw error;
 
-      setDebts(data || []);
+      // Add currency fallback if not present
+      const debtsWithCurrency = (data || []).map((debt: any) => ({
+        ...debt,
+        currency: debt.currency || "USD"
+      }));
+
+      setDebts(debtsWithCurrency);
     } catch (error) {
       console.error("Error fetching debts:", error);
       toast.error(t('profile.errorLoadingDebts', 'Failed to load balances'));
@@ -161,13 +169,49 @@ export const ProfileShow = () => {
 
       if (error) throw error;
 
+      // Apply privacy rules based on viewing context
+      const processedActivities = (data || []).map((activity: any) => {
+        // Check if viewing own profile
+        const isOwnProfile = profileId === identity?.id;
+        
+        // For own profile, show everything
+        if (isOwnProfile) {
+          return activity;
+        }
+        
+        // For other's profiles, need to check if current viewer is involved
+        // We need to fetch activities for the current viewer to check involvement
+        // For now, we'll hide all financial details on other people's profiles
+        // unless the activity indicates the viewer is involved
+        
+        // Since we're viewing someone else's profile, check if the current
+        // viewer is the paid_by user or involved in the transaction
+        const viewerId = identity?.id;
+        const isViewerInvolved = viewerId && (
+          activity.paid_by_user_id === viewerId ||
+          // Additional check would require fetching viewer's activities
+          // For now, mark as private for all activities on other's profiles
+          false
+        );
+        
+        if (!isViewerInvolved) {
+          return {
+            ...activity,
+            // Hide amounts for non-involved viewers
+            is_private: true,
+          };
+        }
+        
+        return activity;
+      });
+
       if (append) {
-        setActivities(prev => [...prev, ...(data || [])]);
+        setActivities(prev => [...prev, ...processedActivities]);
       } else {
-        setActivities(data || []);
+        setActivities(processedActivities);
       }
 
-      setHasMoreActivities((data || []).length === limit);
+      setHasMoreActivities(processedActivities.length === limit);
     } catch (error) {
       console.error("Error fetching activities:", error);
       toast.error(t('profile.errorLoadingActivities', 'Failed to load activities'));
