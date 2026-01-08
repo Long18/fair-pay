@@ -34,14 +34,14 @@ export const PullToRefresh = ({
 
   useEffect(() => {
     const handleScroll = () => checkScrollPosition();
-    
+
     // Listen to both container and window scroll
     const container = containerRef.current;
     if (container) {
       container.addEventListener("scroll", handleScroll);
     }
     window.addEventListener("scroll", handleScroll);
-    
+
     // Initial check
     checkScrollPosition();
 
@@ -59,7 +59,7 @@ export const PullToRefresh = ({
     if (pullDistance > threshold) {
       setIsRefreshing(true);
       setPullDistance(threshold);
-      
+
       // Trigger haptic feedback if available
       if ('vibrate' in navigator) {
         navigator.vibrate(10);
@@ -86,7 +86,7 @@ export const PullToRefresh = ({
   };
 
   // Only enable on touch devices
-  const isTouchDevice = typeof window !== 'undefined' && 
+  const isTouchDevice = typeof window !== 'undefined' &&
     ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
   if (!isTouchDevice || disabled) {

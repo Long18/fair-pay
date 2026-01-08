@@ -8,6 +8,7 @@ export interface AggregatedDebt {
     counterparty_name: string;
     counterparty_avatar_url?: string;
     amount: number;
+    currency: string;
     i_owe_them: boolean;
     owed_to_name?: string; // Name of person who is owed (for public demo data)
     owed_to_id?: string; // ID of person who is owed (for public demo data)
