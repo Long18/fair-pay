@@ -45,6 +45,7 @@ import { Dashboard } from "./pages/dashboard";
 // Profile module
 const ProfileEdit = lazy(() => import("./modules/profile").then(m => ({ default: m.ProfileEdit })));
 const ProfileShow = lazy(() => import("./modules/profile").then(m => ({ default: m.ProfileShow })));
+const ProfileShowUnified = lazy(() => import("./modules/profile").then(m => ({ default: m.ProfileShowUnified })));
 
 // Groups module
 const GroupList = lazy(() => import("./modules/groups").then(m => ({ default: m.GroupList })));
@@ -79,6 +80,19 @@ const PrivacyPage = lazy(() => import("./pages/privacy").then(m => ({ default: m
 const TermsPage = lazy(() => import("./pages/terms").then(m => ({ default: m.TermsPage })));
 
 // Optimized loading fallback component
+// Profile Edit Redirect Component
+const ProfileEditRedirect = () => {
+  const { data: identity } = useGetIdentity();
+  
+  React.useEffect(() => {
+    if (identity?.id) {
+      window.location.href = `/profile/${identity.id}?edit=true`;
+    }
+  }, [identity]);
+  
+  return <PageLoader />;
+};
+
 const PageLoader = memo(() => (
   <div className="flex items-center justify-center min-h-screen" role="status" aria-live="polite">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" aria-label="Loading..."></div>
@@ -270,7 +284,7 @@ function App() {
                     <Route path="/profile/:id" element={
                       <Suspense fallback={<PageLoader />}>
                         <ErrorBoundary context="Profile Details">
-                          <ProfileShow />
+                          <ProfileShowUnified />
                         </ErrorBoundary>
                       </Suspense>
                     } />
@@ -416,9 +430,7 @@ function App() {
                       </Suspense>
                     } />
                     <Route path="/profile/edit" element={
-                      <Suspense fallback={<PageLoader />}>
-                        <ProfileEdit />
-                      </Suspense>
+                      <ProfileEditRedirect />
                     } />
                     <Route path="*" element={<ErrorComponent />} />
                   </Route>
