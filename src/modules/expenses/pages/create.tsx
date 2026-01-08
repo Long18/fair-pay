@@ -353,28 +353,16 @@ export const ExpenseCreate = () => {
       title={isGroupContext ? "Add Group Expense" : "Add Expense with Friend"}
       className="sm:max-w-4xl max-h-[90vh] overflow-y-auto"
     >
-      <div className="space-y-6">
-        <ExpenseForm
-          groupId={contextId}
-          members={allAvailableMembers}
-          currentUserId={identity.id}
-          onSubmit={handleSubmit}
-          isLoading={false}
-          topPartnerIds={topPartnerIds}
-        />
-
-        {/* Receipts & Bills Section - Grouped with Comment */}
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-sm font-semibold mb-1">Receipts & Bills</h3>
-            <p className="text-xs text-muted-foreground mb-4">Attach receipts or bills for this expense (Optional)</p>
-            <AttachmentUpload
-              attachments={attachments}
-              onAttachmentsChange={setAttachments}
-            />
-          </div>
-        </div>
-      </div>
+      <ExpenseForm
+        groupId={contextId}
+        members={allAvailableMembers}
+        currentUserId={identity.id}
+        onSubmit={handleSubmit}
+        isLoading={false}
+        topPartnerIds={topPartnerIds}
+        attachments={attachments}
+        onAttachmentsChange={setAttachments}
+      />
     </ResponsiveDialog>
   );
 };
