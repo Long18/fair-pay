@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -43,6 +44,17 @@ export const ProfileForm = ({
       email: defaultValues?.email || "",
     },
   });
+
+  // Reset form when defaultValues change (e.g., when profile data loads)
+  useEffect(() => {
+    if (defaultValues) {
+      form.reset({
+        full_name: defaultValues.full_name || "",
+        avatar_url: defaultValues.avatar_url || "",
+        email: defaultValues.email || "",
+      });
+    }
+  }, [defaultValues, form]);
 
   return (
     <Form {...form}>
