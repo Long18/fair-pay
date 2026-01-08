@@ -196,7 +196,8 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                       {formatCurrency(0, balance.currency || "VND")}
                     </span>
                   ) : (
-                    formatCurrency(Number(showHistory ? (balance.remaining_amount || balance.amount) : balance.amount), balance.currency || "VND")
+                    // Always prioritize remaining_amount (unpaid) to show what user needs to pay
+                    formatCurrency(Number(balance.remaining_amount !== undefined ? balance.remaining_amount : balance.amount), balance.currency || "VND")
                   )}
                 </TableCell>
               </TableRow>

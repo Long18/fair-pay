@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Profile } from "../types";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { isAdmin } from "@/lib/rbac";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BalanceTable } from "@/components/dashboard/BalanceTable";
@@ -137,6 +138,18 @@ export const ProfileShowUnified = () => {
 
   const isOwnProfile = identity?.id === id;
   const profileId = id || identity?.id;
+  const [isUserAdmin, setIsUserAdmin] = useState(false);
+
+  // Check admin status
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (identity?.id) {
+        const adminStatus = await isAdmin();
+        setIsUserAdmin(adminStatus);
+      }
+    };
+    checkAdmin();
+  }, [identity?.id]);
 
   // Profile query
   const { query: profileQuery } = useOne<Profile>({
@@ -225,13 +238,15 @@ export const ProfileShowUnified = () => {
   }, [profileId]);
 
   // Fetch debts
-  const fetchDebts = async (includeHistory = false) => {
+  const fetchDebts = useCallback(async (includeHistory = false) => {
     if (!profileId) return;
 
     setIsLoadingDebts(true);
     try {
-      // If not logged in or viewing someone else's profile, fetch public view
-      const isPublicView = !identity?.id || !isOwnProfile;
+      // Admin can view all debts, otherwise check if viewing own profile
+      const canViewFullDetails = isUserAdmin || isOwnProfile;
+      // If not logged in or viewing someone else's profile (and not admin), fetch public view
+      const isPublicView = !identity?.id || (!isOwnProfile && !isUserAdmin);
 
       if (isPublicView && !identity?.id) {
         // For unauthenticated users, use public endpoint
@@ -244,12 +259,14 @@ export const ProfileShowUnified = () => {
         const publicDebts = (data || []).map((debt: any) => ({
           ...debt,
           currency: debt.currency || "VND",
-          is_public_view: true
+          is_public_view: true,
+          // Use remaining_amount if available, otherwise use amount
+          amount: debt.remaining_amount !== undefined ? debt.remaining_amount : debt.amount
         }));
 
         setDebts(publicDebts);
       } else {
-        // For authenticated users viewing their own profile
+        // For authenticated users (own profile or admin viewing others)
         const functionName = includeHistory
           ? "get_user_debts_history"
           : "get_user_debts_aggregated";
@@ -259,12 +276,22 @@ export const ProfileShowUnified = () => {
 
         if (error) throw error;
 
-        // Add is_public_view flag if viewing someone else's profile
-        const debtsWithCurrency = (data || []).map((debt: any) => ({
-          ...debt,
-          currency: debt.currency || "VND",
-          is_public_view: !isOwnProfile
-        }));
+        // Process debts: use remaining_amount (unpaid) as the primary amount to display
+        const debtsWithCurrency = (data || []).map((debt: any) => {
+          // For non-history mode, use remaining_amount if available (shows unpaid amount)
+          // For history mode, keep all fields but prioritize remaining_amount for display
+          const displayAmount = includeHistory 
+            ? (debt.remaining_amount !== undefined ? debt.remaining_amount : debt.amount)
+            : (debt.remaining_amount !== undefined ? debt.remaining_amount : debt.amount);
+
+          return {
+            ...debt,
+            currency: debt.currency || "VND",
+            is_public_view: !canViewFullDetails,
+            // Update amount to show remaining (unpaid) amount
+            amount: displayAmount
+          };
+        });
 
         setDebts(debtsWithCurrency);
       }
@@ -274,7 +301,7 @@ export const ProfileShowUnified = () => {
     } finally {
       setIsLoadingDebts(false);
     }
-  };
+  }, [profileId, isUserAdmin, isOwnProfile, identity?.id, t]);
 
   // Fetch activities with pagination
   const fetchActivities = async (page = 1, append = false) => {
@@ -362,11 +389,11 @@ export const ProfileShowUnified = () => {
     } finally {
       setIsRefreshing(false);
     }
-  }, [showHistory, profileId]);
+  }, [fetchDebts, showHistory, profileQuery, t]);
 
   useEffect(() => {
     fetchDebts(showHistory);
-  }, [profileId, showHistory]);
+  }, [fetchDebts, showHistory]);
 
   useEffect(() => {
     fetchActivities(1, false);
@@ -557,20 +584,23 @@ export const ProfileShowUnified = () => {
     );
   }
 
-  // Calculate net balance - only include unsettled debts when showHistory is false
+  // Calculate net balance - use remaining_amount (unpaid) for calculations
+  // Only include unsettled debts when showHistory is false
   const netBalance = debts
     .filter(d => {
       // When showHistory is false, filter out fully settled debts
       if (!showHistory) {
-        const amount = Number(d.amount || 0);
-        const remainingAmount = Number(d.remaining_amount || d.amount || 0);
-        return amount !== 0 && remainingAmount !== 0;
+        // Use remaining_amount if available, otherwise use amount
+        const remainingAmount = Number(d.remaining_amount !== undefined ? d.remaining_amount : d.amount || 0);
+        return remainingAmount !== 0;
       }
-      // When showHistory is true, include all debts
+      // When showHistory is true, include all debts but use remaining_amount
       return true;
     })
     .reduce((sum, d) => {
-      return sum + (d.i_owe_them ? -Math.abs(d.amount) : Math.abs(d.amount));
+      // Use remaining_amount (unpaid) for calculation, fallback to amount
+      const amountToUse = d.remaining_amount !== undefined ? d.remaining_amount : d.amount;
+      return sum + (d.i_owe_them ? -Math.abs(amountToUse) : Math.abs(amountToUse));
     }, 0);
 
   return (

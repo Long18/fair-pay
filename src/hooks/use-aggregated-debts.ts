@@ -84,7 +84,7 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
 
             // Fetch avatar_urls from profiles table and add currency fallback
             let debts = result || [];
-            
+
             // Filter out fully settled debts when includeHistory is false
             if (!includeHistory) {
                 debts = debts.filter((debt: any) => {
@@ -94,7 +94,7 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
                     return amount !== 0 && remainingAmount !== 0;
                 });
             }
-            
+
             if (debts.length > 0) {
                 const counterpartyIds = debts.map((d: { counterparty_id: string }) => d.counterparty_id).filter(Boolean);
                 if (counterpartyIds.length > 0) {
