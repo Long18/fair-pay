@@ -83,7 +83,18 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
             }
 
             // Fetch avatar_urls from profiles table and add currency fallback
-            const debts = result || [];
+            let debts = result || [];
+            
+            // Filter out fully settled debts when includeHistory is false
+            if (!includeHistory) {
+                debts = debts.filter((debt: any) => {
+                    // Filter out debts with amount = 0 or remaining_amount = 0
+                    const amount = Number(debt.amount || 0);
+                    const remainingAmount = Number(debt.remaining_amount || debt.amount || 0);
+                    return amount !== 0 && remainingAmount !== 0;
+                });
+            }
+            
             if (debts.length > 0) {
                 const counterpartyIds = debts.map((d: { counterparty_id: string }) => d.counterparty_id).filter(Boolean);
                 if (counterpartyIds.length > 0) {
