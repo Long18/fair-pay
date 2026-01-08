@@ -1,5 +1,3 @@
-export { ProfileEdit } from "./pages/edit";
-export { ProfileShow } from "./pages/show";
 export { ProfileShowUnified } from "./pages/show-unified";
 export { ProfileForm } from "./components/profile-form";
 export { ProfileHeader } from "./components/profile-header";

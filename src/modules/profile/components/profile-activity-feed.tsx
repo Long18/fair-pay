@@ -53,7 +53,7 @@ export const ProfileActivityFeed = ({
     if (activity.is_private) {
       return;
     }
-    
+
     if (activity.type === "expense") {
       go({ to: `/expenses/show/${activity.id}` });
     } else if (activity.type === "payment") {
@@ -146,8 +146,8 @@ export const ProfileActivityFeed = ({
               <Card
                 className={cn(
                   "rounded-lg overflow-hidden transition-shadow",
-                  activity.is_private 
-                    ? "cursor-not-allowed opacity-75" 
+                  activity.is_private
+                    ? "cursor-not-allowed opacity-75"
                     : "cursor-pointer hover:shadow-md"
                 )}
                 onClick={() => handleActivityClick(activity)}

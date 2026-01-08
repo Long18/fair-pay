@@ -31,7 +31,7 @@ BEGIN
     RETURN QUERY
     WITH activities AS (
         -- Get expense activities
-        SELECT 
+        SELECT
             e.id,
             'expense'::TEXT AS type,
             e.name AS description,
@@ -56,16 +56,16 @@ BEGIN
         WHERE (es.user_id = p_user_id OR e.paid_by_user_id = p_user_id)
             AND NOT e.is_payment
             AND e.date <= CURRENT_DATE -- Filter out future dates
-        
+
         UNION ALL
-        
+
         -- Get payment activities
-        SELECT 
+        SELECT
             pay.id,
             'payment'::TEXT AS type,
-            COALESCE(pay.description, 
-                CASE 
-                    WHEN pay.from_user = p_user_id 
+            COALESCE(pay.description,
+                CASE
+                    WHEN pay.from_user = p_user_id
                     THEN 'Payment to ' || p_to.full_name
                     ELSE 'Payment from ' || p_from.full_name
                 END) AS description,
@@ -90,7 +90,7 @@ BEGIN
         WHERE (pay.from_user = p_user_id OR pay.to_user = p_user_id)
             AND pay.created_at::DATE <= CURRENT_DATE -- Filter out future dates
     )
-    SELECT 
+    SELECT
         a.id,
         a.type,
         a.description,

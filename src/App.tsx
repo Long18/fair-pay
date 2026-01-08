@@ -43,8 +43,6 @@ import { Dashboard } from "./pages/dashboard";
 // Lazy load non-critical components for better code splitting
 
 // Profile module
-const ProfileEdit = lazy(() => import("./modules/profile").then(m => ({ default: m.ProfileEdit })));
-const ProfileShow = lazy(() => import("./modules/profile").then(m => ({ default: m.ProfileShow })));
 const ProfileShowUnified = lazy(() => import("./modules/profile").then(m => ({ default: m.ProfileShowUnified })));
 
 // Groups module
