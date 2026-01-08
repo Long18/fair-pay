@@ -134,7 +134,7 @@ export const ProfileAvatarUpload = ({
           onClick={handleClick}
         >
           <AvatarImage src={displayUrl || undefined} />
-          <AvatarFallback 
+          <AvatarFallback
             className={cn(
               textSizes[size],
               "bg-gradient-to-br from-primary/20 to-primary/10"

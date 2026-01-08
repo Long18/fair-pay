@@ -6,11 +6,11 @@ import { formatCurrency, formatDateShort } from "@/lib/locale-utils";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { 
-  ReceiptIcon, 
-  BanknoteIcon, 
+import {
+  ReceiptIcon,
+  BanknoteIcon,
   ActivityIcon,
-  ChevronRightIcon 
+  ChevronRightIcon
 } from "@/components/ui/icons";
 import { useGo } from "@refinedev/core";
 
@@ -104,8 +104,8 @@ export const ProfileActivityFeed = ({
 
   const itemVariants = {
     hidden: { opacity: 0, x: -20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       x: 0,
       transition: {
         type: "spring" as const,
@@ -113,8 +113,8 @@ export const ProfileActivityFeed = ({
         damping: 15,
       }
     },
-    exit: { 
-      opacity: 0, 
+    exit: {
+      opacity: 0,
       x: 20,
       transition: { duration: 0.2 }
     }
@@ -137,7 +137,7 @@ export const ProfileActivityFeed = ({
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
             >
-              <Card 
+              <Card
                 className="rounded-lg overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => handleActivityClick(activity)}
               >
@@ -146,7 +146,7 @@ export const ProfileActivityFeed = ({
                     {/* Activity Icon */}
                     <div className={cn(
                       "p-2 rounded-full",
-                      activity.type === "expense" 
+                      activity.type === "expense"
                         ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
                         : "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
                     )}>
@@ -162,12 +162,12 @@ export const ProfileActivityFeed = ({
                       <p className="font-medium line-clamp-1">
                         {activity.description}
                       </p>
-                      
+
                       <div className="flex flex-wrap items-center gap-2 mt-1">
                         <span className="text-sm text-muted-foreground">
                           {formatDateShort(activity.date)}
                         </span>
-                        
+
                         {activity.group_name && (
                           <>
                             <span className="text-muted-foreground">•</span>
@@ -176,12 +176,12 @@ export const ProfileActivityFeed = ({
                             </Badge>
                           </>
                         )}
-                        
+
                         {activity.paid_by_name && (
                           <>
                             <span className="text-muted-foreground">•</span>
                             <span className="text-sm text-muted-foreground">
-                              {activity.is_lender 
+                              {activity.is_lender
                                 ? t('profile.youPaid', 'You paid')
                                 : t('profile.paidBy', {
                                     name: activity.paid_by_name,
@@ -206,7 +206,7 @@ export const ProfileActivityFeed = ({
                         {activity.is_borrower && "-"}
                         {formatCurrency(Math.abs(activity.user_share), activity.currency)}
                       </p>
-                      
+
                       {activity.user_share !== activity.total_amount && (
                         <p className="text-xs text-muted-foreground mt-1">
                           {t('profile.ofTotal', {

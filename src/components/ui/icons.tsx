@@ -26,6 +26,8 @@ import {
   RefreshCw,
   List,
   Copy,
+  Scale,
+  Sparkles,
   Share2,
   ArrowLeft,
   ArrowRight,
@@ -602,6 +604,10 @@ export const Users2Icon: React.FC<IconProps> = ({ size = 24, ...props }) => (
   <Users2 size={size} fill="currentColor" {...props} />
 );
 
+export const GroupIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Users2 size={size} fill="currentColor" {...props} />
+);
+
 export const UserPlusIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
   <UserPlus size={size} fill="currentColor" {...props} />
 );
@@ -802,6 +808,14 @@ export const TrophyIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
 
 export const PieChartIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
   <PieChart size={size} fill="currentColor" {...props} />
+);
+
+export const ScaleIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Scale size={size} fill="currentColor" {...props} />
+);
+
+export const SparklesIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Sparkles size={size} fill="currentColor" {...props} />
 );
 
 export const InboxIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (

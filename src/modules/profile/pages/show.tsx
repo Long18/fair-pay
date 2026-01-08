@@ -120,7 +120,7 @@ export const ProfileShow = () => {
   // Fetch debts
   const fetchDebts = async (includeHistory = false) => {
     if (!profileId) return;
-    
+
     setIsLoadingDebts(true);
     try {
       const functionName = includeHistory
@@ -144,15 +144,15 @@ export const ProfileShow = () => {
   // Fetch activities with pagination
   const fetchActivities = async (page = 1, append = false) => {
     if (!profileId) return;
-    
+
     if (!append) setIsLoadingActivities(true);
-    
+
     try {
       const limit = 10;
       const offset = (page - 1) * limit;
 
       const { data, error } = await supabaseClient
-        .rpc('get_user_activities', { 
+        .rpc('get_user_activities', {
           p_user_id: profileId,
           p_limit: limit,
           p_offset: offset
@@ -289,7 +289,7 @@ export const ProfileShow = () => {
   // Handle share profile
   const handleShareProfile = async () => {
     const profileUrl = `${window.location.origin}/profile/${profileId}`;
-    
+
     try {
       if (navigator.share) {
         await navigator.share({
@@ -379,7 +379,7 @@ export const ProfileShow = () => {
           <div className="hidden sm:block">
             <Button
               variant="ghost"
-              onClick={() => go({ to: "/dashboard" })}
+              onClick={() => go({ to: "/" })}
               className="rounded-lg"
             >
               <ArrowLeftIcon size={16} className="mr-2" />

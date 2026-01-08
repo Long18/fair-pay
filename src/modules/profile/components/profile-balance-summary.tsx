@@ -32,13 +32,13 @@ export const ProfileBalanceSummary = ({
   const totalOwedToMe = debts
     .filter(d => !d.i_owe_them)
     .reduce((sum, d) => sum + Math.abs(d.amount), 0);
-  
+
   const totalIOwe = debts
     .filter(d => d.i_owe_them)
     .reduce((sum, d) => sum + Math.abs(d.amount), 0);
-  
+
   const netBalance = totalOwedToMe - totalIOwe;
-  
+
   const owedToMeCount = debts.filter(d => !d.i_owe_them).length;
   const iOweCount = debts.filter(d => d.i_owe_them).length;
 
@@ -71,21 +71,21 @@ export const ProfileBalanceSummary = ({
           </p>
           <p className={cn(
             "font-bold text-lg",
-            netBalance > 0 ? "text-green-600 dark:text-green-400" : 
-            netBalance < 0 ? "text-red-600 dark:text-red-400" : 
+            netBalance > 0 ? "text-green-600 dark:text-green-400" :
+            netBalance < 0 ? "text-red-600 dark:text-red-400" :
             "text-muted-foreground"
           )}>
             {formatCurrency(Math.abs(netBalance), currency)}
           </p>
-          <Badge 
+          <Badge
             variant={netBalance > 0 ? "default" : netBalance < 0 ? "destructive" : "secondary"}
             className={cn(
               "mt-1 text-xs",
               netBalance > 0 && "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
             )}
           >
-            {netBalance > 0 ? t('profile.owesYou', 'owes you') : 
-             netBalance < 0 ? t('profile.youOwe', 'you owe') : 
+            {netBalance > 0 ? t('profile.owesYou', 'owes you') :
+             netBalance < 0 ? t('profile.youOwe', 'you owe') :
              t('profile.settled', 'settled')}
           </Badge>
         </motion.div>
@@ -154,7 +154,7 @@ export const ProfileBalanceSummary = ({
             )}>
               {formatCurrency(Math.abs(netBalance), currency)}
             </p>
-            <Badge 
+            <Badge
               variant={netBalance > 0 ? "default" : netBalance < 0 ? "destructive" : "secondary"}
               className={cn(
                 "rounded-full",
@@ -187,7 +187,7 @@ export const ProfileBalanceSummary = ({
               {formatCurrency(totalOwedToMe, currency)}
             </p>
             <p className="text-xs text-muted-foreground">
-              {owedToMeCount === 0 
+              {owedToMeCount === 0
                 ? t('profile.noOneOwesYou', 'No one owes you')
                 : t('profile.peopleOweYou', {
                     count: owedToMeCount,

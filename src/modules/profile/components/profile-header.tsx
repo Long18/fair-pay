@@ -38,7 +38,7 @@ export const ProfileHeader = ({
     >
       {/* Background gradient */}
       <div className="absolute inset-0 h-32 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-xl" />
-      
+
       <div className="relative flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 p-6">
         {/* Avatar */}
         <motion.div
@@ -46,7 +46,7 @@ export const ProfileHeader = ({
           whileTap={isOwnProfile ? { scale: 0.95 } : {}}
           className="relative"
         >
-          <Avatar 
+          <Avatar
             className={cn(
               "h-24 w-24 sm:h-32 sm:w-32 border-4 border-background shadow-xl",
               isOwnProfile && "cursor-pointer",
@@ -63,7 +63,7 @@ export const ProfileHeader = ({
                 .toUpperCase() || "?"}
             </AvatarFallback>
           </Avatar>
-          
+
           {isOwnProfile && (
             <motion.div
               initial={{ scale: 0 }}
@@ -73,7 +73,7 @@ export const ProfileHeader = ({
               <CameraIcon size={16} />
             </motion.div>
           )}
-          
+
           {isUploadingAvatar && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -86,13 +86,13 @@ export const ProfileHeader = ({
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-4 mb-2">
             <h1 className="text-2xl sm:text-3xl font-bold">{profile.full_name}</h1>
             <Badge variant="secondary" className="rounded-full">
-              {t('profile.memberSince', { 
+              {t('profile.memberSince', {
                 date: formatDateShort(profile.created_at),
                 defaultValue: `Member since ${formatDateShort(profile.created_at)}`
               })}
             </Badge>
           </div>
-          
+
           {profile.email && (
             <p className="text-muted-foreground mb-4">{profile.email}</p>
           )}
@@ -110,7 +110,7 @@ export const ProfileHeader = ({
                 {t('profile.edit', 'Edit Profile')}
               </Button>
             )}
-            
+
             <Button
               onClick={onShareClick}
               variant="outline"
