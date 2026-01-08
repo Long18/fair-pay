@@ -1,11 +1,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { formatNumber } from "@/lib/locale-utils";
 import { useBalanceHistory } from "@/hooks/use-balance-history";
 import { format, subDays } from "date-fns";
 import { useMemo, useState } from "react";
 import { Loader2Icon } from "@/components/ui/icons";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 
 interface BalanceChartProps {
   currentBalance: number;
@@ -62,7 +68,19 @@ export const BalanceChart = ({
   }, [historyData]);
 
   const isPositive = currentBalance >= 0;
-  const chartColor = isPositive ? "#10b981" : "#ef4444";
+
+  // Chart config with theme support for light/dark mode
+  const chartConfig = useMemo(() => {
+    return {
+      balance: {
+        label: "Balance",
+        theme: {
+          light: isPositive ? "#10b981" : "#ef4444",
+          dark: isPositive ? "#22c55e" : "#f87171",
+        },
+      },
+    } satisfies ChartConfig;
+  }, [isPositive]);
 
   if (isLoading) {
     return (
@@ -122,35 +140,54 @@ export const BalanceChart = ({
           </div>
           <div className="h-[150px] sm:h-[180px] md:h-[200px] w-full">
             {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+              <ChartContainer config={chartConfig} className="h-full w-full">
+                <RechartsBarChart
+                  data={chartData}
+                  margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                  accessibilityLayer
+                >
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" />
                   <XAxis
                     dataKey="date"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
                     tick={{ fontSize: 10, fill: "currentColor" }}
                     className="text-muted-foreground"
-                    axisLine={false}
+                  />
+                  <YAxis
                     tickLine={false}
-                  />
-                  <YAxis hide />
-                  <Tooltip
-                    contentStyle={{
-                      background: "hsl(var(--background))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                      fontSize: "12px",
-                      color: "hsl(var(--foreground))",
+                    axisLine={false}
+                    tickMargin={8}
+                    tick={{ fontSize: 10 }}
+                    width={40}
+                    tickFormatter={(value) => {
+                      const absValue = Math.abs(value);
+                      if (absValue >= 1000000) {
+                        return `${(value / 1000000).toFixed(1)}M`;
+                      }
+                      if (absValue >= 1000) {
+                        return `${(value / 1000).toFixed(0)}k`;
+                      }
+                      return value.toString();
                     }}
-                    formatter={(value: number) => [`${formatNumber(value)} ₫`, "Balance"]}
                   />
-                  <Line
-                    type="monotone"
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        formatter={(value) => (
+                          <span className="font-medium">{formatNumber(Number(value))} ₫</span>
+                        )}
+                      />
+                    }
+                  />
+                  <Bar
                     dataKey="balance"
-                    stroke={chartColor}
-                    strokeWidth={2}
-                    dot={false}
+                    fill="var(--color-balance)"
+                    radius={4}
                   />
-                </LineChart>
-              </ResponsiveContainer>
+                </RechartsBarChart>
+              </ChartContainer>
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                 No historical data available
