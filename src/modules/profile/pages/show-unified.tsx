@@ -280,7 +280,7 @@ export const ProfileShowUnified = () => {
         const debtsWithCurrency = (data || []).map((debt: any) => {
           // For non-history mode, use remaining_amount if available (shows unpaid amount)
           // For history mode, keep all fields but prioritize remaining_amount for display
-          const displayAmount = includeHistory 
+          const displayAmount = includeHistory
             ? (debt.remaining_amount !== undefined ? debt.remaining_amount : debt.amount)
             : (debt.remaining_amount !== undefined ? debt.remaining_amount : debt.amount);
 
