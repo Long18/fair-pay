@@ -863,9 +863,12 @@ export const ExpenseForm = ({
           />
         </div>
 
-        <Button type="submit" disabled={isLoading || !isSplitValid} className="w-full">
-          {isLoading ? (isEdit ? "Updating..." : "Creating...") : (isEdit ? "Update Expense" : "Create Expense")}
-        </Button>
+        {/* Fixed bottom button */}
+        <div className="sticky bottom-0 left-0 right-0 bg-background pt-4 pb-2 border-t mt-6 -mx-6 px-6 z-10">
+          <Button type="submit" disabled={isLoading || !isSplitValid} className="w-full">
+            {isLoading ? (isEdit ? "Updating..." : "Creating...") : (isEdit ? "Update Expense" : "Create Expense")}
+          </Button>
+        </div>
       </form>
     </Form>
   );
