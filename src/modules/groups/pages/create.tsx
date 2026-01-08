@@ -25,7 +25,7 @@ export const GroupCreate = () => {
       },
     ],
     meta: {
-      select: "*, user_a_profile:profiles!user_a(id, full_name), user_b_profile:profiles!user_b(id, full_name)",
+      select: "*, user_a_profile:profiles!user_a(id, full_name, avatar_url), user_b_profile:profiles!user_b(id, full_name, avatar_url)",
     },
     pagination: {
       mode: "off",
@@ -47,6 +47,7 @@ export const GroupCreate = () => {
       return {
         id: friendId,
         full_name: friendProfile?.full_name || "Friend",
+        avatar_url: friendProfile?.avatar_url || null,
       };
     });
   }, [allFriendsQuery.data, identity]);
