@@ -77,7 +77,7 @@ export const SwipeableTabs = ({
   };
 
   // Only enable swipe on touch devices
-  const isTouchDevice = typeof window !== 'undefined' && 
+  const isTouchDevice = typeof window !== 'undefined' &&
     ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
   if (!isTouchDevice) {

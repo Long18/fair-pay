@@ -15,12 +15,14 @@ import { PaginationControls, PaginationMetadata } from "@/components/ui/paginati
 import { CheckIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { formatCurrency } from "@/lib/locale-utils";
 
 interface Balance {
   counterparty_id: string;
   counterparty_name: string;
   counterparty_avatar_url?: string | null;
   amount: string | number;
+  currency?: string;
   i_owe_them: boolean;
   total_amount?: number;
   settled_amount?: number;
@@ -40,10 +42,6 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
   const go = useGo();
   const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState(1);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('vi-VN').format(Math.abs(value));
-  };
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
@@ -166,10 +164,10 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                 {showHistory && (
                   <>
                     <TableCell className="text-right text-muted-foreground">
-                      ₫{formatCurrency(Number(balance.total_amount || balance.amount))}
+                      {formatCurrency(Number(balance.total_amount || balance.amount), balance.currency || "USD")}
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
-                      ₫{formatCurrency(Number(balance.settled_amount || 0))}
+                      {formatCurrency(Number(balance.settled_amount || 0), balance.currency || "USD")}
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge variant="outline" className="text-xs">
@@ -185,10 +183,10 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                   {fullySettled ? (
                     <span className="flex items-center justify-end gap-1">
                       <CheckIcon className="h-4 w-4" />
-                      ₫0
+                      {formatCurrency(0, balance.currency || "USD")}
                     </span>
                   ) : (
-                    `₫${formatCurrency(Number(showHistory ? (balance.remaining_amount || balance.amount) : balance.amount))}`
+                    formatCurrency(Number(showHistory ? (balance.remaining_amount || balance.amount) : balance.amount), balance.currency || "USD")
                   )}
                 </TableCell>
               </TableRow>
