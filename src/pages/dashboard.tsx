@@ -91,7 +91,6 @@ export const Dashboard = () => {
       counterparty_avatar_url: d.counterparty_avatar_url,
       amount: d.amount,
       i_owe_them: d.i_owe_them,
-      is_public_view: d.is_public_view, // Pass through public view flag
       currency: d.currency,
       total_amount: d.total_amount,
       settled_amount: d.settled_amount,

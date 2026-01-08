@@ -17,7 +17,6 @@ export interface AggregatedDebt {
     remaining_amount?: number; // Amount still outstanding (for historical mode)
     transaction_count?: number; // Number of transactions (for historical mode)
     last_transaction_date?: string; // Last transaction date (for historical mode)
-    is_public_view?: boolean; // Flag indicating amounts should be censored for privacy
 }
 
 export interface UseAggregatedDebtsOptions {
@@ -46,18 +45,10 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
             let rpcError;
 
             if (!identity?.id) {
-                // Unauthenticated: Fetch real data but with amounts hidden
+                // Unauthenticated: Fetch public data
                 const response = await supabaseClient.rpc("get_user_debts_public");
                 result = response.data;
                 rpcError = response.error;
-
-                // For unauthorized users, mark as public view so UI can censor amounts
-                if (result) {
-                    result = result.map((debt: any) => ({
-                        ...debt,
-                        is_public_view: true // Flag for UI to handle censoring
-                    }));
-                }
             } else {
                 // Authenticated: Fetch user's real data
                 const functionName = includeHistory

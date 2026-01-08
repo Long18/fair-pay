@@ -39,7 +39,6 @@ interface Balance {
   remaining_amount?: number;
   transaction_count?: number;
   last_transaction_date?: string;
-  is_public_view?: boolean;
   display_amount?: string;
 }
 
@@ -179,11 +178,7 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
-                    {balance.is_public_view ? (
-                      <span className="text-muted-foreground italic text-sm">
-                        {t('dashboard.amountHidden', 'Hidden')}
-                      </span>
-                    ) : fullySettled ? (
+                    {fullySettled ? (
                       <span className="flex items-center gap-1 text-green-600 dark:text-green-400 font-semibold text-sm">
                         <CheckIcon className="h-4 w-4" />
                         {formatCurrency(0, balance.currency || "VND")}
@@ -288,14 +283,10 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                   {showHistory && (
                     <>
                       <TableCell className="text-right text-muted-foreground">
-                        {balance.is_public_view
-                          ? <span className="italic">{t('dashboard.amountHidden', 'Hidden')}</span>
-                          : formatCurrency(Number(balance.total_amount || balance.amount), balance.currency || "VND")}
+                        {formatCurrency(Number(balance.total_amount || balance.amount), balance.currency || "VND")}
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">
-                        {balance.is_public_view
-                          ? <span className="italic">{t('dashboard.amountHidden', 'Hidden')}</span>
-                          : formatCurrency(Number(balance.settled_amount || 0), balance.currency || "VND")}
+                        {formatCurrency(Number(balance.settled_amount || 0), balance.currency || "VND")}
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge variant="outline" className="text-xs">
@@ -308,11 +299,7 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                     "text-right font-semibold",
                     fullySettled && "text-green-600 dark:text-green-400"
                   )}>
-                    {balance.is_public_view ? (
-                      <span className="text-muted-foreground italic">
-                        {t('dashboard.amountHidden', 'Amount hidden')}
-                      </span>
-                    ) : fullySettled ? (
+                    {fullySettled ? (
                       <span className="flex items-center justify-end gap-1">
                         <CheckIcon className="h-4 w-4" />
                         {formatCurrency(0, balance.currency || "VND")}
