@@ -78,7 +78,7 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
                 throw rpcError;
             }
 
-            // Fetch avatar_urls from profiles table
+            // Fetch avatar_urls from profiles table and add currency fallback
             const debts = result || [];
             if (debts.length > 0) {
                 const counterpartyIds = debts.map((d: { counterparty_id: string }) => d.counterparty_id).filter(Boolean);
@@ -92,10 +92,21 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
                     const profileMap = new Map(
                         (profiles || []).map((p: { id: string; avatar_url: string }) => [p.id, p.avatar_url])
                     );
-                    debts.forEach((debt: { counterparty_id: string; counterparty_avatar_url?: string }) => {
+                    debts.forEach((debt: { counterparty_id: string; counterparty_avatar_url?: string; currency?: string }) => {
                         debt.counterparty_avatar_url = profileMap.get(debt.counterparty_id);
+                        // Add currency fallback if not present
+                        if (!debt.currency) {
+                            debt.currency = "USD";
+                        }
                     });
                 }
+            } else {
+                // Even for empty results, ensure currency field exists
+                debts.forEach((debt: { currency?: string }) => {
+                    if (!debt.currency) {
+                        debt.currency = "USD";
+                    }
+                });
             }
 
             setData(debts);
