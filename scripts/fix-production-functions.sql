@@ -223,13 +223,80 @@ GRANT EXECUTE ON FUNCTION get_user_activities(UUID, INTEGER, INTEGER) TO authent
 -- =============================================
 -- Mark the migrations as applied
 INSERT INTO supabase_migrations.schema_migrations (version, name, statements)
-VALUES 
+VALUES
     ('20260109100000', '20260109100000_add_currency_to_debt_functions', ARRAY['-- Applied via fix-production-functions.sql']),
     ('20260109140000', '20260109140000_update_user_activities_privacy', ARRAY['-- Applied via fix-production-functions.sql'])
 ON CONFLICT (version) DO NOTHING;
 
 -- =============================================
--- 5. Test the functions
+-- 5. Create get_public_recent_activities function
+-- =============================================
+DROP FUNCTION IF EXISTS get_public_recent_activities(INTEGER, INTEGER) CASCADE;
+
+CREATE OR REPLACE FUNCTION get_public_recent_activities(
+    p_limit INTEGER DEFAULT 10,
+    p_offset INTEGER DEFAULT 0
+)
+RETURNS TABLE (
+    id UUID,
+    type TEXT,
+    description TEXT,
+    amount NUMERIC,
+    currency TEXT,
+    date DATE,
+    group_id UUID,
+    group_name TEXT,
+    created_by_id UUID,
+    created_by_name TEXT
+) AS $$
+BEGIN
+    RETURN QUERY
+    -- Return demo activities for public/unauthorized users
+    SELECT 
+        gen_random_uuid() AS id,
+        'expense'::TEXT AS type,
+        'Coffee Meeting'::TEXT AS description,
+        50000::NUMERIC AS amount,
+        'VND'::TEXT AS currency,
+        (CURRENT_DATE - INTERVAL '1 day')::DATE AS date,
+        NULL::UUID AS group_id,
+        'Team Lunch'::TEXT AS group_name,
+        '00000000-0000-0000-0000-000000000001'::UUID AS created_by_id,
+        'Alice'::TEXT AS created_by_name
+    UNION ALL
+    SELECT
+        gen_random_uuid(),
+        'expense'::TEXT,
+        'Lunch at Restaurant'::TEXT,
+        150000::NUMERIC,
+        'VND'::TEXT,
+        (CURRENT_DATE - INTERVAL '2 days')::DATE,
+        NULL::UUID,
+        'Office Group'::TEXT,
+        '00000000-0000-0000-0000-000000000002'::UUID,
+        'Bob'::TEXT
+    UNION ALL
+    SELECT
+        gen_random_uuid(),
+        'payment'::TEXT,
+        'Payment for lunch'::TEXT,
+        75000::NUMERIC,
+        'VND'::TEXT,
+        (CURRENT_DATE - INTERVAL '3 days')::DATE,
+        NULL::UUID,
+        NULL::TEXT,
+        '00000000-0000-0000-0000-000000000003'::UUID,
+        'Charlie'::TEXT
+    ORDER BY date DESC
+    LIMIT p_limit
+    OFFSET p_offset;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION get_public_recent_activities(INTEGER, INTEGER) TO anon, authenticated;
+
+-- =============================================
+-- 6. Test the functions
 -- =============================================
 -- You can uncomment and run these to test:
 -- SELECT * FROM get_user_debts_aggregated('9ac73f98-d6ff-54dd-8337-e96816e855c1'::uuid) LIMIT 5;

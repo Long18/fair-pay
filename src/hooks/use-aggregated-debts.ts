@@ -89,19 +89,9 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
                     );
                     debts.forEach((debt: { counterparty_id: string; counterparty_avatar_url?: string; currency?: string }) => {
                         debt.counterparty_avatar_url = profileMap.get(debt.counterparty_id);
-                        // Add currency fallback if not present
-                        if (!debt.currency) {
-                            debt.currency = "USD";
-                        }
+                        // Keep currency from database, don't override
                     });
                 }
-            } else {
-                // Even for empty results, ensure currency field exists
-                debts.forEach((debt: { currency?: string }) => {
-                    if (!debt.currency) {
-                        debt.currency = "USD";
-                    }
-                });
             }
 
             setData(debts);
