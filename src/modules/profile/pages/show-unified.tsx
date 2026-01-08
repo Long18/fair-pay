@@ -563,7 +563,7 @@ export const ProfileShowUnified = () => {
 
   return (
     <>
-      <PullToRefresh onRefresh={handleRefresh} disabled={!isOwnProfile}>
+      <PullToRefresh onRefresh={handleRefresh} disabled={!isOwnProfile || isEditMode}>
         <div className="container mx-auto px-4 py-4 sm:py-8 max-w-4xl pb-20 sm:pb-8">
           <motion.div
             initial={{ opacity: 0 }}

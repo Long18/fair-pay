@@ -53,6 +53,20 @@ export const PullToRefresh = ({
     };
   }, [checkScrollPosition]);
 
+  // Re-check scroll position when disabled state changes or after content changes
+  useEffect(() => {
+    if (disabled) {
+      setCanPull(false);
+      setPullDistance(0);
+    } else {
+      // Use a small delay to ensure DOM has updated after content changes
+      const timeoutId = setTimeout(() => {
+        checkScrollPosition();
+      }, 100);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [disabled, checkScrollPosition]);
+
   const handleDragEnd = async (_event: MouseEvent | TouchEvent | PointerEvent, _info: PanInfo) => {
     if (disabled || !canPull || isRefreshing) return;
 
@@ -139,7 +153,7 @@ export const PullToRefresh = ({
 
       {/* Content Container */}
       <motion.div
-        drag={canPull && !isRefreshing ? "y" : false}
+        drag={canPull && !isRefreshing && !disabled ? "y" : false}
         dragConstraints={{ top: 0, bottom: threshold * 1.5 }}
         dragElastic={0.3}
         onDrag={handleDrag}
@@ -155,7 +169,7 @@ export const PullToRefresh = ({
         }}
         className={cn(
           "relative",
-          canPull && !isRefreshing && "touch-pan-y"
+          canPull && !isRefreshing && !disabled && "touch-pan-y"
         )}
       >
         {/* Visual Stretch Effect */}
