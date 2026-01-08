@@ -3,8 +3,6 @@ import { useGetIdentity } from "@refinedev/core";
 import { Profile } from "@/modules/profile/types";
 import { FloatingActionButton } from "@/components/dashboard/FloatingActionButton";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardStates";
-import { DashboardHero } from "@/components/dashboard/DashboardHero";
-import { BalanceSummaryCards } from "@/components/dashboard/balance-summary-cards";
 import { BalanceTable } from "@/components/dashboard/BalanceTable";
 import { ActivityTable } from "@/components/dashboard/ActivityTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,7 +11,6 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { HistoryIcon, Loader2Icon } from "@/components/ui/icons";
-import { useGlobalBalance } from "@/hooks/use-global-balance";
 import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
 import { usePaginatedActivities } from "@/hooks/use-paginated-activities";
 import { useTranslation } from "react-i18next";
@@ -22,7 +19,6 @@ import { DashboardTracker } from "@/lib/analytics/index";
 export const Dashboard = () => {
   const { data: identity } = useGetIdentity<Profile>();
   const { t } = useTranslation();
-  const globalBalance = useGlobalBalance();
   const [showHistory, setShowHistory] = useState(false);
   const [isTogglingHistory, setIsTogglingHistory] = useState(false);
   const { data: debts = [], isLoading: debtsLoading, refetch: refetchDebts, error: debtsError } = useAggregatedDebts({
@@ -65,7 +61,7 @@ export const Dashboard = () => {
   }, [identity?.id, refetchDebts]);
 
   useEffect(() => {
-    if (!globalBalance.isLoading && !debtsLoading && !activitiesLoading) {
+    if (!debtsLoading && !activitiesLoading) {
       const timer = setTimeout(() => {
         setLoading(false);
 
@@ -79,7 +75,7 @@ export const Dashboard = () => {
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [globalBalance.isLoading, debtsLoading, activitiesLoading, identity?.id, debts.length]);
+  }, [debtsLoading, activitiesLoading, identity?.id, debts.length]);
 
   const isAuthenticated = !!identity;
 
@@ -104,47 +100,48 @@ export const Dashboard = () => {
     <>
       {loading ? (
         <DashboardSkeleton />
-      ) : isAuthenticated ? (
+      ) : (
         <div className="space-y-6">
-          {/* Welcome Hero Section */}
-          {isAuthenticated && <DashboardHero />}
-
-          {/* Balance Summary Cards */}
-          {isAuthenticated && (
-            <BalanceSummaryCards
-              totalOwedToMe={globalBalance.total_owed_to_me}
-              totalIOwe={globalBalance.total_i_owe}
-              netBalance={globalBalance.net_balance}
-            />
-          )}
-
           {/* Main Content Tabs */}
           <Tabs defaultValue="balances" className="space-y-6">
-            <TabsList>
-              <TabsTrigger value="balances">{t('balances.title', 'Balances')}</TabsTrigger>
-              <TabsTrigger value="activity">{t('dashboard.recentActivity', 'Activity')}</TabsTrigger>
-            </TabsList>
+            <div className="flex items-center justify-center w-full">
+              <TabsList>
+                <TabsTrigger value="balances" className="px-6">
+                  {t('balances.title', 'Balances')}
+                </TabsTrigger>
+                <TabsTrigger value="activity" className="px-6">
+                  {t('dashboard.recentActivity', 'Activity')}
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-            <TabsContent value="balances" className="space-y-4">
+            <TabsContent value="balances" className="space-y-4 mt-6">
               {isAuthenticated && (
-                <div className="flex items-center justify-end space-x-2 mb-4 p-3 bg-muted/50 rounded-lg">
-                  {isTogglingHistory && (
-                    <Loader2Icon className="h-4 w-4 animate-spin text-muted-foreground" />
-                  )}
+                <div className="flex items-center justify-between p-4 bg-card border rounded-lg shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <HistoryIcon className="h-5 w-5 text-muted-foreground" />
+                    <div className="flex flex-col">
+                      <Label htmlFor="show-history" className="text-sm font-medium cursor-pointer">
+                        {t('dashboard.showAllTransactions', 'Show all transactions (including settled)')}
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {t('dashboard.showAllTransactionsTooltip', 'Include fully settled debts in the list')}
+                      </p>
+                    </div>
+                  </div>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="flex items-center space-x-2">
-                          <HistoryIcon className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex items-center gap-2">
+                          {isTogglingHistory && (
+                            <Loader2Icon className="h-4 w-4 animate-spin text-muted-foreground" />
+                          )}
                           <Switch
                             id="show-history"
                             checked={showHistory}
                             onCheckedChange={handleHistoryToggle}
                             disabled={isTogglingHistory}
                           />
-                          <Label htmlFor="show-history" className="text-sm cursor-pointer font-medium">
-                            {t('dashboard.showAllTransactions', 'Show all transactions (including settled)')}
-                          </Label>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -161,33 +158,20 @@ export const Dashboard = () => {
                   {t('dashboard.errorLoadingDebts', 'Failed to load debts. Please try again.')}
                 </div>
               )}
-              <BalanceTable balances={balances} disabled={!isAuthenticated} showHistory={showHistory} />
+              <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
+                <BalanceTable balances={balances} disabled={!isAuthenticated} showHistory={showHistory} />
+              </div>
             </TabsContent>
 
-            <TabsContent value="activity" className="space-y-4">
-              <ActivityTable
-                activities={activities}
-                metadata={activitiesMetadata}
-                onPageChange={setActivitiesPage}
-                disabled={!isAuthenticated}
-              />
-            </TabsContent>
-          </Tabs>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          <Tabs defaultValue="balances" className="space-y-6">
-            <TabsList>
-              <TabsTrigger value="balances">{t('balances.title', 'Balances')}</TabsTrigger>
-              <TabsTrigger value="activity">{t('dashboard.recentActivity', 'Activity')}</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="balances" className="space-y-4">
-              <BalanceTable balances={[]} disabled={true} />
-            </TabsContent>
-
-            <TabsContent value="activity" className="space-y-4">
-              <ActivityTable activities={[]} disabled={true} />
+            <TabsContent value="activity" className="space-y-4 mt-6">
+              <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
+                <ActivityTable
+                  activities={activities}
+                  metadata={activitiesMetadata}
+                  onPageChange={setActivitiesPage}
+                  disabled={!isAuthenticated}
+                />
+              </div>
             </TabsContent>
           </Tabs>
         </div>

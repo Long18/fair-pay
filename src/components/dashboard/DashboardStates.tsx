@@ -7,29 +7,17 @@ import { FilePlusIcon } from "@/components/ui/icons";
 export function DashboardSkeleton() {
   return (
     <div className="space-y-6">
-      {/* Hero Section Skeleton */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 py-4">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-4 w-64" />
-        </div>
-        <Skeleton className="h-10 w-[180px]" />
-      </div>
-
-      {/* Balance Summary Cards Skeleton */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Skeleton className="h-24 w-full rounded-lg" />
-        <Skeleton className="h-24 w-full rounded-lg" />
-        <Skeleton className="h-24 w-full rounded-lg" />
-      </div>
-
       {/* Tabs Skeleton */}
-      <div className="space-y-4">
-        <div className="flex gap-2">
-          <Skeleton className="h-10 w-24 rounded-md" />
-          <Skeleton className="h-10 w-24 rounded-md" />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-32 rounded-md" />
+            <Skeleton className="h-10 w-32 rounded-md" />
+          </div>
         </div>
-        <Skeleton className="h-96 w-full rounded-lg" />
+        <div className="bg-card border rounded-lg shadow-sm p-6">
+          <Skeleton className="h-96 w-full" />
+        </div>
       </div>
     </div>
   );
