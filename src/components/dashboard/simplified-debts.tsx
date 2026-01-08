@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,11 +7,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatNumber } from "@/lib/locale-utils";
 import { useGo } from "@refinedev/core";
 import { AggregatedDebt } from "@/hooks/use-aggregated-debts";
+import { PaginationControls, PaginationMetadata } from "@/components/ui/pagination-controls";
 
-import { ArrowRightIcon, CheckIcon } from "@/components/ui/icons";
+import { ArrowRightIcon, CheckIcon, UserIcon } from "@/components/ui/icons";
 interface SimplifiedDebtsProps {
   debts: AggregatedDebt[];
   isLoading?: boolean;
+  pageSize?: number;
 }
 
 /**
@@ -21,9 +23,33 @@ interface SimplifiedDebtsProps {
 export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
   debts,
   isLoading = false,
+  pageSize = 10,
 }) => {
   const { t } = useTranslation();
   const go = useGo();
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Calculate pagination
+  const totalItems = debts.length;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedDebts = useMemo(() => {
+    return debts.slice(startIndex, endIndex);
+  }, [debts, startIndex, endIndex]);
+
+  const paginationMetadata: PaginationMetadata = {
+    totalItems,
+    totalPages: totalPages || 1,
+    currentPage,
+    pageSize,
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -83,12 +109,24 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {debts.slice(0, 5).map((debt) => (
+          {paginatedDebts.map((debt) => (
             <div
               key={debt.counterparty_id}
-              className="flex items-center justify-between p-3 rounded-lg hover:bg-[#F9F9F9] transition-colors"
+              className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 dark:hover:bg-muted/30 transition-colors cursor-pointer group"
+              onClick={() => {
+                go({ to: `/profile/${debt.counterparty_id}` });
+              }}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  go({ to: `/profile/${debt.counterparty_id}` });
+                }
+              }}
+              aria-label={`${debt.i_owe_them ? t('dashboard.youOweUser') : t('dashboard.userOwesYou')} ${debt.counterparty_name}, ${formatNumber(debt.amount)} ₫`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={debt.counterparty_avatar_url || undefined} alt={debt.counterparty_name} />
                   <AvatarFallback className="bg-[#FFA14E] text-white text-sm">
@@ -96,47 +134,70 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[#333] truncate">
+                  <p className="text-sm font-medium text-foreground truncate">
                     {debt.i_owe_them ? (
                       <>{t('dashboard.youOweUser')} <span className="font-bold">{debt.counterparty_name}</span></>
                     ) : (
                       <><span className="font-bold">{debt.counterparty_name}</span> {t('dashboard.userOwesYou')}</>
                     )}
                   </p>
-                  <p className="text-xs text-[#828282] mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {t('dashboard.tapToSettleUp')}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                 <Badge
                   variant="outline"
                   className={cn(
                     "font-semibold",
                     debt.i_owe_them
-                      ? "text-[#EB5757] border-[#EB5757]/20 bg-[#EB5757]/5"
-                      : "text-[#6FCF97] border-[#6FCF97]/20 bg-[#6FCF97]/5"
+                      ? "text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/30 bg-red-50 dark:bg-red-950/10"
+                      : "text-green-600 dark:text-green-400 border-green-200 dark:border-green-800/30 bg-green-50 dark:bg-green-950/10"
                   )}
                 >
                   {formatNumber(debt.amount)} ₫
                 </Badge>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 text-[#828282] hover:text-[#FFA14E]"
-                  onClick={() => {
-                    // Navigate to settle-up with this user
-                    go({
-                      to: `/payments/create?userId=${debt.counterparty_id}&amount=${debt.amount}`,
-                    });
-                  }}
-                >
-                  <ArrowRightIcon className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      go({ to: `/profile/${debt.counterparty_id}` });
+                    }}
+                    aria-label={t('dashboard.viewProfile', 'View profile')}
+                  >
+                    <UserIcon className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    onClick={() => {
+                      go({
+                        to: `/payments/create?userId=${debt.counterparty_id}&amount=${debt.amount}`,
+                      });
+                    }}
+                    aria-label={t('dashboard.settleUp', 'Settle up')}
+                  >
+                    <ArrowRightIcon className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           ))}
         </div>
+        {totalPages > 1 && (
+          <div className="mt-4 pt-4 border-t">
+            <PaginationControls
+              metadata={paginationMetadata}
+              onPageChange={handlePageChange}
+              showFirstLast={true}
+              maxVisiblePages={5}
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

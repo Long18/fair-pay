@@ -56,7 +56,7 @@ BEGIN
                 (es.is_settled = false) OR
                 (es.is_settled = true AND es.settled_amount < es.computed_amount)
             )
-        GROUP BY 
+        GROUP BY
             CASE
                 WHEN es.user_id = p_user_id THEN e.paid_by_user_id
                 ELSE es.user_id
@@ -172,27 +172,27 @@ BEGIN
         GROUP BY p.from_user, p.to_user, COALESCE(p.currency, 'USD')
     ),
     all_history AS (
-        SELECT 
-            owes_user,
-            owed_user,
-            currency,
-            total_amount,
-            settled_amount,
-            remaining_amount,
-            transaction_count,
-            last_transaction_date::TIMESTAMPTZ as last_transaction_date
-        FROM expense_history
+        SELECT
+            eh.owes_user,
+            eh.owed_user,
+            eh.currency,
+            eh.total_amount,
+            eh.settled_amount,
+            eh.remaining_amount,
+            eh.transaction_count,
+            eh.last_transaction_date::TIMESTAMPTZ as last_transaction_date
+        FROM expense_history eh
         UNION ALL
-        SELECT 
-            owes_user,
-            owed_user,
-            currency,
-            total_amount,
-            settled_amount,
-            remaining_amount,
-            transaction_count,
-            last_transaction_date::TIMESTAMPTZ
-        FROM payment_history
+        SELECT
+            ph.owes_user,
+            ph.owed_user,
+            ph.currency,
+            ph.total_amount,
+            ph.settled_amount,
+            ph.remaining_amount,
+            ph.transaction_count,
+            ph.last_transaction_date::TIMESTAMPTZ
+        FROM payment_history ph
     ),
     debt_calculations AS (
         SELECT
