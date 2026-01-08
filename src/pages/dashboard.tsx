@@ -3,6 +3,8 @@ import { useGetIdentity } from "@refinedev/core";
 import { Profile } from "@/modules/profile/types";
 import { FloatingActionButton } from "@/components/dashboard/FloatingActionButton";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardStates";
+import { DashboardHero } from "@/components/dashboard/DashboardHero";
+import { BalanceSummaryCards } from "@/components/dashboard/balance-summary-cards";
 import { BalanceTable } from "@/components/dashboard/BalanceTable";
 import { ActivityTable } from "@/components/dashboard/ActivityTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -102,62 +104,94 @@ export const Dashboard = () => {
   return (
     <>
       {loading ? (
-        <Spinner size="lg" className="min-h-[400px]" />
-      ) : (
-        <Tabs defaultValue="balances" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="balances">{t('balances.title', 'Balances')}</TabsTrigger>
-            <TabsTrigger value="activity">{t('dashboard.recentActivity', 'Activity')}</TabsTrigger>
-          </TabsList>
+        <DashboardSkeleton />
+      ) : isAuthenticated ? (
+        <div className="space-y-6">
+          {/* Welcome Hero Section */}
+          {isAuthenticated && <DashboardHero />}
 
-          <TabsContent value="balances" className="space-y-4">
-            {isAuthenticated && (
-              <div className="flex items-center justify-end space-x-2 mb-4 p-3 bg-muted/50 rounded-lg">
-                {isTogglingHistory && (
-                  <Loader2Icon className="h-4 w-4 animate-spin text-muted-foreground" />
-                )}
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-center space-x-2">
-                        <HistoryIcon className="h-4 w-4 text-muted-foreground" />
-                        <Switch
-                          id="show-history"
-                          checked={showHistory}
-                          onCheckedChange={handleHistoryToggle}
-                          disabled={isTogglingHistory}
-                        />
-                        <Label htmlFor="show-history" className="text-sm cursor-pointer font-medium">
-                          {t('dashboard.showAllTransactions', 'Show all transactions (including settled)')}
-                        </Label>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="max-w-xs text-xs">
-                        {t('dashboard.showAllTransactionsTooltip', 'Toggle to view your complete transaction history, including debts that have been fully settled')}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            )}
-            {debtsError && (
-              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
-                {t('dashboard.errorLoadingDebts', 'Failed to load debts. Please try again.')}
-              </div>
-            )}
-            <BalanceTable balances={balances} disabled={!isAuthenticated} showHistory={showHistory} />
-          </TabsContent>
-
-          <TabsContent value="activity" className="space-y-4">
-            <ActivityTable
-              activities={activities}
-              metadata={activitiesMetadata}
-              onPageChange={setActivitiesPage}
-              disabled={!isAuthenticated}
+          {/* Balance Summary Cards */}
+          {isAuthenticated && (
+            <BalanceSummaryCards
+              totalOwedToMe={globalBalance.total_owed_to_me}
+              totalIOwe={globalBalance.total_i_owe}
+              netBalance={globalBalance.net_balance}
             />
-          </TabsContent>
-        </Tabs>
+          )}
+
+          {/* Main Content Tabs */}
+          <Tabs defaultValue="balances" className="space-y-6">
+            <TabsList>
+              <TabsTrigger value="balances">{t('balances.title', 'Balances')}</TabsTrigger>
+              <TabsTrigger value="activity">{t('dashboard.recentActivity', 'Activity')}</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="balances" className="space-y-4">
+              {isAuthenticated && (
+                <div className="flex items-center justify-end space-x-2 mb-4 p-3 bg-muted/50 rounded-lg">
+                  {isTogglingHistory && (
+                    <Loader2Icon className="h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center space-x-2">
+                          <HistoryIcon className="h-4 w-4 text-muted-foreground" />
+                          <Switch
+                            id="show-history"
+                            checked={showHistory}
+                            onCheckedChange={handleHistoryToggle}
+                            disabled={isTogglingHistory}
+                          />
+                          <Label htmlFor="show-history" className="text-sm cursor-pointer font-medium">
+                            {t('dashboard.showAllTransactions', 'Show all transactions (including settled)')}
+                          </Label>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs text-xs">
+                          {t('dashboard.showAllTransactionsTooltip', 'Toggle to view your complete transaction history, including debts that have been fully settled')}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              )}
+              {debtsError && (
+                <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
+                  {t('dashboard.errorLoadingDebts', 'Failed to load debts. Please try again.')}
+                </div>
+              )}
+              <BalanceTable balances={balances} disabled={!isAuthenticated} showHistory={showHistory} />
+            </TabsContent>
+
+            <TabsContent value="activity" className="space-y-4">
+              <ActivityTable
+                activities={activities}
+                metadata={activitiesMetadata}
+                onPageChange={setActivitiesPage}
+                disabled={!isAuthenticated}
+              />
+            </TabsContent>
+          </Tabs>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <Tabs defaultValue="balances" className="space-y-6">
+            <TabsList>
+              <TabsTrigger value="balances">{t('balances.title', 'Balances')}</TabsTrigger>
+              <TabsTrigger value="activity">{t('dashboard.recentActivity', 'Activity')}</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="balances" className="space-y-4">
+              <BalanceTable balances={[]} disabled={true} />
+            </TabsContent>
+
+            <TabsContent value="activity" className="space-y-4">
+              <ActivityTable activities={[]} disabled={true} />
+            </TabsContent>
+          </Tabs>
+        </div>
       )}
 
       <FloatingActionButton disabled={!isAuthenticated} />
