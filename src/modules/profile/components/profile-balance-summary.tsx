@@ -33,8 +33,8 @@ export const ProfileBalanceSummary = ({
   const { t } = useTranslation();
 
   // Filter out settled debts when showHistory is false
-  const activeDebts = showHistory 
-    ? debts 
+  const activeDebts = showHistory
+    ? debts
     : debts.filter(debt => {
         const amount = Number(debt.amount || 0);
         const remainingAmount = Number(debt.remaining_amount || debt.amount || 0);
@@ -84,16 +84,24 @@ export const ProfileBalanceSummary = ({
     visible: { opacity: 1, y: 0 },
   };
 
-  // Calculate totals for each currency
+  // Calculate totals for each currency - use remaining_amount (unpaid) when available
   const currencySummaries = currencies.map(currency => {
     const currencyDebts = debtsByCurrency[currency];
     const totalOwedToMe = currencyDebts
       .filter(d => !d.i_owe_them)
-      .reduce((sum, d) => sum + Math.abs(d.amount), 0);
+      .reduce((sum, d) => {
+        // Use remaining_amount (unpaid) if available, otherwise use amount
+        const amountToUse = d.remaining_amount !== undefined ? d.remaining_amount : d.amount;
+        return sum + Math.abs(amountToUse);
+      }, 0);
 
     const totalIOwe = currencyDebts
       .filter(d => d.i_owe_them)
-      .reduce((sum, d) => sum + Math.abs(d.amount), 0);
+      .reduce((sum, d) => {
+        // Use remaining_amount (unpaid) if available, otherwise use amount
+        const amountToUse = d.remaining_amount !== undefined ? d.remaining_amount : d.amount;
+        return sum + Math.abs(amountToUse);
+      }, 0);
 
     const netBalance = totalOwedToMe - totalIOwe;
     const owedToMeCount = currencyDebts.filter(d => !d.i_owe_them).length;
