@@ -73,7 +73,6 @@ interface DebtSummary {
   remaining_amount?: number;
   transaction_count?: number;
   last_transaction_date?: string;
-  is_public_view?: boolean;
 }
 
 interface ActivityItem {
@@ -89,7 +88,6 @@ interface ActivityItem {
   is_lender: boolean;
   is_borrower: boolean;
   is_payment: boolean;
-  is_private?: boolean; // For privacy control
 }
 
 export const ProfileShowUnified = () => {
@@ -243,30 +241,24 @@ export const ProfileShowUnified = () => {
 
     setIsLoadingDebts(true);
     try {
-      // Admin can view all debts, otherwise check if viewing own profile
-      const canViewFullDetails = isUserAdmin || isOwnProfile;
-      // If not logged in or viewing someone else's profile (and not admin), fetch public view
-      const isPublicView = !identity?.id || (!isOwnProfile && !isUserAdmin);
-
-      if (isPublicView && !identity?.id) {
+      // Fetch debts based on authentication
+      if (!identity?.id) {
         // For unauthenticated users, use public endpoint
         const { data, error } = await supabaseClient
           .rpc("get_user_debts_public");
 
         if (error) throw error;
 
-        // Mark as public view for UI censoring
         const publicDebts = (data || []).map((debt: any) => ({
           ...debt,
           currency: debt.currency || "VND",
-          is_public_view: true,
           // Use remaining_amount if available, otherwise use amount
           amount: debt.remaining_amount !== undefined ? debt.remaining_amount : debt.amount
         }));
 
         setDebts(publicDebts);
       } else {
-        // For authenticated users (own profile or admin viewing others)
+        // For authenticated users
         const functionName = includeHistory
           ? "get_user_debts_history"
           : "get_user_debts_aggregated";
@@ -287,7 +279,6 @@ export const ProfileShowUnified = () => {
           return {
             ...debt,
             currency: debt.currency || "VND",
-            is_public_view: !canViewFullDetails,
             // Update amount to show remaining (unpaid) amount
             amount: displayAmount
           };
@@ -322,41 +313,8 @@ export const ProfileShowUnified = () => {
 
       if (error) throw error;
 
-      // Apply privacy rules based on viewing context
-      const processedActivities = (data || []).map((activity: any) => {
-        // Check if viewing own profile
-        const isOwnProfile = profileId === identity?.id;
-
-        // For own profile, show everything
-        if (isOwnProfile) {
-          return activity;
-        }
-
-        // For other's profiles, need to check if current viewer is involved
-        // We need to fetch activities for the current viewer to check involvement
-        // For now, we'll hide all financial details on other people's profiles
-        // unless the activity indicates the viewer is involved
-
-        // Since we're viewing someone else's profile, check if the current
-        // viewer is the paid_by user or involved in the transaction
-        const viewerId = identity?.id;
-        const isViewerInvolved = viewerId && (
-          activity.paid_by_user_id === viewerId ||
-          // Additional check would require fetching viewer's activities
-          // For now, mark as private for all activities on other's profiles
-          false
-        );
-
-        if (!isViewerInvolved) {
-          return {
-            ...activity,
-            // Hide amounts for non-involved viewers
-            is_private: true,
-          };
-        }
-
-        return activity;
-      });
+      // Process activities - show all activities without privacy restrictions
+      const processedActivities = data || [];
 
       if (append) {
         setActivities(prev => [...prev, ...processedActivities]);

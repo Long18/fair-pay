@@ -190,7 +190,6 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
               iOweThemFlag={debt.i_owe_them}
               onClick={() => handleRowClick(debt.counterparty_id)}
               disabled={disabled}
-              isPublicView={debt.is_public_view}
             />
           ))}
         </div>
@@ -210,7 +209,6 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
               iOweThemFlag={debt.i_owe_them}
               onClick={() => handleRowClick(debt.counterparty_id)}
               disabled={disabled}
-              isPublicView={debt.is_public_view}
             />
           ))}
         </div>

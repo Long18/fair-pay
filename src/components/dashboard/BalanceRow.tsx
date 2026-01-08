@@ -9,7 +9,6 @@ interface BalanceRowProps {
   iOweThemFlag: boolean;
   onClick?: () => void;
   disabled?: boolean;
-  isPublicView?: boolean;
 }
 
 export function BalanceRow({
@@ -19,14 +18,13 @@ export function BalanceRow({
   iOweThemFlag,
   onClick,
   disabled = false,
-  isPublicView = false,
 }: BalanceRowProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('vi-VN').format(Math.abs(value));
   };
 
-  // Display amount text - censored for public view
-  const displayAmount = isPublicView ? "•••••" : `₫${formatCurrency(amount)}`;
+  // Display amount text
+  const displayAmount = `₫${formatCurrency(amount)}`;
 
   return (
     <div

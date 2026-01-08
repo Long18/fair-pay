@@ -13,7 +13,6 @@ interface DebtSummary {
   amount: number;
   currency: string;
   i_owe_them: boolean;
-  is_public_view?: boolean;
   remaining_amount?: number; // For filtering settled debts
 }
 
@@ -41,14 +40,8 @@ export const ProfileBalanceSummary = ({
         return amount !== 0 && remainingAmount !== 0;
       });
 
-  // Check if any debt has public view flag (for censoring amounts)
-  const isPublicView = activeDebts.some(debt => debt.is_public_view);
-
-  // Helper to format or censor amounts
+  // Helper to format amounts
   const displayAmount = (amount: number, currency: string) => {
-    if (isPublicView) {
-      return "•••••";
-    }
     return formatCurrency(amount, currency);
   };
 
