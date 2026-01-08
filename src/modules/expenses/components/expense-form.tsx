@@ -47,6 +47,7 @@ import { DEFAULT_RECURRING_VALUES } from "../types/recurring";
 
 import { RepeatIcon, PercentIcon, DollarSignIcon, UserPlusIcon, UserMinusIcon, XIcon, CalendarIcon } from "@/components/ui/icons";
 import { Bold, Italic, List, Link, Code } from "lucide-react";
+import { AttachmentUpload, type AttachmentFile } from "./attachment-upload";
 const expenseSchema = z.object({
   description: z.string().min(1, "Description is required").max(200),
   amount: z.number().positive("Amount must be positive"),
@@ -77,6 +78,8 @@ interface ExpenseFormProps {
   isLoading?: boolean;
   topPartnerIds?: string[];
   isEdit?: boolean;
+  attachments?: AttachmentFile[];
+  onAttachmentsChange?: (attachments: AttachmentFile[]) => void;
 }
 
 export const ExpenseForm = ({
@@ -88,6 +91,8 @@ export const ExpenseForm = ({
   isLoading,
   topPartnerIds = [],
   isEdit = false,
+  attachments = [],
+  onAttachmentsChange,
 }: ExpenseFormProps) => {
   const form = useForm({
     resolver: zodResolver(expenseSchema),
@@ -766,7 +771,7 @@ export const ExpenseForm = ({
           isRecurring={form.watch("is_recurring") || false}
         />
 
-        {/* Comment Field - Grouped with Receipts & Bills section */}
+        {/* Comment Field */}
         <div className="border-t pt-6">
           <FormField
             control={form.control}
@@ -862,6 +867,22 @@ export const ExpenseForm = ({
             )}
           />
         </div>
+
+        {/* Receipts & Bills Section */}
+        {onAttachmentsChange && (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold mb-1">Receipts & Bills</h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                Attach receipts or bills for this expense (Optional)
+              </p>
+              <AttachmentUpload
+                attachments={attachments}
+                onAttachmentsChange={onAttachmentsChange}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Fixed bottom button */}
         <div className="sticky bottom-0 left-0 right-0 bg-background pt-4 pb-2 border-t mt-6 -mx-6 px-6 z-10">
