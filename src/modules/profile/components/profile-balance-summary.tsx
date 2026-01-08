@@ -66,11 +66,11 @@ export const ProfileBalanceSummary = ({
     const totalOwedToMe = currencyDebts
       .filter(d => !d.i_owe_them)
       .reduce((sum, d) => sum + Math.abs(d.amount), 0);
-    
+
     const totalIOwe = currencyDebts
       .filter(d => d.i_owe_them)
       .reduce((sum, d) => sum + Math.abs(d.amount), 0);
-    
+
     const netBalance = totalOwedToMe - totalIOwe;
     const owedToMeCount = currencyDebts.filter(d => !d.i_owe_them).length;
     const iOweCount = currencyDebts.filter(d => d.i_owe_them).length;
@@ -186,7 +186,7 @@ export const ProfileBalanceSummary = ({
               <div className="flex-1 h-px bg-border" />
             </div>
           )}
-          
+
           <div className="grid gap-4 sm:grid-cols-3">
             {/* Net Balance Card */}
             <motion.div variants={itemVariants}>
