@@ -34,11 +34,11 @@ BEGIN
         SELECT
             e.id,
             'expense'::TEXT AS type,
-            e.name AS description,
-            e.total_amount,
+            e.description AS description,
+            e.amount AS total_amount,
             es.computed_amount AS user_share,
             COALESCE(e.currency, 'USD') AS currency,
-            e.date,
+            e.expense_date::TIMESTAMPTZ AS date,
             g.name AS group_name,
             g.id AS group_id,
             e.paid_by_user_id,
@@ -55,7 +55,7 @@ BEGIN
         LEFT JOIN profiles p ON e.paid_by_user_id = p.id
         WHERE (es.user_id = p_user_id OR e.paid_by_user_id = p_user_id)
             AND NOT e.is_payment
-            AND e.date <= CURRENT_DATE -- Filter out future dates
+            AND e.expense_date <= CURRENT_DATE -- Filter out future dates
 
         UNION ALL
 
@@ -63,7 +63,7 @@ BEGIN
         SELECT
             pay.id,
             'payment'::TEXT AS type,
-            COALESCE(pay.description,
+            COALESCE(pay.note,
                 CASE
                     WHEN pay.from_user = p_user_id
                     THEN 'Payment to ' || p_to.full_name
@@ -72,7 +72,7 @@ BEGIN
             pay.amount AS total_amount,
             pay.amount AS user_share,
             COALESCE(pay.currency, 'USD') AS currency,
-            pay.created_at::DATE AS date,
+            pay.payment_date::TIMESTAMPTZ AS date,
             g.name AS group_name,
             g.id AS group_id,
             pay.from_user AS paid_by_user_id,
@@ -88,7 +88,7 @@ BEGIN
         LEFT JOIN profiles p_from ON pay.from_user = p_from.id
         LEFT JOIN profiles p_to ON pay.to_user = p_to.id
         WHERE (pay.from_user = p_user_id OR pay.to_user = p_user_id)
-            AND pay.created_at::DATE <= CURRENT_DATE -- Filter out future dates
+            AND pay.payment_date <= CURRENT_DATE -- Filter out future dates
     )
     SELECT
         a.id,

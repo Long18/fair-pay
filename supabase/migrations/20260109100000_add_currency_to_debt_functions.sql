@@ -26,13 +26,13 @@ BEGIN
             CASE
                 WHEN es.user_id = p_user_id THEN e.paid_by_user_id
                 ELSE es.user_id
-            END AS counterparty_id,
-            e.currency,
+            END AS balance_counterparty_id,
+            e.currency AS balance_currency,
             CASE
                 WHEN es.user_id = p_user_id AND e.paid_by_user_id != p_user_id THEN es.computed_amount
                 WHEN es.user_id != p_user_id AND e.paid_by_user_id = p_user_id THEN -es.computed_amount
                 ELSE 0
-            END AS amount
+            END AS balance_amount
         FROM expense_splits es
         JOIN expenses e ON es.expense_id = e.id
         WHERE (es.user_id = p_user_id OR e.paid_by_user_id = p_user_id)
@@ -43,41 +43,41 @@ BEGIN
         -- Get balances from payments
         SELECT
             CASE
-                WHEN p.from_user = p_user_id THEN p.to_user
-                ELSE p.from_user
-            END AS counterparty_id,
-            p.currency,
+                WHEN pay.from_user = p_user_id THEN pay.to_user
+                ELSE pay.from_user
+            END AS balance_counterparty_id,
+            pay.currency AS balance_currency,
             CASE
-                WHEN p.from_user = p_user_id THEN p.amount
-                ELSE -p.amount
-            END AS amount
-        FROM payments p
-        WHERE (p.from_user = p_user_id OR p.to_user = p_user_id)
+                WHEN pay.from_user = p_user_id THEN pay.amount
+                ELSE -pay.amount
+            END AS balance_amount
+        FROM payments pay
+        WHERE (pay.from_user = p_user_id OR pay.to_user = p_user_id)
     ),
     all_balances AS (
-        SELECT counterparty_id, currency, amount FROM expense_balances
+        SELECT balance_counterparty_id, balance_currency, balance_amount FROM expense_balances
         UNION ALL
-        SELECT counterparty_id, currency, amount FROM payment_balances
+        SELECT balance_counterparty_id, balance_currency, balance_amount FROM payment_balances
     ),
     aggregated AS (
         SELECT
-            ab.counterparty_id,
-            ab.currency,
-            SUM(ab.amount) AS net_amount
+            ab.balance_counterparty_id,
+            ab.balance_currency,
+            SUM(ab.balance_amount) AS net_amount
         FROM all_balances ab
-        WHERE ab.counterparty_id != p_user_id
-        GROUP BY ab.counterparty_id, ab.currency
-        HAVING SUM(ab.amount) != 0
+        WHERE ab.balance_counterparty_id != p_user_id
+        GROUP BY ab.balance_counterparty_id, ab.balance_currency
+        HAVING SUM(ab.balance_amount) != 0
     )
     SELECT
-        a.counterparty_id,
+        a.balance_counterparty_id AS counterparty_id,
         p.full_name AS counterparty_name,
         ABS(a.net_amount) AS amount,
-        a.currency,
+        a.balance_currency AS currency,
         a.net_amount > 0 AS i_owe_them
     FROM aggregated a
-    JOIN profiles p ON a.counterparty_id = p.id
-    ORDER BY a.currency, ABS(a.net_amount) DESC;
+    JOIN profiles p ON a.balance_counterparty_id = p.id
+    ORDER BY a.balance_currency, ABS(a.net_amount) DESC;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
