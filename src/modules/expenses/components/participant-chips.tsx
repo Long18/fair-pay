@@ -80,7 +80,7 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
   const currencySymbol = currency === "VND" ? "₫" : currency === "USD" ? "$" : "€";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 overflow-x-hidden max-w-full">
       {/* Selected Participants */}
       <div className="space-y-2">
         <div className="flex items-center justify-between mb-2">
@@ -90,30 +90,30 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
           </span>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 overflow-x-hidden">
           {participants.map((participant) => (
             <div
               key={participant.user_id}
               className={cn(
-                "flex items-center gap-1 px-3 py-2 rounded-lg border bg-background",
+                "flex items-center gap-1 px-3 py-2 rounded-lg border bg-background max-w-full",
                 isCurrentUser(participant.user_id) && "border-primary/50 bg-primary/5"
               )}
             >
-              <span className="text-sm font-medium">
+              <span className="text-sm font-medium truncate min-w-0">
                 {getMemberName(participant.user_id)}
               </span>
               {isCurrentUser(participant.user_id) && (
-                <Badge variant="outline" className="h-5 px-1 text-[10px]">You</Badge>
+                <Badge variant="outline" className="h-5 px-1 text-[10px] flex-shrink-0">You</Badge>
               )}
-              <span className="text-sm text-muted-foreground mx-1">•</span>
-              <span className="text-sm font-medium text-primary">
+              <span className="text-sm text-muted-foreground mx-1 flex-shrink-0">•</span>
+              <span className="text-sm font-medium text-primary truncate min-w-0">
                 {formatNumber(participant.computed_amount)} {currencySymbol}
               </span>
               {!isCurrentUser(participant.user_id) && participants.length > 1 && (
                 <button
                   type="button"
                   onClick={() => onRemoveParticipant(participant.user_id)}
-                  className="ml-1 p-0.5 rounded hover:bg-destructive/10 transition-colors"
+                  className="ml-1 p-0.5 rounded hover:bg-destructive/10 transition-colors flex-shrink-0"
                 >
                   <XIcon className="h-3 w-3 text-destructive" />
                 </button>
@@ -169,11 +169,11 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
           </label>
           <div className="space-y-2">
             {participants.map((participant) => (
-              <div key={participant.user_id} className="flex items-center gap-2">
-                <span className="text-sm w-28 truncate">
+              <div key={participant.user_id} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <span className="text-sm sm:w-28 truncate min-w-0">
                   {getMemberName(participant.user_id)}
                 </span>
-                <div className="flex-1 relative">
+                <div className="flex-1 relative min-w-0">
                   <Input
                     type="number"
                     step={splitMethod === "exact" ? "0.01" : "1"}
@@ -182,13 +182,13 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
                     placeholder="0"
                     value={manualValues[participant.user_id] || participant.split_value || ""}
                     onChange={(e) => handleManualValueChange(participant.user_id, e.target.value)}
-                    className="pr-10 h-9"
+                    className="pr-10 h-9 w-full"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                     {splitMethod === "percentage" ? "%" : currencySymbol}
                   </span>
                 </div>
-                <span className="text-sm font-medium text-muted-foreground w-20 text-right">
+                <span className="text-sm font-medium text-muted-foreground sm:w-20 text-left sm:text-right min-w-0">
                   = {formatNumber(participant.computed_amount)}
                 </span>
               </div>

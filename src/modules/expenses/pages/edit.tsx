@@ -398,9 +398,9 @@ export const ExpenseEdit = () => {
       open={true}
       onOpenChange={handleClose}
       title="Edit Expense"
-      className="sm:max-w-4xl max-h-[90vh] overflow-y-auto"
+      className="sm:max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden"
     >
-      <div className="space-y-6">
+      <div className="space-y-6 overflow-x-hidden max-w-full">
         <ExpenseForm
           groupId={contextId!}
           members={allAvailableMembers}

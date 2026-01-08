@@ -79,9 +79,9 @@ export const QuickTemplates: React.FC<QuickTemplatesProps> = ({
   className,
 }) => {
   return (
-    <div className={cn("space-y-2", className)}>
+    <div className={cn("space-y-2 overflow-x-hidden max-w-full", className)}>
       <label className="text-sm font-medium text-muted-foreground">Quick templates</label>
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin -mx-1 px-1">
         {templates.map((template) => (
           <button
             key={template.id}

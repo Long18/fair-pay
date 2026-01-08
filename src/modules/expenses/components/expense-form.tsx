@@ -193,7 +193,7 @@ export const ExpenseForm = ({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 overflow-x-hidden max-w-full">
         {/* Quick Templates */}
         <QuickTemplates
           onSelectTemplate={handleTemplateSelect}
@@ -201,12 +201,12 @@ export const ExpenseForm = ({
         />
 
         {/* Basic Info Card */}
-        <Card className="border-2 border-border/50 shadow-sm">
+        <Card className="border-2 border-border/50 shadow-sm overflow-hidden">
           <CardHeader className="pb-4">
             <CardTitle className="text-lg font-semibold">Expense Details</CardTitle>
             <CardDescription>What did you pay for?</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 overflow-x-hidden">
             {/* Description */}
             <FormField
               control={form.control}
@@ -227,8 +227,8 @@ export const ExpenseForm = ({
             />
 
             {/* Amount and Currency in same row */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="col-span-1 sm:col-span-2">
                 <FormField
                   control={form.control}
                   name="amount"
@@ -271,7 +271,7 @@ export const ExpenseForm = ({
             </div>
 
             {/* Date and Paid By */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FormField
                 control={form.control}
                 name="expense_date"
@@ -334,7 +334,7 @@ export const ExpenseForm = ({
         </Card>
 
         {/* Split Configuration Card */}
-        <Card className="border-2 border-border/50 shadow-sm">
+        <Card className="border-2 border-border/50 shadow-sm overflow-hidden">
           <CardHeader className="pb-4">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <UsersIcon className="h-5 w-5" />
@@ -344,7 +344,7 @@ export const ExpenseForm = ({
               Select who shares this expense
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 overflow-x-hidden">
             {/* Split Method */}
             <FormField
               control={form.control}
@@ -356,7 +356,7 @@ export const ExpenseForm = ({
                     <RadioGroup
                       onValueChange={field.onChange}
                       value={field.value}
-                      className="grid grid-cols-3 gap-3"
+                      className="grid grid-cols-1 sm:grid-cols-3 gap-3"
                     >
                       <FormItem>
                         <FormControl>
