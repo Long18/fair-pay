@@ -64,13 +64,8 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
                 result = response.data;
                 rpcError = response.error;
 
-                // If authenticated but no real data, fallback to demo data for better UX
-                if (!rpcError && (!result || result.length === 0)) {
-                    const demoResponse = await supabaseClient.rpc("get_public_demo_debts");
-                    if (!demoResponse.error) {
-                        result = demoResponse.data;
-                    }
-                }
+                // For authenticated users, show real data only (no demo fallback)
+                // This ensures users see their actual debts, even if empty
             }
 
             if (rpcError) {
