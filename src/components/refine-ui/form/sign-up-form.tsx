@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import {
   useLink,
@@ -22,41 +23,131 @@ import {
   useRefineOptions,
   useRegister,
 } from "@refinedev/core";
+import { Loader2Icon, AlertCircleIcon, MailIcon, LockIcon, CheckCircle2Icon } from "@/components/ui/icons";
 
 export const SignUpForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>(null);
 
   const { open } = useNotification();
-
   const Link = useLink();
-
   const { title } = useRefineOptions();
-
   const { mutate: register } = useRegister();
+
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePassword = (password: string): { valid: boolean; message?: string } => {
+    if (password.length < 6) {
+      return { valid: false, message: "Password must be at least 6 characters" };
+    }
+    if (password.length > 72) {
+      return { valid: false, message: "Password must be less than 72 characters" };
+    }
+    return { valid: true };
+  };
+
+  const handleEmailBlur = () => {
+    if (email && !validateEmail(email)) {
+      setEmailError("Please enter a valid email address");
+    } else {
+      setEmailError(null);
+    }
+  };
+
+  const handlePasswordBlur = () => {
+    if (password) {
+      const validation = validatePassword(password);
+      if (!validation.valid) {
+        setPasswordError(validation.message || "Invalid password");
+      } else {
+        setPasswordError(null);
+      }
+    }
+  };
+
+  const handleConfirmPasswordBlur = () => {
+    if (confirmPassword && password !== confirmPassword) {
+      setConfirmPasswordError("Passwords do not match");
+    } else {
+      setConfirmPasswordError(null);
+    }
+  };
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError(null);
+    setEmailError(null);
+    setPasswordError(null);
+    setConfirmPasswordError(null);
 
+    // Validation
+    if (!email) {
+      setEmailError("Email is required");
+      return;
+    }
+    if (!validateEmail(email)) {
+      setEmailError("Please enter a valid email address");
+      return;
+    }
+    if (!password) {
+      setPasswordError("Password is required");
+      return;
+    }
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      setPasswordError(passwordValidation.message || "Invalid password");
+      return;
+    }
+    if (!confirmPassword) {
+      setConfirmPasswordError("Please confirm your password");
+      return;
+    }
     if (password !== confirmPassword) {
+      setConfirmPasswordError("Passwords do not match");
       open?.({
         type: "error",
         message: "Passwords don't match",
-        description:
-          "Please make sure both password fields contain the same value.",
+        description: "Please make sure both password fields contain the same value.",
       });
-
       return;
     }
 
-    register({
-      email,
-      password,
-    });
+    setIsLoading(true);
+
+    register(
+      {
+        email,
+        password,
+      },
+      {
+        onSuccess: () => {
+          setIsLoading(false);
+        },
+        onError: (error: any) => {
+          setIsLoading(false);
+          const errorMessage = error?.message || "Registration failed. Please try again.";
+          setError(errorMessage);
+          open?.({
+            type: "error",
+            message: "Sign up failed",
+            description: errorMessage,
+          });
+        },
+      }
+    );
   };
 
   const handleSignUpWithGoogle = () => {
+    setError(null);
     register({
       providerName: "google",
     });
@@ -69,115 +160,202 @@ export const SignUpForm = () => {
         "items-center",
         "justify-center",
         "min-h-svh",
-        "bg-gradient-to-br from-teal-50 via-background to-purple-50",
+        "p-4",
+        "bg-gradient-to-br from-primary/5 via-background to-accent/5",
         "dark:from-background dark:via-background dark:to-background",
         "relative",
         "overflow-hidden"
       )}
     >
-      {/* Decorative botanical background elements */}
-      <div className="absolute top-0 right-0 w-96 h-96 opacity-10 dark:opacity-5">
-        <svg viewBox="0 0 200 200" className="w-full h-full">
-          <circle cx="100" cy="100" r="80" fill="currentColor" className="text-teal-400 dark:text-teal-600" />
-          <circle cx="60" cy="80" r="40" fill="currentColor" className="text-teal-300 dark:text-teal-700" />
-          <circle cx="140" cy="120" r="50" fill="currentColor" className="text-purple-300 dark:text-purple-700" />
-        </svg>
+      {/* Modern gradient background elements - Financial Dashboard style */}
+      <div className="absolute top-0 right-0 w-96 h-96 opacity-5 dark:opacity-3">
+        <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 rounded-full blur-3xl" />
       </div>
-      <div className="absolute bottom-0 left-0 w-80 h-80 opacity-10 dark:opacity-5">
-        <svg viewBox="0 0 200 200" className="w-full h-full">
-          <circle cx="100" cy="100" r="70" fill="currentColor" className="text-purple-400 dark:text-purple-600" />
-          <circle cx="70" cy="70" r="45" fill="currentColor" className="text-teal-300 dark:text-teal-700" />
-        </svg>
+      <div className="absolute bottom-0 left-0 w-80 h-80 opacity-5 dark:opacity-3">
+        <div className="w-full h-full bg-gradient-to-tr from-accent/20 to-primary/20 rounded-full blur-3xl" />
       </div>
 
-      <Card className={cn("sm:w-[456px]", "p-8", "shadow-xl", "border", "bg-card/95", "backdrop-blur-sm", "z-10")}>
-        <CardHeader className={cn("px-0", "pb-6", "text-center")}>
+      <Card className={cn(
+        "w-full max-w-md",
+        "p-6 sm:p-8",
+        "shadow-xl",
+        "border",
+        "glass bg-card/95",
+        "backdrop-blur-sm",
+        "z-10",
+        "animate-in fade-in slide-in-from-bottom-4 duration-500"
+      )}>
+        <CardHeader className={cn("px-0", "pb-6", "text-center", "space-y-2")}>
           <div className={cn("flex", "items-center", "justify-center", "mb-4")}>
             {title.icon && (
-              <div className={cn("text-primary", "[&>svg]:w-16", "[&>svg]:h-16")}>
+              <div className={cn("text-primary", "[&>svg]:w-16", "[&>svg]:h-16", "animate-in zoom-in duration-300")}>
                 {title.icon}
               </div>
             )}
           </div>
-          <CardTitle className={cn("text-2xl", "font-bold", "text-foreground")}>
+          <CardTitle className={cn("text-2xl sm:text-3xl", "font-bold", "text-foreground", "tracking-tight")}>
             Create your account
           </CardTitle>
-          <CardDescription className={cn("text-muted-foreground", "font-normal")}>
-            Join FairPay to manage your shared expenses
+          <CardDescription className={cn("text-base", "text-muted-foreground")}>
+            Join {title.text || "FairPay"} to manage your shared expenses
           </CardDescription>
         </CardHeader>
 
         <Separator className="mb-6" />
 
-        <CardContent className={cn("px-0")}>
-          <form onSubmit={handleSignUp}>
-            <div className={cn("space-y-1", "mb-4")}>
-              <Label htmlFor="email" className="text-sm font-medium">
-                Email
+        <CardContent className={cn("px-0", "space-y-5")}>
+          {error && (
+            <Alert variant="destructive" className="animate-in fade-in slide-in-from-top-2">
+              <AlertCircleIcon className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <form onSubmit={handleSignUp} className="space-y-5">
+            <div className={cn("space-y-2")}>
+              <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
+                <MailIcon className="h-4 w-4 text-muted-foreground" />
+                Email address
               </Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder="name@example.com"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-11"
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailError) setEmailError(null);
+                }}
+                onBlur={handleEmailBlur}
+                className={cn("h-11", emailError && "border-destructive focus-visible:ring-destructive")}
+                aria-invalid={!!emailError}
+                aria-describedby={emailError ? "email-error" : undefined}
               />
+              {emailError && (
+                <p id="email-error" className="text-sm text-destructive flex items-center gap-1.5 animate-in fade-in">
+                  <AlertCircleIcon className="h-3.5 w-3.5" />
+                  {emailError}
+                </p>
+              )}
             </div>
 
-            <div className={cn("space-y-1", "mb-4")}>
-              <Label htmlFor="password" className="text-sm font-medium">
+            <div className={cn("space-y-2")}>
+              <Label htmlFor="password" className="text-sm font-medium flex items-center gap-2">
+                <LockIcon className="h-4 w-4 text-muted-foreground" />
                 Password
               </Label>
               <InputPassword
                 id="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (passwordError) setPasswordError(null);
+                  if (confirmPassword && confirmPasswordError) {
+                    setConfirmPasswordError(null);
+                  }
+                }}
+                onBlur={handlePasswordBlur}
                 required
-                className="h-11"
+                className={cn("h-11", passwordError && "border-destructive focus-visible:ring-destructive")}
+                aria-invalid={!!passwordError}
+                aria-describedby={passwordError ? "password-error" : undefined}
               />
+              {passwordError && (
+                <p id="password-error" className="text-sm text-destructive flex items-center gap-1.5 animate-in fade-in">
+                  <AlertCircleIcon className="h-3.5 w-3.5" />
+                  {passwordError}
+                </p>
+              )}
+              {password && !passwordError && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <CheckCircle2Icon className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                  Password meets requirements
+                </p>
+              )}
             </div>
 
-            <div className={cn("space-y-1", "mb-6")}>
-              <Label htmlFor="confirmPassword" className="text-sm font-medium">
+            <div className={cn("space-y-2")}>
+              <Label htmlFor="confirmPassword" className="text-sm font-medium flex items-center gap-2">
+                <LockIcon className="h-4 w-4 text-muted-foreground" />
                 Confirm password
               </Label>
               <InputPassword
                 id="confirmPassword"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  if (confirmPasswordError) setConfirmPasswordError(null);
+                }}
+                onBlur={handleConfirmPasswordBlur}
                 required
-                className="h-11"
+                className={cn("h-11", confirmPasswordError && "border-destructive focus-visible:ring-destructive")}
+                aria-invalid={!!confirmPasswordError}
+                aria-describedby={confirmPasswordError ? "confirm-password-error" : undefined}
               />
+              {confirmPasswordError && (
+                <p id="confirm-password-error" className="text-sm text-destructive flex items-center gap-1.5 animate-in fade-in">
+                  <AlertCircleIcon className="h-3.5 w-3.5" />
+                  {confirmPasswordError}
+                </p>
+              )}
+              {confirmPassword && !confirmPasswordError && password === confirmPassword && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <CheckCircle2Icon className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                  Passwords match
+                </p>
+              )}
             </div>
 
             <Button
               type="submit"
               size="lg"
+              disabled={isLoading}
               className={cn(
                 "w-full",
                 "h-12",
-                "bg-foreground",
-                "hover:bg-foreground/90",
-                "text-background",
-                "font-medium"
+                "font-semibold",
+                "shadow-sm",
+                "transition-all",
+                "disabled:opacity-50",
+                "disabled:cursor-not-allowed"
               )}
             >
-              Sign up
+              {isLoading ? (
+                <>
+                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                "Sign up"
+              )}
             </Button>
 
             <div className={cn("flex", "items-center", "gap-4", "my-6")}>
               <Separator className={cn("flex-1")} />
-              <span className={cn("text-sm", "text-muted-foreground")}>or</span>
+              <span className={cn("text-xs", "text-muted-foreground", "uppercase", "tracking-wider", "font-medium")}>
+                or continue with
+              </span>
               <Separator className={cn("flex-1")} />
             </div>
 
             <Button
               variant="outline"
-              className={cn("w-full", "flex", "items-center", "justify-center", "gap-2", "h-11")}
+              className={cn(
+                "w-full",
+                "flex",
+                "items-center",
+                "justify-center",
+                "gap-2.5",
+                "h-11",
+                "border-2",
+                "hover:bg-accent/50",
+                "transition-all",
+                "font-medium"
+              )}
               onClick={handleSignUpWithGoogle}
               type="button"
+              disabled={isLoading}
             >
               <svg
                 width="20"
