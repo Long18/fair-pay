@@ -28,10 +28,10 @@ export function DashboardTopCards({ disabled = false }: DashboardTopCardsProps) 
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div className="bento-grid mb-8">
 
       {/* 1. Statistics Card */}
-      <Card className="shadow-sm">
+      <Card className="bento-item shadow-sm">
         <CardContent className="p-6 flex items-center justify-between">
           <div className="relative h-20 w-20 flex items-center justify-center">
             <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
@@ -49,7 +49,7 @@ export function DashboardTopCards({ disabled = false }: DashboardTopCardsProps) 
       </Card>
 
       {/* 2. Plan/Action Card */}
-      <Card className="shadow-sm">
+      <Card className="bento-item shadow-sm">
         <CardContent className="p-6 flex flex-col justify-between h-full">
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-3">
@@ -95,7 +95,7 @@ export function DashboardTopCards({ disabled = false }: DashboardTopCardsProps) 
       </Card>
 
       {/* 3. Highlight Card (Net Balance) */}
-      <Card className="bg-primary/5 border-primary/20 shadow-sm relative overflow-hidden">
+      <Card className="bento-item bg-primary/5 border-primary/20 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 p-4 opacity-10">
           <ArrowUpRightIcon className="h-24 w-24 text-primary" />
         </div>

@@ -5,7 +5,7 @@ export function ExpenseListSkeleton() {
   return (
     <div className="space-y-3">
       {[1, 2, 3, 4, 5].map((i) => (
-        <Card key={i} className="p-4">
+        <Card key={i} className="p-4 animate-pulse" style={{ animationDelay: `${i * 100}ms` }}>
           <div className="flex items-center gap-4">
             <Skeleton className="h-12 w-12 rounded-full" />
             <div className="flex-1">

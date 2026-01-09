@@ -43,7 +43,7 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  --font-sans: "Montserrat", "Inter", sans-serif;
+  --font-sans: "Plus Jakarta Sans", "Inter", sans-serif;
 }
 
 :root {
@@ -59,8 +59,8 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
 
-  /* Primary - Teal (HR Refine inspired) */
-  --primary: oklch(0.646 0.138 192.4);
+  /* Primary - Financial Dashboard Blue (UI/UX Pro Max) */
+  --primary: oklch(0.598 0.365 217.2);
   --primary-foreground: oklch(0.985 0 0);
 
   /* Secondary - Purple */
@@ -70,9 +70,9 @@
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
 
-  /* Accent - Indigo */
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  /* Accent - Financial Dashboard Orange (UI/UX Pro Max) */
+  --accent: oklch(0.531 0.380 24.6);
+  --accent-foreground: oklch(0.985 0 0);
 
   /* Destructive - Red */
   --destructive: oklch(0.577 0.245 27.325);
@@ -80,24 +80,24 @@
 
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.646 0.138 192.4);
+  --ring: oklch(0.598 0.365 217.2);
 
-  /* Chart Colors - Vibrant Palette */
-  --chart-1: oklch(0.646 0.138 192.4);
-  --chart-2: oklch(0.6 0.15 280);
-  --chart-3: oklch(0.7 0.18 40);
-  --chart-4: oklch(0.65 0.15 160);
-  --chart-5: oklch(0.75 0.15 80);
+  /* Chart Colors - Financial Dashboard Palette (UI/UX Pro Max) */
+  --chart-1: oklch(0.598 0.365 217.2); /* Primary Blue */
+  --chart-2: oklch(0.678 0.376 213.1); /* Light Blue */
+  --chart-3: oklch(0.531 0.380 24.6); /* Orange */
+  --chart-4: oklch(0.65 0.15 160); /* Green */
+  --chart-5: oklch(0.75 0.15 80); /* Yellow */
 
   /* Sidebar Colors */
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.646 0.138 192.4);
+  --sidebar-primary: oklch(0.598 0.365 217.2);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.646 0.138 192.4);
+  --sidebar-border: oklch(0.914 0.127 214.3);
+  --sidebar-ring: oklch(0.598 0.365 217.2);
 }
 
 .dark {
@@ -111,8 +111,8 @@
   --popover: oklch(0.269 0 0);
   --popover-foreground: oklch(0.985 0 0);
 
-  /* Primary - Bright Teal for dark mode */
-  --primary: oklch(0.75 0.15 192.4);
+  /* Primary - Financial Dashboard Blue for dark mode */
+  --primary: oklch(0.678 0.376 213.1);
   --primary-foreground: oklch(0.145 0 0);
 
   --secondary: oklch(0.269 0 0);
@@ -121,8 +121,8 @@
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
 
-  /* Accent - Indigo for dark mode */
-  --accent: oklch(0.6 0.15 280);
+  /* Accent - Financial Dashboard Orange for dark mode */
+  --accent: oklch(0.6 0.35 24.6);
   --accent-foreground: oklch(0.985 0 0);
 
   /* Destructive - Softer red for dark mode */
@@ -131,24 +131,24 @@
 
   --border: oklch(0.269 0 0);
   --input: oklch(0.269 0 0);
-  --ring: oklch(0.75 0.15 192.4);
+  --ring: oklch(0.678 0.376 213.1);
 
-  /* Chart Colors - Adjusted for dark mode */
-  --chart-1: oklch(0.75 0.15 192.4);
-  --chart-2: oklch(0.65 0.18 280);
-  --chart-3: oklch(0.75 0.18 40);
-  --chart-4: oklch(0.7 0.15 160);
-  --chart-5: oklch(0.8 0.15 80);
+  /* Chart Colors - Financial Dashboard Palette for dark mode */
+  --chart-1: oklch(0.678 0.376 213.1); /* Light Blue */
+  --chart-2: oklch(0.598 0.365 217.2); /* Primary Blue */
+  --chart-3: oklch(0.6 0.35 24.6); /* Orange */
+  --chart-4: oklch(0.7 0.15 160); /* Green */
+  --chart-5: oklch(0.8 0.15 80); /* Yellow */
 
   /* Sidebar Colors for dark mode */
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.708 0 0);
-  --sidebar-primary: oklch(0.75 0.15 192.4);
+  --sidebar-primary: oklch(0.678 0.376 213.1);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.75 0.15 192.4);
+  --sidebar-ring: oklch(0.678 0.376 213.1);
 }
 
 @layer base {
@@ -203,4 +203,97 @@
 
 ::view-transition-new(root) {
   z-index: 999;
+}
+
+/* UI/UX Pro Max - Modern UI Style Utilities */
+
+/* Glassmorphism Effect */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .glass {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass-strong {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Neumorphism Effect */
+.neu {
+  background: var(--card);
+  box-shadow:
+    8px 8px 16px rgba(0, 0, 0, 0.1),
+    -8px -8px 16px rgba(255, 255, 255, 0.9);
+}
+
+.dark .neu {
+  box-shadow:
+    8px 8px 16px rgba(0, 0, 0, 0.5),
+    -8px -8px 16px rgba(255, 255, 255, 0.05);
+}
+
+.neu-inset {
+  background: var(--card);
+  box-shadow:
+    inset 4px 4px 8px rgba(0, 0, 0, 0.1),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.9);
+}
+
+.dark .neu-inset {
+  box-shadow:
+    inset 4px 4px 8px rgba(0, 0, 0, 0.5),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.05);
+}
+
+/* Bento Grid Layout */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.bento-item {
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.bento-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dark .bento-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Bento Grid Variants */
+.bento-item-large {
+  grid-column: span 2;
+}
+
+.bento-item-tall {
+  grid-row: span 2;
+}
+
+@media (max-width: 768px) {
+  .bento-item-large,
+  .bento-item-tall {
+    grid-column: span 1;
+    grid-row: span 1;
+  }
 }
