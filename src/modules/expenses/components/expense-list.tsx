@@ -55,7 +55,8 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
     resource: "expenses",
     filters: crudFilters,
     pagination: {
-      mode: "off",
+      current: currentPage,
+      pageSize: pageSize,
     },
     meta: {
       select: "*, profiles!paid_by_user_id(id, full_name, avatar_url)",
@@ -66,23 +67,21 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
         order: "desc",
       },
     ],
+    queryOptions: {
+      staleTime: 1 * 60 * 1000, // 1 minute - data is fresh
+      gcTime: 3 * 60 * 1000, // 3 minutes - keep in cache
+      refetchOnWindowFocus: false, // Don't refetch on window focus
+    },
   });
 
   const { data, isLoading } = query;
-  const allExpenses = data?.data || [];
-
-  // Client-side pagination
-  const totalExpenses = allExpenses.length;
+  const expenses = data?.data || [];
   const paginationMetadata: PaginationMetadata = {
-    totalItems: totalExpenses,
-    totalPages: Math.ceil(totalExpenses / pageSize),
+    totalItems: data?.total || 0,
+    totalPages: data?.total ? Math.ceil(data.total / pageSize) : 0,
     currentPage: currentPage,
     pageSize: pageSize,
   };
-
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const expenses = allExpenses.slice(startIndex, endIndex);
 
   // Selection handlers
   const handleToggleSelection = (expenseId: string) => {
@@ -255,7 +254,7 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
       ))}
 
       {/* Pagination Controls */}
-      {!isLoading && allExpenses.length > 0 && paginationMetadata.totalPages > 1 && (
+      {!isLoading && paginationMetadata.totalItems > 0 && paginationMetadata.totalPages > 1 && (
         <div className="mt-6">
           <PaginationControls
             metadata={paginationMetadata}

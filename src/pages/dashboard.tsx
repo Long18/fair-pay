@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useGetIdentity } from "@refinedev/core";
 import { Profile } from "@/modules/profile/types";
 import { FloatingActionButton } from "@/components/dashboard/FloatingActionButton";
@@ -32,6 +32,8 @@ export const Dashboard = () => {
   } = usePaginatedActivities({ pageSize: 10 });
 
   const [loading, setLoading] = useState(true);
+  const visibilityDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const lastRefetchTimeRef = useRef<number>(0);
 
   // Handle history toggle with loading state
   const handleHistoryToggle = async (checked: boolean) => {
@@ -44,18 +46,39 @@ export const Dashboard = () => {
     setTimeout(() => setIsTogglingHistory(false), 500);
   };
 
-  // Refetch data when component mounts or becomes visible
+  // Refetch data when component mounts or becomes visible (with debounce and stale time check)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && identity?.id) {
-        console.log('Dashboard visible, refetching data...');
-        refetchDebts();
+        // Only refetch if data is stale (older than 30 seconds)
+        const now = Date.now();
+        const timeSinceLastRefetch = now - lastRefetchTimeRef.current;
+        const STALE_TIME = 30 * 1000; // 30 seconds
+
+        if (timeSinceLastRefetch > STALE_TIME) {
+          // Clear any pending debounce
+          if (visibilityDebounceRef.current) {
+            clearTimeout(visibilityDebounceRef.current);
+          }
+
+          // Debounce the refetch
+          visibilityDebounceRef.current = setTimeout(() => {
+            console.log('Dashboard visible, refetching stale data...');
+            lastRefetchTimeRef.current = Date.now();
+            refetchDebts();
+          }, 1000); // 1 second debounce
+        } else {
+          console.log('Dashboard visible, but data is still fresh, skipping refetch');
+        }
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
+      if (visibilityDebounceRef.current) {
+        clearTimeout(visibilityDebounceRef.current);
+      }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [identity?.id, refetchDebts]);
