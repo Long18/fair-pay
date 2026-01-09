@@ -25,6 +25,7 @@ import {
 import { formatNumber } from "@/lib/locale-utils";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { useTranslation } from "react-i18next";
+import { isAdmin } from "@/lib/rbac";
 import { ArrowLeftIcon, CheckCircle2Icon, PlusIcon, HomeIcon, PencilIcon } from "@/components/ui/icons";
 import { SettleSplitDialog } from "../components/settle-split-dialog";
 import { Spinner } from "@/components/ui/spinner";
@@ -53,6 +54,7 @@ export const ExpenseShow = () => {
   const [settleSplitDialogOpen, setSettleSplitDialogOpen] = useState(false);
   const [selectedSplit, setSelectedSplit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [userIsAdmin, setUserIsAdmin] = useState(false);
 
   const { query: expenseQuery } = useOne<Expense>({
     resource: "expenses",
@@ -133,6 +135,23 @@ export const ExpenseShow = () => {
   const canEdit = expense?.created_by === identity?.id;
   const isPayer = expense?.paid_by_user_id === identity?.id;
   const isPaid = expense?.is_payment === true;
+
+  // Check admin status
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        const adminStatus = await isAdmin();
+        setUserIsAdmin(adminStatus);
+      } catch (error) {
+        console.error("Error checking admin status:", error);
+        setUserIsAdmin(false);
+      }
+    };
+
+    if (identity?.id) {
+      checkAdminStatus();
+    }
+  }, [identity?.id]);
 
   // Handle settle entire expense
   const handleSettleExpense = async () => {
@@ -444,7 +463,7 @@ export const ExpenseShow = () => {
                   {splits.length}
                 </Badge>
               </CardTitle>
-              {isPayer && !isPaid && splits.some(s => !s.is_settled && s.user_id !== identity?.id) && (
+              {((isPayer || userIsAdmin) && !isPaid && splits.some(s => !s.is_settled && s.user_id !== identity?.id)) && (
                 <AlertDialog open={settleAllDialogOpen} onOpenChange={setSettleAllDialogOpen}>
                   <AlertDialogTrigger asChild>
                     <Button
@@ -503,7 +522,7 @@ export const ExpenseShow = () => {
                 {splits.map((split: any, index: number) => {
                   const isCurrentUserSplit = split.user_id === identity?.id;
                   const isSplitSettled = split.is_settled || isPaid;
-                  const canSettle = isPayer && !isSplitSettled && !isCurrentUserSplit;
+                  const canSettle = (isPayer || userIsAdmin) && !isSplitSettled && !isCurrentUserSplit;
 
                   return (
                     <motion.div
