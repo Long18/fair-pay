@@ -70,6 +70,11 @@ export function useSpendingTrend(
     meta: {
       select: '*, expense_splits(*)',
     },
+    queryOptions: {
+      staleTime: 2 * 60 * 1000, // 2 minutes - data is fresh
+      gcTime: 5 * 60 * 1000, // 5 minutes - keep in cache
+      refetchOnWindowFocus: false, // Don't refetch on window focus
+    },
   });
 
   const trend = useMemo<TrendDataPoint[]>(() => {

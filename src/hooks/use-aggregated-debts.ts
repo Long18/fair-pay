@@ -1,7 +1,7 @@
 import { useGetIdentity } from "@refinedev/core";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { Profile } from "@/modules/profile/types";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 
 export interface AggregatedDebt {
     counterparty_id: string;
@@ -37,6 +37,7 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
     const [data, setData] = useState<AggregatedDebt[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     const fetchDebts = useCallback(async () => {
         setIsLoading(true);
@@ -116,6 +117,16 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
         }
     }, [identity?.id, includeHistory]);
 
+    // Debounced version of fetchDebts for real-time subscriptions
+    const debouncedFetchDebts = useCallback(() => {
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+        }
+        debounceTimerRef.current = setTimeout(() => {
+            fetchDebts();
+        }, 500); // 500ms debounce
+    }, [fetchDebts]);
+
     useEffect(() => {
         fetchDebts();
     }, [fetchDebts]);
@@ -137,8 +148,8 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
                     table: 'expenses',
                 },
                 (payload) => {
-                    console.log('Expense changed, refetching debts...', payload);
-                    fetchDebts();
+                    console.log('Expense changed, scheduling debounced refetch...', payload);
+                    debouncedFetchDebts();
                 }
             )
             .subscribe((status) => {
@@ -156,8 +167,8 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
                     table: 'expense_splits',
                 },
                 (payload) => {
-                    console.log('Expense split changed, refetching debts...', payload);
-                    fetchDebts();
+                    console.log('Expense split changed, scheduling debounced refetch...', payload);
+                    debouncedFetchDebts();
                 }
             )
             .subscribe((status) => {
@@ -167,10 +178,13 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
         // Cleanup subscriptions on unmount
         return () => {
             console.log('Cleaning up real-time subscriptions');
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
             supabaseClient.removeChannel(expensesChannel);
             supabaseClient.removeChannel(splitsChannel);
         };
-    }, [identity?.id, fetchDebts]);
+    }, [identity?.id, debouncedFetchDebts]);
 
     return { data, isLoading, error, refetch: fetchDebts };
 };

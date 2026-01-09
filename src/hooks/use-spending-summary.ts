@@ -66,12 +66,22 @@ export function useSpendingSummary(
     meta: {
       select: '*, expense_splits(*)',
     },
+    queryOptions: {
+      staleTime: 2 * 60 * 1000, // 2 minutes - data is fresh
+      gcTime: 5 * 60 * 1000, // 5 minutes - keep in cache
+      refetchOnWindowFocus: false, // Don't refetch on window focus
+    },
   });
 
   const { query: paymentsQuery } = useList<Payment>({
     resource: 'payments',
     filters: groupId ? [{ field: 'group_id', operator: 'eq' as const, value: groupId }] : [],
     pagination: { mode: 'off' },
+    queryOptions: {
+      staleTime: 2 * 60 * 1000, // 2 minutes - data is fresh
+      gcTime: 5 * 60 * 1000, // 5 minutes - keep in cache
+      refetchOnWindowFocus: false, // Don't refetch on window focus
+    },
   });
 
   const summary = useMemo<SpendingSummary>(() => {
