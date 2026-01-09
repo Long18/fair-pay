@@ -46,7 +46,7 @@
     ],
     "rewrites": [
         {
-            "source": "/((?!assets|_vercel|.*\\.(js|css|png|jpg|jpeg|svg|gif|webp|woff|woff2|ttf|eot|ico|br|gz)).*)",
+            "source": "/(.*)",
             "destination": "/index.html"
         }
     ]
