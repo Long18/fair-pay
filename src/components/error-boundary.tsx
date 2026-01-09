@@ -124,6 +124,14 @@ export class ErrorBoundary extends Component<Props, State> {
               <p className="text-muted-foreground">
                 We encountered an unexpected error. Our team has been notified.
               </p>
+              <div className="p-3 bg-muted/50 rounded-md border border-border">
+                <p className="text-sm font-medium mb-1">What you can do:</p>
+                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                  <li>Try refreshing the page</li>
+                  <li>Clear your browser cache and try again</li>
+                  <li>If the problem persists, contact support</li>
+                </ul>
+              </div>
 
               {import.meta.env.DEV && this.state.error && (
                 <details className="p-3 bg-muted rounded-md">

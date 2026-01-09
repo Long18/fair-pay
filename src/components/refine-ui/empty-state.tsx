@@ -21,18 +21,29 @@ interface EmptyStateProps {
 
 export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (
-    <Empty>
+    <Empty className="py-12">
       <EmptyHeader>
-        {icon && <EmptyMedia variant="icon">{icon}</EmptyMedia>}
-        <EmptyTitle>{title}</EmptyTitle>
-        {description && <EmptyDescription>{description}</EmptyDescription>}
+        {icon && (
+          <EmptyMedia variant="icon" className="mb-4">
+            <div className="p-4 bg-muted/50 rounded-full">
+              {icon}
+            </div>
+          </EmptyMedia>
+        )}
+        <EmptyTitle className="text-xl font-semibold mb-2">{title}</EmptyTitle>
+        {description && (
+          <EmptyDescription className="text-muted-foreground max-w-md mx-auto">
+            {description}
+          </EmptyDescription>
+        )}
       </EmptyHeader>
       {action && (
-        <EmptyContent>
-          <Button onClick={action.onClick}>{action.label}</Button>
+        <EmptyContent className="mt-6">
+          <Button onClick={action.onClick} size="lg" className="shadow-sm">
+            {action.label}
+          </Button>
         </EmptyContent>
       )}
     </Empty>
   )
 }
-
