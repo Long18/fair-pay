@@ -285,7 +285,7 @@ export const FriendShow = () => {
                     <AvatarFallback className="text-2xl sm:text-3xl bg-gradient-to-br from-primary/20 to-primary/10">
                       {friendProfile.full_name
                         ?.split(" ")
-                        .map((n) => n[0])
+                        .map((n: string) => n[0])
                         .join("")
                         .toUpperCase() || "?"}
                     </AvatarFallback>

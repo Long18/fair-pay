@@ -99,6 +99,8 @@ import {
   Italic,
   Link,
   Code,
+  Mail,
+  Lock,
 } from "lucide-react";
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -794,6 +796,14 @@ export const LinkIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
 
 export const CodeIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
   <Code size={size} fill="currentColor" {...props} />
+);
+
+export const MailIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Mail size={size} fill="currentColor" {...props} />
+);
+
+export const LockIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Lock size={size} fill="currentColor" {...props} />
 );
 
 // ============ Additional Icons ============
