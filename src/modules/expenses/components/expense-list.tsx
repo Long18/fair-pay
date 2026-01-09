@@ -55,8 +55,7 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
     resource: "expenses",
     filters: crudFilters,
     pagination: {
-      current: currentPage,
-      pageSize: pageSize,
+      mode: "off",
     },
     meta: {
       select: "*, profiles!paid_by_user_id(id, full_name, avatar_url)",
@@ -75,13 +74,20 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
   });
 
   const { data, isLoading } = query;
-  const expenses = data?.data || [];
+  const allExpenses = data?.data || [];
+
+  // Client-side pagination (with query optimization)
+  const totalExpenses = allExpenses.length;
   const paginationMetadata: PaginationMetadata = {
-    totalItems: data?.total || 0,
-    totalPages: data?.total ? Math.ceil(data.total / pageSize) : 0,
+    totalItems: totalExpenses,
+    totalPages: Math.ceil(totalExpenses / pageSize),
     currentPage: currentPage,
     pageSize: pageSize,
   };
+
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const expenses = allExpenses.slice(startIndex, endIndex);
 
   // Selection handlers
   const handleToggleSelection = (expenseId: string) => {
@@ -96,7 +102,7 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
     if (selectedExpenseIds.length === expenses.length) {
       setSelectedExpenseIds([]);
     } else {
-      setSelectedExpenseIds(expenses.map((e) => e.id));
+      setSelectedExpenseIds(expenses.map((e) => e.id).filter((id): id is string => !!id));
     }
   };
 
@@ -254,7 +260,7 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
       ))}
 
       {/* Pagination Controls */}
-      {!isLoading && paginationMetadata.totalItems > 0 && paginationMetadata.totalPages > 1 && (
+      {!isLoading && allExpenses.length > 0 && paginationMetadata.totalPages > 1 && (
         <div className="mt-6">
           <PaginationControls
             metadata={paginationMetadata}
