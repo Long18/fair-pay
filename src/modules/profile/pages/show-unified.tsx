@@ -652,7 +652,6 @@ export const ProfileShowUnified = () => {
                           defaultValues={editForm}
                           isLoading={isSaving}
                           onChangePassword={() => setChangePasswordDialogOpen(true)}
-                          onChange={() => setHasUnsavedChanges(true)}
                         />
                       </div>
                     </CardContent>
@@ -958,9 +957,6 @@ export const ProfileShowUnified = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
-  );
-};
 
       {/* Unsaved Changes Dialog */}
       <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>

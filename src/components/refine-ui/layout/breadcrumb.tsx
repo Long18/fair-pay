@@ -10,11 +10,12 @@ interface BreadcrumbItem {
 }
 
 interface BreadcrumbProps {
-  items: BreadcrumbItem[];
+  items?: BreadcrumbItem[];
   className?: string;
 }
 
-export const Breadcrumb = ({ items, className }: BreadcrumbProps) => {
+export const Breadcrumb = ({ items = [], className }: BreadcrumbProps) => {
+  if (items.length === 0) return null;
   return (
     <nav
       aria-label="Breadcrumb"

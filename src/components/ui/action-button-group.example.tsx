@@ -1,5 +1,5 @@
 import { ActionButtonGroup } from "@/components/ui/action-button-group";
-import { PencilIcon, Share2Icon, Trash2Icon } from "@/components/ui/icons";
+import { PencilIcon, ShareIcon, Trash2Icon } from "@/components/ui/icons";
 
 /**
  * Example usage of ActionButtonGroup component
@@ -25,7 +25,7 @@ export function ActionButtonGroupExamples() {
     },
     {
       label: "Share",
-      icon: Share2Icon,
+      icon: ShareIcon,
       onClick: handleShare,
       variant: "outline" as const,
     },
