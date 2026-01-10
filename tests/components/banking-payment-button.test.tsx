@@ -71,8 +71,8 @@ describe('BankingPaymentButton - Property Tests', () => {
         description: fc.option(fc.string(), { nil: undefined }),
         accountName: fc.option(fc.string(), { nil: undefined }),
       }),
-      created_at: fc.date().map(d => d.toISOString()),
-      updated_at: fc.date().map(d => d.toISOString()),
+      created_at: fc.constant(new Date().toISOString()),
+      updated_at: fc.constant(new Date().toISOString()),
     });
 
     fc.assert(

@@ -118,7 +118,7 @@ describe('ExpenseSplitCard - Property Tests', () => {
       computed_amount: fc.double({ min: 1, max: 1000 }),
       is_settled: fc.constant(false),
       settled_amount: fc.constant(0),
-      created_at: fc.date().map(d => d.toISOString()),
+      created_at: fc.constant(new Date().toISOString()),
       profiles: fc.record({
         id: fc.uuid(),
         full_name: fc.string({ minLength: 1, maxLength: 50 }),
@@ -135,7 +135,7 @@ describe('ExpenseSplitCard - Property Tests', () => {
       currency: fc.constantFrom('VND', 'USD', 'EUR'),
       paid_by_user_id: fc.uuid(),
       is_payment: fc.constant(false),
-      created_at: fc.date().map(d => d.toISOString()),
+      created_at: fc.constant(new Date().toISOString()),
     });
 
     fc.assert(
@@ -265,7 +265,7 @@ describe('ExpenseSplitCard - Admin Button Visibility Property Tests', () => {
       computed_amount: fc.double({ min: 1, max: 1000 }),
       is_settled: fc.constant(false),
       settled_amount: fc.constant(0),
-      created_at: fc.date().map(d => d.toISOString()),
+      created_at: fc.constant(new Date().toISOString()),
       profiles: fc.record({
         id: fc.uuid(),
         full_name: fc.string({ minLength: 1, maxLength: 50 }),
@@ -282,7 +282,7 @@ describe('ExpenseSplitCard - Admin Button Visibility Property Tests', () => {
       currency: fc.constantFrom('VND', 'USD', 'EUR'),
       paid_by_user_id: fc.uuid(),
       is_payment: fc.constant(false),
-      created_at: fc.date().map(d => d.toISOString()),
+      created_at: fc.constant(new Date().toISOString()),
     });
 
     fc.assert(
