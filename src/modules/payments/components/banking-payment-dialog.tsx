@@ -36,7 +36,7 @@ export function BankingPaymentDialog({
   onOpenChange,
   split,
   amount,
-  onPaymentComplete,
+  onPaymentComplete: _onPaymentComplete,
 }: BankingPaymentDialogProps) {
   const { t } = useTranslation();
   const [selectedBankId, setSelectedBankId] = useState<string>('');
