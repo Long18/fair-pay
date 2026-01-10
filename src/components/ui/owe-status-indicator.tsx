@@ -10,9 +10,9 @@ const oweStatusIndicatorVariants = cva(
   {
     variants: {
       direction: {
-        owe: "text-red-600 dark:text-red-400",
-        owed: "text-green-600 dark:text-green-400",
-        neutral: "text-gray-600 dark:text-gray-400",
+        owe: "text-semantic-negative",
+        owed: "text-semantic-positive",
+        neutral: "text-semantic-neutral",
       },
       size: {
         sm: "text-xs [&>svg]:size-3",
