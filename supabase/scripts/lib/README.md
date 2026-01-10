@@ -4,6 +4,159 @@ This directory contains reusable library functions for database operations.
 
 ## Available Libraries
 
+### config-loader.sh
+
+Configuration loading and parsing functions for sync operations.
+
+**Functions:**
+
+1. **load_config()**
+   - Loads configuration from config.json
+   - Substitutes environment variables (${VAR_NAME} pattern)
+   - Provides default values for missing configuration
+   - Exports configuration as CONFIG_* environment variables
+   - **Requirements:** 3.1, 3.2
+
+2. **get_config_value()**
+   - Gets a specific configuration value by key
+   - Supports default values
+   - Returns configuration value or default
+
+3. **print_config()**
+   - Prints all loaded configuration values
+   - Useful for debugging and verification
+
+**Usage:**
+
+```bash
+# Source the library
+source supabase/scripts/lib/config-loader.sh
+
+# Load configuration
+load_config
+
+# Print configuration
+print_config
+
+# Get specific value
+version=$(get_config_value "CONFIG_VERSION" "1.0.0")
+echo "Version: $version"
+
+# Use configuration values
+echo "Production Project: ${CONFIG_PROD_PROJECT_REF}"
+echo "Local Database: ${CONFIG_LOCAL_DATABASE_URL}"
+```
+
+**Exported Variables:**
+
+- `CONFIG_VERSION` - Configuration version
+- `CONFIG_PROD_PROJECT_REF` - Production project reference
+- `CONFIG_PROD_VERIFY_BEFORE_SYNC` - Verify before sync flag
+- `CONFIG_LOCAL_DATABASE_URL` - Local database URL
+- `CONFIG_LOCAL_DOCKER_CONTAINER` - Local Docker container name
+- `CONFIG_SYNC_INCLUDE_TABLES` - Comma-separated list of tables to include
+- `CONFIG_SYNC_EXCLUDE_TABLES` - Comma-separated list of tables to exclude
+- `CONFIG_SYNC_INCLUDE_AUTH_USERS` - Include auth.users flag
+- `CONFIG_SYNC_INCLUDE_STORAGE` - Include storage flag
+- `CONFIG_SYNC_ANONYMIZE` - Anonymize data flag
+- `CONFIG_ANONYMIZATION_ENABLED` - Anonymization enabled flag
+- `CONFIG_ANONYMIZATION_RULES` - JSON array of anonymization rules
+- `CONFIG_BACKUP_ENABLED` - Backup enabled flag
+- `CONFIG_BACKUP_RETENTION_DAYS` - Backup retention days
+- `CONFIG_BACKUP_MAX_BACKUPS` - Maximum number of backups
+- `CONFIG_BACKUP_COMPRESSION` - Backup compression flag
+- `CONFIG_OUTPUT_DIRECTORY` - Output directory path
+- `CONFIG_OUTPUT_COMPRESSION` - Output compression flag
+
+**Environment Variable Substitution:**
+
+The config loader supports environment variable substitution using the `${VAR_NAME}` pattern:
+
+```json
+{
+  "production": {
+    "projectRef": "${SUPABASE_PROD_PROJECT_REF}"
+  }
+}
+```
+
+Variables are loaded from `.env.local` in the project root.
+
+**Testing:**
+
+Run the test suite to verify functionality:
+
+```bash
+./supabase/scripts/lib/test-config.sh
+```
+
+### validator.sh
+
+Configuration validation functions for ensuring config integrity.
+
+**Functions:**
+
+1. **validate_config()**
+   - Validates entire configuration
+   - Checks required fields
+   - Validates table names, strategies, booleans, and numbers
+   - Reports specific validation errors
+   - **Requirements:** 3.9, 3.10
+
+2. **validate_table_name()**
+   - Validates a single table name
+   - Prevents SQL injection
+   - Ensures valid PostgreSQL identifiers
+   - Supports schema.table format
+
+3. **validate_anonymization_strategy()**
+   - Validates anonymization strategy
+   - Checks against valid strategies list
+   - Provides helpful error messages
+
+4. **validate_boolean()**
+   - Validates boolean values (true/false)
+   - Rejects other values (yes/no, 1/0)
+
+5. **validate_number()**
+   - Validates numeric values
+   - Supports min/max range validation
+   - Ensures positive integers
+
+**Usage:**
+
+```bash
+# Source the libraries
+source supabase/scripts/lib/config-loader.sh
+source supabase/scripts/lib/validator.sh
+
+# Load and validate configuration
+load_config
+validate_config
+
+# Validate individual values
+validate_table_name "users"
+validate_table_name "public.profiles"
+validate_anonymization_strategy "fake-email"
+validate_boolean "true" "my_field"
+validate_number "5" "retention_days" 1 365
+```
+
+**Validation Rules:**
+
+- **Table names**: Must start with letter/underscore, contain only alphanumeric and underscores, max 63 chars
+- **Anonymization strategies**: Must be one of: fake-email, fake-name, fake-phone, hash, null
+- **Booleans**: Must be exactly "true" or "false"
+- **Numbers**: Must be positive integers, optionally within min/max range
+
+**Testing:**
+
+Run the test suite to verify functionality:
+
+```bash
+./supabase/scripts/lib/test-config.sh
+```
+
 ### dumper.sh
 
 Database dumping functions for production sync operations.
@@ -109,7 +262,11 @@ The Supabase CLI doesn't have a `--schema-only` flag, so we:
 ## Related Files
 
 - `supabase/scripts/sync/config.json` - Configuration file
-- `supabase/scripts/lib/test-dumper.sh` - Test suite
+- `supabase/scripts/lib/config-loader.sh` - Configuration loader
+- `supabase/scripts/lib/validator.sh` - Configuration validator
+- `supabase/scripts/lib/test-config.sh` - Config loader and validator test suite
+- `supabase/scripts/lib/test-dumper.sh` - Dumper test suite
+- `supabase/scripts/lib/test-anonymizer.sh` - Anonymizer test suite
 - `scripts/production/dump-production-schema.sh` - Legacy schema dump script
 - `scripts/production/pull-production-full.sh` - Legacy full sync script
 
@@ -311,5 +468,8 @@ Run the test suite to verify functionality:
 ## Related Files
 
 - `supabase/scripts/sync/config.json` - Configuration file
+- `supabase/scripts/lib/config-loader.sh` - Configuration loader
+- `supabase/scripts/lib/validator.sh` - Configuration validator
+- `supabase/scripts/lib/test-config.sh` - Config loader and validator test suite
 - `supabase/scripts/lib/test-anonymizer.sh` - Test suite
 - `supabase/scripts/lib/dumper.sh` - Data dumping functions
