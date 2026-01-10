@@ -1,4 +1,5 @@
 {
+  "_comment": "Sensitive values (projectRef, databaseUrl, dockerContainer) are loaded from .env.local",
   "version": "1.0.0",
   "production": {
     "projectRef": "${SUPABASE_PROD_PROJECT_REF}",
@@ -20,9 +21,10 @@
     "rules": []
   },
   "backup": {
-    "enabled": true,
-    "retentionDays": 7,
-    "maxBackups": 5
+    "enabled": "${SUPABASE_BACKUP_ENABLED}",
+    "retentionDays": "${SUPABASE_BACKUP_RETENTION_DAYS}",
+    "maxBackups": "${SUPABASE_BACKUP_MAX_BACKUPS}",
+    "compression": "${SUPABASE_BACKUP_COMPRESSION}"
   },
   "output": {
     "directory": "supabase/scripts/sync/dumps",
