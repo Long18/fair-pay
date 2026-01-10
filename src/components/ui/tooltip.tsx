@@ -54,7 +54,7 @@ function Tooltip({
 }: TooltipProps) {
   const isMobile = useIsMobile();
   const [open, setOpen] = React.useState(false);
-  const timeoutRef = React.useRef<NodeJS.Timeout>();
+  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Handle mobile tap behavior
   React.useEffect(() => {

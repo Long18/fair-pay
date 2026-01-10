@@ -61,11 +61,6 @@ export const FriendList = () => {
   const sentRequests = friends.filter(f => f.status === "pending" && f.is_requester);
 
   const handleAccept = (friendshipId: string) => {
-    // Use update mutation instead of delete for accepting
-    const { mutate } = useList<Friendship>({
-      resource: "friendships",
-    });
-    
     toast.promise(
       fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/friendships?id=eq.${friendshipId}`, {
         method: 'PATCH',

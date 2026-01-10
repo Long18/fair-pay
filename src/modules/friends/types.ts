@@ -28,6 +28,7 @@ export interface Friend {
   user_id: string;
   full_name: string;
   avatar_url: string | null;
+  email?: string;
   status: FriendshipStatus;
   created_at: string;
   is_requester: boolean;
