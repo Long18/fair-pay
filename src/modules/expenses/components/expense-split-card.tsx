@@ -183,14 +183,14 @@ export const ExpenseSplitCard = ({
               )}
             </div>
 
-            {/* Action Buttons with Tooltips */}
+            {/* Action Buttons with Tooltips - Ensure 44x44px touch targets */}
             {canSettle && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     size="sm"
                     variant="default"
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-green-600 hover:bg-green-700 min-h-[44px] min-w-[44px]"
                     onClick={() => onSettle(split)}
                     disabled={isSettling}
                   >
@@ -217,7 +217,7 @@ export const ExpenseSplitCard = ({
                     size="sm"
                     variant="outline"
                     disabled
-                    className="cursor-not-allowed"
+                    className="cursor-not-allowed min-h-[44px] min-w-[44px]"
                   >
                     <CheckCircle2Icon className="h-4 w-4 mr-1" />
                     {t('expenses.settle', 'Settle')}
@@ -276,13 +276,15 @@ export const ExpenseSplitCard = ({
               </div>
             </div>
 
-            {/* Expand Indicator - Mobile Only */}
-            <ChevronDownIcon
-              className={cn(
-                "h-4 w-4 text-muted-foreground transition-transform duration-200",
-                isExpanded && "rotate-180"
-              )}
-            />
+            {/* Expand Indicator - Mobile Only - Ensure 44x44px touch target */}
+            <div className="min-h-[44px] min-w-[44px] flex items-center justify-center">
+              <ChevronDownIcon
+                className={cn(
+                  "h-5 w-5 text-muted-foreground transition-transform duration-200",
+                  isExpanded && "rotate-180"
+                )}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -309,7 +311,7 @@ export const ExpenseSplitCard = ({
                   <Button
                     size="sm"
                     variant="default"
-                    className="flex-1 bg-green-600 hover:bg-green-700"
+                    className="flex-1 bg-green-600 hover:bg-green-700 min-h-[44px]"
                     onClick={() => onSettle(split)}
                     disabled={isSettling}
                   >
@@ -329,13 +331,13 @@ export const ExpenseSplitCard = ({
                     <MomoPaymentButton
                       split={split}
                       onPaymentComplete={onPaymentComplete}
-                      className="flex-1"
+                      className="flex-1 min-h-[44px]"
                     />
                     <BankingPaymentButton
                       split={split}
                       payeeId={split.user_id}
                       onPaymentComplete={onPaymentComplete}
-                      className="flex-1"
+                      className="flex-1 min-h-[44px]"
                     />
                   </>
                 )}
