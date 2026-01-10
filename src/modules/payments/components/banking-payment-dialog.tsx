@@ -15,7 +15,7 @@ import { generateVietQRDeeplink, findBankById, VIETQR_BANKS } from '@/lib/vietqr
 import { toast } from 'sonner';
 import { BanknoteIcon, ArrowUpRightIcon } from '@/components/ui/icons';
 import { ExpenseSplit } from '@/modules/expenses/types';
-import { useDonationSettings } from '@/hooks/use-donation-settings';
+import { useUserSettings } from '@/hooks/use-user-settings';
 
 interface BankingPaymentDialogProps {
   open: boolean;
@@ -27,6 +27,7 @@ interface BankingPaymentDialogProps {
       email?: string;
     };
   };
+  payeeId: string; // ID of the user who is owed money
   amount: number;
   onPaymentComplete?: () => void;
 }
@@ -35,35 +36,38 @@ export function BankingPaymentDialog({
   open,
   onOpenChange,
   split,
+  payeeId,
   amount,
   onPaymentComplete: _onPaymentComplete,
 }: BankingPaymentDialogProps) {
   const { t } = useTranslation();
   const [selectedBankId, setSelectedBankId] = useState<string>('');
-  const { data: donationSettings, isLoading } = useDonationSettings();
+  
+  // Fetch payee's banking settings (NOT admin's donation settings)
+  const { data: payeeSettings, isLoading } = useUserSettings(payeeId);
 
-  const bankInfo = donationSettings?.bank_info;
+  const bankInfo = payeeSettings?.bank_info;
   const hasBankInfo = bankInfo?.account && bankInfo?.bank;
 
-  // Use selected bank or default to admin's configured bank
+  // Use selected bank or default to payee's configured bank
   const activeBankId = selectedBankId || bankInfo?.app || '';
   const bankDetails = activeBankId ? findBankById(activeBankId) : null;
 
-  // Subtask 2.1: Implement VietQR deeplink generation
+  // Subtask 2.1: Implement VietQR deeplink generation using payee's account
   const handleOpenBankApp = (bankId?: string) => {
     const targetBankId = bankId || activeBankId;
 
     if (hasBankInfo && targetBankId && bankInfo.account && bankInfo.bank) {
       try {
-        // Include payment amount and payer name in description
+        // Include payment amount and payee name in description
         const description = `FairPay: ${split.profiles?.full_name || 'Payment'}`;
         
         const deeplink = generateVietQRDeeplink(
           targetBankId,
-          bankInfo.account,
-          bankInfo.bank,
+          bankInfo.account, // Payee's account number
+          bankInfo.bank,    // Payee's bank code
           amount.toString(), // Include payment amount
-          description // Include payer name in description
+          description // Include payee name in description
         );
 
         window.location.href = deeplink;
@@ -113,7 +117,7 @@ export function BankingPaymentDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {donationSettings?.qr_code_image_url && (
+        {payeeSettings?.qr_code_image_url && (
           <>
             <Separator />
             <div className="flex flex-col items-center py-4 gap-4">
@@ -123,7 +127,7 @@ export function BankingPaymentDialog({
                 aria-label={t('payments.banking.tapToOpenBank', 'Tap to open bank app')}
               >
                 <img
-                  src={donationSettings.qr_code_image_url}
+                  src={payeeSettings.qr_code_image_url}
                   alt="QR Code"
                   className="h-full w-full object-contain"
                 />

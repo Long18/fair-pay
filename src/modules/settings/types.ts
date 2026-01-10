@@ -1,3 +1,5 @@
+import { BankInfo } from '@/types/user-settings';
+
 export type Theme = 'light' | 'dark' | 'system';
 export type DateFormat = 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
 export type ProfileVisibility = 'public' | 'friends' | 'private';
@@ -23,6 +25,10 @@ export interface UserSettings {
   allow_friend_requests: boolean;
   allow_group_invites: boolean;
   profile_visibility: ProfileVisibility;
+
+  // Banking payment fields
+  bank_info: BankInfo | null;
+  qr_code_image_url: string | null;
 
   // Timestamps
   created_at: string;
