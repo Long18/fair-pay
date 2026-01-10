@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { UserIcon, ChevronRightIcon, PlusIcon } from "@/components/ui/icons";
+import { UserIcon, ArrowRightIcon } from "@/components/ui/icons";
 import { useGo } from "@refinedev/core";
 import { EmptyFriends } from "./profile-empty-states";
 
@@ -42,7 +42,6 @@ export const ProfileFriendsList = ({
                   <Skeleton className="h-4 w-32" />
                   <Skeleton className="h-3 w-48" />
                 </div>
-                <Skeleton className="h-8 w-8" />
               </div>
             </CardContent>
           </Card>
@@ -54,6 +53,10 @@ export const ProfileFriendsList = ({
   if (friends.length === 0) {
     return <EmptyFriends className={className} />;
   }
+
+  // Show only top 3-5 friends as preview
+  const previewFriends = friends.slice(0, 5);
+  const hasMore = friends.length > 5;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -85,17 +88,23 @@ export const ProfileFriendsList = ({
       animate="visible"
       className={cn("space-y-3", className)}
     >
-      {friends.map((friend) => (
+      {/* Friends Count Header */}
+      <div className="flex items-center justify-between px-1">
+        <p className="text-sm text-muted-foreground">
+          {t('profile.friends.count', {
+            count: friends.length,
+            defaultValue: `${friends.length} friend${friends.length !== 1 ? 's' : ''}`
+          })}
+        </p>
+      </div>
+
+      {/* Preview List (top 3-5 friends, view-only) */}
+      {previewFriends.map((friend) => (
         <motion.div
           key={friend.id}
           variants={itemVariants}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
         >
-          <Card
-            className="rounded-lg cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => go({ to: `/profile/${friend.id}` })}
-          >
+          <Card className="rounded-lg">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <Avatar className="h-12 w-12">
@@ -117,22 +126,25 @@ export const ProfileFriendsList = ({
                     </p>
                   )}
                 </div>
-
-                <ChevronRightIcon size={20} className="text-muted-foreground" />
               </div>
             </CardContent>
           </Card>
         </motion.div>
       ))}
 
+      {/* View All Friends Button */}
       <motion.div variants={itemVariants}>
         <Button
           variant="outline"
           className="w-full rounded-lg"
           onClick={() => go({ to: "/friends" })}
         >
-          <PlusIcon size={16} className="mr-2" />
-          {t('profile.friends.addNew', 'Add New Friend')}
+          <span className="flex-1 text-center">
+            {hasMore
+              ? t('profile.friends.viewAll', `View All ${friends.length} Friends`)
+              : t('profile.friends.manageFriends', 'Manage Friends')}
+          </span>
+          <ArrowRightIcon size={16} className="ml-2" />
         </Button>
       </motion.div>
     </motion.div>

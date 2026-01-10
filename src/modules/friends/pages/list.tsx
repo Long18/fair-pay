@@ -1,5 +1,5 @@
-import { useList, useGetIdentity, useUpdate, useDelete, useGo } from "@refinedev/core";
-import { useMemo } from "react";
+import { useList, useGetIdentity, useDelete, useGo } from "@refinedev/core";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -7,19 +7,25 @@ import { Badge } from "@/components/ui/badge";
 import { Profile } from "@/modules/profile/types";
 import { Friendship, Friend } from "../types";
 import { AddFriendModal } from "../components/add-friend-modal";
+import { FriendRow } from "../components/friend-row";
+import { RemoveFriendDialog } from "../components/remove-friend-dialog";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import { CheckIcon, XIcon } from "@/components/ui/icons";
 
-import { CheckIcon, XIcon, Trash2Icon, ChevronRightIcon } from "@/components/ui/icons";
 export const FriendList = () => {
+  const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
-  const updateMutation = useUpdate();
   const deleteMutation = useDelete();
   const go = useGo();
+
+  const [removingFriend, setRemovingFriend] = useState<Friend | null>(null);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   const { query } = useList<Friendship>({
     resource: "friendships",
     meta: {
-      select: "*, user_a_profile:profiles!user_a(id, full_name, avatar_url), user_b_profile:profiles!user_b(id, full_name, avatar_url)",
+      select: "*, user_a_profile:profiles!user_a(id, full_name, avatar_url, email), user_b_profile:profiles!user_b(id, full_name, avatar_url, email)",
     },
     pagination: {
       mode: "off",
@@ -42,6 +48,7 @@ export const FriendList = () => {
         user_id: isUserA ? f.user_b : f.user_a,
         full_name: friendProfile?.full_name || "Unknown",
         avatar_url: friendProfile?.avatar_url,
+        email: friendProfile?.email,
         status: f.status,
         created_at: f.created_at,
         is_requester: isRequester,
@@ -54,20 +61,25 @@ export const FriendList = () => {
   const sentRequests = friends.filter(f => f.status === "pending" && f.is_requester);
 
   const handleAccept = (friendshipId: string) => {
-    updateMutation.mutate(
-      {
-        resource: "friendships",
-        id: friendshipId,
-        values: { status: "accepted" },
-      },
-      {
-        onSuccess: () => {
-          toast.success("Friend request accepted");
-          query.refetch();
+    // Use update mutation instead of delete for accepting
+    const { mutate } = useList<Friendship>({
+      resource: "friendships",
+    });
+    
+    toast.promise(
+      fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/friendships?id=eq.${friendshipId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
-        onError: (error) => {
-          toast.error(`Failed to accept request: ${error.message}`);
-        },
+        body: JSON.stringify({ status: 'accepted' }),
+      }).then(() => query.refetch()),
+      {
+        loading: t('friends.accepting', 'Accepting...'),
+        success: t('friends.acceptSuccess', 'Friend request accepted'),
+        error: t('friends.acceptError', 'Failed to accept request'),
       }
     );
   };
@@ -80,31 +92,40 @@ export const FriendList = () => {
       },
       {
         onSuccess: () => {
-          toast.success("Friend request rejected");
+          toast.success(t('friends.rejectSuccess', 'Friend request rejected'));
           query.refetch();
         },
         onError: (error) => {
-          toast.error(`Failed to reject request: ${error.message}`);
+          toast.error(t('friends.rejectError', `Failed to reject request: ${error.message}`));
         },
       }
     );
   };
 
-  const handleRemoveFriend = (friendshipId: string, friendName: string) => {
-    if (!confirm(`Remove ${friendName} from friends?`)) return;
+  const handleRemoveFriend = (friend: Friend) => {
+    setRemovingFriend(friend);
+  };
 
+  const confirmRemoveFriend = () => {
+    if (!removingFriend) return;
+
+    setIsRemoving(true);
     deleteMutation.mutate(
       {
         resource: "friendships",
-        id: friendshipId,
+        id: removingFriend.friendship_id,
       },
       {
         onSuccess: () => {
-          toast.success("Friend removed");
+          toast.success(t('friends.removeSuccess', 'Friend removed'));
           query.refetch();
+          setRemovingFriend(null);
         },
         onError: (error) => {
-          toast.error(`Failed to remove friend: ${error.message}`);
+          toast.error(t('friends.removeError', `Failed to remove friend: ${error.message}`));
+        },
+        onSettled: () => {
+          setIsRemoving(false);
         },
       }
     );
@@ -113,7 +134,7 @@ export const FriendList = () => {
   if (query.isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p>Loading friends...</p>
+        <p>{t('common.loading', 'Loading...')}</p>
       </div>
     );
   }
@@ -123,9 +144,11 @@ export const FriendList = () => {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-4xl font-bold tracking-tight">Friends</h1>
+            <h1 className="text-2xl sm:text-4xl font-bold tracking-tight">
+              {t('friends.title', 'Friends')}
+            </h1>
             <p className="text-sm sm:text-base text-muted-foreground mt-2">
-              Manage your friends and split expenses 1-on-1
+              {t('friends.subtitle', 'Manage your friends and split expenses 1-on-1')}
             </p>
           </div>
           <AddFriendModal />
@@ -135,7 +158,7 @@ export const FriendList = () => {
         {pendingRequests.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Friend Requests</CardTitle>
+              <CardTitle>{t('friends.requests', 'Friend Requests')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -158,7 +181,7 @@ export const FriendList = () => {
                       <div className="min-w-0 flex-1">
                         <div className="font-medium text-sm sm:text-base truncate">{friend.full_name}</div>
                         <div className="text-xs sm:text-sm text-muted-foreground">
-                          Sent you a friend request
+                          {t('friends.sentRequest', 'Sent you a friend request')}
                         </div>
                       </div>
                     </div>
@@ -169,7 +192,7 @@ export const FriendList = () => {
                         onClick={() => handleAccept(friend.friendship_id)}
                       >
                         <CheckIcon className="h-4 w-4 sm:mr-1" />
-                        <span className="hidden sm:inline">Accept</span>
+                        <span className="hidden sm:inline">{t('common.accept', 'Accept')}</span>
                       </Button>
                       <Button
                         size="sm"
@@ -178,7 +201,7 @@ export const FriendList = () => {
                         onClick={() => handleReject(friend.friendship_id)}
                       >
                         <XIcon className="h-4 w-4 sm:mr-1" />
-                        <span className="hidden sm:inline">Reject</span>
+                        <span className="hidden sm:inline">{t('common.reject', 'Reject')}</span>
                       </Button>
                     </div>
                   </div>
@@ -192,7 +215,7 @@ export const FriendList = () => {
         {sentRequests.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Pending Requests</CardTitle>
+              <CardTitle>{t('friends.pendingRequests', 'Pending Requests')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -214,7 +237,9 @@ export const FriendList = () => {
                       </Avatar>
                       <div className="min-w-0 flex-1">
                         <div className="font-medium text-sm sm:text-base truncate">{friend.full_name}</div>
-                        <Badge variant="secondary" className="text-xs mt-1">Pending</Badge>
+                        <Badge variant="secondary" className="text-xs mt-1">
+                          {t('friends.pending', 'Pending')}
+                        </Badge>
                       </div>
                     </div>
                     <Button
@@ -223,7 +248,7 @@ export const FriendList = () => {
                       className="w-full sm:w-auto shrink-0"
                       onClick={() => handleReject(friend.friendship_id)}
                     >
-                      Cancel
+                      {t('common.cancel', 'Cancel')}
                     </Button>
                   </div>
                 ))}
@@ -235,56 +260,45 @@ export const FriendList = () => {
         {/* Accepted Friends */}
         <Card>
           <CardHeader>
-            <CardTitle>My Friends ({acceptedFriends.length})</CardTitle>
+            <CardTitle>
+              {t('friends.myFriends', 'My Friends')} ({acceptedFriends.length})
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {acceptedFriends.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <p>No friends yet. Add someone to start splitting expenses!</p>
+                <p>{t('friends.noFriends', 'No friends yet. Add someone to start splitting expenses!')}</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {acceptedFriends.map((friend) => (
-                  <div
+                  <FriendRow
                     key={friend.friendship_id}
-                    className="flex items-center justify-between gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={() => go({ to: `/friends/${friend.user_id}` })}
-                  >
-                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                      <Avatar className="h-10 w-10 sm:h-12 sm:w-12 shrink-0">
-                        <AvatarImage src={friend.avatar_url || undefined} alt={friend.full_name} />
-                        <AvatarFallback className="text-xs sm:text-sm">
-                          {friend.full_name
-                            ?.split(" ")
-                            .map((n) => n[0])
-                            .join("")
-                            .toUpperCase() || "?"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="font-medium text-sm sm:text-base truncate min-w-0 flex-1">{friend.full_name}</div>
-                    </div>
-                    <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 w-8 sm:h-auto sm:w-auto p-0 sm:px-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveFriend(friend.friendship_id, friend.full_name);
-                        }}
-                      >
-                        <Trash2Icon className="h-4 w-4 text-destructive" />
-                        <span className="hidden sm:inline ml-1">Remove</span>
-                      </Button>
-                      <ChevronRightIcon className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
-                    </div>
-                  </div>
+                    friend={{
+                      id: friend.user_id,
+                      full_name: friend.full_name,
+                      avatar_url: friend.avatar_url,
+                      email: friend.email,
+                    }}
+                    onNavigate={() => go({ to: `/friends/${friend.friendship_id}` })}
+                    onRemove={() => handleRemoveFriend(friend)}
+                  />
                 ))}
               </div>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Remove Friend Dialog */}
+      <RemoveFriendDialog
+        open={!!removingFriend}
+        onOpenChange={(open) => !open && setRemovingFriend(null)}
+        friendName={removingFriend?.full_name || ''}
+        hasUnpaidExpenses={false} // TODO: Check for unpaid expenses
+        onConfirm={confirmRemoveFriend}
+        isRemoving={isRemoving}
+      />
     </div>
   );
 };
