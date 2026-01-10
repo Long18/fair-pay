@@ -354,3 +354,187 @@
     grid-row: span 1;
   }
 }
+
+/* Animation Utilities - Transaction Clarity UX Improvements */
+
+/* Animation Duration CSS Variables */
+:root {
+  --animation-duration-fast: 150ms;
+  --animation-duration-normal: 200ms;
+  --animation-duration-slow: 300ms;
+  --animation-easing-out: cubic-bezier(0, 0, 0.2, 1);
+  --animation-easing-in: cubic-bezier(0.4, 0, 1, 1);
+  --animation-easing-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Expand/Collapse Animation (300ms) */
+@keyframes expand {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: auto;
+    opacity: 1;
+  }
+}
+
+@keyframes collapse {
+  from {
+    height: auto;
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+.animate-expand {
+  animation: expand var(--animation-duration-slow) var(--animation-easing-out);
+}
+
+.animate-collapse {
+  animation: collapse var(--animation-duration-slow) var(--animation-easing-in);
+}
+
+/* Smooth Transitions */
+.transition-smooth {
+  transition: all var(--animation-duration-normal) var(--animation-easing-out);
+}
+
+.transition-smooth-slow {
+  transition: all var(--animation-duration-slow) var(--animation-easing-out);
+}
+
+.transition-smooth-fast {
+  transition: all var(--animation-duration-fast) var(--animation-easing-out);
+}
+
+/* Rotate Animation for Chevrons */
+.rotate-chevron {
+  transition: transform var(--animation-duration-normal) var(--animation-easing-in-out);
+}
+
+.rotate-chevron.expanded {
+  transform: rotate(180deg);
+}
+
+/* Fade Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in var(--animation-duration-normal) var(--animation-easing-out);
+}
+
+.animate-fade-out {
+  animation: fade-out var(--animation-duration-normal) var(--animation-easing-in);
+}
+
+/* Slide Animations */
+@keyframes slide-in-from-top {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-from-bottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-from-left {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-from-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-from-top {
+  animation: slide-in-from-top var(--animation-duration-slow) var(--animation-easing-out);
+}
+
+.animate-slide-in-from-bottom {
+  animation: slide-in-from-bottom var(--animation-duration-slow) var(--animation-easing-out);
+}
+
+.animate-slide-in-from-left {
+  animation: slide-in-from-left var(--animation-duration-slow) var(--animation-easing-out);
+}
+
+.animate-slide-in-from-right {
+  animation: slide-in-from-right var(--animation-duration-slow) var(--animation-easing-out);
+}
+
+/* Scale Animations */
+@keyframes scale-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes scale-out {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in var(--animation-duration-fast) var(--animation-easing-out);
+}
+
+.animate-scale-out {
+  animation: scale-out var(--animation-duration-fast) var(--animation-easing-in);
+}
