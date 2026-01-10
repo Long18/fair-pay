@@ -1,0 +1,31 @@
+{
+  "version": "1.0.0",
+  "production": {
+    "projectRef": "${SUPABASE_PROD_PROJECT_REF}",
+    "verifyBeforeSync": true
+  },
+  "local": {
+    "databaseUrl": "${SUPABASE_LOCAL_DATABASE_URL}",
+    "dockerContainer": "${SUPABASE_LOCAL_DOCKER_CONTAINER}"
+  },
+  "sync": {
+    "includeTables": ["*"],
+    "excludeTables": [],
+    "includeAuthUsers": true,
+    "includeStorage": false,
+    "anonymize": false
+  },
+  "anonymization": {
+    "enabled": false,
+    "rules": []
+  },
+  "backup": {
+    "enabled": true,
+    "retentionDays": 7,
+    "maxBackups": 5
+  },
+  "output": {
+    "directory": "supabase/scripts/sync/dumps",
+    "compression": false
+  }
+}
