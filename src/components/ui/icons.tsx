@@ -48,6 +48,7 @@ import {
   UserMinus,
   Heart,
   Calendar,
+  Clock,
   Repeat,
   Upload,
   Download,
@@ -626,6 +627,10 @@ export const HeartIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
 
 export const CalendarIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
   <Calendar size={size} fill="currentColor" {...props} />
+);
+
+export const ClockIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Clock size={size} fill="currentColor" {...props} />
 );
 
 export const RepeatIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
