@@ -38,6 +38,21 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-status-success: var(--status-success);
+  --color-status-success-foreground: var(--status-success-foreground);
+  --color-status-success-bg: var(--status-success-bg);
+  --color-status-success-border: var(--status-success-border);
+  --color-status-warning: var(--status-warning);
+  --color-status-warning-foreground: var(--status-warning-foreground);
+  --color-status-warning-bg: var(--status-warning-bg);
+  --color-status-warning-border: var(--status-warning-border);
+  --color-status-info: var(--status-info);
+  --color-status-info-foreground: var(--status-info-foreground);
+  --color-status-info-bg: var(--status-info-bg);
+  --color-status-info-border: var(--status-info-border);
+  --color-semantic-negative: var(--semantic-negative);
+  --color-semantic-positive: var(--semantic-positive);
+  --color-semantic-neutral: var(--semantic-neutral);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -89,6 +104,27 @@
   --chart-4: oklch(0.65 0.15 160); /* Green */
   --chart-5: oklch(0.75 0.15 80); /* Yellow */
 
+  /* Status Colors - Payment States */
+  --status-success: oklch(0.65 0.15 160); /* Green for "paid" */
+  --status-success-foreground: oklch(0.35 0.12 160);
+  --status-success-bg: oklch(0.95 0.05 160);
+  --status-success-border: oklch(0.88 0.08 160);
+
+  --status-warning: oklch(0.75 0.15 80); /* Orange for "unpaid" */
+  --status-warning-foreground: oklch(0.45 0.12 80);
+  --status-warning-bg: oklch(0.95 0.05 80);
+  --status-warning-border: oklch(0.88 0.08 80);
+
+  --status-info: oklch(0.598 0.365 217.2); /* Blue for "partial" */
+  --status-info-foreground: oklch(0.35 0.25 217.2);
+  --status-info-bg: oklch(0.95 0.08 217.2);
+  --status-info-border: oklch(0.88 0.15 217.2);
+
+  /* Semantic Colors - Owe Status */
+  --semantic-negative: oklch(0.577 0.245 27.325); /* Red for "owe" */
+  --semantic-positive: oklch(0.65 0.15 160); /* Green for "owed" */
+  --semantic-neutral: oklch(0.556 0 0); /* Gray for neutral */
+
   /* Sidebar Colors */
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -139,6 +175,27 @@
   --chart-3: oklch(0.6 0.35 24.6); /* Orange */
   --chart-4: oklch(0.7 0.15 160); /* Green */
   --chart-5: oklch(0.8 0.15 80); /* Yellow */
+
+  /* Status Colors - Payment States (Dark Mode) */
+  --status-success: oklch(0.7 0.15 160); /* Brighter green for dark mode */
+  --status-success-foreground: oklch(0.75 0.12 160);
+  --status-success-bg: oklch(0.25 0.08 160);
+  --status-success-border: oklch(0.35 0.1 160);
+
+  --status-warning: oklch(0.8 0.15 80); /* Brighter orange for dark mode */
+  --status-warning-foreground: oklch(0.85 0.12 80);
+  --status-warning-bg: oklch(0.25 0.08 80);
+  --status-warning-border: oklch(0.35 0.1 80);
+
+  --status-info: oklch(0.678 0.376 213.1); /* Brighter blue for dark mode */
+  --status-info-foreground: oklch(0.75 0.3 213.1);
+  --status-info-bg: oklch(0.25 0.15 213.1);
+  --status-info-border: oklch(0.35 0.2 213.1);
+
+  /* Semantic Colors - Owe Status (Dark Mode) */
+  --semantic-negative: oklch(0.704 0.191 22.216); /* Softer red for dark mode */
+  --semantic-positive: oklch(0.7 0.15 160); /* Brighter green for dark mode */
+  --semantic-neutral: oklch(0.708 0 0); /* Lighter gray for dark mode */
 
   /* Sidebar Colors for dark mode */
   --sidebar: oklch(0.205 0 0);

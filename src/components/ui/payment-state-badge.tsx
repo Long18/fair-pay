@@ -9,9 +9,9 @@ const paymentStateBadgeVariants = cva(
   {
     variants: {
       state: {
-        paid: "border-green-200 bg-green-100 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300",
-        unpaid: "border-orange-200 bg-orange-100 text-orange-700 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
-        partial: "border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+        paid: "border-status-success-border bg-status-success-bg text-status-success-foreground",
+        unpaid: "border-status-warning-border bg-status-warning-bg text-status-warning-foreground",
+        partial: "border-status-info-border bg-status-info-bg text-status-info-foreground",
       },
       size: {
         sm: "text-xs px-1.5 py-0.5 [&>svg]:size-2.5",
