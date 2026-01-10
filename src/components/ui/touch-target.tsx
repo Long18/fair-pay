@@ -36,9 +36,9 @@ export function TouchTarget({
 
   if (asChild && React.isValidElement(children)) {
     return React.cloneElement(children, {
-      ...children.props,
+      ...(children.props as Record<string, any>),
       className: cn(minSizeClass, "flex items-center justify-center", (children.props as any).className),
-    });
+    } as any);
   }
 
   return (

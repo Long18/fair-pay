@@ -6,7 +6,7 @@ import {
   startOfWeek,
   startOfMonth,
 } from "date-fns";
-import type { EnhancedActivityItem } from "@/components/dashboard/enhanced-activity-row";
+import type { EnhancedActivityItem } from "@/types/activity";
 
 // =============================================
 // Time Period Types
@@ -158,7 +158,7 @@ export function detectDuplicateDescriptions(
 
   // Find descriptions that appear more than once
   const duplicateIds = new Set<string>();
-  descriptionCounts.forEach((ids, description) => {
+  descriptionCounts.forEach((ids) => {
     if (ids.length > 1) {
       ids.forEach((id) => duplicateIds.add(id));
     }
