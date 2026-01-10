@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ActivityIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { debounce } from "@/lib/performance";
 
 import { ActivityFilterControls, type PaymentStateFilter, type FilterCounts } from "./activity-filter-controls";
 import { ActivitySortControls, type SortOption } from "./activity-sort-controls";
@@ -153,7 +154,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
   }, [activities]);
 
   // Handlers
-  const handleFilterChange = (filter: PaymentStateFilter) => {
+  const handleFilterChange = React.useCallback((filter: PaymentStateFilter) => {
     const newParams = new URLSearchParams(searchParams);
     if (filter === "all") {
       newParams.delete("filter");
@@ -161,9 +162,9 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
       newParams.set("filter", filter);
     }
     setSearchParams(newParams);
-  };
+  }, [searchParams, setSearchParams]);
 
-  const handleSortChange = (sort: SortOption) => {
+  const handleSortChange = React.useCallback((sort: SortOption) => {
     const newParams = new URLSearchParams(searchParams);
     if (sort === "date-desc") {
       newParams.delete("sort");
@@ -171,9 +172,20 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
       newParams.set("sort", sort);
     }
     setSearchParams(newParams);
-  };
+  }, [searchParams, setSearchParams]);
 
-  const handleToggleActivity = (activityId: string) => {
+  // Debounced handlers to avoid excessive URL updates and re-renders
+  const debouncedFilterChange = React.useMemo(
+    () => debounce(handleFilterChange, 300),
+    [handleFilterChange]
+  );
+
+  const debouncedSortChange = React.useMemo(
+    () => debounce(handleSortChange, 300),
+    [handleSortChange]
+  );
+
+  const handleToggleActivity = React.useCallback((activityId: string) => {
     setExpandedActivityIds((prev) => {
       const next = new Set(prev);
       if (next.has(activityId)) {
@@ -183,9 +195,9 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
       }
       return next;
     });
-  };
+  }, []);
 
-  const handleToggleGroup = (period: string) => {
+  const handleToggleGroup = React.useCallback((period: string) => {
     setCollapsedGroupPeriods((prev) => {
       const next = new Set(prev);
       if (next.has(period)) {
@@ -195,7 +207,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
       }
       return next;
     });
-  };
+  }, []);
 
   // Loading state
   if (isLoading) {
@@ -282,7 +294,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
         {showFilters && (
           <ActivityFilterControls
             activeFilter={activeFilter}
-            onFilterChange={handleFilterChange}
+            onFilterChange={debouncedFilterChange}
             counts={filterCounts}
           />
         )}
@@ -290,7 +302,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
         {showSort && (
           <ActivitySortControls
             activeSort={activeSort}
-            onSortChange={handleSortChange}
+            onSortChange={debouncedSortChange}
           />
         )}
       </div>
