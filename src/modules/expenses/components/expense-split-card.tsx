@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2Icon, XCircleIcon, ChevronDownIcon, ChevronUpIcon } from "@/components/ui/icons";
 import { MomoPaymentButton } from "@/modules/payments/components/momo-payment-button";
+import { BankingPaymentButton } from "@/modules/payments/components/banking-payment-button";
 import { formatNumber } from "@/lib/locale-utils";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -202,10 +203,16 @@ export const ExpenseSplitCard = ({
             )}
 
             {isCurrentUser && !isSplitSettled && !isPayer && (
-              <MomoPaymentButton
-                split={split}
-                onPaymentComplete={onPaymentComplete}
-              />
+              <>
+                <MomoPaymentButton
+                  split={split}
+                  onPaymentComplete={onPaymentComplete}
+                />
+                <BankingPaymentButton
+                  split={split}
+                  onPaymentComplete={onPaymentComplete}
+                />
+              </>
             )}
           </div>
 
@@ -272,13 +279,18 @@ export const ExpenseSplitCard = ({
                 )}
 
                 {isCurrentUser && !isSplitSettled && !isPayer && (
-                  <div className="flex-1">
+                  <>
                     <MomoPaymentButton
                       split={split}
                       onPaymentComplete={onPaymentComplete}
-                      className="w-full"
+                      className="flex-1"
                     />
-                  </div>
+                    <BankingPaymentButton
+                      split={split}
+                      onPaymentComplete={onPaymentComplete}
+                      className="flex-1"
+                    />
+                  </>
                 )}
               </div>
             </div>
