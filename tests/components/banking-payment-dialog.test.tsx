@@ -373,3 +373,202 @@ describe('BankingPaymentDialog - Unit Tests', () => {
     expect(container.firstChild).toBeNull();
   });
 });
+
+describe('BankingPaymentDialog - Error Handling Tests', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const createMockSplit = (overrides?: Partial<ExpenseSplit>): ExpenseSplit & { profiles?: any } => ({
+    id: '123',
+    expense_id: '456',
+    user_id: '789',
+    split_method: 'equal',
+    split_value: null,
+    computed_amount: 100,
+    is_settled: false,
+    settled_amount: 0,
+    created_at: new Date().toISOString(),
+    profiles: {
+      id: '789',
+      full_name: 'Test User',
+      email: 'test@example.com',
+    },
+    ...overrides,
+  });
+
+  const createMockDonationSettings = (overrides?: Partial<DonationSettings>): DonationSettings => ({
+    id: '1',
+    is_enabled: true,
+    avatar_image_url: null,
+    qr_code_image_url: 'https://example.com/qr.png',
+    cta_text: { en: 'Donate', vi: 'Quyên góp' },
+    donate_message: { en: 'Thank you', vi: 'Cảm ơn' },
+    bank_info: {
+      account: '1234567890',
+      bank: 'VCB',
+      accountName: 'Test Account',
+      app: 'vcb',
+    },
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    ...overrides,
+  });
+
+  /**
+   * Error Handling Test: Missing donation settings handled gracefully
+   * Validates: Requirements 8.1, 8.4
+   */
+  it('should handle missing donation settings gracefully', () => {
+    const split = createMockSplit();
+
+    vi.mocked(useDonationSettings).mockReturnValue({
+      data: null,
+      isLoading: false,
+    } as any);
+
+    const { container } = render(
+      <BankingPaymentDialog
+        open={true}
+        onOpenChange={() => {}}
+        split={split}
+        amount={100}
+      />
+    );
+
+    // Dialog should still render but with minimal content
+    expect(screen.getByText('Pay via Banking')).toBeInTheDocument();
+    
+    // QR code should not be present
+    expect(screen.queryByAltText('QR Code')).not.toBeInTheDocument();
+    
+    // Bank details should not be present
+    expect(screen.queryByText('Account Name:')).not.toBeInTheDocument();
+    
+    // Bank selector should not be present
+    expect(screen.queryByText('Select Your Bank App')).not.toBeInTheDocument();
+  });
+
+  /**
+   * Error Handling Test: Missing bank account information handled gracefully
+   * Validates: Requirements 8.5
+   */
+  it('should show only available information when bank account details are incomplete', () => {
+    const split = createMockSplit();
+    const settings = createMockDonationSettings({
+      bank_info: {
+        account: '1234567890',
+        // Missing bank code and account name
+      }
+    });
+
+    vi.mocked(useDonationSettings).mockReturnValue({
+      data: settings,
+      isLoading: false,
+    } as any);
+
+    render(
+      <BankingPaymentDialog
+        open={true}
+        onOpenChange={() => {}}
+        split={split}
+        amount={100}
+      />
+    );
+
+    // Account number should be displayed
+    expect(screen.getByText('1234567890')).toBeInTheDocument();
+    
+    // Bank selector should not be present (no bank code)
+    expect(screen.queryByText('Select Your Bank App')).not.toBeInTheDocument();
+  });
+
+  /**
+   * Error Handling Test: Loading state returns null
+   * Validates: Requirements 8.4
+   */
+  it('should return null during loading state', () => {
+    const split = createMockSplit();
+
+    vi.mocked(useDonationSettings).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    } as any);
+
+    const { container } = render(
+      <BankingPaymentDialog
+        open={true}
+        onOpenChange={() => {}}
+        split={split}
+        amount={100}
+      />
+    );
+
+    // Dialog should not render at all
+    expect(container.firstChild).toBeNull();
+  });
+
+  /**
+   * Error Handling Test: Missing QR code URL handled gracefully
+   * Validates: Requirements 8.1
+   */
+  it('should handle missing QR code URL gracefully', () => {
+    const split = createMockSplit();
+    const settings = createMockDonationSettings({
+      qr_code_image_url: null,
+    });
+
+    vi.mocked(useDonationSettings).mockReturnValue({
+      data: settings,
+      isLoading: false,
+    } as any);
+
+    render(
+      <BankingPaymentDialog
+        open={true}
+        onOpenChange={() => {}}
+        split={split}
+        amount={100}
+      />
+    );
+
+    // QR code should not be present
+    expect(screen.queryByAltText('QR Code')).not.toBeInTheDocument();
+    
+    // But bank details should still be displayed
+    expect(screen.getByText('Test Account')).toBeInTheDocument();
+    expect(screen.getByText('1234567890')).toBeInTheDocument();
+  });
+
+  /**
+   * Error Handling Test: Missing bank info object handled gracefully
+   * Validates: Requirements 8.1
+   */
+  it('should handle missing bank info object gracefully', () => {
+    const split = createMockSplit();
+    const settings = createMockDonationSettings({
+      bank_info: null,
+    });
+
+    vi.mocked(useDonationSettings).mockReturnValue({
+      data: settings,
+      isLoading: false,
+    } as any);
+
+    render(
+      <BankingPaymentDialog
+        open={true}
+        onOpenChange={() => {}}
+        split={split}
+        amount={100}
+      />
+    );
+
+    // Bank details section should not be present
+    expect(screen.queryByText('Account Name:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Account:')).not.toBeInTheDocument();
+    
+    // Bank selector should not be present
+    expect(screen.queryByText('Select Your Bank App')).not.toBeInTheDocument();
+  });
+});
