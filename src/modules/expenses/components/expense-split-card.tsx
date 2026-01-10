@@ -210,6 +210,7 @@ export const ExpenseSplitCard = ({
                 />
                 <BankingPaymentButton
                   split={split}
+                  payeeId={split.user_id}
                   onPaymentComplete={onPaymentComplete}
                 />
               </>
@@ -287,6 +288,7 @@ export const ExpenseSplitCard = ({
                     />
                     <BankingPaymentButton
                       split={split}
+                      payeeId={split.user_id}
                       onPaymentComplete={onPaymentComplete}
                       className="flex-1"
                     />
