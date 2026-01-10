@@ -196,7 +196,18 @@
         "deletePayment": "Delete Payment",
         "paymentDetails": "Payment Details",
         "noPayments": "No payments yet",
-        "recordFirst": "Record your first payment to start settling up"
+        "recordFirst": "Record your first payment to start settling up",
+        "payViaBanking": "Pay via Banking",
+        "banking": {
+            "title": "Pay via Banking",
+            "description": "Complete payment using bank transfer",
+            "openingBankApp": "Opening bank app...",
+            "selectBankFirst": "Please select your bank app first",
+            "failedToOpen": "Failed to open bank app",
+            "selectYourBank": "Select Your Bank App",
+            "chooseBank": "Choose your bank app",
+            "openBankApp": "Open {{bankName}} App"
+        }
     },
     "friends": {
         "title": "Friends",
