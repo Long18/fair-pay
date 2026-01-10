@@ -522,7 +522,11 @@ export const ExpenseShow = () => {
                 {splits.map((split: any, index: number) => {
                   const isCurrentUserSplit = split.user_id === identity?.id;
                   const isSplitSettled = split.is_settled || isPaid;
-                  const canSettle = (isPayer || userIsAdmin) && !isSplitSettled && !isCurrentUserSplit;
+                  // Admin can settle any unsettled split (including their own when they're owed money)
+                  // Payer can settle splits for others (but not their own)
+                  const canSettle = userIsAdmin 
+                    ? !isSplitSettled 
+                    : (isPayer && !isSplitSettled && !isCurrentUserSplit);
 
                   return (
                     <motion.div
