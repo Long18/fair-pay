@@ -23,6 +23,22 @@ export default tseslint.config(
         "warn",
         { allowConstantExport: true },
       ],
+      // Enforce status color token usage (Requirements 8.1, 8.2, 8.3)
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "Literal[value=/bg-(green|red|orange|blue)-(50|100|200|300|400|500|600|700|800|900|950)/]",
+          message: "Use status color tokens from '@/lib/status-colors' instead of hardcoded Tailwind status colors. Import getPaymentStateColors(), getOweStatusColors(), or getSemanticStatusColors().",
+        },
+        {
+          selector: "Literal[value=/text-(green|red|orange|blue)-(50|100|200|300|400|500|600|700|800|900|950)/]",
+          message: "Use status color tokens from '@/lib/status-colors' instead of hardcoded Tailwind status colors. Import getPaymentStateColors(), getOweStatusColors(), or getSemanticStatusColors().",
+        },
+        {
+          selector: "Literal[value=/border-(green|red|orange|blue)-(50|100|200|300|400|500|600|700|800|900|950)/]",
+          message: "Use status color tokens from '@/lib/status-colors' instead of hardcoded Tailwind status colors. Import getPaymentStateColors(), getOweStatusColors(), or getSemanticStatusColors().",
+        },
+      ],
     },
   }
 );
