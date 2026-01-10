@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { BanknoteIcon } from '@/components/ui/icons';
 import { ExpenseSplit } from '@/modules/expenses/types';
 import { BankingPaymentDialog } from './banking-payment-dialog';
-import { useDonationSettings } from '@/hooks/use-donation-settings';
+import { useUserSettings } from '@/hooks/use-user-settings';
 import { cn } from '@/lib/utils';
 
 interface BankingPaymentButtonProps {
@@ -15,6 +15,7 @@ interface BankingPaymentButtonProps {
       email?: string;
     };
   };
+  payeeId: string; // ID of the user who is owed money
   className?: string;
   disabled?: boolean;
   onPaymentComplete?: () => void;
@@ -22,6 +23,7 @@ interface BankingPaymentButtonProps {
 
 export function BankingPaymentButton({
   split,
+  payeeId,
   className,
   disabled = false,
   onPaymentComplete,
@@ -29,15 +31,17 @@ export function BankingPaymentButton({
   const { t } = useTranslation();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
-  const { data: donationSettings, isLoading } = useDonationSettings();
+  
+  // Fetch payee's banking settings (NOT admin's donation settings)
+  const { data: payeeSettings, isLoading } = useUserSettings(payeeId);
 
   // Don't show button if loading
   if (isLoading) {
     return null;
   }
 
-  // Don't show button if donation settings not configured or bank_info missing
-  if (!donationSettings || !donationSettings.bank_info) {
+  // Don't show button if payee hasn't configured banking information
+  if (!payeeSettings || !payeeSettings.bank_info) {
     return null;
   }
 
@@ -92,6 +96,7 @@ export function BankingPaymentButton({
         open={dialogOpen}
         onOpenChange={handleCloseDialog}
         split={split}
+        payeeId={payeeId}
         amount={remainingAmount}
         onPaymentComplete={handlePaymentComplete}
       />
