@@ -195,7 +195,18 @@
         "deletePayment": "Xóa thanh toán",
         "paymentDetails": "Chi tiết thanh toán",
         "noPayments": "Chưa có thanh toán nào",
-        "recordFirst": "Ghi thanh toán đầu tiên để bắt đầu thanh toán nợ"
+        "recordFirst": "Ghi thanh toán đầu tiên để bắt đầu thanh toán nợ",
+        "payViaBanking": "Thanh toán qua Ngân hàng",
+        "banking": {
+            "title": "Thanh toán qua Ngân hàng",
+            "description": "Hoàn tất thanh toán bằng chuyển khoản ngân hàng",
+            "openingBankApp": "Đang mở ứng dụng ngân hàng...",
+            "selectBankFirst": "Vui lòng chọn ứng dụng ngân hàng của bạn trước",
+            "failedToOpen": "Không thể mở ứng dụng ngân hàng",
+            "selectYourBank": "Chọn Ứng dụng Ngân hàng",
+            "chooseBank": "Chọn ứng dụng ngân hàng của bạn",
+            "openBankApp": "Mở ứng dụng {{bankName}}"
+        }
     },
     "friends": {
         "title": "Bạn bè",
