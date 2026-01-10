@@ -159,16 +159,25 @@ export const ExpenseShow = () => {
 
     setSettlingExpense(true);
     try {
-      const { data, error } = await supabaseClient.rpc('settle_expense', {
+      const { data, error } = await supabaseClient.rpc('settle_all_splits', {
         p_expense_id: expense.id,
       });
 
       if (error) throw error;
 
-      toast.success(t('expenses.settleSuccess', {
-        description: expense.description,
-        defaultValue: `Marked "${expense.description}" as paid`,
-      }));
+      // Extract summary from response
+      const splitsUpdated = data?.splits_updated || 0;
+      const alreadyPaid = data?.already_paid || 0;
+      const totalAmount = data?.total_amount || 0;
+      const currency = data?.currency || expense.currency;
+
+      toast.success(
+        t('expenses.settleAllSuccess', {
+          splitsUpdated,
+          alreadyPaid,
+          defaultValue: `Settled ${splitsUpdated} of ${splitsUpdated + alreadyPaid} splits. ${alreadyPaid} already paid.`,
+        })
+      );
 
       refetchExpense();
       // Refetch splits to update settlement status
@@ -478,15 +487,18 @@ export const ExpenseShow = () => {
                   <AlertDialogContent className="rounded-xl">
                     <AlertDialogHeader>
                       <AlertDialogTitle>
-                        {t('expenses.settleAllTitle', 'Mark as Paid')}
+                        {t('expenses.settleAllTitle', 'Settle All Unpaid Splits?')}
                       </AlertDialogTitle>
                       <AlertDialogDescription>
-                        {t('expenses.settleAllDescription', {
-                          description: expense.description,
-                          amount: formatNumber(expense.amount),
-                          currency: expense.currency,
-                          defaultValue: `Mark "${expense.description}" (${formatNumber(expense.amount)} ${expense.currency}) as paid? All participants will be marked as settled.`,
-                        })}
+                        {(() => {
+                          const unpaidCount = splits.filter(s => !s.is_settled || (s.settled_amount < s.computed_amount)).length;
+                          const alreadyPaidCount = splits.filter(s => s.is_settled && s.settled_amount >= s.computed_amount).length;
+                          return t('expenses.settleAllDescription', {
+                            unpaidCount,
+                            alreadyPaidCount,
+                            defaultValue: `Mark ${unpaidCount} unpaid split${unpaidCount !== 1 ? 's' : ''} as settled? ${alreadyPaidCount} split${alreadyPaidCount !== 1 ? 's are' : ' is'} already paid and will remain unchanged.`,
+                          });
+                        })()}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -519,54 +531,81 @@ export const ExpenseShow = () => {
           <CardContent>
             <AnimatePresence mode="popLayout">
               <div className="space-y-3">
-                {splits.map((split: any, index: number) => {
-                  const isCurrentUserSplit = split.user_id === identity?.id;
-                  const isSplitSettled = split.is_settled || isPaid;
-                  // Admin can settle any unsettled split (including their own when they're owed money)
-                  // Payer can settle splits for others (but not their own)
-                  const canSettle = userIsAdmin 
-                    ? !isSplitSettled 
-                    : (isPayer && !isSplitSettled && !isCurrentUserSplit);
+                {splits
+                  .slice() // Create a copy to avoid mutating original array
+                  .sort((a: any, b: any) => {
+                    // Sort order: unpaid first, then partially paid, then fully paid
+                    const aSettled = a.is_settled || isPaid;
+                    const bSettled = b.is_settled || isPaid;
+                    const aPartial = a.is_settled && a.settled_amount < a.computed_amount;
+                    const bPartial = b.is_settled && b.settled_amount < b.computed_amount;
 
-                  return (
-                    <motion.div
-                      key={split.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
-                    >
-                      <ExpenseSplitCard
-                        split={split}
-                        expense={expense}
-                        isCurrentUser={isCurrentUserSplit}
-                        isPayer={isPayer}
-                        canSettle={canSettle}
-                        isSettling={settlingSplitId === split.id}
-                        onSettle={openSettleDialog}
-                        onPaymentComplete={() => {
-                          refetchExpense();
-                          // Reload splits
-                          setIsLoadingSplits(true);
-                          supabaseClient
-                            .rpc("get_expense_splits_public", { p_expense_id: id })
-                            .then(({ data, error }) => {
-                              if (!error && data) {
-                                setSplits(data.map((s: any) => ({
-                                  ...s,
-                                  profiles: {
-                                    id: s.user_id,
-                                    full_name: s.user_full_name,
-                                    avatar_url: s.user_avatar_url,
-                                  },
-                                })));
-                              }
-                              setIsLoadingSplits(false);
-                            });
-                        }}
-                      />
-                    </motion.div>
-                  );
-                })}
+                    // Unpaid (not settled) = 0
+                    // Partially paid = 1
+                    // Fully paid = 2
+                    const aStatus = aSettled ? (aPartial ? 1 : 2) : 0;
+                    const bStatus = bSettled ? (bPartial ? 1 : 2) : 0;
+
+                    if (aStatus !== bStatus) {
+                      return aStatus - bStatus;
+                    }
+
+                    // If same status, put current user first
+                    const aIsCurrentUser = a.user_id === identity?.id;
+                    const bIsCurrentUser = b.user_id === identity?.id;
+                    if (aIsCurrentUser && !bIsCurrentUser) return -1;
+                    if (!aIsCurrentUser && bIsCurrentUser) return 1;
+
+                    return 0;
+                  })
+                  .map((split: any, index: number) => {
+                    const isCurrentUserSplit = split.user_id === identity?.id;
+                    const isSplitSettled = split.is_settled || isPaid;
+                    // Admin can settle any unsettled split (including their own when they're owed money)
+                    // Payer can settle splits for others (but not their own)
+                    const canSettle = userIsAdmin 
+                      ? !isSplitSettled 
+                      : (isPayer && !isSplitSettled && !isCurrentUserSplit);
+
+                    return (
+                      <motion.div
+                        key={split.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                      >
+                        <ExpenseSplitCard
+                          split={split}
+                          expense={expense}
+                          isCurrentUser={isCurrentUserSplit}
+                          isPayer={isPayer}
+                          canSettle={canSettle}
+                          isSettling={settlingSplitId === split.id}
+                          onSettle={openSettleDialog}
+                          onPaymentComplete={() => {
+                            refetchExpense();
+                            // Reload splits
+                            setIsLoadingSplits(true);
+                            supabaseClient
+                              .rpc("get_expense_splits_public", { p_expense_id: id })
+                              .then(({ data, error }) => {
+                                if (!error && data) {
+                                  setSplits(data.map((s: any) => ({
+                                    ...s,
+                                    profiles: {
+                                      id: s.user_id,
+                                      full_name: s.user_full_name,
+                                      avatar_url: s.user_avatar_url,
+                                    },
+                                  })));
+                                }
+                                setIsLoadingSplits(false);
+                              });
+                          }}
+                        />
+                      </motion.div>
+                    );
+                  })}
               </div>
             </AnimatePresence>
           </CardContent>
