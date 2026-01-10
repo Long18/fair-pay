@@ -272,3 +272,191 @@ describe('BankingPaymentButton - Unit Tests', () => {
     expect(button).toHaveClass('custom-class');
   });
 });
+
+describe('BankingPaymentButton - Error Handling Tests', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const createMockSplit = (overrides?: Partial<ExpenseSplit>): ExpenseSplit & { profiles?: any } => ({
+    id: '123',
+    expense_id: '456',
+    user_id: '789',
+    split_method: 'equal',
+    split_value: null,
+    computed_amount: 100,
+    is_settled: false,
+    settled_amount: 0,
+    created_at: new Date().toISOString(),
+    profiles: {
+      id: '789',
+      full_name: 'Test User',
+      email: 'test@example.com',
+    },
+    ...overrides,
+  });
+
+  const createMockDonationSettings = (): DonationSettings => ({
+    id: '1',
+    is_enabled: true,
+    avatar_image_url: null,
+    qr_code_image_url: null,
+    cta_text: { en: 'Donate', vi: 'Quyên góp' },
+    donate_message: { en: 'Thank you', vi: 'Cảm ơn' },
+    bank_info: {
+      account: '1234567890',
+      bank: 'VCB',
+      accountName: 'Test Account',
+    },
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  });
+
+  /**
+   * Error Handling Test: Missing donation settings hides button
+   * Validates: Requirements 8.1
+   */
+  it('should hide button when donation settings are missing', () => {
+    const split = createMockSplit();
+    
+    vi.mocked(useDonationSettings).mockReturnValue({
+      data: null,
+      isLoading: false,
+      error: null,
+      isError: false,
+      isSuccess: false,
+    } as any);
+
+    const { container } = render(<BankingPaymentButton split={split} />);
+    
+    expect(container.querySelector('button')).not.toBeInTheDocument();
+  });
+
+  /**
+   * Error Handling Test: Missing bank_info hides button
+   * Validates: Requirements 8.1
+   */
+  it('should hide button when bank_info is missing', () => {
+    const split = createMockSplit();
+    const settings = createMockDonationSettings();
+    settings.bank_info = null;
+    
+    vi.mocked(useDonationSettings).mockReturnValue({
+      data: settings,
+      isLoading: false,
+      error: null,
+      isError: false,
+      isSuccess: true,
+    } as any);
+
+    const { container } = render(<BankingPaymentButton split={split} />);
+    
+    expect(container.querySelector('button')).not.toBeInTheDocument();
+  });
+
+  /**
+   * Error Handling Test: Loading state hides button
+   * Validates: Requirements 8.4
+   */
+  it('should hide button during loading state', () => {
+    const split = createMockSplit();
+    
+    vi.mocked(useDonationSettings).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+      isError: false,
+      isSuccess: false,
+    } as any);
+
+    const { container } = render(<BankingPaymentButton split={split} />);
+    
+    expect(container.querySelector('button')).not.toBeInTheDocument();
+  });
+
+  /**
+   * Error Handling Test: Error state hides button
+   * Validates: Requirements 8.4
+   */
+  it('should hide button when there is an error loading donation settings', () => {
+    const split = createMockSplit();
+    
+    vi.mocked(useDonationSettings).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error('Failed to load settings'),
+      isError: true,
+      isSuccess: false,
+    } as any);
+
+    const { container } = render(<BankingPaymentButton split={split} />);
+    
+    expect(container.querySelector('button')).not.toBeInTheDocument();
+  });
+
+  /**
+   * Error Handling Test: Settled split hides button
+   * Validates: Requirements 1.4
+   */
+  it('should hide button when split is already settled', () => {
+    const split = createMockSplit({ is_settled: true });
+    
+    vi.mocked(useDonationSettings).mockReturnValue({
+      data: createMockDonationSettings(),
+      isLoading: false,
+      error: null,
+      isError: false,
+      isSuccess: true,
+    } as any);
+
+    const { container } = render(<BankingPaymentButton split={split} />);
+    
+    expect(container.querySelector('button')).not.toBeInTheDocument();
+  });
+
+  /**
+   * Error Handling Test: Zero remaining amount hides button
+   * Validates: Requirements 1.4
+   */
+  it('should hide button when remaining amount is zero', () => {
+    const split = createMockSplit({ 
+      computed_amount: 100,
+      settled_amount: 100,
+    });
+    
+    vi.mocked(useDonationSettings).mockReturnValue({
+      data: createMockDonationSettings(),
+      isLoading: false,
+      error: null,
+      isError: false,
+      isSuccess: true,
+    } as any);
+
+    const { container } = render(<BankingPaymentButton split={split} />);
+    
+    expect(container.querySelector('button')).not.toBeInTheDocument();
+  });
+
+  /**
+   * Error Handling Test: Negative remaining amount hides button
+   * Validates: Requirements 1.4
+   */
+  it('should hide button when remaining amount is negative', () => {
+    const split = createMockSplit({ 
+      computed_amount: 100,
+      settled_amount: 150,
+    });
+    
+    vi.mocked(useDonationSettings).mockReturnValue({
+      data: createMockDonationSettings(),
+      isLoading: false,
+      error: null,
+      isError: false,
+      isSuccess: true,
+    } as any);
+
+    const { container } = render(<BankingPaymentButton split={split} />);
+    
+    expect(container.querySelector('button')).not.toBeInTheDocument();
+  });
+});
