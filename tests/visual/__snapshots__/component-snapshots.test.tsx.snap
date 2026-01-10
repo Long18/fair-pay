@@ -1,0 +1,709 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Visual Regression Tests > Action Button Group Snapshots > should match snapshot for dropdown layout 1`] = `
+<div
+  class="flex items-center"
+>
+  <button
+    aria-expanded="false"
+    aria-haspopup="menu"
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 size-9 min-h-[44px] min-w-[44px] md:size-9"
+    data-slot="dropdown-menu-trigger"
+    data-state="closed"
+    id="radix-«r0»"
+    type="button"
+  >
+    <svg
+      class="lucide lucide-ellipsis-vertical size-4"
+      fill="currentColor"
+      height="24"
+      stroke="currentColor"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+      viewBox="0 0 24 24"
+      width="24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="1"
+      />
+      <circle
+        cx="12"
+        cy="5"
+        r="1"
+      />
+      <circle
+        cx="12"
+        cy="19"
+        r="1"
+      />
+    </svg>
+    <span
+      class="sr-only"
+    >
+      Open actions menu
+    </span>
+  </button>
+</div>
+`;
+
+exports[`Visual Regression Tests > Action Button Group Snapshots > should match snapshot for horizontal layout 1`] = `
+<div
+  class="flex flex-row items-center gap-4"
+>
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-9 px-4 py-2 has-[>svg]:px-3 min-h-[44px] md:h-9"
+    data-slot="button"
+  >
+    <svg
+      class="lucide lucide-pencil size-4"
+      fill="currentColor"
+      height="24"
+      stroke="currentColor"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+      viewBox="0 0 24 24"
+      width="24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"
+      />
+      <path
+        d="m15 5 4 4"
+      />
+    </svg>
+    Edit
+  </button>
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-9 px-4 py-2 has-[>svg]:px-3 min-h-[44px] md:h-9"
+    data-slot="button"
+  >
+    Share
+  </button>
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60 h-9 px-4 py-2 has-[>svg]:px-3 min-h-[44px] md:h-9 ml-6"
+    data-slot="button"
+  >
+    <svg
+      class="lucide lucide-trash2 lucide-trash-2 size-4"
+      fill="currentColor"
+      height="24"
+      stroke="currentColor"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+      viewBox="0 0 24 24"
+      width="24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M3 6h18"
+      />
+      <path
+        d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"
+      />
+      <path
+        d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"
+      />
+      <line
+        x1="10"
+        x2="10"
+        y1="11"
+        y2="17"
+      />
+      <line
+        x1="14"
+        x2="14"
+        y1="11"
+        y2="17"
+      />
+    </svg>
+    Delete
+  </button>
+</div>
+`;
+
+exports[`Visual Regression Tests > Action Button Group Snapshots > should match snapshot for vertical layout 1`] = `
+<div
+  class="flex flex-col items-stretch gap-4"
+>
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-9 px-4 py-2 has-[>svg]:px-3 min-h-[44px] md:h-9"
+    data-slot="button"
+  >
+    <svg
+      class="lucide lucide-pencil size-4"
+      fill="currentColor"
+      height="24"
+      stroke="currentColor"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+      viewBox="0 0 24 24"
+      width="24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"
+      />
+      <path
+        d="m15 5 4 4"
+      />
+    </svg>
+    Edit
+  </button>
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-9 px-4 py-2 has-[>svg]:px-3 min-h-[44px] md:h-9"
+    data-slot="button"
+  >
+    Share
+  </button>
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60 h-9 px-4 py-2 has-[>svg]:px-3 min-h-[44px] md:h-9 mt-6"
+    data-slot="button"
+  >
+    <svg
+      class="lucide lucide-trash2 lucide-trash-2 size-4"
+      fill="currentColor"
+      height="24"
+      stroke="currentColor"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+      viewBox="0 0 24 24"
+      width="24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M3 6h18"
+      />
+      <path
+        d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"
+      />
+      <path
+        d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"
+      />
+      <line
+        x1="10"
+        x2="10"
+        y1="11"
+        y2="17"
+      />
+      <line
+        x1="14"
+        x2="14"
+        y1="11"
+        y2="17"
+      />
+    </svg>
+    Delete
+  </button>
+</div>
+`;
+
+exports[`Visual Regression Tests > Action Button Group Snapshots > should match snapshot with disabled action 1`] = `
+<div
+  class="flex flex-row items-center gap-4"
+>
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-9 px-4 py-2 has-[>svg]:px-3 min-h-[44px] md:h-9"
+    data-slot="button"
+  >
+    <svg
+      class="lucide lucide-pencil size-4"
+      fill="currentColor"
+      height="24"
+      stroke="currentColor"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+      viewBox="0 0 24 24"
+      width="24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"
+      />
+      <path
+        d="m15 5 4 4"
+      />
+    </svg>
+    Edit
+  </button>
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-9 px-4 py-2 has-[>svg]:px-3 min-h-[44px] md:h-9"
+    data-slot="button"
+  >
+    Share
+  </button>
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-9 px-4 py-2 has-[>svg]:px-3 min-h-[44px] md:h-9"
+    data-slot="button"
+    disabled=""
+  >
+    Disabled
+  </button>
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60 h-9 px-4 py-2 has-[>svg]:px-3 min-h-[44px] md:h-9 ml-6"
+    data-slot="button"
+  >
+    <svg
+      class="lucide lucide-trash2 lucide-trash-2 size-4"
+      fill="currentColor"
+      height="24"
+      stroke="currentColor"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+      viewBox="0 0 24 24"
+      width="24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M3 6h18"
+      />
+      <path
+        d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"
+      />
+      <path
+        d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"
+      />
+      <line
+        x1="10"
+        x2="10"
+        y1="11"
+        y2="17"
+      />
+      <line
+        x1="14"
+        x2="14"
+        y1="11"
+        y2="17"
+      />
+    </svg>
+    Delete
+  </button>
+</div>
+`;
+
+exports[`Visual Regression Tests > Action Button Group Snapshots > should match snapshot with only destructive actions 1`] = `
+<div
+  class="flex flex-row items-center gap-4"
+>
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60 h-9 px-4 py-2 has-[>svg]:px-3 min-h-[44px] md:h-9 ml-6"
+    data-slot="button"
+  >
+    Delete
+  </button>
+</div>
+`;
+
+exports[`Visual Regression Tests > Owe Status Indicator Snapshots > should match snapshot for USD currency 1`] = `
+<span
+  aria-label="You owe $1,234.56"
+  class="inline-flex items-center justify-center gap-1 font-medium whitespace-nowrap shrink-0 text-semantic-negative text-sm [&>svg]:size-3.5"
+>
+  <svg
+    class="lucide lucide-arrow-down"
+    fill="currentColor"
+    height="24"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2"
+    viewBox="0 0 24 24"
+    width="24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M12 5v14"
+    />
+    <path
+      d="m19 12-7 7-7-7"
+    />
+  </svg>
+  <span>
+    $1,234.56
+  </span>
+</span>
+`;
+
+exports[`Visual Regression Tests > Owe Status Indicator Snapshots > should match snapshot for large size 1`] = `
+<span
+  aria-label="You owe 50.000₫"
+  class="inline-flex items-center justify-center gap-1 font-medium whitespace-nowrap shrink-0 text-semantic-negative text-base [&>svg]:size-4"
+>
+  <svg
+    class="lucide lucide-arrow-down"
+    fill="currentColor"
+    height="24"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2"
+    viewBox="0 0 24 24"
+    width="24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M12 5v14"
+    />
+    <path
+      d="m19 12-7 7-7-7"
+    />
+  </svg>
+  <span>
+    50.000₫
+  </span>
+</span>
+`;
+
+exports[`Visual Regression Tests > Owe Status Indicator Snapshots > should match snapshot for medium size 1`] = `
+<span
+  aria-label="You owe 50.000₫"
+  class="inline-flex items-center justify-center gap-1 font-medium whitespace-nowrap shrink-0 text-semantic-negative text-sm [&>svg]:size-3.5"
+>
+  <svg
+    class="lucide lucide-arrow-down"
+    fill="currentColor"
+    height="24"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2"
+    viewBox="0 0 24 24"
+    width="24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M12 5v14"
+    />
+    <path
+      d="m19 12-7 7-7-7"
+    />
+  </svg>
+  <span>
+    50.000₫
+  </span>
+</span>
+`;
+
+exports[`Visual Regression Tests > Owe Status Indicator Snapshots > should match snapshot for neutral direction 1`] = `
+<span
+  aria-label="Neutral 0₫"
+  class="inline-flex items-center justify-center gap-1 font-medium whitespace-nowrap shrink-0 text-semantic-neutral text-sm [&>svg]:size-3.5"
+>
+  <span>
+    0₫
+  </span>
+</span>
+`;
+
+exports[`Visual Regression Tests > Owe Status Indicator Snapshots > should match snapshot for owe direction 1`] = `
+<span
+  aria-label="You owe 50.000₫"
+  class="inline-flex items-center justify-center gap-1 font-medium whitespace-nowrap shrink-0 text-semantic-negative text-sm [&>svg]:size-3.5"
+>
+  <svg
+    class="lucide lucide-arrow-down"
+    fill="currentColor"
+    height="24"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2"
+    viewBox="0 0 24 24"
+    width="24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M12 5v14"
+    />
+    <path
+      d="m19 12-7 7-7-7"
+    />
+  </svg>
+  <span>
+    50.000₫
+  </span>
+</span>
+`;
+
+exports[`Visual Regression Tests > Owe Status Indicator Snapshots > should match snapshot for owed direction 1`] = `
+<span
+  aria-label="Owed to you 100.000₫"
+  class="inline-flex items-center justify-center gap-1 font-medium whitespace-nowrap shrink-0 text-semantic-positive text-sm [&>svg]:size-3.5"
+>
+  <svg
+    class="lucide lucide-arrow-up"
+    fill="currentColor"
+    height="24"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2"
+    viewBox="0 0 24 24"
+    width="24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="m5 12 7-7 7 7"
+    />
+    <path
+      d="M12 19V5"
+    />
+  </svg>
+  <span>
+    100.000₫
+  </span>
+</span>
+`;
+
+exports[`Visual Regression Tests > Owe Status Indicator Snapshots > should match snapshot for small size 1`] = `
+<span
+  aria-label="You owe 50.000₫"
+  class="inline-flex items-center justify-center gap-1 font-medium whitespace-nowrap shrink-0 text-semantic-negative text-xs [&>svg]:size-3"
+>
+  <svg
+    class="lucide lucide-arrow-down"
+    fill="currentColor"
+    height="24"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2"
+    viewBox="0 0 24 24"
+    width="24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M12 5v14"
+    />
+    <path
+      d="m19 12-7 7-7-7"
+    />
+  </svg>
+  <span>
+    50.000₫
+  </span>
+</span>
+`;
+
+exports[`Visual Regression Tests > Payment State Badge Snapshots > should match snapshot for large size 1`] = `
+<span
+  class="inline-flex items-center justify-center rounded-md border font-medium w-fit whitespace-nowrap shrink-0 gap-1 transition-colors border-status-success-border bg-status-success-bg text-status-success-foreground text-sm px-2.5 py-1 [&>svg]:size-3.5"
+>
+  <svg
+    class="lucide lucide-circle-check"
+    fill="currentColor"
+    height="24"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2"
+    viewBox="0 0 24 24"
+    width="24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <circle
+      cx="12"
+      cy="12"
+      r="10"
+    />
+    <path
+      d="m9 12 2 2 4-4"
+    />
+  </svg>
+  <span>
+    Paid
+  </span>
+</span>
+`;
+
+exports[`Visual Regression Tests > Payment State Badge Snapshots > should match snapshot for medium size 1`] = `
+<span
+  class="inline-flex items-center justify-center rounded-md border font-medium w-fit whitespace-nowrap shrink-0 gap-1 transition-colors border-status-success-border bg-status-success-bg text-status-success-foreground text-xs px-2 py-0.5 [&>svg]:size-3"
+>
+  <svg
+    class="lucide lucide-circle-check"
+    fill="currentColor"
+    height="24"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2"
+    viewBox="0 0 24 24"
+    width="24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <circle
+      cx="12"
+      cy="12"
+      r="10"
+    />
+    <path
+      d="m9 12 2 2 4-4"
+    />
+  </svg>
+  <span>
+    Paid
+  </span>
+</span>
+`;
+
+exports[`Visual Regression Tests > Payment State Badge Snapshots > should match snapshot for paid state 1`] = `
+<span
+  class="inline-flex items-center justify-center rounded-md border font-medium w-fit whitespace-nowrap shrink-0 gap-1 transition-colors border-status-success-border bg-status-success-bg text-status-success-foreground text-xs px-2 py-0.5 [&>svg]:size-3"
+>
+  <svg
+    class="lucide lucide-circle-check"
+    fill="currentColor"
+    height="24"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2"
+    viewBox="0 0 24 24"
+    width="24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <circle
+      cx="12"
+      cy="12"
+      r="10"
+    />
+    <path
+      d="m9 12 2 2 4-4"
+    />
+  </svg>
+  <span>
+    Paid
+  </span>
+</span>
+`;
+
+exports[`Visual Regression Tests > Payment State Badge Snapshots > should match snapshot for partial state 1`] = `
+<span
+  class="inline-flex items-center justify-center rounded-md border font-medium w-fit whitespace-nowrap shrink-0 gap-1 transition-colors border-status-info-border bg-status-info-bg text-status-info-foreground text-xs px-2 py-0.5 [&>svg]:size-3"
+>
+  <svg
+    class="lucide lucide-trending-up"
+    fill="currentColor"
+    height="24"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2"
+    viewBox="0 0 24 24"
+    width="24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <polyline
+      points="22 7 13.5 15.5 8.5 10.5 2 17"
+    />
+    <polyline
+      points="16 7 22 7 22 13"
+    />
+  </svg>
+  <span>
+    Partial
+  </span>
+</span>
+`;
+
+exports[`Visual Regression Tests > Payment State Badge Snapshots > should match snapshot for partial state with percentage 1`] = `
+<span
+  class="inline-flex items-center justify-center rounded-md border font-medium w-fit whitespace-nowrap shrink-0 gap-1 transition-colors border-status-info-border bg-status-info-bg text-status-info-foreground text-xs px-2 py-0.5 [&>svg]:size-3"
+>
+  <svg
+    class="lucide lucide-trending-up"
+    fill="currentColor"
+    height="24"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2"
+    viewBox="0 0 24 24"
+    width="24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <polyline
+      points="22 7 13.5 15.5 8.5 10.5 2 17"
+    />
+    <polyline
+      points="16 7 22 7 22 13"
+    />
+  </svg>
+  <span>
+    75% Paid
+  </span>
+</span>
+`;
+
+exports[`Visual Regression Tests > Payment State Badge Snapshots > should match snapshot for small size 1`] = `
+<span
+  class="inline-flex items-center justify-center rounded-md border font-medium w-fit whitespace-nowrap shrink-0 gap-1 transition-colors border-status-success-border bg-status-success-bg text-status-success-foreground text-xs px-1.5 py-0.5 [&>svg]:size-2.5"
+>
+  <svg
+    class="lucide lucide-circle-check"
+    fill="currentColor"
+    height="24"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2"
+    viewBox="0 0 24 24"
+    width="24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <circle
+      cx="12"
+      cy="12"
+      r="10"
+    />
+    <path
+      d="m9 12 2 2 4-4"
+    />
+  </svg>
+  <span>
+    Paid
+  </span>
+</span>
+`;
+
+exports[`Visual Regression Tests > Payment State Badge Snapshots > should match snapshot for unpaid state 1`] = `
+<span
+  class="inline-flex items-center justify-center rounded-md border font-medium w-fit whitespace-nowrap shrink-0 gap-1 transition-colors border-status-warning-border bg-status-warning-bg text-status-warning-foreground text-xs px-2 py-0.5 [&>svg]:size-3"
+>
+  <svg
+    class="lucide lucide-clock"
+    fill="currentColor"
+    height="24"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2"
+    viewBox="0 0 24 24"
+    width="24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <circle
+      cx="12"
+      cy="12"
+      r="10"
+    />
+    <polyline
+      points="12 6 12 12 16 14"
+    />
+  </svg>
+  <span>
+    Unpaid
+  </span>
+</span>
+`;
