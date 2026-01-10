@@ -45,19 +45,19 @@ describe("PaymentStateBadge", () => {
   it("applies correct color classes for paid state", () => {
     const { container } = render(<PaymentStateBadge state="paid" />);
     const badge = container.querySelector("span");
-    expect(badge).toHaveClass("border-green-200", "bg-green-100", "text-green-700");
+    expect(badge).toHaveClass("border-status-success-border", "bg-status-success-bg", "text-status-success-foreground");
   });
 
   it("applies correct color classes for unpaid state", () => {
     const { container } = render(<PaymentStateBadge state="unpaid" />);
     const badge = container.querySelector("span");
-    expect(badge).toHaveClass("border-orange-200", "bg-orange-100", "text-orange-700");
+    expect(badge).toHaveClass("border-status-warning-border", "bg-status-warning-bg", "text-status-warning-foreground");
   });
 
   it("applies correct color classes for partial state", () => {
     const { container } = render(<PaymentStateBadge state="partial" />);
     const badge = container.querySelector("span");
-    expect(badge).toHaveClass("border-blue-200", "bg-blue-100", "text-blue-700");
+    expect(badge).toHaveClass("border-status-info-border", "bg-status-info-bg", "text-status-info-foreground");
   });
 
   it("accepts custom className", () => {

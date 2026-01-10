@@ -58,7 +58,7 @@ describe("OweStatusIndicator", () => {
       <OweStatusIndicator direction="owe" amount={50000} />
     );
     const indicator = container.querySelector("span");
-    expect(indicator).toHaveClass("text-red-600");
+    expect(indicator).toHaveClass("text-semantic-negative");
   });
 
   it("applies correct color classes for owed direction", () => {
@@ -66,7 +66,7 @@ describe("OweStatusIndicator", () => {
       <OweStatusIndicator direction="owed" amount={50000} />
     );
     const indicator = container.querySelector("span");
-    expect(indicator).toHaveClass("text-green-600");
+    expect(indicator).toHaveClass("text-semantic-positive");
   });
 
   it("applies correct color classes for neutral direction", () => {
@@ -74,7 +74,7 @@ describe("OweStatusIndicator", () => {
       <OweStatusIndicator direction="neutral" amount={0} />
     );
     const indicator = container.querySelector("span");
-    expect(indicator).toHaveClass("text-gray-600");
+    expect(indicator).toHaveClass("text-semantic-neutral");
   });
 
   it("accepts custom className", () => {
