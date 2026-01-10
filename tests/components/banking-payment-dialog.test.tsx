@@ -79,10 +79,17 @@ describe('BankingPaymentDialog - Property Tests', () => {
           // Verify deeplink URL structure is valid
           expect(deeplink).toContain('https://dl.vietqr.io/pay');
           expect(deeplink).toContain(`app=${bankId}`);
-          expect(deeplink).toContain(`ba=${account}@${bankCode}`);
+          // Account for URL encoding: @ becomes %40
+          const encodedBankAccount = `${account}%40${bankCode}`;
+          expect(deeplink).toContain(`ba=${encodedBankAccount}`);
 
           // Verify it's a valid URL
           expect(() => new URL(deeplink)).not.toThrow();
+          
+          // Verify URL parameters are correctly parsed
+          const url = new URL(deeplink);
+          expect(url.searchParams.get('app')).toBe(bankId);
+          expect(url.searchParams.get('ba')).toBe(`${account}@${bankCode}`);
         }
       ),
       { numRuns: 100 }
