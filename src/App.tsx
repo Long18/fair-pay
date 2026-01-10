@@ -368,6 +368,7 @@ function App() {
                       } />
                     </Route>
                     <Route path="/friends">
+                      {/* Canonical Friends Routes - All friend navigation should use these routes */}
                       <Route index element={
                         <Suspense fallback={<PageLoader />}>
                           <ErrorBoundary context="Friends List">
@@ -375,6 +376,7 @@ function App() {
                           </ErrorBoundary>
                         </Suspense>
                       } />
+                      {/* Canonical Friend Detail - Accepts both friendship ID and user ID */}
                       <Route path=":id" element={
                         <Suspense fallback={<PageLoader />}>
                           <ErrorBoundary context="Friend Show">

@@ -115,13 +115,31 @@ export const ProfileShowUnified = () => {
 
   // Edit mode support
   const isEditMode = searchParams.get("edit") === "true";
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  
   const setEditMode = (enabled: boolean) => {
     if (enabled) {
       searchParams.set("edit", "true");
+      setSearchParams(searchParams);
     } else {
-      searchParams.delete("edit");
+      // Use history-based navigation to go back
+      window.history.back();
     }
-    setSearchParams(searchParams);
+  };
+
+  const handleCancelEdit = () => {
+    if (hasUnsavedChanges) {
+      setShowUnsavedDialog(true);
+    } else {
+      setEditMode(false);
+    }
+  };
+
+  const confirmCancelEdit = () => {
+    setHasUnsavedChanges(false);
+    setShowUnsavedDialog(false);
+    setEditMode(false);
   };
 
   const [editForm, setEditForm] = useState({
@@ -422,6 +440,7 @@ export const ProfileShowUnified = () => {
       if (error) throw error;
 
       toast.success(t('profile.profileUpdated', 'Profile updated successfully'));
+      setHasUnsavedChanges(false);
       setEditMode(false);
       profileQuery.refetch();
     } catch (error: any) {
@@ -610,7 +629,7 @@ export const ProfileShowUnified = () => {
                       <div className="flex items-center justify-between mb-6">
                         <h2 className="text-xl font-semibold">{t('profile.editProfile', 'Edit Profile')}</h2>
                         <Button
-                          onClick={() => setEditMode(false)}
+                          onClick={handleCancelEdit}
                           variant="ghost"
                           size="sm"
                         >
@@ -633,6 +652,7 @@ export const ProfileShowUnified = () => {
                           defaultValues={editForm}
                           isLoading={isSaving}
                           onChangePassword={() => setChangePasswordDialogOpen(true)}
+                          onChange={() => setHasUnsavedChanges(true)}
                         />
                       </div>
                     </CardContent>
@@ -934,6 +954,27 @@ export const ProfileShowUnified = () => {
               ) : (
                 t('profile.confirmSettle', 'Yes, Settle All')
               )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+};
+
+      {/* Unsaved Changes Dialog */}
+      <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('profile.unsavedChanges', 'Unsaved Changes')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('profile.unsavedChangesDescription', 'You have unsaved changes. Are you sure you want to leave without saving?')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.stayOnPage', 'Stay on Page')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCancelEdit} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {t('common.discardChanges', 'Discard Changes')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,81 +1,94 @@
-"use client";
+import { Link } from "react-router";
+import { cn } from "@/lib/utils";
+import { HomeIcon, ChevronRightIcon } from "@/components/ui/icons";
+import { Fragment } from "react";
 
-import {
-  Breadcrumb as ShadcnBreadcrumb,
-  BreadcrumbItem as ShadcnBreadcrumbItem,
-  BreadcrumbList as ShadcnBreadcrumbList,
-  BreadcrumbPage as ShadcnBreadcrumbPage,
-  BreadcrumbSeparator as ShadcnBreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import {
-  matchResourceFromRoute,
-  useBreadcrumb,
-  useLink,
-  useResourceParams,
-} from "@refinedev/core";
-import { Fragment, useMemo } from "react";
-
-import { HomeIcon } from "@/components/ui/icons";
-export function Breadcrumb() {
-  const Link = useLink();
-  const { breadcrumbs } = useBreadcrumb();
-  const { resources } = useResourceParams();
-  const rootRouteResource = matchResourceFromRoute("/", resources);
-
-  const breadCrumbItems = useMemo(() => {
-    const list: {
-      key: string;
-      href: string;
-      Component: React.ReactNode;
-    }[] = [];
-
-    list.push({
-      key: "breadcrumb-item-home",
-      href: rootRouteResource.matchedRoute ?? "/",
-      Component: (
-        <Link to={rootRouteResource.matchedRoute ?? "/"}>
-          {rootRouteResource?.resource?.meta?.icon ?? (
-            <HomeIcon className="h-4 w-4" />
-          )}
-        </Link>
-      ),
-    });
-
-    for (const { label, href } of breadcrumbs) {
-      list.push({
-        key: `breadcrumb-item-${label}`,
-        href: href ?? "",
-        Component: href ? <Link to={href}>{label}</Link> : <span>{label}</span>,
-      });
-    }
-
-    return list;
-  }, [breadcrumbs, Link, rootRouteResource]);
-
-  return (
-    <ShadcnBreadcrumb>
-      <ShadcnBreadcrumbList>
-        {breadCrumbItems.map((item, index) => {
-          if (index === breadCrumbItems.length - 1) {
-            return (
-              <ShadcnBreadcrumbPage key={item.key}>
-                {item.Component}
-              </ShadcnBreadcrumbPage>
-            );
-          }
-
-          return (
-            <Fragment key={item.key}>
-              <ShadcnBreadcrumbItem key={item.key}>
-                {item.Component}
-              </ShadcnBreadcrumbItem>
-              <ShadcnBreadcrumbSeparator />
-            </Fragment>
-          );
-        })}
-      </ShadcnBreadcrumbList>
-    </ShadcnBreadcrumb>
-  );
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
+  icon?: React.ReactNode;
 }
 
-Breadcrumb.displayName = "Breadcrumb";
+interface BreadcrumbProps {
+  items: BreadcrumbItem[];
+  className?: string;
+}
+
+export const Breadcrumb = ({ items, className }: BreadcrumbProps) => {
+  return (
+    <nav
+      aria-label="Breadcrumb"
+      className={cn(
+        "hidden md:flex items-center gap-2 text-sm text-muted-foreground",
+        className
+      )}
+    >
+      {items.map((item, index) => {
+        const isLast = index === items.length - 1;
+
+        return (
+          <Fragment key={index}>
+            {index > 0 && (
+              <ChevronRightIcon className="h-4 w-4 shrink-0" />
+            )}
+            {item.href && !isLast ? (
+              <Link
+                to={item.href}
+                className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </Link>
+            ) : (
+              <span
+                className={cn(
+                  "flex items-center gap-1.5",
+                  isLast && "text-foreground font-medium"
+                )}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </span>
+            )}
+          </Fragment>
+        );
+      })}
+    </nav>
+  );
+};
+
+// Helper function to create common breadcrumb patterns
+export const createBreadcrumbs = {
+  home: (): BreadcrumbItem => ({
+    label: "Home",
+    href: "/",
+    icon: <HomeIcon className="h-4 w-4" />,
+  }),
+  
+  friends: (): BreadcrumbItem => ({
+    label: "Friends",
+    href: "/friends",
+  }),
+  
+  friendDetail: (name: string): BreadcrumbItem => ({
+    label: name,
+  }),
+  
+  groups: (): BreadcrumbItem => ({
+    label: "Groups",
+    href: "/groups",
+  }),
+  
+  groupDetail: (name: string): BreadcrumbItem => ({
+    label: name,
+  }),
+  
+  profile: (): BreadcrumbItem => ({
+    label: "Profile",
+    href: "/profile",
+  }),
+  
+  editProfile: (): BreadcrumbItem => ({
+    label: "Edit Profile",
+  }),
+};
