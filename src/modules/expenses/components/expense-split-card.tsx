@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2Icon, XCircleIcon, ChevronDownIcon, ChevronUpIcon } from "@/components/ui/icons";
 import { MomoPaymentButton } from "@/modules/payments/components/momo-payment-button";
 import { BankingPaymentButton } from "@/modules/payments/components/banking-payment-button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatNumber } from "@/lib/locale-utils";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -182,37 +183,81 @@ export const ExpenseSplitCard = ({
               )}
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Buttons with Tooltips */}
             {canSettle && (
-              <Button
-                size="sm"
-                variant="default"
-                className="bg-green-600 hover:bg-green-700"
-                onClick={() => onSettle(split)}
-                disabled={isSettling}
-              >
-                {isSettling ? (
-                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={() => onSettle(split)}
+                    disabled={isSettling}
+                  >
+                    {isSettling ? (
+                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <CheckCircle2Icon className="h-4 w-4 mr-1" />
+                        {t('expenses.settle', 'Settle')}
+                      </>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" maxWidth="300px">
+                  {t('expenses.settleTooltip', 'Mark this payment as received manually (no money transfer)')}
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            {!canSettle && !isSplitSettled && !isCurrentUser && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled
+                    className="cursor-not-allowed"
+                  >
                     <CheckCircle2Icon className="h-4 w-4 mr-1" />
                     {t('expenses.settle', 'Settle')}
-                  </>
-                )}
-              </Button>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" maxWidth="300px">
+                  {t('expenses.noPermissionTooltip', 'Only the payer or admin can mark this as settled')}
+                </TooltipContent>
+              </Tooltip>
             )}
 
             {isCurrentUser && !isSplitSettled && !isPayer && (
               <>
-                <MomoPaymentButton
-                  split={split}
-                  onPaymentComplete={onPaymentComplete}
-                />
-                <BankingPaymentButton
-                  split={split}
-                  payeeId={split.user_id}
-                  onPaymentComplete={onPaymentComplete}
-                />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <MomoPaymentButton
+                        split={split}
+                        onPaymentComplete={onPaymentComplete}
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" maxWidth="300px">
+                    {t('expenses.momoTooltip', 'Transfer money now using MoMo payment integration')}
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <BankingPaymentButton
+                        split={split}
+                        payeeId={split.user_id}
+                        onPaymentComplete={onPaymentComplete}
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" maxWidth="300px">
+                    {t('expenses.bankingTooltip', 'Transfer money now using bank account integration')}
+                  </TooltipContent>
+                </Tooltip>
               </>
             )}
           </div>
