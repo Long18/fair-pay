@@ -8,52 +8,10 @@ import { OweStatusIndicator } from "@/components/ui/owe-status-indicator";
 import { ChevronDownIcon, ChevronRightIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import type { SupportedCurrency } from "@/lib/format-utils";
+import type { PaymentEvent, EnhancedActivityItem } from "@/types/activity";
 
-// =============================================
-// Types
-// =============================================
-
-export interface PaymentEvent {
-  id: string;
-  event_type: "manual_settle" | "momo_payment" | "banking_payment" | "settle_all";
-  from_user_id: string;
-  from_user_name: string;
-  from_user_avatar?: string;
-  to_user_id: string;
-  to_user_name: string;
-  to_user_avatar?: string;
-  amount: number;
-  currency: string;
-  method: "manual" | "momo" | "banking";
-  actor_user_id: string;
-  actor_user_name: string;
-  metadata?: Record<string, any>;
-  created_at: string;
-}
-
-export interface EnhancedActivityItem {
-  // Parent row (expense)
-  id: string;
-  type: "expense";
-  description: string;
-  amount: number;
-  currency: SupportedCurrency;
-  date: string;
-  paymentState: "paid" | "unpaid" | "partial";
-  partialPercentage?: number;
-  oweStatus: {
-    direction: "owe" | "owed" | "neutral";
-    amount: number;
-  };
-  participantCount: number;
-  groupName?: string;
-  
-  // Child rows (payment events)
-  paymentEvents: PaymentEvent[];
-  
-  // Context for disambiguation
-  contextLine?: string;
-}
+// Re-export types from centralized location
+export type { PaymentEvent, EnhancedActivityItem } from "@/types/activity";
 
 // =============================================
 // Component Props
@@ -218,7 +176,7 @@ export const EnhancedActivityRow = React.forwardRef<
               className="overflow-hidden"
             >
               <div className="ml-12 mr-4 space-y-2 pt-2 pb-2">
-                {activity.paymentEvents.map((event) => (
+                {activity.paymentEvents.map((event: PaymentEvent) => (
                   <PaymentEventRow
                     key={event.id}
                     event={event}

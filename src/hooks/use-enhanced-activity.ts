@@ -1,7 +1,7 @@
 import { useList, useGetIdentity } from "@refinedev/core";
 import { useMemo, useEffect, useState } from "react";
 import type { Profile } from "@/modules/profile/types";
-import type { EnhancedActivityItem, PaymentEvent } from "@/components/dashboard/enhanced-activity-row";
+import type { EnhancedActivityItem, PaymentEvent } from "@/types/activity";
 import { supabaseClient } from "@/utility/supabaseClient";
 
 // =============================================
@@ -67,7 +67,7 @@ export const useEnhancedActivity = (
   }
 
   // Fetch expenses with splits
-  const { data, isLoading, isRefetching, error } = useList<Expense>({
+  const expensesQuery = useList<Expense>({
     resource: "expenses",
     pagination: {
       pageSize: limit,
@@ -97,6 +97,7 @@ export const useEnhancedActivity = (
     },
   });
 
+  const { data, isLoading, isRefetching, error } = expensesQuery.query;
   const expenses = data?.data || [];
 
   // State for resolved activities
@@ -115,7 +116,7 @@ export const useEnhancedActivity = (
 
       try {
         // Fetch payment events for all expenses in batch
-        const expenseIds = expenses.map((e) => e.id);
+        const expenseIds = expenses.map((e: any) => e.id);
         const { data: paymentEventsData } = await supabaseClient.rpc(
           "get_expenses_with_payment_events",
           { p_expense_ids: expenseIds }
@@ -129,13 +130,13 @@ export const useEnhancedActivity = (
         }
 
         // Transform each expense
-        const transformed: EnhancedActivityItem[] = expenses.map((expense) => {
+        const transformed: EnhancedActivityItem[] = expenses.map((expense: any) => {
           // Calculate payment state
           const splits = expense.expense_splits || [];
           const totalSplits = splits.length;
-          const settledSplits = splits.filter((s) => s.is_settled).length;
+          const settledSplits = splits.filter((s: any) => s.is_settled).length;
           const partiallySplits = splits.filter(
-            (s) => s.is_settled && s.settled_amount < s.computed_amount
+            (s: any) => s.is_settled && s.settled_amount < s.computed_amount
           ).length;
 
           let paymentState: "paid" | "unpaid" | "partial";
@@ -148,13 +149,13 @@ export const useEnhancedActivity = (
           } else {
             paymentState = "partial";
             // Calculate percentage
-            const totalAmount = splits.reduce((sum, s) => sum + s.computed_amount, 0);
-            const settledAmount = splits.reduce((sum, s) => sum + (s.settled_amount || 0), 0);
+            const totalAmount = splits.reduce((sum: any, s: any) => sum + s.computed_amount, 0);
+            const settledAmount = splits.reduce((sum: any, s: any) => sum + (s.settled_amount || 0), 0);
             partialPercentage = Math.round((settledAmount / totalAmount) * 100);
           }
 
           // Calculate owe status for current user
-          const currentUserSplit = splits.find((s) => s.user_id === identity.id);
+          const currentUserSplit = splits.find((s: any) => s.user_id === identity.id);
           let oweStatus: {
             direction: "owe" | "owed" | "neutral";
             amount: number;
@@ -176,8 +177,8 @@ export const useEnhancedActivity = (
           } else if (expense.paid_by_user_id === identity.id) {
             // Current user is the payer, calculate how much is owed to them
             const totalOwed = splits
-              .filter((s) => s.user_id !== identity.id)
-              .reduce((sum, s) => sum + (s.computed_amount - (s.settled_amount || 0)), 0);
+              .filter((s: any) => s.user_id !== identity.id)
+              .reduce((sum: any, s: any) => sum + (s.computed_amount - (s.settled_amount || 0)), 0);
             oweStatus = {
               direction: totalOwed > 0 ? "owed" : "neutral",
               amount: totalOwed,
@@ -205,6 +206,7 @@ export const useEnhancedActivity = (
             participantCount: splits.length,
             groupName: expense.groups?.name,
             paymentEvents,
+            originalExpense: expense,
           };
         });
 

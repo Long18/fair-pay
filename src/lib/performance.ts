@@ -2,6 +2,24 @@
  * Performance optimization utilities
  */
 
+import type { Metric } from 'web-vitals';
+
+/**
+ * Measures Web Vitals and reports them via callback
+ * @param onPerfEntry - Callback to handle performance metrics
+ */
+export function measureWebVitals(onPerfEntry?: (metric: Metric) => void) {
+  if (onPerfEntry && typeof onPerfEntry === 'function') {
+    import('web-vitals').then(({ onCLS, onINP, onFCP, onLCP, onTTFB }) => {
+      onCLS(onPerfEntry);
+      onINP(onPerfEntry); // FID is deprecated, use INP instead
+      onFCP(onPerfEntry);
+      onLCP(onPerfEntry);
+      onTTFB(onPerfEntry);
+    });
+  }
+}
+
 /**
  * Creates a debounced function that delays invoking func until after wait milliseconds
  * have elapsed since the last time the debounced function was invoked.

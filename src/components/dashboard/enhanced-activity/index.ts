@@ -29,22 +29,6 @@ export type { ActivitySummaryProps } from "../activity-summary";
 export { ActivityTimePeriodGroup } from "../activity-time-period-group";
 export type { ActivityTimePeriodGroupProps } from "../activity-time-period-group";
 
-// Utility functions
-export {
-  groupActivitiesByTimePeriod,
-  sortActivitiesByDate,
-  sortActivitiesByAmount,
-  detectDuplicateDescriptions,
-  generateContextLine,
-  getTimePeriod,
-  getTimePeriodLabel,
-} from "../../lib/activity-grouping";
-
-export type { TimePeriod, TimePeriodGroup } from "../../lib/activity-grouping";
-
-// Hooks
-export { useProgressiveDisclosure } from "../../hooks/use-progressive-disclosure";
-export type {
-  ProgressiveDisclosureOptions,
-  ProgressiveDisclosureResult,
-} from "../../hooks/use-progressive-disclosure";
+// Note: Utility functions and hooks are available directly from their source files:
+// - Activity grouping utils: import from "@/lib/activity-grouping"
+// - Progressive disclosure hook: import from "@/hooks/use-progressive-disclosure"
