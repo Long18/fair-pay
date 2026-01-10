@@ -1,5 +1,5 @@
 import { useOne, useList, useGo, useGetIdentity } from "@refinedev/core";
-import { useParams } from "react-router";
+import { useParams, useSearchParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -24,14 +24,25 @@ import {
   ShareIcon,
 } from "@/components/ui/icons";
 import { SwipeableTabs, PullToRefresh, EmptyBalances } from "@/modules/profile";
+import { Breadcrumb, createBreadcrumbs } from "@/components/refine-ui/layout/breadcrumb";
 
 export const FriendShow = () => {
   const { id } = useParams<{ id: string }>();
   const go = useGo();
   const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
-  const [activeTab, setActiveTab] = useState("expenses");
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Get tab from URL, default to 'activity'
+  const activeTab = searchParams.get('tab') || 'activity';
+
+  // Set tab in URL (only when user changes it, not on initial load)
+  const handleTabChange = (tab: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('tab', tab);
+    setSearchParams(newParams, { replace: true });
+  };
 
   // First, try to fetch as friendship ID
   const { query: friendshipQuery } = useOne<Friendship>({
@@ -230,7 +241,7 @@ export const FriendShow = () => {
     );
   }
 
-  const tabs = ["expenses", "balances", "recurring"];
+  const tabs = ["activity", "balances", "recurring"];
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
@@ -241,12 +252,21 @@ export const FriendShow = () => {
           transition={{ duration: 0.3 }}
           className="space-y-6"
         >
-          {/* Desktop Back Button */}
-          <div className="hidden sm:flex items-center justify-between">
+          {/* Breadcrumb Navigation (Desktop only) */}
+          <Breadcrumb
+            items={[
+              createBreadcrumbs.home(),
+              createBreadcrumbs.friends(),
+              createBreadcrumbs.friendDetail(friendProfile.full_name),
+            ]}
+          />
+
+          {/* Desktop Back Button & Mobile Back Button */}
+          <div className="flex items-center justify-between">
             <Button
               variant="ghost"
               onClick={() => go({ to: "/friends" })}
-              className="rounded-lg"
+              className="rounded-lg md:hidden"
             >
               <ArrowLeftIcon size={16} className="mr-2" />
               {t('common.back', 'Back')}
@@ -256,7 +276,7 @@ export const FriendShow = () => {
               onClick={handleShare}
               variant="outline"
               size="sm"
-              className="rounded-lg"
+              className="rounded-lg ml-auto"
             >
               <ShareIcon size={16} className="mr-2 sm:mr-0" />
               <span className="sm:sr-only">{t('common.share', 'Share')}</span>
@@ -315,23 +335,13 @@ export const FriendShow = () => {
                       <PlusIcon size={16} className="mr-2" />
                       {t('expenses.addExpense', 'Add Expense')}
                     </Button>
-
-                    <Button
-                      onClick={handleShare}
-                      variant="outline"
-                      size="sm"
-                      className="rounded-lg"
-                    >
-                      <ShareIcon size={16} className="mr-2 sm:mr-0" />
-                      <span className="sm:sr-only">{t('common.share', 'Share')}</span>
-                    </Button>
                   </div>
                 </div>
               </div>
             </motion.div>
           </Card>
 
-          {/* Tabs for Expenses, Balances, and Recurring */}
+          {/* Tabs for Activity, Balances, and Recurring */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -340,11 +350,11 @@ export const FriendShow = () => {
           >
             <Tabs
               value={activeTab}
-              onValueChange={setActiveTab}
+              onValueChange={handleTabChange}
               className="w-full"
             >
               <TabsList className="grid w-full rounded-lg" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
-                <TabsTrigger value="expenses" className="rounded-lg">
+                <TabsTrigger value="activity" className="rounded-lg">
                   <ReceiptIcon size={16} className="mr-2 sm:mr-0 lg:mr-2" />
                   <span className="hidden lg:inline">{t('expenses.title', 'Expenses')}</span>
                 </TabsTrigger>
@@ -361,11 +371,11 @@ export const FriendShow = () => {
               <SwipeableTabs
                 tabs={tabs}
                 activeTab={activeTab}
-                onTabChange={setActiveTab}
+                onTabChange={handleTabChange}
                 className="mt-4"
               >
-                {/* Expenses Tab */}
-                <TabsContent value="expenses" className="mt-0">
+                {/* Activity Tab */}
+                <TabsContent value="activity" className="mt-0">
                   <Card className="rounded-xl">
                     <CardHeader>
                       <CardTitle>{t('expenses.title', 'Expenses')}</CardTitle>
