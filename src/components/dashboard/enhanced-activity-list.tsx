@@ -1,0 +1,347 @@
+import * as React from "react";
+import { useSearchParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ActivityIcon } from "@/components/ui/icons";
+import { cn } from "@/lib/utils";
+
+import { ActivityFilterControls, type PaymentStateFilter, type FilterCounts } from "./activity-filter-controls";
+import { ActivitySortControls, type SortOption } from "./activity-sort-controls";
+import { ActivitySummary } from "./activity-summary";
+import { ActivityTimePeriodGroup } from "./activity-time-period-group";
+import { EnhancedActivityRow, type EnhancedActivityItem } from "./enhanced-activity-row";
+import { useProgressiveDisclosure } from "@/hooks/use-progressive-disclosure";
+import {
+  groupActivitiesByTimePeriod,
+  sortActivitiesByDate,
+  sortActivitiesByAmount,
+  detectDuplicateDescriptions,
+  generateContextLine,
+  type TimePeriodGroup,
+} from "@/lib/activity-grouping";
+import type { SupportedCurrency } from "@/lib/format-utils";
+
+// =============================================
+// Component Props
+// =============================================
+
+export interface EnhancedActivityListProps {
+  activities: EnhancedActivityItem[];
+  currentUserId: string;
+  currency?: SupportedCurrency;
+  isLoading?: boolean;
+  showSummary?: boolean;
+  showFilters?: boolean;
+  showSort?: boolean;
+  showTimeGrouping?: boolean;
+  className?: string;
+}
+
+// =============================================
+// Enhanced Activity List Component
+// =============================================
+
+export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
+  activities,
+  currentUserId,
+  currency = "VND",
+  isLoading = false,
+  showSummary = true,
+  showFilters = true,
+  showSort = true,
+  showTimeGrouping = true,
+  className,
+}) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // URL state management
+  const activeFilter = (searchParams.get("filter") as PaymentStateFilter) || "all";
+  const activeSort = (searchParams.get("sort") as SortOption) || "date-desc";
+
+  // Local state for expanded items
+  const [expandedActivityIds, setExpandedActivityIds] = React.useState<Set<string>>(new Set());
+  const [collapsedGroupPeriods, setCollapsedGroupPeriods] = React.useState<Set<string>>(new Set());
+  const [isSummaryCollapsed, setIsSummaryCollapsed] = React.useState(false);
+
+  // Filter activities
+  const filteredActivities = React.useMemo(() => {
+    if (activeFilter === "all") {
+      return activities;
+    }
+    return activities.filter((activity) => activity.paymentState === activeFilter);
+  }, [activities, activeFilter]);
+
+  // Sort activities
+  const sortedActivities = React.useMemo(() => {
+    switch (activeSort) {
+      case "date-desc":
+        return sortActivitiesByDate(filteredActivities, "desc");
+      case "date-asc":
+        return sortActivitiesByDate(filteredActivities, "asc");
+      case "amount-desc":
+        return sortActivitiesByAmount(filteredActivities, "desc");
+      case "amount-asc":
+        return sortActivitiesByAmount(filteredActivities, "asc");
+      default:
+        return filteredActivities;
+    }
+  }, [filteredActivities, activeSort]);
+
+  // Detect duplicates and add context lines
+  const duplicateIds = React.useMemo(() => {
+    return detectDuplicateDescriptions(sortedActivities);
+  }, [sortedActivities]);
+
+  const activitiesWithContext = React.useMemo(() => {
+    return sortedActivities.map((activity) => {
+      if (duplicateIds.has(activity.id)) {
+        return {
+          ...activity,
+          contextLine: generateContextLine(activity),
+        };
+      }
+      return activity;
+    });
+  }, [sortedActivities, duplicateIds]);
+
+  // Progressive disclosure
+  const {
+    visibleItems,
+    hasMore,
+    loadMore,
+    totalCount,
+    visibleCount,
+  } = useProgressiveDisclosure(activitiesWithContext, {
+    initialCount: 10,
+    incrementCount: 10,
+  });
+
+  // Group by time period (if enabled)
+  const timeGroups = React.useMemo(() => {
+    if (!showTimeGrouping) {
+      return null;
+    }
+    return groupActivitiesByTimePeriod(visibleItems);
+  }, [visibleItems, showTimeGrouping]);
+
+  // Calculate filter counts
+  const filterCounts: FilterCounts = React.useMemo(() => {
+    return {
+      all: activities.length,
+      paid: activities.filter((a) => a.paymentState === "paid").length,
+      unpaid: activities.filter((a) => a.paymentState === "unpaid").length,
+      partial: activities.filter((a) => a.paymentState === "partial").length,
+    };
+  }, [activities]);
+
+  // Calculate summary metrics
+  const summaryMetrics = React.useMemo(() => {
+    let totalOwed = 0;
+    let totalToReceive = 0;
+
+    activities.forEach((activity) => {
+      if (activity.oweStatus.direction === "owe") {
+        totalOwed += activity.oweStatus.amount;
+      } else if (activity.oweStatus.direction === "owed") {
+        totalToReceive += activity.oweStatus.amount;
+      }
+    });
+
+    const netBalance = totalToReceive - totalOwed;
+
+    return { totalOwed, totalToReceive, netBalance };
+  }, [activities]);
+
+  // Handlers
+  const handleFilterChange = (filter: PaymentStateFilter) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (filter === "all") {
+      newParams.delete("filter");
+    } else {
+      newParams.set("filter", filter);
+    }
+    setSearchParams(newParams);
+  };
+
+  const handleSortChange = (sort: SortOption) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (sort === "date-desc") {
+      newParams.delete("sort");
+    } else {
+      newParams.set("sort", sort);
+    }
+    setSearchParams(newParams);
+  };
+
+  const handleToggleActivity = (activityId: string) => {
+    setExpandedActivityIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(activityId)) {
+        next.delete(activityId);
+      } else {
+        next.add(activityId);
+      }
+      return next;
+    });
+  };
+
+  const handleToggleGroup = (period: string) => {
+    setCollapsedGroupPeriods((prev) => {
+      const next = new Set(prev);
+      if (next.has(period)) {
+        next.delete(period);
+      } else {
+        next.add(period);
+      }
+      return next;
+    });
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className={cn("space-y-4", className)}>
+        {showSummary && (
+          <div className="h-32 bg-muted rounded-lg animate-pulse" />
+        )}
+        {showFilters && (
+          <div className="h-12 bg-muted rounded-lg animate-pulse" />
+        )}
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-24 rounded-lg" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Empty state
+  if (activities.length === 0) {
+    return (
+      <div className={cn("text-center py-12", className)}>
+        <ActivityIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+        <p className="text-foreground font-medium">No activity yet</p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Create your first expense to get started
+        </p>
+      </div>
+    );
+  }
+
+  // No results after filtering
+  if (filteredActivities.length === 0) {
+    return (
+      <div className={cn("space-y-4", className)}>
+        {showSummary && (
+          <ActivitySummary
+            totalOwed={summaryMetrics.totalOwed}
+            totalToReceive={summaryMetrics.totalToReceive}
+            netBalance={summaryMetrics.netBalance}
+            currency={currency}
+            isCollapsed={isSummaryCollapsed}
+            onToggleCollapse={() => setIsSummaryCollapsed(!isSummaryCollapsed)}
+          />
+        )}
+
+        {showFilters && (
+          <ActivityFilterControls
+            activeFilter={activeFilter}
+            onFilterChange={handleFilterChange}
+            counts={filterCounts}
+          />
+        )}
+
+        <div className="text-center py-12">
+          <ActivityIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-foreground font-medium">No activities match your filter</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Try selecting a different filter
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("space-y-4", className)}>
+      {/* Summary Section */}
+      {showSummary && (
+        <ActivitySummary
+          totalOwed={summaryMetrics.totalOwed}
+          totalToReceive={summaryMetrics.totalToReceive}
+          netBalance={summaryMetrics.netBalance}
+          currency={currency}
+          isCollapsed={isSummaryCollapsed}
+          onToggleCollapse={() => setIsSummaryCollapsed(!isSummaryCollapsed)}
+        />
+      )}
+
+      {/* Filter and Sort Controls */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        {showFilters && (
+          <ActivityFilterControls
+            activeFilter={activeFilter}
+            onFilterChange={handleFilterChange}
+            counts={filterCounts}
+          />
+        )}
+
+        {showSort && (
+          <ActivitySortControls
+            activeSort={activeSort}
+            onSortChange={handleSortChange}
+          />
+        )}
+      </div>
+
+      {/* Activity List */}
+      <div className="space-y-4">
+        {showTimeGrouping && timeGroups ? (
+          // Time-grouped view
+          timeGroups.map((group) => (
+            <ActivityTimePeriodGroup
+              key={group.period}
+              group={{
+                ...group,
+                isCollapsed: collapsedGroupPeriods.has(group.period),
+              }}
+              currentUserId={currentUserId}
+              expandedActivityIds={expandedActivityIds}
+              onToggleActivity={handleToggleActivity}
+              onToggleGroup={() => handleToggleGroup(group.period)}
+              duplicateIds={duplicateIds}
+            />
+          ))
+        ) : (
+          // Flat list view
+          <div className="space-y-2">
+            {visibleItems.map((activity) => (
+              <EnhancedActivityRow
+                key={activity.id}
+                activity={activity}
+                currentUserId={currentUserId}
+                isExpanded={expandedActivityIds.has(activity.id)}
+                onToggleExpand={() => handleToggleActivity(activity.id)}
+                showDuplicateContext={duplicateIds.has(activity.id)}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Load More Button */}
+        {hasMore && (
+          <div className="text-center pt-4">
+            <Button
+              variant="outline"
+              onClick={loadMore}
+              className="rounded-lg"
+            >
+              Load More ({visibleCount} of {totalCount})
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
