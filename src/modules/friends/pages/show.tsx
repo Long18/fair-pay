@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Profile } from "@/modules/profile/types";
 import { Friendship } from "../types";
-import { ExpenseList, RecurringExpenseList } from "@/modules/expenses";
+import { RecurringExpenseList } from "@/modules/expenses";
 import { SimplifiedBalanceView, PaymentList, useBalanceCalculation } from "@/modules/payments";
 import { useMemo, useState, useCallback } from "react";
 import { formatDateShort } from "@/lib/locale-utils";
@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/icons";
 import { SwipeableTabs, PullToRefresh, EmptyBalances } from "@/modules/profile";
 import { Breadcrumb, createBreadcrumbs } from "@/components/refine-ui/layout/breadcrumb";
+import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
+import { EnhancedActivityList } from "@/components/dashboard/enhanced-activity-list";
 
 export const FriendShow = () => {
   const { id } = useParams<{ id: string }>();
@@ -158,6 +160,12 @@ export const FriendShow = () => {
     currentUserId: identity?.id || "",
     members,
   });
+
+  // Use enhanced activity hook for transaction-centric activity list
+  const {
+    activities: enhancedActivities,
+    isLoading: isLoadingActivities,
+  } = useEnhancedActivity({ friendshipId: friendship?.id });
 
   // Refresh all data
   const handleRefresh = useCallback(async () => {
@@ -381,7 +389,16 @@ export const FriendShow = () => {
                       <CardTitle>{t('expenses.title', 'Expenses')}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <ExpenseList friendshipId={friendship.id} members={members} />
+                      <EnhancedActivityList
+                        activities={enhancedActivities}
+                        currentUserId={identity?.id || ""}
+                        currency="VND"
+                        isLoading={isLoadingActivities}
+                        showSummary={true}
+                        showFilters={true}
+                        showSort={true}
+                        showTimeGrouping={true}
+                      />
                     </CardContent>
                   </Card>
                 </TabsContent>
