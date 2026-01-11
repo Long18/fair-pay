@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useGetIdentity, useGo } from "@refinedev/core";
 import { useAggregatedDebts, type AggregatedDebt } from "@/hooks/use-aggregated-debts";
+import { useBalance } from "@/hooks/useBalance";
 import { SimplifiedDebts } from "@/components/dashboard/simplified-debts";
 import { BalanceChart } from "@/components/dashboard/balance-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,6 +42,7 @@ type SortDirection = 'asc' | 'desc';
 export const BalancesPage = () => {
   const { data: identity } = useGetIdentity<Profile>();
   const { data: debts = [], isLoading, error, refetch } = useAggregatedDebts();
+  const { totalOwedToMe, totalIOwe, netBalance, refetch: refetchBalance } = useBalance();
   const go = useGo();
   const { t } = useTranslation();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -81,9 +83,8 @@ export const BalancesPage = () => {
   const iOwe = sortedDebts.filter((d: AggregatedDebt) => d.i_owe_them);
   const owedToMe = sortedDebts.filter((d: AggregatedDebt) => !d.i_owe_them);
 
-  const totalIOwe = iOwe.reduce((sum: number, d: AggregatedDebt) => sum + d.amount, 0);
-  const totalOwedToMe = owedToMe.reduce((sum: number, d: AggregatedDebt) => sum + d.amount, 0);
-  const netBalance = totalOwedToMe - totalIOwe;
+  // Use centralized useBalance hook for totals (single source of truth)
+  // Individual debt lists (iOwe, owedToMe) still come from useAggregatedDebts for table display
 
   const handleSortChange = (field: SortField) => {
     if (sortField === field) {
@@ -121,7 +122,7 @@ export const BalancesPage = () => {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await refetch();
+      await Promise.all([refetch(), refetchBalance()]);
       toast.success(t('balances.refreshSuccess', 'Balances refreshed successfully'));
     } catch (err) {
       console.error('Failed to refresh balances:', err);
