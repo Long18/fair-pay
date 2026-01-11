@@ -5,7 +5,6 @@
 -- Drop existing function if it exists (with all possible signatures)
 DROP FUNCTION IF EXISTS get_user_activities(UUID);
 DROP FUNCTION IF EXISTS get_user_activities(UUID, INTEGER);
-
 -- Create function to get user activities
 CREATE OR REPLACE FUNCTION get_user_activities(
   p_user_id UUID,
@@ -63,10 +62,8 @@ BEGIN
   LIMIT p_limit;
 END;
 $$;
-
 -- Grant execute permission
 GRANT EXECUTE ON FUNCTION get_user_activities(UUID, INTEGER) TO authenticated;
 GRANT EXECUTE ON FUNCTION get_user_activities(UUID, INTEGER) TO anon;
-
 -- Add comment
 COMMENT ON FUNCTION get_user_activities(UUID, INTEGER) IS 'Get activities (expenses and splits) for a specific user with settlement status. Shows all expenses including unpaid ones.';
