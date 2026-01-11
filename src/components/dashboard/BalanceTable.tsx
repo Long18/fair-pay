@@ -23,6 +23,8 @@ import {
   EmptyContent,
 } from "@/components/ui/empty";
 import { CheckIcon, ScaleIcon, PlusCircleIcon } from "@/components/ui/icons";
+import { PaymentStateBadge } from "@/components/ui/payment-state-badge";
+import { getOweStatusColors, getPaymentStateColors } from "@/lib/status-colors";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/locale-utils";
@@ -134,7 +136,7 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
               className={cn(
                 "hover:shadow-md transition-shadow cursor-pointer",
                 disabled && "opacity-50 cursor-not-allowed",
-                fullySettled && "opacity-60 bg-green-50 dark:bg-green-950/20"
+                fullySettled && `opacity-60 ${getPaymentStateColors('paid').bg}`
               )}
               onClick={() => !disabled && go({ to: `/profile/${balance.counterparty_id}` })}
             >
@@ -149,8 +151,8 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                         </AvatarFallback>
                       </Avatar>
                       {fullySettled && (
-                        <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-0.5">
-                          <CheckIcon className="h-3 w-3 text-white" />
+                        <div className={cn("absolute -bottom-1 -right-1 rounded-full p-0.5", getPaymentStateColors('paid').bg)}>
+                          <CheckIcon className={cn("h-3 w-3", getPaymentStateColors('paid').icon)} />
                         </div>
                       )}
                     </div>
@@ -160,9 +162,7 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                       </p>
                       <div className="flex items-center gap-2 mt-1">
                         {fullySettled ? (
-                          <Badge variant="outline" className="bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700 text-xs">
-                            {t('dashboard.settled', 'Settled')}
-                          </Badge>
+                          <PaymentStateBadge state="paid" size="sm" />
                         ) : (
                           <Badge variant={balance.i_owe_them ? "default" : "secondary"} className="text-xs">
                             {balance.i_owe_them ? t('dashboard.youOwe') : t('dashboard.userOwesYou')}
@@ -179,14 +179,14 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
                     {fullySettled ? (
-                      <span className="flex items-center gap-1 text-green-600 dark:text-green-400 font-semibold text-sm">
+                      <span className={cn("flex items-center gap-1 font-semibold text-sm", getPaymentStateColors('paid').text)}>
                         <CheckIcon className="h-4 w-4" />
                         {formatCurrency(0, balance.currency || "VND")}
                       </span>
                     ) : (
                       <span className={cn(
                         "font-semibold text-sm",
-                        balance.i_owe_them ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
+                        balance.i_owe_them ? getOweStatusColors('owe').text : getOweStatusColors('owed').text
                       )}>
                         {balance.i_owe_them ? '-' : '+'}
                         {formatCurrency(Number(balance.remaining_amount !== undefined ? balance.remaining_amount : balance.amount), balance.currency || "VND")}
@@ -237,7 +237,7 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                     "cursor-pointer transition-colors",
                     index % 2 === 0 && "bg-muted/50 dark:bg-muted/30",
                     disabled && "opacity-50 cursor-not-allowed",
-                    fullySettled && "opacity-60 bg-green-50 dark:bg-green-950/20"
+                    fullySettled && `opacity-60 ${getPaymentStateColors('paid').bg}`
                   )}
                   onClick={() => !disabled && go({ to: `/profile/${balance.counterparty_id}` })}
                 >
@@ -250,8 +250,8 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                         </AvatarFallback>
                       </Avatar>
                       {fullySettled && (
-                        <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-0.5">
-                          <CheckIcon className="h-3 w-3 text-white" />
+                        <div className={cn("absolute -bottom-1 -right-1 rounded-full p-0.5", getPaymentStateColors('paid').bg)}>
+                          <CheckIcon className={cn("h-3 w-3", getPaymentStateColors('paid').icon)} />
                         </div>
                       )}
                     </div>
@@ -271,9 +271,7 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                   </TableCell>
                   <TableCell>
                     {fullySettled ? (
-                      <Badge variant="outline" className="bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700">
-                        {t('dashboard.settled', 'Settled')}
-                      </Badge>
+                      <PaymentStateBadge state="paid" size="md" />
                     ) : (
                       <Badge variant={balance.i_owe_them ? "default" : "secondary"}>
                         {balance.i_owe_them ? t('dashboard.youOwe') : t('dashboard.userOwesYou')}
@@ -297,7 +295,7 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                   )}
                   <TableCell className={cn(
                     "text-right font-semibold",
-                    fullySettled && "text-green-600 dark:text-green-400"
+                    fullySettled && getPaymentStateColors('paid').text
                   )}>
                     {fullySettled ? (
                       <span className="flex items-center justify-end gap-1">
