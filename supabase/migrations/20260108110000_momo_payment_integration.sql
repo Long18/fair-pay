@@ -19,7 +19,6 @@ BEGIN
   RETURN FALSE;
 END;
 $$;
-
 -- 1. Create momo_settings table for configuration
 CREATE TABLE IF NOT EXISTS momo_settings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -29,22 +28,18 @@ CREATE TABLE IF NOT EXISTS momo_settings (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Add RLS policies for momo_settings
 ALTER TABLE momo_settings ENABLE ROW LEVEL SECURITY;
-
 -- Only authenticated users can read settings
 DROP POLICY IF EXISTS "momo_settings_read_policy" ON momo_settings;
 CREATE POLICY "momo_settings_read_policy" ON momo_settings
     FOR SELECT TO authenticated
     USING (true);
-
 -- Only admins can update settings (using is_admin() function to avoid RLS recursion)
 DROP POLICY IF EXISTS "momo_settings_update_policy" ON momo_settings;
 CREATE POLICY "momo_settings_update_policy" ON momo_settings
     FOR UPDATE TO authenticated
     USING (is_admin());
-
 -- 2. Create momo_payment_requests table (FK constraints added later)
 CREATE TABLE IF NOT EXISTS momo_payment_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -63,7 +58,6 @@ CREATE TABLE IF NOT EXISTS momo_payment_requests (
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT amount_positive CHECK (amount > 0)
 );
-
 -- Add foreign key constraints if referenced tables exist
 DO $$
 BEGIN
@@ -95,35 +89,29 @@ BEGIN
     END IF;
   END IF;
 END $$;
-
 -- Add indexes for performance
 CREATE INDEX IF NOT EXISTS idx_momo_payment_requests_user_id ON momo_payment_requests(user_id);
 CREATE INDEX IF NOT EXISTS idx_momo_payment_requests_expense_split_id ON momo_payment_requests(expense_split_id);
 CREATE INDEX IF NOT EXISTS idx_momo_payment_requests_reference_code ON momo_payment_requests(reference_code);
 CREATE INDEX IF NOT EXISTS idx_momo_payment_requests_status ON momo_payment_requests(status);
 CREATE INDEX IF NOT EXISTS idx_momo_payment_requests_created_at ON momo_payment_requests(created_at DESC);
-
 -- Add RLS policies for momo_payment_requests
 ALTER TABLE momo_payment_requests ENABLE ROW LEVEL SECURITY;
-
 -- Users can view their own payment requests
 DROP POLICY IF EXISTS "momo_payment_requests_read_own" ON momo_payment_requests;
 CREATE POLICY "momo_payment_requests_read_own" ON momo_payment_requests
     FOR SELECT TO authenticated
     USING (user_id = auth.uid());
-
 -- Users can create their own payment requests
 DROP POLICY IF EXISTS "momo_payment_requests_create_own" ON momo_payment_requests;
 CREATE POLICY "momo_payment_requests_create_own" ON momo_payment_requests
     FOR INSERT TO authenticated
     WITH CHECK (user_id = auth.uid());
-
 -- Users can update their own payment requests (for status changes)
 DROP POLICY IF EXISTS "momo_payment_requests_update_own" ON momo_payment_requests;
 CREATE POLICY "momo_payment_requests_update_own" ON momo_payment_requests
     FOR UPDATE TO authenticated
     USING (user_id = auth.uid());
-
 -- 3. Create momo_webhook_logs table for audit trail
 CREATE TABLE IF NOT EXISTS momo_webhook_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -139,7 +127,6 @@ CREATE TABLE IF NOT EXISTS momo_webhook_logs (
     processed BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Add FK constraint for matched_request_id if momo_payment_requests exists
 DO $$
 BEGIN
@@ -156,21 +143,17 @@ BEGIN
     END IF;
   END IF;
 END $$;
-
 -- Add indexes for webhook logs
 CREATE INDEX IF NOT EXISTS idx_momo_webhook_logs_tran_id ON momo_webhook_logs(tran_id);
 CREATE INDEX IF NOT EXISTS idx_momo_webhook_logs_processed ON momo_webhook_logs(processed);
 CREATE INDEX IF NOT EXISTS idx_momo_webhook_logs_created_at ON momo_webhook_logs(created_at DESC);
-
 -- Add RLS policies for momo_webhook_logs
 ALTER TABLE momo_webhook_logs ENABLE ROW LEVEL SECURITY;
-
 -- Only admins can view webhook logs
 DROP POLICY IF EXISTS "momo_webhook_logs_admin_only" ON momo_webhook_logs;
 CREATE POLICY "momo_webhook_logs_admin_only" ON momo_webhook_logs
     FOR ALL TO authenticated
     USING (is_admin());
-
 -- 4. Add triggers for updated_at
 CREATE OR REPLACE FUNCTION update_momo_settings_updated_at()
 RETURNS TRIGGER AS $$
@@ -179,13 +162,11 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 DROP TRIGGER IF EXISTS update_momo_settings_updated_at ON momo_settings;
 CREATE TRIGGER update_momo_settings_updated_at
     BEFORE UPDATE ON momo_settings
     FOR EACH ROW
     EXECUTE FUNCTION update_momo_settings_updated_at();
-
 CREATE OR REPLACE FUNCTION update_momo_payment_requests_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -193,13 +174,11 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 DROP TRIGGER IF EXISTS update_momo_payment_requests_updated_at ON momo_payment_requests;
 CREATE TRIGGER update_momo_payment_requests_updated_at
     BEFORE UPDATE ON momo_payment_requests
     FOR EACH ROW
     EXECUTE FUNCTION update_momo_payment_requests_updated_at();
-
 -- 5. Function to verify MoMo payment and update expense split (only create if expense_splits exists)
 DO $$
 BEGIN
@@ -278,7 +257,6 @@ BEGIN
     $func$ LANGUAGE plpgsql SECURITY DEFINER';
   END IF;
 END $$;
-
 -- 6. Function to create MoMo payment request (only create if expense_splits exists)
 DO $$
 BEGIN
@@ -366,16 +344,13 @@ BEGIN
     $func$ LANGUAGE plpgsql SECURITY DEFINER';
   END IF;
 END $$;
-
 -- 7. Insert default MoMo settings (can be updated by admin)
 INSERT INTO momo_settings (receiver_phone, receiver_name, enabled)
 VALUES ('0918399443', 'FairPay', TRUE)
 ON CONFLICT DO NOTHING;
-
 -- 8. Grant necessary permissions
 GRANT SELECT ON momo_settings TO authenticated;
 GRANT ALL ON momo_payment_requests TO authenticated;
-
 -- Grant execute permissions on functions if they exist
 DO $$
 BEGIN
@@ -386,7 +361,6 @@ BEGIN
     GRANT EXECUTE ON FUNCTION create_momo_payment_request TO authenticated;
   END IF;
 END $$;
-
 -- Enable realtime for payment requests (idempotent)
 DO $$
 BEGIN

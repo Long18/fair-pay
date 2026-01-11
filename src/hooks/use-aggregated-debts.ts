@@ -46,8 +46,11 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
             let rpcError;
 
             if (!identity?.id) {
-                // Unauthenticated: Fetch public data
-                const response = await supabaseClient.rpc("get_user_debts_public");
+                // Unauthenticated: Fetch public data with admin email configuration
+                const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
+                const response = await supabaseClient.rpc("get_user_debts_public", {
+                    p_admin_email: adminEmail || null
+                });
                 result = response.data;
                 rpcError = response.error;
             } else {

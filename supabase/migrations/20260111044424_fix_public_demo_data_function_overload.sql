@@ -1,13 +1,12 @@
--- Fix get_user_debts_public to show debts like get_user_debts_aggregated
--- Date: 2026-01-11
--- Purpose: Make unauthenticated users see the same debt structure as authenticated users
---          Select one active user and show only their actual outstanding debts
+-- Fix function overloading issue by dropping the parameterless version
+-- and making the parameter optional with a default value
 
--- =============================================
--- Update get_user_debts_public function
--- =============================================
-DROP FUNCTION IF EXISTS get_user_debts_public() CASCADE;
-CREATE OR REPLACE FUNCTION get_user_debts_public()
+-- Drop both functions
+DROP FUNCTION IF EXISTS get_user_debts_public();
+DROP FUNCTION IF EXISTS get_user_debts_public(TEXT);
+
+-- Create single function with optional parameter
+CREATE OR REPLACE FUNCTION get_user_debts_public(p_admin_email TEXT DEFAULT NULL)
 RETURNS TABLE (
     counterparty_id UUID,
     counterparty_name TEXT,
@@ -15,20 +14,57 @@ RETURNS TABLE (
     currency TEXT,
     i_owe_them BOOLEAN,
     is_real_data BOOLEAN
-) AS $$
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
 DECLARE
     v_sample_user_id UUID;
 BEGIN
-    -- Find a user with recent activity who has outstanding debts
-    SELECT es.user_id INTO v_sample_user_id
-    FROM expense_splits es
-    JOIN expenses e ON es.expense_id = e.id
-    WHERE NOT es.is_settled
-        AND e.created_at > CURRENT_DATE - INTERVAL '30 days'
-        AND es.user_id != e.paid_by_user_id
-        AND e.expense_date <= CURRENT_DATE
-    ORDER BY e.created_at DESC
-    LIMIT 1;
+    -- If admin email is provided, try to use admin user's data first
+    IF p_admin_email IS NOT NULL THEN
+        SELECT p.id INTO v_sample_user_id
+        FROM profiles p
+        WHERE p.email = p_admin_email
+        LIMIT 1;
+        
+        -- Check if admin user has any debts to show
+        IF v_sample_user_id IS NOT NULL THEN
+            -- Check if admin user has outstanding debts
+            IF EXISTS (
+                SELECT 1
+                FROM expense_splits es
+                JOIN expenses e ON es.expense_id = e.id
+                WHERE (es.user_id = v_sample_user_id OR e.paid_by_user_id = v_sample_user_id)
+                    AND NOT e.is_payment
+                    AND es.user_id != e.paid_by_user_id
+                    AND e.expense_date <= CURRENT_DATE
+                    AND (
+                        (es.is_settled = false) OR
+                        (es.is_settled = true AND es.settled_amount < es.computed_amount)
+                    )
+            ) THEN
+                -- Admin user has debts, use their data
+                NULL; -- Continue with admin user
+            ELSE
+                -- Admin user has no debts, fall back to finding another user
+                v_sample_user_id := NULL;
+            END IF;
+        END IF;
+    END IF;
+    
+    -- If no admin user or admin has no debts, find a user with recent activity who has outstanding debts
+    IF v_sample_user_id IS NULL THEN
+        SELECT es.user_id INTO v_sample_user_id
+        FROM expense_splits es
+        JOIN expenses e ON es.expense_id = e.id
+        WHERE NOT es.is_settled
+            AND e.created_at > CURRENT_DATE - INTERVAL '30 days'
+            AND es.user_id != e.paid_by_user_id
+            AND e.expense_date <= CURRENT_DATE
+        ORDER BY e.created_at DESC
+        LIMIT 1;
+    END IF;
 
     -- If no active user found, return empty
     IF v_sample_user_id IS NULL THEN
@@ -122,5 +158,7 @@ BEGIN
     WHERE agg.counterparty_id IS NOT NULL
     ORDER BY agg.currency, ABS(agg.net_amount) DESC;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-GRANT EXECUTE ON FUNCTION get_user_debts_public() TO anon, authenticated;
+$$;
+
+-- Grant execute permissions
+GRANT EXECUTE ON FUNCTION get_user_debts_public(TEXT) TO anon, authenticated;;
