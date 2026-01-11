@@ -298,7 +298,7 @@ export const ProfileShowUnified = () => {
   const {
     activities: enhancedActivities,
     isLoading: isLoadingActivities,
-  } = useEnhancedActivity({ limit: 50 });
+  } = useEnhancedActivity({ limit: 50, userId: profileId });
 
   // Refresh all data
   const handleRefresh = useCallback(async () => {

@@ -38,6 +38,7 @@ export interface UseEnhancedActivityOptions {
   limit?: number;
   groupId?: string;
   friendshipId?: string;
+  userId?: string; // Filter to show only transactions where user is payer or participant
 }
 
 export interface UseEnhancedActivityResult {
@@ -54,7 +55,7 @@ export interface UseEnhancedActivityResult {
 export const useEnhancedActivity = (
   options: UseEnhancedActivityOptions = {}
 ): UseEnhancedActivityResult => {
-  const { limit = 50, groupId, friendshipId } = options;
+  const { limit = 50, groupId, friendshipId, userId } = options;
   const { data: identity } = useGetIdentity<Profile>();
 
   // Build filters
@@ -65,6 +66,7 @@ export const useEnhancedActivity = (
   if (friendshipId) {
     filters.push({ field: "friendship_id", operator: "eq", value: friendshipId });
   }
+  // Note: userId filter is applied post-fetch since we need to check both paid_by_user_id and expense_splits
 
   // Fetch expenses with splits
   const expensesQuery = useList<Expense>({
@@ -100,7 +102,19 @@ export const useEnhancedActivity = (
   const { data, isLoading, isRefetching, error } = expensesQuery.query;
   
   // Create stable reference for expenses array to prevent infinite loops
-  const expenses = useMemo(() => data?.data || [], [data?.data]);
+  // Apply userId filter: only include expenses where user is payer or participant
+  const expenses = useMemo(() => {
+    const allExpenses = data?.data || [];
+    if (!userId) return allExpenses;
+    
+    return allExpenses.filter((expense: any) => {
+      // User is the payer
+      if (expense.paid_by_user_id === userId) return true;
+      // User is a participant in splits
+      const splits = expense.expense_splits || [];
+      return splits.some((split: any) => split.user_id === userId);
+    });
+  }, [data?.data, userId]);
 
   // State for resolved activities
   const [resolvedActivities, setResolvedActivities] = useState<EnhancedActivityItem[]>([]);
