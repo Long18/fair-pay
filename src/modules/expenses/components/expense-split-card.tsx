@@ -1,24 +1,38 @@
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2Icon, XCircleIcon, ChevronDownIcon, ChevronUpIcon } from "@/components/ui/icons";
+import { CheckCircle2Icon, ChevronDownIcon } from "@/components/ui/icons";
 import { MomoPaymentButton } from "@/modules/payments/components/momo-payment-button";
 import { BankingPaymentButton } from "@/modules/payments/components/banking-payment-button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { PaymentStateBadge } from "@/components/ui/payment-state-badge";
 import { formatNumber } from "@/lib/locale-utils";
+import { getPaymentStateColors } from "@/lib/status-colors";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import type { ExpenseSplit } from "@/modules/expenses/types";
+
+type SplitWithProfile = ExpenseSplit & {
+  profiles?: {
+    id: string;
+    full_name: string;
+    avatar_url?: string;
+    email?: string;
+  };
+};
 
 interface ExpenseSplitCardProps {
-  split: any;
-  expense: any;
+  split: SplitWithProfile;
+  expense: {
+    is_payment?: boolean;
+    currency: string;
+  };
   isCurrentUser: boolean;
   isPayer: boolean;
   canSettle: boolean;
   isSettling: boolean;
-  onSettle: (split: any) => void;
+  onSettle: (split: SplitWithProfile) => void;
   onPaymentComplete: () => void;
 }
 
@@ -36,48 +50,33 @@ export const ExpenseSplitCard = ({
   const [isExpanded, setIsExpanded] = useState(false);
 
   const isSplitSettled = split.is_settled || expense.is_payment;
-  const isPartiallySettled = split.is_settled && split.settled_amount < split.computed_amount;
-  const remainingAmount = split.computed_amount - (split.settled_amount || 0);
+  const settledAmount = split.settled_amount ?? 0;
+  const isPartiallySettled = split.is_settled && settledAmount < split.computed_amount;
+  const remainingAmount = split.computed_amount - settledAmount;
 
-  const getStatusBadge = () => {
+  // Calculate partial percentage for badge
+  const partialPercentage = isPartiallySettled
+    ? Math.round((settledAmount / split.computed_amount) * 100)
+    : undefined;
+
+  const getPaymentState = (): "paid" | "unpaid" | "partial" | null => {
     if (isSplitSettled && !isPartiallySettled) {
-      return (
-        <Badge
-          variant="outline"
-          className="bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700"
-        >
-          <CheckCircle2Icon className="h-3 w-3 mr-1" />
-          {t('expenses.paid', 'Paid')}
-        </Badge>
-      );
+      return "paid";
     }
-
     if (isPartiallySettled) {
-      return (
-        <Badge
-          variant="outline"
-          className="bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700"
-        >
-          <CheckCircle2Icon className="h-3 w-3 mr-1" />
-          {t('expenses.partiallyPaid', 'Partially Paid')}
-        </Badge>
-      );
+      return "partial";
     }
-
     if (!isSplitSettled && !isCurrentUser) {
-      return (
-        <Badge
-          variant="outline"
-          className="bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700"
-        >
-          <XCircleIcon className="h-3 w-3 mr-1" />
-          {t('expenses.unpaid', 'Unpaid')}
-        </Badge>
-      );
+      return "unpaid";
     }
-
     return null;
   };
+
+  const paymentState = getPaymentState();
+  
+  // Get status colors for settled state
+  const paidColors = getPaymentStateColors('paid');
+  const partialColors = getPaymentStateColors('partial');
 
   return (
     <motion.div
@@ -88,7 +87,7 @@ export const ExpenseSplitCard = ({
       className={cn(
         "group border-2 rounded-lg transition-all duration-200 overflow-hidden",
         isSplitSettled
-          ? "bg-green-50/50 dark:bg-green-950/10 border-green-200 dark:border-green-800"
+          ? cn(paidColors.bg, paidColors.border)
           : "hover:border-primary/50 hover:bg-accent/30 bg-card"
       )}
     >
@@ -111,14 +110,14 @@ export const ExpenseSplitCard = ({
             <Avatar className={cn(
               "h-10 w-10 md:h-12 md:w-12 border-2 shadow-sm ring-2 ring-offset-1 ring-offset-background transition-all duration-200 flex-shrink-0",
               isSplitSettled
-                ? "border-green-300 dark:border-green-700 ring-green-200 dark:ring-green-800"
+                ? cn(paidColors.border, "ring-status-success-border")
                 : "border-background ring-primary/20 group-hover:ring-primary/50"
             )}>
               <AvatarImage src={split.profiles?.avatar_url || undefined} alt={split.profiles?.full_name} />
               <AvatarFallback className={cn(
                 "text-xs md:text-sm font-semibold",
                 isSplitSettled
-                  ? "bg-gradient-to-br from-green-100 to-green-50 dark:from-green-950/40 dark:to-green-950/20 text-green-700 dark:text-green-300"
+                  ? cn(paidColors.bg, paidColors.text)
                   : "bg-gradient-to-br from-muted to-muted/50"
               )}>
                 {split.profiles?.full_name
@@ -133,7 +132,7 @@ export const ExpenseSplitCard = ({
             <div className="flex-1 min-w-0">
               <div className={cn(
                 "font-semibold text-sm md:text-base truncate transition-colors",
-                isSplitSettled ? "text-green-700 dark:text-green-300" : "group-hover:text-primary"
+                isSplitSettled ? paidColors.text : "group-hover:text-primary"
               )}>
                 {split.profiles?.full_name || t('profile.unknown')}
                 {isCurrentUser && (
@@ -148,7 +147,13 @@ export const ExpenseSplitCard = ({
                 <span className="text-xs text-muted-foreground">
                   {String(t(`expenses.${split.split_method}`, split.split_method))}
                 </span>
-                {getStatusBadge()}
+                {paymentState && (
+                  <PaymentStateBadge
+                    state={paymentState}
+                    percentage={partialPercentage}
+                    size="sm"
+                  />
+                )}
               </div>
 
               {/* Desktop: Show full info */}
@@ -156,7 +161,13 @@ export const ExpenseSplitCard = ({
                 <span className="text-xs text-muted-foreground">
                   {String(t(`expenses.${split.split_method}`, split.split_method))}
                 </span>
-                {getStatusBadge()}
+                {paymentState && (
+                  <PaymentStateBadge
+                    state={paymentState}
+                    percentage={partialPercentage}
+                    size="sm"
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -166,17 +177,17 @@ export const ExpenseSplitCard = ({
             <div className="flex flex-col items-end">
               {isPartiallySettled ? (
                 <>
-                  <div className="font-bold text-lg text-amber-600 dark:text-amber-400">
+                  <div className={cn("font-bold text-lg", partialColors.text)}>
                     {formatNumber(remainingAmount)} {expense.currency}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {t('expenses.remaining', 'Remaining')} ({formatNumber(split.settled_amount)} / {formatNumber(split.computed_amount)} {t('expenses.paid', 'paid')})
+                    {t('expenses.remaining', 'Remaining')} ({formatNumber(settledAmount)} / {formatNumber(split.computed_amount)} {t('expenses.paid', 'paid')})
                   </div>
                 </>
               ) : (
                 <div className={cn(
                   "font-bold text-lg",
-                  isSplitSettled ? "text-green-600 dark:text-green-400" : ""
+                  isSplitSettled ? paidColors.icon : ""
                 )}>
                   {formatNumber(split.computed_amount)} {expense.currency}
                 </div>
@@ -190,7 +201,7 @@ export const ExpenseSplitCard = ({
                   <Button
                     size="sm"
                     variant="default"
-                    className="bg-green-600 hover:bg-green-700 min-h-[44px] min-w-[44px]"
+                    className="bg-status-success-foreground hover:bg-status-success-foreground/90 min-h-[44px] min-w-[44px]"
                     onClick={() => onSettle(split)}
                     disabled={isSettling}
                   >
@@ -267,7 +278,7 @@ export const ExpenseSplitCard = ({
             <div className="text-right">
               <div className={cn(
                 "font-bold text-base",
-                isSplitSettled ? "text-green-600 dark:text-green-400" : ""
+                isSplitSettled ? paidColors.icon : ""
               )}>
                 {formatNumber(isPartiallySettled ? remainingAmount : split.computed_amount)}
               </div>
@@ -302,7 +313,7 @@ export const ExpenseSplitCard = ({
             <div className="p-4 space-y-3">
               {isPartiallySettled && (
                 <div className="text-sm text-muted-foreground">
-                  {formatNumber(split.settled_amount)} / {formatNumber(split.computed_amount)} {expense.currency} {t('expenses.paid', 'paid')}
+                  {formatNumber(settledAmount)} / {formatNumber(split.computed_amount)} {expense.currency} {t('expenses.paid', 'paid')}
                 </div>
               )}
 
@@ -311,7 +322,7 @@ export const ExpenseSplitCard = ({
                   <Button
                     size="sm"
                     variant="default"
-                    className="flex-1 bg-green-600 hover:bg-green-700 min-h-[44px]"
+                    className="flex-1 bg-status-success-foreground hover:bg-status-success-foreground/90 min-h-[44px]"
                     onClick={() => onSettle(split)}
                     disabled={isSettling}
                   >
