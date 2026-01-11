@@ -180,7 +180,7 @@ export const Dashboard = () => {
                 </div>
               )}
               <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
-                <BalanceTable balances={balances} disabled={!isAuthenticated} showHistory={showHistory} />
+                <BalanceTable balances={balances} showHistory={showHistory} />
               </div>
             </TabsContent>
 
