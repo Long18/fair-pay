@@ -153,26 +153,31 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
     return { totalOwed, totalToReceive, netBalance };
   }, [activities]);
 
-  // Handlers
+  // Handlers - use refs to avoid dependency on searchParams
+  const searchParamsRef = React.useRef(searchParams);
+  const setSearchParamsRef = React.useRef(setSearchParams);
+  searchParamsRef.current = searchParams;
+  setSearchParamsRef.current = setSearchParams;
+
   const handleFilterChange = React.useCallback((filter: PaymentStateFilter) => {
-    const newParams = new URLSearchParams(searchParams);
+    const newParams = new URLSearchParams(searchParamsRef.current);
     if (filter === "all") {
       newParams.delete("filter");
     } else {
       newParams.set("filter", filter);
     }
-    setSearchParams(newParams);
-  }, [searchParams, setSearchParams]);
+    setSearchParamsRef.current(newParams);
+  }, []); // No dependencies to prevent recreation
 
   const handleSortChange = React.useCallback((sort: SortOption) => {
-    const newParams = new URLSearchParams(searchParams);
+    const newParams = new URLSearchParams(searchParamsRef.current);
     if (sort === "date-desc") {
       newParams.delete("sort");
     } else {
       newParams.set("sort", sort);
     }
-    setSearchParams(newParams);
-  }, [searchParams, setSearchParams]);
+    setSearchParamsRef.current(newParams);
+  }, []); // No dependencies to prevent recreation
 
   // Debounced handlers to avoid excessive URL updates and re-renders
   const debouncedFilterChange = React.useMemo(
