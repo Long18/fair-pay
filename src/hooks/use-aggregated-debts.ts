@@ -184,7 +184,8 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
             supabaseClient.removeChannel(expensesChannel);
             supabaseClient.removeChannel(splitsChannel);
         };
-    }, [identity?.id, debouncedFetchDebts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [identity?.id]); // Removed debouncedFetchDebts to prevent infinite loop
 
     return { data, isLoading, error, refetch: fetchDebts };
 };
