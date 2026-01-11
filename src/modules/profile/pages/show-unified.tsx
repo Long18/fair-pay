@@ -47,11 +47,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatDateShort } from "@/lib/locale-utils";
 import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
+import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
+import { EnhancedActivityList } from "@/components/dashboard/enhanced-activity-list";
 
 // Import new components
 import { ProfileHeader } from "../components/profile-header";
 import { ProfileBalanceSummary } from "../components/profile-balance-summary";
-import { ProfileActivityFeed } from "../components/profile-activity-feed";
 import { ProfileAvatarUpload } from "../components/profile-avatar-upload";
 import { ProfileMobileNavigation } from "../components/profile-mobile-navigation";
 import { ProfileForm } from "../components/profile-form";
@@ -75,21 +76,6 @@ interface DebtSummary {
   last_transaction_date?: string;
 }
 
-interface ActivityItem {
-  id: string;
-  type: "expense" | "payment";
-  description: string;
-  total_amount: number;
-  user_share: number;
-  currency: string;
-  date: string;
-  group_name?: string;
-  paid_by_name?: string;
-  is_lender: boolean;
-  is_borrower: boolean;
-  is_payment: boolean;
-}
-
 export const ProfileShowUnified = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -99,17 +85,13 @@ export const ProfileShowUnified = () => {
 
   // State management
   const [debts, setDebts] = useState<DebtSummary[]>([]);
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [isLoadingDebts, setIsLoadingDebts] = useState(true);
-  const [isLoadingActivities, setIsLoadingActivities] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
   const [settleDialogOpen, setSettleDialogOpen] = useState(false);
   const [changePasswordDialogOpen, setChangePasswordDialogOpen] = useState(false);
   const [isSettling, setIsSettling] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [activityPage, setActivityPage] = useState(1);
-  const [hasMoreActivities, setHasMoreActivities] = useState(true);
   const [activeTab, setActiveTab] = useState("activity");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -312,42 +294,11 @@ export const ProfileShowUnified = () => {
     }
   }, [profileId, isUserAdmin, isOwnProfile, identity?.id, t]);
 
-  // Fetch activities with pagination
-  const fetchActivities = async (page = 1, append = false) => {
-    if (!profileId) return;
-
-    if (!append) setIsLoadingActivities(true);
-
-    try {
-      const limit = 10;
-      const offset = (page - 1) * limit;
-
-      const { data, error } = await supabaseClient
-        .rpc('get_user_activities', {
-          p_user_id: profileId,
-          p_limit: limit,
-          p_offset: offset
-        });
-
-      if (error) throw error;
-
-      // Process activities - show all activities without privacy restrictions
-      const processedActivities = data || [];
-
-      if (append) {
-        setActivities(prev => [...prev, ...processedActivities]);
-      } else {
-        setActivities(processedActivities);
-      }
-
-      setHasMoreActivities(processedActivities.length === limit);
-    } catch (error) {
-      console.error("Error fetching activities:", error);
-      toast.error(t('profile.errorLoadingActivities', 'Failed to load activities'));
-    } finally {
-      setIsLoadingActivities(false);
-    }
-  };
+  // Use enhanced activity hook for transaction-centric activity list
+  const {
+    activities: enhancedActivities,
+    isLoading: isLoadingActivities,
+  } = useEnhancedActivity({ limit: 50 });
 
   // Refresh all data
   const handleRefresh = useCallback(async () => {
@@ -355,7 +306,6 @@ export const ProfileShowUnified = () => {
     try {
       await Promise.all([
         fetchDebts(showHistory),
-        fetchActivities(1, false),
         profileQuery.refetch(),
       ]);
       toast.success(t('common.refreshed', 'Data refreshed'));
@@ -370,10 +320,6 @@ export const ProfileShowUnified = () => {
   useEffect(() => {
     fetchDebts(showHistory);
   }, [fetchDebts, showHistory]);
-
-  useEffect(() => {
-    fetchActivities(1, false);
-  }, [profileId]);
 
   // Initialize edit form when profile loads
   useEffect(() => {
@@ -516,13 +462,6 @@ export const ProfileShowUnified = () => {
     } finally {
       setIsSettling(false);
     }
-  };
-
-  // Handle load more activities
-  const handleLoadMoreActivities = () => {
-    const nextPage = activityPage + 1;
-    setActivityPage(nextPage);
-    fetchActivities(nextPage, true);
   };
 
   // Tab configuration
@@ -747,16 +686,16 @@ export const ProfileShowUnified = () => {
                         <CardTitle>{t('profile.recentActivity', 'Recent Activity')}</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        {activities.length === 0 && !isLoadingActivities ? (
-                          <EmptyActivities />
-                        ) : (
-                          <ProfileActivityFeed
-                            activities={activities}
-                            isLoading={isLoadingActivities}
-                            onLoadMore={handleLoadMoreActivities}
-                            hasMore={hasMoreActivities}
-                          />
-                        )}
+                        <EnhancedActivityList
+                          activities={enhancedActivities}
+                          currentUserId={identity?.id || ""}
+                          currency="VND"
+                          isLoading={isLoadingActivities}
+                          showSummary={true}
+                          showFilters={true}
+                          showSort={true}
+                          showTimeGrouping={true}
+                        />
                       </CardContent>
                     </Card>
                   </TabsContent>
