@@ -52,7 +52,6 @@ import { EnhancedActivityList } from "@/components/dashboard/enhanced-activity-l
 
 // Import new components
 import { ProfileHeader } from "../components/profile-header";
-import { ProfileBalanceSummary } from "../components/profile-balance-summary";
 import { ProfileAvatarUpload } from "../components/profile-avatar-upload";
 import { ProfileMobileNavigation } from "../components/profile-mobile-navigation";
 import { ProfileForm } from "../components/profile-form";
@@ -615,23 +614,6 @@ export const ProfileShowUnified = () => {
                 )}
               </AnimatePresence>
             </Card>
-
-            {/* Balance Summary - Only show in view mode */}
-            <AnimatePresence>
-              {!isEditMode && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                >
-                  <ProfileBalanceSummary
-                    debts={debts}
-                    showHistory={showHistory}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             {/* Tabs for Activities, Balances, Groups, Friends */}
             <AnimatePresence>
