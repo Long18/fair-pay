@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getSemanticStatusColors } from '@/lib/status-colors';
 import { toast } from 'sonner';
 import {
   RefreshCwIcon,
@@ -25,7 +26,6 @@ import {
 } from '@/components/ui/icons';
 import { ExpenseSplit } from '@/modules/expenses/types';
 import { momoAPI } from '@/lib/momo/api';
-import { supabaseClient } from '@/utility/supabaseClient';
 import { useMomoPayment } from '@/hooks/use-momo-payment';
 import { formatNumber } from '@/lib/locale-utils';
 
@@ -118,10 +118,13 @@ export function MomoPaymentDialog({
   };
 
   const getStatusBadge = () => {
+    const successColors = getSemanticStatusColors('success');
+    const warningColors = getSemanticStatusColors('warning');
+    
     switch (status) {
       case 'verified':
         return (
-          <Badge className="gap-1 bg-green-600 text-white">
+          <Badge className={`gap-1 ${successColors.bg} ${successColors.text} ${successColors.border}`}>
             <CheckCircle2Icon className="h-3 w-3" />
             {t('payments.momo.status.verified', 'Verified')}
           </Badge>
@@ -142,7 +145,7 @@ export function MomoPaymentDialog({
         );
       default:
         return (
-          <Badge className="gap-1 bg-amber-600 text-white">
+          <Badge className={`gap-1 ${warningColors.bg} ${warningColors.text} ${warningColors.border}`}>
             <CalendarIcon className="h-3 w-3" />
             {t('payments.momo.status.pending', 'Waiting for payment')}
           </Badge>
