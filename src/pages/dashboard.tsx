@@ -4,15 +4,14 @@ import { Profile } from "@/modules/profile/types";
 import { FloatingActionButton } from "@/components/dashboard/FloatingActionButton";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardStates";
 import { BalanceTable } from "@/components/dashboard/BalanceTable";
-import { ActivityTable } from "@/components/dashboard/ActivityTable";
+import { EnhancedActivityList } from "@/components/dashboard/enhanced-activity";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { HistoryIcon, Loader2Icon } from "@/components/ui/icons";
 import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
-import { usePaginatedActivities } from "@/hooks/use-paginated-activities";
+import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
 import { useTranslation } from "react-i18next";
 import { DashboardTracker } from "@/lib/analytics/index";
 
@@ -25,11 +24,9 @@ export const Dashboard = () => {
     includeHistory: showHistory
   });
   const {
-    items: activities,
-    metadata: activitiesMetadata,
-    setPage: setActivitiesPage,
+    activities,
     isLoading: activitiesLoading
-  } = usePaginatedActivities({ pageSize: 10 });
+  } = useEnhancedActivity({ limit: 50 });
 
   const [loading, setLoading] = useState(true);
   const visibilityDebounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -187,12 +184,16 @@ export const Dashboard = () => {
             </TabsContent>
 
             <TabsContent value="activity" className="space-y-4 mt-6">
-              <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
-                <ActivityTable
+              <div className="bg-card border rounded-lg shadow-sm overflow-hidden p-4">
+                <EnhancedActivityList
                   activities={activities}
-                  metadata={activitiesMetadata}
-                  onPageChange={setActivitiesPage}
-                  disabled={!isAuthenticated}
+                  currentUserId={identity?.id || ""}
+                  currency="VND"
+                  isLoading={activitiesLoading}
+                  showSummary={true}
+                  showFilters={true}
+                  showSort={true}
+                  showTimeGrouping={true}
                 />
               </div>
             </TabsContent>
