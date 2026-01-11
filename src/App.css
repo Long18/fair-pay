@@ -1,4 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800&display=swap');
+@font-face {
+  font-family: 'Fz Fragrant';
+  src: url('/fonts/Fz-Fragrant.otf') format('opentype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -58,7 +65,7 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  --font-sans: "Exo 2", "Inter", sans-serif;
+  --font-sans: "Fz Fragrant", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 :root {
