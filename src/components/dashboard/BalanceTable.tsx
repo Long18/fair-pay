@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
-import { useGo, useGetIdentity } from "@refinedev/core";
+import { useGo } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
-import { Profile } from "@/modules/profile/types";
 import {
   Table,
   TableBody,
@@ -48,16 +47,14 @@ interface Balance {
 interface BalanceTableProps {
   balances: Balance[];
   pageSize?: number;
+  disabled?: boolean;
   showHistory?: boolean;
 }
 
-export function BalanceTable({ balances, pageSize = 10, showHistory = false }: BalanceTableProps) {
+export function BalanceTable({ balances, pageSize = 10, disabled = false, showHistory = false }: BalanceTableProps) {
   const go = useGo();
-  const { data: identity } = useGetIdentity<Profile>();
   const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState(1);
-  
-  const isAuthenticated = !!identity;
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
@@ -107,10 +104,12 @@ export function BalanceTable({ balances, pageSize = 10, showHistory = false }: B
             {t('dashboard.allSettledUpNoDebts', 'All settled up!')}
           </EmptyTitle>
           <EmptyDescription>
-            {t('dashboard.noOutstandingBalances', 'You have no outstanding balances. Everyone is settled up!')}
+            {disabled
+              ? t('dashboard.loginToSeeBalances', 'Log in to view your balances and track expenses')
+              : t('dashboard.noOutstandingBalances', 'You have no outstanding balances. Everyone is settled up!')}
           </EmptyDescription>
         </EmptyHeader>
-        {isAuthenticated && (
+        {!disabled && (
           <EmptyContent>
             <Button
               onClick={() => go({ to: "/expenses/create" })}
@@ -135,11 +134,11 @@ export function BalanceTable({ balances, pageSize = 10, showHistory = false }: B
             <Card
               key={balance.counterparty_id}
               className={cn(
-                "hover:shadow-md transition-shadow",
-                isAuthenticated ? "cursor-pointer" : "cursor-default",
+                "hover:shadow-md transition-shadow cursor-pointer",
+                disabled && "opacity-50 cursor-not-allowed",
                 fullySettled && `opacity-60 ${getPaymentStateColors('paid').bg}`
               )}
-              onClick={() => isAuthenticated && go({ to: `/profile/${balance.counterparty_id}` })}
+              onClick={() => !disabled && go({ to: `/profile/${balance.counterparty_id}` })}
             >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between gap-3">
@@ -235,12 +234,12 @@ export function BalanceTable({ balances, pageSize = 10, showHistory = false }: B
                 <TableRow
                   key={balance.counterparty_id}
                   className={cn(
-                    "transition-colors",
-                    isAuthenticated ? "cursor-pointer" : "cursor-default",
+                    "cursor-pointer transition-colors",
                     index % 2 === 0 && "bg-muted/50 dark:bg-muted/30",
+                    disabled && "opacity-50 cursor-not-allowed",
                     fullySettled && `opacity-60 ${getPaymentStateColors('paid').bg}`
                   )}
-                  onClick={() => isAuthenticated && go({ to: `/profile/${balance.counterparty_id}` })}
+                  onClick={() => !disabled && go({ to: `/profile/${balance.counterparty_id}` })}
                 >
                   <TableCell>
                     <div className="relative">
