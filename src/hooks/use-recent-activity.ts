@@ -132,8 +132,9 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
         },
     });
 
-    const expenses: any[] = expensesQuery.data?.data || [];
-    const payments: any[] = paymentsQuery.data?.data || [];
+    // Create stable references for arrays to prevent infinite loops
+    const expenses: any[] = useMemo(() => expensesQuery.data?.data || [], [expensesQuery.data?.data]);
+    const payments: any[] = useMemo(() => paymentsQuery.data?.data || [], [paymentsQuery.data?.data]);
 
     const activity = useMemo(() => {
         // For unauthenticated users, return public activities
