@@ -78,7 +78,8 @@ export const Dashboard = () => {
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [identity?.id, refetchDebts]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [identity?.id]); // Removed refetchDebts from dependencies to prevent infinite loop
 
   useEffect(() => {
     if (!debtsLoading && !activitiesLoading) {
