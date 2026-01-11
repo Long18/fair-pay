@@ -171,13 +171,25 @@ export const useEnhancedActivity = (
           }
 
           // Calculate owe status for current user
+          // Priority: Check if user is the payer first, then check if they have a split
           const currentUserSplit = splits.find((s: any) => s.user_id === identity.id);
           let oweStatus: {
             direction: "owe" | "owed" | "neutral";
             amount: number;
           };
 
-          if (currentUserSplit) {
+          if (expense.paid_by_user_id === identity.id) {
+            // Current user is the payer - calculate how much others owe them
+            // (excluding their own split if they have one)
+            const totalOwed = splits
+              .filter((s: any) => s.user_id !== identity.id)
+              .reduce((sum: any, s: any) => sum + (s.computed_amount - (s.settled_amount || 0)), 0);
+            oweStatus = {
+              direction: totalOwed > 0 ? "owed" : "neutral",
+              amount: totalOwed,
+            };
+          } else if (currentUserSplit) {
+            // Current user is NOT the payer but has a split - they owe the payer
             const owedAmount = currentUserSplit.computed_amount - (currentUserSplit.settled_amount || 0);
             if (owedAmount > 0) {
               oweStatus = {
@@ -190,15 +202,6 @@ export const useEnhancedActivity = (
                 amount: 0,
               };
             }
-          } else if (expense.paid_by_user_id === identity.id) {
-            // Current user is the payer, calculate how much is owed to them
-            const totalOwed = splits
-              .filter((s: any) => s.user_id !== identity.id)
-              .reduce((sum: any, s: any) => sum + (s.computed_amount - (s.settled_amount || 0)), 0);
-            oweStatus = {
-              direction: totalOwed > 0 ? "owed" : "neutral",
-              amount: totalOwed,
-            };
           } else {
             oweStatus = {
               direction: "neutral",
