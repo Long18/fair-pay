@@ -118,14 +118,18 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
     }, [identity?.id, includeHistory]);
 
     // Debounced version of fetchDebts for real-time subscriptions
+    // Use useRef to maintain a stable reference to avoid infinite loops
+    const fetchDebtsRef = useRef(fetchDebts);
+    fetchDebtsRef.current = fetchDebts;
+
     const debouncedFetchDebts = useCallback(() => {
         if (debounceTimerRef.current) {
             clearTimeout(debounceTimerRef.current);
         }
         debounceTimerRef.current = setTimeout(() => {
-            fetchDebts();
+            fetchDebtsRef.current();
         }, 500); // 500ms debounce
-    }, [fetchDebts]);
+    }, []); // No dependencies to prevent recreation
 
     useEffect(() => {
         fetchDebts();
@@ -184,8 +188,7 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
             supabaseClient.removeChannel(expensesChannel);
             supabaseClient.removeChannel(splitsChannel);
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [identity?.id]); // Removed debouncedFetchDebts to prevent infinite loop
+    }, [identity?.id, debouncedFetchDebts]); // debouncedFetchDebts is now stable
 
     return { data, isLoading, error, refetch: fetchDebts };
 };
