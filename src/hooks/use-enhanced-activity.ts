@@ -98,7 +98,9 @@ export const useEnhancedActivity = (
   });
 
   const { data, isLoading, isRefetching, error } = expensesQuery.query;
-  const expenses = data?.data || [];
+  
+  // Create stable reference for expenses array to prevent infinite loops
+  const expenses = useMemo(() => data?.data || [], [data?.data]);
 
   // State for resolved activities
   const [resolvedActivities, setResolvedActivities] = useState<EnhancedActivityItem[]>([]);
