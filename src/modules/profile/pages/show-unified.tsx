@@ -451,10 +451,31 @@ export const ProfileShowUnified = () => {
 
     setIsSettling(true);
     try {
-      // Implementation would go here
-      toast.success(t('profile.allDebtsSettled', 'All debts marked as settled'));
-      setSettleDialogOpen(false);
-      fetchDebts(showHistory);
+      const { data, error } = await supabaseClient.rpc('settle_all_debts_with_person', {
+        p_counterparty_id: profileId
+      });
+
+      if (error) {
+        console.error('Error settling debts:', error);
+        toast.error(t('profile.settleError', 'Failed to settle debts'));
+        return;
+      }
+
+      if (data?.success) {
+        const { splits_updated, total_amount } = data;
+        if (splits_updated > 0) {
+          toast.success(
+            t('profile.allDebtsSettled', 'All debts marked as settled') + 
+            ` (${splits_updated} ${splits_updated === 1 ? 'split' : 'splits'})`
+          );
+        } else {
+          toast.info(t('profile.noDebtsToSettle', 'No outstanding debts to settle'));
+        }
+        setSettleDialogOpen(false);
+        fetchDebts(showHistory);
+      } else {
+        toast.error(t('profile.settleError', 'Failed to settle debts'));
+      }
     } catch (error) {
       console.error('Error settling debts:', error);
       toast.error(t('profile.settleError', 'Failed to settle debts'));
