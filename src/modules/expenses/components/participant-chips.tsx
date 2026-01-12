@@ -70,6 +70,13 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
     onSplitValueChange(userId, numValue);
   };
 
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Blur input on Enter to dismiss keyboard on mobile
+    if (e.key === 'Enter') {
+      e.currentTarget.blur();
+    }
+  };
+
   const getMemberName = (userId: string) => {
     const member = members.find(m => m.id === userId);
     return member?.full_name || "Unknown";
@@ -176,12 +183,14 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
                 <div className="flex-1 relative min-w-0">
                   <Input
                     type="number"
+                    inputMode="decimal"
                     step={splitMethod === "exact" ? "0.01" : "1"}
                     min="0"
                     max={splitMethod === "percentage" ? "100" : undefined}
                     placeholder="0"
                     value={manualValues[participant.user_id] || participant.split_value || ""}
                     onChange={(e) => handleManualValueChange(participant.user_id, e.target.value)}
+                    onKeyDown={handleInputKeyDown}
                     className="pr-10 h-9 w-full"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">

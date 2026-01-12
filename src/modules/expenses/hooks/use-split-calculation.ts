@@ -13,6 +13,8 @@ export interface SplitCalculation {
 
 export const useSplitCalculation = (initialSplits?: ParticipantSplit[]): SplitCalculation => {
   const [participants, setParticipants] = useState<ParticipantSplit[]>(initialSplits || []);
+  const [lastAmount, setLastAmount] = useState<number>(0);
+  const [lastMethod, setLastMethod] = useState<'equal' | 'exact' | 'percentage'>('equal');
 
   const addParticipant = useCallback((userId: string) => {
     // Guard against undefined/null userId
@@ -37,13 +39,26 @@ export const useSplitCalculation = (initialSplits?: ParticipantSplit[]): SplitCa
     setParticipants(prev =>
       prev.map(p =>
         p.user_id === userId
-          ? { ...p, split_value: value }
+          ? { 
+              ...p, 
+              split_value: value,
+              // Update computed_amount immediately for exact/percentage methods
+              computed_amount: lastMethod === 'exact' 
+                ? value 
+                : (lastMethod === 'percentage' 
+                    ? Math.round((lastAmount * value / 100) * 100) / 100 
+                    : p.computed_amount)
+            }
           : p
       )
     );
-  }, []);
+  }, [lastAmount, lastMethod]);
 
   const recalculate = useCallback((amount: number, method: 'equal' | 'exact' | 'percentage') => {
+    // Store for use in setSplitValue
+    setLastAmount(amount);
+    setLastMethod(method);
+    
     setParticipants(prev => {
       if (prev.length === 0 || amount <= 0) return prev;
 

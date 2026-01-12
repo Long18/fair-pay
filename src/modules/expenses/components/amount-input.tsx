@@ -63,6 +63,13 @@ export const AmountInput: React.FC<AmountInputProps> = ({
     }, 0);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Blur input on Enter to dismiss keyboard on mobile
+    if (e.key === 'Enter') {
+      e.currentTarget.blur();
+    }
+  };
+
   const currencySymbol = currencySymbols[currency] || currency;
 
   return (
@@ -77,6 +84,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
         value={displayValue}
         onChange={handleChange}
         onFocus={handleFocus}
+        onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={disabled}
         className={cn(
