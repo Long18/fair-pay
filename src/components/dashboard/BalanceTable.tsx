@@ -157,7 +157,7 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className={cn("font-medium text-foreground truncate", fullySettled && "line-through text-muted-foreground")}>
+                      <p className={cn("typography-row-title truncate", fullySettled && "line-through text-muted-foreground")}>
                         {balance.counterparty_name}
                       </p>
                       <div className="flex items-center gap-2 mt-1">
@@ -169,7 +169,7 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                           </Badge>
                         )}
                         {showHistory && balance.last_transaction_date && (
-                          <span className="text-xs text-muted-foreground">
+                          <span className="typography-metadata">
                             {t('dashboard.lastTransaction', 'Last: ')}
                             {formatDate(balance.last_transaction_date)}
                           </span>
@@ -179,13 +179,13 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
                     {fullySettled ? (
-                      <span className={cn("flex items-center gap-1 font-semibold text-sm", getPaymentStateColors('paid').text)}>
+                      <span className={cn("flex items-center gap-1 typography-amount", getPaymentStateColors('paid').text)}>
                         <CheckIcon className="h-4 w-4" />
                         {formatCurrency(0, balance.currency || "VND")}
                       </span>
                     ) : (
                       <span className={cn(
-                        "font-semibold text-sm",
+                        "typography-amount-prominent",
                         balance.i_owe_them ? getOweStatusColors('owe').text : getOweStatusColors('owed').text
                       )}>
                         {balance.i_owe_them ? '-' : '+'}
@@ -258,11 +258,11 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
-                      <span className={cn("font-medium", fullySettled && "line-through text-muted-foreground")}>
+                      <span className={cn("typography-row-title", fullySettled && "line-through text-muted-foreground")}>
                         {balance.counterparty_name}
                       </span>
                       {showHistory && balance.last_transaction_date && (
-                        <span className="text-xs text-muted-foreground">
+                        <span className="typography-metadata">
                           {t('dashboard.lastTransaction', 'Last: ')}
                           {formatDate(balance.last_transaction_date)}
                         </span>
@@ -280,11 +280,15 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                   </TableCell>
                   {showHistory && (
                     <>
-                      <TableCell className="text-right text-muted-foreground">
-                        {formatCurrency(Number(balance.total_amount || balance.amount), balance.currency || "VND")}
+                      <TableCell className="text-right">
+                        <span className="typography-amount text-muted-foreground">
+                          {formatCurrency(Number(balance.total_amount || balance.amount), balance.currency || "VND")}
+                        </span>
                       </TableCell>
-                      <TableCell className="text-right text-muted-foreground">
-                        {formatCurrency(Number(balance.settled_amount || 0), balance.currency || "VND")}
+                      <TableCell className="text-right">
+                        <span className="typography-amount text-muted-foreground">
+                          {formatCurrency(Number(balance.settled_amount || 0), balance.currency || "VND")}
+                        </span>
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge variant="outline" className="text-xs">
@@ -293,18 +297,16 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                       </TableCell>
                     </>
                   )}
-                  <TableCell className={cn(
-                    "text-right font-semibold",
-                    fullySettled && getPaymentStateColors('paid').text
-                  )}>
+                  <TableCell className="text-right">
                     {fullySettled ? (
-                      <span className="flex items-center justify-end gap-1">
+                      <span className={cn("flex items-center justify-end gap-1 typography-amount", getPaymentStateColors('paid').text)}>
                         <CheckIcon className="h-4 w-4" />
                         {formatCurrency(0, balance.currency || "VND")}
                       </span>
                     ) : (
-                      // Always prioritize remaining_amount (unpaid) to show what user needs to pay
-                      formatCurrency(Number(balance.remaining_amount !== undefined ? balance.remaining_amount : balance.amount), balance.currency || "VND")
+                      <span className="typography-amount-prominent">
+                        {formatCurrency(Number(balance.remaining_amount !== undefined ? balance.remaining_amount : balance.amount), balance.currency || "VND")}
+                      </span>
                     )}
                   </TableCell>
                 </TableRow>

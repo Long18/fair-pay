@@ -123,6 +123,11 @@ export const Dashboard = () => {
         <DashboardSkeleton />
       ) : (
         <div className="space-y-6">
+          {/* Page Title */}
+          <h1 className="typography-page-title">
+            {t('dashboard.title', 'Dashboard')}
+          </h1>
+
           {/* Main Content Tabs */}
           <Tabs defaultValue="balances" className="space-y-6">
             <div className="flex items-center justify-center w-full">
