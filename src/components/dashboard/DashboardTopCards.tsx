@@ -41,9 +41,9 @@ export function DashboardTopCards({ disabled = false }: DashboardTopCardsProps) 
             <span className="absolute text-sm font-bold">{percentage}%</span>
           </div>
           <div className="space-y-1 text-right">
-            <div className="text-2xl font-bold tracking-tight">₫{formatCurrency(totalOwedToMe)}</div>
-            <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Total Settled</div>
-            <div className="text-xs text-muted-foreground">of ₫{formatCurrency(totalOwed + totalOwedToMe)}</div>
+            <div className="typography-amount-large">₫{formatCurrency(totalOwedToMe)}</div>
+            <div className="typography-metadata uppercase tracking-wider font-semibold">Total Settled</div>
+            <div className="typography-metadata">of ₫{formatCurrency(totalOwed + totalOwedToMe)}</div>
           </div>
         </CardContent>
       </Card>
@@ -57,8 +57,8 @@ export function DashboardTopCards({ disabled = false }: DashboardTopCardsProps) 
                 <WalletIcon className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm font-medium leading-none">Next Settlement</p>
-                <p className="text-xs text-muted-foreground mt-1">Pending actions</p>
+                <p className="typography-card-title">Next Settlement</p>
+                <p className="typography-metadata mt-1">Pending actions</p>
               </div>
             </div>
             {totalOwed > 0 && <AlertCircleIcon className="h-4 w-4 text-orange-500" />}
@@ -101,11 +101,11 @@ export function DashboardTopCards({ disabled = false }: DashboardTopCardsProps) 
         </div>
         <CardContent className="p-6 relative z-10">
           <div className="space-y-2">
-            <p className="text-sm font-medium text-primary">Your Net Balance</p>
-            <h3 className="text-4xl font-bold tracking-tighter">
+            <p className="typography-card-title text-primary">Your Net Balance</p>
+            <h3 className="text-4xl font-bold tracking-tighter tabular-nums">
               {netBalance >= 0 ? '+' : ''}₫{formatCurrency(netBalance)}
             </h3>
-            <p className="text-xs text-muted-foreground">
+            <p className="typography-metadata">
               {netBalance > 0
                 ? `You are owed overall`
                 : netBalance < 0
