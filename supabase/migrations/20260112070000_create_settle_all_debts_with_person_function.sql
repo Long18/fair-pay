@@ -14,7 +14,7 @@ RETURNS JSONB
 SECURITY DEFINER
 SET search_path = public, pg_temp
 LANGUAGE plpgsql
-AS $$$
+AS $$
 DECLARE
   v_current_user_id UUID;
   v_split RECORD;
@@ -152,7 +152,7 @@ BEGIN
     'split_ids', v_split_ids
   );
 END;
-$$$;
+$$;
 
 COMMENT ON FUNCTION settle_all_debts_with_person(UUID) IS 
 'Settle all outstanding debts between current user and another person. 
