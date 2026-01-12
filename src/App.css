@@ -66,6 +66,56 @@
   --radius-xl: calc(var(--radius) + 4px);
 
   --font-sans: "Fz Fragrant", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Financial-optimized font sizes */
+  --font-size-amount-sm: 0.875rem;
+  --line-height-amount-sm: 1.25rem;
+  --font-weight-amount-sm: 600;
+
+  --font-size-amount-md: 1rem;
+  --line-height-amount-md: 1.5rem;
+  --font-weight-amount-md: 600;
+
+  --font-size-amount-lg: 1.125rem;
+  --line-height-amount-lg: 1.75rem;
+  --font-weight-amount-lg: 700;
+}
+
+/* Typography Utility Classes */
+.typography-page-title {
+  @apply text-2xl md:text-3xl font-bold tracking-tight;
+}
+
+.typography-section-title {
+  @apply text-xl font-semibold;
+}
+
+.typography-card-title {
+  @apply text-lg font-medium;
+}
+
+.typography-row-title {
+  @apply text-base font-medium;
+}
+
+.typography-body {
+  @apply text-sm;
+}
+
+.typography-metadata {
+  @apply text-xs text-muted-foreground;
+}
+
+.typography-amount {
+  @apply text-sm font-semibold tabular-nums;
+}
+
+.typography-amount-prominent {
+  @apply text-base font-bold tabular-nums;
+}
+
+.typography-amount-large {
+  @apply text-lg font-bold tabular-nums;
 }
 
 :root {
