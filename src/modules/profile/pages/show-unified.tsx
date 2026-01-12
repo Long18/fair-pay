@@ -451,8 +451,8 @@ export const ProfileShowUnified = () => {
 
     setIsSettling(true);
     try {
-      const { data, error } = await supabaseClient.rpc('settle_all_debts_with_person', {
-        p_counterparty_id: profileId
+      const { data, error } = await supabaseClient.rpc('settle_all_splits_for_user', {
+        p_user_id: profileId
       });
 
       if (error) {
