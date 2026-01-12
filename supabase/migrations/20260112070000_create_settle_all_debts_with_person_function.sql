@@ -41,12 +41,14 @@ BEGIN
     RAISE EXCEPTION 'Cannot settle debts with yourself';
   END IF;
 
-  -- Count already paid splits between these users
+  -- Count already paid splits between current user and counterparty ONLY
   SELECT COUNT(*) INTO v_already_paid
   FROM expense_splits es
   JOIN expenses e ON es.expense_id = e.id
   WHERE (
+    -- Current user owes counterparty
     (es.user_id = v_current_user_id AND e.paid_by_user_id = p_counterparty_id) OR
+    -- Counterparty owes current user
     (es.user_id = p_counterparty_id AND e.paid_by_user_id = v_current_user_id)
   )
   AND NOT e.is_payment
@@ -55,13 +57,15 @@ BEGIN
   AND es.is_settled = true
   AND COALESCE(es.settled_amount, 0) >= es.computed_amount - 0.01;
 
-  -- Process each unpaid or partially paid split between these users
+  -- Process each unpaid or partially paid split between current user and counterparty ONLY
   FOR v_split IN 
     SELECT es.*, e.currency, e.paid_by_user_id
     FROM expense_splits es
     JOIN expenses e ON es.expense_id = e.id
     WHERE (
+      -- Current user owes counterparty
       (es.user_id = v_current_user_id AND e.paid_by_user_id = p_counterparty_id) OR
+      -- Counterparty owes current user  
       (es.user_id = p_counterparty_id AND e.paid_by_user_id = v_current_user_id)
     )
     AND NOT e.is_payment
@@ -155,8 +159,9 @@ END;
 $$;
 
 COMMENT ON FUNCTION settle_all_debts_with_person(UUID) IS 
-'Settle all outstanding debts between current user and another person. 
-Settles all unpaid or partially paid splits where either user owes the other.
+'Settle all outstanding debts between CURRENT USER and specified counterparty ONLY. 
+Does NOT affect debts between other users.
+Only settles splits where current user owes counterparty OR counterparty owes current user.
 Creates individual payment_event records for each split settled.
 Writes audit trail record for the bulk operation. Returns summary with counts and amounts.';
 
