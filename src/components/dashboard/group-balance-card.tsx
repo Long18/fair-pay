@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useGo } from "@refinedev/core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,12 +7,14 @@ import { GroupBalance } from "@/hooks/use-global-balance";
 import { formatCurrency as formatCurrencyUtil } from "@/lib/locale-utils";
 
 import { UsersIcon, TrendingDownIcon } from "@/components/ui/icons";
+
 interface GroupBalanceCardProps {
   group: GroupBalance;
   currency?: string;
 }
 
 export const GroupBalanceCard = ({ group, currency = "VND" }: GroupBalanceCardProps) => {
+  const { t } = useTranslation();
   const go = useGo();
 
   const formatCurrency = (amount: number) => {
@@ -25,9 +28,9 @@ export const GroupBalanceCard = ({ group, currency = "VND" }: GroupBalanceCardPr
   };
 
   const getBalanceText = (balance: number) => {
-    if (balance > 0) return `You are owed ${formatCurrency(balance)}`;
-    if (balance < 0) return `You owe ${formatCurrency(balance)}`;
-    return "All settled";
+    if (balance > 0) return t("groups.youAreOwed", { amount: formatCurrency(balance) });
+    if (balance < 0) return t("groups.youOwe", { amount: formatCurrency(Math.abs(balance)) });
+    return t("groups.allSettled");
   };
 
   return (
@@ -41,7 +44,7 @@ export const GroupBalanceCard = ({ group, currency = "VND" }: GroupBalanceCardPr
             <CardTitle className="text-lg truncate">{group.group_name}</CardTitle>
             <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
               <UsersIcon className="h-3 w-3" />
-              <span>{group.member_count} members</span>
+              <span>{t("groups.membersCount", { count: group.member_count })}</span>
             </div>
           </div>
           {group.my_balance !== 0 && (
@@ -59,18 +62,16 @@ export const GroupBalanceCard = ({ group, currency = "VND" }: GroupBalanceCardPr
           {getBalanceText(group.my_balance)}
         </p>
 
-        {/* Total Group Debt */}
         {group.total_group_debt > 0 && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground border-t pt-3">
             <TrendingDownIcon className="h-4 w-4" />
-            <span>Total group debt: {formatCurrency(group.total_group_debt)}</span>
+            <span>{t("groups.totalGroupDebt")}: {formatCurrency(group.total_group_debt)}</span>
           </div>
         )}
 
-        {/* Top Debtors */}
         {group.top_debtors && group.top_debtors.length > 0 && (
           <div className="border-t pt-3">
-            <p className="text-xs font-medium text-muted-foreground mb-2">Top Debtors:</p>
+            <p className="text-xs font-medium text-muted-foreground mb-2">{t("groups.topDebtors")}:</p>
             <div className="space-y-2">
               {group.top_debtors.slice(0, 3).map((debtor, index) => (
                 <div key={debtor.user_id} className="flex items-center gap-2 text-sm">

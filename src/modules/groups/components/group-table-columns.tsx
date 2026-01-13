@@ -1,36 +1,39 @@
 import { ColumnDef } from "@tanstack/react-table";
+import { useTranslation } from "react-i18next";
 import { Group } from "../types";
 import { Button } from "@/components/ui/button";
 import { useGo } from "@refinedev/core";
 import { formatDate } from "@/lib/locale-utils";
 
 import { EyeIcon, PencilIcon } from "@/components/ui/icons";
+
 export const useGroupColumns = (): ColumnDef<Group>[] => {
+  const { t } = useTranslation();
   const go = useGo();
 
   return [
     {
       accessorKey: "name",
-      header: "Group Name",
+      header: t("groups.groupName"),
       cell: ({ row }) => (
         <div className="font-medium">{row.getValue("name")}</div>
       ),
     },
     {
       accessorKey: "description",
-      header: "Description",
+      header: t("groups.description"),
       cell: ({ row }) => {
         const description = row.getValue("description") as string | null;
         return (
           <div className="text-sm text-muted-foreground truncate max-w-md">
-            {description || "No description"}
+            {description || t("expenses.noDescription")}
           </div>
         );
       },
     },
     {
       accessorKey: "created_at",
-      header: "Created",
+      header: t("groups.created"),
       cell: ({ row }) => {
         const date = new Date(row.getValue("created_at"));
         return (
@@ -46,7 +49,7 @@ export const useGroupColumns = (): ColumnDef<Group>[] => {
     },
     {
       id: "actions",
-      header: "Actions",
+      header: t("groups.actions"),
       cell: ({ row }) => {
         const group = row.original;
         return (

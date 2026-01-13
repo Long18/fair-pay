@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/locale-utils";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,7 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
   onSplitValueChange,
   totalSplit,
 }) => {
+  const { t } = useTranslation();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [manualValues, setManualValues] = useState<Record<string, string>>({});
 
@@ -71,7 +73,6 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Blur input on Enter to dismiss keyboard on mobile
     if (e.key === 'Enter') {
       e.currentTarget.blur();
     }
@@ -79,7 +80,7 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
 
   const getMemberName = (userId: string) => {
     const member = members.find(m => m.id === userId);
-    return member?.full_name || "Unknown";
+    return member?.full_name || t("expenses.unknown");
   };
 
   const isCurrentUser = (userId: string) => userId === currentUserId;
@@ -88,12 +89,11 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
 
   return (
     <div className="space-y-4 overflow-x-hidden max-w-full">
-      {/* Selected Participants */}
       <div className="space-y-2">
         <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-medium">Participants</label>
+          <label className="text-sm font-medium">{t("expenses.participants")}</label>
           <span className="text-xs text-muted-foreground">
-            {participants.length} selected
+            {participants.length} {t("expenses.selected")}
           </span>
         </div>
 
@@ -110,7 +110,7 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
                 {getMemberName(participant.user_id)}
               </span>
               {isCurrentUser(participant.user_id) && (
-                <Badge variant="outline" className="h-5 px-1 text-[10px] flex-shrink-0">You</Badge>
+                <Badge variant="outline" className="h-5 px-1 text-[10px] flex-shrink-0">{t("common.you")}</Badge>
               )}
               <span className="text-sm text-muted-foreground mx-1 flex-shrink-0">•</span>
               <span className="text-sm font-medium text-primary truncate min-w-0">
@@ -128,24 +128,18 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
             </div>
           ))}
 
-          {/* Add Participant Button */}
           {availableMembers.length > 0 && (
             <Popover open={isAddOpen} onOpenChange={setIsAddOpen}>
               <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-[38px] border-dashed"
-                >
+                <Button type="button" variant="outline" size="sm" className="h-[38px] border-dashed">
                   <UserPlusIcon className="h-4 w-4 mr-1" />
-                  Add
+                  {t("expenses.add")}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[200px] p-0" align="start">
                 <Command>
-                  <CommandInput placeholder="Search..." />
-                  <CommandEmpty>No members found</CommandEmpty>
+                  <CommandInput placeholder={t("common.search")} />
+                  <CommandEmpty>{t("groups.noGroups")}</CommandEmpty>
                   <CommandGroup>
                     {availableMembers.map((member) => (
                       <CommandItem
@@ -168,11 +162,10 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
         </div>
       </div>
 
-      {/* Manual Split Values (for exact/percentage) */}
       {splitMethod !== "equal" && participants.length > 0 && (
         <div className="space-y-2 pt-2 border-t">
           <label className="text-sm font-medium">
-            {splitMethod === "exact" ? "Enter amounts" : "Enter percentages"}
+            {splitMethod === "exact" ? t("expenses.enterAmounts") : t("expenses.enterPercentages")}
           </label>
           <div className="space-y-2">
             {participants.map((participant) => (
@@ -206,14 +199,13 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
         </div>
       )}
 
-      {/* Total Summary */}
       {participants.length > 0 && amount && (
         <div className={cn(
           "flex justify-between items-center p-3 rounded-lg",
           "bg-muted/50 border",
           Math.abs(totalSplit - amount) > 1 && splitMethod !== "equal" && "border-destructive bg-destructive/10"
         )}>
-          <span className="font-semibold text-sm">Total Split</span>
+          <span className="font-semibold text-sm">{t("expenses.totalSplit")}</span>
           <span className={cn(
             "font-bold",
             Math.abs(totalSplit - amount) > 1 && splitMethod !== "equal" ? "text-destructive" : "text-primary"
@@ -223,23 +215,23 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
         </div>
       )}
 
-      {/* Validation Message */}
       {amount && Math.abs(totalSplit - amount) > 1 && splitMethod !== "equal" && (
         <p className="text-sm text-destructive flex items-start gap-2">
           <span>⚠️</span>
           <span>
-            Total split ({formatNumber(totalSplit)} {currencySymbol}) doesn't match
-            expense amount ({formatNumber(amount)} {currencySymbol})
+            {t("expenses.splitMismatch", {
+              splitAmount: `${formatNumber(totalSplit)} ${currencySymbol}`,
+              expenseAmount: `${formatNumber(amount)} ${currencySymbol}`
+            })}
           </span>
         </p>
       )}
 
-      {/* Empty State */}
       {participants.length === 0 && (
         <div className="text-center py-6 text-muted-foreground">
           <UsersIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm font-medium">No participants selected</p>
-          <p className="text-xs mt-1">Click the Add button to select who shares this expense</p>
+          <p className="text-sm font-medium">{t("expenses.noParticipants")}</p>
+          <p className="text-xs mt-1">{t("expenses.clickToAdd")}</p>
         </div>
       )}
     </div>

@@ -21,6 +21,8 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { UserSettings, CURRENCIES, DATE_FORMATS, THEMES, Theme, DateFormat } from '../types';
 import { Loader2Icon } from "@/components/ui/icons";
+import { useTranslation } from 'react-i18next';
+
 const displaySettingsSchema = z.object({
   default_currency: z.string(),
   date_format: z.enum(['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']),
@@ -34,6 +36,7 @@ interface DisplaySettingsFormProps {
 }
 
 export function DisplaySettingsForm({ settings, onSave, isUpdating }: DisplaySettingsFormProps) {
+  const { t } = useTranslation();
   const form = useForm({
     resolver: zodResolver(displaySettingsSchema),
     defaultValues: {
@@ -55,11 +58,11 @@ export function DisplaySettingsForm({ settings, onSave, isUpdating }: DisplaySet
           name="default_currency"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Tiền tệ mặc định</FormLabel>
+              <FormLabel>{t('settings.defaultCurrency')}</FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Chọn tiền tệ" />
+                    <SelectValue placeholder={t('settings.selectCurrency')} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -71,7 +74,7 @@ export function DisplaySettingsForm({ settings, onSave, isUpdating }: DisplaySet
                 </SelectContent>
               </Select>
               <FormDescription>
-                Tiền tệ mặc định sẽ được sử dụng khi tạo chi tiêu mới
+                {t('settings.currencyDescription')}
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -83,23 +86,23 @@ export function DisplaySettingsForm({ settings, onSave, isUpdating }: DisplaySet
           name="date_format"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Định dạng ngày</FormLabel>
+              <FormLabel>{t('settings.dateFormat')}</FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Chọn định dạng" />
+                    <SelectValue placeholder={t('settings.dateFormat')} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
                   {DATE_FORMATS.map((format) => (
                     <SelectItem key={format.value} value={format.value}>
-                      {format.label} - Ví dụ: {format.example}
+                      {format.label} - {t('settings.example')}: {format.example}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <FormDescription>
-                Định dạng ngày hiển thị trong toàn bộ ứng dụng
+                {t('settings.dateFormatDescription')}
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -111,7 +114,7 @@ export function DisplaySettingsForm({ settings, onSave, isUpdating }: DisplaySet
           name="theme"
           render={({ field }) => (
             <FormItem className="space-y-3">
-              <FormLabel>Giao diện</FormLabel>
+              <FormLabel>{t('settings.theme')}</FormLabel>
               <FormControl>
                 <RadioGroup
                   onValueChange={field.onChange}
@@ -142,7 +145,7 @@ export function DisplaySettingsForm({ settings, onSave, isUpdating }: DisplaySet
 
         <Button type="submit" disabled={isUpdating}>
           {isUpdating && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
-          Lưu cài đặt
+          {t('settings.saveSettings')}
         </Button>
       </form>
     </Form>

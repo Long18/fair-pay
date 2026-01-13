@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SpendingSummary } from '@/hooks/use-spending-summary';
 import { formatNumber } from '@/lib/locale-utils';
+import { useTranslation } from 'react-i18next';
 
 import { TrendingUpIcon, TrendingDownIcon, ReceiptIcon, CreditCardIcon, ArrowUpDownIcon } from "@/components/ui/icons";
 interface SpendingSummaryStatsProps {
@@ -8,11 +9,13 @@ interface SpendingSummaryStatsProps {
 }
 
 export function SpendingSummaryStats({ summary }: SpendingSummaryStatsProps) {
+  const { t } = useTranslation();
+  
   return (
     <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
       <Card className="border-border shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs sm:text-sm font-medium">Tổng chi</CardTitle>
+          <CardTitle className="text-xs sm:text-sm font-medium">{t('reports.totalSpent')}</CardTitle>
           <TrendingDownIcon className="h-4 w-4 text-destructive" />
         </CardHeader>
         <CardContent>
@@ -20,14 +23,14 @@ export function SpendingSummaryStats({ summary }: SpendingSummaryStatsProps) {
             {formatNumber(summary.totalSpent)} ₫
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            {summary.expenseCount} chi tiêu
+            {summary.expenseCount} {t('analytics.expenses')}
           </p>
         </CardContent>
       </Card>
 
       <Card className="border-border shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs sm:text-sm font-medium">Tổng thu</CardTitle>
+          <CardTitle className="text-xs sm:text-sm font-medium">{t('reports.totalReceived')}</CardTitle>
           <TrendingUpIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
         </CardHeader>
         <CardContent>
@@ -35,14 +38,14 @@ export function SpendingSummaryStats({ summary }: SpendingSummaryStatsProps) {
             {formatNumber(summary.totalReceived)} ₫
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            {summary.paymentCount} thanh toán
+            {summary.paymentCount} {t('payments.title').toLowerCase()}
           </p>
         </CardContent>
       </Card>
 
       <Card className="border-border shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs sm:text-sm font-medium">Cân bằng</CardTitle>
+          <CardTitle className="text-xs sm:text-sm font-medium">{t('reports.balance')}</CardTitle>
           <ArrowUpDownIcon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -50,14 +53,14 @@ export function SpendingSummaryStats({ summary }: SpendingSummaryStatsProps) {
             {summary.netBalance >= 0 ? '+' : ''}{formatNumber(summary.netBalance)} ₫
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            {summary.netBalance >= 0 ? 'Bạn đang được nợ' : 'Bạn đang nợ'}
+            {summary.netBalance >= 0 ? t('reports.youAreOwed') : t('reports.youOwe')}
           </p>
         </CardContent>
       </Card>
 
       <Card className="border-border shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs sm:text-sm font-medium">Trung bình</CardTitle>
+          <CardTitle className="text-xs sm:text-sm font-medium">{t('reports.average')}</CardTitle>
           <ReceiptIcon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -65,7 +68,7 @@ export function SpendingSummaryStats({ summary }: SpendingSummaryStatsProps) {
             {formatNumber(summary.averageExpense)} ₫
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Mỗi chi tiêu
+            {t('reports.perExpense')}
           </p>
         </CardContent>
       </Card>

@@ -6,12 +6,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { EmptyState } from '@/components/refine-ui/empty-state';
 import { RepeatIcon, InfoIcon } from "@/components/ui/icons";
+import { useTranslation } from 'react-i18next';
+
 interface RecurringExpenseListProps {
   groupId?: string;
   friendshipId?: string;
 }
 
 export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpenseListProps) {
+  const { t } = useTranslation();
   const { recurring, active, paused, isLoading, error } = useRecurringExpenses({
     groupId,
     friendshipId,
@@ -31,7 +34,7 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
     return (
       <Alert variant="destructive">
         <AlertDescription>
-          Có lỗi xảy ra khi tải chi phí định kỳ: {error.message}
+          {t('recurring.loadError')}: {error.message}
         </AlertDescription>
       </Alert>
     );
@@ -41,8 +44,8 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
     return (
       <EmptyState
         icon={<RepeatIcon />}
-        title="Chưa có chi phí định kỳ"
-        description="Khi tạo chi phí, chọn 'Chi phí định kỳ' để tự động tạo chi phí theo lịch"
+        title={t('recurring.noRecurring')}
+        description={t('recurring.noRecurringDescription')}
       />
     );
   }
@@ -52,24 +55,23 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
       <Alert>
         <InfoIcon className="h-4 w-4" />
         <AlertDescription>
-          Chi phí định kỳ được tạo tự động vào 00:00 UTC mỗi ngày. Bạn có thể tạm dừng hoặc xóa
-          bất kỳ lúc nào.
+          {t('recurring.autoCreatedInfo')}
         </AlertDescription>
       </Alert>
 
       <Tabs defaultValue="active" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="active">
-            Đang hoạt động ({active.length})
+            {t('recurring.activeTab', { count: active.length })}
           </TabsTrigger>
-          <TabsTrigger value="paused">Đã tạm dừng ({paused.length})</TabsTrigger>
+          <TabsTrigger value="paused">{t('recurring.pausedTab', { count: paused.length })}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="active" className="space-y-4 mt-4">
           {active.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <p className="text-sm text-muted-foreground">
-                Không có chi phí định kỳ nào đang hoạt động
+                {t('recurring.noActiveRecurring')}
               </p>
             </div>
           ) : (
@@ -83,7 +85,7 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
           {paused.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <p className="text-sm text-muted-foreground">
-                Không có chi phí định kỳ nào bị tạm dừng
+                {t('recurring.noPausedRecurring')}
               </p>
             </div>
           ) : (

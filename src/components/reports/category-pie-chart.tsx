@@ -5,6 +5,7 @@ import { PieChart, Pie, Cell, Label } from 'recharts';
 import { CategoryData } from '@/hooks/use-category-breakdown';
 import { getCategoryMeta } from '@/modules/expenses';
 import { formatNumber } from '@/lib/locale-utils';
+import { useTranslation } from 'react-i18next';
 import {
   ChartContainer,
   ChartTooltip,
@@ -19,16 +20,19 @@ interface CategoryPieChartProps {
   title?: string;
 }
 
-export function CategoryPieChart({ data, title = 'Chi tiêu theo danh mục' }: CategoryPieChartProps) {
+export function CategoryPieChart({ data, title }: CategoryPieChartProps) {
+  const { t } = useTranslation();
+  const chartTitle = title || t('analytics.spendingByCategory');
+  
   if (data.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{title}</CardTitle>
+          <CardTitle>{chartTitle}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-64 text-muted-foreground">
-            Không có dữ liệu
+            {t('reports.noData')}
           </div>
         </CardContent>
       </Card>
@@ -60,9 +64,9 @@ export function CategoryPieChart({ data, title = 'Chi tiêu theo danh mục' }: 
   return (
     <Card className="flex flex-col border-border shadow-sm">
       <CardHeader className="pb-3 px-4 sm:px-6">
-        <CardTitle className="text-base sm:text-lg md:text-xl">{title}</CardTitle>
+        <CardTitle className="text-base sm:text-lg md:text-xl">{chartTitle}</CardTitle>
         <CardDescription className="text-xs sm:text-sm mt-1">
-          Tổng: {formatNumber(totalAmount)} ₫
+          {t('analytics.total')}: {formatNumber(totalAmount)} ₫
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-4 sm:pb-6 px-4 sm:px-6">
@@ -76,7 +80,7 @@ export function CategoryPieChart({ data, title = 'Chi tiêu theo danh mục' }: 
                     <div className="flex flex-col gap-1">
                       <span className="font-medium">{formatNumber(Number(value))} ₫</span>
                       <span className="text-xs text-muted-foreground">
-                        {item.payload.count} chi tiêu
+                        {item.payload.count} {t('analytics.expenses')}
                       </span>
                     </div>
                   )}
