@@ -18,6 +18,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { format } from 'date-fns';
 import { vi, enUS } from 'date-fns/locale';
 import {
@@ -28,6 +33,7 @@ import {
 import { CategoryIcon } from './category-icon';
 import { PrepaidStatusBadge } from './prepaid-status-badge';
 import { PrepaidPaymentDialog } from './prepaid-payment-dialog';
+import { PrepaidPaymentHistory } from './prepaid-payment-history';
 import { useState } from 'react';
 import { useUpdateRecurringExpense, useDeleteRecurringExpense } from '../hooks/use-recurring-expenses';
 import { useNotification } from '@refinedev/core';
@@ -43,6 +49,7 @@ import {
   Trash2Icon, 
   CalendarIcon,
   BanknoteIcon,
+  ChevronDownIcon,
 } from "@/components/ui/icons";
 
 interface RecurringExpenseCardProps {
@@ -54,6 +61,7 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
   const { t, i18n } = useTranslation();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showPrepaidDialog, setShowPrepaidDialog] = useState(false);
+  const [showPrepaidHistory, setShowPrepaidHistory] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { pauseRecurring, resumeRecurring } = useUpdateRecurringExpense();
@@ -244,6 +252,34 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
                 {formatPrepaidCoverage(recurring.prepaid_until, language)}
               </p>
             </div>
+          )}
+
+          {/* Prepaid Payment History Section - Requirements 6.2 */}
+          {hasPrepaidCoverage && (
+            <Collapsible open={showPrepaidHistory} onOpenChange={setShowPrepaidHistory}>
+              <CollapsibleTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-between mt-2 text-muted-foreground hover:text-foreground"
+                >
+                  <span className="text-sm">
+                    {t('recurring.prepaid.paymentHistory', 'Payment History')}
+                  </span>
+                  <ChevronDownIcon
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      showPrepaidHistory ? 'rotate-180' : ''
+                    }`}
+                  />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <PrepaidPaymentHistory
+                  recurringExpenseId={recurring.id}
+                  currency={template?.currency || 'VND'}
+                />
+              </CollapsibleContent>
+            </Collapsible>
           )}
         </CardContent>
       </Card>
