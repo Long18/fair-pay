@@ -5,7 +5,6 @@ import { FloatingActionButton } from "@/components/dashboard/FloatingActionButto
 import { DashboardSkeleton } from "@/components/dashboard/DashboardStates";
 import { BalanceTable } from "@/components/dashboard/BalanceTable";
 import { EnhancedActivityList } from "@/components/dashboard/enhanced-activity";
-import { DebtBreakdownSection } from "@/components/dashboard/debt-breakdown-section";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -186,13 +185,8 @@ export const Dashboard = () => {
                 </div>
               )}
               <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
-                <BalanceTable balances={balances} disabled={!isAuthenticated} showHistory={showHistory} />
+                <BalanceTable balances={balances} disabled={!isAuthenticated} showHistory={showHistory} showExpenseBreakdown={!showHistory} />
               </div>
-
-              {/* Debt Breakdown Section - NEW */}
-              {isAuthenticated && !showHistory && (
-                <DebtBreakdownSection balances={balances} isLoading={debtsLoading} />
-              )}
             </TabsContent>
 
             <TabsContent value="activity" className="space-y-4 mt-6">
