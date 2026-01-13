@@ -5,6 +5,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -25,13 +26,25 @@ import {
   getRecurringExpenseStatus,
 } from '../types/recurring';
 import { CategoryIcon } from './category-icon';
+import { PrepaidStatusBadge } from './prepaid-status-badge';
+import { PrepaidPaymentDialog } from './prepaid-payment-dialog';
 import { useState } from 'react';
 import { useUpdateRecurringExpense, useDeleteRecurringExpense } from '../hooks/use-recurring-expenses';
 import { useNotification } from '@refinedev/core';
 import { formatNumber } from '@/lib/locale-utils';
 import { useTranslation } from 'react-i18next';
+import { getPrepaidCoverageStatus, formatPrepaidCoverage } from '../utils/prepaid-calculations';
 
-import { MoreVerticalIcon, RepeatIcon, PauseIcon, PlayIcon, Trash2Icon, CalendarIcon } from "@/components/ui/icons";
+import { 
+  MoreVerticalIcon, 
+  RepeatIcon, 
+  PauseIcon, 
+  PlayIcon, 
+  Trash2Icon, 
+  CalendarIcon,
+  BanknoteIcon,
+} from "@/components/ui/icons";
+
 interface RecurringExpenseCardProps {
   recurring: RecurringExpense;
   onUpdate?: () => void;
@@ -40,6 +53,7 @@ interface RecurringExpenseCardProps {
 export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCardProps) {
   const { t, i18n } = useTranslation();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showPrepaidDialog, setShowPrepaidDialog] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { pauseRecurring, resumeRecurring } = useUpdateRecurringExpense();
@@ -47,8 +61,13 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
   const { open: notify } = useNotification();
 
   const status = getRecurringExpenseStatus(recurring);
-  const template = recurring.template_expense;
+  const template = recurring.template_expense || recurring.expenses;
   const dateLocale = i18n.language === 'vi' ? vi : enUS;
+  const language = i18n.language === 'vi' ? 'vi' : 'en';
+
+  // Get prepaid coverage info
+  const prepaidCoverageInfo = getPrepaidCoverageStatus(recurring);
+  const hasPrepaidCoverage = prepaidCoverageInfo.status !== 'none';
 
   const handlePauseResume = async () => {
     try {
@@ -99,6 +118,11 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
     }
   };
 
+  const handlePrepaidSuccess = () => {
+    setShowPrepaidDialog(false);
+    onUpdate?.();
+  };
+
   if (!template) {
     return null;
   }
@@ -114,13 +138,17 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
               </div>
               <div>
                 <CardTitle className="text-base">{template.description}</CardTitle>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
                   {template.category && (
                     <CategoryIcon category={template.category} size="sm" />
                   )}
                   <Badge variant={recurring.is_active ? 'default' : 'secondary'}>
                     {recurring.is_active ? t('recurring.active') : t('recurring.paused')}
                   </Badge>
+                  {/* Prepaid Status Badge - Requirements 5.1, 5.3, 5.4, 5.5 */}
+                  {hasPrepaidCoverage && (
+                    <PrepaidStatusBadge coverageInfo={prepaidCoverageInfo} />
+                  )}
                 </div>
               </div>
             </div>
@@ -132,6 +160,16 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                {/* Pay Upfront action - Requirements 5.1 */}
+                {recurring.is_active && (
+                  <>
+                    <DropdownMenuItem onClick={() => setShowPrepaidDialog(true)}>
+                      <BanknoteIcon className="mr-2 h-4 w-4" />
+                      {t('recurring.prepaid.payUpfront', 'Pay upfront')}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem
                   onClick={handlePauseResume}
                   disabled={isUpdating}
@@ -198,9 +236,19 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
               )}
             </div>
           </div>
+
+          {/* Prepaid Coverage Info - Requirements 5.2 */}
+          {hasPrepaidCoverage && recurring.prepaid_until && (
+            <div className="pt-2 border-t">
+              <p className="text-sm text-muted-foreground">
+                {formatPrepaidCoverage(recurring.prepaid_until, language)}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -220,6 +268,14 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Prepaid Payment Dialog - Requirements 1.1, 4.4 */}
+      <PrepaidPaymentDialog
+        recurring={recurring}
+        open={showPrepaidDialog}
+        onOpenChange={setShowPrepaidDialog}
+        onSuccess={handlePrepaidSuccess}
+      />
     </>
   );
 }
