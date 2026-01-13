@@ -180,13 +180,14 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
   }, []); // No dependencies to prevent recreation
 
   // Debounced handlers to avoid excessive URL updates and re-renders
+  // Reduced debounce time to 100ms for more responsive feel
   const debouncedFilterChange = React.useMemo(
-    () => debounce(handleFilterChange, 300),
+    () => debounce(handleFilterChange, 100),
     [handleFilterChange]
   );
 
   const debouncedSortChange = React.useMemo(
-    () => debounce(handleSortChange, 300),
+    () => debounce(handleSortChange, 100),
     [handleSortChange]
   );
 
