@@ -43,7 +43,7 @@ export function PrepaidPaymentForm({
   const language = i18n.language === 'vi' ? 'vi' : 'en';
 
   // Calculate coverage period and total amount
-  const { totalAmount, coverageFrom, coverageTo, coveragePeriodText } = useMemo(() => {
+  const { totalAmount, coveragePeriodText } = useMemo(() => {
     const total = calculateTotalPrepaidAmount(periodAmount, periodsCount);
     
     // Determine start date for coverage calculation
@@ -69,8 +69,6 @@ export function PrepaidPaymentForm({
 
     return {
       totalAmount: total,
-      coverageFrom: startDate,
-      coverageTo: calculatedEnd,
       coveragePeriodText: periodText,
     };
   }, [periodsCount, periodAmount, recurring, language]);

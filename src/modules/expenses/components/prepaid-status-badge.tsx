@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { PrepaidCoverageInfo, PrepaidCoverageStatus } from '../types/recurring';
 import { formatPrepaidCoverage } from '../utils/prepaid-calculations';
+import { semanticStatusColors, oweStatusColors } from '@/lib/status-colors';
 
 interface PrepaidStatusBadgeProps {
   coverageInfo: PrepaidCoverageInfo;
@@ -20,22 +21,22 @@ const STATUS_CONFIG: Record<PrepaidCoverageStatus, {
   none: {
     variant: 'outline',
     icon: ClockIcon,
-    colorClass: 'text-muted-foreground',
+    colorClass: oweStatusColors.neutral.icon,
   },
   active: {
     variant: 'default',
     icon: CheckCircle2Icon,
-    colorClass: 'text-green-600 dark:text-green-400',
+    colorClass: semanticStatusColors.success.icon,
   },
   expiring_soon: {
     variant: 'secondary',
     icon: AlertTriangleIcon,
-    colorClass: 'text-amber-600 dark:text-amber-400',
+    colorClass: semanticStatusColors.warning.icon,
   },
   expired: {
     variant: 'destructive',
     icon: XCircleIcon,
-    colorClass: 'text-red-600 dark:text-red-400',
+    colorClass: semanticStatusColors.error.icon,
   },
 };
 
@@ -78,8 +79,8 @@ export function PrepaidStatusBadge({
       variant={config.variant}
       className={cn(
         'gap-1 whitespace-nowrap',
-        status === 'active' && 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800',
-        status === 'expiring_soon' && 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800',
+        status === 'active' && `${semanticStatusColors.success.bg} ${semanticStatusColors.success.text} ${semanticStatusColors.success.border}`,
+        status === 'expiring_soon' && `${semanticStatusColors.warning.bg} ${semanticStatusColors.warning.text} ${semanticStatusColors.warning.border}`,
         className
       )}
     >
