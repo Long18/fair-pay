@@ -13,6 +13,8 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { UserSettings } from '../types';
 import { Loader2Icon } from "@/components/ui/icons";
+import { useTranslation } from 'react-i18next';
+
 const notificationSettingsSchema = z.object({
   notifications_enabled: z.boolean(),
   email_notifications: z.boolean(),
@@ -29,6 +31,7 @@ interface NotificationSettingsFormProps {
 }
 
 export function NotificationSettingsForm({ settings, onSave, isUpdating }: NotificationSettingsFormProps) {
+  const { t } = useTranslation();
   const form = useForm({
     resolver: zodResolver(notificationSettingsSchema),
     defaultValues: {
@@ -57,10 +60,10 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
                 <FormLabel className="text-base">
-                  Bật thông báo
+                  {t('settings.enableNotifications')}
                 </FormLabel>
                 <FormDescription>
-                  Nhận thông báo trong ứng dụng về hoạt động của bạn
+                  {t('settings.enableNotificationsDescription')}
                 </FormDescription>
               </div>
               <FormControl>
@@ -81,10 +84,10 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                 <div className="space-y-0.5">
                   <FormLabel className="text-base">
-                    Thông báo qua email
+                    {t('settings.emailNotifications')}
                   </FormLabel>
                   <FormDescription>
-                    Nhận thông báo qua email về hoạt động quan trọng
+                    {t('settings.emailNotificationsDescription')}
                   </FormDescription>
                 </div>
                 <FormControl>
@@ -105,10 +108,10 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                 <div className="space-y-0.5">
                   <FormLabel className="text-base">
-                    Chi tiêu mới
+                    {t('settings.newExpenseNotifications')}
                   </FormLabel>
                   <FormDescription>
-                    Thông báo khi có chi tiêu mới trong nhóm của bạn
+                    {t('settings.newExpenseNotificationsDescription')}
                   </FormDescription>
                 </div>
                 <FormControl>
@@ -129,10 +132,10 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                 <div className="space-y-0.5">
                   <FormLabel className="text-base">
-                    Thanh toán nhận được
+                    {t('settings.paymentReceivedNotifications')}
                   </FormLabel>
                   <FormDescription>
-                    Thông báo khi ai đó thanh toán cho bạn
+                    {t('settings.paymentReceivedNotificationsDescription')}
                   </FormDescription>
                 </div>
                 <FormControl>
@@ -153,10 +156,10 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                 <div className="space-y-0.5">
                   <FormLabel className="text-base">
-                    Lời mời kết bạn
+                    {t('settings.friendRequestNotifications')}
                   </FormLabel>
                   <FormDescription>
-                    Thông báo khi có người gửi lời mời kết bạn
+                    {t('settings.friendRequestNotificationsDescription')}
                   </FormDescription>
                 </div>
                 <FormControl>
@@ -177,10 +180,10 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                 <div className="space-y-0.5">
                   <FormLabel className="text-base">
-                    Lời mời vào nhóm
+                    {t('settings.groupInviteNotifications')}
                   </FormLabel>
                   <FormDescription>
-                    Thông báo khi được mời vào nhóm mới
+                    {t('settings.groupInviteNotificationsDescription')}
                   </FormDescription>
                 </div>
                 <FormControl>
@@ -197,7 +200,7 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
 
         <Button type="submit" disabled={isUpdating}>
           {isUpdating && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
-          Lưu cài đặt
+          {t('settings.saveSettings')}
         </Button>
       </form>
     </Form>

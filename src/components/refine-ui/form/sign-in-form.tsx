@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { InputPassword } from "@/components/refine-ui/form/input-password";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ import { useLink, useLogin, useRefineOptions, useNotification } from "@refinedev
 import { Loader2Icon, AlertCircleIcon, MailIcon, LockIcon } from "@/components/ui/icons";
 
 export const SignInForm = () => {
+  const { t } = useTranslation();
   const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -43,7 +45,7 @@ export const SignInForm = () => {
 
   const handleEmailBlur = () => {
     if (email && !validateEmail(email)) {
-      setEmailError("Please enter a valid email address");
+      setEmailError(t("auth.invalidEmail"));
     } else {
       setEmailError(null);
     }
@@ -51,7 +53,7 @@ export const SignInForm = () => {
 
   const handlePasswordBlur = () => {
     if (password && password.length < 6) {
-      setPasswordError("Password must be at least 6 characters");
+      setPasswordError(t("auth.passwordMinLength"));
     } else {
       setPasswordError(null);
     }
@@ -63,42 +65,38 @@ export const SignInForm = () => {
     setEmailError(null);
     setPasswordError(null);
 
-    // Validation
     if (!email) {
-      setEmailError("Email is required");
+      setEmailError(t("auth.emailRequired"));
       return;
     }
     if (!validateEmail(email)) {
-      setEmailError("Please enter a valid email address");
+      setEmailError(t("auth.invalidEmail"));
       return;
     }
     if (!password) {
-      setPasswordError("Password is required");
+      setPasswordError(t("auth.passwordRequired"));
       return;
     }
     if (password.length < 6) {
-      setPasswordError("Password must be at least 6 characters");
+      setPasswordError(t("auth.passwordMinLength"));
       return;
     }
 
     setIsLoading(true);
 
     login(
-      {
-        email,
-        password,
-      },
+      { email, password },
       {
         onSuccess: () => {
           setIsLoading(false);
         },
         onError: (error: any) => {
           setIsLoading(false);
-          const errorMessage = error?.message || "Invalid email or password. Please try again.";
+          const errorMessage = error?.message || t("auth.invalidCredentials");
           setError(errorMessage);
           open?.({
             type: "error",
-            message: "Sign in failed",
+            message: t("auth.signInFailed"),
             description: errorMessage,
           });
         },
@@ -108,26 +106,18 @@ export const SignInForm = () => {
 
   const handleSignInWithGoogle = () => {
     setError(null);
-    login({
-      providerName: "google",
-    });
+    login({ providerName: "google" });
   };
 
   return (
     <div
       className={cn(
-        "flex",
-        "items-center",
-        "justify-center",
-        "min-h-svh",
-        "p-4",
+        "flex", "items-center", "justify-center", "min-h-svh", "p-4",
         "bg-gradient-to-br from-primary/5 via-background to-accent/5",
         "dark:from-background dark:via-background dark:to-background",
-        "relative",
-        "overflow-hidden"
+        "relative", "overflow-hidden"
       )}
     >
-      {/* Modern gradient background elements - Financial Dashboard style */}
       <div className="absolute top-0 right-0 w-96 h-96 opacity-5 dark:opacity-3">
         <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 rounded-full blur-3xl" />
       </div>
@@ -136,13 +126,8 @@ export const SignInForm = () => {
       </div>
 
       <Card className={cn(
-        "w-full max-w-md",
-        "p-6 sm:p-8",
-        "shadow-xl",
-        "border",
-        "glass bg-card/95",
-        "backdrop-blur-sm",
-        "z-10",
+        "w-full max-w-md", "p-6 sm:p-8", "shadow-xl", "border",
+        "glass bg-card/95", "backdrop-blur-sm", "z-10",
         "animate-in fade-in slide-in-from-bottom-4 duration-500"
       )}>
         <CardHeader className={cn("px-0", "pb-6", "text-center", "space-y-2")}>
@@ -154,10 +139,10 @@ export const SignInForm = () => {
             )}
           </div>
           <CardTitle className={cn("text-2xl sm:text-3xl", "font-bold", "text-foreground", "tracking-tight")}>
-            Welcome back
+            {t("auth.welcomeBack")}
           </CardTitle>
           <CardDescription className={cn("text-base", "text-muted-foreground")}>
-            Sign in to your {title.text || "FairPay"} account
+            {t("auth.signInToAccount", { appName: title.text || "FairPay" })}
           </CardDescription>
         </CardHeader>
 
@@ -175,12 +160,12 @@ export const SignInForm = () => {
             <div className={cn("space-y-2")}>
               <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
                 <MailIcon className="h-4 w-4 text-muted-foreground" />
-                Email address
+                {t("auth.emailAddress")}
               </Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="name@example.com"
+                placeholder={t("auth.emailPlaceholder")}
                 required
                 value={email}
                 onChange={(e) => {
@@ -203,7 +188,7 @@ export const SignInForm = () => {
             <div className={cn("space-y-2")}>
               <Label htmlFor="password" className="text-sm font-medium flex items-center gap-2">
                 <LockIcon className="h-4 w-4 text-muted-foreground" />
-                Password
+                {t("auth.password")}
               </Label>
               <InputPassword
                 id="password"
@@ -231,22 +216,17 @@ export const SignInForm = () => {
               size="lg"
               disabled={isLoading}
               className={cn(
-                "w-full",
-                "h-12",
-                "font-semibold",
-                "shadow-sm",
-                "transition-all",
-                "disabled:opacity-50",
-                "disabled:cursor-not-allowed"
+                "w-full", "h-12", "font-semibold", "shadow-sm", "transition-all",
+                "disabled:opacity-50", "disabled:cursor-not-allowed"
               )}
             >
               {isLoading ? (
                 <>
                   <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
+                  {t("auth.signingIn")}
                 </>
               ) : (
-                "Sign in"
+                t("auth.signIn")
               )}
             </Button>
 
@@ -255,38 +235,32 @@ export const SignInForm = () => {
                 <Checkbox
                   id="remember"
                   checked={rememberMe}
-                  onCheckedChange={(checked) =>
-                    setRememberMe(checked === "indeterminate" ? false : checked)
-                  }
+                  onCheckedChange={(checked) => setRememberMe(checked === "indeterminate" ? false : checked)}
                   className="cursor-pointer"
                 />
                 <Label
                   htmlFor="remember"
                   className="text-sm text-muted-foreground cursor-pointer group-hover:text-foreground transition-colors"
                 >
-                  Remember me
+                  {t("auth.rememberMe")}
                 </Label>
               </div>
               <Link
                 to="/forgot-password"
                 className={cn(
-                  "text-sm",
-                  "text-primary",
-                  "hover:text-primary/80",
-                  "hover:underline",
-                  "font-medium",
-                  "transition-colors",
+                  "text-sm", "text-primary", "hover:text-primary/80", "hover:underline",
+                  "font-medium", "transition-colors",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm px-1"
                 )}
               >
-                Forgot password?
+                {t("auth.forgotPassword")}
               </Link>
             </div>
 
             <div className={cn("flex", "items-center", "gap-4", "my-6")}>
               <Separator className={cn("flex-1")} />
               <span className={cn("text-xs", "text-muted-foreground", "uppercase", "tracking-wider", "font-medium")}>
-                or continue with
+                {t("auth.orContinueWith")}
               </span>
               <Separator className={cn("flex-1")} />
             </div>
@@ -294,34 +268,17 @@ export const SignInForm = () => {
             <Button
               variant="outline"
               className={cn(
-                "w-full",
-                "flex",
-                "items-center",
-                "justify-center",
-                "gap-2.5",
-                "h-11",
-                "border-2",
-                "hover:bg-accent/50",
-                "transition-all",
-                "font-medium"
+                "w-full", "flex", "items-center", "justify-center", "gap-2.5", "h-11",
+                "border-2", "hover:bg-accent/50", "transition-all", "font-medium"
               )}
               onClick={handleSignInWithGoogle}
               type="button"
               disabled={isLoading}
             >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 21 20"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M18.8375 8.63637C16.1151 8.63503 13.3926 8.6357 10.6702 8.63601C10.6705 9.76521 10.6688 10.8944 10.6708 12.0233C12.2475 12.0229 13.8242 12.0226 15.4005 12.0233C15.2178 13.1053 14.5747 14.0949 13.6628 14.704C13.0895 15.0895 12.4309 15.3397 11.7519 15.4586C11.0685 15.5752 10.3623 15.5902 9.68064 15.4522C8.9874 15.3138 8.32566 15.025 7.74838 14.6179C6.82531 13.9694 6.12086 13.0205 5.75916 11.9527C5.38931 10.8666 5.38659 9.65804 5.76085 8.57294C6.02053 7.80816 6.45275 7.10169 7.02054 6.52677C7.7209 5.80979 8.63145 5.29725 9.61248 5.08707C10.4525 4.90775 11.3383 4.94197 12.1607 5.19078C12.8597 5.40301 13.5041 5.78605 14.032 6.29013C14.5655 5.75959 15.0964 5.22602 15.629 4.6945C15.9083 4.4084 16.2019 4.13482 16.4724 3.84092C15.6636 3.09241 14.7154 2.49071 13.6794 2.11035C11.8143 1.42392 9.7108 1.40935 7.83312 2.05923C5.71711 2.78366 3.91535 4.36606 2.91636 6.36616C2.56856 7.05534 2.31463 7.79094 2.16209 8.54757C1.77834 10.4327 2.04582 12.4426 2.91533 14.1596C3.48044 15.2803 4.29063 16.2766 5.27339 17.0577C6.20055 17.797 7.28124 18.3431 8.42705 18.6479C9.87286 19.0357 11.4119 19.0269 12.8672 18.6957C14.1825 18.393 15.4269 17.7645 16.4205 16.8472C17.4707 15.882 18.2199 14.6105 18.6165 13.244C19.0491 11.7534 19.1088 10.1622 18.8375 8.63637Z"
-                  fill="currentColor"
-                />
+              <svg width="20" height="20" viewBox="0 0 21 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18.8375 8.63637C16.1151 8.63503 13.3926 8.6357 10.6702 8.63601C10.6705 9.76521 10.6688 10.8944 10.6708 12.0233C12.2475 12.0229 13.8242 12.0226 15.4005 12.0233C15.2178 13.1053 14.5747 14.0949 13.6628 14.704C13.0895 15.0895 12.4309 15.3397 11.7519 15.4586C11.0685 15.5752 10.3623 15.5902 9.68064 15.4522C8.9874 15.3138 8.32566 15.025 7.74838 14.6179C6.82531 13.9694 6.12086 13.0205 5.75916 11.9527C5.38931 10.8666 5.38659 9.65804 5.76085 8.57294C6.02053 7.80816 6.45275 7.10169 7.02054 6.52677C7.7209 5.80979 8.63145 5.29725 9.61248 5.08707C10.4525 4.90775 11.3383 4.94197 12.1607 5.19078C12.8597 5.40301 13.5041 5.78605 14.032 6.29013C14.5655 5.75959 15.0964 5.22602 15.629 4.6945C15.9083 4.4084 16.2019 4.13482 16.4724 3.84092C15.6636 3.09241 14.7154 2.49071 13.6794 2.11035C11.8143 1.42392 9.7108 1.40935 7.83312 2.05923C5.71711 2.78366 3.91535 4.36606 2.91636 6.36616C2.56856 7.05534 2.31463 7.79094 2.16209 8.54757C1.77834 10.4327 2.04582 12.4426 2.91533 14.1596C3.48044 15.2803 4.29063 16.2766 5.27339 17.0577C6.20055 17.797 7.28124 18.3431 8.42705 18.6479C9.87286 19.0357 11.4119 19.0269 12.8672 18.6957C14.1825 18.393 15.4269 17.7645 16.4205 16.8472C17.4707 15.882 18.2199 14.6105 18.6165 13.244C19.0491 11.7534 19.1088 10.1622 18.8375 8.63637Z" fill="currentColor" />
               </svg>
-              <span className="text-sm">Continue with Google</span>
+              <span className="text-sm">{t("auth.continueWithGoogle")}</span>
             </Button>
           </form>
         </CardContent>
@@ -331,13 +288,10 @@ export const SignInForm = () => {
         <CardFooter className="px-0">
           <div className={cn("w-full", "text-center")}>
             <span className={cn("text-sm", "text-muted-foreground")}>
-              Don't have an account?{" "}
+              {t("auth.dontHaveAccount")}{" "}
             </span>
-            <Link
-              to="/register"
-              className={cn("text-sm", "text-primary", "font-semibold", "hover:underline")}
-            >
-              Sign up
+            <Link to="/register" className={cn("text-sm", "text-primary", "font-semibold", "hover:underline")}>
+              {t("auth.signUp")}
             </Link>
           </div>
         </CardFooter>
