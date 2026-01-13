@@ -28,6 +28,7 @@ import { getOweStatusColors, getPaymentStateColors } from "@/lib/status-colors";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/locale-utils";
+import { BalanceTableRowExpandable, BalanceTableRowExpandableMobile } from "./balance-table-row-expandable";
 
 interface Balance {
   counterparty_id: string;
@@ -49,12 +50,14 @@ interface BalanceTableProps {
   pageSize?: number;
   disabled?: boolean;
   showHistory?: boolean;
+  showExpenseBreakdown?: boolean;
 }
 
-export function BalanceTable({ balances, pageSize = 10, disabled = false, showHistory = false }: BalanceTableProps) {
+export function BalanceTable({ balances, pageSize = 10, disabled = false, showHistory = false, showExpenseBreakdown = false }: BalanceTableProps) {
   const go = useGo();
   const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState(1);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
@@ -90,7 +93,21 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
+      // Reset expansion state when changing pages
+      setExpandedRows(new Set());
     }
+  };
+
+  const toggleRow = (counterpartyId: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(counterpartyId)) {
+        next.delete(counterpartyId);
+      } else {
+        next.add(counterpartyId);
+      }
+      return next;
+    });
   };
 
   if (balances.length === 0) {
@@ -129,6 +146,21 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
       {/* Mobile: Card Layout */}
       <div className="block md:hidden space-y-3">
         {paginatedBalances.map((balance) => {
+          // Use expandable component when showExpenseBreakdown is true and not in history mode
+          if (showExpenseBreakdown && !showHistory) {
+            return (
+              <BalanceTableRowExpandableMobile
+                key={balance.counterparty_id}
+                balance={balance}
+                disabled={disabled}
+                currency={balance.currency || "VND"}
+                isExpanded={expandedRows.has(balance.counterparty_id)}
+                onToggleExpand={() => toggleRow(balance.counterparty_id)}
+              />
+            );
+          }
+
+          // Default static card
           const fullySettled = isFullySettled(balance);
           return (
             <Card
@@ -229,6 +261,22 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
           </TableHeader>
           <TableBody>
             {paginatedBalances.map((balance, index) => {
+              // Use expandable component when showExpenseBreakdown is true and not in history mode
+              if (showExpenseBreakdown && !showHistory) {
+                return (
+                  <BalanceTableRowExpandable
+                    key={balance.counterparty_id}
+                    balance={balance}
+                    index={index}
+                    disabled={disabled}
+                    currency={balance.currency || "VND"}
+                    isExpanded={expandedRows.has(balance.counterparty_id)}
+                    onToggleExpand={() => toggleRow(balance.counterparty_id)}
+                  />
+                );
+              }
+
+              // Default static row
               const fullySettled = isFullySettled(balance);
               return (
                 <TableRow
