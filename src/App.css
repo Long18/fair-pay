@@ -1,6 +1,6 @@
 @font-face {
-  font-family: 'Fz Fragrant';
-  src: url('/fonts/Fz-Fragrant.otf') format('opentype');
+  font-family: 'VL Mark';
+  src: url('/fonts/VL_Mark Simonson - Proxima Nova Bold.otf') format('opentype');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -65,7 +65,7 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  --font-sans: "Fz Fragrant", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "VL Mark", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   /* Financial-optimized font sizes */
   --font-size-amount-sm: 0.875rem;
