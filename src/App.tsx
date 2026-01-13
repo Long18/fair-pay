@@ -41,6 +41,7 @@ import { OAuthConsent } from "./pages/oauth";
 // Dashboard (most common entry point)
 import { Dashboard } from "./pages/dashboard";
 import { BalancesPage } from "./pages/balances";
+import { PersonDebtBreakdown } from "./pages/person-debt-breakdown";
 
 // Lazy load non-critical components for better code splitting
 
@@ -295,6 +296,13 @@ function App() {
                           <ProfileShowUnified />
                         </ErrorBoundary>
                       </Suspense>
+                    } />
+
+                    {/* Person debt breakdown view - NEW */}
+                    <Route path="/debts/:userId" element={
+                      <ErrorBoundary context="Person Debt Breakdown">
+                        <PersonDebtBreakdown />
+                      </ErrorBoundary>
                     } />
 
                     {/* Public expense view */}
