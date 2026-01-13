@@ -14,6 +14,8 @@ import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { UserSettings, PROFILE_VISIBILITY_OPTIONS, ProfileVisibility } from '../types';
 import { Loader2Icon } from "@/components/ui/icons";
+import { useTranslation } from 'react-i18next';
+
 const privacySettingsSchema = z.object({
   allow_friend_requests: z.boolean(),
   allow_group_invites: z.boolean(),
@@ -27,6 +29,7 @@ interface PrivacySettingsFormProps {
 }
 
 export function PrivacySettingsForm({ settings, onSave, isUpdating }: PrivacySettingsFormProps) {
+  const { t } = useTranslation();
   const form = useForm({
     resolver: zodResolver(privacySettingsSchema),
     defaultValues: {
@@ -50,10 +53,10 @@ export function PrivacySettingsForm({ settings, onSave, isUpdating }: PrivacySet
             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
                 <FormLabel className="text-base">
-                  Cho phép lời mời kết bạn
+                  {t('settings.allowFriendRequests')}
                 </FormLabel>
                 <FormDescription>
-                  Người dùng khác có thể gửi lời mời kết bạn cho bạn
+                  {t('settings.allowFriendRequestsDescription')}
                 </FormDescription>
               </div>
               <FormControl>
@@ -73,10 +76,10 @@ export function PrivacySettingsForm({ settings, onSave, isUpdating }: PrivacySet
             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
                 <FormLabel className="text-base">
-                  Cho phép lời mời vào nhóm
+                  {t('settings.allowGroupInvites')}
                 </FormLabel>
                 <FormDescription>
-                  Người dùng khác có thể mời bạn vào nhóm của họ
+                  {t('settings.allowGroupInvitesDescription')}
                 </FormDescription>
               </div>
               <FormControl>
@@ -94,9 +97,9 @@ export function PrivacySettingsForm({ settings, onSave, isUpdating }: PrivacySet
           name="profile_visibility"
           render={({ field }) => (
             <FormItem className="space-y-3">
-              <FormLabel>Mức độ hiển thị hồ sơ</FormLabel>
+              <FormLabel>{t('settings.profileVisibility')}</FormLabel>
               <FormDescription>
-                Kiểm soát ai có thể xem hồ sơ của bạn
+                {t('settings.profileVisibilityDescription')}
               </FormDescription>
               <FormControl>
                 <RadioGroup
@@ -127,7 +130,7 @@ export function PrivacySettingsForm({ settings, onSave, isUpdating }: PrivacySet
 
         <Button type="submit" disabled={isUpdating}>
           {isUpdating && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
-          Lưu cài đặt
+          {t('settings.saveSettings')}
         </Button>
       </form>
     </Form>

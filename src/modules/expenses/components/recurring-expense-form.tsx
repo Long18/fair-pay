@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { vi, enUS } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { InfoIcon, CalendarIcon } from "@/components/ui/icons";
 import {
@@ -31,6 +31,7 @@ import {
   Alert,
   AlertDescription,
 } from '@/components/ui/alert';
+import { useTranslation } from 'react-i18next';
 
 interface RecurringExpenseFormProps {
   control: Control<any>;
@@ -38,6 +39,9 @@ interface RecurringExpenseFormProps {
 }
 
 export function RecurringExpenseForm({ control, isRecurring }: RecurringExpenseFormProps) {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === 'vi' ? vi : enUS;
+
   if (!isRecurring) {
     return null;
   }
@@ -47,20 +51,20 @@ export function RecurringExpenseForm({ control, isRecurring }: RecurringExpenseF
       <div className="flex items-center gap-2 mb-4">
         <InfoIcon className="h-4 w-4 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">
-          Cấu hình chi phí định kỳ - hệ thống sẽ tự động tạo chi phí theo lịch
+          {t('recurring.configureRecurring')}
         </p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="frequency">Tần suất</Label>
+          <Label htmlFor="frequency">{t('recurring.frequency')}</Label>
           <Controller
             name="recurring.frequency"
             control={control}
             render={({ field }) => (
               <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Chọn tần suất" />
+                  <SelectValue placeholder={t('recurring.selectFrequency')} />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(RECURRING_FREQUENCY_LABELS).map(([value, label]) => (
@@ -75,7 +79,7 @@ export function RecurringExpenseForm({ control, isRecurring }: RecurringExpenseF
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="interval">Khoảng cách</Label>
+          <Label htmlFor="interval">{t('recurring.interval')}</Label>
           <Controller
             name="recurring.interval"
             control={control}
@@ -112,7 +116,7 @@ export function RecurringExpenseForm({ control, isRecurring }: RecurringExpenseF
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>Ngày bắt đầu</Label>
+          <Label>{t('recurring.startDate')}</Label>
           <Controller
             name="recurring.start_date"
             control={control}
@@ -128,9 +132,9 @@ export function RecurringExpenseForm({ control, isRecurring }: RecurringExpenseF
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {field.value ? (
-                      format(field.value, 'PPP', { locale: vi })
+                      format(field.value, 'PPP', { locale: dateLocale })
                     ) : (
-                      <span>Chọn ngày</span>
+                      <span>{t('recurring.selectStartDate')}</span>
                     )}
                   </Button>
                 </PopoverTrigger>
@@ -148,7 +152,7 @@ export function RecurringExpenseForm({ control, isRecurring }: RecurringExpenseF
         </div>
 
         <div className="space-y-2">
-          <Label>Ngày kết thúc (tùy chọn)</Label>
+          <Label>{t('recurring.endDate')}</Label>
           <Controller
             name="recurring.end_date"
             control={control}
@@ -164,9 +168,9 @@ export function RecurringExpenseForm({ control, isRecurring }: RecurringExpenseF
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {field.value ? (
-                      format(field.value, 'PPP', { locale: vi })
+                      format(field.value, 'PPP', { locale: dateLocale })
                     ) : (
-                      <span>Không giới hạn</span>
+                      <span>{t('recurring.noLimit')}</span>
                     )}
                   </Button>
                 </PopoverTrigger>
@@ -184,7 +188,7 @@ export function RecurringExpenseForm({ control, isRecurring }: RecurringExpenseF
                       onClick={() => field.onChange(null)}
                       className="w-full"
                     >
-                      Xóa ngày kết thúc
+                      {t('recurring.clearEndDate')}
                     </Button>
                   </div>
                 </PopoverContent>
@@ -195,7 +199,7 @@ export function RecurringExpenseForm({ control, isRecurring }: RecurringExpenseF
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="notify_before_days">Thông báo trước (ngày)</Label>
+        <Label htmlFor="notify_before_days">{t('recurring.notifyBeforeDays')}</Label>
         <Controller
           name="recurring.notify_before_days"
           control={control}
@@ -210,7 +214,7 @@ export function RecurringExpenseForm({ control, isRecurring }: RecurringExpenseF
           )}
         />
         <p className="text-xs text-muted-foreground">
-          Số ngày trước khi tạo chi phí để gửi thông báo (0 = thông báo ngày tạo)
+          {t('recurring.notifyBeforeDaysDescription')}
         </p>
       </div>
 
@@ -238,10 +242,10 @@ export function RecurringExpenseForm({ control, isRecurring }: RecurringExpenseF
                     <Alert>
                       <InfoIcon className="h-4 w-4" />
                       <AlertDescription>
-                        <strong>Xem trước:</strong> Chi phí đầu tiên sẽ được tạo vào{' '}
-                        <strong>{format(startField.value, 'PPP', { locale: vi })}</strong>.
-                        Chi phí tiếp theo sẽ được tạo vào{' '}
-                        <strong>{format(nextDate, 'PPP', { locale: vi })}</strong>.
+                        <strong>{t('recurring.preview')}:</strong> {t('recurring.firstExpenseWillBeCreated')}{' '}
+                        <strong>{format(startField.value, 'PPP', { locale: dateLocale })}</strong>.
+                        {t('recurring.nextExpenseWillBeCreated')}{' '}
+                        <strong>{format(nextDate, 'PPP', { locale: dateLocale })}</strong>.
                       </AlertDescription>
                     </Alert>
                   );

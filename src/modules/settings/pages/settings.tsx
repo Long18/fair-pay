@@ -4,8 +4,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useUserSettings } from '../hooks/use-user-settings';
 import { DisplaySettingsForm, NotificationSettingsForm, PrivacySettingsForm } from '../components';
 import { SettingsIcon, BellIcon, AlertCircleIcon } from "@/components/ui/icons";
+import { useTranslation } from 'react-i18next';
+
 export function SettingsPage() {
   const { settings, isLoading, isUpdating, saveSettings } = useUserSettings();
+  const { t } = useTranslation();
 
   if (isLoading) {
     return (
@@ -19,9 +22,9 @@ export function SettingsPage() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <div>
-        <h1 className="text-3xl font-bold">Cài đặt</h1>
+        <h1 className="text-3xl font-bold">{t('settings.title')}</h1>
         <p className="text-muted-foreground">
-          Quản lý tùy chọn và sở thích của bạn
+          {t('settings.subtitle')}
         </p>
       </div>
 
@@ -29,24 +32,24 @@ export function SettingsPage() {
         <TabsList className="grid w-full max-w-md grid-cols-3">
           <TabsTrigger value="display" className="flex items-center gap-2">
             <SettingsIcon className="h-4 w-4" />
-            <span className="hidden sm:inline">Hiển thị</span>
+            <span className="hidden sm:inline">{t('settings.display')}</span>
           </TabsTrigger>
           <TabsTrigger value="notifications" className="flex items-center gap-2">
             <BellIcon className="h-4 w-4" />
-            <span className="hidden sm:inline">Thông báo</span>
+            <span className="hidden sm:inline">{t('settings.notifications')}</span>
           </TabsTrigger>
           <TabsTrigger value="privacy" className="flex items-center gap-2">
             <AlertCircleIcon className="h-4 w-4" />
-            <span className="hidden sm:inline">Riêng tư</span>
+            <span className="hidden sm:inline">{t('settings.privacy')}</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="display">
           <Card>
             <CardHeader>
-              <CardTitle>Tùy chọn hiển thị</CardTitle>
+              <CardTitle>{t('settings.displayOptions')}</CardTitle>
               <CardDescription>
-                Tùy chỉnh giao diện và định dạng dữ liệu
+                {t('settings.displayOptionsDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -62,9 +65,9 @@ export function SettingsPage() {
         <TabsContent value="notifications">
           <Card>
             <CardHeader>
-              <CardTitle>Tùy chọn thông báo</CardTitle>
+              <CardTitle>{t('settings.notificationOptions')}</CardTitle>
               <CardDescription>
-                Chọn loại thông báo bạn muốn nhận
+                {t('settings.notificationOptionsDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -80,9 +83,9 @@ export function SettingsPage() {
         <TabsContent value="privacy">
           <Card>
             <CardHeader>
-              <CardTitle>Cài đặt riêng tư</CardTitle>
+              <CardTitle>{t('settings.privacySettings')}</CardTitle>
               <CardDescription>
-                Kiểm soát ai có thể xem và tương tác với bạn
+                {t('settings.privacySettingsDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>

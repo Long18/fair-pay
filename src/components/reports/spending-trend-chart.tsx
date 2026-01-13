@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { TrendDataPoint } from '@/hooks/use-spending-trend';
 import { formatNumber } from '@/lib/locale-utils';
+import { useTranslation } from 'react-i18next';
 import {
   ChartContainer,
   ChartTooltip,
@@ -18,16 +19,19 @@ interface SpendingTrendChartProps {
   title?: string;
 }
 
-export function SpendingTrendChart({ data, title = 'Xu hướng chi tiêu' }: SpendingTrendChartProps) {
+export function SpendingTrendChart({ data, title }: SpendingTrendChartProps) {
+  const { t } = useTranslation();
+  const chartTitle = title || t('reports.spendingTrend');
+  
   if (data.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{title}</CardTitle>
+          <CardTitle>{chartTitle}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-64 text-muted-foreground">
-            Không có dữ liệu
+            {t('reports.noData')}
           </div>
         </CardContent>
       </Card>
@@ -36,11 +40,11 @@ export function SpendingTrendChart({ data, title = 'Xu hướng chi tiêu' }: Sp
 
   const chartConfig = {
     amount: {
-      label: "Số tiền",
+      label: t('analytics.amount'),
       color: "var(--chart-1)",
     },
     count: {
-      label: "Số lượng",
+      label: t('analytics.count'),
       color: "var(--chart-2)",
     },
   } satisfies ChartConfig;
@@ -51,9 +55,9 @@ export function SpendingTrendChart({ data, title = 'Xu hướng chi tiêu' }: Sp
   return (
     <Card className="flex flex-col border-border shadow-sm">
       <CardHeader className="pb-3 px-4 sm:px-6">
-        <CardTitle className="text-base sm:text-lg md:text-xl">{title}</CardTitle>
+        <CardTitle className="text-base sm:text-lg md:text-xl">{chartTitle}</CardTitle>
         <CardDescription className="text-xs sm:text-sm mt-1">
-          {totalCount} chi tiêu • {formatNumber(totalAmount)} ₫
+          {totalCount} {t('analytics.expenses')} • {formatNumber(totalAmount)} ₫
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-4 sm:pb-6 px-4 sm:px-6">
@@ -86,7 +90,7 @@ export function SpendingTrendChart({ data, title = 'Xu hướng chi tiêu' }: Sp
                     <div className="flex flex-col gap-1">
                       <span className="font-medium">{formatNumber(Number(value))} ₫</span>
                       <span className="text-xs text-muted-foreground">
-                        {item.payload.count} chi tiêu
+                        {item.payload.count} {t('analytics.expenses')}
                       </span>
                     </div>
                   )}

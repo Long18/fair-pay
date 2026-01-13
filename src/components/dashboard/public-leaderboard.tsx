@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LeaderboardUser } from "@/hooks/use-sample-leaderboard";
@@ -9,6 +10,8 @@ interface PublicLeaderboardProps {
 }
 
 export const PublicLeaderboard = ({ users, title, type }: PublicLeaderboardProps) => {
+  const { t } = useTranslation();
+
   const formatAmount = (amount: number) => {
     const absAmount = Math.abs(amount);
     return new Intl.NumberFormat("vi-VN").format(absAmount);
@@ -65,7 +68,7 @@ export const PublicLeaderboard = ({ users, title, type }: PublicLeaderboardProps
                     {user.name}
                   </p>
                   <p className="text-xs text-[#828282]">
-                    {type === "debtors" ? "Owes" : "Is owed"}
+                    {type === "debtors" ? t("dashboard.owes") : t("dashboard.isOwed")}
                   </p>
                 </div>
               </div>

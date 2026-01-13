@@ -1,5 +1,7 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { format, subDays } from "date-fns";
+import { vi, enUS } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
@@ -23,16 +25,17 @@ export const QuickDatePicker: React.FC<QuickDatePickerProps> = ({
   className,
   disabled = false,
 }) => {
+  const { t, i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
-  // Parse date string to Date object
+  const dateLocale = i18n.language === "vi" ? vi : enUS;
+
   const parseDate = (dateString: string | undefined) => {
     if (!dateString) return undefined;
     const [year, month, day] = dateString.split('-').map(Number);
     return new Date(year, month - 1, day);
   };
 
-  // Format Date to string (YYYY-MM-DD)
   const formatDateString = (date: Date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -45,8 +48,8 @@ export const QuickDatePicker: React.FC<QuickDatePickerProps> = ({
   const yesterday = subDays(today, 1);
 
   const quickOptions = [
-    { label: "Today", value: formatDateString(today) },
-    { label: "Yesterday", value: formatDateString(yesterday) },
+    { label: t("expenses.today"), value: formatDateString(today) },
+    { label: t("expenses.yesterday"), value: formatDateString(yesterday) },
   ];
 
   const isQuickOption = (dateValue: string | undefined) => {
@@ -55,18 +58,17 @@ export const QuickDatePicker: React.FC<QuickDatePickerProps> = ({
   };
 
   const getDisplayText = () => {
-    if (!value) return "Select date";
+    if (!value) return t("expenses.selectDate");
 
     const quickOption = quickOptions.find(opt => opt.value === value);
     if (quickOption) return quickOption.label;
 
     const date = parseDate(value);
-    return date ? format(date, "MMM d, yyyy") : "Select date";
+    return date ? format(date, "MMM d, yyyy", { locale: dateLocale }) : t("expenses.selectDate");
   };
 
   return (
     <div className={cn("flex gap-1", className)}>
-      {/* Quick options */}
       <div className="flex gap-1 flex-1">
         {quickOptions.map((option) => (
           <Button
@@ -83,20 +85,16 @@ export const QuickDatePicker: React.FC<QuickDatePickerProps> = ({
         ))}
       </div>
 
-      {/* Custom date picker */}
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <Button
             type="button"
             variant={value && !isQuickOption(value) ? "default" : "outline"}
-            className={cn(
-              "h-11 px-3",
-              !value && "text-muted-foreground"
-            )}
+            className={cn("h-11 px-3", !value && "text-muted-foreground")}
             disabled={disabled}
           >
             {value && !isQuickOption(value) ? (
-              <span>{format(parseDate(value)!, "MMM d")}</span>
+              <span>{format(parseDate(value)!, "MMM d", { locale: dateLocale })}</span>
             ) : (
               <CalendarIcon className="h-4 w-4" />
             )}
@@ -114,6 +112,7 @@ export const QuickDatePicker: React.FC<QuickDatePickerProps> = ({
             }}
             initialFocus
             disabled={(date) => date > today}
+            locale={dateLocale}
           />
         </PopoverContent>
       </Popover>
