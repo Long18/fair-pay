@@ -25,6 +25,7 @@ interface RecordPrepaidPaymentParams {
   recurringExpenseId: string;
   periodsCount: number;
   amount: number;
+  paidByUserId?: string;
 }
 
 /**
@@ -59,7 +60,7 @@ export function useRecordPrepaidPayment(): UseRecordPrepaidPaymentResult {
   const recordPayment = async (
     params: RecordPrepaidPaymentParams
   ): Promise<RecordPrepaidPaymentResult> => {
-    const { recurringExpenseId, periodsCount, amount } = params;
+    const { recurringExpenseId, periodsCount, amount, paidByUserId } = params;
 
     // Client-side validation
     if (periodsCount < 1) {
@@ -83,6 +84,7 @@ export function useRecordPrepaidPayment(): UseRecordPrepaidPaymentResult {
           p_recurring_expense_id: recurringExpenseId,
           p_periods_count: periodsCount,
           p_amount: amount,
+          p_paid_by_user_id: paidByUserId || null,
         }
       );
 

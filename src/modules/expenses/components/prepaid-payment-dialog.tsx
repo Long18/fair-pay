@@ -10,8 +10,15 @@ import { RecurringExpense } from '../types/recurring';
 import { PrepaidPaymentForm } from './prepaid-payment-form';
 import { useRecordPrepaidPayment } from '../hooks/use-record-prepaid-payment';
 
+interface Member {
+  id: string;
+  full_name: string;
+}
+
 interface PrepaidPaymentDialogProps {
   recurring: RecurringExpense;
+  members: Member[];
+  currentUserId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
@@ -27,6 +34,8 @@ interface PrepaidPaymentDialogProps {
  */
 export function PrepaidPaymentDialog({
   recurring,
+  members,
+  currentUserId,
   open,
   onOpenChange,
   onSuccess,
@@ -36,14 +45,16 @@ export function PrepaidPaymentDialog({
 
   const template = recurring.template_expense || recurring.expenses;
 
-  const handleSubmit = async (periodsCount: number, amount: number) => {
+  const handleSubmit = async (periodsCount: number, amount: number, paidByUserId: string) => {
     const result = await recordPayment({
       recurringExpenseId: recurring.id,
       periodsCount,
       amount,
+      paidByUserId,
     });
 
     if (result.success) {
+      onOpenChange(false);
       onSuccess?.();
     }
   };
@@ -62,6 +73,8 @@ export function PrepaidPaymentDialog({
 
         <PrepaidPaymentForm
           recurring={recurring}
+          members={members}
+          currentUserId={currentUserId}
           onSubmit={handleSubmit}
           isSubmitting={isRecording}
         />

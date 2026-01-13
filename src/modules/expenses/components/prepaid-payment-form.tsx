@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2Icon, CalendarIcon, BanknoteIcon } from '@/components/ui/icons';
+import { Loader2Icon, CalendarIcon, BanknoteIcon, UserIcon } from '@/components/ui/icons';
 import { formatNumber } from '@/lib/locale-utils';
 import { RecurringExpense } from '../types/recurring';
 import {
@@ -12,9 +12,16 @@ import {
   formatCoveragePeriod,
 } from '../utils/prepaid-calculations';
 
+interface Member {
+  id: string;
+  full_name: string;
+}
+
 interface PrepaidPaymentFormProps {
   recurring: RecurringExpense;
-  onSubmit: (periodsCount: number, amount: number) => Promise<void>;
+  members: Member[];
+  currentUserId: string;
+  onSubmit: (periodsCount: number, amount: number, paidByUserId: string) => Promise<void>;
   isSubmitting?: boolean;
 }
 
@@ -30,6 +37,8 @@ interface PrepaidPaymentFormProps {
  */
 export function PrepaidPaymentForm({
   recurring,
+  members,
+  currentUserId,
   onSubmit,
   isSubmitting = false,
 }: PrepaidPaymentFormProps) {
@@ -41,6 +50,10 @@ export function PrepaidPaymentForm({
   const periodAmount = template?.amount || 0;
   const currency = template?.currency || 'VND';
   const language = i18n.language === 'vi' ? 'vi' : 'en';
+  
+  // Default payer to template expense payer or current user
+  const defaultPayer = template?.paid_by_user_id || currentUserId;
+  const [paidByUserId, setPaidByUserId] = useState<string>(defaultPayer);
 
   // Calculate coverage period and total amount
   const { totalAmount, coveragePeriodText } = useMemo(() => {
@@ -94,8 +107,13 @@ export function PrepaidPaymentForm({
       return;
     }
 
+    if (!paidByUserId) {
+      setError(t('recurring.prepaid.selectPayer', 'Please select who pays'));
+      return;
+    }
+
     setError(null);
-    await onSubmit(periodsCount, totalAmount);
+    await onSubmit(periodsCount, totalAmount, paidByUserId);
   };
 
   return (
@@ -108,6 +126,27 @@ export function PrepaidPaymentForm({
         <p className="text-lg font-semibold">
           {formatNumber(periodAmount)} {currency}
         </p>
+      </div>
+
+      {/* Paid By Selection */}
+      <div className="space-y-2">
+        <Label htmlFor="paidBy" className="flex items-center gap-2">
+          <UserIcon className="h-4 w-4" />
+          {t('recurring.prepaid.paidBy', 'Paid by')}
+        </Label>
+        <select
+          id="paidBy"
+          value={paidByUserId}
+          onChange={(e) => setPaidByUserId(e.target.value)}
+          className="w-full h-11 px-3 border border-input rounded-lg bg-background"
+        >
+          <option value="">{t('common.select', 'Select...')}</option>
+          {members.map((member) => (
+            <option key={member.id} value={member.id}>
+              {member.full_name}{member.id === currentUserId ? ` (${t('common.you', 'You')})` : ''}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Number of Periods Input */}
@@ -158,7 +197,7 @@ export function PrepaidPaymentForm({
       <Button
         type="submit"
         className="w-full"
-        disabled={isSubmitting || periodsCount < 1}
+        disabled={isSubmitting || periodsCount < 1 || !paidByUserId}
       >
         {isSubmitting ? (
           <>
