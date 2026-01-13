@@ -1,5 +1,14 @@
 import { useList, useCreate, useUpdate, useDelete, useOne } from '@refinedev/core';
-import { RecurringExpense, RecurringExpenseFormValues } from '../types/recurring';
+import { useMemo } from 'react';
+import { RecurringExpense, RecurringExpenseFormValues, PrepaidCoverageInfo } from '../types/recurring';
+import { getPrepaidCoverageStatus } from '../utils/prepaid-calculations';
+
+/**
+ * Extended recurring expense with prepaid coverage info
+ */
+export interface RecurringExpenseWithCoverage extends RecurringExpense {
+  prepaidCoverageInfo: PrepaidCoverageInfo;
+}
 
 interface UseRecurringExpensesProps {
   groupId?: string;
@@ -19,30 +28,44 @@ export function useRecurringExpenses({ groupId, friendshipId }: UseRecurringExpe
     },
   });
 
-  // Map the joined 'expenses' field to 'template_expense' for compatibility
-  let recurring = (query.data?.data || []).map((r: any) => ({
-    ...r,
-    template_expense: r.expenses, // Map expenses to template_expense
-  }));
+  // Map the joined 'expenses' field to 'template_expense' and add prepaid coverage info
+  const recurring = useMemo(() => {
+    let items = (query.data?.data || []).map((r: any) => {
+      const recurringExpense: RecurringExpense = {
+        ...r,
+        template_expense: r.expenses, // Map expenses to template_expense
+      };
+      
+      // Calculate prepaid coverage status
+      const prepaidCoverageInfo = getPrepaidCoverageStatus(recurringExpense);
+      
+      return {
+        ...recurringExpense,
+        prepaidCoverageInfo,
+      } as RecurringExpenseWithCoverage;
+    });
 
-  // Filter on client side based on the template expense's context
-  if (groupId) {
-    recurring = recurring.filter((r: any) =>
-      r.expenses && r.expenses.group_id === groupId
-    );
-  }
+    // Filter on client side based on the template expense's context
+    if (groupId) {
+      items = items.filter((r: any) =>
+        r.expenses && r.expenses.group_id === groupId
+      );
+    }
 
-  if (friendshipId) {
-    recurring = recurring.filter((r: any) =>
-      r.expenses && r.expenses.friendship_id === friendshipId
-    );
-  }
+    if (friendshipId) {
+      items = items.filter((r: any) =>
+        r.expenses && r.expenses.friendship_id === friendshipId
+      );
+    }
+
+    return items;
+  }, [query.data?.data, groupId, friendshipId]);
 
   const isLoading = query.isLoading;
   const error = query.error;
 
-  const active = recurring.filter((r) => r.is_active);
-  const paused = recurring.filter((r) => !r.is_active);
+  const active = useMemo(() => recurring.filter((r) => r.is_active), [recurring]);
+  const paused = useMemo(() => recurring.filter((r) => !r.is_active), [recurring]);
 
   return {
     recurring,
@@ -62,8 +85,26 @@ export function useRecurringExpense(id: string) {
     },
   });
 
+  // Add prepaid coverage info to the recurring expense
+  const recurring = useMemo(() => {
+    const data = query.data?.data;
+    if (!data) return undefined;
+
+    const recurringExpense: RecurringExpense = {
+      ...data,
+      template_expense: (data as any).expenses,
+    };
+
+    const prepaidCoverageInfo = getPrepaidCoverageStatus(recurringExpense);
+
+    return {
+      ...recurringExpense,
+      prepaidCoverageInfo,
+    } as RecurringExpenseWithCoverage;
+  }, [query.data?.data]);
+
   return {
-    recurring: query.data?.data,
+    recurring,
     isLoading: query.isLoading,
     error: query.error,
   };
