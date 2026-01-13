@@ -25,6 +25,10 @@ export {
   useUpdateRecurringExpense,
   useDeleteRecurringExpense,
 } from "./hooks/use-recurring-expenses";
+export type { RecurringExpenseWithCoverage } from "./hooks/use-recurring-expenses";
+export { usePrepaidPayments } from "./hooks/use-prepaid-payments";
+export type { PrepaidPaymentWithCreator } from "./hooks/use-prepaid-payments";
+export { useRecordPrepaidPayment } from "./hooks/use-record-prepaid-payment";
 export type {
   Expense,
   ExpenseSplit,
@@ -40,6 +44,9 @@ export type {
   RecurringExpenseFormValues,
   RecurringExpenseStatus,
   RecurringFrequency,
+  RecurringPrepaidPayment,
+  PrepaidCoverageStatus,
+  PrepaidCoverageInfo,
 } from "./types/recurring";
 export {
   RECURRING_FREQUENCY_LABELS,
@@ -48,3 +55,13 @@ export {
   getFrequencyDescription,
   calculateNextOccurrence,
 } from "./types/recurring";
+export {
+  adjustToValidDate,
+  calculatePrepaidUntil,
+  calculateRemainingPeriods,
+  getPrepaidCoverageStatus,
+  calculateTotalPrepaidAmount,
+  formatPrepaidCoverage,
+  formatCoveragePeriod,
+  formatPrepaidStatus,
+} from "./utils/prepaid-calculations";
