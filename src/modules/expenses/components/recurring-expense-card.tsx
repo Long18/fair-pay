@@ -34,9 +34,9 @@ import { CategoryIcon } from './category-icon';
 import { PrepaidStatusBadge } from './prepaid-status-badge';
 import { PrepaidPaymentDialog } from './prepaid-payment-dialog';
 import { PrepaidPaymentHistory } from './prepaid-payment-history';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useUpdateRecurringExpense, useDeleteRecurringExpense } from '../hooks/use-recurring-expenses';
-import { useNotification } from '@refinedev/core';
+import { useNotification, useGetIdentity, useList } from '@refinedev/core';
 import { formatNumber } from '@/lib/locale-utils';
 import { useTranslation } from 'react-i18next';
 import { getPrepaidCoverageStatus, formatPrepaidCoverage } from '../utils/prepaid-calculations';
@@ -67,6 +67,8 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
   const { pauseRecurring, resumeRecurring } = useUpdateRecurringExpense();
   const { deleteRecurring } = useDeleteRecurringExpense();
   const { open: notify } = useNotification();
+  const { data: identity } = useGetIdentity<{ id: string }>();
+  const currentUserId = identity?.id || '';
 
   const status = getRecurringExpenseStatus(recurring);
   const template = recurring.template_expense || recurring.expenses;
@@ -76,6 +78,58 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
   // Get prepaid coverage info
   const prepaidCoverageInfo = getPrepaidCoverageStatus(recurring);
   const hasPrepaidCoverage = prepaidCoverageInfo.status !== 'none';
+
+  // Fetch members based on context (group or friendship)
+  const groupId = template?.group_id;
+  const friendshipId = template?.friendship_id;
+
+  // Fetch group members if group context
+  const { query: groupMembersQuery } = useList({
+    resource: 'group_members',
+    filters: groupId ? [{ field: 'group_id', operator: 'eq', value: groupId }] : [],
+    meta: {
+      select: '*, profiles:user_id(id, full_name)',
+    },
+    pagination: { mode: 'off' },
+    queryOptions: {
+      enabled: !!groupId,
+    },
+  });
+
+  // Fetch friendship members if friendship context
+  const { query: friendshipQuery } = useList({
+    resource: 'friendships',
+    filters: friendshipId ? [{ field: 'id', operator: 'eq', value: friendshipId }] : [],
+    meta: {
+      select: '*, user:user_id(id, full_name), friend:friend_id(id, full_name)',
+    },
+    pagination: { mode: 'off' },
+    queryOptions: {
+      enabled: !!friendshipId,
+    },
+  });
+
+  // Build members list
+  const members = useMemo(() => {
+    if (groupId && groupMembersQuery.data?.data) {
+      return groupMembersQuery.data.data.map((gm: any) => ({
+        id: gm.profiles?.id || gm.user_id,
+        full_name: gm.profiles?.full_name || 'Unknown',
+      }));
+    }
+    if (friendshipId && friendshipQuery.data?.data?.[0]) {
+      const friendship = friendshipQuery.data.data[0] as any;
+      return [
+        { id: friendship.user?.id || friendship.user_id, full_name: friendship.user?.full_name || 'Unknown' },
+        { id: friendship.friend?.id || friendship.friend_id, full_name: friendship.friend?.full_name || 'Unknown' },
+      ];
+    }
+    // Fallback: just the template payer
+    if (template?.paid_by_user_id) {
+      return [{ id: template.paid_by_user_id, full_name: 'Payer' }];
+    }
+    return [];
+  }, [groupId, friendshipId, groupMembersQuery.data, friendshipQuery.data, template]);
 
   const handlePauseResume = async () => {
     try {
@@ -308,6 +362,8 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
       {/* Prepaid Payment Dialog - Requirements 1.1, 4.4 */}
       <PrepaidPaymentDialog
         recurring={recurring}
+        members={members}
+        currentUserId={currentUserId}
         open={showPrepaidDialog}
         onOpenChange={setShowPrepaidDialog}
         onSuccess={handlePrepaidSuccess}

@@ -296,7 +296,10 @@
         "yearly": "Yearly",
         "prepaid": {
             "payUpfront": "Pay Upfront",
+            "paidBy": "Paid by",
+            "selectPayer": "Please select who pays",
             "periodsCount": "Number of periods",
+            "periodAmount": "Amount per period",
             "totalAmount": "Total amount",
             "coverageUntil": "Coverage until",
             "remainingPeriods": "{{count}} period(s) remaining",
