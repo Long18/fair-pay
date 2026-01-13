@@ -295,7 +295,10 @@
         "yearly": "Hàng năm",
         "prepaid": {
             "payUpfront": "Trả trước",
+            "paidBy": "Người trả",
+            "selectPayer": "Vui lòng chọn người trả",
             "periodsCount": "Số kỳ",
+            "periodAmount": "Số tiền mỗi kỳ",
             "totalAmount": "Tổng số tiền",
             "coverageUntil": "Bao phủ đến",
             "remainingPeriods": "Còn {{count}} kỳ",
