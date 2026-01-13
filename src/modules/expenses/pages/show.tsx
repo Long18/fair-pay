@@ -10,6 +10,8 @@ import { ExpenseAmountDisplay } from "../components/expense-amount-display";
 import { ExpenseSplitCard } from "../components/expense-split-card";
 import { Profile } from "@/modules/profile/types";
 import { Badge } from "@/components/ui/badge";
+import { YourPositionCard } from "@/components/expenses/your-position-card";
+import { SettleExpenseSection } from "@/components/expenses/settle-expense-section";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -55,6 +57,7 @@ export const ExpenseShow = () => {
   const [selectedSplit, setSelectedSplit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [userIsAdmin, setUserIsAdmin] = useState(false);
+  const [settlingUserSplit, setSettlingUserSplit] = useState(false);
 
   const { query: expenseQuery } = useOne<Expense>({
     resource: "expenses",
@@ -135,6 +138,15 @@ export const ExpenseShow = () => {
   const canEdit = expense?.created_by === identity?.id;
   const isPayer = expense?.paid_by_user_id === identity?.id;
   const isPaid = expense?.is_payment === true;
+
+  // Calculate user position for YourPositionCard
+  const userSplit = splits.find(s => s.user_id === identity?.id);
+  const myShare = userSplit?.computed_amount || 0;
+  const iPaid = isPayer ? expense?.amount || 0 : 0;
+  const userIOwes = myShare > iPaid ? myShare - iPaid : 0;
+  const userIsOwed = iPaid > myShare ? iPaid - myShare : 0;
+  const netPosition = userIsOwed - userIOwes;
+  const payerName = expense?.profiles?.full_name || "Unknown";
 
   // Check admin status
   useEffect(() => {
@@ -288,6 +300,65 @@ export const ExpenseShow = () => {
     setSettleSplitDialogOpen(true);
   };
 
+  // Handle settle user's own split
+  const handleSettleUserSplit = async () => {
+    if (!userSplit) return;
+
+    setSettlingUserSplit(true);
+    try {
+      const { error } = await supabaseClient
+        .from('expense_splits')
+        .update({
+          is_settled: true,
+          settled_at: new Date().toISOString(),
+          settled_amount: userSplit.computed_amount,
+        })
+        .eq('id', userSplit.id);
+
+      if (error) throw error;
+
+      toast.success(
+        t('expenses.settlementMarked', {
+          defaultValue: 'Your payment has been marked as settled',
+        })
+      );
+
+      // Refetch splits
+      if (id) {
+        setIsLoadingSplits(true);
+        const { data: splitsData } = await supabaseClient.rpc("get_expense_splits_public", { p_expense_id: id });
+        if (splitsData) {
+          const transformedSplits = splitsData.map((split: any) => ({
+            id: split.id,
+            expense_id: split.expense_id,
+            user_id: split.user_id,
+            split_method: split.split_method,
+            split_value: split.split_value,
+            computed_amount: split.computed_amount,
+            is_settled: split.is_settled,
+            settled_amount: split.settled_amount,
+            settled_at: split.settled_at,
+            created_at: split.created_at,
+            profiles: {
+              id: split.user_id,
+              full_name: split.user_full_name,
+              avatar_url: split.user_avatar_url,
+            },
+          }));
+          setSplits(transformedSplits);
+        }
+        setIsLoadingSplits(false);
+      }
+    } catch (error: any) {
+      console.error('Error settling split:', error);
+      toast.error(t('expenses.settleError', {
+        defaultValue: `Failed to settle: ${error.message}`,
+      }));
+    } finally {
+      setSettlingUserSplit(false);
+    }
+  };
+
   // Sync displayAttachments with fetched attachments
   useEffect(() => {
     setDisplayAttachments(attachments);
@@ -420,6 +491,17 @@ export const ExpenseShow = () => {
         transition={{ duration: 0.4 }}
         className="space-y-4 md:space-y-6"
       >
+        {/* Your Position Card - NEW */}
+        {identity?.id && userSplit && (
+          <YourPositionCard
+            iOwe={userIOwes}
+            iAmOwed={userIsOwed}
+            netPosition={netPosition}
+            currency={expense.currency}
+            isSettled={userSplit.is_settled || false}
+          />
+        )}
+
         {/* Main Expense Card */}
         <Card className="rounded-xl border-2 shadow-sm hover:shadow-md transition-shadow duration-200">
           <CardHeader className="pb-0">
@@ -610,6 +692,18 @@ export const ExpenseShow = () => {
             </AnimatePresence>
           </CardContent>
         </Card>
+
+        {/* Settle Your Share Section - NEW */}
+        {identity?.id && userSplit && !isPaid && (
+          <SettleExpenseSection
+            payerName={payerName}
+            amountOwed={userIOwes}
+            currency={expense.currency}
+            isSettled={userSplit.is_settled || false}
+            onSettle={handleSettleUserSplit}
+            isSettling={settlingUserSplit}
+          />
+        )}
 
         {/* Receipts, Bills & Comments */}
         <Card className="rounded-xl border-2 shadow-sm hover:shadow-md transition-shadow duration-200">
