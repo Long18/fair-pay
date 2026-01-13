@@ -10,12 +10,14 @@ interface RecurringExpense {
   id: string
   template_expense_id: string
   frequency: string
-  interval: number
+  interval_value: number
   next_occurrence: string
   context_type: 'group' | 'friend'
   group_id: string | null
   friendship_id: string | null
   created_by: string
+  prepaid_until: string | null
+  end_date: string | null
 }
 
 interface TemplateExpense {
@@ -35,6 +37,14 @@ interface ExpenseSplit {
   split_method: string
   split_value: number
   computed_amount: number
+}
+
+interface ProcessingResults {
+  processed: number
+  created: number
+  skipped: number
+  deactivated: number
+  errors: string[]
 }
 
 serve(async (req) => {
@@ -65,24 +75,78 @@ serve(async (req) => {
     if (!dueRecurring || dueRecurring.length === 0) {
       console.log('No recurring expenses due for creation')
       return new Response(
-        JSON.stringify({ success: true, processed: 0, message: 'No recurring expenses due' }),
+        JSON.stringify({ success: true, processed: 0, skipped: 0, message: 'No recurring expenses due' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     console.log(`Found ${dueRecurring.length} recurring expenses due for creation`)
 
-    const results = {
+    const results: ProcessingResults = {
       processed: 0,
       created: 0,
+      skipped: 0,
       deactivated: 0,
-      errors: [] as string[]
+      errors: []
     }
 
     for (const recurring of dueRecurring as RecurringExpense[]) {
       try {
         results.processed++
 
+        // Check if this period is covered by prepaid payment (Requirements 3.1, 3.2)
+        if (recurring.prepaid_until) {
+          const prepaidUntil = new Date(recurring.prepaid_until)
+          const nextOccurrence = new Date(recurring.next_occurrence)
+          
+          if (nextOccurrence <= prepaidUntil) {
+            // Skip this period - it's prepaid (Requirement 3.2)
+            // Advance next_occurrence to first uncovered period (Requirement 3.3)
+            let newNextOccurrence = nextOccurrence
+            
+            while (newNextOccurrence <= prepaidUntil) {
+              const { data: nextDate, error: calcError } = await supabase
+                .rpc('calculate_next_occurrence', {
+                  p_current_date: newNextOccurrence.toISOString().split('T')[0],
+                  p_frequency: recurring.frequency,
+                  p_interval_value: recurring.interval_value
+                })
+              
+              if (calcError) {
+                throw new Error(`Failed to calculate next occurrence: ${calcError.message}`)
+              }
+              
+              newNextOccurrence = new Date(nextDate)
+            }
+            
+            // Check if we should deactivate (past end_date)
+            const updates: Record<string, unknown> = {
+              next_occurrence: newNextOccurrence.toISOString().split('T')[0]
+            }
+            
+            if (recurring.end_date && newNextOccurrence > new Date(recurring.end_date)) {
+              updates.is_active = false
+              results.deactivated++
+              console.log(`Deactivated recurring ${recurring.id} - next occurrence past end_date`)
+            }
+            
+            // Update next_occurrence to first uncovered period
+            const { error: updateError } = await supabase
+              .from('recurring_expenses')
+              .update(updates)
+              .eq('id', recurring.id)
+            
+            if (updateError) {
+              console.error(`Failed to update recurring expense ${recurring.id}: ${updateError.message}`)
+            }
+            
+            console.log(`Skipped prepaid period for recurring ${recurring.id}, advanced to ${newNextOccurrence.toISOString().split('T')[0]}`)
+            results.skipped++
+            continue
+          }
+        }
+
+        // Normal expense creation flow (Requirement 3.5 - resume normal generation)
         const { data: templateExpense, error: templateError } = await supabase
           .from('expenses')
           .select('*')
@@ -145,10 +209,10 @@ serve(async (req) => {
           .rpc('calculate_next_occurrence', {
             p_current_date: recurring.next_occurrence,
             p_frequency: recurring.frequency,
-            p_interval: recurring.interval
+            p_interval_value: recurring.interval_value
           })
 
-        const updates: any = {
+        const updates: Record<string, unknown> = {
           next_occurrence: nextDate,
           last_created_at: new Date().toISOString()
         }
@@ -172,7 +236,7 @@ serve(async (req) => {
         results.created++
 
       } catch (error) {
-        const errorMessage = `Error processing recurring expense ${recurring.id}: ${error.message}`
+        const errorMessage = `Error processing recurring expense ${recurring.id}: ${(error as Error).message}`
         console.error(errorMessage)
         results.errors.push(errorMessage)
       }
@@ -193,7 +257,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message
+        error: (error as Error).message
       }),
       {
         status: 500,
