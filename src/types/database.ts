@@ -653,6 +653,50 @@ export type Database = {
         }
         Returns: string
       }
+      calculate_prepaid_until: {
+        Args: {
+          p_start_date: string
+          p_periods_count: number
+          p_frequency: string
+          p_interval_value: number
+        }
+        Returns: string
+      }
+      get_prepaid_payment_history: {
+        Args: {
+          p_recurring_expense_id: string
+        }
+        Returns: {
+          id: string
+          payment_date: string
+          periods_covered: number
+          amount: number
+          coverage_from: string
+          coverage_to: string
+          expense_id: string | null
+          created_by: string
+          created_by_name: string
+          created_at: string
+          total_prepaid_amount: number
+        }[]
+      }
+      record_prepaid_payment: {
+        Args: {
+          p_recurring_expense_id: string
+          p_periods_count: number
+          p_amount: number
+        }
+        Returns: {
+          success: boolean
+          payment_id: string
+          expense_id: string
+          coverage_from: string
+          coverage_to: string
+          prepaid_until: string
+          periods_covered: number
+          amount: number
+        }
+      }
       create_notification: {
         Args: {
           p_link?: string
