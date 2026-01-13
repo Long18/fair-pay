@@ -1,7 +1,15 @@
 @font-face {
   font-family: 'VL Mark';
   src: url('/fonts/VL_Mark Simonson - Proxima Nova Bold.otf') format('opentype');
-  font-weight: 100 900;
+  font-weight: 700 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'VL Mark';
+  src: url('/fonts/VL_Mark Simonson - Proxima Nova Thin.otf') format('opentype');
+  font-weight: 100 600;
   font-style: normal;
   font-display: swap;
 }
