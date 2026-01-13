@@ -88,7 +88,9 @@ export const ExpenseSplitCard = ({
         "group border-2 rounded-lg transition-all duration-200 overflow-hidden",
         isSplitSettled
           ? cn(paidColors.bg, paidColors.border)
-          : "hover:border-primary/50 hover:bg-accent/30 bg-card"
+          : isCurrentUser
+            ? "border-primary/30 bg-primary/5 hover:border-primary/50 hover:bg-primary/10"
+            : "hover:border-primary/50 hover:bg-accent/30 bg-card"
       )}
     >
       {/* Main Content */}
