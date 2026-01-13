@@ -110,27 +110,39 @@ export function groupActivitiesByTimePeriod(
 
 /**
  * Sort activities by date (descending)
+ * Handles null/undefined dates by treating them as epoch (oldest possible date)
  */
 export function sortActivitiesByDate(
   activities: EnhancedActivityItem[],
   order: "asc" | "desc" = "desc"
 ): EnhancedActivityItem[] {
   return [...activities].sort((a, b) => {
-    const dateA = new Date(a.date).getTime();
-    const dateB = new Date(b.date).getTime();
-    return order === "desc" ? dateB - dateA : dateA - dateB;
+    // Handle null/undefined dates by defaulting to 0 (epoch)
+    const dateA = a.date ? new Date(a.date).getTime() : 0;
+    const dateB = b.date ? new Date(b.date).getTime() : 0;
+
+    // Check for invalid dates (NaN)
+    const validA = !isNaN(dateA) ? dateA : 0;
+    const validB = !isNaN(dateB) ? dateB : 0;
+
+    return order === "desc" ? validB - validA : validA - validB;
   });
 }
 
 /**
  * Sort activities by amount
+ * Handles null/undefined amounts by treating them as 0
  */
 export function sortActivitiesByAmount(
   activities: EnhancedActivityItem[],
   order: "asc" | "desc" = "desc"
 ): EnhancedActivityItem[] {
   return [...activities].sort((a, b) => {
-    return order === "desc" ? b.amount - a.amount : a.amount - b.amount;
+    // Handle null/undefined amounts by defaulting to 0
+    const amountA = a.amount ?? 0;
+    const amountB = b.amount ?? 0;
+
+    return order === "desc" ? amountB - amountA : amountA - amountB;
   });
 }
 

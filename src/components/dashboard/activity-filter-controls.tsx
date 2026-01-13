@@ -1,5 +1,7 @@
 import * as React from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { XIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 // =============================================
@@ -47,6 +49,8 @@ export const ActivityFilterControls: React.FC<ActivityFilterControlsProps> = ({
     { value: "partial", label: "Partial", count: counts.partial },
   ];
 
+  const hasActiveFilters = activeFilter !== "all";
+
   return (
     <div className={cn("flex flex-wrap items-center gap-2", className)}>
       {filters.map((filter) => (
@@ -78,6 +82,20 @@ export const ActivityFilterControls: React.FC<ActivityFilterControlsProps> = ({
           </Badge>
         </button>
       ))}
+
+      {/* Reset Button - shows when filter is active */}
+      {hasActiveFilters && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onFilterChange("all")}
+          className="h-9 rounded-full px-3"
+          aria-label="Reset filters"
+        >
+          <XIcon className="h-4 w-4 mr-1" />
+          <span className="text-sm">Reset</span>
+        </Button>
+      )}
     </div>
   );
 };
