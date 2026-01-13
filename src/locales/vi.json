@@ -292,7 +292,31 @@
         "daily": "Hàng ngày",
         "weekly": "Hàng tuần",
         "monthly": "Hàng tháng",
-        "yearly": "Hàng năm"
+        "yearly": "Hàng năm",
+        "prepaid": {
+            "payUpfront": "Trả trước",
+            "periodsCount": "Số kỳ",
+            "totalAmount": "Tổng số tiền",
+            "coverageUntil": "Bao phủ đến",
+            "remainingPeriods": "Còn {{count}} kỳ",
+            "expiringSoon": "Sắp hết hạn",
+            "expired": "Đã hết hạn trả trước",
+            "noCoverage": "Chưa trả trước",
+            "paymentHistory": "Lịch sử trả trước",
+            "paidUntil": "Đã trả đến {{date}}",
+            "periodsCovered": "Bao phủ {{count}} kỳ",
+            "coveragePeriod": "Kỳ bao phủ",
+            "recordPayment": "Ghi nhận trả trước",
+            "recordSuccess": "Đã ghi nhận trả trước thành công",
+            "recordError": "Không thể ghi nhận trả trước",
+            "totalPrepaid": "Tổng đã trả trước",
+            "noPayments": "Chưa có thanh toán trả trước",
+            "active": "Đang hoạt động",
+            "statusNone": "Chưa trả trước",
+            "statusActive": "Đang có trả trước",
+            "statusExpiringSoon": "Sắp hết hạn",
+            "statusExpired": "Đã hết hạn"
+        }
     },
     "payments": {
         "title": "Thanh toán",

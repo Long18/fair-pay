@@ -25,12 +25,49 @@ export interface RecurringExpense {
   next_occurrence: string;
   end_date: string | null;
   is_active: boolean;
+  prepaid_until: string | null;
+  last_prepaid_at: string | null;
   created_at: string;
   updated_at: string;
 
   // Joined data from the expenses table
   template_expense?: Expense;
   expenses?: Expense; // This is how Supabase returns the joined data
+}
+
+/**
+ * Represents a prepaid payment record for a recurring expense
+ */
+export interface RecurringPrepaidPayment {
+  id: string;
+  recurring_expense_id: string;
+  payment_date: string;
+  periods_covered: number;
+  amount: number;
+  coverage_from: string;
+  coverage_to: string;
+  expense_id: string | null;
+  created_by: string;
+  created_at: string;
+}
+
+/**
+ * Status of prepaid coverage for a recurring expense
+ */
+export type PrepaidCoverageStatus =
+  | 'none'           // No prepaid coverage
+  | 'active'         // prepaid_until > today
+  | 'expiring_soon'  // prepaid_until within 1 period
+  | 'expired';       // prepaid_until <= today
+
+/**
+ * Information about prepaid coverage for a recurring expense
+ */
+export interface PrepaidCoverageInfo {
+  status: PrepaidCoverageStatus;
+  prepaid_until: string | null;
+  remaining_periods: number;
+  days_until_expiry: number;
 }
 
 export interface RecurringExpenseFormValues {

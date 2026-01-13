@@ -293,7 +293,31 @@
         "daily": "Daily",
         "weekly": "Weekly",
         "monthly": "Monthly",
-        "yearly": "Yearly"
+        "yearly": "Yearly",
+        "prepaid": {
+            "payUpfront": "Pay Upfront",
+            "periodsCount": "Number of periods",
+            "totalAmount": "Total amount",
+            "coverageUntil": "Coverage until",
+            "remainingPeriods": "{{count}} period(s) remaining",
+            "expiringSoon": "Expiring soon",
+            "expired": "Prepaid coverage expired",
+            "noCoverage": "No prepaid coverage",
+            "paymentHistory": "Prepaid Payment History",
+            "paidUntil": "Paid until {{date}}",
+            "periodsCovered": "{{count}} period(s) covered",
+            "coveragePeriod": "Coverage period",
+            "recordPayment": "Record Prepaid Payment",
+            "recordSuccess": "Prepaid payment recorded successfully",
+            "recordError": "Failed to record prepaid payment",
+            "totalPrepaid": "Total prepaid",
+            "noPayments": "No prepaid payments yet",
+            "active": "Active",
+            "statusNone": "No prepaid coverage",
+            "statusActive": "Active prepaid coverage",
+            "statusExpiringSoon": "Expiring soon",
+            "statusExpired": "Expired"
+        }
     },
     "payments": {
         "title": "Payments",
