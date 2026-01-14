@@ -4,6 +4,9 @@ import { useAggregatedDebts, type AggregatedDebt } from "@/hooks/use-aggregated-
 import { useBalance } from "@/hooks/useBalance";
 import { SimplifiedDebts } from "@/components/dashboard/simplified-debts";
 import { BalanceChart } from "@/components/dashboard/balance-chart";
+import { PageContainer } from "@/components/ui/page-container";
+import { PageHeader } from "@/components/ui/page-header";
+import { PageContent } from "@/components/ui/page-content";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Profile } from "@/modules/profile/types";
@@ -133,32 +136,29 @@ export const BalancesPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-7xl mx-auto py-4 md:py-6 lg:py-8 px-4 sm:px-6 lg:px-8">
-        <div className="space-y-4 md:space-y-6">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-xl md:text-2xl font-bold text-foreground" id="balances-page-title">
-                {t('balances.title', 'All Balances')}
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1" id="balances-page-description">
-                {t('balances.description', 'Complete overview of your debts and credits')}
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={isRefreshing || isLoading}
-              className="gap-2 w-full sm:w-auto"
-              aria-label={t('balances.refresh', 'Refresh balances')}
-              aria-describedby="balances-page-description"
-            >
-              <RefreshCwIcon className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
-              {t('balances.refresh', 'Refresh')}
-            </Button>
-          </div>
+    <PageContainer variant="default" withBackground fullHeight>
+      <PageHeader
+        title={t('balances.title', 'All Balances')}
+        description={t('balances.description', 'Complete overview of your debts and credits')}
+        titleId="balances-page-title"
+        descriptionId="balances-page-description"
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing || isLoading}
+            className="gap-2 w-full sm:w-auto"
+            aria-label={t('balances.refresh', 'Refresh balances')}
+            aria-describedby="balances-page-description"
+          >
+            <RefreshCwIcon className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
+            {t('balances.refresh', 'Refresh')}
+          </Button>
+        }
+      />
+
+      <PageContent>
 
           {/* Error State */}
           {error && (
@@ -450,44 +450,43 @@ export const BalancesPage = () => {
             </Tabs>
           )}
 
-          {/* Settle All Dialog */}
-          <AlertDialog open={settleAllDialogOpen} onOpenChange={setSettleAllDialogOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  {t('balances.settleAllTitle', 'Settle All Debts?')}
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  {t('balances.settleAllDescription', {
-                    count: iOwe.length,
-                    amount: formatNumber(totalIOwe),
-                    defaultValue: `Are you sure you want to settle all ${iOwe.length} debts totaling ₫${formatNumber(totalIOwe)}? This action cannot be undone.`
-                  })}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={isSettling}>
-                  {t('common.cancel', 'Cancel')}
-                </AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleSettleAll}
-                  disabled={isSettling}
-                  className="bg-primary text-primary-foreground"
-                >
-                  {isSettling ? (
-                    <>
-                      <RefreshCwIcon className="h-4 w-4 mr-2 animate-spin" />
-                      {t('balances.settling', 'Settling...')}
-                    </>
-                  ) : (
-                    t('balances.confirmSettle', 'Settle All')
-                  )}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </div>
-    </div>
+        {/* Settle All Dialog */}
+        <AlertDialog open={settleAllDialogOpen} onOpenChange={setSettleAllDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {t('balances.settleAllTitle', 'Settle All Debts?')}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('balances.settleAllDescription', {
+                  count: iOwe.length,
+                  amount: formatNumber(totalIOwe),
+                  defaultValue: `Are you sure you want to settle all ${iOwe.length} debts totaling ₫${formatNumber(totalIOwe)}? This action cannot be undone.`
+                })}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isSettling}>
+                {t('common.cancel', 'Cancel')}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleSettleAll}
+                disabled={isSettling}
+                className="bg-primary text-primary-foreground"
+              >
+                {isSettling ? (
+                  <>
+                    <RefreshCwIcon className="h-4 w-4 mr-2 animate-spin" />
+                    {t('balances.settling', 'Settling...')}
+                  </>
+                ) : (
+                  t('balances.confirmSettle', 'Settle All')
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </PageContent>
+    </PageContainer>
   );
 };
