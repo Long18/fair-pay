@@ -41,23 +41,25 @@ import { formatNumber } from '@/lib/locale-utils';
 import { useTranslation } from 'react-i18next';
 import { getPrepaidCoverageStatus, formatPrepaidCoverage } from '../utils/prepaid-calculations';
 
-import { 
-  MoreVerticalIcon, 
-  RepeatIcon, 
-  PauseIcon, 
-  PlayIcon, 
-  Trash2Icon, 
+import {
+  MoreVerticalIcon,
+  RepeatIcon,
+  PauseIcon,
+  PlayIcon,
+  Trash2Icon,
   CalendarIcon,
   BanknoteIcon,
   ChevronDownIcon,
+  PencilIcon,
 } from "@/components/ui/icons";
 
 interface RecurringExpenseCardProps {
   recurring: RecurringExpense;
   onUpdate?: () => void;
+  onEdit?: (recurring: RecurringExpense) => void;
 }
 
-export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCardProps) {
+export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringExpenseCardProps) {
   const { t, i18n } = useTranslation();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showPrepaidDialog, setShowPrepaidDialog] = useState(false);
@@ -231,6 +233,12 @@ export function RecurringExpenseCard({ recurring, onUpdate }: RecurringExpenseCa
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>
+                )}
+                {onEdit && (
+                  <DropdownMenuItem onClick={() => onEdit(recurring)}>
+                    <PencilIcon className="mr-2 h-4 w-4" />
+                    {t('recurring.edit', 'Edit')}
+                  </DropdownMenuItem>
                 )}
                 <DropdownMenuItem
                   onClick={handlePauseResume}

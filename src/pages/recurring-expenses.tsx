@@ -12,7 +12,10 @@ import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useKeyboardShortcut } from "@/hooks/use-keyboard-shortcut";
 import { useRecurringExpenses } from "@/modules/expenses/hooks/use-recurring-expenses";
 import { RecurringExpenseCard } from "@/modules/expenses/components/recurring-expense-card";
+import { CreateRecurringDialog } from "@/modules/expenses/components/create-recurring-dialog";
+import { EditRecurringDialog } from "@/modules/expenses/components/edit-recurring-dialog";
 import { EmptyState } from "@/components/refine-ui/empty-state";
+import { RecurringExpense } from "@/modules/expenses/types/recurring";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -30,8 +33,16 @@ export function RecurringExpensesPage() {
     "recurring-expenses-tab",
     "active"
   );
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedRecurring, setSelectedRecurring] = useState<RecurringExpense | null>(null);
 
   const { recurring, active, paused, isLoading, error } = useRecurringExpenses({});
+
+  const handleEdit = (recurring: RecurringExpense) => {
+    setSelectedRecurring(recurring);
+    setEditDialogOpen(true);
+  };
 
   // Keyboard shortcuts
   useKeyboardShortcut([
@@ -47,10 +58,7 @@ export function RecurringExpensesPage() {
     },
     {
       key: "n",
-      callback: () => {
-        // TODO: Open create recurring dialog
-        console.log("Create new recurring expense (keyboard shortcut)");
-      },
+      callback: () => setCreateDialogOpen(true),
       description: "Create new recurring expense",
     },
   ]);
@@ -181,7 +189,7 @@ export function RecurringExpensesPage() {
         <MobileAppBar
           title={t('recurring.title', 'Recurring Expenses')}
           action={
-            <Button size="sm" variant="ghost">
+            <Button size="sm" variant="ghost" onClick={() => setCreateDialogOpen(true)}>
               <PlusIcon className="h-4 w-4" />
             </Button>
           }
@@ -194,7 +202,7 @@ export function RecurringExpensesPage() {
             title={t('recurring.title', 'Recurring Expenses')}
             description={t('recurring.description', 'Manage your automatic recurring payments')}
             action={
-              <Button>
+              <Button onClick={() => setCreateDialogOpen(true)}>
                 <PlusIcon className="h-4 w-4 mr-2" />
                 {t('recurring.create', 'Create Recurring')}
               </Button>
@@ -278,10 +286,7 @@ export function RecurringExpensesPage() {
               )}
               action={{
                 label: t('recurring.create', 'Create Recurring'),
-                onClick: () => {
-                  // TODO: Open create recurring dialog
-                  console.log('Create recurring expense');
-                },
+                onClick: () => setCreateDialogOpen(true),
               }}
             />
           ) : (
@@ -306,7 +311,7 @@ export function RecurringExpensesPage() {
                   </div>
                 ) : (
                   active.map((item) => (
-                    <RecurringExpenseCard key={item.id} recurring={item} />
+                    <RecurringExpenseCard key={item.id} recurring={item} onEdit={handleEdit} />
                   ))
                 )}
               </TabsContent>
@@ -320,7 +325,7 @@ export function RecurringExpensesPage() {
                   </div>
                 ) : (
                   paused.map((item) => (
-                    <RecurringExpenseCard key={item.id} recurring={item} />
+                    <RecurringExpenseCard key={item.id} recurring={item} onEdit={handleEdit} />
                   ))
                 )}
               </TabsContent>
@@ -355,6 +360,17 @@ export function RecurringExpensesPage() {
           />
         </BottomNavigation>
       </MobileOnly>
+
+      <CreateRecurringDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+      />
+
+      <EditRecurringDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        recurring={selectedRecurring}
+      />
     </>
   );
 }
