@@ -9,6 +9,7 @@ import {
   ReceiptIcon,
   WalletIcon,
   FairPayIcon,
+  RepeatIcon,
 } from "./components/ui/icons";
 
 import routerProvider, {
@@ -71,6 +72,7 @@ const FriendShow = lazy(() => import("./modules/friends").then(m => ({ default: 
 // Other modules
 const NotificationList = lazy(() => import("./modules/notifications").then(m => ({ default: m.NotificationList })));
 const ReportsPage = lazy(() => import("./pages/reports").then(m => ({ default: m.ReportsPage })));
+const RecurringExpensesPage = lazy(() => import("./pages/recurring-expenses").then(m => ({ default: m.RecurringExpensesPage })));
 const SettingsPage = lazy(() => import("./modules/settings").then(m => ({ default: m.SettingsPage })));
 const DonationSettings = lazy(() => import("./modules/settings").then(m => ({ default: m.DonationSettings })));
 const MomoSettings = lazy(() => import("./modules/settings/pages/momo-settings").then(m => ({ default: m.MomoSettingsPage })));
@@ -255,6 +257,14 @@ function App() {
                     },
                   },
                   {
+                    name: "recurring_expenses",
+                    list: "/recurring-expenses",
+                    meta: {
+                      label: "Recurring",
+                      icon: <RepeatIcon className="w-5 h-5" />,
+                    },
+                  },
+                  {
                     name: "user_settings",
                     meta: {
                       label: "User Settings",
@@ -436,6 +446,13 @@ function App() {
                       <Suspense fallback={<PageLoader />}>
                         <ErrorBoundary context="Balances Page">
                           <BalancesPage />
+                        </ErrorBoundary>
+                      </Suspense>
+                    } />
+                    <Route path="/recurring-expenses" element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ErrorBoundary context="Recurring Expenses Page">
+                          <RecurringExpensesPage />
                         </ErrorBoundary>
                       </Suspense>
                     } />
