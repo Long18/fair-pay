@@ -14,8 +14,10 @@ import { useRecurringExpenses } from "@/modules/expenses/hooks/use-recurring-exp
 import { RecurringExpenseCard } from "@/modules/expenses/components/recurring-expense-card";
 import { CreateRecurringDialog } from "@/modules/expenses/components/create-recurring-dialog";
 import { EditRecurringDialog } from "@/modules/expenses/components/edit-recurring-dialog";
+import { RecurringExpensesAnalytics } from "@/components/analytics/recurring-expenses-analytics";
 import { EmptyState } from "@/components/refine-ui/empty-state";
 import { RecurringExpense } from "@/modules/expenses/types/recurring";
+import { BulkCalendarExport } from "@/components/calendar/bulk-calendar-export";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -29,7 +31,7 @@ import {
 
 export function RecurringExpensesPage() {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = usePersistedState<"active" | "paused">(
+  const [activeTab, setActiveTab] = usePersistedState<"active" | "paused" | "analytics">(
     "recurring-expenses-tab",
     "active"
   );
@@ -55,6 +57,11 @@ export function RecurringExpensesPage() {
       key: "2",
       callback: () => setActiveTab("paused"),
       description: "Switch to Paused tab",
+    },
+    {
+      key: "3",
+      callback: () => setActiveTab("analytics"),
+      description: "Switch to Analytics tab",
     },
     {
       key: "n",
@@ -202,10 +209,13 @@ export function RecurringExpensesPage() {
             title={t('recurring.title', 'Recurring Expenses')}
             description={t('recurring.description', 'Manage your automatic recurring payments')}
             action={
-              <Button onClick={() => setCreateDialogOpen(true)}>
-                <PlusIcon className="h-4 w-4 mr-2" />
-                {t('recurring.create', 'Create Recurring')}
-              </Button>
+              <div className="flex items-center gap-2">
+                <BulkCalendarExport expenses={recurring} />
+                <Button onClick={() => setCreateDialogOpen(true)}>
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  {t('recurring.create', 'Create Recurring')}
+                </Button>
+              </div>
             }
           />
         </DesktopOnly>
@@ -290,7 +300,7 @@ export function RecurringExpensesPage() {
               }}
             />
           ) : (
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "active" | "paused")}>
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "active" | "paused" | "analytics")}>
               <div className="flex items-center justify-center w-full">
                 <TabsList>
                   <TabsTrigger value="active" className="px-6">
@@ -298,6 +308,9 @@ export function RecurringExpensesPage() {
                   </TabsTrigger>
                   <TabsTrigger value="paused" className="px-6">
                     {t('recurring.tabs.paused', 'Paused')} ({paused.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="analytics" className="px-6">
+                    {t('recurring.tabs.analytics', 'Analytics')}
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -328,6 +341,10 @@ export function RecurringExpensesPage() {
                     <RecurringExpenseCard key={item.id} recurring={item} onEdit={handleEdit} />
                   ))
                 )}
+              </TabsContent>
+
+              <TabsContent value="analytics" className="mt-6">
+                <RecurringExpensesAnalytics />
               </TabsContent>
             </Tabs>
           )}
