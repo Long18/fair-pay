@@ -1,11 +1,14 @@
 import { useCallback } from "react";
-import { useUpdate, useDelete } from "@refinedev/core";
+import { useUpdate, useDelete, useNotification } from "@refinedev/core";
+import { useTranslation } from "react-i18next";
 import { RecurringExpense } from "../types/recurring";
 import { calculateNextOccurrence } from "../types/recurring";
 
 export function useRecurringActions() {
   const { mutate: updateRecurring } = useUpdate();
   const { mutate: deleteRecurring } = useDelete();
+  const { open: notify } = useNotification();
+  const { t } = useTranslation();
 
   const pause = useCallback(
     (id: string) => {
@@ -17,15 +20,23 @@ export function useRecurringActions() {
         },
         {
           onSuccess: () => {
-            console.log("Recurring expense paused successfully");
+            notify?.({
+              type: "success",
+              message: t("recurring.pausedSuccess", "Recurring expense paused"),
+              description: t("recurring.pausedDescription", "Future expenses will not be created"),
+            });
           },
           onError: (error) => {
-            console.error("Failed to pause recurring expense:", error);
+            notify?.({
+              type: "error",
+              message: t("recurring.pausedError", "Failed to pause"),
+              description: error instanceof Error ? error.message : undefined,
+            });
           },
         }
       );
     },
-    [updateRecurring]
+    [updateRecurring, notify, t]
   );
 
   const resume = useCallback(
@@ -38,15 +49,23 @@ export function useRecurringActions() {
         },
         {
           onSuccess: () => {
-            console.log("Recurring expense resumed successfully");
+            notify?.({
+              type: "success",
+              message: t("recurring.resumedSuccess", "Recurring expense resumed"),
+              description: t("recurring.resumedDescription", "Future expenses will be created automatically"),
+            });
           },
           onError: (error) => {
-            console.error("Failed to resume recurring expense:", error);
+            notify?.({
+              type: "error",
+              message: t("recurring.resumedError", "Failed to resume"),
+              description: error instanceof Error ? error.message : undefined,
+            });
           },
         }
       );
     },
-    [updateRecurring]
+    [updateRecurring, notify, t]
   );
 
   const skip = useCallback(
@@ -65,15 +84,23 @@ export function useRecurringActions() {
         },
         {
           onSuccess: () => {
-            console.log("Skipped next occurrence successfully");
+            notify?.({
+              type: "success",
+              message: t("recurring.skippedSuccess", "Next occurrence skipped"),
+              description: t("recurring.skippedDescription", "The next scheduled expense has been skipped"),
+            });
           },
           onError: (error) => {
-            console.error("Failed to skip next occurrence:", error);
+            notify?.({
+              type: "error",
+              message: t("recurring.skippedError", "Failed to skip"),
+              description: error instanceof Error ? error.message : undefined,
+            });
           },
         }
       );
     },
-    [updateRecurring]
+    [updateRecurring, notify, t]
   );
 
   const remove = useCallback(
@@ -85,15 +112,23 @@ export function useRecurringActions() {
         },
         {
           onSuccess: () => {
-            console.log("Recurring expense deleted successfully");
+            notify?.({
+              type: "success",
+              message: t("recurring.deletedSuccess", "Recurring expense deleted"),
+              description: t("recurring.deletedDescription", "Future expenses will not be created"),
+            });
           },
           onError: (error) => {
-            console.error("Failed to delete recurring expense:", error);
+            notify?.({
+              type: "error",
+              message: t("recurring.deletedError", "Failed to delete"),
+              description: error instanceof Error ? error.message : undefined,
+            });
           },
         }
       );
     },
-    [deleteRecurring]
+    [deleteRecurring, notify, t]
   );
 
   return {
