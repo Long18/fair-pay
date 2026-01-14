@@ -15,12 +15,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { HistoryIcon, Loader2Icon } from "@/components/ui/icons";
 import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
 import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useTranslation } from "react-i18next";
 import { DashboardTracker } from "@/lib/analytics/index";
 
 export const Dashboard = () => {
   const { data: identity } = useGetIdentity<Profile>();
   const { t } = useTranslation();
+  const [activeTab, setActiveTab] = usePersistedState<"balances" | "activity">("dashboard-tab", "balances");
   const [showHistory, setShowHistory] = useState(false);
   const [isTogglingHistory, setIsTogglingHistory] = useState(false);
   const { data: debts = [], isLoading: debtsLoading, refetch: refetchDebts, error: debtsError } = useAggregatedDebts({
@@ -130,7 +132,7 @@ export const Dashboard = () => {
 
           <PageContent>
             {/* Main Content Tabs */}
-            <Tabs defaultValue="balances" className="space-y-6">
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "balances" | "activity")} className="space-y-6">
               <div className="flex items-center justify-center w-full">
                 <TabsList>
                   <TabsTrigger value="balances" className="px-6">
