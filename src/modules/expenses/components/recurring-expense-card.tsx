@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { SwipeableCard } from '@/components/ui/swipeable-card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -191,9 +192,27 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
     return null;
   }
 
+  const swipeActions = {
+    right: [
+      {
+        label: recurring.is_active ? t('recurring.pause') : t('recurring.resume'),
+        icon: recurring.is_active ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />,
+        onClick: handlePauseResume,
+        variant: "default" as const,
+      },
+      {
+        label: t('recurring.delete'),
+        icon: <Trash2Icon className="h-5 w-5" />,
+        onClick: () => setShowDeleteDialog(true),
+        variant: "destructive" as const,
+      },
+    ],
+  };
+
   return (
     <>
-      <Card>
+      <SwipeableCard rightActions={swipeActions.right} className="md:pointer-events-none">
+        <Card>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
@@ -345,6 +364,7 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
           )}
         </CardContent>
       </Card>
+      </SwipeableCard>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

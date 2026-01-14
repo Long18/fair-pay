@@ -1,13 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdate, useNotification } from "@refinedev/core";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -87,21 +81,17 @@ export function EditRecurringDialog({
   if (!recurring) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>
-            {t("recurring.edit.title", "Edit Recurring Schedule")}
-          </DialogTitle>
-          <DialogDescription>
-            {t(
-              "recurring.edit.description",
-              "Update how often this expense repeats."
-            )}
-          </DialogDescription>
-        </DialogHeader>
+    <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
+      <ResponsiveDialog.Header
+        title={t("recurring.edit.title", "Edit Recurring Schedule")}
+        description={t(
+          "recurring.edit.description",
+          "Update how often this expense repeats."
+        )}
+      />
 
-        <div className="space-y-4 py-4">
+      <ResponsiveDialog.Content>
+        <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="frequency">
               {t("recurring.frequency", "Frequency")}
@@ -155,22 +145,23 @@ export function EditRecurringDialog({
             />
           </div>
         </div>
+      </ResponsiveDialog.Content>
 
-        <div className="flex justify-end gap-2">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isSubmitting}
-          >
-            {t("common.cancel", "Cancel")}
-          </Button>
-          <Button onClick={handleSave} disabled={isSubmitting}>
-            {isSubmitting
-              ? t("common.saving", "Saving...")
-              : t("common.save", "Save")}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+      <ResponsiveDialog.Footer>
+        <Button
+          variant="outline"
+          onClick={() => onOpenChange(false)}
+          disabled={isSubmitting}
+          className="max-sm:w-full"
+        >
+          {t("common.cancel", "Cancel")}
+        </Button>
+        <Button onClick={handleSave} disabled={isSubmitting} className="max-sm:w-full">
+          {isSubmitting
+            ? t("common.saving", "Saving...")
+            : t("common.save", "Save")}
+        </Button>
+      </ResponsiveDialog.Footer>
+    </ResponsiveDialog>
   );
 }
