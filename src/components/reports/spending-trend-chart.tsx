@@ -72,14 +72,14 @@ export function SpendingTrendChart({ data, title }: SpendingTrendChartProps) {
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tick={{ fontSize: 11 }}
+              tick={{ fontSize: "var(--font-size-chart-sm)", fontFamily: "var(--font-sans)" }}
               interval="preserveStartEnd"
             />
             <YAxis
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tick={{ fontSize: 11 }}
+              tick={{ fontSize: "var(--font-size-chart-sm)", fontFamily: "var(--font-sans)" }}
               tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
               width={40}
             />
