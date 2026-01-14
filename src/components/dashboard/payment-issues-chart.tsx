@@ -44,7 +44,11 @@ export const PaymentIssuesChart = ({
               dataKey="name"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#BDBDBD", fontSize: 12, fontFamily: "Montserrat" }}
+              tick={{
+                fill: "#BDBDBD",
+                fontSize: "var(--font-size-chart-md)",
+                fontFamily: "var(--font-sans)",
+              }}
               dy={10}
             />
             <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={61}>

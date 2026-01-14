@@ -18,8 +18,6 @@
     <meta name="google-site-verification" content="Kxbq4d_Ys2ZnNyKT8MLUpiJOAb8TParQNwbOCyW3Ezo" />
 
     <!-- Performance optimizations -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
-    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://obbjwfndjsfabklhsxlv.supabase.co" crossorigin>
     <link rel="dns-prefetch" href="https://obbjwfndjsfabklhsxlv.supabase.co">
 
@@ -87,11 +85,10 @@
     <title>FairPay - Expense Splitting Made Easy | Free Bill Splitter App</title>
 
     <!-- Font optimization -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800&display=swap" as="style">
     <style>
-      /* System font stack for instant text rendering */
+      /* OpenAI/ChatGPT font stack for instant text rendering */
       body {
-        font-family: 'Exo 2', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+        font-family: var(--font-sans, "Soehne", "Sohne", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif);
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
@@ -115,7 +112,7 @@
   </head>
   <body>
     <noscript>
-      <div style="padding: 20px; text-align: center; font-family: sans-serif;">
+      <div style="padding: 20px; text-align: center; font-family: var(--font-sans, 'Soehne', 'Sohne', system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif);">
         <h1>JavaScript Required</h1>
         <p>FairPay requires JavaScript to run. Please enable JavaScript in your browser settings.</p>
       </div>

@@ -95,13 +95,13 @@ export function StackedAreaChart({
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: "var(--font-size-chart-md)", fontFamily: "var(--font-sans)" }}
             />
             <YAxis
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: "var(--font-size-chart-md)", fontFamily: "var(--font-sans)" }}
               tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
             />
             <ChartTooltip
