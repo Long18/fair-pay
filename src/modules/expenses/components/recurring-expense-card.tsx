@@ -35,12 +35,15 @@ import { CategoryIcon } from './category-icon';
 import { PrepaidStatusBadge } from './prepaid-status-badge';
 import { PrepaidPaymentDialog } from './prepaid-payment-dialog';
 import { PrepaidPaymentHistory } from './prepaid-payment-history';
+import { MemberPrepaidBalanceList } from './member-prepaid-balance-list';
+import { MultiMemberPrepaidDialog } from './multi-member-prepaid-dialog';
 import { useState, useMemo } from 'react';
 import { useUpdateRecurringExpense, useDeleteRecurringExpense } from '../hooks/use-recurring-expenses';
 import { useNotification, useGetIdentity, useList } from '@refinedev/core';
 import { formatNumber } from '@/lib/locale-utils';
 import { useTranslation } from 'react-i18next';
 import { getPrepaidCoverageStatus, formatPrepaidCoverage } from '../utils/prepaid-calculations';
+import { useMemberPrepaidInfo } from '../hooks/use-member-prepaid-info';
 
 import {
   MoreVerticalIcon,
@@ -79,9 +82,13 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
   const dateLocale = i18n.language === 'vi' ? vi : enUS;
   const language = i18n.language === 'vi' ? 'vi' : 'en';
 
-  // Get prepaid coverage info
+  // Get prepaid coverage info (legacy)
   const prepaidCoverageInfo = getPrepaidCoverageStatus(recurring);
   const hasPrepaidCoverage = prepaidCoverageInfo.status !== 'none';
+
+  // Get per-member prepaid info (new system)
+  const { data: memberPrepaidInfo } = useMemberPrepaidInfo(recurring.id);
+  const membersWithPrepaid = memberPrepaidInfo?.filter(m => m.balance_amount > 0) || [];
 
   // Fetch members based on context (group or friendship)
   const groupId = template?.group_id;
@@ -229,9 +236,18 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
                   <Badge variant={recurring.is_active ? 'default' : 'secondary'}>
                     {recurring.is_active ? t('recurring.active') : t('recurring.paused')}
                   </Badge>
-                  {/* Prepaid Status Badge - Requirements 5.1, 5.3, 5.4, 5.5 */}
+                  {/* Prepaid Status Badge - Legacy */}
                   {hasPrepaidCoverage && (
                     <PrepaidStatusBadge coverageInfo={prepaidCoverageInfo} />
+                  )}
+                  {/* Per-Member Prepaid Badge */}
+                  {membersWithPrepaid.length > 0 && (
+                    <Badge variant="default" className="gap-1">
+                      <BanknoteIcon className="h-3 w-3" />
+                      {t('prepaid.membersPrepaid', '{{count}} member(s) prepaid', {
+                        count: membersWithPrepaid.length
+                      })}
+                    </Badge>
                   )}
                 </div>
               </div>
@@ -330,7 +346,7 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
             </div>
           </div>
 
-          {/* Prepaid Coverage Info - Requirements 5.2 */}
+          {/* Legacy Prepaid Coverage Info */}
           {hasPrepaidCoverage && recurring.prepaid_until && (
             <div className="pt-2 border-t">
               <p className="text-sm text-muted-foreground">
@@ -339,8 +355,8 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
             </div>
           )}
 
-          {/* Prepaid Payment History Section - Requirements 6.2 */}
-          {hasPrepaidCoverage && (
+          {/* Per-Member Prepaid Balances Section */}
+          {memberPrepaidInfo && memberPrepaidInfo.length > 0 && (
             <Collapsible open={showPrepaidHistory} onOpenChange={setShowPrepaidHistory}>
               <CollapsibleTrigger asChild>
                 <Button
@@ -348,8 +364,8 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
                   size="sm"
                   className="w-full justify-between mt-2 text-muted-foreground hover:text-foreground"
                 >
-                  <span className="text-sm">
-                    {t('recurring.prepaid.paymentHistory', 'Payment History')}
+                  <span className="text-sm font-medium">
+                    {t('prepaid.memberBalances', 'Member balances')}
                   </span>
                   <ChevronDownIcon
                     className={`h-4 w-4 transition-transform duration-200 ${
@@ -358,11 +374,17 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
                   />
                 </Button>
               </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <PrepaidPaymentHistory
-                  recurringExpenseId={recurring.id}
-                  currency={template?.currency || 'VND'}
-                />
+              <CollapsibleContent className="mt-2 space-y-2">
+                <MemberPrepaidBalanceList recurringExpenseId={recurring.id} />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setShowPrepaidDialog(true)}
+                >
+                  <BanknoteIcon className="mr-2 h-4 w-4" />
+                  {t('prepaid.addPrepaid', 'Add prepaid for members')}
+                </Button>
               </CollapsibleContent>
             </Collapsible>
           )}
@@ -391,9 +413,19 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Prepaid Payment Dialog - Requirements 1.1, 4.4 */}
+      {/* Legacy Prepaid Payment Dialog */}
       <PrepaidPaymentDialog
         recurring={recurring}
+        members={members}
+        currentUserId={currentUserId}
+        open={false}
+        onOpenChange={setShowPrepaidDialog}
+        onSuccess={handlePrepaidSuccess}
+      />
+
+      {/* Per-Member Prepaid Dialog */}
+      <MultiMemberPrepaidDialog
+        recurringExpenseId={recurring.id}
         members={members}
         currentUserId={currentUserId}
         open={showPrepaidDialog}
