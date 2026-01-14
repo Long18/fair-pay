@@ -1,13 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGo, useList, useGetIdentity } from "@refinedev/core";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -83,21 +77,17 @@ export function CreateRecurringDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>
-            {t('recurring.create.title', 'Create Recurring Expense')}
-          </DialogTitle>
-          <DialogDescription>
-            {t(
-              'recurring.create.description',
-              'Select a group or friend for this recurring expense. You will then create the expense template.'
-            )}
-          </DialogDescription>
-        </DialogHeader>
+    <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
+      <ResponsiveDialog.Header
+        title={t('recurring.create.title', 'Create Recurring Expense')}
+        description={t(
+          'recurring.create.description',
+          'Select a group or friend for this recurring expense. You will then create the expense template.'
+        )}
+      />
 
-        <div className="space-y-4 py-4">
+      <ResponsiveDialog.Content>
+        <div className="space-y-4">
           <Alert>
             <InfoIcon className="h-4 w-4" />
             <AlertDescription className="text-xs">
@@ -188,19 +178,20 @@ export function CreateRecurringDialog({
             </RadioGroup>
           )}
         </div>
+      </ResponsiveDialog.Content>
 
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t('common.cancel', 'Cancel')}
-          </Button>
-          <Button
-            onClick={handleContinue}
-            disabled={!selectedContext || isLoading}
-          >
-            {t('common.continue', 'Continue')}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+      <ResponsiveDialog.Footer>
+        <Button variant="outline" onClick={() => onOpenChange(false)}>
+          {t('common.cancel', 'Cancel')}
+        </Button>
+        <Button
+          onClick={handleContinue}
+          disabled={!selectedContext || isLoading}
+          className="max-sm:w-full"
+        >
+          {t('common.continue', 'Continue')}
+        </Button>
+      </ResponsiveDialog.Footer>
+    </ResponsiveDialog>
   );
 }
