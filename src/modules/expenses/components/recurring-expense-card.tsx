@@ -48,11 +48,12 @@ import {
   PauseIcon,
   PlayIcon,
   Trash2Icon,
-  CalendarIcon,
+  CalendarIcon as CalendarIconBase,
   BanknoteIcon,
   ChevronDownIcon,
   PencilIcon,
 } from "@/components/ui/icons";
+import { CalendarExportMenu } from "@/components/calendar/calendar-export-menu";
 
 interface RecurringExpenseCardProps {
   recurring: RecurringExpense;
@@ -236,12 +237,14 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
               </div>
             </div>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <MoreVerticalIcon className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
+            <div className="flex items-center gap-1">
+              <CalendarExportMenu expense={recurring} variant="icon" />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <MoreVerticalIcon className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {/* Pay Upfront action - Requirements 5.1 */}
                 {recurring.is_active && (
@@ -284,7 +287,8 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
                   {t('recurring.delete')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu>
+              </DropdownMenu>
+            </div>
           </div>
         </CardHeader>
 
@@ -302,7 +306,7 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
             <div className="space-y-1">
               <p className="text-muted-foreground">{t('recurring.nextCreation')}</p>
               <div className="flex items-center gap-1">
-                <CalendarIcon className="h-3 w-3" />
+                <CalendarIconBase className="h-3 w-3" />
                 <p className="font-medium">
                   {format(new Date(recurring.next_occurrence), 'PPP', { locale: dateLocale })}
                 </p>
