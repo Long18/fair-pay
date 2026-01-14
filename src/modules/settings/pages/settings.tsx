@@ -5,6 +5,7 @@ import { useUserSettings } from '../hooks/use-user-settings';
 import { DisplaySettingsForm, NotificationSettingsForm, PrivacySettingsForm } from '../components';
 import { SettingsIcon, BellIcon, AlertCircleIcon } from "@/components/ui/icons";
 import { useTranslation } from 'react-i18next';
+import { ReminderSettingsComponent } from '@/components/settings/reminder-settings';
 
 export function SettingsPage() {
   const { settings, isLoading, isUpdating, saveSettings } = useUserSettings();
@@ -62,7 +63,7 @@ export function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="notifications">
+        <TabsContent value="notifications" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>{t('settings.notificationOptions')}</CardTitle>
@@ -78,6 +79,8 @@ export function SettingsPage() {
               />
             </CardContent>
           </Card>
+
+          <ReminderSettingsComponent />
         </TabsContent>
 
         <TabsContent value="privacy">
