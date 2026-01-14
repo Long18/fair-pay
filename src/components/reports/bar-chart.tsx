@@ -96,7 +96,7 @@ export function BarChart({
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  tick={{ fontSize: 11 }}
+                  tick={{ fontSize: "var(--font-size-chart-sm)", fontFamily: "var(--font-sans)" }}
                   tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
                 />
                 <YAxis
@@ -105,7 +105,7 @@ export function BarChart({
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  tick={{ fontSize: 11 }}
+                  tick={{ fontSize: "var(--font-size-chart-sm)", fontFamily: "var(--font-sans)" }}
                   width={80}
                 />
               </>
@@ -116,14 +116,14 @@ export function BarChart({
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  tick={{ fontSize: 11 }}
+                  tick={{ fontSize: "var(--font-size-chart-sm)", fontFamily: "var(--font-sans)" }}
                   interval="preserveStartEnd"
                 />
                 <YAxis
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  tick={{ fontSize: 11 }}
+                  tick={{ fontSize: "var(--font-size-chart-sm)", fontFamily: "var(--font-sans)" }}
                   tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
                   width={40}
                 />

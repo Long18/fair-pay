@@ -51,13 +51,21 @@ export const WeeklyEarningsChart = ({ data }: WeeklyEarningsChartProps) => {
               dataKey="week"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#969696", fontSize: 14, fontFamily: "Montserrat" }}
+              tick={{
+                fill: "#969696",
+                fontSize: "var(--font-size-chart-lg)",
+                fontFamily: "var(--font-sans)",
+              }}
               dy={10}
             />
             <YAxis
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#969696", fontSize: 14, fontFamily: "Montserrat" }}
+              tick={{
+                fill: "#969696",
+                fontSize: "var(--font-size-chart-lg)",
+                fontFamily: "var(--font-sans)",
+              }}
               tickFormatter={(value) => `${value.toLocaleString()}`}
               ticks={[0, 50000, 100000, 150000, 200000]}
             />

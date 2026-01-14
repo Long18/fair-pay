@@ -152,14 +152,18 @@ export const BalanceChart = ({
                     tickLine={false}
                     axisLine={false}
                     tickMargin={8}
-                    tick={{ fontSize: 10, fill: "currentColor" }}
+                    tick={{
+                      fontSize: "var(--font-size-chart-xs)",
+                      fontFamily: "var(--font-sans)",
+                      fill: "currentColor",
+                    }}
                     className="text-muted-foreground"
                   />
                   <YAxis
                     tickLine={false}
                     axisLine={false}
                     tickMargin={8}
-                    tick={{ fontSize: 10 }}
+                    tick={{ fontSize: "var(--font-size-chart-xs)", fontFamily: "var(--font-sans)" }}
                     width={40}
                     tickFormatter={(value) => {
                       const absValue = Math.abs(value);
