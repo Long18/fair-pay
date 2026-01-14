@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { useGetIdentity, useGo } from "@refinedev/core";
 import { useAggregatedDebts, type AggregatedDebt } from "@/hooks/use-aggregated-debts";
 import { useBalance } from "@/hooks/useBalance";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { SimplifiedDebts } from "@/components/dashboard/simplified-debts";
 import { BalanceChart } from "@/components/dashboard/balance-chart";
 import { PageContainer } from "@/components/ui/page-container";
@@ -53,7 +54,7 @@ export const BalancesPage = () => {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [settleAllDialogOpen, setSettleAllDialogOpen] = useState(false);
   const [isSettling, setIsSettling] = useState(false);
-  const [activeTab, setActiveTab] = useState<'you-owe' | 'owed-to-you'>('you-owe');
+  const [activeTab, setActiveTab] = usePersistedState<'you-owe' | 'owed-to-you'>('balances-tab', 'you-owe');
 
   // Sort debts
   const sortedDebts = useMemo(() => {
