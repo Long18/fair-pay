@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataCard } from "@/components/ui/data-card";
 import { Button } from "@/components/ui/button";
 import { WalletIcon } from "@/components/ui/icons";
 interface OneOffPaymentCardProps {
@@ -19,14 +19,16 @@ export const OneOffPaymentCard = ({
   };
 
   return (
-    <Card className="border-green-200 bg-gradient-to-br from-green-50 to-green-100 shadow-sm">
-      <CardHeader>
-        <CardTitle className="text-sm font-medium text-gray-700 flex items-center gap-2">
-          <WalletIcon className="h-5 w-5" />
-          One Off Payment
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <DataCard className="border-green-200 bg-gradient-to-br from-green-50 to-green-100">
+      <DataCard.Header
+        title={
+          <div className="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <WalletIcon className="h-5 w-5" />
+            One Off Payment
+          </div>
+        }
+      />
+      <DataCard.Content className="space-y-4">
         <div>
           <p className="text-sm text-gray-700">
             Pay full amount and get <span className="font-bold text-green-700">{discountPercentage}% discount</span>*
@@ -38,16 +40,17 @@ export const OneOffPaymentCard = ({
           <div className="text-4xl font-bold text-gray-900">₫{formatCurrency(discountedAmount)}</div>
           <div className="text-sm text-gray-600 mt-1">Discounted Amount</div>
         </div>
-
-        {onPayNow && (
+      </DataCard.Content>
+      {onPayNow && (
+        <DataCard.Footer>
           <Button
             onClick={onPayNow}
             className="w-full bg-gray-900 hover:bg-gray-800 text-white font-bold py-6 text-base"
           >
             PAY NOW
           </Button>
-        )}
-      </CardContent>
-    </Card>
+        </DataCard.Footer>
+      )}
+    </DataCard>
   );
 };

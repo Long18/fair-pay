@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useGo } from "@refinedev/core";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataCard } from "@/components/ui/data-card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { GroupBalance } from "@/hooks/use-global-balance";
@@ -34,30 +34,33 @@ export const GroupBalanceCard = ({ group, currency = "VND" }: GroupBalanceCardPr
   };
 
   return (
-    <Card
-      className="hover:shadow-md transition-shadow cursor-pointer"
+    <DataCard
+      className="cursor-pointer"
       onClick={() => go({ to: `/groups/show/${group.group_id}` })}
     >
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
+      <DataCard.Header
+        className="pb-3"
+        title={
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-lg truncate">{group.group_name}</CardTitle>
+            <div className="text-lg truncate">{group.group_name}</div>
             <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
               <UsersIcon className="h-3 w-3" />
               <span>{t("groups.membersCount", { count: group.member_count })}</span>
             </div>
           </div>
-          {group.my_balance !== 0 && (
+        }
+        badge={
+          group.my_balance !== 0 ? (
             <Badge
               variant={group.my_balance > 0 ? "default" : "destructive"}
               className="ml-2"
             >
               {group.my_balance > 0 ? "+" : ""}{formatCurrency(group.my_balance)}
             </Badge>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
+          ) : undefined
+        }
+      />
+      <DataCard.Content className="space-y-3">
         <p className={`text-sm font-medium ${getBalanceColor(group.my_balance)}`}>
           {getBalanceText(group.my_balance)}
         </p>
@@ -91,7 +94,7 @@ export const GroupBalanceCard = ({ group, currency = "VND" }: GroupBalanceCardPr
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </DataCard.Content>
+    </DataCard>
   );
 };
