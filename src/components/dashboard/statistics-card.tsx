@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataCard } from "@/components/ui/data-card";
 import { CircularProgress } from "./circular-progress";
 
 interface StatisticsCardProps {
@@ -23,11 +23,9 @@ export const StatisticsCard = ({
   };
 
   return (
-    <Card className="border-gray-200 shadow-sm">
-      <CardHeader>
-        <CardTitle className="text-sm font-medium text-gray-600">Statistics</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <DataCard className="border-gray-200">
+      <DataCard.Header title="Statistics" />
+      <DataCard.Content className="space-y-6">
         <div className="flex flex-col items-center gap-3">
           <CircularProgress percentage={percentage} color="#4CAF50" />
           <div className="text-center">
@@ -46,7 +44,7 @@ export const StatisticsCard = ({
             <div className="text-sm text-gray-600 mt-1">Amount Due</div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </DataCard.Content>
+    </DataCard>
   );
 };

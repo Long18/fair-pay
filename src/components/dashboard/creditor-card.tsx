@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { DataCard } from "@/components/ui/data-card";
 import { Button } from "@/components/ui/button";
 import { AlertCircleIcon, MoreVerticalIcon } from "@/components/ui/icons";
 interface CreditorCardProps {
@@ -29,9 +29,9 @@ export const CreditorCard = ({
   };
 
   return (
-    <Card className="border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between mb-4">
+    <DataCard className="border-gray-200">
+      <DataCard.Header
+        title={
           <div className="flex items-center gap-3">
             {logo ? (
               <img src={logo} alt={name} className="h-10 w-10 object-contain" />
@@ -41,10 +41,12 @@ export const CreditorCard = ({
               </div>
             )}
             <div>
-              <h3 className="text-base font-bold text-gray-900">{name}</h3>
+              <div className="text-base font-bold text-gray-900">{name}</div>
               <p className="text-xs text-gray-600">{description}</p>
             </div>
           </div>
+        }
+        badge={
           <Button
             variant="ghost"
             size="icon"
@@ -53,8 +55,9 @@ export const CreditorCard = ({
           >
             <MoreVerticalIcon className="h-4 w-4" />
           </Button>
-        </div>
-
+        }
+      />
+      <DataCard.Content>
         {hasIssue && (
           <div className="flex items-center gap-2 mb-4 p-2 bg-red-50 rounded-lg">
             <AlertCircleIcon className="h-4 w-4 text-red-500" />
@@ -144,7 +147,7 @@ export const CreditorCard = ({
             <p className="text-xs text-gray-600">Due</p>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </DataCard.Content>
+    </DataCard>
   );
 };
