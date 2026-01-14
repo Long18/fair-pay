@@ -5,6 +5,7 @@ import { FloatingActionButton } from "@/components/dashboard/FloatingActionButto
 import { DashboardSkeleton } from "@/components/dashboard/DashboardStates";
 import { BalanceTable } from "@/components/dashboard/BalanceTable";
 import { EnhancedActivityList } from "@/components/dashboard/enhanced-activity";
+import { RecurringExpensesSummary } from "@/components/dashboard/recurring-expenses-summary";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageContent } from "@/components/ui/page-content";
@@ -131,6 +132,9 @@ export const Dashboard = () => {
           <PageHeader title={t('dashboard.title', 'Dashboard')} />
 
           <PageContent>
+            {/* Recurring Expenses Summary */}
+            <RecurringExpensesSummary />
+
             {/* Main Content Tabs */}
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "balances" | "activity")} className="space-y-6">
               <div className="flex items-center justify-center w-full">
