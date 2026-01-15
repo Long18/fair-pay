@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useOne, useList, useDelete, useGo, useGetIdentity } from "@refinedev/core";
 import { useParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Group, GroupMember } from "../types";
 import { Profile } from "@/modules/profile/types";
 import { MemberList } from "../components/member-list";
@@ -18,6 +17,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { formatNumber } from "@/lib/locale-utils";
 import { toast } from "sonner";
+import { BalanceCard } from "@/components/groups/balance-card";
+import { ExpandableCard } from "@/components/ui/expandable-card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,8 +54,6 @@ export const GroupShow = () => {
   const go = useGo();
   const { data: identity } = useGetIdentity<Profile>();
   const [addMemberModalOpen, setAddMemberModalOpen] = useState(false);
-  const [currentMemberPage, setCurrentMemberPage] = useState(1);
-  const memberPageSize = 10;
   const [useServerSimplification, setUseServerSimplification] = useState(() => {
     // Load preference from localStorage
     const saved = localStorage.getItem(`group-${id}-use-server-simplification`);
@@ -141,21 +140,7 @@ export const GroupShow = () => {
 
   const refetch = membersQuery.refetch;
 
-  // Pagination metadata for members
-  const totalMembers = allMembers.length;
-  const memberPaginationMetadata = {
-    totalItems: totalMembers,
-    totalPages: Math.ceil(totalMembers / memberPageSize),
-    currentPage: currentMemberPage,
-    pageSize: memberPageSize,
-  };
-
-  // Client-side pagination: slice the members array
-  const startIndex = (currentMemberPage - 1) * memberPageSize;
-  const endIndex = startIndex + memberPageSize;
-  const members = allMembers.slice(startIndex, endIndex);
-
-  // Calculate balances (use all members, not just paginated slice)
+  // Calculate balances
   const membersList = allMembers.map((m: any) => ({
     id: m.user_id,
     full_name: m.profiles?.full_name || "Unknown",
@@ -168,6 +153,23 @@ export const GroupShow = () => {
     currentUserId: identity?.id || "",
     members: membersList,
   });
+
+  // Calculate total balances for hero section
+  const { totalIOwe, totalOwedToMe, netBalance } = useMemo(() => {
+    const iOwe = balances
+      .filter(b => b.balance < 0)
+      .reduce((sum, b) => sum + Math.abs(b.balance), 0);
+
+    const owedToMe = balances
+      .filter(b => b.balance > 0)
+      .reduce((sum, b) => sum + b.balance, 0);
+
+    return {
+      totalIOwe: iOwe,
+      totalOwedToMe: owedToMe,
+      netBalance: owedToMe - iOwe,
+    };
+  }, [balances]);
 
   const currentUserMember = allMembers.find((m: any) => m.user_id === identity?.id);
   const isAdmin = currentUserMember?.role === "admin";
@@ -322,7 +324,7 @@ export const GroupShow = () => {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <UsersIcon className="h-4 w-4" />
-                    <span>{totalMembers} {totalMembers === 1 ? 'member' : 'members'}</span>
+                    <span>{allMembers.length} {allMembers.length === 1 ? 'member' : 'members'}</span>
                   </div>
                 </div>
               </div>
@@ -382,237 +384,189 @@ export const GroupShow = () => {
           </CardHeader>
         </Card>
 
-        <Tabs defaultValue="expenses" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 h-auto p-1 bg-muted/50">
-            <TabsTrigger
-              value="expenses"
-              className="text-xs sm:text-sm flex items-center gap-2 data-[state=active]:bg-background"
-            >
-              <ReceiptIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Expenses</span>
-              <span className="sm:hidden">Exp</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="balances"
-              className="text-xs sm:text-sm flex items-center gap-2 data-[state=active]:bg-background"
-            >
-              <BanknoteIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Balances</span>
-              <span className="sm:hidden">Bal</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="recurring"
-              className="text-xs sm:text-sm flex items-center gap-2 data-[state=active]:bg-background"
-            >
-              <RepeatIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Recurring</span>
-              <span className="sm:hidden">Rec</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="members"
-              className="text-xs sm:text-sm flex items-center gap-2 data-[state=active]:bg-background"
-            >
-              <UsersIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Members</span>
-              <span className="sm:hidden">Mem</span>
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="expenses" className="mt-6">
-            <ExpenseList groupId={group.id} members={membersList} />
-          </TabsContent>
-          <TabsContent value="balances" className="mt-6">
-            <div className="space-y-6">
-              {/* Action Bar */}
-              <Card className="border-2">
-                <CardContent className="pt-6">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    {/* Settle All Button */}
-                    {isAdmin && unsettledCount > 0 && (
-                      <Button
-                        variant="default"
-                        size="lg"
-                        onClick={() => setSettleAllDialogOpen(true)}
-                        disabled={settleAllMutation.isPending}
-                        className="w-full sm:w-auto"
-                      >
-                        {settleAllMutation.isPending ? (
-                          <>
-                            <span className="animate-spin mr-2">⏳</span>
-                            Settling...
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle2Icon className="h-4 w-4 mr-2" />
-                            Settle All Debts ({unsettledCount} {unsettledCount === 1 ? 'split' : 'splits'})
-                          </>
-                        )}
-                      </Button>
-                    )}
-
-                    {/* Debt Simplification Toggle */}
-                    {allMembers.length >= 3 && (
-                      <div className={cn("w-full sm:w-auto", isAdmin && unsettledCount > 0 && "sm:ml-auto")}>
-                        <SimplifiedDebtsToggle
-                          isSimplified={useServerSimplification}
-                          onToggle={handleToggleSimplification}
-                          rawCount={balances.filter(b => b.balance !== 0).length}
-                          simplifiedCount={simplifiedCount}
-                          disabled={isLoadingSimplified}
-                        />
-                      </div>
-                    )}
+        {/* Hero Balance Section - Sticky */}
+        <div className="sticky top-0 z-10 bg-background pb-4">
+          <Card className="border-2 bg-gradient-to-br from-primary/5 to-primary/10">
+            <CardContent className="pt-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start gap-6">
+                {/* My Total Balance */}
+                <div className="flex-1 w-full">
+                  <div className="flex items-center gap-2 mb-3">
+                    <BanknoteIcon className="h-5 w-5 text-primary" />
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                      My Balance
+                    </h3>
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Server-Side Simplified Debts View */}
-              {useServerSimplification && !isLoadingSimplified && simplifiedDebts.length > 0 && (
-                <Card className="border-2">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <SparklesIcon className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg font-semibold">Simplified Debts</CardTitle>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Optimized transactions using Min-Cost Max-Flow algorithm
-                        </p>
-                      </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* I Owe */}
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs text-red-600 font-medium">YOU OWE</span>
+                      <span className="text-2xl font-bold text-red-600">
+                        {formatNumber(totalIOwe)} ₫
+                      </span>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {simplifiedDebts.map((debt, index) => (
-                        <div
-                          key={`${debt.from_user_id}-${debt.to_user_id}-${index}`}
-                          className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-2 rounded-lg bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 hover:from-primary/10 hover:via-primary/15 hover:to-primary/10 transition-all duration-200"
-                        >
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <Avatar className="h-12 w-12 shrink-0 border-2 border-background">
-                              <AvatarImage src={debt.from_user_avatar || undefined} />
-                              <AvatarFallback className="text-sm font-semibold">
-                                {getInitials(debt.from_user_name)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0 flex-1">
-                              <p className="font-semibold text-base truncate">{debt.from_user_name}</p>
-                              <p className="text-xs text-muted-foreground">Pays</p>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-3 shrink-0">
-                            <Badge variant="secondary" className="text-base font-bold px-4 py-1.5 bg-background border-2">
-                              {formatNumber(debt.amount)} ₫
-                            </Badge>
-                            <ArrowRightIcon className="h-6 w-6 text-primary shrink-0" />
-                          </div>
-
-                          <div className="flex items-center gap-3 flex-1 min-w-0 justify-end">
-                            <div className="text-right min-w-0 flex-1">
-                              <p className="font-semibold text-base truncate">{debt.to_user_name}</p>
-                              <p className="text-xs text-muted-foreground">Receives</p>
-                            </div>
-                            <Avatar className="h-12 w-12 shrink-0 border-2 border-background">
-                              <AvatarImage src={debt.to_user_avatar || undefined} />
-                              <AvatarFallback className="text-sm font-semibold">
-                                {getInitials(debt.to_user_name)}
-                              </AvatarFallback>
-                            </Avatar>
-                          </div>
-                        </div>
-                      ))}
+                    {/* Owed to Me */}
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs text-green-600 font-medium">OWES YOU</span>
+                      <span className="text-2xl font-bold text-green-600">
+                        {formatNumber(totalOwedToMe)} ₫
+                      </span>
                     </div>
-                  </CardContent>
-                </Card>
-              )}
+                  </div>
+                </div>
 
-              {/* Loading State for Simplified Debts */}
-              {useServerSimplification && isLoadingSimplified && (
-                <Card className="border-2">
-                  <CardContent className="py-16 text-center">
-                    <div className="space-y-4">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-                      <div>
-                        <p className="font-medium text-base">Calculating simplified debts...</p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Optimizing transactions using Min-Cost Max-Flow algorithm
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                {/* Quick Actions */}
+                {isAdmin && unsettledCount > 0 && (
+                  <Button
+                    variant="default"
+                    size="lg"
+                    onClick={() => setSettleAllDialogOpen(true)}
+                    className="w-full sm:w-auto"
+                  >
+                    <CheckCircle2Icon className="h-4 w-4 mr-2" />
+                    Settle All ({unsettledCount})
+                  </Button>
+                )}
+              </div>
 
-              {/* Empty State for Simplified Debts */}
-              {useServerSimplification && !isLoadingSimplified && simplifiedDebts.length === 0 && (
-                <Card className="border-2 border-dashed">
-                  <CardContent className="py-16 text-center">
-                    <div className="space-y-4">
-                      <div className="text-6xl mb-2">✅</div>
-                      <div>
-                        <p className="font-semibold text-lg">All settled up!</p>
-                        <p className="text-muted-foreground mt-1">No debts to simplify.</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Original Balance View (when not using server simplification) */}
-              {!useServerSimplification && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-                  <Card className="border-2">
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <BanknoteIcon className="h-5 w-5 text-primary" />
-                        Balances
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <SimplifiedBalanceView
-                        balances={balances}
-                        currentUserId={identity?.id || ""}
-                        simplifyDebts={group?.simplify_debts || false}
-                        onSettleUp={handleSettleUp}
-                        currency="VND"
-                      />
-                    </CardContent>
-                  </Card>
-                  <Card className="border-2">
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <HistoryIcon className="h-5 w-5 text-primary" />
-                        Payment History
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <PaymentList groupId={group.id} />
-                    </CardContent>
-                  </Card>
+              {/* Debt Simplification Toggle */}
+              {allMembers.length >= 3 && (
+                <div className="pt-4 border-t mt-4">
+                  <SimplifiedDebtsToggle
+                    isSimplified={useServerSimplification}
+                    onToggle={handleToggleSimplification}
+                    rawCount={balances.filter(b => b.balance !== 0).length}
+                    simplifiedCount={simplifiedCount}
+                    disabled={isLoadingSimplified}
+                  />
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </div>
 
-              {/* Payment History (always show when using server simplification) */}
-              {useServerSimplification && (
-                <Card className="border-2">
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <HistoryIcon className="h-5 w-5 text-primary" />
-                      Payment History
-                    </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <PaymentList groupId={group.id} />
-                    </CardContent>
-                  </Card>
+        {/* Debts Section */}
+        <div className="space-y-6">
+          {/* I Owe Section */}
+          {balances.filter(b => b.balance < 0).length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="h-1 w-12 bg-red-600 rounded-full" />
+                <h3 className="text-lg font-semibold text-red-600 uppercase tracking-wide">
+                  You Owe
+                </h3>
+              </div>
+              <div className="space-y-2">
+                {balances
+                  .filter(b => b.balance < 0)
+                  .map(balance => (
+                    <BalanceCard
+                      key={balance.user_id}
+                      amount={Math.abs(balance.balance)}
+                      currency="₫"
+                      status="owe"
+                      userName={balance.user_name}
+                      userAvatar={balance.avatar_url || undefined}
+                      onClick={() => handleSettleUp(balance.user_id, Math.abs(balance.balance))}
+                      isExpandable={false}
+                    />
+                  ))
+                }
+              </div>
+            </div>
+          )}
+
+          {/* Owes Me Section */}
+          {balances.filter(b => b.balance > 0).length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="h-1 w-12 bg-green-600 rounded-full" />
+                <h3 className="text-lg font-semibold text-green-600 uppercase tracking-wide">
+                  Owes You
+                </h3>
+              </div>
+              <div className="space-y-2">
+                {balances
+                  .filter(b => b.balance > 0)
+                  .map(balance => (
+                    <BalanceCard
+                      key={balance.user_id}
+                      amount={balance.balance}
+                      currency="₫"
+                      status="owed"
+                      userName={balance.user_name}
+                      userAvatar={balance.avatar_url || undefined}
+                      isExpandable={false}
+                    />
+                  ))
+                }
+              </div>
+            </div>
+          )}
+
+          {/* All Settled State */}
+          {balances.every(b => b.balance === 0) && (
+            <Card className="border-2 border-dashed">
+              <CardContent className="py-16 text-center">
+                <div className="space-y-4">
+                  <div className="text-6xl">✅</div>
+                  <div>
+                    <p className="font-semibold text-lg">All settled up!</p>
+                    <p className="text-muted-foreground">No outstanding balances.</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Recent Expenses Section */}
+        <ExpandableCard
+          title="Recent Expenses"
+          subtitle={`${expenses.length} expense(s)`}
+          badge={
+            expenses.length > 0 && (
+              <Badge variant="secondary">
+                {formatNumber(expenses.reduce((sum, e) => sum + e.amount, 0))} ₫
+              </Badge>
+            )
+          }
+          expanded={false}
+        >
+          <ExpenseList groupId={group.id} members={membersList} />
+        </ExpandableCard>
+
+        {/* Recurring Expenses Section */}
+        <ExpandableCard
+          title="Recurring Expenses"
+          subtitle="Monthly subscriptions"
+          expanded={false}
+        >
+          <RecurringExpenseList groupId={group.id} />
+        </ExpandableCard>
+
+        {/* Members Section */}
+        <Card className="border-2">
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <UsersIcon className="h-5 w-5 text-primary" />
+                <CardTitle className="text-lg">Members</CardTitle>
+                <Badge variant="secondary">{allMembers.length}</Badge>
+              </div>
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAddMemberModalOpen(true)}
+                >
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  Add Member
+                </Button>
               )}
             </div>
-          </TabsContent>
-          <TabsContent value="recurring" className="mt-6">
-            <RecurringExpenseList groupId={group.id} />
-          </TabsContent>
-          <TabsContent value="members" className="mt-6">
+          </CardHeader>
+          <CardContent>
             <AddMemberModal
               groupId={group.id}
               open={addMemberModalOpen}
@@ -623,20 +577,18 @@ export const GroupShow = () => {
               }}
             />
             <MemberList
-              members={members.map((m: any) => ({
+              members={allMembers.map((m: any) => ({
                 ...m,
                 profile: m.profiles,
               }))}
               currentUserId={identity?.id || ""}
               isAdmin={isAdmin}
               onRemoveMember={handleRemoveMember}
-              onAddMember={isAdmin ? () => setAddMemberModalOpen(true) : undefined}
               isLoading={isLoadingMembers}
-              paginationMetadata={memberPaginationMetadata}
-              onPageChange={setCurrentMemberPage}
+              showPagination={false}
             />
-          </TabsContent>
-        </Tabs>
+          </CardContent>
+        </Card>
 
         {/* Settle All Dialog */}
         <SettleAllDialog
