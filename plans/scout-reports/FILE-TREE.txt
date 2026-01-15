@@ -1,0 +1,223 @@
+GROUP-RELATED FILES - DIRECTORY TREE
+====================================
+
+src/modules/groups/
+├── pages/
+│   ├── list.tsx                 [GroupList page - displays all groups]
+│   ├── show.tsx                 [GroupShow page - group details with tabs]
+│   ├── create.tsx               [GroupCreate page - new group form]
+│   └── edit.tsx                 [GroupEdit page - update group]
+├── components/
+│   ├── group-form.tsx           [Reusable form (create/edit)]
+│   ├── member-list.tsx          [Display group members with pagination]
+│   ├── add-member-modal.tsx     [Dialog to add new members]
+│   └── group-table-columns.tsx  [Table column definitions]
+├── types.ts                      [TypeScript interfaces]
+└── index.ts                      [Module exports]
+
+src/components/dashboard/
+├── groups-table.tsx             [Groups summary table]
+├── group-balance-card.tsx       [Group balance card with top debtors]
+└── activity-time-period-group.tsx [Activity grouping helper]
+
+src/modules/profile/components/
+└── profile-groups-list.tsx      [Animated groups list in profile]
+
+
+RELATIONSHIPS
+=============
+
+GroupList
+  └─ DataTable
+      └─ useGroupColumns
+          ├─ Name column
+          ├─ Description column
+          ├─ Created date
+          └─ Actions (View/Edit)
+
+GroupShow
+  ├─ Group header
+  ├─ Tabs
+  │  ├─ Expenses
+  │  │   └─ ExpenseList
+  │  ├─ Balances
+  │  │   ├─ SimplifiedBalanceView
+  │  │   └─ PaymentList
+  │  ├─ Recurring
+  │  │   └─ RecurringExpenseList
+  │  └─ Members
+  │      ├─ AddMemberModal
+  │      └─ MemberList
+  │         └─ PaginationControls
+  └─ SettleAllDialog
+
+GroupCreate
+  └─ GroupForm
+      ├─ Basic Info section
+      ├─ Settings section
+      └─ Members section
+          └─ MemberCombobox
+
+GroupEdit
+  └─ GroupForm
+
+Dashboard
+├─ GroupsTable
+└─ GroupBalanceCard
+
+Profile
+└─ ProfileGroupsList
+
+
+DATA FLOW
+=========
+
+Queries:
+  ├─ useTable (groups) → GroupList
+  ├─ useOne (group/:id) → GroupShow, GroupEdit
+  ├─ useList (group_members) → MemberList
+  ├─ useList (expenses) → Balance calculation
+  ├─ useList (payments) → Balance calculation
+  ├─ useList (friendships) → GroupCreate, AddMemberModal
+  └─ useSimplifiedDebts → GroupShow (debts simplification)
+
+Mutations:
+  ├─ useCreate (groups) → GroupCreate
+  ├─ useCreate (group_members) → AddMemberModal
+  ├─ useUpdate (groups) → GroupEdit
+  ├─ useDelete (groups) → GroupShow
+  └─ useDelete (group_members) → MemberList
+
+
+DATABASE TABLES
+===============
+
+groups
+├── id (PK)
+├── name
+├── description
+├── created_by (FK: auth.users)
+├── simplify_debts
+├── created_at
+└── updated_at
+
+group_members
+├── id (PK)
+├── group_id (FK)
+├── user_id (FK: auth.users)
+├── role (admin|member)
+└── joined_at
+
+expenses
+├── id (PK)
+├── group_id (FK)
+├── paid_by (FK: auth.users)
+├── amount
+├── category
+├── description
+├── receipt_url
+└── created_at
+
+expense_splits
+├── id (PK)
+├── expense_id (FK)
+├── user_id (FK: auth.users)
+├── computed_amount
+├── settled_amount
+└── is_settled
+
+payments
+├── id (PK)
+├── group_id (FK)
+├── from_user_id (FK)
+├── to_user_id (FK)
+├── amount
+└── created_at
+
+profiles
+├── id (PK)
+├── full_name
+├── avatar_url
+└── ...
+
+friendships
+├── id (PK)
+├── user_a (FK)
+├── user_b (FK)
+├── status (accepted|pending|blocked)
+└── created_at
+
+
+ROUTES
+======
+
+/groups
+  └─ GroupList page
+
+/groups/create
+  └─ GroupCreate page
+
+/groups/show/:id
+  └─ GroupShow page
+
+/groups/edit/:id
+  └─ GroupEdit page
+
+/groups/:id/expenses/create
+  └─ CreateExpense page (from ExpenseList)
+
+
+STYLING
+=======
+
+Framework: shadcn/ui
+  ├─ Card
+  ├─ Button
+  ├─ Dialog
+  ├─ Tabs
+  ├─ Table
+  ├─ Form
+  ├─ Input/Textarea
+  ├─ Avatar
+  ├─ Badge
+  └─ Dialog components
+
+CSS: Tailwind CSS
+  ├─ Responsive breakpoints (sm, lg)
+  ├─ Color variants (primary, destructive, secondary)
+  ├─ Utility classes
+  └─ Custom animations
+
+Icons: @/components/ui/icons
+  ├─ PlusIcon
+  ├─ UsersIcon
+  ├─ EyeIcon
+  ├─ PencilIcon
+  ├─ Trash2Icon
+  └─ ... (20+ icons used)
+
+Animations: Framer Motion
+  └─ ProfileGroupsList (staggered animations)
+
+
+STATISTICS
+==========
+
+Total Files:           14
+Pages:                  4
+Components:            7
+Supporting Files:      3
+Module Files:          2
+
+Lines of Code (approx):
+  ├─ Pages:           ~2000 LOC
+  ├─ Components:      ~1500 LOC
+  └─ Types/Utils:     ~200 LOC
+
+Features Implemented:
+  ├─ Group CRUD:       5 (Create, Read, Update, Delete, List)
+  ├─ Member Mgmt:      4 (Add, Remove, Pagination, Search)
+  ├─ Expense View:     2 (List, Recurring)
+  ├─ Balance:          3 (Calculate, Simplify, Visualize)
+  ├─ Settlement:       2 (Settle All, Payment History)
+  └─ UI/UX:            5 (Tabs, Forms, Pagination, Empty States, Responsive)
