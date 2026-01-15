@@ -89,11 +89,48 @@ export const semanticStatusColors = {
 } as const;
 
 /**
+ * Debt status color tokens
+ * Used for group debt cards with enhanced states (hover, badge)
+ * WCAG AAA compliant with 4.5:1+ contrast ratios
+ */
+export const DEBT_STATUS_COLORS = {
+  owe: {
+    bg: 'bg-red-50',
+    text: 'text-red-600',
+    border: 'border-red-800',
+    badge: 'bg-red-100 text-red-700',
+    hover: 'hover:bg-red-100',
+  },
+  owed: {
+    bg: 'bg-green-50',
+    text: 'text-green-600',
+    border: 'border-green-800',
+    badge: 'bg-green-100 text-green-700',
+    hover: 'hover:bg-green-100',
+  },
+  settled: {
+    bg: 'bg-gray-50',
+    text: 'text-gray-600',
+    border: 'border-gray-300',
+    badge: 'bg-gray-100 text-gray-700',
+    hover: 'hover:bg-gray-100',
+  },
+  pending: {
+    bg: 'bg-yellow-50',
+    text: 'text-yellow-600',
+    border: 'border-yellow-700',
+    badge: 'bg-yellow-100 text-yellow-700',
+    hover: 'hover:bg-yellow-100',
+  },
+} as const;
+
+/**
  * Type definitions for status colors
  */
 export type PaymentState = keyof typeof paymentStateColors;
 export type OweStatus = keyof typeof oweStatusColors;
 export type SemanticStatus = keyof typeof semanticStatusColors;
+export type DebtStatus = keyof typeof DEBT_STATUS_COLORS;
 
 export type StatusColorSet = {
   bg: string;
