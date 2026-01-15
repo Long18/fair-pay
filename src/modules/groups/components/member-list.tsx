@@ -17,6 +17,7 @@ interface MemberListProps {
   isLoading?: boolean;
   paginationMetadata?: PaginationMetadata;
   onPageChange?: (page: number) => void;
+  showPagination?: boolean;
 }
 
 export const MemberList = ({
@@ -28,6 +29,7 @@ export const MemberList = ({
   isLoading,
   paginationMetadata,
   onPageChange,
+  showPagination = true,
 }: MemberListProps) => {
   return (
     <Card>
@@ -102,7 +104,7 @@ export const MemberList = ({
             </div>
           )}
         </div>
-        {paginationMetadata && onPageChange && paginationMetadata.totalPages > 1 && (
+        {showPagination && paginationMetadata && onPageChange && paginationMetadata.totalPages > 1 && (
           <div className="mt-4 pt-4 border-t">
             <PaginationControls
               metadata={paginationMetadata}
