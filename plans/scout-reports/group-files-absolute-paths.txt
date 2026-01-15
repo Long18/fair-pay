@@ -1,0 +1,27 @@
+ABSOLUTE FILE PATHS - GROUP-RELATED FILES
+=========================================
+
+CORE GROUP MODULE
+=================
+/Users/long.lnt/Desktop/Projects/FairPay/src/modules/groups/pages/list.tsx
+/Users/long.lnt/Desktop/Projects/FairPay/src/modules/groups/pages/show.tsx
+/Users/long.lnt/Desktop/Projects/FairPay/src/modules/groups/pages/create.tsx
+/Users/long.lnt/Desktop/Projects/FairPay/src/modules/groups/pages/edit.tsx
+/Users/long.lnt/Desktop/Projects/FairPay/src/modules/groups/components/group-form.tsx
+/Users/long.lnt/Desktop/Projects/FairPay/src/modules/groups/components/member-list.tsx
+/Users/long.lnt/Desktop/Projects/FairPay/src/modules/groups/components/add-member-modal.tsx
+/Users/long.lnt/Desktop/Projects/FairPay/src/modules/groups/components/group-table-columns.tsx
+/Users/long.lnt/Desktop/Projects/FairPay/src/modules/groups/types.ts
+/Users/long.lnt/Desktop/Projects/FairPay/src/modules/groups/index.ts
+
+DASHBOARD COMPONENTS
+====================
+/Users/long.lnt/Desktop/Projects/FairPay/src/components/dashboard/groups-table.tsx
+/Users/long.lnt/Desktop/Projects/FairPay/src/components/dashboard/group-balance-card.tsx
+/Users/long.lnt/Desktop/Projects/FairPay/src/components/dashboard/activity-time-period-group.tsx
+
+PROFILE COMPONENTS
+==================
+/Users/long.lnt/Desktop/Projects/FairPay/src/modules/profile/components/profile-groups-list.tsx
+
+TOTAL: 14 files
