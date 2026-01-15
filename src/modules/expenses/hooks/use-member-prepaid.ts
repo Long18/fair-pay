@@ -70,14 +70,24 @@ export function useMemberPrepaid() {
   const recordMultiMember = async (params: RecordMultiMemberPrepaidParams) => {
     setIsRecording(true);
     try {
+      console.log('Recording prepaid with params:', {
+        recurringExpenseId: params.recurringExpenseId,
+        memberMonths: params.memberMonths,
+        paidByUserId: params.paidByUserId,
+      });
+
       const { data, error } = await supabaseClient.rpc('record_multi_member_prepaid', {
         p_recurring_expense_id: params.recurringExpenseId,
         p_member_months: params.memberMonths,
         p_paid_by_user_id: params.paidByUserId || null,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('RPC error:', error);
+        throw error;
+      }
 
+      console.log('RPC result:', data);
       const result = data as RecordMultiMemberPrepaidResult;
 
       // Invalidate queries to refresh data
@@ -102,7 +112,11 @@ export function useMemberPrepaid() {
           })
         );
       } else {
-        toast.error(t('prepaid.allFailed', 'Failed to record prepaid for all members'));
+        // Show error details if available
+        const errorDetails = result.errors ? ` Details: ${result.errors.join(', ')}` : '';
+        toast.error(
+          t('prepaid.allFailed', 'Failed to record prepaid for all members') + errorDetails
+        );
       }
 
       return { success: true, data: result };
