@@ -27,6 +27,7 @@ export interface Expense {
     updated_at: string;
     comment?: string | null;
     attachments?: Attachment[];
+    expense_splits?: ExpenseSplit[]; // For joined data from Supabase
 }
 
 export interface ExpenseSplit {

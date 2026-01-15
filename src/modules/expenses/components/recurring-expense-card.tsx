@@ -318,6 +318,30 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
             </Badge>
           </div>
 
+          {/* Member Splits Section */}
+          {template.expense_splits && template.expense_splits.length > 0 && (
+            <div className="pt-2 border-t">
+              <p className="text-xs font-medium text-muted-foreground mb-2">
+                {t('recurring.memberShares', 'Member shares per occurrence')}
+              </p>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                {template.expense_splits.map((split: any) => {
+                  const member = members.find(m => m.id === split.user_id);
+                  return (
+                    <div key={split.id} className="flex items-center justify-between px-2 py-1 rounded bg-muted/50">
+                      <span className="text-xs truncate flex-1">
+                        {member?.full_name || 'Unknown'}
+                      </span>
+                      <span className="text-xs font-medium ml-2">
+                        {formatNumber(split.computed_amount)} {template.currency}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="space-y-1">
               <p className="text-muted-foreground">{t('recurring.nextCreation')}</p>
