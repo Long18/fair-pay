@@ -42,7 +42,7 @@ export function MultiMemberPrepaidDialog({
 }: MultiMemberPrepaidDialogProps) {
   const { t } = useTranslation();
   const { recordMultiMember, isRecording } = useMemberPrepaid();
-  const { data: prepaidInfo } = useMemberPrepaidInfo(recurringExpenseId);
+  const { data: prepaidInfo, isLoading: isLoadingPrepaidInfo } = useMemberPrepaidInfo(recurringExpenseId);
 
   const [selectedMembers, setSelectedMembers] = useState<Map<string, number>>(
     new Map()
@@ -81,11 +81,21 @@ export function MultiMemberPrepaidDialog({
   };
 
   const handleMonthsChange = (userId: string, value: string) => {
-    const months = parseInt(value, 10);
-    if (isNaN(months) || months < 1) return;
-
     const newSelected = new Map(selectedMembers);
-    newSelected.set(userId, Math.min(months, 24)); // Cap at 24 months
+
+    // Allow empty string (while user is typing) or valid numbers
+    if (value === '') {
+      newSelected.set(userId, 1); // Default to 1 when cleared
+      setSelectedMembers(newSelected);
+      return;
+    }
+
+    const months = parseInt(value, 10);
+    if (isNaN(months)) return; // Only block non-numeric input
+
+    // Clamp between 1 and 24
+    const clampedMonths = Math.max(1, Math.min(months, 24));
+    newSelected.set(userId, clampedMonths);
     setSelectedMembers(newSelected);
   };
 
@@ -131,13 +141,24 @@ export function MultiMemberPrepaidDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Member Selection */}
-          <div className="space-y-3">
-            <Label className="text-base font-semibold">
-              {t('prepaid.selectMembers', 'Select members')}
-            </Label>
+          {/* Loading State */}
+          {isLoadingPrepaidInfo && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">
+                {t('prepaid.loadingMemberInfo', 'Loading member information...')}
+              </span>
+            </div>
+          )}
 
-            {members.map((member) => {
+          {/* Member Selection */}
+          {!isLoadingPrepaidInfo && (
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">
+                {t('prepaid.selectMembers', 'Select members')}
+              </Label>
+
+              {members.map((member) => {
               const monthlyShare = memberShares.get(member.id) || 0;
               const months = selectedMembers.get(member.id) || 1;
               const isSelected = selectedMembers.has(member.id);
@@ -209,9 +230,11 @@ export function MultiMemberPrepaidDialog({
                 </div>
               );
             })}
-          </div>
+            </div>
+          )}
 
           {/* Paid By Selection */}
+          {!isLoadingPrepaidInfo && (
           <div className="space-y-2">
             <Label htmlFor="paid-by" className="text-base font-semibold">
               {t('prepaid.paidBy', 'Paid by')}
@@ -230,9 +253,10 @@ export function MultiMemberPrepaidDialog({
               ))}
             </select>
           </div>
+          )}
 
           {/* Total Amount Summary */}
-          {selectedMembers.size > 0 && (
+          {!isLoadingPrepaidInfo && selectedMembers.size > 0 && (
             <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">

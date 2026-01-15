@@ -219,7 +219,7 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
 
   return (
     <>
-      <SwipeableCard rightActions={swipeActions.right} className="md:pointer-events-none">
+      <SwipeableCard rightActions={swipeActions.right} className="md:[&>*:first-child]:pointer-events-auto">
         <Card>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
