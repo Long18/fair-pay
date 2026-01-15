@@ -21,7 +21,7 @@ export function useRecurringExpenses({ groupId, friendshipId }: UseRecurringExpe
     filters: [],
     sorters: [{ field: 'next_occurrence', order: 'asc' }],
     meta: {
-      select: '*, expenses:template_expense_id(*)',
+      select: '*, expenses:template_expense_id(*, expense_splits(*))',
     },
     pagination: {
       mode: 'off',
@@ -81,7 +81,7 @@ export function useRecurringExpense(id: string) {
     resource: 'recurring_expenses',
     id,
     meta: {
-      select: '*, expenses:template_expense_id(*)',
+      select: '*, expenses:template_expense_id(*, expense_splits(*))',
     },
   });
 
