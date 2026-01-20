@@ -13,7 +13,6 @@ import { SimplifiedDebtsToggle } from "@/components/dashboard/SimplifiedDebtsTog
 import { useSimplifiedDebts } from "@/hooks/use-simplified-debts";
 import { useSettleAllGroupDebts } from "@/hooks/use-bulk-operations";
 import { useCategoryBreakdown } from "@/hooks/use-category-breakdown";
-import { useExpenseBreakdown } from "@/hooks/use-expense-breakdown";
 import { SettleAllDialog } from "@/components/bulk-operations/SettleAllDialog";
 import { QuickSettlementDialog } from "@/components/payments/quick-settlement-dialog";
 import { PaymentMethod } from "@/lib/payment-methods";
@@ -21,11 +20,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { formatNumber } from "@/lib/locale-utils";
 import { toast } from "sonner";
-import { BalanceCard } from "@/components/groups/balance-card";
 import { ExpandableCard } from "@/components/ui/expandable-card";
-import { ExpenseBreakdown } from "@/components/groups/expense-breakdown";
 import { CategoryBreakdown } from "@/components/groups/category-breakdown";
-import { calculatePriority, PriorityLevel } from "@/lib/priority-calculator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,7 +42,6 @@ import {
   PlusIcon,
   ArrowRightIcon,
   ReceiptIcon,
-  BanknoteIcon,
   RepeatIcon,
   UsersIcon,
   Users2Icon,
@@ -170,81 +165,12 @@ export const GroupShow = () => {
     members: membersList,
   });
 
-  // Calculate total balances for hero section
-  const { totalIOwe, totalOwedToMe, netBalance } = useMemo(() => {
-    const iOwe = balances
-      .filter(b => b.balance < 0)
-      .reduce((sum, b) => sum + Math.abs(b.balance), 0);
-
-    const owedToMe = balances
-      .filter(b => b.balance > 0)
-      .reduce((sum, b) => sum + b.balance, 0);
-
-    return {
-      totalIOwe: iOwe,
-      totalOwedToMe: owedToMe,
-      netBalance: owedToMe - iOwe,
-    };
-  }, [balances]);
-
   // Category breakdown for insights
   const { breakdown: categoryBreakdown, isLoading: isLoadingCategories } = useCategoryBreakdown(
     'all_time',
     undefined,
     id
   );
-
-  // Calculate expense breakdown per user with priority
-  const balancesWithBreakdown = useMemo(() => {
-    return balances.map(balance => {
-      // Get expenses where this user paid and current user has a split
-      const userExpenses = expenses.filter((expense: any) => {
-        const isPaidByUser = expense.paid_by_user_id === balance.user_id;
-        const currentUserHasSplit = expense.expense_splits?.some(
-          (s: any) => s.user_id === identity?.id
-        );
-        return isPaidByUser && currentUserHasSplit;
-      });
-
-      // Calculate breakdown
-      const breakdown = userExpenses.map((expense: any) => {
-        const userSplit = expense.expense_splits?.find(
-          (s: any) => s.user_id === identity?.id
-        );
-        return {
-          id: expense.id,
-          description: expense.description,
-          amount: expense.amount,
-          your_share: userSplit?.computed_amount || 0,
-          expense_date: expense.expense_date,
-          category: expense.category,
-          is_settled: userSplit?.is_settled || false,
-        };
-      });
-
-      const lastExpenseDate = userExpenses.length > 0
-        ? userExpenses.sort((a: any, b: any) =>
-            new Date(b.expense_date).getTime() - new Date(a.expense_date).getTime()
-          )[0].expense_date
-        : null;
-
-      const priority = balance.balance !== 0 && balance.balance < 0
-        ? calculatePriority({
-            amount: Math.abs(balance.balance),
-            lastExpenseDate,
-            expenseCount: breakdown.length,
-          })
-        : undefined;
-
-      return {
-        ...balance,
-        breakdown,
-        lastActivity: lastExpenseDate,
-        expenseCount: breakdown.length,
-        priority,
-      };
-    });
-  }, [balances, expenses, identity?.id]);
 
   // Calculate member stats (expense count, total paid)
   const memberStats = useMemo(() => {
@@ -562,136 +488,33 @@ export const GroupShow = () => {
           </CardHeader>
         </Card>
 
-        {/* Hero Balance Section - Sticky */}
-        <div className="sticky top-0 z-10 bg-background pb-4">
-          <Card className="border-2 bg-gradient-to-br from-primary/5 to-primary/10">
-            <CardContent className="pt-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start gap-6">
-                {/* My Total Balance */}
-                <div className="flex-1 w-full">
-                  <div className="flex items-center gap-2 mb-3">
-                    <BanknoteIcon className="h-5 w-5 text-primary" />
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                      My Balance
-                    </h3>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* I Owe */}
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs text-red-600 font-medium">YOU OWE</span>
-                      <span className="text-2xl font-bold text-red-600">
-                        {formatNumber(totalIOwe)} ₫
-                      </span>
-                    </div>
-                    {/* Owed to Me */}
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs text-green-600 font-medium">OWES YOU</span>
-                      <span className="text-2xl font-bold text-green-600">
-                        {formatNumber(totalOwedToMe)} ₫
-                      </span>
-                    </div>
-                  </div>
-                </div>
+        {/* Quick Actions */}
+        {isAdmin && unsettledCount > 0 && (
+          <div className="flex justify-end">
+            <Button
+              variant="default"
+              size="lg"
+              onClick={() => setSettleAllDialogOpen(true)}
+            >
+              <CheckCircle2Icon className="h-4 w-4 mr-2" />
+              Settle All ({unsettledCount})
+            </Button>
+          </div>
+        )}
 
-                {/* Quick Actions */}
-                {isAdmin && unsettledCount > 0 && (
-                  <Button
-                    variant="default"
-                    size="lg"
-                    onClick={() => setSettleAllDialogOpen(true)}
-                    className="w-full sm:w-auto"
-                  >
-                    <CheckCircle2Icon className="h-4 w-4 mr-2" />
-                    Settle All ({unsettledCount})
-                  </Button>
-                )}
-              </div>
+        {/* Debt Simplification Toggle */}
+        {allMembers.length >= 3 && balances.some(b => b.balance !== 0) && (
+          <SimplifiedDebtsToggle
+            isSimplified={useServerSimplification}
+            onToggle={handleToggleSimplification}
+            rawCount={balances.filter(b => b.balance !== 0).length}
+            simplifiedCount={simplifiedCount}
+            disabled={isLoadingSimplified}
+          />
+        )}
 
-              {/* Debt Simplification Toggle */}
-              {allMembers.length >= 3 && (
-                <div className="pt-4 border-t mt-4">
-                  <SimplifiedDebtsToggle
-                    isSimplified={useServerSimplification}
-                    onToggle={handleToggleSimplification}
-                    rawCount={balances.filter(b => b.balance !== 0).length}
-                    simplifiedCount={simplifiedCount}
-                    disabled={isLoadingSimplified}
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Debts Section */}
+        {/* States Section */}
         <div className="space-y-6">
-          {/* I Owe Section */}
-          {balancesWithBreakdown.filter(b => b.balance < 0).length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="h-1 w-12 bg-red-600 rounded-full" />
-                <h3 className="text-lg font-semibold text-red-600 uppercase tracking-wide">
-                  You Owe
-                </h3>
-              </div>
-              <div className="space-y-2">
-                {balancesWithBreakdown
-                  .filter(b => b.balance < 0)
-                  .map(balance => (
-                    <BalanceCard
-                      key={balance.user_id}
-                      amount={Math.abs(balance.balance)}
-                      currency="₫"
-                      status="owe"
-                      userName={balance.user_name}
-                      userAvatar={balance.avatar_url || undefined}
-                      isExpandable={balance.breakdown.length > 0}
-                      priority={balance.priority}
-                      lastActivity={balance.lastActivity || undefined}
-                      expenseCount={balance.expenseCount}
-                    >
-                      <ExpenseBreakdown
-                        expenses={balance.breakdown}
-                        totalAmount={Math.abs(balance.balance)}
-                        currency="₫"
-                        userName={balance.user_name}
-                        onSettleUp={() => handleSettleUp(balance.user_id, balance.user_name, Math.abs(balance.balance))}
-                      />
-                    </BalanceCard>
-                  ))
-                }
-              </div>
-            </div>
-          )}
-
-          {/* Owes Me Section */}
-          {balancesWithBreakdown.filter(b => b.balance > 0).length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="h-1 w-12 bg-green-600 rounded-full" />
-                <h3 className="text-lg font-semibold text-green-600 uppercase tracking-wide">
-                  Owes You
-                </h3>
-              </div>
-              <div className="space-y-2">
-                {balancesWithBreakdown
-                  .filter(b => b.balance > 0)
-                  .map(balance => (
-                    <BalanceCard
-                      key={balance.user_id}
-                      amount={balance.balance}
-                      currency="₫"
-                      status="owed"
-                      userName={balance.user_name}
-                      userAvatar={balance.avatar_url || undefined}
-                      isExpandable={false}
-                    />
-                  ))
-                }
-              </div>
-            </div>
-          )}
-
           {/* Empty State - No Expenses Yet */}
           {balances.every(b => b.balance === 0) && expenses.length === 0 && (
             <Card className="border-2 border-dashed">
