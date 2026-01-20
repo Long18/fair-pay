@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useOne, useList, useDelete, useGo, useGetIdentity } from "@refinedev/core";
+import { useOne, useList, useDelete, useGo, useGetIdentity, useUpdate } from "@refinedev/core";
 import { useParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -97,6 +97,7 @@ export const GroupShow = () => {
 
   const deleteGroupMutation = useDelete();
   const deleteMemberMutation = useDelete();
+  const updateMemberMutation = useUpdate();
 
   // Fetch expenses for balance calculation
   const { query: expensesQuery } = useList({
@@ -236,6 +237,29 @@ export const GroupShow = () => {
     });
   }, [balances, expenses, identity?.id]);
 
+  // Calculate member stats (expense count, total paid)
+  const memberStats = useMemo(() => {
+    const stats: Record<string, { expense_count: number; total_paid: number }> = {};
+
+    allMembers.forEach((member: any) => {
+      const memberExpenses = expenses.filter((e: any) => {
+        const splits = e.expense_splits || [];
+        return splits.some((s: any) => s.user_id === member.user_id);
+      });
+
+      const totalPaid = expenses
+        .filter((e: any) => e.paid_by_user_id === member.user_id)
+        .reduce((sum: number, e: any) => sum + e.amount, 0);
+
+      stats[member.user_id] = {
+        expense_count: memberExpenses.length,
+        total_paid: totalPaid,
+      };
+    });
+
+    return stats;
+  }, [allMembers, expenses]);
+
   const currentUserMember = allMembers.find((m: any) => m.user_id === identity?.id);
   const isAdmin = currentUserMember?.role === "admin";
   const isCreator = group?.created_by === identity?.id;
@@ -314,6 +338,29 @@ export const GroupShow = () => {
         },
         onError: (error) => {
           toast.error(`Failed to remove member: ${error.message}`);
+        },
+      }
+    );
+  };
+
+  const handleToggleRole = (memberId: string, currentRole: string) => {
+    const newRole = currentRole === "admin" ? "member" : "admin";
+
+    updateMemberMutation.mutate(
+      {
+        resource: "group_members",
+        id: memberId,
+        values: { role: newRole },
+      },
+      {
+        onSuccess: () => {
+          toast.success(
+            `Member ${newRole === "admin" ? "promoted to admin" : "changed to member"}`
+          );
+          refetch();
+        },
+        onError: (error) => {
+          toast.error(`Failed to update role: ${error.message}`);
         },
       }
     );
@@ -714,10 +761,15 @@ export const GroupShow = () => {
                 profile: m.profiles,
               }))}
               currentUserId={identity?.id || ""}
+              creatorId={group.created_by}
               isAdmin={isAdmin}
               onRemoveMember={handleRemoveMember}
+              onToggleRole={handleToggleRole}
               isLoading={isLoadingMembers}
               showPagination={false}
+              showStats={true}
+              memberStats={memberStats}
+              showHeader={false}
             />
           </CardContent>
         </Card>
