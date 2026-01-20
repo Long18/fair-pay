@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useOne, useList, useDelete, useGo, useGetIdentity, useUpdate } from "@refinedev/core";
+import { useOne, useList, useDelete, useGo, useGetIdentity, useUpdate, useCreate } from "@refinedev/core";
 import { useParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import { useSettleAllGroupDebts } from "@/hooks/use-bulk-operations";
 import { useCategoryBreakdown } from "@/hooks/use-category-breakdown";
 import { useExpenseBreakdown } from "@/hooks/use-expense-breakdown";
 import { SettleAllDialog } from "@/components/bulk-operations/SettleAllDialog";
+import { QuickSettlementDialog } from "@/components/payments/quick-settlement-dialog";
+import { PaymentMethod } from "@/lib/payment-methods";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { formatNumber } from "@/lib/locale-utils";
@@ -66,6 +68,12 @@ export const GroupShow = () => {
     return saved === "true";
   });
   const [settleAllDialogOpen, setSettleAllDialogOpen] = useState(false);
+  const [quickSettleDialogOpen, setQuickSettleDialogOpen] = useState(false);
+  const [selectedSettlement, setSelectedSettlement] = useState<{
+    userId: string;
+    userName: string;
+    amount: number;
+  } | null>(null);
 
   const { query: groupQuery } = useOne<Group>({
     resource: "groups",
@@ -98,6 +106,7 @@ export const GroupShow = () => {
   const deleteGroupMutation = useDelete();
   const deleteMemberMutation = useDelete();
   const updateMemberMutation = useUpdate();
+  const createPaymentMutation = useCreate();
 
   // Fetch expenses for balance calculation
   const { query: expensesQuery } = useList({
@@ -264,11 +273,68 @@ export const GroupShow = () => {
   const isAdmin = currentUserMember?.role === "admin";
   const isCreator = group?.created_by === identity?.id;
 
-  const handleSettleUp = (toUserId: string, amount: number) => {
-    if (!group?.id) return;
-    go({
-      to: `/groups/${group.id}/payments/create?toUser=${toUserId}&amount=${amount}`,
-    });
+  const handleSettleUp = (toUserId: string, userName: string, amount: number) => {
+    setSelectedSettlement({ userId: toUserId, userName, amount });
+    setQuickSettleDialogOpen(true);
+  };
+
+  const handleConfirmSettlement = async (data: {
+    amount: number;
+    paymentMethod: PaymentMethod;
+    paymentDate: string;
+    notes: string;
+  }) => {
+    if (!selectedSettlement || !identity?.id || !group?.id) return;
+
+    try {
+      await createPaymentMutation.mutateAsync({
+        resource: "payments",
+        values: {
+          from_user_id: identity.id,
+          to_user_id: selectedSettlement.userId,
+          amount: data.amount,
+          payment_date: data.paymentDate,
+          payment_method: data.paymentMethod,
+          notes: data.notes || null,
+          group_id: group.id,
+          created_by: identity.id,
+        },
+      });
+
+      // Success feedback
+      toast.success(
+        `Payment of ${formatNumber(data.amount)} ₫ to ${selectedSettlement.userName} recorded!`
+      );
+
+      // Close dialog
+      setQuickSettleDialogOpen(false);
+      setSelectedSettlement(null);
+
+      // Refresh data
+      expensesQuery.refetch();
+      paymentsQuery.refetch();
+
+      // Show remaining balance toast if partial payment
+      if (data.amount < selectedSettlement.amount) {
+        const remaining = selectedSettlement.amount - data.amount;
+        setTimeout(() => {
+          toast.info(`Remaining balance: ${formatNumber(remaining)} ₫`, {
+            action: {
+              label: "Pay More",
+              onClick: () => {
+                setSelectedSettlement({
+                  ...selectedSettlement,
+                  amount: remaining,
+                });
+                setQuickSettleDialogOpen(true);
+              },
+            },
+          });
+        }, 1500);
+      }
+    } catch (error: any) {
+      toast.error(`Failed to record payment: ${error.message}`);
+    }
   };
 
   const handleToggleSimplification = (enabled: boolean) => {
@@ -589,7 +655,7 @@ export const GroupShow = () => {
                         totalAmount={Math.abs(balance.balance)}
                         currency="₫"
                         userName={balance.user_name}
-                        onSettleUp={() => handleSettleUp(balance.user_id, Math.abs(balance.balance))}
+                        onSettleUp={() => handleSettleUp(balance.user_id, balance.user_name, Math.abs(balance.balance))}
                       />
                     </BalanceCard>
                   ))
@@ -783,6 +849,21 @@ export const GroupShow = () => {
           totalAmount={unsettledTotal}
           isLoading={settleAllMutation.isPending}
         />
+
+        {/* Quick Settlement Dialog */}
+        {selectedSettlement && (
+          <QuickSettlementDialog
+            open={quickSettleDialogOpen}
+            onOpenChange={(open) => {
+              setQuickSettleDialogOpen(open);
+              if (!open) setSelectedSettlement(null);
+            }}
+            recipientName={selectedSettlement.userName}
+            amount={selectedSettlement.amount}
+            currency="₫"
+            onConfirm={handleConfirmSettlement}
+          />
+        )}
       </div>
     </div>
   );
