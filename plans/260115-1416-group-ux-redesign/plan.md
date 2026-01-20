@@ -2,9 +2,9 @@
 
 **Created:** 2026-01-15 14:16
 **Updated:** 2026-01-20
-**Status:** Phase 3 Complete - Ready for Phase 4
+**Status:** Phase 4 Complete - Ready for Phase 5
 **Priority:** High (User Feedback Critical)
-**Progress:** 3 of 8 phases complete (37.5%)
+**Progress:** 4 of 8 phases complete (50%)
 
 ---
 
@@ -64,12 +64,13 @@ Redesign group detail page as **single scrollable page** with:
 - Improved empty states ✅
 - **Delivered:** 4 new files, BalanceCard extended, ~2 hours
 
-### 📋 Phase 4: Member Management Simplification
-**File:** `phase-04-member-management.md`
-- Simplified member list view
-- Inline add member
-- Clear role indicators
-- Remove pagination (virtual scroll)
+### ✅ Phase 4: Member Management Simplification (COMPLETE)
+**File:** `phase-04-COMPLETE.md`
+- Enhanced MemberCard with role indicators ✅
+- Member search for 8+ members ✅
+- Member stats display (expenses, paid) ✅
+- Role toggle (admin/member) ✅
+- **Delivered:** MemberCard component, ~1.5 hours
 
 ### 📋 Phase 5: Settlement Flow
 **File:** `phase-05-settlement-flow.md`
@@ -171,8 +172,9 @@ Redesign group detail page as **single scrollable page** with:
 2. ~~Start Phase 1 (design system)~~ ✅
 3. ~~Start Phase 2 (group detail redesign)~~ ✅
 4. ~~Start Phase 3 (balance visualization)~~ ✅
-5. Start Phase 4 (member management simplification)
-6. Continue through remaining phases
+5. ~~Start Phase 4 (member management simplification)~~ ✅
+6. Start Phase 5 (settlement flow)
+7. Continue through remaining phases
 
 ---
 
