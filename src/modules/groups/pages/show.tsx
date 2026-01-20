@@ -755,7 +755,6 @@ export const GroupShow = () => {
             title="Spending by Category"
             subtitle="See where your money goes"
             badge={<Badge variant="outline">Insights</Badge>}
-            expanded={false}
           >
             <CategoryBreakdown
               breakdown={categoryBreakdown}
@@ -776,18 +775,8 @@ export const GroupShow = () => {
               </Badge>
             )
           }
-          expanded={false}
         >
           <ExpenseList groupId={group.id} members={membersList} />
-        </ExpandableCard>
-
-        {/* Recurring Expenses Section */}
-        <ExpandableCard
-          title="Recurring Expenses"
-          subtitle="Monthly subscriptions"
-          expanded={false}
-        >
-          <RecurringExpenseList groupId={group.id} />
         </ExpandableCard>
 
         {/* Members Section */}
