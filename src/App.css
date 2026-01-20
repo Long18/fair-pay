@@ -814,3 +814,147 @@
 .animate-scale-out {
   animation: scale-out var(--animation-duration-fast) var(--animation-easing-in);
 }
+
+/* =================================================================
+   Mobile Optimization Utilities (Phase 7)
+   ================================================================= */
+
+/* Safe Area Insets for iOS Notch, Home Indicator, etc. */
+:root {
+  --sat: env(safe-area-inset-top);
+  --sar: env(safe-area-inset-right);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-left {
+  padding-left: env(safe-area-inset-left);
+}
+
+.safe-right {
+  padding-right: env(safe-area-inset-right);
+}
+
+.safe-all {
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Sticky elements with safe area */
+.sticky-with-safe {
+  top: env(safe-area-inset-top);
+}
+
+/* Modal/Bottom sheet safe bottom padding */
+.modal-bottom-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+/* Touch-friendly targets (44px minimum per Apple HIG and Material Design) */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  touch-action: manipulation;
+}
+
+/* Prevent text selection on touch devices */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Smooth scrolling with momentum on iOS */
+.scroll-smooth-touch {
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
+}
+
+/* Hide scrollbar but keep functionality (mobile) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Pull-to-refresh indicator */
+.pull-indicator {
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: top 0.2s ease;
+}
+
+.pull-indicator.visible {
+  top: 10px;
+}
+
+/* Offline indicator banner */
+.offline-banner {
+  position: fixed;
+  top: env(safe-area-inset-top);
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  padding: 0.5rem 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: var(--status-warning);
+  color: var(--status-warning-foreground);
+}
+
+/* Responsive font sizes for financial amounts */
+@media (max-width: 640px) {
+  .typography-amount-large {
+    @apply text-base font-bold tabular-nums;
+  }
+
+  .typography-amount-prominent {
+    @apply text-sm font-bold tabular-nums;
+  }
+}
+
+/* Improve tap highlight on mobile */
+@media (hover: none) {
+  button,
+  a,
+  [role="button"] {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  }
+
+  .dark button,
+  .dark a,
+  .dark [role="button"] {
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Performance optimization: will-change for animated elements */
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+.will-change-scroll {
+  will-change: scroll-position;
+}
