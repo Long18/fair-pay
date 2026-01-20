@@ -12,6 +12,8 @@ import { SimplifiedBalanceView, PaymentList, useBalanceCalculation } from "@/mod
 import { SimplifiedDebtsToggle } from "@/components/dashboard/SimplifiedDebtsToggle";
 import { useSimplifiedDebts } from "@/hooks/use-simplified-debts";
 import { useSettleAllGroupDebts } from "@/hooks/use-bulk-operations";
+import { useCategoryBreakdown } from "@/hooks/use-category-breakdown";
+import { useExpenseBreakdown } from "@/hooks/use-expense-breakdown";
 import { SettleAllDialog } from "@/components/bulk-operations/SettleAllDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +21,9 @@ import { formatNumber } from "@/lib/locale-utils";
 import { toast } from "sonner";
 import { BalanceCard } from "@/components/groups/balance-card";
 import { ExpandableCard } from "@/components/ui/expandable-card";
+import { ExpenseBreakdown } from "@/components/groups/expense-breakdown";
+import { CategoryBreakdown } from "@/components/groups/category-breakdown";
+import { calculatePriority, PriorityLevel } from "@/lib/priority-calculator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,7 +51,8 @@ import {
   CalendarIcon,
   SparklesIcon,
   CheckCircle2Icon,
-  HistoryIcon
+  HistoryIcon,
+  PieChartIcon
 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 export const GroupShow = () => {
@@ -170,6 +176,65 @@ export const GroupShow = () => {
       netBalance: owedToMe - iOwe,
     };
   }, [balances]);
+
+  // Category breakdown for insights
+  const { breakdown: categoryBreakdown, isLoading: isLoadingCategories } = useCategoryBreakdown(
+    'all_time',
+    undefined,
+    id
+  );
+
+  // Calculate expense breakdown per user with priority
+  const balancesWithBreakdown = useMemo(() => {
+    return balances.map(balance => {
+      // Get expenses where this user paid and current user has a split
+      const userExpenses = expenses.filter((expense: any) => {
+        const isPaidByUser = expense.paid_by_user_id === balance.user_id;
+        const currentUserHasSplit = expense.expense_splits?.some(
+          (s: any) => s.user_id === identity?.id
+        );
+        return isPaidByUser && currentUserHasSplit;
+      });
+
+      // Calculate breakdown
+      const breakdown = userExpenses.map((expense: any) => {
+        const userSplit = expense.expense_splits?.find(
+          (s: any) => s.user_id === identity?.id
+        );
+        return {
+          id: expense.id,
+          description: expense.description,
+          amount: expense.amount,
+          your_share: userSplit?.computed_amount || 0,
+          expense_date: expense.expense_date,
+          category: expense.category,
+          is_settled: userSplit?.is_settled || false,
+        };
+      });
+
+      const lastExpenseDate = userExpenses.length > 0
+        ? userExpenses.sort((a: any, b: any) =>
+            new Date(b.expense_date).getTime() - new Date(a.expense_date).getTime()
+          )[0].expense_date
+        : null;
+
+      const priority = balance.balance !== 0 && balance.balance < 0
+        ? calculatePriority({
+            amount: Math.abs(balance.balance),
+            lastExpenseDate,
+            expenseCount: breakdown.length,
+          })
+        : undefined;
+
+      return {
+        ...balance,
+        breakdown,
+        lastActivity: lastExpenseDate,
+        expenseCount: breakdown.length,
+        priority,
+      };
+    });
+  }, [balances, expenses, identity?.id]);
 
   const currentUserMember = allMembers.find((m: any) => m.user_id === identity?.id);
   const isAdmin = currentUserMember?.role === "admin";
@@ -448,7 +513,7 @@ export const GroupShow = () => {
         {/* Debts Section */}
         <div className="space-y-6">
           {/* I Owe Section */}
-          {balances.filter(b => b.balance < 0).length > 0 && (
+          {balancesWithBreakdown.filter(b => b.balance < 0).length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <div className="h-1 w-12 bg-red-600 rounded-full" />
@@ -457,7 +522,7 @@ export const GroupShow = () => {
                 </h3>
               </div>
               <div className="space-y-2">
-                {balances
+                {balancesWithBreakdown
                   .filter(b => b.balance < 0)
                   .map(balance => (
                     <BalanceCard
@@ -467,9 +532,19 @@ export const GroupShow = () => {
                       status="owe"
                       userName={balance.user_name}
                       userAvatar={balance.avatar_url || undefined}
-                      onClick={() => handleSettleUp(balance.user_id, Math.abs(balance.balance))}
-                      isExpandable={false}
-                    />
+                      isExpandable={balance.breakdown.length > 0}
+                      priority={balance.priority}
+                      lastActivity={balance.lastActivity || undefined}
+                      expenseCount={balance.expenseCount}
+                    >
+                      <ExpenseBreakdown
+                        expenses={balance.breakdown}
+                        totalAmount={Math.abs(balance.balance)}
+                        currency="₫"
+                        userName={balance.user_name}
+                        onSettleUp={() => handleSettleUp(balance.user_id, Math.abs(balance.balance))}
+                      />
+                    </BalanceCard>
                   ))
                 }
               </div>
@@ -477,7 +552,7 @@ export const GroupShow = () => {
           )}
 
           {/* Owes Me Section */}
-          {balances.filter(b => b.balance > 0).length > 0 && (
+          {balancesWithBreakdown.filter(b => b.balance > 0).length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <div className="h-1 w-12 bg-green-600 rounded-full" />
@@ -486,7 +561,7 @@ export const GroupShow = () => {
                 </h3>
               </div>
               <div className="space-y-2">
-                {balances
+                {balancesWithBreakdown
                   .filter(b => b.balance > 0)
                   .map(balance => (
                     <BalanceCard
@@ -504,21 +579,78 @@ export const GroupShow = () => {
             </div>
           )}
 
-          {/* All Settled State */}
-          {balances.every(b => b.balance === 0) && (
+          {/* Empty State - No Expenses Yet */}
+          {balances.every(b => b.balance === 0) && expenses.length === 0 && (
             <Card className="border-2 border-dashed">
               <CardContent className="py-16 text-center">
                 <div className="space-y-4">
-                  <div className="text-6xl">✅</div>
+                  <div className="text-6xl mb-2">🎉</div>
                   <div>
-                    <p className="font-semibold text-lg">All settled up!</p>
-                    <p className="text-muted-foreground">No outstanding balances.</p>
+                    <p className="font-semibold text-xl">Ready to track expenses!</p>
+                    <p className="text-muted-foreground mt-2 max-w-md mx-auto">
+                      Add your first group expense to start splitting costs with members.
+                    </p>
+                  </div>
+                  <Button
+                    size="lg"
+                    onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
+                  >
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Add First Expense
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* All Settled State - Has Expenses */}
+          {balances.every(b => b.balance === 0) && expenses.length > 0 && (
+            <Card className="border-2 bg-gradient-to-br from-green-50 to-emerald-50">
+              <CardContent className="py-16 text-center">
+                <div className="space-y-4">
+                  <div className="text-6xl mb-2">✅</div>
+                  <div>
+                    <p className="font-semibold text-xl text-green-900">All settled up!</p>
+                    <p className="text-green-700 mt-2">
+                      {expenses.length} expense(s) tracked, all balances cleared.
+                    </p>
+                  </div>
+                  <div className="flex justify-center gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => go({ to: `/groups/${group.id}/expenses` })}
+                    >
+                      <HistoryIcon className="h-4 w-4 mr-2" />
+                      View History
+                    </Button>
+                    <Button
+                      onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
+                    >
+                      <PlusIcon className="h-4 w-4 mr-2" />
+                      Add Another
+                    </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
           )}
         </div>
+
+        {/* Category Breakdown - Insights Section */}
+        {categoryBreakdown.length > 0 && (
+          <ExpandableCard
+            title="Spending by Category"
+            subtitle="See where your money goes"
+            badge={<Badge variant="outline">Insights</Badge>}
+            expanded={false}
+          >
+            <CategoryBreakdown
+              breakdown={categoryBreakdown}
+              totalAmount={categoryBreakdown.reduce((sum, c) => sum + c.amount, 0)}
+              currency="₫"
+            />
+          </ExpandableCard>
+        )}
 
         {/* Recent Expenses Section */}
         <ExpandableCard
