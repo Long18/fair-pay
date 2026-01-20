@@ -30,8 +30,9 @@ export function useContributingExpenses(counterpartyId: string) {
       setError(null);
 
       try {
-        // Query expenses where both current user and counterparty have splits
-        const { data: myExpenses, error: myExpensesError } = await supabaseClient
+        // Query expenses where counterparty paid and current user has a split (I owe them)
+        // OR current user paid and counterparty has a split (they owe me)
+        const { data: expensesPaidByCounterparty, error: paidByCounterpartyError } = await supabaseClient
           .from('expense_splits')
           .select(`
             id,
@@ -49,26 +50,37 @@ export function useContributingExpenses(counterpartyId: string) {
               groups (name)
             )
           `)
-          .eq('user_id', identity!.id);
+          .eq('user_id', identity!.id)
+          .eq('expenses.paid_by_user_id', counterpartyId);
 
-        if (myExpensesError) throw myExpensesError;
+        if (paidByCounterpartyError) throw paidByCounterpartyError;
 
-        // Filter expenses to only include those where counterparty also has a split
-        const expenseIds = myExpenses?.map(split => (split.expenses as any).id) || [];
-
-        const { data: counterpartySplits, error: counterpartyError } = await supabaseClient
+        // Query expenses where current user paid and counterparty has a split
+        const { data: expensesPaidByMe, error: paidByMeError } = await supabaseClient
           .from('expense_splits')
-          .select('expense_id')
+          .select(`
+            id,
+            computed_amount,
+            is_settled,
+            settled_amount,
+            expenses!inner (
+              id,
+              description,
+              amount,
+              currency,
+              expense_date,
+              group_id,
+              paid_by_user_id,
+              groups (name)
+            )
+          `)
           .eq('user_id', counterpartyId)
-          .in('expense_id', expenseIds);
+          .eq('expenses.paid_by_user_id', identity!.id);
 
-        if (counterpartyError) throw counterpartyError;
+        if (paidByMeError) throw paidByMeError;
 
-        const sharedExpenseIds = new Set(counterpartySplits?.map(s => s.expense_id) || []);
-
-        // Transform data
-        const contributingExpenses: ContributingExpense[] = (myExpenses || [])
-          .filter(split => sharedExpenseIds.has((split.expenses as any).id))
+        // Transform data - expenses where counterparty paid (I owe them)
+        const iOweExpenses: ContributingExpense[] = (expensesPaidByCounterparty || [])
           .map(split => {
             const expense = split.expenses as any;
             const myShare = Number(split.computed_amount);
@@ -89,6 +101,41 @@ export function useContributingExpenses(counterpartyId: string) {
               is_settled: isFullySettled,
             };
           });
+
+        // Transform data - expenses where I paid (they owe me)
+        const theyOweExpenses: ContributingExpense[] = (expensesPaidByMe || [])
+          .map(split => {
+            const expense = split.expenses as any;
+            const theirShare = Number(split.computed_amount);
+            const settledAmount = Number(split.settled_amount || 0);
+            const isFullySettled = split.is_settled;
+            const isPartiallySettled = settledAmount > 0 && !isFullySettled;
+
+            return {
+              id: expense.id,
+              description: expense.description,
+              amount: Number(expense.amount),
+              currency: expense.currency,
+              expense_date: expense.expense_date,
+              group_id: expense.group_id,
+              group_name: expense.groups?.name || null,
+              my_share: theirShare, // This is what they owe
+              status: isFullySettled ? 'paid' : isPartiallySettled ? 'partial' : 'unpaid',
+              is_settled: isFullySettled,
+            };
+          });
+
+        // Combine and deduplicate by expense ID (keep the most recent entry)
+        const allExpenses = [...iOweExpenses, ...theyOweExpenses];
+        const expenseMap = new Map<string, ContributingExpense>();
+        allExpenses.forEach(exp => {
+          if (!expenseMap.has(exp.id) ||
+              new Date(exp.expense_date) > new Date(expenseMap.get(exp.id)!.expense_date)) {
+            expenseMap.set(exp.id, exp);
+          }
+        });
+
+        const contributingExpenses = Array.from(expenseMap.values());
 
         // Sort by date (newest first)
         contributingExpenses.sort((a, b) =>
