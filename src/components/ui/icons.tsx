@@ -102,6 +102,7 @@ import {
   Code,
   Mail,
   Lock,
+  Flame,
 } from "lucide-react";
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -687,6 +688,14 @@ export const XCircleIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
 
 export const PlusCircleIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
   <PlusCircle size={size} fill="currentColor" {...props} />
+);
+
+export const FlameIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Flame size={size} {...props} />
+);
+
+export const CheckCircleIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <CheckCircle2 size={size} {...props} />
 );
 
 // ============ Math/Currency Icons ============
