@@ -7,7 +7,7 @@
 export const PAYMENT_METHODS = {
   cash: { icon: '💵', label: 'Cash', color: 'text-green-600' },
   bank_transfer: { icon: '🏦', label: 'Bank Transfer', color: 'text-blue-600' },
-  momo: { icon: '📱', label: 'MoMo', color: 'text-pink-600' },
+  vietqr: { icon: '📱', label: 'VietQR', color: 'text-blue-600' },
   zalopay: { icon: '🔵', label: 'ZaloPay', color: 'text-blue-500' },
   vnpay: { icon: '🔴', label: 'VNPay', color: 'text-red-600' },
   other: { icon: '📋', label: 'Other', color: 'text-gray-600' },

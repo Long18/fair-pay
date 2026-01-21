@@ -248,11 +248,11 @@ const UserDropdown = () => {
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
-                go({ to: "/settings/momo" });
+                go({ to: "/settings/bank" });
               }}
             >
               <BanknoteIcon className="h-4 w-4" />
-              <span>{t('settings.momo.title', 'MoMo Settings')}</span>
+              <span>{t('settings.bank.title', 'Bank Settings')}</span>
             </DropdownMenuItem>
           </>
         )}

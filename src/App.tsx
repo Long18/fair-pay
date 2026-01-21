@@ -74,7 +74,7 @@ const NotificationList = lazy(() => import("./modules/notifications").then(m => 
 const ReportsPage = lazy(() => import("./pages/reports").then(m => ({ default: m.ReportsPage })));
 const SettingsPage = lazy(() => import("./modules/settings").then(m => ({ default: m.SettingsPage })));
 const DonationSettings = lazy(() => import("./modules/settings").then(m => ({ default: m.DonationSettings })));
-const MomoSettings = lazy(() => import("./modules/settings/pages/momo-settings").then(m => ({ default: m.MomoSettingsPage })));
+const BankSettings = lazy(() => import("./modules/settings/pages/bank-settings").then(m => ({ default: m.BankSettingsPage })));
 const DonationWidget = lazy(() => import("./components/donation-widget").then(m => ({ default: m.DonationWidget })));
 
 // Legal pages
@@ -450,9 +450,9 @@ function App() {
                         <DonationSettings />
                       </Suspense>
                     } />
-                    <Route path="/settings/momo" element={
+                    <Route path="/settings/bank" element={
                       <Suspense fallback={<PageLoader />}>
-                        <MomoSettings />
+                        <BankSettings />
                       </Suspense>
                     } />
                     <Route path="/profile/edit" element={
