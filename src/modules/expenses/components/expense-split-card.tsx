@@ -2,8 +2,7 @@ import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2Icon, ChevronDownIcon } from "@/components/ui/icons";
-import { MomoPaymentButton } from "@/modules/payments/components/momo-payment-button";
-import { BankingPaymentButton } from "@/modules/payments/components/banking-payment-button";
+import { VietQRPaymentButton } from "@/modules/payments/components/vietqr-payment-button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PaymentStateBadge } from "@/components/ui/payment-state-badge";
 import { formatNumber } from "@/lib/locale-utils";
@@ -243,35 +242,20 @@ export const ExpenseSplitCard = ({
             )}
 
             {isCurrentUser && !isSplitSettled && !isPayer && (
-              <>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <MomoPaymentButton
-                        split={split}
-                        onPaymentComplete={onPaymentComplete}
-                      />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" maxWidth="300px">
-                    {t('expenses.momoTooltip', 'Transfer money now using MoMo payment integration')}
-                  </TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <BankingPaymentButton
-                        split={split}
-                        payeeId={split.user_id}
-                        onPaymentComplete={onPaymentComplete}
-                      />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" maxWidth="300px">
-                    {t('expenses.bankingTooltip', 'Transfer money now using bank account integration')}
-                  </TooltipContent>
-                </Tooltip>
-              </>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <VietQRPaymentButton
+                      split={split}
+                      payeeId={split.user_id}
+                      onPaymentComplete={onPaymentComplete}
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" maxWidth="300px">
+                  {t('expenses.vietqrTooltip', 'Pay now using VietQR bank transfer')}
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
 
@@ -340,19 +324,12 @@ export const ExpenseSplitCard = ({
                 )}
 
                 {isCurrentUser && !isSplitSettled && !isPayer && (
-                  <>
-                    <MomoPaymentButton
-                      split={split}
-                      onPaymentComplete={onPaymentComplete}
-                      className="flex-1 min-h-[44px]"
-                    />
-                    <BankingPaymentButton
-                      split={split}
-                      payeeId={split.user_id}
-                      onPaymentComplete={onPaymentComplete}
-                      className="flex-1 min-h-[44px]"
-                    />
-                  </>
+                  <VietQRPaymentButton
+                    split={split}
+                    payeeId={split.user_id}
+                    onPaymentComplete={onPaymentComplete}
+                    className="flex-1 min-h-[44px]"
+                  />
                 )}
               </div>
             </div>

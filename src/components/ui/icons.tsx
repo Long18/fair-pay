@@ -104,6 +104,8 @@ import {
   Lock,
   Flame,
   Star,
+  QrCode,
+  ExternalLink,
 } from "lucide-react";
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -865,4 +867,12 @@ export const CameraIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
 
 export const PaletteIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
   <Palette size={size} fill="currentColor" {...props} />
+);
+
+export const QrCodeIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <QrCode size={size} {...props} />
+);
+
+export const ExternalLinkIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <ExternalLink size={size} {...props} />
 );
