@@ -26,10 +26,11 @@ export function Layout({ children }: PropsWithChildren) {
               "flex-col",
               "flex-1",
               "px-2",
-              "pt-4",
-              "md:p-4",
+              "pt-12",
+              "md:pt-16",
+              "md:px-4",
               "lg:px-6",
-              "lg:pt-6"
+              "lg:pt-20"
             )}
           >
             {children}

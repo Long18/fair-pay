@@ -44,19 +44,22 @@ function DesktopHeader() {
     <>
       <header
         className={cn(
-          "sticky",
+          "fixed",
           "top-0",
+          "inset-x-0",
           "flex",
           "h-16",
           "shrink-0",
           "items-center",
           "gap-4",
           "border-b",
-          "bg-background/95",
-          "backdrop-blur-sm",
+          "bg-background/80",
+          "backdrop-blur-md",
           "px-6",
           "justify-between",
-          "z-40"
+          "z-50",
+          "shadow-lg",
+          "transition-all duration-300 ease-out"
         )}
       >
         <div className="flex flex-col justify-center">
@@ -113,8 +116,9 @@ function MobileHeader() {
     <>
       <header
         className={cn(
-          "sticky",
+          "fixed",
           "top-0",
+          "inset-x-0",
           "flex",
           "h-12",
           "shrink-0",
@@ -122,10 +126,13 @@ function MobileHeader() {
           "gap-2",
           "border-b",
           "border-border",
-          "bg-sidebar",
+          "bg-background/80",
+          "backdrop-blur-md",
           "pr-3",
           "justify-between",
-          "z-40"
+          "z-50",
+          "shadow-lg",
+          "transition-all duration-300 ease-out"
         )}
       >
         <SidebarTrigger
