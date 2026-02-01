@@ -123,7 +123,6 @@ export function NavBar() {
 
 function NavLogo() {
   const go = useGo();
-  const isMobile = useIsMobile();
 
   return (
     <button
@@ -143,9 +142,7 @@ function NavLogo() {
       <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold shadow-sm">
         <FairPayIcon className="w-5 h-5" />
       </div>
-      {!isMobile && (
-        <span className="text-lg font-bold hidden sm:block">FairPay</span>
-      )}
+      <span className="text-base md:text-lg font-bold">FairPay</span>
     </button>
   );
 }
