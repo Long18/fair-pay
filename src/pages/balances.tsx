@@ -83,6 +83,10 @@ import {
   DownloadIcon,
   FileTextIcon,
   CalendarIcon,
+  ActivityIcon,
+  TrendingUpIcon,
+  TrendingDownIcon,
+  FilterIcon,
 } from "@/components/ui/icons";
 
 import { useTranslation } from "react-i18next";
@@ -392,213 +396,151 @@ export const BalancesPage = () => {
   // ── render ─────────────────────────────────────────────────────────────
   return (
     <PageContainer variant="default" withBackground fullHeight>
+      {/* ──────────────────────────────────────────────────────────────────
+          PAGE HEADER – title row with refresh + export actions
+      ────────────────────────────────────────────────────────────────── */}
       <PageHeader
-        title={t("balances.reportsAndBalancesTitle", "Reports & Balances")}
+        title={t("balances.reportsAndBalancesTitle", "Insights")}
         description={t(
           "balances.reportsAndBalancesDescription",
-          "Unified spending analytics and balance overview"
+          "Spending analytics and balance overview"
         )}
         titleId="balances-page-title"
         descriptionId="balances-page-description"
         action={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isRefreshing || isBalancesLoading}
-            className="gap-2 w-full sm:w-auto"
-            aria-label={t("balances.refresh", "Refresh")}
-            aria-describedby="balances-page-description"
-          >
-            <RefreshCwIcon className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} aria-hidden="true" />
-            {t("balances.refresh", "Refresh")}
-          </Button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button
+              onClick={handleExportCSV}
+              variant="ghost"
+              size="sm"
+              disabled={isReportsLoading || breakdown.length === 0}
+              className="gap-1.5 text-muted-foreground hover:text-foreground"
+              aria-label={t("reports.exportCSV", "Export CSV")}
+            >
+              <DownloadIcon className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline text-xs">CSV</span>
+            </Button>
+            <Button
+              onClick={handleExportPDF}
+              variant="ghost"
+              size="sm"
+              disabled={isReportsLoading || breakdown.length === 0}
+              className="gap-1.5 text-muted-foreground hover:text-foreground"
+              aria-label={t("reports.exportPDF", "Export PDF")}
+            >
+              <FileTextIcon className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline text-xs">PDF</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isRefreshing || isBalancesLoading}
+              className="gap-2"
+              aria-label={t("balances.refresh", "Refresh")}
+              aria-describedby="balances-page-description"
+            >
+              <RefreshCwIcon className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} aria-hidden="true" />
+              <span className="hidden sm:inline text-xs">{t("balances.refresh", "Refresh")}</span>
+            </Button>
+          </div>
         }
       />
 
       <PageContent>
-        {/* ----------------------------------------------------------------
-            FILTER CARD
-        ---------------------------------------------------------------- */}
-        <Card className="border-border shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base sm:text-lg">
-              {t("reports.filters", "Filters")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {/* Time Period */}
-              <div className="space-y-2">
-                <Label htmlFor="time-period" className="text-xs sm:text-sm font-medium">
-                  {t("reports.timePeriod", "Time Period")}
-                </Label>
-                <Select value={preset} onValueChange={handlePresetChange}>
-                  <SelectTrigger id="time-period" className="h-9 text-xs sm:text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="this_month">This Month</SelectItem>
-                    <SelectItem value="last_month">Last Month</SelectItem>
-                    <SelectItem value="this_year">This Year</SelectItem>
-                    <SelectItem value="last_year">Last Year</SelectItem>
-                    <SelectItem value="all_time">All Time</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Custom date picker – only when "custom" preset */}
-              {preset === "custom" && (
-                <div className="space-y-2">
-                  <Label htmlFor="date-range" className="text-xs sm:text-sm font-medium">
-                    {t("reports.dateRange", "Date Range")}
-                  </Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        id="date-range"
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal h-9 text-xs sm:text-sm",
-                          !customRange && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {customRange?.from ? (
-                          customRange.to ? (
-                            <>
-                              {format(customRange.from, "dd MMM yyyy", { locale: vi })} –{" "}
-                              {format(customRange.to, "dd MMM yyyy", { locale: vi })}
-                            </>
-                          ) : (
-                            format(customRange.from, "dd MMM yyyy", { locale: vi })
-                          )
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        initialFocus
-                        mode="range"
-                        defaultMonth={customRange?.from}
-                        selected={customRange}
-                        onSelect={setCustomRange}
-                        numberOfMonths={2}
-                        captionLayout="dropdown"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              )}
-
-              {/* Group */}
-              <div className="space-y-2">
-                <Label htmlFor="group-select" className="text-xs sm:text-sm font-medium">
-                  {t("reports.group", "Group")}
-                </Label>
-                <Select
-                  value={selectedGroupId || "all"}
-                  onValueChange={(v) => setSelectedGroupId(v === "all" ? undefined : v)}
-                >
-                  <SelectTrigger id="group-select" className="h-9 text-xs sm:text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Groups</SelectItem>
-                    {groups.map((group) => (
-                      <SelectItem key={group.id} value={group.id}>
-                        {group.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Chart Type */}
-              <div className="space-y-2">
-                <Label htmlFor="chart-type" className="text-xs sm:text-sm font-medium">
-                  {t("reports.chartType", "Chart Type")}
-                </Label>
-                <Select value={chartType} onValueChange={(v) => setChartType(v as "pie" | "bar")}>
-                  <SelectTrigger id="chart-type" className="h-9 text-xs sm:text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pie">Pie Chart</SelectItem>
-                    <SelectItem value="bar">Bar Chart</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Comparison toggle */}
-            <div className="pt-2 border-t">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="show-comparison" className="text-xs sm:text-sm font-medium cursor-pointer">
-                  {t("reports.showComparison", "Show period comparison")}
-                </Label>
-                <Switch
-                  id="show-comparison"
-                  checked={showComparison}
-                  onCheckedChange={setShowComparison}
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ----------------------------------------------------------------
-            ERROR BANNER
-        ---------------------------------------------------------------- */}
-        {debtsError && (
-          <Alert variant="destructive">
-            <AlertCircleIcon className="h-4 w-4" />
-            <AlertDescription>
-              {t("balances.loadError", "Failed to load balances. Please try refreshing the page.")}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* ----------------------------------------------------------------
-            BALANCE SUMMARY CARDS – always visible
-        ---------------------------------------------------------------- */}
+        {/* ──────────────────────────────────────────────────────────────
+            BALANCE SUMMARY CARDS – the hero section, always visible first
+        ────────────────────────────────────────────────────────────── */}
         <div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
+          className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4"
           role="region"
           aria-label={t("balances.summaryCards", "Balance summary")}
         >
-          {/* Net Balance */}
+          {/* Net Balance – primary indicator */}
           <Card
-            className={`border-2 ${
+            className={cn(
+              "relative overflow-hidden border-0 shadow-sm transition-shadow duration-200 hover:shadow-md animate-fade-in",
               netBalance > 0
-                ? "border-green-500/30 dark:border-green-700/30 bg-green-50 dark:bg-green-950/20"
+                ? "bg-green-50 dark:bg-green-950/30"
                 : netBalance < 0
-                  ? "border-red-500/30 dark:border-red-700/30 bg-red-50 dark:bg-red-950/20"
-                  : "border-border bg-muted/20"
-            }`}
+                  ? "bg-red-50 dark:bg-red-950/30"
+                  : "bg-muted/40 dark:bg-muted/20"
+            )}
+            style={{ animationDelay: "0ms" }}
           >
-            <CardHeader className="pb-2 md:pb-3">
-              <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
-                {t("balances.netBalance", "Net Balance")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div
-                className={`text-xl md:text-3xl font-bold ${
-                  netBalance > 0
-                    ? "text-green-600 dark:text-green-400"
-                    : netBalance < 0
-                      ? "text-red-600 dark:text-red-400"
-                      : "text-foreground"
-                }`}
-              >
-                {netBalance >= 0 ? "+" : ""}
-                {formatNumber(netBalance)} ₫
+            {/* Left accent stripe */}
+            <div
+              className={cn(
+                "absolute inset-y-0 left-0 w-1",
+                netBalance > 0
+                  ? "bg-green-500"
+                  : netBalance < 0
+                    ? "bg-red-500"
+                    : "bg-border"
+              )}
+            />
+            <CardContent className="pt-5 pb-4 pl-5 pr-4">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      {t("balances.netBalance", "Net Balance")}
+                    </span>
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-0.5 text-xs font-medium px-1.5 py-0.5 rounded-full",
+                        netBalance > 0
+                          ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
+                          : netBalance < 0
+                            ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
+                            : "bg-muted text-muted-foreground"
+                      )}
+                    >
+                      {netBalance > 0 ? (
+                        <TrendingUpIcon className="h-2.5 w-2.5" />
+                      ) : netBalance < 0 ? (
+                        <TrendingDownIcon className="h-2.5 w-2.5" />
+                      ) : null}
+                      {netBalance > 0 ? "Positive" : netBalance < 0 ? "Negative" : "Settled"}
+                    </span>
+                  </div>
+                  <div
+                    className={cn(
+                      "text-2xl sm:text-3xl font-bold tabular-nums leading-tight",
+                      netBalance > 0
+                        ? "text-green-600 dark:text-green-400"
+                        : netBalance < 0
+                          ? "text-red-600 dark:text-red-400"
+                          : "text-foreground"
+                    )}
+                  >
+                    {netBalance >= 0 ? "+" : ""}
+                    {formatNumber(netBalance)} ₫
+                  </div>
+                </div>
+                <div
+                  className={cn(
+                    "h-9 w-9 rounded-lg flex items-center justify-center",
+                    netBalance > 0
+                      ? "bg-green-100 dark:bg-green-900/40"
+                      : netBalance < 0
+                        ? "bg-red-100 dark:bg-red-900/40"
+                        : "bg-muted"
+                  )}
+                >
+                  <ActivityIcon
+                    className={cn(
+                      "h-4.5 w-4.5",
+                      netBalance > 0
+                        ? "text-green-600 dark:text-green-400"
+                        : netBalance < 0
+                          ? "text-red-600 dark:text-red-400"
+                          : "text-muted-foreground"
+                    )}
+                  />
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-2.5">
                 {netBalance > 0
                   ? t("balances.youAreOwedOverall", "You are owed overall")
                   : netBalance < 0
@@ -609,17 +551,26 @@ export const BalancesPage = () => {
           </Card>
 
           {/* You Owe */}
-          <Card className="border-red-200 dark:border-red-800/30 bg-red-50 dark:bg-red-950/10">
-            <CardHeader className="pb-2 md:pb-3">
-              <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
-                {t("balances.youOwe", "You Owe")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl md:text-3xl font-bold text-red-600 dark:text-red-400">
-                {formatNumber(totalIOwe)} ₫
+          <Card
+            className="relative overflow-hidden border-0 shadow-sm transition-shadow duration-200 hover:shadow-md bg-red-50 dark:bg-red-950/30 animate-fade-in"
+            style={{ animationDelay: "60ms" }}
+          >
+            <div className="absolute inset-y-0 left-0 w-1 bg-red-500" />
+            <CardContent className="pt-5 pb-4 pl-5 pr-4">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2.5">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t("balances.youOwe", "You Owe")}
+                  </span>
+                  <div className="text-2xl sm:text-3xl font-bold tabular-nums leading-tight text-red-600 dark:text-red-400">
+                    {formatNumber(totalIOwe)} ₫
+                  </div>
+                </div>
+                <div className="h-9 w-9 rounded-lg bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
+                  <TrendingDownIcon className="h-4.5 w-4.5 text-red-600 dark:text-red-400" />
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-2.5">
                 {t("balances.toPeople", {
                   count: iOwe.length,
                   defaultValue: `to ${iOwe.length} ${iOwe.length === 1 ? "person" : "people"}`,
@@ -629,17 +580,26 @@ export const BalancesPage = () => {
           </Card>
 
           {/* Owed to You */}
-          <Card className="border-green-200 dark:border-green-800/30 bg-green-50 dark:bg-green-950/10">
-            <CardHeader className="pb-2 md:pb-3">
-              <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
-                {t("balances.owedToYou", "Owed to You")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl md:text-3xl font-bold text-green-600 dark:text-green-400">
-                {formatNumber(totalOwedToMe)} ₫
+          <Card
+            className="relative overflow-hidden border-0 shadow-sm transition-shadow duration-200 hover:shadow-md bg-green-50 dark:bg-green-950/30 animate-fade-in"
+            style={{ animationDelay: "120ms" }}
+          >
+            <div className="absolute inset-y-0 left-0 w-1 bg-green-500" />
+            <CardContent className="pt-5 pb-4 pl-5 pr-4">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2.5">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t("balances.owedToYou", "Owed to You")}
+                  </span>
+                  <div className="text-2xl sm:text-3xl font-bold tabular-nums leading-tight text-green-600 dark:text-green-400">
+                    {formatNumber(totalOwedToMe)} ₫
+                  </div>
+                </div>
+                <div className="h-9 w-9 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
+                  <TrendingUpIcon className="h-4.5 w-4.5 text-green-600 dark:text-green-400" />
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-2.5">
                 {t("balances.fromPeople", {
                   count: owedToMe.length,
                   defaultValue: `from ${owedToMe.length} ${owedToMe.length === 1 ? "person" : "people"}`,
@@ -649,62 +609,162 @@ export const BalancesPage = () => {
           </Card>
         </div>
 
-        {/* ----------------------------------------------------------------
-            EXPORT BUTTONS
-        ---------------------------------------------------------------- */}
-        <div className="flex flex-wrap gap-2">
-          <Button
-            onClick={handleExportCSV}
-            variant="outline"
-            size="sm"
-            disabled={isReportsLoading || breakdown.length === 0}
-            className="w-full sm:w-auto"
-          >
-            <DownloadIcon className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Export CSV</span>
-            <span className="sm:hidden">CSV</span>
-          </Button>
-          <Button
-            onClick={handleExportPDF}
-            variant="outline"
-            size="sm"
-            disabled={isReportsLoading || breakdown.length === 0}
-            className="w-full sm:w-auto"
-          >
-            <FileTextIcon className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Export PDF</span>
-            <span className="sm:hidden">PDF</span>
-          </Button>
+        {/* ──────────────────────────────────────────────────────────────
+            ERROR BANNER
+        ────────────────────────────────────────────────────────────── */}
+        {debtsError && (
+          <Alert variant="destructive">
+            <AlertCircleIcon className="h-4 w-4" />
+            <AlertDescription>
+              {t("balances.loadError", "Failed to load balances. Please try refreshing the page.")}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* ──────────────────────────────────────────────────────────────
+            FILTER TOOLBAR – compact horizontal bar
+        ────────────────────────────────────────────────────────────── */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 animate-fade-in" style={{ animationDelay: "180ms" }}>
+          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <FilterIcon className="h-3.5 w-3.5" />
+            <span>{t("reports.filters", "Filters")}</span>
+          </div>
+          <div className="flex flex-wrap gap-2 flex-1">
+            {/* Time Period */}
+            <Select value={preset} onValueChange={handlePresetChange}>
+              <SelectTrigger
+                id="time-period"
+                className="h-8 w-auto min-w-[130px] text-xs border-border bg-card rounded-lg px-3 shadow-none focus:ring-1 focus:ring-primary/30"
+              >
+                <CalendarIcon className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="this_month">This Month</SelectItem>
+                <SelectItem value="last_month">Last Month</SelectItem>
+                <SelectItem value="this_year">This Year</SelectItem>
+                <SelectItem value="last_year">Last Year</SelectItem>
+                <SelectItem value="all_time">All Time</SelectItem>
+                <SelectItem value="custom">Custom Range</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Custom date picker – only when "custom" preset */}
+            {preset === "custom" && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="date-range"
+                    variant="outline"
+                    className={cn(
+                      "h-8 text-xs justify-start font-normal rounded-lg shadow-none border-border focus:ring-1 focus:ring-primary/30",
+                      !customRange && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
+                    {customRange?.from ? (
+                      customRange.to ? (
+                        <>
+                          {format(customRange.from, "dd MMM", { locale: vi })} – {format(customRange.to, "dd MMM yyyy", { locale: vi })}
+                        </>
+                      ) : (
+                        format(customRange.from, "dd MMM yyyy", { locale: vi })
+                      )
+                    ) : (
+                      <span>Pick dates</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={customRange?.from}
+                    selected={customRange}
+                    onSelect={setCustomRange}
+                    numberOfMonths={2}
+                    captionLayout="dropdown"
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+
+            {/* Group */}
+            <Select
+              value={selectedGroupId || "all"}
+              onValueChange={(v) => setSelectedGroupId(v === "all" ? undefined : v)}
+            >
+              <SelectTrigger
+                id="group-select"
+                className="h-8 w-auto min-w-[110px] text-xs border-border bg-card rounded-lg px-3 shadow-none focus:ring-1 focus:ring-primary/30"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Groups</SelectItem>
+                {groups.map((group) => (
+                  <SelectItem key={group.id} value={group.id}>
+                    {group.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Chart Type */}
+            <Select value={chartType} onValueChange={(v) => setChartType(v as "pie" | "bar")}>
+              <SelectTrigger
+                id="chart-type"
+                className="h-8 w-auto min-w-[100px] text-xs border-border bg-card rounded-lg px-3 shadow-none focus:ring-1 focus:ring-primary/30"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pie">Pie Chart</SelectItem>
+                <SelectItem value="bar">Bar Chart</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Comparison toggle – inline pill */}
+            <div className="flex items-center gap-2 ml-auto sm:ml-2 pl-3 border-l border-border">
+              <Label htmlFor="show-comparison" className="text-xs text-muted-foreground cursor-pointer whitespace-nowrap">
+                {t("reports.showComparison", "Compare")}
+              </Label>
+              <Switch
+                id="show-comparison"
+                checked={showComparison}
+                onCheckedChange={setShowComparison}
+                className="h-4 w-7"
+              />
+            </div>
+          </div>
         </div>
 
-        {/* ----------------------------------------------------------------
+        {/* ──────────────────────────────────────────────────────────────
             LOADING SKELETONS (reports section)
-        ---------------------------------------------------------------- */}
+        ────────────────────────────────────────────────────────────── */}
         {isReportsLoading && (
           <>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
               {[1, 2, 3, 4].map((i) => (
-                <Card key={i} className="border-border animate-pulse">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <Skeleton className="h-4 w-20" />
-                    <Skeleton className="h-4 w-4 rounded" />
-                  </CardHeader>
-                  <CardContent>
-                    <Skeleton className="h-8 w-32 mb-2" />
-                    <Skeleton className="h-3 w-24" />
+                <Card key={i} className="border-0 shadow-sm animate-pulse">
+                  <CardContent className="pt-5 pb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <Skeleton className="h-3 w-20" />
+                      <Skeleton className="h-7 w-7 rounded-lg" />
+                    </div>
+                    <Skeleton className="h-7 w-28 mb-2" />
+                    <Skeleton className="h-2.5 w-20" />
                   </CardContent>
                 </Card>
               ))}
             </div>
             <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
               {[1, 2].map((i) => (
-                <Card key={i} className="border-border animate-pulse">
-                  <CardHeader className="pb-4">
-                    <Skeleton className="h-5 w-40 mb-2" />
-                    <Skeleton className="h-4 w-32" />
-                  </CardHeader>
-                  <CardContent>
-                    <Skeleton className="h-[300px] w-full rounded" />
+                <Card key={i} className="border-0 shadow-sm animate-pulse">
+                  <CardContent className="pt-5 pb-4">
+                    <Skeleton className="h-4 w-36 mb-1.5" />
+                    <Skeleton className="h-3 w-24 mb-4" />
+                    <Skeleton className="h-[280px] w-full rounded-lg" />
                   </CardContent>
                 </Card>
               ))}
@@ -712,12 +772,12 @@ export const BalancesPage = () => {
           </>
         )}
 
-        {/* ----------------------------------------------------------------
+        {/* ──────────────────────────────────────────────────────────────
             MAIN TABBED CONTENT
-        ---------------------------------------------------------------- */}
+        ────────────────────────────────────────────────────────────── */}
         {!isReportsLoading && (
           <>
-            {/* Spending summary stats row (from reports) */}
+            {/* Spending summary stats row */}
             <SpendingSummaryStats summary={summary} />
 
             {/* Period comparison (conditional) */}
@@ -728,38 +788,68 @@ export const BalancesPage = () => {
             {/* Insights panel */}
             <InsightsPanel insights={insights} isLoading={insightsLoading} />
 
-            {/* Tabs */}
+            {/* Tabs – underline style via custom overrides */}
             <div ref={chartsRef}>
               <Tabs
                 value={activeTab}
                 onValueChange={(v) => setActiveTab(v as MergedTab)}
                 className="space-y-4 md:space-y-6"
               >
-                <TabsList className={`grid w-full ${showSpenders ? "grid-cols-4" : "grid-cols-3"}`}>
-                  <TabsTrigger value="charts" className="text-xs sm:text-sm">
-                    {t("reports.charts", "Charts")}
-                  </TabsTrigger>
-                  <TabsTrigger value="breakdown" className="text-xs sm:text-sm">
-                    {t("reports.breakdown", "Breakdown")}
-                  </TabsTrigger>
-                  <TabsTrigger value="balances" className="text-xs sm:text-sm">
-                    {t("balances.title", "Balances")}
-                  </TabsTrigger>
-                  {showSpenders && (
-                    <TabsTrigger value="spenders" className="text-xs sm:text-sm">
-                      {t("reports.topSpenders", "Top Spenders")}
+                {/* Custom tab header: pills on left, export on right */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <TabsList className="bg-transparent p-0 h-auto border-b border-border rounded-none w-full sm:w-auto">
+                    <TabsTrigger
+                      value="charts"
+                      className="text-xs sm:text-sm px-4 py-2.5 rounded-none data-[state=active]:shadow-none data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary border-b-2 border-transparent transition-colors duration-200"
+                    >
+                      {t("reports.charts", "Charts")}
                     </TabsTrigger>
-                  )}
-                </TabsList>
+                    <TabsTrigger
+                      value="breakdown"
+                      className="text-xs sm:text-sm px-4 py-2.5 rounded-none data-[state=active]:shadow-none data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary border-b-2 border-transparent transition-colors duration-200"
+                    >
+                      {t("reports.breakdown", "Breakdown")}
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="balances"
+                      className="text-xs sm:text-sm px-4 py-2.5 rounded-none data-[state=active]:shadow-none data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary border-b-2 border-transparent transition-colors duration-200"
+                    >
+                      {t("balances.title", "Balances")}
+                      {debts.length > 0 && (
+                        <span className="ml-1.5 text-xs bg-primary/10 text-primary rounded-full px-1.5 py-0.5">
+                          {debts.length}
+                        </span>
+                      )}
+                    </TabsTrigger>
+                    {showSpenders && (
+                      <TabsTrigger
+                        value="spenders"
+                        className="text-xs sm:text-sm px-4 py-2.5 rounded-none data-[state=active]:shadow-none data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary border-b-2 border-transparent transition-colors duration-200"
+                      >
+                        {t("reports.topSpenders", "Top Spenders")}
+                      </TabsTrigger>
+                    )}
+                  </TabsList>
+                </div>
 
-                {/* ─── Charts Tab ──────────────────────────────────────── */}
-                <TabsContent value="charts" className="space-y-4 md:space-y-6 mt-4">
+                {/* ─── Charts Tab ──────────────────────────────────── */}
+                <TabsContent value="charts" className="space-y-4 md:space-y-6 mt-2 animate-fade-in">
                   {breakdown.length === 0 ? (
-                    <Card className="border-border">
-                      <CardContent className="py-12 text-center">
-                        <p className="text-muted-foreground">
-                          {t("reports.noSpendingData", "No spending data for selected period")}
-                        </p>
+                    <Card className="border-0 shadow-sm">
+                      <CardContent className="py-16 text-center">
+                        <div className="space-y-3 max-w-sm mx-auto">
+                          <div className="flex justify-center">
+                            <div className="h-14 w-14 rounded-xl bg-muted flex items-center justify-center">
+                              <ActivityIcon className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                          </div>
+                          <p className="text-sm font-medium text-foreground">
+                            {t("reports.noSpendingData", "No spending data")}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {t("reports.noSpendingDataHint", "Try adjusting the time period or group filter")}
+                          </p>
+                        </div>
                       </CardContent>
                     </Card>
                   ) : (
@@ -779,11 +869,21 @@ export const BalancesPage = () => {
                       </div>
                       <div data-chart className="w-full">
                         {trend.length === 0 ? (
-                          <Card className="border-border">
-                            <CardContent className="py-12 text-center">
-                              <p className="text-muted-foreground">
-                                {t("reports.noTrendData", "No trend data available")}
-                              </p>
+                          <Card className="border-0 shadow-sm">
+                            <CardContent className="py-16 text-center">
+                              <div className="space-y-3 max-w-sm mx-auto">
+                                <div className="flex justify-center">
+                                  <div className="h-14 w-14 rounded-xl bg-muted flex items-center justify-center">
+                                    <TrendingUpIcon className="h-6 w-6 text-muted-foreground" />
+                                  </div>
+                                </div>
+                                <p className="text-sm font-medium text-foreground">
+                                  {t("reports.noTrendData", "No trend data")}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {t("reports.noTrendDataHint", "Trend data appears after multiple periods of activity")}
+                                </p>
+                              </div>
                             </CardContent>
                           </Card>
                         ) : (
@@ -794,14 +894,24 @@ export const BalancesPage = () => {
                   )}
                 </TabsContent>
 
-                {/* ─── Breakdown Tab ───────────────────────────────────── */}
-                <TabsContent value="breakdown" className="mt-4">
+                {/* ─── Breakdown Tab ─────────────────────────────────── */}
+                <TabsContent value="breakdown" className="mt-2 animate-fade-in">
                   {topCategories && topCategories.length === 0 && !topCategoriesLoading ? (
-                    <Card className="border-border">
-                      <CardContent className="py-12 text-center">
-                        <p className="text-muted-foreground">
-                          {t("reports.noBreakdownData", "No category data for selected period. Try a different date range.")}
-                        </p>
+                    <Card className="border-0 shadow-sm">
+                      <CardContent className="py-16 text-center">
+                        <div className="space-y-3 max-w-sm mx-auto">
+                          <div className="flex justify-center">
+                            <div className="h-14 w-14 rounded-xl bg-muted flex items-center justify-center">
+                              <ActivityIcon className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                          </div>
+                          <p className="text-sm font-medium text-foreground">
+                            {t("reports.noBreakdownData", "No category data")}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {t("reports.noBreakdownDataHint", "Try a different date range to see category breakdowns")}
+                          </p>
+                        </div>
                       </CardContent>
                     </Card>
                   ) : (
@@ -809,54 +919,51 @@ export const BalancesPage = () => {
                   )}
                 </TabsContent>
 
-                {/* ─── Balances Tab ────────────────────────────────────── */}
-                <TabsContent value="balances" className="space-y-4 mt-4">
+                {/* ─── Balances Tab ──────────────────────────────────── */}
+                <TabsContent value="balances" className="space-y-4 mt-2 animate-fade-in">
                   {isBalancesLoading ? (
-                    /* skeleton while debts load */
-                    <Card className="border-border animate-pulse">
-                      <CardHeader>
-                        <Skeleton className="h-5 w-40" />
-                      </CardHeader>
-                      <CardContent className="space-y-3">
+                    <Card className="border-0 shadow-sm animate-pulse">
+                      <CardContent className="pt-5 space-y-4">
+                        <Skeleton className="h-4 w-32" />
                         {[1, 2, 3].map((i) => (
-                          <div key={i} className="flex items-center gap-3">
-                            <Skeleton className="h-10 w-10 rounded-full" />
-                            <div className="flex-1 space-y-2">
-                              <Skeleton className="h-4 w-3/4" />
-                              <Skeleton className="h-3 w-1/2" />
+                          <div key={i} className="flex items-center gap-3 py-2">
+                            <Skeleton className="h-9 w-9 rounded-full" />
+                            <div className="flex-1 space-y-1.5">
+                              <Skeleton className="h-3.5 w-3/4" />
+                              <Skeleton className="h-2.5 w-1/2" />
                             </div>
+                            <Skeleton className="h-3.5 w-16" />
                           </div>
                         ))}
                       </CardContent>
                     </Card>
                   ) : debts.length === 0 ? (
-                    /* empty / all settled */
-                    <Card className="border-border">
-                      <CardContent className="py-16 text-center">
-                        <div className="space-y-4 max-w-md mx-auto">
+                    /* empty / all settled – hero empty state */
+                    <Card className="border-0 shadow-sm">
+                      <CardContent className="py-20 text-center">
+                        <div className="space-y-4 max-w-sm mx-auto">
                           <div className="flex justify-center">
-                            <div className="h-20 w-20 rounded-full bg-green-100 dark:bg-green-950/20 flex items-center justify-center">
-                              <CheckCircle2Icon className="h-10 w-10 text-green-600 dark:text-green-400" />
+                            <div className="h-20 w-20 rounded-2xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center">
+                              <CheckCircle2Icon className="h-10 w-10 text-green-500 dark:text-green-400" />
                             </div>
                           </div>
-                          <div className="space-y-2">
-                            <h3 className="text-xl font-bold text-foreground">
-                              {t("balances.allSettledUp", "All Settled Up!")}
+                          <div className="space-y-1.5">
+                            <h3 className="text-lg font-semibold text-foreground">
+                              {t("balances.allSettledUp", "All Settled Up")}
                             </h3>
-                            <p className="text-muted-foreground">
-                              {t("balances.noOutstandingDebts", "You have no outstanding debts or credits")}
+                            <p className="text-sm text-muted-foreground">
+                              {t("balances.noOutstandingDebts", "No outstanding debts or credits with anyone")}
                             </p>
                           </div>
                           {identity && (
-                            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-                              <Button
-                                onClick={() => go({ to: "/expenses/create" })}
-                                className="gap-2"
-                              >
-                                <PlusIcon className="h-4 w-4" />
-                                {t("balances.addExpense", "Add Expense")}
-                              </Button>
-                            </div>
+                            <Button
+                              onClick={() => go({ to: "/expenses/create" })}
+                              className="gap-2 mt-2"
+                              size="sm"
+                            >
+                              <PlusIcon className="h-3.5 w-3.5" />
+                              {t("balances.addExpense", "Add Expense")}
+                            </Button>
                           )}
                         </div>
                       </CardContent>
@@ -868,66 +975,78 @@ export const BalancesPage = () => {
                       onValueChange={(v) => setBalancesSubTab(v as "you-owe" | "owed-to-you")}
                       className="space-y-4"
                     >
-                      <div className="flex flex-col gap-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                          <TabsList className="grid w-full sm:w-auto grid-cols-2">
-                            <TabsTrigger value="you-owe" className="text-xs sm:text-sm">
-                              {t("balances.youOwe", "You Owe")}{" "}
-                              {iOwe.length > 0 && `(${iOwe.length})`}
-                            </TabsTrigger>
-                            <TabsTrigger value="owed-to-you" className="text-xs sm:text-sm">
-                              {t("balances.owedToYou", "Owed to You")}{" "}
-                              {owedToMe.length > 0 && `(${owedToMe.length})`}
-                            </TabsTrigger>
-                          </TabsList>
-
-                          {/* Sort selector */}
-                          <Select
-                            value={`${sortField}-${sortDirection}`}
-                            onValueChange={(value) => {
-                              const [field, dir] = value.split("-") as [SortField, SortDirection];
-                              setSortField(field);
-                              setSortDirection(dir);
-                            }}
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <TabsList className="bg-muted/60 dark:bg-muted/40 rounded-lg p-0.5 h-auto w-full sm:w-auto">
+                          <TabsTrigger
+                            value="you-owe"
+                            className="text-xs sm:text-sm rounded-md data-[state=active]:shadow-sm transition-all duration-200"
                           >
-                            <SelectTrigger
-                              className="w-full sm:w-[160px] h-9 text-xs sm:text-sm"
-                              aria-label={t("balances.sortBy", "Sort by")}
-                            >
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="amount-desc">
-                                <div className="flex items-center gap-2">
-                                  {t("balances.amount", "Amount")}
-                                  <ArrowDownIcon className="h-3 w-3" />
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="amount-asc">
-                                <div className="flex items-center gap-2">
-                                  {t("balances.amount", "Amount")}
-                                  <ArrowUpIcon className="h-3 w-3" />
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="name-asc">
-                                <div className="flex items-center gap-2">
-                                  {t("balances.name", "Name")}
-                                  <ArrowUpIcon className="h-3 w-3" />
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="name-desc">
-                                <div className="flex items-center gap-2">
-                                  {t("balances.name", "Name")}
-                                  <ArrowDownIcon className="h-3 w-3" />
-                                </div>
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                            {t("balances.youOwe", "You Owe")}
+                            {iOwe.length > 0 && (
+                              <span className="ml-1.5 text-xs bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 rounded-full px-1.5 py-0.5">
+                                {iOwe.length}
+                              </span>
+                            )}
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="owed-to-you"
+                            className="text-xs sm:text-sm rounded-md data-[state=active]:shadow-sm transition-all duration-200"
+                          >
+                            {t("balances.owedToYou", "Owed to You")}
+                            {owedToMe.length > 0 && (
+                              <span className="ml-1.5 text-xs bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400 rounded-full px-1.5 py-0.5">
+                                {owedToMe.length}
+                              </span>
+                            )}
+                          </TabsTrigger>
+                        </TabsList>
+
+                        {/* Sort selector */}
+                        <Select
+                          value={`${sortField}-${sortDirection}`}
+                          onValueChange={(value) => {
+                            const [field, dir] = value.split("-") as [SortField, SortDirection];
+                            setSortField(field);
+                            setSortDirection(dir);
+                          }}
+                        >
+                          <SelectTrigger
+                            className="w-full sm:w-[140px] h-8 text-xs border-border bg-card rounded-lg shadow-none"
+                            aria-label={t("balances.sortBy", "Sort by")}
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="amount-desc">
+                              <div className="flex items-center gap-1.5">
+                                {t("balances.amount", "Amount")}
+                                <ArrowDownIcon className="h-3 w-3 text-muted-foreground" />
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="amount-asc">
+                              <div className="flex items-center gap-1.5">
+                                {t("balances.amount", "Amount")}
+                                <ArrowUpIcon className="h-3 w-3 text-muted-foreground" />
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="name-asc">
+                              <div className="flex items-center gap-1.5">
+                                {t("balances.name", "Name")}
+                                <ArrowUpIcon className="h-3 w-3 text-muted-foreground" />
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="name-desc">
+                              <div className="flex items-center gap-1.5">
+                                {t("balances.name", "Name")}
+                                <ArrowDownIcon className="h-3 w-3 text-muted-foreground" />
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       {/* You Owe sub-tab */}
-                      <TabsContent value="you-owe" className="space-y-4 mt-4">
+                      <TabsContent value="you-owe" className="space-y-3 mt-0">
                         {iOwe.length > 0 ? (
                           <>
                             <div className="flex justify-end">
@@ -935,25 +1054,25 @@ export const BalancesPage = () => {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setSettleAllDialogOpen(true)}
-                                className="gap-2 w-full sm:w-auto"
+                                className="gap-2 h-8 text-xs border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800/40 dark:text-green-400 dark:hover:bg-green-950/30"
                                 aria-label={t("balances.settleAll", "Settle All")}
                               >
-                                <CheckCircle2Icon className="h-4 w-4" />
+                                <CheckCircle2Icon className="h-3.5 w-3.5" />
                                 {t("balances.settleAll", "Settle All")}
                               </Button>
                             </div>
                             <SimplifiedDebts debts={iOwe} isLoading={isBalancesLoading} />
                           </>
                         ) : (
-                          <Card className="border-border">
+                          <Card className="border-0 shadow-sm">
                             <CardContent className="py-12 text-center">
-                              <div className="space-y-3">
+                              <div className="space-y-2.5">
                                 <div className="flex justify-center">
-                                  <div className="h-16 w-16 rounded-full bg-green-100 dark:bg-green-950/20 flex items-center justify-center">
-                                    <CheckCircle2Icon className="h-8 w-8 text-green-600 dark:text-green-400" />
+                                  <div className="h-12 w-12 rounded-xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center">
+                                    <CheckCircle2Icon className="h-5.5 w-5.5 text-green-500 dark:text-green-400" />
                                   </div>
                                 </div>
-                                <p className="text-muted-foreground">
+                                <p className="text-sm text-muted-foreground">
                                   {t("balances.youDontOweAnyone", "You don't owe anyone")}
                                 </p>
                               </div>
@@ -963,19 +1082,19 @@ export const BalancesPage = () => {
                       </TabsContent>
 
                       {/* Owed to You sub-tab */}
-                      <TabsContent value="owed-to-you" className="space-y-4 mt-4">
+                      <TabsContent value="owed-to-you" className="space-y-3 mt-0">
                         {owedToMe.length > 0 ? (
                           <SimplifiedDebts debts={owedToMe} isLoading={isBalancesLoading} />
                         ) : (
-                          <Card className="border-border">
+                          <Card className="border-0 shadow-sm">
                             <CardContent className="py-12 text-center">
-                              <div className="space-y-3">
+                              <div className="space-y-2.5">
                                 <div className="flex justify-center">
-                                  <div className="h-16 w-16 rounded-full bg-green-100 dark:bg-green-950/20 flex items-center justify-center">
-                                    <CheckCircle2Icon className="h-8 w-8 text-green-600 dark:text-green-400" />
+                                  <div className="h-12 w-12 rounded-xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center">
+                                    <CheckCircle2Icon className="h-5.5 w-5.5 text-green-500 dark:text-green-400" />
                                   </div>
                                 </div>
-                                <p className="text-muted-foreground">
+                                <p className="text-sm text-muted-foreground">
                                   {t("balances.noOneOwesYou", "No one owes you")}
                                 </p>
                               </div>
@@ -987,9 +1106,9 @@ export const BalancesPage = () => {
                   )}
                 </TabsContent>
 
-                {/* ─── Top Spenders Tab (group-gated) ──────────────────── */}
+                {/* ─── Top Spenders Tab (group-gated) ────────────────── */}
                 {showSpenders && (
-                  <TabsContent value="spenders" className="mt-4">
+                  <TabsContent value="spenders" className="mt-2 animate-fade-in">
                     <TopSpenders data={topSpenders} isLoading={topSpendersLoading} />
                   </TabsContent>
                 )}
@@ -998,9 +1117,9 @@ export const BalancesPage = () => {
           </>
         )}
 
-        {/* ----------------------------------------------------------------
+        {/* ──────────────────────────────────────────────────────────────
             SETTLE ALL DIALOG
-        ---------------------------------------------------------------- */}
+        ────────────────────────────────────────────────────────────── */}
         <AlertDialog open={settleAllDialogOpen} onOpenChange={setSettleAllDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
