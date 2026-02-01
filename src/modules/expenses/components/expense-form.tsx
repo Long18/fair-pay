@@ -65,7 +65,7 @@ const expenseSchema = z.object({
 type ExpenseFormSchema = z.infer<typeof expenseSchema>;
 
 interface ExpenseFormProps {
-  groupId: string;
+  groupId?: string;
   members: Array<{ id: string; full_name: string }>;
   currentUserId: string;
   onSubmit: (values: ExpenseFormValues) => void;
@@ -84,7 +84,6 @@ export const ExpenseForm = ({
   onSubmit,
   defaultValues,
   isLoading,
-  topPartnerIds = [],
   isEdit = false,
   attachments = [],
   onAttachmentsChange,
@@ -127,22 +126,15 @@ export const ExpenseForm = ({
   // Auto-select participants
   useEffect(() => {
     if (members.length > 0 && participants.length === 0 && !defaultValues?.splits) {
-      if (members.length === 2 && groupId === undefined) {
+      // Friend context: auto-select both parties
+      if (groupId === undefined && members.length === 2) {
         members.forEach(m => {
           if (m.id) addParticipant(m.id);
         });
-      } else {
-        const defaultParticipants = [currentUserId, ...topPartnerIds.slice(0, 2)]
-          .filter(id => id !== undefined && id !== null);
-        const uniqueParticipants = Array.from(new Set(defaultParticipants));
-        uniqueParticipants.forEach((memberId) => {
-          if (memberId && members.some(m => m.id === memberId)) {
-            addParticipant(memberId);
-          }
-        });
       }
+      // Group context: no auto-selection, user must choose explicitly
     }
-  }, [members, participants.length, defaultValues?.splits, currentUserId, topPartnerIds, addParticipant, groupId]);
+  }, [members, participants.length, defaultValues?.splits, groupId, addParticipant]);
 
   // Recalculate splits when amount or method changes
   useEffect(() => {
@@ -167,7 +159,7 @@ export const ExpenseForm = ({
 
     const formValues: ExpenseFormValues = {
       ...data,
-      context_type: "group" as const,
+      context_type: groupId ? "group" : "friend",
       group_id: groupId,
       splits: validSplits,
     };
