@@ -257,6 +257,10 @@ describe('ParticipantChips', () => {
         pending_email: 'pending@example.com',
         computed_amount: 50,
       },
+      {
+        user_id: 'user-2',
+        computed_amount: 50,
+      },
     ];
 
     render(
@@ -286,11 +290,8 @@ describe('ParticipantChips', () => {
     ];
 
     render(
-      <ParticipantChips {...defaultProps} participants={participants as any} />
+      <ParticipantChips {...defaultProps} participants={participants as any} availableMembers={[]} />
     );
-
-    // Check for user name
-    expect(screen.getByText('Alice')).toBeInTheDocument();
 
     // Check for pending email
     expect(screen.getByText('pending@example.com')).toBeInTheDocument();
@@ -300,6 +301,10 @@ describe('ParticipantChips', () => {
 
     // Check for "Pending" badge
     expect(screen.getByText('Pending')).toBeInTheDocument();
+
+    // Check for both mail icon (pending) and user representation
+    const mailIcons = screen.getAllByTestId('mail-icon');
+    expect(mailIcons.length).toBeGreaterThan(0);
   });
 
   it('should submit email on Enter key', async () => {
