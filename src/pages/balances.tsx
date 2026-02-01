@@ -691,7 +691,7 @@ export const BalancesPage = () => {
                       </CardContent>
                     </Card>
                   ) : (
-                    <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
                       <div data-chart className="w-full">
                         {chartType === "pie" ? (
                           <CategoryPieChart data={breakdown} />
