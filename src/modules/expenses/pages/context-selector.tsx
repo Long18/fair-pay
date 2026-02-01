@@ -54,21 +54,16 @@ export const ExpenseContextSelector = () => {
     if (!identity) return;
     if (loadingGroups || loadingFriendships) return;
 
+    // Only auto-redirect for simple cases (single option)
+    // For multiple options, show the selection dialog
     if (groups.length === 1 && friendships.length === 0) {
       const groupId = groups[0].id;
       go({ to: `/groups/${groupId}/expenses/create`, type: "replace" });
     } else if (friendships.length === 1 && groups.length === 0) {
       const friendshipId = friendships[0].id;
       go({ to: `/friends/${friendshipId}/expenses/create`, type: "replace" });
-    } else if (groups.length > 0) {
-      const mostRecentGroup = [...groups].sort((a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      )[0];
-      go({ to: `/groups/${mostRecentGroup.id}/expenses/create`, type: "replace" });
-    } else if (friendships.length > 0) {
-      const friendshipId = friendships[0].id;
-      go({ to: `/friends/${friendshipId}/expenses/create`, type: "replace" });
     }
+    // For multiple groups OR friendships, show selection dialog (no auto-redirect)
   }, [identity, groups.length, friendships.length, loadingGroups, loadingFriendships, go]);
 
   const handleClose = () => {
