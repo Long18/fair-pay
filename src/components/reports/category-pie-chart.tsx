@@ -109,7 +109,7 @@ export function CategoryPieChart({ data, title }: CategoryPieChartProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-4 sm:pb-6 px-4 sm:px-6">
-        <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[250px] sm:max-h-[300px] md:max-h-[350px] w-full">
+        <ChartContainer config={chartConfig} className="mx-auto w-full min-h-[240px] max-h-[280px] sm:min-h-[280px] sm:max-h-[320px] md:min-h-[300px] md:max-h-[350px]">
           <PieChart>
             <ChartTooltip
               content={
@@ -134,9 +134,9 @@ export function CategoryPieChart({ data, title }: CategoryPieChartProps) {
               cy="50%"
               innerRadius="0%"
               outerRadius="80%"
-              label={({ payload, percent }) => {
-                const config = chartConfig[payload.category];
-                return `${config?.label} ${(percent * 100).toFixed(0)}%`;
+              label={({ percent }) => {
+                if (percent < 0.08) return null;
+                return `${(percent * 100).toFixed(0)}%`;
               }}
               labelLine={false}
             >

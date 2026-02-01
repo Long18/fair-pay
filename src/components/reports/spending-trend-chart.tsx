@@ -61,27 +61,27 @@ export function SpendingTrendChart({ data, title }: SpendingTrendChartProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-4 sm:pb-6 px-4 sm:px-6">
-        <ChartContainer config={chartConfig} className="h-[250px] sm:h-[300px] md:h-[350px] w-full">
+        <ChartContainer config={chartConfig} className="h-[220px] sm:h-[280px] md:h-[350px] w-full">
           <LineChart
             data={data}
-            margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+            margin={{ top: 5, right: 10, left: -10, bottom: 5 }}
           >
             <CartesianGrid vertical={false} />
             <XAxis
               dataKey="label"
               tickLine={false}
               axisLine={false}
-              tickMargin={8}
-              tick={{ fontSize: "var(--font-size-chart-sm)", fontFamily: "var(--font-sans)" }}
+              tickMargin={6}
+              tick={{ fontSize: "var(--font-size-chart-xs)", fontFamily: "var(--font-sans)" }}
               interval="preserveStartEnd"
             />
             <YAxis
               tickLine={false}
               axisLine={false}
-              tickMargin={8}
-              tick={{ fontSize: "var(--font-size-chart-sm)", fontFamily: "var(--font-sans)" }}
+              tickMargin={4}
+              tick={{ fontSize: "var(--font-size-chart-xs)", fontFamily: "var(--font-sans)" }}
               tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
-              width={40}
+              width={34}
             />
             <ChartTooltip
               content={
