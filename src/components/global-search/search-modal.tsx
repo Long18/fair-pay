@@ -129,7 +129,7 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
             className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-auto p-0"
             autoFocus
           />
-          <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+          <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-border px-1.5 font-mono text-[10px] font-medium text-foreground/70 opacity-100">
             <span className="text-xs">ESC</span>
           </kbd>
         </div>
@@ -142,13 +142,13 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
               {recentSearches.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-medium text-muted-foreground">
+                    <h3 className="text-sm font-medium text-foreground/70">
                       Recent Searches
                     </h3>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
+                      className="h-auto p-0 text-xs text-foreground/70 hover:text-foreground"
                       onClick={clearRecentSearches}
                     >
                       Clear
@@ -173,21 +173,21 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
 
               {/* Empty State */}
               <div className="text-center py-12">
-                <SearchIcon className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">
+                <SearchIcon className="h-12 w-12 text-foreground/60 mx-auto mb-3" />
+                <p className="text-sm text-foreground/60">
                   Start typing to search expenses, groups, and friends
                 </p>
               </div>
             </div>
           ) : isSearching ? (
             <div className="p-8 text-center">
-              <p className="text-sm text-muted-foreground">Searching...</p>
+              <p className="text-sm text-foreground/60">Searching...</p>
             </div>
           ) : totalResults === 0 ? (
             <div className="p-8 text-center">
-              <SearchIcon className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+              <SearchIcon className="h-12 w-12 text-foreground/60 mx-auto mb-3" />
               <p className="text-sm font-medium mb-1">No results found</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-foreground/60">
                 Try adjusting your search or filters
               </p>
             </div>
@@ -197,7 +197,7 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
               {groupedResults.expenses.length > 0 && (
                 <div>
                   <div className="px-4 py-2">
-                    <h3 className="text-xs font-medium text-muted-foreground uppercase">
+                    <h3 className="text-xs font-medium text-foreground/70 uppercase">
                       Expenses ({groupedResults.expenses.length})
                     </h3>
                   </div>
@@ -213,7 +213,7 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
                         key={result.id}
                         className={cn(
                           "w-full px-4 py-2 flex items-center gap-3 hover:bg-muted transition-colors text-left",
-                          index === selectedIndex && "bg-muted"
+                          index === selectedIndex && "bg-primary/20 ring-2 ring-primary/50 ring-inset"
                         )}
                         onClick={() => handleSelectResult(result)}
                       >
@@ -235,7 +235,7 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
                           <p className="text-sm font-medium truncate">
                             {result.title}
                           </p>
-                          <p className="text-xs text-muted-foreground truncate">
+                          <p className="text-xs text-foreground/60 truncate">
                             {result.subtitle}
                           </p>
                         </div>
@@ -255,7 +255,7 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
               {groupedResults.groups.length > 0 && (
                 <div>
                   <div className="px-4 py-2">
-                    <h3 className="text-xs font-medium text-muted-foreground uppercase">
+                    <h3 className="text-xs font-medium text-foreground/70 uppercase">
                       Groups ({groupedResults.groups.length})
                     </h3>
                   </div>
@@ -269,7 +269,7 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
                         key={result.id}
                         className={cn(
                           "w-full px-4 py-2 flex items-center gap-3 hover:bg-muted transition-colors text-left",
-                          adjustedIndex === selectedIndex && "bg-muted"
+                          adjustedIndex === selectedIndex && "bg-primary/20 ring-2 ring-primary/50 ring-inset"
                         )}
                         onClick={() => handleSelectResult(result)}
                       >
@@ -278,7 +278,7 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
                           <p className="text-sm font-medium truncate">
                             {result.title}
                           </p>
-                          <p className="text-xs text-muted-foreground truncate">
+                          <p className="text-xs text-foreground/60 truncate">
                             {result.subtitle}
                           </p>
                         </div>
@@ -292,7 +292,7 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
               {groupedResults.friends.length > 0 && (
                 <div>
                   <div className="px-4 py-2">
-                    <h3 className="text-xs font-medium text-muted-foreground uppercase">
+                    <h3 className="text-xs font-medium text-foreground/70 uppercase">
                       Friends ({groupedResults.friends.length})
                     </h3>
                   </div>
@@ -308,7 +308,7 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
                         key={result.id}
                         className={cn(
                           "w-full px-4 py-2 flex items-center gap-3 hover:bg-muted transition-colors text-left",
-                          adjustedIndex === selectedIndex && "bg-muted"
+                          adjustedIndex === selectedIndex && "bg-primary/20 ring-2 ring-primary/50 ring-inset"
                         )}
                         onClick={() => handleSelectResult(result)}
                       >
@@ -317,7 +317,7 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
                           <p className="text-sm font-medium truncate">
                             {result.title}
                           </p>
-                          <p className="text-xs text-muted-foreground truncate">
+                          <p className="text-xs text-foreground/60 truncate">
                             {result.subtitle}
                           </p>
                         </div>
