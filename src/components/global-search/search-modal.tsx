@@ -118,7 +118,7 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-0 gap-0">
+      <DialogContent className="max-w-2xl p-0 gap-0" showCloseButton={false}>
         {/* Search Input */}
         <div className="flex items-center gap-3 px-4 py-3 border-b">
           <SearchIcon className="h-5 w-5 text-muted-foreground" />
