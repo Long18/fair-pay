@@ -6,8 +6,7 @@ import {
   HomeIcon,
   UsersIcon,
   UserPlusIcon,
-  ReceiptIcon,
-  WalletIcon,
+  ActivityIcon,
   FairPayIcon,
   RepeatIcon,
 } from "./components/ui/icons";
@@ -243,15 +242,15 @@ function App() {
                     list: "/reports",
                     meta: {
                       label: "Reports",
-                      icon: <ReceiptIcon className="w-5 h-5" />,
+                      hide: true,
                     },
                   },
                   {
                     name: "balances",
                     list: "/balances",
                     meta: {
-                      label: "Balances",
-                      icon: <WalletIcon className="w-5 h-5" />,
+                      label: "Insights",
+                      icon: <ActivityIcon className="w-5 h-5" />,
                     },
                   },
                   {
