@@ -1,4 +1,3 @@
 export { Layout } from "./layout";
-export { Header } from "./header";
-export { Sidebar } from "./sidebar";
+export { NavBar } from "./navbar";
 export { Breadcrumb, createBreadcrumbs } from "./breadcrumb";
