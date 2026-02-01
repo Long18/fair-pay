@@ -88,27 +88,33 @@ export type Database = {
           created_at: string
           expense_id: string
           id: string
+          is_claimed: boolean
+          pending_email: string | null
           split_method: string
           split_value: number | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           computed_amount: number
           created_at?: string
           expense_id: string
           id?: string
+          is_claimed?: boolean
+          pending_email?: string | null
           split_method: string
           split_value?: number | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           computed_amount?: number
           created_at?: string
           expense_id?: string
           id?: string
+          is_claimed?: boolean
+          pending_email?: string | null
           split_method?: string
           split_value?: number | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {

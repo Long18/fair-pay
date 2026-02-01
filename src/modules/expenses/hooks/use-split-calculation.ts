@@ -4,8 +4,9 @@ import { ParticipantSplit } from "../types";
 export interface SplitCalculation {
   participants: ParticipantSplit[];
   addParticipant: (userId: string) => void;
-  removeParticipant: (userId: string) => void;
-  setSplitValue: (userId: string, value: number) => void;
+  addParticipantByEmail: (email: string) => void;
+  removeParticipant: (userIdOrEmail: string) => void;
+  setSplitValue: (userIdOrEmail: string, value: number) => void;
   recalculate: (amount: number, method: 'equal' | 'exact' | 'percentage') => void;
   isValid: boolean;
   totalSplit: number;
@@ -17,7 +18,6 @@ export const useSplitCalculation = (initialSplits?: ParticipantSplit[]): SplitCa
   const [lastMethod, setLastMethod] = useState<'equal' | 'exact' | 'percentage'>('equal');
 
   const addParticipant = useCallback((userId: string) => {
-    // Guard against undefined/null userId
     if (!userId) {
       console.warn('[useSplitCalculation] Attempted to add participant with invalid userId:', userId);
       return;
@@ -31,26 +31,42 @@ export const useSplitCalculation = (initialSplits?: ParticipantSplit[]): SplitCa
     });
   }, []);
 
-  const removeParticipant = useCallback((userId: string) => {
-    setParticipants(prev => prev.filter(p => p.user_id !== userId));
+  const addParticipantByEmail = useCallback((email: string) => {
+    if (!email) {
+      console.warn('[useSplitCalculation] Attempted to add participant with invalid email:', email);
+      return;
+    }
+
+    const normalizedEmail = email.toLowerCase();
+    setParticipants(prev => {
+      if (prev.find(p => p.pending_email === normalizedEmail)) {
+        return prev;
+      }
+      return [...prev, { pending_email: normalizedEmail, split_value: 0, computed_amount: 0 }];
+    });
   }, []);
 
-  const setSplitValue = useCallback((userId: string, value: number) => {
+  const removeParticipant = useCallback((userIdOrEmail: string) => {
+    setParticipants(prev => prev.filter(p =>
+      p.user_id !== userIdOrEmail && p.pending_email !== userIdOrEmail
+    ));
+  }, []);
+
+  const setSplitValue = useCallback((userIdOrEmail: string, value: number) => {
     setParticipants(prev =>
-      prev.map(p =>
-        p.user_id === userId
-          ? { 
-              ...p, 
-              split_value: value,
-              // Update computed_amount immediately for exact/percentage methods
-              computed_amount: lastMethod === 'exact' 
-                ? value 
-                : (lastMethod === 'percentage' 
-                    ? Math.round((lastAmount * value / 100) * 100) / 100 
-                    : p.computed_amount)
-            }
-          : p
-      )
+      prev.map(p => {
+        const key = p.user_id || p.pending_email || '';
+        if (key !== userIdOrEmail) return p;
+        return {
+          ...p,
+          split_value: value,
+          computed_amount: lastMethod === 'exact'
+            ? value
+            : (lastMethod === 'percentage'
+                ? Math.round((lastAmount * value / 100) * 100) / 100
+                : p.computed_amount)
+        };
+      })
     );
   }, [lastAmount, lastMethod]);
 
@@ -111,6 +127,7 @@ export const useSplitCalculation = (initialSplits?: ParticipantSplit[]): SplitCa
   return {
     participants,
     addParticipant,
+    addParticipantByEmail,
     removeParticipant,
     setSplitValue,
     recalculate,

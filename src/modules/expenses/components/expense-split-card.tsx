@@ -241,7 +241,7 @@ export const ExpenseSplitCard = ({
               </Tooltip>
             )}
 
-            {isCurrentUser && !isSplitSettled && !isPayer && (
+            {isCurrentUser && !isSplitSettled && !isPayer && split.user_id && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div>
@@ -323,7 +323,7 @@ export const ExpenseSplitCard = ({
                   </Button>
                 )}
 
-                {isCurrentUser && !isSplitSettled && !isPayer && (
+                {isCurrentUser && !isSplitSettled && !isPayer && split.user_id && (
                   <VietQRPaymentButton
                     split={split}
                     payeeId={split.user_id}

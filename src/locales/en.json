@@ -246,7 +246,10 @@
         "templateMovie": "Movie",
         "templateMovieDesc": "Movie tickets",
         "templateUtilities": "Utilities",
-        "templateUtilitiesDesc": "Monthly utilities"
+        "templateUtilitiesDesc": "Monthly utilities",
+        "addByEmail": "Add by email",
+        "pending": "Pending",
+        "emailAlreadyAdded": "This email has already been added"
     },
     "recurring": {
         "title": "Recurring Expenses",
