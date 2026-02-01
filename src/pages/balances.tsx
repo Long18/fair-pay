@@ -85,7 +85,6 @@ import {
   CalendarIcon,
   ActivityIcon,
   TrendingUpIcon,
-  TrendingDownIcon,
   FilterIcon,
 } from "@/components/ui/icons";
 
@@ -417,7 +416,7 @@ export const BalancesPage = () => {
               className="gap-1.5 text-muted-foreground hover:text-foreground"
               aria-label={t("reports.exportCSV", "Export CSV")}
             >
-              <DownloadIcon className="h-3.5 w-3.5" />
+              <DownloadIcon className="h-4 w-4" />
               <span className="hidden sm:inline text-xs">CSV</span>
             </Button>
             <Button
@@ -428,7 +427,7 @@ export const BalancesPage = () => {
               className="gap-1.5 text-muted-foreground hover:text-foreground"
               aria-label={t("reports.exportPDF", "Export PDF")}
             >
-              <FileTextIcon className="h-3.5 w-3.5" />
+              <FileTextIcon className="h-4 w-4" />
               <span className="hidden sm:inline text-xs">PDF</span>
             </Button>
             <Button
@@ -440,7 +439,7 @@ export const BalancesPage = () => {
               aria-label={t("balances.refresh", "Refresh")}
               aria-describedby="balances-page-description"
             >
-              <RefreshCwIcon className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} aria-hidden="true" />
+              <RefreshCwIcon className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} aria-hidden="true" />
               <span className="hidden sm:inline text-xs">{t("balances.refresh", "Refresh")}</span>
             </Button>
           </div>
@@ -448,167 +447,6 @@ export const BalancesPage = () => {
       />
 
       <PageContent>
-        {/* ──────────────────────────────────────────────────────────────
-            BALANCE SUMMARY CARDS – the hero section, always visible first
-        ────────────────────────────────────────────────────────────── */}
-        <div
-          className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4"
-          role="region"
-          aria-label={t("balances.summaryCards", "Balance summary")}
-        >
-          {/* Net Balance – primary indicator */}
-          <Card
-            className={cn(
-              "relative overflow-hidden border-0 shadow-sm transition-shadow duration-200 hover:shadow-md animate-fade-in",
-              netBalance > 0
-                ? "bg-green-50 dark:bg-green-950/30"
-                : netBalance < 0
-                  ? "bg-red-50 dark:bg-red-950/30"
-                  : "bg-muted/40 dark:bg-muted/20"
-            )}
-            style={{ animationDelay: "0ms" }}
-          >
-            {/* Left accent stripe */}
-            <div
-              className={cn(
-                "absolute inset-y-0 left-0 w-1",
-                netBalance > 0
-                  ? "bg-green-500"
-                  : netBalance < 0
-                    ? "bg-red-500"
-                    : "bg-border"
-              )}
-            />
-            <CardContent className="pt-5 pb-4 pl-5 pr-4">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      {t("balances.netBalance", "Net Balance")}
-                    </span>
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-0.5 text-xs font-medium px-1.5 py-0.5 rounded-full",
-                        netBalance > 0
-                          ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
-                          : netBalance < 0
-                            ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
-                            : "bg-muted text-muted-foreground"
-                      )}
-                    >
-                      {netBalance > 0 ? (
-                        <TrendingUpIcon className="h-2.5 w-2.5" />
-                      ) : netBalance < 0 ? (
-                        <TrendingDownIcon className="h-2.5 w-2.5" />
-                      ) : null}
-                      {netBalance > 0 ? "Positive" : netBalance < 0 ? "Negative" : "Settled"}
-                    </span>
-                  </div>
-                  <div
-                    className={cn(
-                      "text-2xl sm:text-3xl font-bold tabular-nums leading-tight",
-                      netBalance > 0
-                        ? "text-green-600 dark:text-green-400"
-                        : netBalance < 0
-                          ? "text-red-600 dark:text-red-400"
-                          : "text-foreground"
-                    )}
-                  >
-                    {netBalance >= 0 ? "+" : ""}
-                    {formatNumber(netBalance)} ₫
-                  </div>
-                </div>
-                <div
-                  className={cn(
-                    "h-9 w-9 rounded-lg flex items-center justify-center",
-                    netBalance > 0
-                      ? "bg-green-100 dark:bg-green-900/40"
-                      : netBalance < 0
-                        ? "bg-red-100 dark:bg-red-900/40"
-                        : "bg-muted"
-                  )}
-                >
-                  <ActivityIcon
-                    className={cn(
-                      "h-4.5 w-4.5",
-                      netBalance > 0
-                        ? "text-green-600 dark:text-green-400"
-                        : netBalance < 0
-                          ? "text-red-600 dark:text-red-400"
-                          : "text-muted-foreground"
-                    )}
-                  />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2.5">
-                {netBalance > 0
-                  ? t("balances.youAreOwedOverall", "You are owed overall")
-                  : netBalance < 0
-                    ? t("balances.youOweOverall", "You owe overall")
-                    : t("balances.allSettledUp", "All settled up")}
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* You Owe */}
-          <Card
-            className="relative overflow-hidden border-0 shadow-sm transition-shadow duration-200 hover:shadow-md bg-red-50 dark:bg-red-950/30 animate-fade-in"
-            style={{ animationDelay: "60ms" }}
-          >
-            <div className="absolute inset-y-0 left-0 w-1 bg-red-500" />
-            <CardContent className="pt-5 pb-4 pl-5 pr-4">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2.5">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    {t("balances.youOwe", "You Owe")}
-                  </span>
-                  <div className="text-2xl sm:text-3xl font-bold tabular-nums leading-tight text-red-600 dark:text-red-400">
-                    {formatNumber(totalIOwe)} ₫
-                  </div>
-                </div>
-                <div className="h-9 w-9 rounded-lg bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
-                  <TrendingDownIcon className="h-4.5 w-4.5 text-red-600 dark:text-red-400" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2.5">
-                {t("balances.toPeople", {
-                  count: iOwe.length,
-                  defaultValue: `to ${iOwe.length} ${iOwe.length === 1 ? "person" : "people"}`,
-                })}
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Owed to You */}
-          <Card
-            className="relative overflow-hidden border-0 shadow-sm transition-shadow duration-200 hover:shadow-md bg-green-50 dark:bg-green-950/30 animate-fade-in"
-            style={{ animationDelay: "120ms" }}
-          >
-            <div className="absolute inset-y-0 left-0 w-1 bg-green-500" />
-            <CardContent className="pt-5 pb-4 pl-5 pr-4">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2.5">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    {t("balances.owedToYou", "Owed to You")}
-                  </span>
-                  <div className="text-2xl sm:text-3xl font-bold tabular-nums leading-tight text-green-600 dark:text-green-400">
-                    {formatNumber(totalOwedToMe)} ₫
-                  </div>
-                </div>
-                <div className="h-9 w-9 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
-                  <TrendingUpIcon className="h-4.5 w-4.5 text-green-600 dark:text-green-400" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2.5">
-                {t("balances.fromPeople", {
-                  count: owedToMe.length,
-                  defaultValue: `from ${owedToMe.length} ${owedToMe.length === 1 ? "person" : "people"}`,
-                })}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* ──────────────────────────────────────────────────────────────
             ERROR BANNER
         ────────────────────────────────────────────────────────────── */}
@@ -626,7 +464,7 @@ export const BalancesPage = () => {
         ────────────────────────────────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 animate-fade-in" style={{ animationDelay: "180ms" }}>
           <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-            <FilterIcon className="h-3.5 w-3.5" />
+            <FilterIcon className="h-4 w-4" />
             <span>{t("reports.filters", "Filters")}</span>
           </div>
           <div className="flex flex-wrap gap-2 flex-1">
@@ -636,7 +474,7 @@ export const BalancesPage = () => {
                 id="time-period"
                 className="h-8 w-auto min-w-[130px] text-xs border-border bg-card rounded-lg px-3 shadow-none focus:ring-1 focus:ring-primary/30"
               >
-                <CalendarIcon className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                <CalendarIcon className="h-4 w-4 mr-1.5 text-muted-foreground" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
