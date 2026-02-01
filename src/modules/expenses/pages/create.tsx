@@ -67,27 +67,6 @@ export const ExpenseCreate = () => {
     },
   });
 
-  // Fetch all user's friends (for adding to group expenses)
-  const { query: allFriendsQuery } = useList<Friendship>({
-    resource: "friendships",
-    filters: [
-      {
-        field: "status",
-        operator: "eq",
-        value: "accepted",
-      },
-    ],
-    meta: {
-      select: "*, user_a_profile:profiles!user_a(id, full_name), user_b_profile:profiles!user_b(id, full_name)",
-    },
-    pagination: {
-      mode: "off",
-    },
-    queryOptions: {
-      enabled: !!identity?.id,
-    },
-  });
-
   const createMutation = useCreate();
 
   // Determine members based on context (group members or friendship participants)
@@ -141,52 +120,16 @@ export const ExpenseCreate = () => {
     return [];
   }, [isGroupContext, isFriendContext, membersQuery.data, friendshipQuery.data, identity]);
 
-  // Extract all friends from friendships (for adding to group expenses)
-  const allFriends = useMemo(() => {
-    if (!allFriendsQuery.data?.data || !identity?.id) return [];
-
-    return allFriendsQuery.data.data
-      .map((friendship: any) => {
-        const isUserA = friendship.user_a_id === identity.id;
-        const friendProfile = isUserA ? friendship.user_b_profile : friendship.user_a_profile;
-        const friendId = isUserA ? friendship.user_b_id : friendship.user_a_id;
-
-        return {
-          id: friendId,
-          full_name: friendProfile?.full_name || "Friend",
-        };
-      })
-      .filter((friend) => friend.id !== undefined && friend.id !== null); // Filter out invalid friends
-  }, [allFriendsQuery.data, identity]);
-
-  // Combine members + friends for group context (remove duplicates, including current user)
-  const allAvailableMembers = useMemo(() => {
-    const seenIds = new Set<string>();
-    const combined: { id: string; full_name: string }[] = [];
-
+  // For group context: only group members. For friend context: the 2 people in the friendship.
+  const availableMembers = useMemo(() => {
     if (isGroupContext) {
-      // Add all group members first
-      members.forEach(m => {
-        if (m.id && !seenIds.has(m.id)) {
-          combined.push(m);
-          seenIds.add(m.id);
-        }
-      });
-
-      // Add friends who are not already in the group
-      allFriends.forEach(f => {
-        if (f.id && !seenIds.has(f.id)) {
-          combined.push(f);
-          seenIds.add(f.id);
-        }
-      });
-
-      return combined;
+      // Only group members -- no friends added
+      return members.filter(m => m.id !== undefined && m.id !== null);
     }
 
-    // In friend context: just the 2 people in the friendship (filter out invalid)
+    // Friend context: just the 2 people in the friendship
     return members.filter(m => m.id !== undefined && m.id !== null);
-  }, [isGroupContext, members, allFriends]);
+  }, [isGroupContext, members]);
 
   const handleSubmit = async (values: ExpenseFormValues) => {
     const { splits, is_recurring, recurring, split_method, ...expenseData } = values;
@@ -332,7 +275,7 @@ export const ExpenseCreate = () => {
 
   const contextId = groupId || friendshipId;
 
-  if (!contextId || !identity || allAvailableMembers.length === 0) {
+  if (!contextId || !identity || availableMembers.length === 0) {
     return (
       <ResponsiveDialog
         open={true}
@@ -354,8 +297,8 @@ export const ExpenseCreate = () => {
       className="sm:max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden"
     >
       <ExpenseForm
-        groupId={contextId}
-        members={allAvailableMembers}
+        groupId={groupId}
+        members={availableMembers}
         currentUserId={identity.id}
         onSubmit={handleSubmit}
         isLoading={false}
