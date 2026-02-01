@@ -21,6 +21,7 @@ export interface AggregatedDebt {
 
 export interface UseAggregatedDebtsOptions {
     includeHistory?: boolean; // If true, includes settled debts in results
+    dateRange?: { start: Date; end: Date };
 }
 
 /**
@@ -32,7 +33,7 @@ export interface UseAggregatedDebtsOptions {
  * @param options.includeHistory - If true, fetches all historical debts including settled ones
  */
 export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
-    const { includeHistory = false } = options;
+    const { includeHistory = false, dateRange } = options;
     const { data: identity } = useGetIdentity<Profile>();
     const [data, setData] = useState<AggregatedDebt[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -59,11 +60,15 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
                     ? "get_user_debts_history"
                     : "get_user_debts_aggregated";
 
+                const rpcParams: Record<string, string> = { p_user_id: identity.id };
+                if (dateRange) {
+                    rpcParams.p_start_date = dateRange.start.toISOString();
+                    rpcParams.p_end_date = dateRange.end.toISOString();
+                }
+
                 const response = await supabaseClient.rpc(
                     functionName,
-                    {
-                        p_user_id: identity.id,
-                    }
+                    rpcParams
                 );
                 result = response.data;
                 rpcError = response.error;
@@ -118,7 +123,7 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
         } finally {
             setIsLoading(false);
         }
-    }, [identity?.id, includeHistory]);
+    }, [identity?.id, includeHistory, dateRange?.start?.toISOString(), dateRange?.end?.toISOString()]);
 
     // Debounced version of fetchDebts for real-time subscriptions
     // Use useRef to maintain a stable reference to avoid infinite loops

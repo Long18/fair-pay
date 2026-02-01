@@ -7,6 +7,10 @@ interface BalanceData {
   net_balance: number;
 }
 
+interface UseBalanceOptions {
+  dateRange?: { start: Date; end: Date };
+}
+
 /**
  * Centralized hook for fetching user balance
  *
@@ -18,21 +22,28 @@ interface BalanceData {
  *
  * @returns Balance data including what user owes and is owed
  */
-export const useBalance = () => {
+export const useBalance = (options?: UseBalanceOptions) => {
   const { data: identity } = useGetIdentity<{ id: string }>();
+  const dateRange = options?.dateRange;
 
   const result = useCustom<BalanceData>({
     url: "",
     method: "get",
     config: { query: {} },
     queryOptions: {
-      queryKey: ["balance", identity?.id],
+      queryKey: ["balance", identity?.id, dateRange?.start?.toISOString(), dateRange?.end?.toISOString()],
       queryFn: async () => {
         if (!identity?.id) throw new Error("User not authenticated");
 
+        const rpcParams: Record<string, string> = { p_user_id: identity.id };
+        if (dateRange) {
+          rpcParams.p_start_date = dateRange.start.toISOString();
+          rpcParams.p_end_date = dateRange.end.toISOString();
+        }
+
         const { data, error } = await supabaseClient.rpc(
           'get_user_balance',
-          { p_user_id: identity.id }
+          rpcParams
         );
 
         if (error) throw new Error(error.message);

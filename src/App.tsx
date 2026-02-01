@@ -18,7 +18,7 @@ import routerProvider, {
   UnsavedChangesNotifier,
 } from "@refinedev/react-router";
 import { dataProvider, liveProvider } from "@refinedev/supabase";
-import { BrowserRouter, Outlet, Route, Routes } from "react-router";
+import { BrowserRouter, Outlet, Route, Routes, Navigate } from "react-router";
 import "./App.css";
 import authProvider from "./authProvider";
 import { supabaseClient } from "./utility";
@@ -71,7 +71,6 @@ const FriendShow = lazy(() => import("./modules/friends").then(m => ({ default: 
 
 // Other modules
 const NotificationList = lazy(() => import("./modules/notifications").then(m => ({ default: m.NotificationList })));
-const ReportsPage = lazy(() => import("./pages/reports").then(m => ({ default: m.ReportsPage })));
 const SettingsPage = lazy(() => import("./modules/settings").then(m => ({ default: m.SettingsPage })));
 const DonationSettings = lazy(() => import("./modules/settings").then(m => ({ default: m.DonationSettings })));
 const BankSettings = lazy(() => import("./modules/settings/pages/bank-settings").then(m => ({ default: m.BankSettingsPage })));
@@ -428,11 +427,7 @@ function App() {
                         <NotificationList />
                       </Suspense>
                     } />
-                    <Route path="/reports" element={
-                      <Suspense fallback={<PageLoader />}>
-                        <ReportsPage />
-                      </Suspense>
-                    } />
+                    <Route path="/reports" element={<Navigate to="/balances" replace />} />
                     <Route path="/balances" element={
                       <Suspense fallback={<PageLoader />}>
                         <ErrorBoundary context="Balances Page">
