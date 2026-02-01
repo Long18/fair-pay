@@ -107,6 +107,7 @@ export const ExpenseForm = ({
   const {
     participants,
     addParticipant,
+    addParticipantByEmail,
     removeParticipant,
     setSplitValue,
     recalculate,
@@ -145,7 +146,8 @@ export const ExpenseForm = ({
 
   const handleFormSubmit = (data: ExpenseFormSchema) => {
     const validSplits = participants.filter(p => {
-      if (!p.user_id) return false;
+      // Either user_id or pending_email must be present
+      if (!p.user_id && !p.pending_email) return false;
       if (p.computed_amount === undefined || p.computed_amount === null || isNaN(p.computed_amount)) {
         return false;
       }
@@ -402,6 +404,7 @@ export const ExpenseForm = ({
               amount={amount}
               currency={currency}
               onAddParticipant={addParticipant}
+              onAddParticipantByEmail={addParticipantByEmail}
               onRemoveParticipant={removeParticipant}
               onSplitValueChange={setSplitValue}
               totalSplit={totalSplit}

@@ -245,7 +245,10 @@
         "templateMovie": "Phim",
         "templateMovieDesc": "Vé xem phim",
         "templateUtilities": "Tiện ích",
-        "templateUtilitiesDesc": "Tiện ích hàng tháng"
+        "templateUtilitiesDesc": "Tiện ích hàng tháng",
+        "addByEmail": "Thêm bằng email",
+        "pending": "Chờ xác nhận",
+        "emailAlreadyAdded": "Email này đã được thêm"
     },
     "recurring": {
         "title": "Chi phí định kỳ",

@@ -158,10 +158,10 @@ export const ExpenseCreate = () => {
           // Create splits using Supabase client
           // Auto-mark the payer's split as fully settled
           try {
-            // Filter out invalid splits (missing user_id or computed_amount)
+            // Filter out invalid splits (must have user_id or pending_email, and a computed_amount)
             const validSplits = splits.filter(split => {
-              if (!split.user_id) {
-                console.warn('Skipping split with missing user_id:', split);
+              if (!split.user_id && !split.pending_email) {
+                console.warn('Skipping split with neither user_id nor pending_email:', split);
                 return false;
               }
               if (split.computed_amount === undefined || split.computed_amount === null) {
@@ -180,17 +180,20 @@ export const ExpenseCreate = () => {
             }
 
             const splitPromises = validSplits.map((split) => {
-              const isPayer = split.user_id === values.paid_by_user_id;
+              const isPendingEmail = !!split.pending_email && !split.user_id;
+              const isPayer = !!split.user_id && split.user_id === values.paid_by_user_id;
               return supabaseClient
                 .from("expense_splits")
                 .insert({
                   expense_id: expenseId,
-                  user_id: split.user_id,
+                  user_id: split.user_id || null,
+                  pending_email: split.pending_email || null,
                   split_method: values.split_method,
                   split_value: split.split_value ?? null,
                   computed_amount: split.computed_amount,
-                  // Auto-settle the payer's own split
+                  // Auto-settle only the payer's own split (not email-based participants)
                   is_settled: isPayer,
+                  is_claimed: !isPendingEmail,
                   settled_amount: isPayer ? split.computed_amount : 0,
                   settled_at: isPayer ? new Date().toISOString() : null,
                 });

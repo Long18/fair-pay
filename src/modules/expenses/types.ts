@@ -33,7 +33,9 @@ export interface Expense {
 export interface ExpenseSplit {
     id: string;
     expense_id: string;
-    user_id: string;
+    user_id: string | null;
+    pending_email?: string | null;
+    is_claimed?: boolean;
     split_method: 'equal' | 'exact' | 'percentage';
     split_value: number | null;
     computed_amount: number;
@@ -76,7 +78,8 @@ export interface ExpenseFormValues {
 }
 
 export interface ParticipantSplit {
-    user_id: string;
+    user_id?: string;
+    pending_email?: string;
     split_value?: number;
     computed_amount: number;
 }
