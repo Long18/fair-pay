@@ -20,6 +20,7 @@ export const ExpenseContextSelector = () => {
 
   const { query: groupsQuery } = useList({
     resource: "group_members",
+    pagination: { mode: "off" },
     filters: [
       {
         field: "user_id",
@@ -37,6 +38,7 @@ export const ExpenseContextSelector = () => {
 
   const { query: friendshipsQuery } = useList<Friendship>({
     resource: "friendships",
+    pagination: { mode: "off" },
     filters: [
       {
         field: "status",
