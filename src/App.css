@@ -4,6 +4,7 @@
   src: url("/fonts/sohne-font-family/TestSohne-Extraleicht-BF663d89cd3f5c5.otf") format("opentype");
   font-weight: 200;
   font-style: normal;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -12,6 +13,7 @@
   src: url("/fonts/sohne-font-family/TestSohne-ExtraleichtKursiv-BF663d89cd3f0d1.otf") format("opentype");
   font-weight: 200;
   font-style: italic;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -20,6 +22,7 @@
   src: url("/fonts/sohne-font-family/TestSohne-Leicht-BF663d89cd4952e.otf") format("opentype");
   font-weight: 300;
   font-style: normal;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -28,6 +31,7 @@
   src: url("/fonts/sohne-font-family/TestSohne-LeichtKursiv-BF663d89cd9a361.otf") format("opentype");
   font-weight: 300;
   font-style: italic;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -36,6 +40,7 @@
   src: url("/fonts/sohne-font-family/TestSohne-Buch-BF663d89cd32e6a.otf") format("opentype");
   font-weight: 400;
   font-style: normal;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -44,6 +49,7 @@
   src: url("/fonts/sohne-font-family/TestSohne-BuchKursiv-BF663d89cd3e887.otf") format("opentype");
   font-weight: 400;
   font-style: italic;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -52,6 +58,7 @@
   src: url("/fonts/sohne-font-family/TestSohne-Kraftig-BF663d89cd37e26.otf") format("opentype");
   font-weight: 500;
   font-style: normal;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -60,6 +67,7 @@
   src: url("/fonts/sohne-font-family/TestSohne-KraftigKursiv-BF663d89cd2bd4b.otf") format("opentype");
   font-weight: 500;
   font-style: italic;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -68,6 +76,7 @@
   src: url("/fonts/sohne-font-family/TestSohne-Halbfett-BF663d89cd2d67b.otf") format("opentype");
   font-weight: 600;
   font-style: normal;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -76,6 +85,7 @@
   src: url("/fonts/sohne-font-family/TestSohne-HalbfettKursiv-BF663d89cd41624.otf") format("opentype");
   font-weight: 600;
   font-style: italic;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -84,6 +94,7 @@
   src: url("/fonts/sohne-font-family/TestSohne-Fett-BF663d89cca89ff.otf") format("opentype");
   font-weight: 700;
   font-style: normal;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -92,6 +103,7 @@
   src: url("/fonts/sohne-font-family/TestSohne-FettKursiv-BF663d89cc64878.otf") format("opentype");
   font-weight: 700;
   font-style: italic;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -100,6 +112,7 @@
   src: url("/fonts/sohne-font-family/TestSohne-Extrafett-BF663d89cc9f2c0.otf") format("opentype");
   font-weight: 800;
   font-style: normal;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -108,6 +121,7 @@
   src: url("/fonts/sohne-font-family/TestSohne-ExtrafettKursiv-BF663d89ccb8000.otf") format("opentype");
   font-weight: 800;
   font-style: italic;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -116,6 +130,7 @@
   src: url("/fonts/sohne-font-family/TestSohneMono-Extraleicht-BF663d89cd32fa2.otf") format("opentype");
   font-weight: 200;
   font-style: normal;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -124,6 +139,7 @@
   src: url("/fonts/sohne-font-family/TestSohneMono-ExtraleichtKursiv-BF663d89cc93455.otf") format("opentype");
   font-weight: 200;
   font-style: italic;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -132,6 +148,7 @@
   src: url("/fonts/sohne-font-family/TestSohneMono-Leicht-BF663d89cd4fdd9.otf") format("opentype");
   font-weight: 300;
   font-style: normal;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -140,6 +157,7 @@
   src: url("/fonts/sohne-font-family/TestSohneMono-LeichtKursiv-BF663d89cceebee.otf") format("opentype");
   font-weight: 300;
   font-style: italic;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -148,6 +166,7 @@
   src: url("/fonts/sohne-font-family/TestSohneMono-Buch-BF663d89cbcec64.otf") format("opentype");
   font-weight: 400;
   font-style: normal;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -156,6 +175,7 @@
   src: url("/fonts/sohne-font-family/TestSohneMono-BuchKursiv-BF663d89cc8d4c3.otf") format("opentype");
   font-weight: 400;
   font-style: italic;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -164,6 +184,7 @@
   src: url("/fonts/sohne-font-family/TestSohneMono-Kraftig-BF663d89cd2bd2d.otf") format("opentype");
   font-weight: 500;
   font-style: normal;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -172,6 +193,7 @@
   src: url("/fonts/sohne-font-family/TestSohneMono-KraftigKursiv-BF663d89ccea359.otf") format("opentype");
   font-weight: 500;
   font-style: italic;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -180,6 +202,7 @@
   src: url("/fonts/sohne-font-family/TestSohneMono-Halbfett-BF663d89cc69f9d.otf") format("opentype");
   font-weight: 600;
   font-style: normal;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -188,6 +211,7 @@
   src: url("/fonts/sohne-font-family/TestSohneMono-HalbfettKursiv-BF663d89cc6d0d0.otf") format("opentype");
   font-weight: 600;
   font-style: italic;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -196,6 +220,7 @@
   src: url("/fonts/sohne-font-family/TestSohneMono-Fett-BF663d89cc6a8e8.otf") format("opentype");
   font-weight: 700;
   font-style: normal;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -204,6 +229,7 @@
   src: url("/fonts/sohne-font-family/TestSohneMono-FettKursiv-BF663d89cc7b026.otf") format("opentype");
   font-weight: 700;
   font-style: italic;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -212,6 +238,7 @@
   src: url("/fonts/sohne-font-family/TestSohneMono-Extrafett-BF663d89cc64878.otf") format("opentype");
   font-weight: 800;
   font-style: normal;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
@@ -220,6 +247,7 @@
   src: url("/fonts/sohne-font-family/TestSohneMono-ExtrafettKursiv-BF663d89cc6518a.otf") format("opentype");
   font-weight: 800;
   font-style: italic;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
   font-display: swap;
 }
 
