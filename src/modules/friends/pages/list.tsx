@@ -1,10 +1,11 @@
 import { useList, useGetIdentity, useDelete, useGo } from "@refinedev/core";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { PaginationControls, PaginationMetadata } from "@/components/ui/pagination-controls";
 import { Profile } from "@/modules/profile/types";
 import { Friendship, Friend } from "../types";
 import { AddFriendModal } from "../components/add-friend-modal";
@@ -23,6 +24,8 @@ export const FriendListContent = () => {
   const [removingFriend, setRemovingFriend] = useState<Friend | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   const { query } = useList<Friendship>({
     resource: "friendships",
@@ -75,6 +78,32 @@ export const FriendListContent = () => {
   const sentRequests = filteredFriends.filter(
     (f) => f.status === "pending" && f.is_requester
   );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  const totalItems = acceptedFriends.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+
+  useEffect(() => {
+    if (safePage !== currentPage) {
+      setCurrentPage(safePage);
+    }
+  }, [safePage, currentPage]);
+
+  const paginatedAcceptedFriends = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return acceptedFriends.slice(start, start + pageSize);
+  }, [acceptedFriends, safePage]);
+
+  const paginationMetadata: PaginationMetadata = {
+    totalItems,
+    totalPages,
+    currentPage: safePage,
+    pageSize,
+  };
 
   const handleAccept = (friendshipId: string) => {
     toast.promise(
@@ -284,7 +313,7 @@ export const FriendListContent = () => {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {acceptedFriends.map((friend) => (
+                  {paginatedAcceptedFriends.map((friend) => (
                     <FriendRow
                       key={friend.friendship_id}
                       friend={{
@@ -301,6 +330,11 @@ export const FriendListContent = () => {
               )}
             </CardContent>
           </Card>
+          <PaginationControls
+            metadata={paginationMetadata}
+            onPageChange={setCurrentPage}
+            className="pt-2"
+          />
         </>
       )}
 

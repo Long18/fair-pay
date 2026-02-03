@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useGo, useList, useGetIdentity } from '@refinedev/core';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { PaginationControls, PaginationMetadata } from '@/components/ui/pagination-controls';
 import { GroupCard, BalanceSummary, GroupMemberPreview } from '../components/group-card';
 import { EmptyGroupsState } from '../components/empty-groups-state';
 import { Group, GroupMember } from '../types';
@@ -24,6 +25,8 @@ export const GroupListContent = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [sortBy, setSortBy] = useState<SortType>('recent');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 9;
 
   // Fetch groups with members
   const { query: groupsQuery } = useList<Group>({
@@ -214,6 +217,32 @@ export const GroupListContent = () => {
     return filtered;
   }, [groupsWithData, searchQuery, filterType, sortBy, balanceSummaries, identity?.id]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterType, sortBy]);
+
+  const totalItems = filteredGroups.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+
+  useEffect(() => {
+    if (safePage !== currentPage) {
+      setCurrentPage(safePage);
+    }
+  }, [safePage, currentPage]);
+
+  const paginatedGroups = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return filteredGroups.slice(start, start + pageSize);
+  }, [filteredGroups, safePage]);
+
+  const paginationMetadata: PaginationMetadata = {
+    totalItems,
+    totalPages,
+    currentPage: safePage,
+    pageSize,
+  };
+
   const isLoading = isLoadingGroups || isLoadingExpenses || isLoadingPayments;
   const hasGroups = groups.length > 0;
 
@@ -282,15 +311,22 @@ export const GroupListContent = () => {
 
       {/* Groups Grid */}
       {!isLoading && filteredGroups.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredGroups.map((group) => (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {paginatedGroups.map((group) => (
             <GroupCard
               key={group.id}
               group={group}
               balanceSummary={balanceSummaries[group.id]}
               isLoading={isLoading}
             />
-          ))}
+            ))}
+          </div>
+          <PaginationControls
+            metadata={paginationMetadata}
+            onPageChange={setCurrentPage}
+            className="pt-2"
+          />
         </div>
       )}
 
