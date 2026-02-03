@@ -1,4 +1,4 @@
-export { GroupList } from "./pages/list";
+export { GroupList, GroupListContent } from "./pages/list";
 export { GroupCreate } from "./pages/create";
 export { GroupEdit } from "./pages/edit";
 export { GroupShow } from "./pages/show";

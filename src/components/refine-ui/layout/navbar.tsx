@@ -543,6 +543,7 @@ function getDisplayName(
     Dashboard: "dashboard.title",
     Groups: "groups.title",
     Friends: "friends.title",
+    Connections: "connections.title",
     Balances: "balances.title",
     Reports: "reports.title",
     Settings: "settings.title",

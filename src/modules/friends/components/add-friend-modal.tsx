@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { useCreate, useList, useGetIdentity } from "@refinedev/core";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -44,7 +45,11 @@ const addFriendSchema = z.object({
   userId: z.string().min(1, "Please select a user"),
 });
 
-export const AddFriendModal = () => {
+type AddFriendModalProps = {
+  trigger?: ReactNode;
+};
+
+export const AddFriendModal = ({ trigger }: AddFriendModalProps) => {
   const [open, setOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
@@ -183,10 +188,12 @@ export const AddFriendModal = () => {
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogTrigger asChild>
-        <Button size="lg" className="w-full sm:w-auto">
-          <UserPlusIcon className="mr-2 h-5 w-5" />
-          Add Friend
-        </Button>
+        {trigger ?? (
+          <Button size="lg" className="w-full sm:w-auto">
+            <UserPlusIcon className="mr-2 h-5 w-5" />
+            Add Friend
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-md w-[calc(100vw-2rem)] sm:w-full">
         <DialogHeader>

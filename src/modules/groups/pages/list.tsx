@@ -19,8 +19,7 @@ import { PlusIcon, SearchIcon } from '@/components/ui/icons';
 type FilterType = 'all' | 'active' | 'settled' | 'admin';
 type SortType = 'recent' | 'oldest' | 'name' | 'balance';
 
-export const GroupList = () => {
-  const go = useGo();
+export const GroupListContent = () => {
   const { data: identity } = useGetIdentity<Profile>();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<FilterType>('all');
@@ -219,6 +218,94 @@ export const GroupList = () => {
   const hasGroups = groups.length > 0;
 
   return (
+    <div className="space-y-6">
+      {/* Search & Filters - Only show if has groups */}
+      {hasGroups && (
+        <div className="flex flex-col sm:flex-row gap-3">
+          {/* Search */}
+          <div className="relative flex-1">
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search groups..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          {/* Filter Dropdown */}
+          <Select
+            value={filterType}
+            onValueChange={(v) => setFilterType(v as FilterType)}
+          >
+            <SelectTrigger className="w-full sm:w-40">
+              <SelectValue placeholder="Filter" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Groups</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="settled">Settled</SelectItem>
+              <SelectItem value="admin">I'm Admin</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Sort Dropdown */}
+          <Select
+            value={sortBy}
+            onValueChange={(v) => setSortBy(v as SortType)}
+          >
+            <SelectTrigger className="w-full sm:w-40">
+              <SelectValue placeholder="Sort" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recent">Most Recent</SelectItem>
+              <SelectItem value="oldest">Oldest</SelectItem>
+              <SelectItem value="name">Name</SelectItem>
+              <SelectItem value="balance">Balance</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-64 rounded-lg bg-muted animate-pulse"
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Groups Grid */}
+      {!isLoading && filteredGroups.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredGroups.map((group) => (
+            <GroupCard
+              key={group.id}
+              group={group}
+              balanceSummary={balanceSummaries[group.id]}
+              isLoading={isLoading}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!isLoading && filteredGroups.length === 0 && (
+        <EmptyGroupsState hasGroups={hasGroups} />
+      )}
+    </div>
+  );
+};
+
+export const GroupList = () => {
+  const go = useGo();
+
+  return (
     <div className="container py-8 max-w-7xl">
       <div className="space-y-6">
         {/* Header */}
@@ -235,85 +322,7 @@ export const GroupList = () => {
           </Button>
         </div>
 
-        {/* Search & Filters - Only show if has groups */}
-        {hasGroups && (
-          <div className="flex flex-col sm:flex-row gap-3">
-            {/* Search */}
-            <div className="relative flex-1">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search groups..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-
-            {/* Filter Dropdown */}
-            <Select
-              value={filterType}
-              onValueChange={(v) => setFilterType(v as FilterType)}
-            >
-              <SelectTrigger className="w-full sm:w-40">
-                <SelectValue placeholder="Filter" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Groups</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="settled">Settled</SelectItem>
-                <SelectItem value="admin">I'm Admin</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Sort Dropdown */}
-            <Select
-              value={sortBy}
-              onValueChange={(v) => setSortBy(v as SortType)}
-            >
-              <SelectTrigger className="w-full sm:w-40">
-                <SelectValue placeholder="Sort" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="recent">Most Recent</SelectItem>
-                <SelectItem value="oldest">Oldest</SelectItem>
-                <SelectItem value="name">Name</SelectItem>
-                <SelectItem value="balance">Balance</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {/* Loading State */}
-        {isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="h-64 rounded-lg bg-muted animate-pulse"
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Groups Grid */}
-        {!isLoading && filteredGroups.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredGroups.map((group) => (
-              <GroupCard
-                key={group.id}
-                group={group}
-                balanceSummary={balanceSummaries[group.id]}
-                isLoading={isLoading}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!isLoading && filteredGroups.length === 0 && (
-          <EmptyGroupsState hasGroups={hasGroups} />
-        )}
+        <GroupListContent />
       </div>
     </div>
   );

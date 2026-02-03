@@ -188,6 +188,15 @@
         "totalGroupDebt": "Total group debt",
         "topDebtors": "Top Debtors"
     },
+    "connections": {
+        "title": "Connections",
+        "subtitle": "Manage groups and friends in one place",
+        "tabs": {
+            "groups": "Groups",
+            "friends": "Friends"
+        },
+        "summary": "{{groups}} groups • {{friends}} friends"
+    },
     "expenses": {
         "title": "Expenses",
         "addExpense": "Add Expense",
@@ -357,6 +366,7 @@
         "email": "Email",
         "removeFriend": "Remove Friend",
         "friendDetails": "Friend Details",
+        "searchPlaceholder": "Search friends...",
         "noFriends": "No friends yet",
         "addFirst": "Add your first friend to start splitting expenses"
     },
