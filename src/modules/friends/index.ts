@@ -1,4 +1,4 @@
-export { FriendList } from "./pages/list";
+export { FriendList, FriendListContent } from "./pages/list";
 export { FriendShow } from "./pages/show";
 export { AddFriendModal } from "./components/add-friend-modal";
 export { FriendRow } from "./components/friend-row";

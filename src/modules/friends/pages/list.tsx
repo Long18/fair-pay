@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Profile } from "@/modules/profile/types";
 import { Friendship, Friend } from "../types";
 import { AddFriendModal } from "../components/add-friend-modal";
@@ -11,9 +12,9 @@ import { FriendRow } from "../components/friend-row";
 import { RemoveFriendDialog } from "../components/remove-friend-dialog";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { CheckIcon, XIcon } from "@/components/ui/icons";
+import { CheckIcon, SearchIcon, XIcon } from "@/components/ui/icons";
 
-export const FriendList = () => {
+export const FriendListContent = () => {
   const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
   const deleteMutation = useDelete();
@@ -21,6 +22,7 @@ export const FriendList = () => {
 
   const [removingFriend, setRemovingFriend] = useState<Friend | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { query } = useList<Friendship>({
     resource: "friendships",
@@ -56,9 +58,23 @@ export const FriendList = () => {
     });
   }, [friendships, identity]);
 
-  const acceptedFriends = friends.filter(f => f.status === "accepted");
-  const pendingRequests = friends.filter(f => f.status === "pending" && !f.is_requester);
-  const sentRequests = friends.filter(f => f.status === "pending" && f.is_requester);
+  const filteredFriends = useMemo(() => {
+    if (!searchQuery.trim()) return friends;
+    const query = searchQuery.trim().toLowerCase();
+    return friends.filter((friend) => {
+      const name = friend.full_name?.toLowerCase() || "";
+      const email = friend.email?.toLowerCase() || "";
+      return name.includes(query) || email.includes(query);
+    });
+  }, [friends, searchQuery]);
+
+  const acceptedFriends = filteredFriends.filter((f) => f.status === "accepted");
+  const pendingRequests = filteredFriends.filter(
+    (f) => f.status === "pending" && !f.is_requester
+  );
+  const sentRequests = filteredFriends.filter(
+    (f) => f.status === "pending" && f.is_requester
+  );
 
   const handleAccept = (friendshipId: string) => {
     toast.promise(
@@ -126,31 +142,33 @@ export const FriendList = () => {
     );
   };
 
-  if (query.isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>{t('common.loading', 'Loading...')}</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="container max-w-7xl px-4 sm:px-6 py-4 sm:py-8">
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-4xl font-bold tracking-tight">
-              {t('friends.title', 'Friends')}
-            </h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-2">
-              {t('friends.subtitle', 'Manage your friends and split expenses 1-on-1')}
-            </p>
-          </div>
-          <AddFriendModal />
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder={t('friends.searchPlaceholder', 'Search friends...')}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
         </div>
+      </div>
 
-        {/* Pending Requests (Incoming) */}
-        {pendingRequests.length > 0 && (
+      {query.isLoading && (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-20 rounded-lg bg-muted animate-pulse" />
+          ))}
+        </div>
+      )}
+
+      {!query.isLoading && (
+        <>
+          {/* Pending Requests (Incoming) */}
+          {pendingRequests.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle>{t('friends.requests', 'Friend Requests')}</CardTitle>
@@ -206,8 +224,8 @@ export const FriendList = () => {
           </Card>
         )}
 
-        {/* Sent Requests */}
-        {sentRequests.length > 0 && (
+          {/* Sent Requests */}
+          {sentRequests.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle>{t('friends.pendingRequests', 'Pending Requests')}</CardTitle>
@@ -252,38 +270,39 @@ export const FriendList = () => {
           </Card>
         )}
 
-        {/* Accepted Friends */}
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {t('friends.myFriends', 'My Friends')} ({acceptedFriends.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {acceptedFriends.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>{t('friends.noFriends', 'No friends yet. Add someone to start splitting expenses!')}</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {acceptedFriends.map((friend) => (
-                  <FriendRow
-                    key={friend.friendship_id}
-                    friend={{
-                      id: friend.user_id,
-                      full_name: friend.full_name,
-                      avatar_url: friend.avatar_url,
-                      email: friend.email,
-                    }}
-                    onNavigate={() => go({ to: `/friends/${friend.friendship_id}` })}
-                    onRemove={() => handleRemoveFriend(friend)}
-                  />
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+          {/* Accepted Friends */}
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {t('friends.myFriends', 'My Friends')} ({acceptedFriends.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {acceptedFriends.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>{t('friends.noFriends', 'No friends yet. Add someone to start splitting expenses!')}</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {acceptedFriends.map((friend) => (
+                    <FriendRow
+                      key={friend.friendship_id}
+                      friend={{
+                        id: friend.user_id,
+                        full_name: friend.full_name,
+                        avatar_url: friend.avatar_url,
+                        email: friend.email,
+                      }}
+                      onNavigate={() => go({ to: `/friends/${friend.friendship_id}` })}
+                      onRemove={() => handleRemoveFriend(friend)}
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
 
       {/* Remove Friend Dialog */}
       <RemoveFriendDialog
@@ -294,6 +313,30 @@ export const FriendList = () => {
         onConfirm={confirmRemoveFriend}
         isRemoving={isRemoving}
       />
+    </div>
+  );
+};
+
+export const FriendList = () => {
+  const { t } = useTranslation();
+
+  return (
+    <div className="container max-w-7xl px-4 sm:px-6 py-4 sm:py-8">
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-4xl font-bold tracking-tight">
+              {t('friends.title', 'Friends')}
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-2">
+              {t('friends.subtitle', 'Manage your friends and split expenses 1-on-1')}
+            </p>
+          </div>
+          <AddFriendModal />
+        </div>
+
+        <FriendListContent />
+      </div>
     </div>
   );
 };

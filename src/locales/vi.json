@@ -187,6 +187,15 @@
         "totalGroupDebt": "Tổng nợ nhóm",
         "topDebtors": "Top con nợ"
     },
+    "connections": {
+        "title": "Kết nối",
+        "subtitle": "Quản lý nhóm và bạn bè ở một nơi",
+        "tabs": {
+            "groups": "Nhóm",
+            "friends": "Bạn bè"
+        },
+        "summary": "{{groups}} nhóm • {{friends}} bạn"
+    },
     "expenses": {
         "title": "Chi tiêu",
         "addExpense": "Thêm chi tiêu",
@@ -356,6 +365,7 @@
         "email": "Email",
         "removeFriend": "Xóa bạn",
         "friendDetails": "Chi tiết bạn bè",
+        "searchPlaceholder": "Tìm kiếm bạn bè...",
         "noFriends": "Chưa có bạn bè nào",
         "addFirst": "Thêm bạn đầu tiên để bắt đầu chia sẻ chi tiêu"
     },

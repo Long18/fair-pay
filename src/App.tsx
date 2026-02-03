@@ -49,7 +49,6 @@ import { PersonDebtBreakdown } from "./pages/person-debt-breakdown";
 const ProfileShowUnified = lazy(() => import("./modules/profile").then(m => ({ default: m.ProfileShowUnified })));
 
 // Groups module
-const GroupList = lazy(() => import("./modules/groups").then(m => ({ default: m.GroupList })));
 const GroupCreate = lazy(() => import("./modules/groups").then(m => ({ default: m.GroupCreate })));
 const GroupEdit = lazy(() => import("./modules/groups").then(m => ({ default: m.GroupEdit })));
 const GroupShow = lazy(() => import("./modules/groups").then(m => ({ default: m.GroupShow })));
@@ -65,8 +64,10 @@ const PaymentCreate = lazy(() => import("./modules/payments").then(m => ({ defau
 const PaymentShow = lazy(() => import("./modules/payments").then(m => ({ default: m.PaymentShow })));
 
 // Friends module
-const FriendList = lazy(() => import("./modules/friends").then(m => ({ default: m.FriendList })));
 const FriendShow = lazy(() => import("./modules/friends").then(m => ({ default: m.FriendShow })));
+
+// Connections page
+const ConnectionsPage = lazy(() => import("./pages/connections").then(m => ({ default: m.ConnectionsPage })));
 
 // Other modules
 const NotificationList = lazy(() => import("./modules/notifications").then(m => ({ default: m.NotificationList })));
@@ -174,6 +175,14 @@ function App() {
                     },
                   },
                   {
+                    name: "connections",
+                    list: "/connections",
+                    meta: {
+                      label: "Connections",
+                      icon: <UsersIcon className="w-5 h-5" />,
+                    },
+                  },
+                  {
                     name: "profiles",
                     meta: {
                       label: "Profile",
@@ -188,6 +197,7 @@ function App() {
                     meta: {
                       canDelete: true,
                       label: "Groups",
+                      hide: true,
                       icon: <UsersIcon className="w-5 h-5" />,
                     },
                   },
@@ -196,6 +206,7 @@ function App() {
                     list: "/friends",
                     meta: {
                       label: "Friends",
+                      hide: true,
                       icon: <UserPlusIcon className="w-5 h-5" />,
                     },
                   },
@@ -338,13 +349,16 @@ function App() {
                       </Authenticated>
                     }
                   >
+                    <Route path="/connections" element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ErrorBoundary context="Connections">
+                          <ConnectionsPage />
+                        </ErrorBoundary>
+                      </Suspense>
+                    } />
                     <Route path="/groups">
                       <Route index element={
-                        <Suspense fallback={<PageLoader />}>
-                          <ErrorBoundary context="Groups List">
-                            <GroupList />
-                          </ErrorBoundary>
-                        </Suspense>
+                        <Navigate to="/connections?tab=groups" replace />
                       } />
                       <Route path="create" element={
                         <Suspense fallback={<PageLoader />}>
@@ -377,11 +391,7 @@ function App() {
                     <Route path="/friends">
                       {/* Canonical Friends Routes - All friend navigation should use these routes */}
                       <Route index element={
-                        <Suspense fallback={<PageLoader />}>
-                          <ErrorBoundary context="Friends List">
-                            <FriendList />
-                          </ErrorBoundary>
-                        </Suspense>
+                        <Navigate to="/connections?tab=friends" replace />
                       } />
                       {/* Canonical Friend Detail - Accepts both friendship ID and user ID */}
                       <Route path=":id" element={
