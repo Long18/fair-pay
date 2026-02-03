@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "@refinedev/react-hook-form";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -118,6 +118,7 @@ export const ExpenseForm = ({
   const [showAdvanced, setShowAdvanced] = useState(!!defaultValues?.comment || (attachments && attachments.length > 0));
   const [showComment, setShowComment] = useState(!!defaultValues?.comment);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const didAutoSelectRef = useRef(false);
 
   const amount = form.watch("amount");
   const splitMethod = form.watch("split_method");
@@ -126,16 +127,20 @@ export const ExpenseForm = ({
 
   // Auto-select participants
   useEffect(() => {
-    if (members.length > 0 && participants.length === 0 && !defaultValues?.splits) {
+    if (!didAutoSelectRef.current && members.length > 0 && participants.length === 0 && !defaultValues?.splits) {
       // Friend context: auto-select both parties
       if (groupId === undefined && members.length === 2) {
         members.forEach(m => {
           if (m.id) addParticipant(m.id);
         });
       }
-      // Group context: no auto-selection, user must choose explicitly
+      // Group context: auto-select expense creator
+      if (groupId !== undefined && currentUserId) {
+        addParticipant(currentUserId);
+      }
+      didAutoSelectRef.current = true;
     }
-  }, [members, participants.length, defaultValues?.splits, groupId, addParticipant]);
+  }, [members, participants.length, defaultValues?.splits, groupId, currentUserId, addParticipant]);
 
   // Recalculate splits when amount or method changes
   useEffect(() => {
