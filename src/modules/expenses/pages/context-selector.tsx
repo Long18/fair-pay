@@ -68,7 +68,9 @@ export const ExpenseContextSelector = () => {
   const filteredFriendships = useMemo(() => {
     if (!normalizedFriendSearch) return friendships;
     return friendships.filter((friendship: any) => {
-      const isUserA = friendship.user_a_id === identity?.id;
+      const userAId = friendship.user_a || friendship.user_a_id;
+      const userBId = friendship.user_b || friendship.user_b_id;
+      const isUserA = userAId === identity?.id;
       const friendProfile = isUserA ? friendship.user_b_profile : friendship.user_a_profile;
       const friendName = friendProfile?.full_name || "Friend";
       return friendName.toLowerCase().includes(normalizedFriendSearch);
@@ -253,7 +255,9 @@ export const ExpenseContextSelector = () => {
               <p className="text-sm text-muted-foreground px-1">No friends match your search.</p>
             ) : (
               pagedFriendships.map((friendship: any) => {
-                const isUserA = friendship.user_a_id === identity?.id;
+                const userAId = friendship.user_a || friendship.user_a_id;
+                const userBId = friendship.user_b || friendship.user_b_id;
+                const isUserA = userAId === identity?.id;
                 const friendProfile = isUserA ? friendship.user_b_profile : friendship.user_a_profile;
                 return (
                   <Button
