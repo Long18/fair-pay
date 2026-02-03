@@ -3,6 +3,9 @@ import { useGetIdentity, useGo, useList } from "@refinedev/core";
 import { useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { PageContainer } from "@/components/ui/page-container";
+import { PageHeader } from "@/components/ui/page-header";
+import { PageContent } from "@/components/ui/page-content";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { PlusIcon, UserPlusIcon } from "@/components/ui/icons";
 import { AddFriendModal } from "@/modules/friends/components/add-friend-modal";
@@ -46,62 +49,72 @@ export const ConnectionsPage = () => {
   }, [friendshipsQuery.data, identity?.id]);
 
   return (
-    <div className="container max-w-7xl px-4 sm:px-6 py-4 sm:py-8">
-      <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl sm:text-4xl font-bold tracking-tight">
-              {t("connections.title", "Connections")}
-            </h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-2">
-              {t("connections.subtitle", "Manage groups and friends in one place")}
-            </p>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <Button onClick={() => go({ to: "/groups/create" })} size="lg">
+    <PageContainer variant="default">
+      <PageHeader
+        title={t("connections.title", "Connections")}
+        description={t("connections.subtitle", "Manage groups and friends in one place")}
+        action={
+          <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row">
+            <Button
+              onClick={() => go({ to: "/groups/create" })}
+              size="lg"
+              className="w-full sm:w-auto"
+            >
               <PlusIcon className="mr-2 h-5 w-5" />
               {t("groups.createGroup", "Create Group")}
             </Button>
             <AddFriendModal
               trigger={
-                <Button size="lg" variant="outline">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto">
                   <UserPlusIcon className="mr-2 h-5 w-5" />
                   {t("friends.addFriend", "Add Friend")}
                 </Button>
               }
             />
           </div>
-        </div>
+        }
+      />
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <ToggleGroup
-            type="single"
-            value={activeTab}
-            onValueChange={(value) => {
-              if (!value) return;
-              setSearchParams({ tab: value }, { replace: true });
-            }}
-            variant="outline"
-            size="sm"
-            className="w-full sm:w-auto"
-          >
-            <ToggleGroupItem value="groups" className="flex-1 sm:flex-none">
-              {t("connections.tabs.groups", "Groups")}
-            </ToggleGroupItem>
-            <ToggleGroupItem value="friends" className="flex-1 sm:flex-none">
-              {t("connections.tabs.friends", "Friends")}
-            </ToggleGroupItem>
-          </ToggleGroup>
-          <p className="text-sm text-muted-foreground">
-            {t("connections.summary", "{{groups}} groups • {{friends}} friends", {
-              groups: groupCount,
-              friends: acceptedFriendsCount,
-            })}
-          </p>
+      <PageContent>
+        <div className="space-y-3 sm:space-y-4">
+          <div className="flex items-center justify-center w-full">
+            <ToggleGroup
+              type="single"
+              value={activeTab}
+              onValueChange={(value) => {
+                if (!value) return;
+                setSearchParams({ tab: value }, { replace: true });
+              }}
+              variant="outline"
+              size="sm"
+              className="w-full sm:w-auto"
+            >
+              <ToggleGroupItem value="groups" className="flex-1 sm:flex-none min-w-[7rem]">
+                {t("connections.tabs.groups", "Groups")}
+              </ToggleGroupItem>
+              <ToggleGroupItem value="friends" className="flex-1 sm:flex-none min-w-[7rem]">
+                {t("connections.tabs.friends", "Friends")}
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              {t("connections.summary", "{{groups}} groups • {{friends}} friends", {
+                groups: groupCount,
+                friends: acceptedFriendsCount,
+              })}
+            </p>
+            <div className="hidden sm:block text-xs text-muted-foreground">
+              {activeTab === "groups"
+                ? t("connections.tabs.groups", "Groups")
+                : t("connections.tabs.friends", "Friends")}
+            </div>
+          </div>
         </div>
 
         {activeTab === "groups" ? <GroupListContent /> : <FriendListContent />}
-      </div>
-    </div>
+      </PageContent>
+    </PageContainer>
   );
 };
