@@ -127,7 +127,7 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
           </EmptyDescription>
         </EmptyHeader>
         {!disabled && (
-          <EmptyContent>
+          <EmptyContent className="flex flex-col gap-3">
             <Button
               onClick={() => go({ to: "/expenses/create" })}
               className="gap-2"
