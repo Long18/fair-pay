@@ -70,8 +70,8 @@ BEGIN
         ELSE e.paid_by_user_id
       END as counterparty_id,
       CASE
-        WHEN e.paid_by_user_id = p_user_id THEN pro.full_name
-        ELSE paid_by.full_name
+        WHEN e.paid_by_user_id = p_user_id THEN COALESCE(pro.full_name, 'Unknown User')
+        ELSE COALESCE(paid_by.full_name, 'Unknown User')
       END as counterparty_name,
       CASE
         WHEN e.paid_by_user_id = p_user_id THEN pro.avatar_url
@@ -83,45 +83,38 @@ BEGIN
       END as amount,
       e.currency,
       (e.paid_by_user_id != p_user_id) as i_owe_them,
-      paid_by.full_name as owed_to_name,
+      COALESCE(paid_by.full_name, 'Unknown User') as owed_to_name,
       e.paid_by_user_id as owed_to_id,
-      CASE
-        WHEN e.paid_by_user_id = p_user_id THEN es.computed_amount
-        ELSE es.computed_amount
-      END as total_amount,
-      CASE
-        WHEN e.paid_by_user_id = p_user_id THEN COALESCE(es.computed_amount, 0)
-        ELSE COALESCE(es.computed_amount, 0)
-      END as settled_amount,
-      CASE
-        WHEN e.paid_by_user_id = p_user_id THEN COALESCE(es.computed_amount, 0)
-        ELSE COALESCE(es.computed_amount, 0)
-      END as remaining_amount,
+      es.computed_amount as total_amount,
+      COALESCE(es.settled_amount, 0) as settled_amount,
+      COALESCE(es.computed_amount - COALESCE(es.settled_amount, 0), 0) as remaining_amount,
       1::BIGINT as transaction_count,
       e.expense_date as last_transaction_date
     FROM user_expenses e
     INNER JOIN expense_splits es ON e.id = es.expense_id
     LEFT JOIN profiles pro ON es.user_id = pro.id
     LEFT JOIN profiles paid_by ON e.paid_by_user_id = paid_by.id
-    WHERE es.user_id = p_user_id OR e.paid_by_user_id = p_user_id
+    WHERE (es.user_id = p_user_id OR e.paid_by_user_id = p_user_id)
+      AND es.user_id IS NOT NULL
   )
   SELECT
-    counterparty_id,
-    counterparty_name,
-    counterparty_avatar_url,
-    SUM(amount)::NUMERIC,
-    currency,
-    i_owe_them,
-    owed_to_name,
-    owed_to_id,
-    SUM(total_amount)::NUMERIC,
-    SUM(settled_amount)::NUMERIC,
-    SUM(remaining_amount)::NUMERIC,
+    dp.counterparty_id,
+    MAX(dp.counterparty_name) as counterparty_name,
+    MAX(dp.counterparty_avatar_url) as counterparty_avatar_url,
+    SUM(dp.amount)::NUMERIC,
+    dp.currency,
+    MAX(dp.i_owe_them::int)::boolean,
+    MAX(dp.owed_to_name),
+    MAX(dp.owed_to_id),
+    SUM(dp.total_amount)::NUMERIC,
+    SUM(dp.settled_amount)::NUMERIC,
+    SUM(dp.remaining_amount)::NUMERIC,
     COUNT(*)::BIGINT,
-    MAX(last_transaction_date)
-  FROM debt_pairs
-  GROUP BY counterparty_id, counterparty_name, counterparty_avatar_url, currency, i_owe_them, owed_to_name, owed_to_id
-  ORDER BY SUM(amount) DESC;
+    MAX(dp.last_transaction_date)
+  FROM debt_pairs dp
+  WHERE dp.counterparty_id IS NOT NULL
+  GROUP BY dp.counterparty_id, dp.currency
+  ORDER BY SUM(dp.amount) DESC;
 END;
 $$;
 
