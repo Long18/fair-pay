@@ -89,6 +89,7 @@ export const ExpenseShow = () => {
               id: split.id,
               expense_id: split.expense_id,
               user_id: split.user_id,
+              pending_email: split.pending_email,
               split_method: split.split_method,
               split_value: split.split_value,
               computed_amount: split.computed_amount,
@@ -98,8 +99,8 @@ export const ExpenseShow = () => {
               created_at: split.created_at,
               profiles: {
                 id: split.user_id,
-                full_name: split.user_full_name,
-                avatar_url: split.user_avatar_url,
+                full_name: split.full_name || split.pending_email,
+                avatar_url: split.avatar_url,
               },
             }));
             setSplits(transformedSplits);
@@ -209,10 +210,10 @@ export const ExpenseShow = () => {
             settled_at: split.settled_at,
             created_at: split.created_at,
             profiles: {
-              id: split.user_id,
-              full_name: split.user_full_name,
-              avatar_url: split.user_avatar_url,
-            },
+                id: split.user_id,
+                full_name: split.full_name,
+                avatar_url: split.avatar_url,
+              },
           }));
           setSplits(transformedSplits);
         }
@@ -273,10 +274,10 @@ export const ExpenseShow = () => {
             settled_at: split.settled_at,
             created_at: split.created_at,
             profiles: {
-              id: split.user_id,
-              full_name: split.user_full_name,
-              avatar_url: split.user_avatar_url,
-            },
+                id: split.user_id,
+                full_name: split.full_name,
+                avatar_url: split.avatar_url,
+              },
           }));
           setSplits(transformedSplits);
         }
@@ -340,10 +341,10 @@ export const ExpenseShow = () => {
             settled_at: split.settled_at,
             created_at: split.created_at,
             profiles: {
-              id: split.user_id,
-              full_name: split.user_full_name,
-              avatar_url: split.user_avatar_url,
-            },
+                id: split.user_id,
+                full_name: split.full_name,
+                avatar_url: split.avatar_url,
+              },
           }));
           setSplits(transformedSplits);
         }
@@ -676,8 +677,8 @@ export const ExpenseShow = () => {
                                     ...s,
                                     profiles: {
                                       id: s.user_id,
-                                      full_name: s.user_full_name,
-                                      avatar_url: s.user_avatar_url,
+                                      full_name: s.full_name,
+                                      avatar_url: s.avatar_url,
                                     },
                                   })));
                                 }

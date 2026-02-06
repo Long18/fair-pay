@@ -135,7 +135,7 @@ export const ExpenseSplitCard = ({
                 "font-semibold text-sm md:text-base truncate transition-colors",
                 isSplitSettled ? paidColors.text : "group-hover:text-primary"
               )}>
-                {split.profiles?.full_name || t('profile.unknown')}
+                {split.profiles?.full_name || split.pending_email || t('profile.unknown')}
                 {isCurrentUser && (
                   <span className="text-xs text-muted-foreground ml-2 font-normal">
                     ({t('common.you')})
