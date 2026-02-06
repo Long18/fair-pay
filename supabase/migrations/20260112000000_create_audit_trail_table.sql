@@ -27,6 +27,8 @@ CREATE INDEX IF NOT EXISTS idx_audit_trail_action_type ON audit_trail(action_typ
 ALTER TABLE audit_trail ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policy: Only admins can view audit trail
+DROP POLICY IF EXISTS "Admins can view all audit trail records" ON audit_trail;
+
 CREATE POLICY "Admins can view all audit trail records"
   ON audit_trail FOR SELECT
   TO authenticated
