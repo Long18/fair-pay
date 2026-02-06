@@ -4,7 +4,9 @@ import { useGetIdentity } from '@refinedev/core';
 import { Profile } from '@/modules/profile/types';
 
 interface ContributingExpense {
-  id: string;
+  id: string; // split ID (used for settlement)
+  split_id: string;
+  expense_id: string;
   description: string;
   amount: number;
   currency: string;
@@ -21,6 +23,7 @@ export function useContributingExpenses(counterpartyId: string) {
   const [expenses, setExpenses] = useState<ContributingExpense[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!identity?.id || !counterpartyId) return;
@@ -89,7 +92,9 @@ export function useContributingExpenses(counterpartyId: string) {
             const isPartiallySettled = settledAmount > 0 && !isFullySettled;
 
             return {
-              id: expense.id,
+              id: split.id, // split ID for settlement
+              split_id: split.id,
+              expense_id: expense.id,
               description: expense.description,
               amount: Number(expense.amount),
               currency: expense.currency,
@@ -112,7 +117,9 @@ export function useContributingExpenses(counterpartyId: string) {
             const isPartiallySettled = settledAmount > 0 && !isFullySettled;
 
             return {
-              id: expense.id,
+              id: split.id, // split ID for settlement
+              split_id: split.id,
+              expense_id: expense.id,
               description: expense.description,
               amount: Number(expense.amount),
               currency: expense.currency,
@@ -152,7 +159,12 @@ export function useContributingExpenses(counterpartyId: string) {
     }
 
     fetchExpenses();
-  }, [identity?.id, counterpartyId]);
+  }, [identity?.id, counterpartyId, refreshKey]);
 
-  return { expenses, isLoading, error };
+  return {
+    expenses,
+    isLoading,
+    error,
+    refetch: () => setRefreshKey(k => k + 1)
+  };
 }
