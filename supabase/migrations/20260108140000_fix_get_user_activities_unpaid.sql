@@ -67,4 +67,4 @@ $$;
 GRANT EXECUTE ON FUNCTION get_user_activities(UUID, INTEGER) TO authenticated;
 
 -- Add comment
-COMMENT ON FUNCTION get_user_activities IS 'Get activities (expenses and splits) for a specific user with settlement status. Shows all expenses including unpaid ones.';
+COMMENT ON FUNCTION get_user_activities(UUID, INTEGER) IS 'Get activities (expenses and splits) for a specific user with settlement status. Shows all expenses including unpaid ones.';

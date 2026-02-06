@@ -47,9 +47,9 @@ export function useAllUsersDebt(options?: UseAllUsersDebtOptions) {
       })
 
       try {
-        const baseUrl = options?.baseUrl || `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`
-        const endpoint = isAuthenticated ? 'all-users-debt-detailed' : 'all-users-debt-summary'
-        const url = new URL(`${baseUrl}/${endpoint}`)
+        const baseUrl = options?.baseUrl || '/api/debt'
+        const endpoint = isAuthenticated ? 'all-users-detailed' : 'all-users-summary'
+        const url = new URL(`${baseUrl}/${endpoint}`, typeof window !== 'undefined' ? window.location.origin : 'http://localhost')
 
         url.searchParams.append('limit', Math.min(limit, 100).toString())
         url.searchParams.append('offset', offset.toString())

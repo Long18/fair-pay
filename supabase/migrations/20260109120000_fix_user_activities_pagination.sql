@@ -71,4 +71,4 @@ $$;
 GRANT EXECUTE ON FUNCTION get_user_activities(UUID, INTEGER, INTEGER) TO authenticated;
 
 -- Add comment
-COMMENT ON FUNCTION get_user_activities IS 'Get activities (expenses and splits) for a specific user with settlement status and pagination support.';
+COMMENT ON FUNCTION get_user_activities(UUID, INTEGER, INTEGER) IS 'Get activities (expenses and splits) for a specific user with settlement status and pagination support.';
