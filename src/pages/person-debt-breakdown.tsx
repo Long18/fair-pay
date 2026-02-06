@@ -33,7 +33,7 @@ export const PersonDebtBreakdown = () => {
   const isLoadingProfile = counterpartyQuery.isLoading;
 
   // Fetch contributing expenses
-  const { expenses, isLoading: isLoadingExpenses } = useContributingExpenses(userId!);
+  const { expenses, isLoading: isLoadingExpenses, refetch } = useContributingExpenses(userId!);
 
   // Calculate debt summary
   const { summary, isLoading: isLoadingSummary } = useDebtSummary(
@@ -85,7 +85,7 @@ export const PersonDebtBreakdown = () => {
     const result = await settle(Array.from(selectedSplitIds));
     if (result.success) {
       setSelectedSplitIds(new Set());
-      // Expenses will auto-refetch due to hook dependencies
+      refetch();
     }
   };
 
@@ -197,7 +197,7 @@ export const PersonDebtBreakdown = () => {
                 {expenses.map((expense) => (
                   <ExpenseBreakdownItemSelectable
                     key={expense.id}
-                    id={expense.id}
+                    id={expense.expense_id}
                     splitId={expense.id}
                     description={expense.description}
                     amount={expense.amount}
