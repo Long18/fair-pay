@@ -12,6 +12,8 @@ ADD COLUMN IF NOT EXISTS qr_code_image_url TEXT;
 
 -- Add RLS policy to allow users to view payee settings in their expense splits
 -- This enables payment dialogs to display the payee's banking information
+DROP POLICY IF EXISTS "Users can view payee settings in their expense splits" ON user_settings;
+
 CREATE POLICY "Users can view payee settings in their expense splits"
   ON user_settings FOR SELECT
   TO authenticated
@@ -21,11 +23,11 @@ CREATE POLICY "Users can view payee settings in their expense splits"
       SELECT es.user_id
       FROM expense_splits es
       INNER JOIN expenses e ON e.id = es.expense_id
-      WHERE 
+      WHERE
         -- User is involved in the expense (either as payer or split participant)
-        (e.paid_by_user_id = auth.uid() OR 
+        (e.paid_by_user_id = auth.uid() OR
          EXISTS (
-           SELECT 1 FROM expense_splits es2 
+           SELECT 1 FROM expense_splits es2
            WHERE es2.expense_id = e.id AND es2.user_id = auth.uid()
          ))
     )

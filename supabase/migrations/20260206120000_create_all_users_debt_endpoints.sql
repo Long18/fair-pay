@@ -15,27 +15,37 @@ RETURNS TABLE (
 LANGUAGE sql
 STABLE
 AS $$
+  WITH user_balances AS (
+    -- Calculate owed_to_me: sum where user is owed_user (paid_by)
+    SELECT
+      p.id,
+      p.full_name,
+      COALESCE(SUM(
+        CASE
+          WHEN owed_user = p.id THEN amount_owed
+          WHEN owes_user = p.id THEN -amount_owed
+          ELSE 0
+        END
+      ), 0) as net_balance
+    FROM public.profiles p
+    LEFT JOIN public.user_debts_summary uds ON (
+      uds.owed_user = p.id OR uds.owes_user = p.id
+    )
+    GROUP BY p.id, p.full_name
+    HAVING COALESCE(SUM(
+      CASE
+        WHEN owed_user = p.id THEN amount_owed
+        WHEN owes_user = p.id THEN -amount_owed
+        ELSE 0
+      END
+    ), 0) != 0
+  )
   SELECT
-    p.id as user_id,
-    p.full_name,
-    COALESCE(
-      SUM(CASE
-        WHEN dh.i_owe_them = false THEN dh.remaining_amount
-        ELSE -dh.remaining_amount
-      END),
-      0
-    )::NUMERIC(12,2) as net_balance,
+    id as user_id,
+    full_name,
+    net_balance::NUMERIC(12,2),
     COUNT(*) OVER () as total_count
-  FROM public.profiles p
-  LEFT JOIN public.user_debts_summary dh ON p.id = dh.user_id
-  GROUP BY p.id, p.full_name
-  HAVING COALESCE(
-    SUM(CASE
-      WHEN dh.i_owe_them = false THEN dh.remaining_amount
-      ELSE -dh.remaining_amount
-    END),
-    0
-  ) != 0
+  FROM user_balances
   ORDER BY net_balance DESC
   LIMIT p_limit
   OFFSET p_offset;
@@ -65,64 +75,50 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
-DECLARE
-  v_admin_check BOOLEAN;
-  v_total_count BIGINT;
 BEGIN
   -- Admin check
-  v_admin_check := is_admin();
-  IF NOT v_admin_check THEN
+  IF NOT is_admin() THEN
     RAISE EXCEPTION 'Only admins can view all user debts';
   END IF;
 
-  -- Get total count
-  SELECT COUNT(DISTINCT p.id) INTO v_total_count
-  FROM profiles p
-  LEFT JOIN user_debts_summary uds ON p.id = uds.user_id
-  GROUP BY p.id
-  HAVING COALESCE(
-    SUM(CASE WHEN uds.i_owe_them = false THEN uds.remaining_amount ELSE -uds.remaining_amount END),
-    0
-  ) != 0;
-
   RETURN QUERY
+  WITH user_debts AS (
+    SELECT
+      p.id,
+      p.full_name,
+      u.email,
+      COALESCE(SUM(CASE WHEN uds.owed_user = p.id THEN uds.amount_owed ELSE 0 END), 0)::NUMERIC(12,2) as total_owed_to_me,
+      COALESCE(SUM(CASE WHEN uds.owes_user = p.id THEN uds.amount_owed ELSE 0 END), 0)::NUMERIC(12,2) as total_i_owe,
+      COALESCE(
+        SUM(CASE WHEN uds.owed_user = p.id THEN uds.amount_owed ELSE -uds.amount_owed END),
+        0
+      )::NUMERIC(12,2) as net_balance,
+      COUNT(DISTINCT CASE WHEN uds.owed_user = p.id THEN uds.owes_user WHEN uds.owes_user = p.id THEN uds.owed_user END) as debt_relationships
+    FROM profiles p
+    LEFT JOIN auth.users u ON p.id = u.id
+    LEFT JOIN user_debts_summary uds ON (uds.owed_user = p.id OR uds.owes_user = p.id)
+    GROUP BY p.id, p.full_name, u.email
+    HAVING COALESCE(
+      SUM(CASE WHEN uds.owed_user = p.id THEN uds.amount_owed ELSE -uds.amount_owed END),
+      0
+    ) != 0
+  ),
+  total_users AS (
+    SELECT COUNT(*) as cnt FROM user_debts
+  )
   SELECT
-    p.id,
-    p.full_name,
-    u.email,
-    COALESCE(bal.total_owed_to_me, 0)::NUMERIC(12,2),
-    COALESCE(bal.total_i_owe, 0)::NUMERIC(12,2),
-    COALESCE(bal.net_balance, 0)::NUMERIC(12,2),
-    COUNT(DISTINCT dh.counterparty_id)::INT,
-    COALESCE(
-      JSONB_AGG(DISTINCT JSONB_BUILD_OBJECT(
-        'counterparty_id', dh.counterparty_id,
-        'counterparty_name', dh.counterparty_name,
-        'remaining_amount', dh.remaining_amount,
-        'i_owe_them', dh.i_owe_them
-      )) FILTER (WHERE dh.counterparty_id IS NOT NULL),
-      '[]'::JSONB
-    ),
-    COALESCE(
-      JSONB_AGG(DISTINCT JSONB_BUILD_OBJECT(
-        'group_id', g.id,
-        'group_name', g.name
-      )) FILTER (WHERE g.id IS NOT NULL),
-      '[]'::JSONB
-    ),
-    v_total_count
-  FROM profiles p
-  LEFT JOIN auth.users u ON p.id = u.id
-  LEFT JOIN (
-    SELECT user_id, total_owed_to_me, total_i_owe, net_balance
-    FROM get_user_balance(p.id)
-  ) bal ON true
-  LEFT JOIN user_debts_history(p.id) dh ON true
-  LEFT JOIN expense_splits es ON es.user_id = dh.counterparty_id
-  LEFT JOIN expenses e ON e.id = es.expense_id
-  LEFT JOIN groups g ON g.id = e.group_id
-  WHERE COALESCE(bal.net_balance, 0) != 0
-  GROUP BY p.id, p.full_name, u.email, bal.total_owed_to_me, bal.total_i_owe, bal.net_balance
+    ud.id,
+    ud.full_name,
+    ud.email,
+    ud.total_owed_to_me,
+    ud.total_i_owe,
+    ud.net_balance,
+    ud.debt_relationships::INT,
+    '[]'::JSONB,
+    '[]'::JSONB,
+    tu.cnt
+  FROM user_debts ud
+  CROSS JOIN total_users tu
   ORDER BY net_balance DESC
   LIMIT p_limit
   OFFSET p_offset;
