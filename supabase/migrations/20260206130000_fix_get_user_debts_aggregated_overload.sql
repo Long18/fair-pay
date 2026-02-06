@@ -89,7 +89,7 @@ BEGIN
       COALESCE(es.settled_amount, 0) as settled_amount,
       COALESCE(es.computed_amount - COALESCE(es.settled_amount, 0), 0) as remaining_amount,
       1::BIGINT as transaction_count,
-      e.expense_date as last_transaction_date
+      e.expense_date::TIMESTAMPTZ as last_transaction_date
     FROM user_expenses e
     INNER JOIN expense_splits es ON e.id = es.expense_id
     LEFT JOIN profiles pro ON es.user_id = pro.id
@@ -105,7 +105,7 @@ BEGIN
     dp.currency,
     MAX(dp.i_owe_them::int)::boolean,
     MAX(dp.owed_to_name),
-    MAX(dp.owed_to_id),
+    dp.owed_to_id,
     SUM(dp.total_amount)::NUMERIC,
     SUM(dp.settled_amount)::NUMERIC,
     SUM(dp.remaining_amount)::NUMERIC,
@@ -113,7 +113,7 @@ BEGIN
     MAX(dp.last_transaction_date)
   FROM debt_pairs dp
   WHERE dp.counterparty_id IS NOT NULL
-  GROUP BY dp.counterparty_id, dp.currency
+  GROUP BY dp.counterparty_id, dp.currency, dp.owed_to_id
   ORDER BY SUM(dp.amount) DESC;
 END;
 $$;
