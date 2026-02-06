@@ -13,7 +13,8 @@ export interface DebtByPerson {
   counterparty_id: string
   counterparty_name: string
   remaining_amount: number
-  i_owe_them: boolean
+  currency: string
+  i_owe_them: boolean  // false = they owe me, true = I owe them
 }
 
 export interface DebtByGroup {
