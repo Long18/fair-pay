@@ -97,21 +97,28 @@ export const Dashboard = () => {
 
   const isAuthenticated = !!identity;
 
-  // Process debts for balance table
+  // Process debts for balance table - filter to show only active balances
   const balances = useMemo(() => {
-    return debts.map(d => ({
-      counterparty_id: d.counterparty_id,
-      counterparty_name: d.counterparty_name,
-      counterparty_avatar_url: d.counterparty_avatar_url,
-      amount: d.amount,
-      i_owe_them: d.i_owe_them,
-      currency: d.currency,
-      total_amount: d.total_amount,
-      settled_amount: d.settled_amount,
-      remaining_amount: d.remaining_amount,
-      transaction_count: d.transaction_count,
-      last_transaction_date: d.last_transaction_date,
-    }));
+    return debts
+      .filter(d => {
+        // Show only balances with outstanding amounts (remaining_amount !== 0)
+        // Fully settled debts are hidden unless explicitly viewing history
+        const remaining = d.remaining_amount || d.amount || 0;
+        return remaining !== 0;
+      })
+      .map(d => ({
+        counterparty_id: d.counterparty_id,
+        counterparty_name: d.counterparty_name,
+        counterparty_avatar_url: d.counterparty_avatar_url,
+        amount: d.amount,
+        i_owe_them: d.i_owe_them,
+        currency: d.currency,
+        total_amount: d.total_amount,
+        settled_amount: d.settled_amount,
+        remaining_amount: d.remaining_amount,
+        transaction_count: d.transaction_count,
+        last_transaction_date: d.last_transaction_date,
+      }));
   }, [debts]);
 
   return (
