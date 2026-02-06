@@ -55,23 +55,41 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
                 result = response.data;
                 rpcError = response.error;
             } else {
-                // Authenticated: Fetch user's real data
-                const functionName = includeHistory
-                    ? "get_user_debts_history"
-                    : "get_user_debts_aggregated";
+                // Authenticated: Check if user has any expenses first
+                // Skip expensive debt aggregation query if user has no debts
+                const { data: expenseCount, error: countError } = await supabaseClient
+                    .from("expenses")
+                    .select("id", { count: "exact", head: true })
+                    .or(`paid_by_user_id.eq.${identity.id},created_by.eq.${identity.id}`);
 
-                const rpcParams: Record<string, string> = { p_user_id: identity.id };
-                if (dateRange) {
-                    rpcParams.p_start_date = dateRange.start.toISOString();
-                    rpcParams.p_end_date = dateRange.end.toISOString();
+                if (countError) {
+                    console.error("Error checking expenses:", countError);
+                    rpcError = countError;
+                    result = [];
+                } else if (!expenseCount || expenseCount === 0) {
+                    // User has no expenses, return empty debts immediately
+                    console.log("User has no expenses, skipping debt aggregation query");
+                    result = [];
+                    rpcError = null;
+                } else {
+                    // Authenticated: Fetch user's real data only if they have expenses
+                    const functionName = includeHistory
+                        ? "get_user_debts_history"
+                        : "get_user_debts_aggregated";
+
+                    const rpcParams: Record<string, string> = { p_user_id: identity.id };
+                    if (dateRange) {
+                        rpcParams.p_start_date = dateRange.start.toISOString();
+                        rpcParams.p_end_date = dateRange.end.toISOString();
+                    }
+
+                    const response = await supabaseClient.rpc(
+                        functionName,
+                        rpcParams
+                    );
+                    result = response.data;
+                    rpcError = response.error;
                 }
-
-                const response = await supabaseClient.rpc(
-                    functionName,
-                    rpcParams
-                );
-                result = response.data;
-                rpcError = response.error;
 
                 // For authenticated users, show real data only (no demo fallback)
                 // This ensures users see their actual debts, even if empty
