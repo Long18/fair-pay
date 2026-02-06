@@ -57,7 +57,7 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
             } else {
                 // Authenticated: Check if user has any expenses first
                 // Skip expensive debt aggregation query if user has no debts
-                const { data: expenseCount, error: countError } = await supabaseClient
+                const { count: expenseCount, error: countError } = await supabaseClient
                     .from("expenses")
                     .select("id", { count: "exact", head: true })
                     .or(`paid_by_user_id.eq.${identity.id},created_by.eq.${identity.id}`);
