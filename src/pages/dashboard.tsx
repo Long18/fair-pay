@@ -9,10 +9,7 @@ import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageContent } from "@/components/ui/page-content";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { HistoryIcon, Loader2Icon } from "@/components/ui/icons";
+import { HistoryIcon } from "@/components/ui/icons";
 import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
 import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
 import { usePersistedState } from "@/hooks/use-persisted-state";
@@ -24,7 +21,6 @@ export const Dashboard = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = usePersistedState<"balances" | "activity">("dashboard-tab", "balances");
   const [showHistory, setShowHistory] = useState(false);
-  const [isTogglingHistory, setIsTogglingHistory] = useState(false);
   const { data: debts = [], isLoading: debtsLoading, refetch: refetchDebts, error: debtsError } = useAggregatedDebts({
     includeHistory: showHistory
   });
@@ -37,15 +33,11 @@ export const Dashboard = () => {
   const visibilityDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const lastRefetchTimeRef = useRef<number>(0);
 
-  // Handle history toggle with loading state
-  const handleHistoryToggle = async (checked: boolean) => {
-    setIsTogglingHistory(true);
+  // Handle history toggle
+  const handleHistoryToggle = (checked: boolean) => {
     setShowHistory(checked);
-
     // Track toggle event
     DashboardTracker.viewToggled(`show_settled_${checked}`);
-
-    setTimeout(() => setIsTogglingHistory(false), 500);
   };
 
   // Refetch data when component mounts or becomes visible (with debounce and stale time check)
@@ -145,41 +137,17 @@ export const Dashboard = () => {
               </div>
 
               <TabsContent value="balances" className="space-y-4 mt-6">
-                {isAuthenticated && (
-                  <div className="flex items-center justify-between p-4 bg-card border rounded-lg shadow-sm">
-                    <div className="flex items-center gap-3">
-                      <HistoryIcon className="h-5 w-5 text-muted-foreground" />
-                      <div className="flex flex-col">
-                        <Label htmlFor="show-history" className="text-sm font-medium cursor-pointer">
-                          {t('dashboard.showAllTransactions', 'Show all transactions (including settled)')}
-                        </Label>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {t('dashboard.showAllTransactionsTooltip', 'Include fully settled debts in the list')}
-                        </p>
-                      </div>
-                    </div>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center gap-2">
-                            {isTogglingHistory && (
-                              <Loader2Icon className="h-4 w-4 animate-spin text-muted-foreground" />
-                            )}
-                            <Switch
-                              id="show-history"
-                              checked={showHistory}
-                              onCheckedChange={handleHistoryToggle}
-                              disabled={isTogglingHistory}
-                            />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs text-xs">
-                            {t('dashboard.showAllTransactionsTooltip', 'Toggle to view your complete transaction history, including debts that have been fully settled')}
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                {isAuthenticated && showHistory && (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg text-xs text-muted-foreground mb-3">
+                    <HistoryIcon className="h-4 w-4" />
+                    <span>{t('dashboard.showingSettledDebts', 'Showing settled debts')}</span>
+                    <button
+                      onClick={() => handleHistoryToggle(false)}
+                      className="ml-auto text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label="Hide settled debts"
+                    >
+                      ✕
+                    </button>
                   </div>
                 )}
                 {debtsError && (
