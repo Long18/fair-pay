@@ -100,7 +100,19 @@ export const QuickDatePicker: React.FC<QuickDatePickerProps> = ({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="end">
+        <PopoverContent
+          className="w-auto p-0"
+          align="end"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onPointerDownOutside={(e) => {
+            // On mobile, taps inside the calendar portal can be misidentified
+            // as "outside" clicks. Only close if truly outside.
+            const target = e.target as HTMLElement;
+            if (target?.closest?.("[data-slot='popover-content']")) {
+              e.preventDefault();
+            }
+          }}
+        >
           <Calendar
             mode="single"
             selected={selectedDate}
@@ -110,7 +122,6 @@ export const QuickDatePicker: React.FC<QuickDatePickerProps> = ({
                 setIsOpen(false);
               }
             }}
-            initialFocus
             disabled={(date) => date > today}
             locale={dateLocale}
           />
