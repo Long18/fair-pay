@@ -44,12 +44,13 @@ export function useDebtSummary(counterpartyId: string, counterpartyName: string,
         unpaidCount++;
       }
 
-      // If my share is positive, I owe them
-      // If my share is negative, they owe me
-      if (myShare > 0 && !expense.is_settled) {
-        totalIOweThem += myShare;
-      } else if (myShare < 0 && !expense.is_settled) {
-        totalTheyOweMe += Math.abs(myShare);
+      // Use the direction field to determine who owes whom
+      if (!expense.is_settled) {
+        if (expense.direction === 'i_owe') {
+          totalIOweThem += myShare;
+        } else if (expense.direction === 'they_owe') {
+          totalTheyOweMe += myShare;
+        }
       }
     });
 
