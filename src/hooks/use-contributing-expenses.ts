@@ -14,6 +14,7 @@ interface ContributingExpense {
   group_id?: string | null;
   group_name?: string | null;
   my_share: number;
+  direction: 'i_owe' | 'they_owe'; // whether I owe them or they owe me
   status: 'paid' | 'unpaid' | 'partial';
   is_settled: boolean;
 }
@@ -102,6 +103,7 @@ export function useContributingExpenses(counterpartyId: string) {
               group_id: expense.group_id,
               group_name: expense.groups?.name || null,
               my_share: myShare,
+              direction: 'i_owe' as const,
               status: isFullySettled ? 'paid' : isPartiallySettled ? 'partial' : 'unpaid',
               is_settled: isFullySettled,
             };
@@ -127,22 +129,16 @@ export function useContributingExpenses(counterpartyId: string) {
               group_id: expense.group_id,
               group_name: expense.groups?.name || null,
               my_share: theirShare, // This is what they owe
+              direction: 'they_owe' as const,
               status: isFullySettled ? 'paid' : isPartiallySettled ? 'partial' : 'unpaid',
               is_settled: isFullySettled,
             };
           });
 
-        // Combine and deduplicate by expense ID (keep the most recent entry)
-        const allExpenses = [...iOweExpenses, ...theyOweExpenses];
-        const expenseMap = new Map<string, ContributingExpense>();
-        allExpenses.forEach(exp => {
-          if (!expenseMap.has(exp.id) ||
-              new Date(exp.expense_date) > new Date(expenseMap.get(exp.id)!.expense_date)) {
-            expenseMap.set(exp.id, exp);
-          }
-        });
-
-        const contributingExpenses = Array.from(expenseMap.values());
+        // Combine both lists - no deduplication needed because:
+        // Query 1 returns expenses paid by counterparty, Query 2 returns expenses paid by me.
+        // Since each expense has a single paid_by_user_id, these sets are mutually exclusive.
+        const contributingExpenses = [...iOweExpenses, ...theyOweExpenses];
 
         // Sort by date (newest first)
         contributingExpenses.sort((a, b) =>
