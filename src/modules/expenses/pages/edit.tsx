@@ -179,7 +179,10 @@ export const ExpenseEdit = () => {
 
     if (isFriendContext && friendshipQuery.data?.data) {
       const friendship: any = friendshipQuery.data.data;
-      const isUserA = friendship.user_a_id === identity?.id;
+      // Use user_a/user_b (not user_a_id/user_b_id) - Supabase returns column names directly
+      const userAId = friendship.user_a || friendship.user_a_id;
+      const userBId = friendship.user_b || friendship.user_b_id;
+      const isUserA = userAId === identity?.id;
       const friendProfile = isUserA ? friendship.user_b_profile : friendship.user_a_profile;
 
       return [
@@ -188,7 +191,7 @@ export const ExpenseEdit = () => {
           full_name: "You",
         },
         {
-          id: isUserA ? friendship.user_b_id : friendship.user_a_id,
+          id: isUserA ? userBId : userAId,
           full_name: friendProfile?.full_name || "Friend",
         },
       ];
@@ -203,9 +206,11 @@ export const ExpenseEdit = () => {
 
     return allFriendsQuery.data.data
       .map((friendship: any) => {
-        const isUserA = friendship.user_a_id === identity.id;
+        const userAId = friendship.user_a || friendship.user_a_id;
+        const userBId = friendship.user_b || friendship.user_b_id;
+        const isUserA = userAId === identity.id;
         const friendProfile = isUserA ? friendship.user_b_profile : friendship.user_a_profile;
-        const friendId = isUserA ? friendship.user_b_id : friendship.user_a_id;
+        const friendId = isUserA ? userBId : userAId;
 
         return {
           id: friendId,
@@ -245,7 +250,7 @@ export const ExpenseEdit = () => {
   }, [isGroupContext, members, allFriends]);
 
   const handleSubmit = async (values: ExpenseFormValues) => {
-    const { splits, is_recurring, recurring, split_method, ...expenseData } = values;
+    const { splits, is_recurring, recurring, split_method, context_type, group_id, friendship_id, ...expenseData } = values;
 
     updateMutation.mutate(
       {
