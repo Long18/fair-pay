@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,8 +9,17 @@ import { formatNumber } from "@/lib/locale-utils";
 import { useGo } from "@refinedev/core";
 import { AggregatedDebt } from "@/hooks/use-aggregated-debts";
 import { PaginationControls, PaginationMetadata } from "@/components/ui/pagination-controls";
+import { ContributingExpensesList } from "./contributing-expenses-list";
+import { useContributingExpenses } from "@/hooks/use-contributing-expenses";
+import { cn } from "@/lib/utils";
 
-import { ArrowRightIcon, CheckIcon, UserIcon } from "@/components/ui/icons";
+import {
+  ArrowRightIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+} from "@/components/ui/icons";
+
 interface SimplifiedDebtsProps {
   debts: AggregatedDebt[];
   isLoading?: boolean;
@@ -18,7 +28,7 @@ interface SimplifiedDebtsProps {
 
 /**
  * SimplifiedDebts - Shows aggregated view of who owes whom
- * Replaces hundreds of small transactions with clear, actionable debt items
+ * with inline expand for contributing expenses.
  */
 export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
   debts,
@@ -28,15 +38,16 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
   const { t } = useTranslation();
   const go = useGo();
   const [currentPage, setCurrentPage] = useState(1);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  // Calculate pagination
   const totalItems = debts.length;
   const totalPages = Math.ceil(totalItems / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
-  const paginatedDebts = useMemo(() => {
-    return debts.slice(startIndex, endIndex);
-  }, [debts, startIndex, endIndex]);
+  const paginatedDebts = useMemo(
+    () => debts.slice(startIndex, endIndex),
+    [debts, startIndex, endIndex]
+  );
 
   const paginationMetadata: PaginationMetadata = {
     totalItems,
@@ -45,18 +56,26 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
     pageSize,
   };
 
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
+  const handlePageChange = useCallback(
+    (page: number) => {
+      if (page >= 1 && page <= totalPages) {
+        setCurrentPage(page);
+        setExpandedId(null);
+      }
+    },
+    [totalPages]
+  );
+
+  const toggleExpand = useCallback((id: string) => {
+    setExpandedId((prev) => (prev === id ? null : id));
+  }, []);
 
   if (isLoading) {
     return (
-      <Card className="border-border">
-        <CardHeader>
+      <Card className="border-border shadow-sm">
+        <CardHeader className="pb-3">
           <CardTitle className="text-base font-bold">
-            {t('dashboard.whoOwesWhom')}
+            {t("dashboard.whoOwesWhom")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -81,7 +100,7 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
       <Card className="border-border shadow-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-base sm:text-lg font-bold text-foreground">
-            {t('dashboard.whoOwesWhom')}
+            {t("dashboard.whoOwesWhom")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -92,7 +111,7 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
               </div>
             </div>
             <p className="text-sm sm:text-base text-muted-foreground">
-              {t('dashboard.allSettledUpNoDebts')}
+              {t("dashboard.allSettledUpNoDebts")}
             </p>
           </div>
         </CardContent>
@@ -104,88 +123,18 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
     <Card className="border-border shadow-sm">
       <CardHeader className="pb-3">
         <CardTitle className="text-base sm:text-lg font-bold text-foreground">
-          {t('dashboard.whoOwesWhom')}
+          {t("dashboard.whoOwesWhom")}
         </CardTitle>
       </CardHeader>
       <CardContent className="px-3 sm:px-6">
-        <div className="space-y-2 sm:space-y-3">
+        <div className="space-y-1.5">
           {paginatedDebts.map((debt) => (
-            <div
+            <DebtRow
               key={debt.counterparty_id}
-              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-muted/50 dark:hover:bg-muted/30 transition-colors cursor-pointer group border border-transparent hover:border-border"
-              onClick={() => {
-                go({ to: `/profile/${debt.counterparty_id}` });
-              }}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  go({ to: `/profile/${debt.counterparty_id}` });
-                }
-              }}
-              aria-label={`${debt.i_owe_them ? t('dashboard.youOweUser') : t('dashboard.userOwesYou')} ${debt.counterparty_name}, ${formatNumber(debt.amount)} ₫`}
-            >
-              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                <Avatar className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0">
-                  <AvatarImage src={debt.counterparty_avatar_url || undefined} alt={debt.counterparty_name} />
-                  <AvatarFallback className="bg-[#FFA14E] text-white text-xs sm:text-sm">
-                    {debt.counterparty_name.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm sm:text-base font-medium text-foreground truncate">
-                    {debt.i_owe_them ? (
-                      <>{t('dashboard.youOweUser')} <span className="font-bold">{debt.counterparty_name}</span></>
-                    ) : (
-                      <><span className="font-bold">{debt.counterparty_name}</span> {t('dashboard.userOwesYou')}</>
-                    )}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5 hidden sm:block">
-                    {t('dashboard.tapToSettleUp')}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-2" onClick={(e) => e.stopPropagation()}>
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "font-semibold text-xs sm:text-sm px-2 sm:px-3 py-1",
-                    debt.i_owe_them
-                      ? "text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/30 bg-red-50 dark:bg-red-950/10"
-                      : "text-green-600 dark:text-green-400 border-green-200 dark:border-green-800/30 bg-green-50 dark:bg-green-950/10"
-                  )}
-                >
-                  {formatNumber(debt.amount)} ₫
-                </Badge>
-                <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 sm:h-9 sm:w-9 text-muted-foreground hover:text-foreground"
-                    onClick={() => {
-                      go({ to: `/profile/${debt.counterparty_id}` });
-                    }}
-                    aria-label={t('dashboard.viewProfile', 'View profile')}
-                  >
-                    <UserIcon className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 sm:h-9 sm:w-9 text-muted-foreground hover:text-primary"
-                    onClick={() => {
-                      go({
-                        to: `/payments/create?userId=${debt.counterparty_id}&amount=${debt.amount}`,
-                      });
-                    }}
-                    aria-label={t('dashboard.settleUp', 'Settle up')}
-                  >
-                    <ArrowRightIcon className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
+              debt={debt}
+              isExpanded={expandedId === debt.counterparty_id}
+              onToggle={() => toggleExpand(debt.counterparty_id)}
+            />
           ))}
         </div>
         {totalPages > 1 && (
@@ -193,7 +142,7 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
             <PaginationControls
               metadata={paginationMetadata}
               onPageChange={handlePageChange}
-              showFirstLast={true}
+              showFirstLast
               maxVisiblePages={5}
             />
           </div>
@@ -203,6 +152,141 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
   );
 };
 
-function cn(...classes: (string | undefined)[]) {
-  return classes.filter(Boolean).join(" ");
+
+/* ─── Individual Debt Row with expand ─────────────────────────────────── */
+
+interface DebtRowProps {
+  debt: AggregatedDebt;
+  isExpanded: boolean;
+  onToggle: () => void;
 }
+
+const DebtRow: React.FC<DebtRowProps> = React.memo(
+  ({ debt, isExpanded, onToggle }) => {
+    const { t } = useTranslation();
+    const go = useGo();
+    const { expenses, isLoading } = useContributingExpenses(
+      isExpanded ? debt.counterparty_id : ""
+    );
+
+    return (
+      <div
+        className={cn(
+          "rounded-md border transition-colors",
+          isExpanded
+            ? "border-border bg-card shadow-sm"
+            : "border-transparent hover:bg-muted/40"
+        )}
+      >
+        {/* Clickable header row */}
+        <div
+          className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 cursor-pointer"
+          onClick={onToggle}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onToggle();
+            }
+          }}
+          aria-expanded={isExpanded}
+          aria-label={`${debt.i_owe_them ? t("dashboard.youOweUser") : t("dashboard.userOwesYou")} ${debt.counterparty_name}, ${formatNumber(debt.amount)} ₫`}
+        >
+          <Avatar className="h-9 w-9 sm:h-10 sm:w-10 shrink-0">
+            <AvatarImage
+              src={debt.counterparty_avatar_url || undefined}
+              alt={debt.counterparty_name}
+            />
+            <AvatarFallback className="bg-[#FFA14E] text-white text-xs sm:text-sm">
+              {debt.counterparty_name.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+
+          <div className="flex-1 min-w-0">
+            <p className="text-sm sm:text-base font-medium text-foreground truncate">
+              {debt.i_owe_them ? (
+                <>
+                  {t("dashboard.youOweUser")}{" "}
+                  <span className="font-bold">{debt.counterparty_name}</span>
+                </>
+              ) : (
+                <>
+                  <span className="font-bold">{debt.counterparty_name}</span>{" "}
+                  {t("dashboard.userOwesYou")}
+                </>
+              )}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <Badge
+              variant="outline"
+              className={cn(
+                "font-semibold text-xs sm:text-sm px-2 sm:px-3 py-1 tabular-nums",
+                debt.i_owe_them
+                  ? "text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/30 bg-red-50 dark:bg-red-950/10"
+                  : "text-green-600 dark:text-green-400 border-green-200 dark:border-green-800/30 bg-green-50 dark:bg-green-950/10"
+              )}
+            >
+              {formatNumber(debt.amount)} ₫
+            </Badge>
+
+            <motion.div
+              animate={{ rotate: isExpanded ? 180 : 0 }}
+              transition={{ duration: 0.15 }}
+              className="text-muted-foreground"
+            >
+              <ChevronDownIcon className="h-4 w-4" />
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Expandable contributing expenses */}
+        <AnimatePresence initial={false}>
+          {isExpanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <div className="px-3 pb-3 space-y-3">
+                <div className="border-t pt-3">
+                  <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                    {t(
+                      "dashboard.contributingExpenses",
+                      "Contributing Expenses"
+                    )}
+                  </h4>
+                  <ContributingExpensesList
+                    expenses={expenses}
+                    counterpartyId={debt.counterparty_id}
+                    isLoading={isLoading}
+                  />
+                </div>
+
+                {/* Single primary CTA */}
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="w-full gap-2 h-9"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    go({ to: `/debts/${debt.counterparty_id}` });
+                  }}
+                >
+                  {t("dashboard.viewFullBreakdown", "View Details")}
+                  <ChevronRightIcon className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+);
+
+DebtRow.displayName = "DebtRow";

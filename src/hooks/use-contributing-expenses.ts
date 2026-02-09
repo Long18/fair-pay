@@ -13,6 +13,7 @@ interface ContributingExpense {
   expense_date: string;
   group_id?: string | null;
   group_name?: string | null;
+  category?: string | null;
   my_share: number;
   direction: 'i_owe' | 'they_owe'; // whether I owe them or they owe me
   status: 'paid' | 'unpaid' | 'partial';
@@ -48,6 +49,7 @@ export function useContributingExpenses(counterpartyId: string) {
               description,
               amount,
               currency,
+              category,
               expense_date,
               group_id,
               paid_by_user_id,
@@ -72,6 +74,7 @@ export function useContributingExpenses(counterpartyId: string) {
               description,
               amount,
               currency,
+              category,
               expense_date,
               group_id,
               paid_by_user_id,
@@ -102,6 +105,7 @@ export function useContributingExpenses(counterpartyId: string) {
               expense_date: expense.expense_date,
               group_id: expense.group_id,
               group_name: expense.groups?.name || null,
+              category: expense.category || null,
               my_share: myShare,
               direction: 'i_owe' as const,
               status: isFullySettled ? 'paid' : isPartiallySettled ? 'partial' : 'unpaid',
@@ -128,6 +132,7 @@ export function useContributingExpenses(counterpartyId: string) {
               expense_date: expense.expense_date,
               group_id: expense.group_id,
               group_name: expense.groups?.name || null,
+              category: expense.category || null,
               my_share: theirShare, // This is what they owe
               direction: 'they_owe' as const,
               status: isFullySettled ? 'paid' : isPartiallySettled ? 'partial' : 'unpaid',

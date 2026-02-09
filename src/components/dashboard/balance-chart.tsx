@@ -123,7 +123,7 @@ export const BalanceChart = ({
         <div className="space-y-3 sm:space-y-4">
           <div>
             <div
-              className={`text-xl sm:text-2xl md:text-3xl font-bold ${
+              className={`text-xl sm:text-2xl md:text-3xl font-bold tabular-nums ${
                 isPositive
                   ? "text-green-600 dark:text-green-400"
                   : "text-red-600 dark:text-red-400"
