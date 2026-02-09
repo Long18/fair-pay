@@ -321,6 +321,7 @@
         "pageDescription": "Manage your auto-created expense schedules",
         "memberShares": "Member shares per occurrence",
         "edit": "Edit",
+        "recurringTemplate": "Recurring template",
         "prepaid": {
             "payUpfront": "Pay Upfront",
             "prepaidUntil": "Prepaid until",
