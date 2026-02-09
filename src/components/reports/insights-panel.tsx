@@ -32,9 +32,11 @@ export function InsightsPanel({
   const [expanded, setExpanded] = useState<boolean>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      return stored === null ? true : stored === "true";
+      if (stored !== null) return stored === "true";
+      // Default: collapsed when many insights to reduce vertical noise
+      return insights.length <= 3;
     } catch {
-      return true;
+      return insights.length <= 3;
     }
   });
 

@@ -30,7 +30,7 @@ export const BalanceSummaryCards = ({
             </div>
             <div className="flex-1">
               <p className="text-sm text-muted-foreground font-medium">You are owed</p>
-              <p className="text-2xl font-bold text-teal-600 dark:text-teal-400 mt-1">
+              <p className="text-2xl font-bold text-teal-600 dark:text-teal-400 mt-1 tabular-nums">
                 {formatCurrency(totalOwedToMe)}
               </p>
             </div>
@@ -47,7 +47,7 @@ export const BalanceSummaryCards = ({
             </div>
             <div className="flex-1">
               <p className="text-sm text-muted-foreground font-medium">You owe</p>
-              <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
+              <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1 tabular-nums">
                 {formatCurrency(totalIOwe)}
               </p>
             </div>
@@ -72,7 +72,7 @@ export const BalanceSummaryCards = ({
             </div>
             <div className="flex-1">
               <p className="text-sm text-muted-foreground font-medium">Net balance</p>
-              <p className={`text-2xl font-bold mt-1 ${
+              <p className={`text-2xl font-bold mt-1 tabular-nums ${
                 netBalance >= 0
                   ? "text-purple-600 dark:text-purple-400"
                   : "text-orange-600 dark:text-orange-400"
