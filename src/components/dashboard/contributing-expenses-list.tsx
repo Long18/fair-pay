@@ -7,6 +7,7 @@ import { ChevronRightIcon } from "@/components/ui/icons";
 
 interface ContributingExpense {
   id: string;
+  expense_id: string;
   description: string;
   amount: number;
   currency: string;
@@ -56,7 +57,7 @@ export function ContributingExpensesList({
       {expenses.slice(0, 3).map((expense) => (
         <ContributingExpenseItem
           key={expense.id}
-          id={expense.id}
+          id={expense.expense_id}
           description={expense.description}
           amount={expense.amount}
           currency={expense.currency}
