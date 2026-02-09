@@ -3,7 +3,7 @@ import { useOne, useList, useDelete, useGo, useGetIdentity } from "@refinedev/co
 import { useParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Expense, ExpenseSplit, Attachment } from "../types";
+import { Expense, Attachment } from "../types";
 import { AttachmentList } from "../components/attachment-list";
 import { ExpenseHeader } from "../components/expense-header";
 import { ExpenseAmountDisplay } from "../components/expense-amount-display";
@@ -30,7 +30,6 @@ import { useTranslation } from "react-i18next";
 import { isAdmin } from "@/lib/rbac";
 import { ArrowLeftIcon, CheckCircle2Icon, PlusIcon, HomeIcon, PencilIcon, RepeatIcon, CalendarIcon, PauseIcon, PlayIcon } from "@/components/ui/icons";
 import { SettleSplitDialog } from "../components/settle-split-dialog";
-import { Spinner } from "@/components/ui/spinner";
 import { MarkdownComment } from "../components/markdown-comment";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -225,8 +224,6 @@ export const ExpenseShow = () => {
       // Extract summary from response
       const splitsUpdated = data?.splits_updated || 0;
       const alreadyPaid = data?.already_paid || 0;
-      const totalAmount = data?.total_amount || 0;
-      const currency = data?.currency || expense.currency;
 
       toast.success(
         t('expenses.settleAllSuccess', {
@@ -281,7 +278,7 @@ export const ExpenseShow = () => {
 
     setSettlingSplitId(selectedSplit.id);
     try {
-      const { data, error } = await supabaseClient.rpc('settle_split', {
+      const { error } = await supabaseClient.rpc('settle_split', {
         p_split_id: selectedSplit.id,
         p_amount: amount,
       });
@@ -958,19 +955,6 @@ export const ExpenseShow = () => {
           </CardContent>
         </Card>
       </motion.div>
-
-      {/* Settle Split Dialog */}
-      {selectedSplit && (
-        <SettleSplitDialog
-          open={settleSplitDialogOpen}
-          onOpenChange={setSettleSplitDialogOpen}
-          userName={selectedSplit.profiles?.full_name || t('profile.unknown')}
-          computedAmount={selectedSplit.computed_amount}
-          currency={expense.currency}
-          onConfirm={handleSettleSplit}
-          isSettling={settlingSplitId === selectedSplit.id}
-        />
-      )}
 
       {/* Settle Split Dialog */}
       {selectedSplit && (
