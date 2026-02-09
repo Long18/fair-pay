@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "@refinedev/react-hook-form";
 import { useEffect, useState, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +17,10 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { formatNumber } from "@/lib/locale-utils";
 import { ExpenseFormValues } from "../types";
 import { useSplitCalculation } from "../hooks/use-split-calculation";
 import { RecurringExpenseForm } from "./recurring-expense-form";
@@ -28,6 +32,8 @@ import {
   MessageSquareIcon,
   ChevronDownIcon,
   CheckIcon,
+  HandCoinsIcon,
+  ArrowRightIcon,
 } from "@/components/ui/icons";
 
 // Import new components
@@ -52,6 +58,7 @@ const expenseSchema = z.object({
   paid_by_user_id: z.string().uuid("Please select who paid"),
   split_method: z.enum(["equal", "exact", "percentage"]),
   comment: z.string().max(1000, "Comment is too long").optional(),
+  is_loan: z.boolean(),
   is_recurring: z.boolean(),
   recurring: z.object({
     frequency: z.enum(["weekly", "bi_weekly", "monthly", "quarterly", "yearly", "custom"]),
@@ -88,6 +95,7 @@ export const ExpenseForm = ({
   attachments = [],
   onAttachmentsChange,
 }: ExpenseFormProps) => {
+  const { t } = useTranslation();
   const form = useForm({
     resolver: zodResolver(expenseSchema),
     defaultValues: {
@@ -99,10 +107,13 @@ export const ExpenseForm = ({
       paid_by_user_id: defaultValues?.paid_by_user_id || currentUserId,
       split_method: defaultValues?.split_method || "equal",
       comment: defaultValues?.comment || "",
+      is_loan: defaultValues?.is_loan || false,
       is_recurring: false,
       recurring: DEFAULT_RECURRING_VALUES,
     },
   });
+
+  const isFriendContext = groupId === undefined;
 
   const {
     participants,
@@ -124,6 +135,8 @@ export const ExpenseForm = ({
   const splitMethod = form.watch("split_method");
   const currency = form.watch("currency");
   const isRecurring = form.watch("is_recurring");
+  const isLoan = form.watch("is_loan");
+  const paidByUserId = form.watch("paid_by_user_id");
 
   // Auto-select participants
   useEffect(() => {
@@ -145,9 +158,23 @@ export const ExpenseForm = ({
   // Recalculate splits when amount or method changes
   useEffect(() => {
     if (amount && amount > 0 && participants.length > 0) {
-      recalculate(amount, splitMethod);
+      if (isLoan && isFriendContext) {
+        // Loan mode: 100% goes to borrower (non-payer)
+        // We handle this by setting exact amounts
+        participants.forEach(p => {
+          const key = p.user_id || p.pending_email || '';
+          if (key === paidByUserId) {
+            setSplitValue(key, 0);
+          } else {
+            setSplitValue(key, amount);
+          }
+        });
+        recalculate(amount, 'exact');
+      } else {
+        recalculate(amount, splitMethod);
+      }
     }
-  }, [amount, splitMethod, participants.length, recalculate]);
+  }, [amount, splitMethod, participants.length, recalculate, isLoan, isFriendContext, paidByUserId, setSplitValue]);
 
   const handleFormSubmit = (data: ExpenseFormSchema) => {
     const validSplits = participants.filter(p => {
@@ -168,6 +195,7 @@ export const ExpenseForm = ({
       ...data,
       context_type: groupId ? "group" : "friend",
       group_id: groupId,
+      is_loan: isLoan && isFriendContext ? true : false,
       splits: validSplits,
     };
     onSubmit(formValues);
@@ -332,7 +360,100 @@ export const ExpenseForm = ({
           </CardContent>
         </Card>
 
-        {/* Split Configuration Card */}
+        {/* Loan Toggle - Friend context only */}
+        {isFriendContext && members.length === 2 && (
+          <Card className={cn(
+            "border-2 shadow-sm overflow-hidden transition-colors",
+            isLoan ? "border-amber-400/50 bg-amber-50/30 dark:bg-amber-950/20" : "border-border/50"
+          )}>
+            <CardContent className="pt-6">
+              <FormField
+                control={form.control}
+                name="is_loan"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between">
+                    <div className="space-y-0.5">
+                      <FormLabel className="flex items-center gap-2">
+                        <HandCoinsIcon className="h-4 w-4" />
+                        {t('expenses.loanToggle')}
+                      </FormLabel>
+                      <FormDescription>
+                        {t('expenses.loanToggleDescription')}
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {/* Loan Summary - shows who borrows from whom */}
+              {isLoan && amount && amount > 0 && paidByUserId && (
+                <div className="mt-4 p-4 rounded-lg bg-amber-100/50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800">
+                  <div className="flex items-center justify-center gap-3">
+                    {/* Borrower */}
+                    <div className="flex flex-col items-center gap-1">
+                      <Avatar className="h-10 w-10 border-2 border-amber-300">
+                        <AvatarImage
+                          src={members.find(m => m.id !== paidByUserId)?.avatar_url || undefined}
+                          alt={members.find(m => m.id !== paidByUserId)?.full_name}
+                        />
+                        <AvatarFallback className="text-xs bg-amber-200 dark:bg-amber-800">
+                          {(members.find(m => m.id !== paidByUserId)?.full_name || "?")
+                            .split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs font-medium text-amber-800 dark:text-amber-200">
+                        {members.find(m => m.id !== paidByUserId)?.full_name || t('expenses.unknown')}
+                      </span>
+                      <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-700 dark:text-amber-300">
+                        {t('expenses.borrower')}
+                      </Badge>
+                    </div>
+
+                    {/* Arrow with amount */}
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-lg font-bold text-amber-700 dark:text-amber-300">
+                        {formatNumber(amount)} {currency === "VND" ? "₫" : currency === "USD" ? "$" : "€"}
+                      </span>
+                      <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                        <span className="text-xs">{t('expenses.borrowsFrom')}</span>
+                        <ArrowRightIcon className="h-4 w-4" />
+                      </div>
+                    </div>
+
+                    {/* Lender */}
+                    <div className="flex flex-col items-center gap-1">
+                      <Avatar className="h-10 w-10 border-2 border-green-300">
+                        <AvatarImage
+                          src={members.find(m => m.id === paidByUserId)?.avatar_url || undefined}
+                          alt={members.find(m => m.id === paidByUserId)?.full_name}
+                        />
+                        <AvatarFallback className="text-xs bg-green-200 dark:bg-green-800">
+                          {(members.find(m => m.id === paidByUserId)?.full_name || "?")
+                            .split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs font-medium text-green-800 dark:text-green-200">
+                        {members.find(m => m.id === paidByUserId)?.full_name || t('expenses.unknown')}
+                      </span>
+                      <Badge variant="outline" className="text-[10px] border-green-400 text-green-700 dark:text-green-300">
+                        {t('expenses.lender')}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Split Configuration Card - Hidden when loan mode is active */}
+        {!(isLoan && isFriendContext) && (
         <Card className="border-2 border-border/50 shadow-sm overflow-hidden">
           <CardHeader className="pb-4">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -416,6 +537,7 @@ export const ExpenseForm = ({
             />
           </CardContent>
         </Card>
+        )}
 
         {/* Advanced Options - Collapsible */}
         <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>

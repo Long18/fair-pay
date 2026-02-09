@@ -254,7 +254,7 @@ export const ExpenseEdit = () => {
   }, [isGroupContext, members, allFriends]);
 
   const handleSubmit = async (values: ExpenseFormValues) => {
-    const { splits, is_recurring, recurring, split_method, context_type, group_id, friendship_id, ...expenseData } = values;
+    const { splits, is_recurring, recurring, split_method, context_type, group_id, friendship_id, is_loan, ...expenseData } = values;
 
     updateMutation.mutate(
       {
@@ -378,6 +378,15 @@ export const ExpenseEdit = () => {
   }
 
   // Prepare initial values for form
+  // Detect loan pattern: friend context + 2 splits + payer has 0 amount
+  const isExistingLoan = (() => {
+    if (expense.context_type !== 'friend' || existingSplits.length !== 2) return false;
+    const payerSplit = existingSplits.find((s: any) => s.user_id === expense.paid_by_user_id);
+    const borrowerSplit = existingSplits.find((s: any) => s.user_id !== expense.paid_by_user_id);
+    if (!payerSplit || !borrowerSplit) return false;
+    return payerSplit.computed_amount === 0 && Math.abs(borrowerSplit.computed_amount - expense.amount) < 1;
+  })();
+
   const defaultValues: Partial<ExpenseFormValues> = {
     description: expense.description,
     amount: expense.amount,
@@ -385,8 +394,9 @@ export const ExpenseEdit = () => {
     category: expense.category,
     expense_date: expense.expense_date,
     paid_by_user_id: expense.paid_by_user_id,
-    split_method: existingSplits[0]?.split_method || "equal",
+    split_method: isExistingLoan ? "exact" : (existingSplits[0]?.split_method || "equal"),
     comment: expense.comment || "",
+    is_loan: isExistingLoan,
     is_recurring: !!recurringExpense,
     recurring: recurringExpense ? {
       frequency: recurringExpense.frequency as any,
@@ -411,7 +421,7 @@ export const ExpenseEdit = () => {
     >
       <div className="space-y-6 overflow-x-hidden max-w-full">
         <ExpenseForm
-          groupId={contextId!}
+          groupId={expense.group_id || undefined}
           members={allAvailableMembers}
           currentUserId={identity.id}
           onSubmit={handleSubmit}

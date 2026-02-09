@@ -135,7 +135,7 @@ export const ExpenseCreate = () => {
   }, [isGroupContext, members]);
 
   const handleSubmit = async (values: ExpenseFormValues) => {
-    const { splits, is_recurring, recurring, split_method, ...expenseData } = values;
+    const { splits, is_recurring, recurring, split_method, is_loan, ...expenseData } = values;
 
     // Add context type and IDs to expense data
     const expensePayload = {

@@ -257,7 +257,16 @@
         "templateUtilitiesDesc": "Tiện ích hàng tháng",
         "addByEmail": "Thêm bằng email",
         "pending": "Chờ xác nhận",
-        "emailAlreadyAdded": "Email này đã được thêm"
+        "emailAlreadyAdded": "Email này đã được thêm",
+        "loan": "Cho vay",
+        "loanToggle": "Đây là khoản vay",
+        "loanToggleDescription": "Một người cho người kia mượn tiền (người mượn nợ 100%)",
+        "borrower": "Người mượn",
+        "lender": "Người cho vay",
+        "borrowsFrom": "mượn từ",
+        "lentBy": "Cho vay bởi",
+        "lentTo": "Cho {{name}} mượn",
+        "loanAmount": "Số tiền cho vay"
     },
     "recurring": {
         "title": "Chi phí định kỳ",
