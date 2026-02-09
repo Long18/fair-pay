@@ -31,6 +31,7 @@ interface ExpenseSplitCardProps {
   isPayer: boolean;
   canSettle: boolean;
   isSettling: boolean;
+  isLoan?: boolean;
   onSettle: (split: SplitWithProfile) => void;
   onPaymentComplete: () => void;
 }
@@ -42,6 +43,7 @@ export const ExpenseSplitCard = ({
   isPayer,
   canSettle,
   isSettling,
+  isLoan,
   onSettle,
   onPaymentComplete,
 }: ExpenseSplitCardProps) => {
@@ -146,7 +148,9 @@ export const ExpenseSplitCard = ({
               {/* Mobile: Show basic info */}
               <div className="flex items-center gap-2 mt-1 md:hidden">
                 <span className="text-xs text-muted-foreground">
-                  {String(t(`expenses.${split.split_method}`, split.split_method))}
+                  {isLoan
+                    ? (isPayer ? t('expenses.lender') : t('expenses.borrower'))
+                    : String(t(`expenses.${split.split_method}`, split.split_method))}
                 </span>
                 {paymentState && (
                   <PaymentStateBadge
@@ -160,7 +164,9 @@ export const ExpenseSplitCard = ({
               {/* Desktop: Show full info */}
               <div className="hidden md:flex items-center gap-2 mt-1">
                 <span className="text-xs text-muted-foreground">
-                  {String(t(`expenses.${split.split_method}`, split.split_method))}
+                  {isLoan
+                    ? (isPayer ? t('expenses.lender') : t('expenses.borrower'))
+                    : String(t(`expenses.${split.split_method}`, split.split_method))}
                 </span>
                 {paymentState && (
                   <PaymentStateBadge

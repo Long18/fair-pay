@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useOne, useList, useDelete, useGo, useGetIdentity } from "@refinedev/core";
 import { useParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -140,6 +140,22 @@ export const ExpenseShow = () => {
   const canEdit = expense?.created_by === identity?.id;
   const isPayer = expense?.paid_by_user_id === identity?.id;
   const isPaid = expense?.is_payment === true;
+
+  // Detect loan pattern: friend context + exactly 2 splits + one split has 0 amount
+  const isLoan = useMemo(() => {
+    if (!expense || expense.context_type !== 'friend' || splits.length !== 2) return false;
+    const payerSplit = splits.find((s: any) => s.user_id === expense.paid_by_user_id);
+    const borrowerSplit = splits.find((s: any) => s.user_id !== expense.paid_by_user_id);
+    if (!payerSplit || !borrowerSplit) return false;
+    // Loan pattern: payer's computed_amount is 0 (or near 0), borrower has full amount
+    return payerSplit.computed_amount === 0 && Math.abs(borrowerSplit.computed_amount - expense.amount) < 1;
+  }, [expense, splits]);
+
+  const borrowerName = useMemo(() => {
+    if (!isLoan || !expense) return undefined;
+    const borrowerSplit = splits.find((s: any) => s.user_id !== expense.paid_by_user_id);
+    return borrowerSplit?.profiles?.full_name || undefined;
+  }, [isLoan, expense, splits]);
 
   // Calculate user position for YourPositionCard
   const userSplit = splits.find(s => s.user_id === identity?.id);
@@ -544,7 +560,7 @@ export const ExpenseShow = () => {
             </AlertDialog>
           </CardHeader>
           <CardContent className="space-y-4 md:space-y-6 pt-6">
-            <ExpenseAmountDisplay expense={expense} />
+            <ExpenseAmountDisplay expense={expense} isLoan={isLoan} borrowerName={borrowerName} />
           </CardContent>
         </Card>
 
@@ -667,6 +683,7 @@ export const ExpenseShow = () => {
                           isPayer={isPayer}
                           canSettle={canSettle}
                           isSettling={settlingSplitId === split.id}
+                          isLoan={isLoan}
                           onSettle={openSettleDialog}
                           onPaymentComplete={() => {
                             refetchExpense();
