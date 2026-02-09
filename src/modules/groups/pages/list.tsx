@@ -17,7 +17,7 @@ import { Profile } from '@/modules/profile/types';
 import { calculateBalances } from '@/modules/payments/hooks/use-balance-calculation';
 import { PlusIcon, SearchIcon } from '@/components/ui/icons';
 
-type FilterType = 'all' | 'active' | 'settled' | 'admin';
+type FilterType = 'all' | 'active' | 'settled' | 'admin' | 'archived';
 type SortType = 'recent' | 'oldest' | 'name' | 'balance';
 
 export const GroupListContent = () => {
@@ -152,6 +152,8 @@ export const GroupListContent = () => {
         name: group.name,
         description: group.description,
         created_at: group.created_at,
+        created_by: group.created_by,
+        is_archived: group.is_archived ?? false,
         member_count: groupMembers.length,
         members,
         groupMembers, // Keep full data for filtering
@@ -177,12 +179,12 @@ export const GroupListContent = () => {
     if (filterType === 'active') {
       filtered = filtered.filter((g) => {
         const summary = balanceSummaries[g.id];
-        return summary && (summary.you_owe > 0 || summary.owed_to_you > 0);
+        return !g.is_archived && summary && (summary.you_owe > 0 || summary.owed_to_you > 0);
       });
     } else if (filterType === 'settled') {
       filtered = filtered.filter((g) => {
         const summary = balanceSummaries[g.id];
-        return summary && summary.you_owe === 0 && summary.owed_to_you === 0;
+        return !g.is_archived && summary && summary.you_owe === 0 && summary.owed_to_you === 0;
       });
     } else if (filterType === 'admin') {
       filtered = filtered.filter((g) =>
@@ -190,6 +192,11 @@ export const GroupListContent = () => {
           (m: any) => m.user_id === identity?.id && m.role === 'admin'
         )
       );
+    } else if (filterType === 'archived') {
+      filtered = filtered.filter((g) => g.is_archived);
+    } else {
+      // 'all' - show non-archived by default
+      filtered = filtered.filter((g) => !g.is_archived);
     }
 
     // Sort
@@ -276,6 +283,7 @@ export const GroupListContent = () => {
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="settled">Settled</SelectItem>
               <SelectItem value="admin">I'm Admin</SelectItem>
+              <SelectItem value="archived">Archived</SelectItem>
             </SelectContent>
           </Select>
 
@@ -313,14 +321,21 @@ export const GroupListContent = () => {
       {!isLoading && filteredGroups.length > 0 && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {paginatedGroups.map((group) => (
-            <GroupCard
-              key={group.id}
-              group={group}
-              balanceSummary={balanceSummaries[group.id]}
-              isLoading={isLoading}
-            />
-            ))}
+            {paginatedGroups.map((group) => {
+              const isGroupAdmin = group.groupMembers.some(
+                (m: any) => m.user_id === identity?.id && m.role === 'admin'
+              );
+              const isGroupCreator = group.created_by === identity?.id;
+              return (
+                <GroupCard
+                  key={group.id}
+                  group={group}
+                  balanceSummary={balanceSummaries[group.id]}
+                  isLoading={isLoading}
+                  canManage={isGroupAdmin || isGroupCreator}
+                />
+              );
+            })}
           </div>
           <PaginationControls
             metadata={paginationMetadata}

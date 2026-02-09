@@ -29,7 +29,7 @@ export const ExpenseContextSelector = () => {
       },
     ],
     meta: {
-      select: "*, groups!group_id(id, name, created_at)",
+      select: "*, groups!group_id(id, name, created_at, is_archived, created_by), role",
     },
     queryOptions: {
       enabled: !!identity?.id,
@@ -54,7 +54,20 @@ export const ExpenseContextSelector = () => {
     },
   });
 
-  const groups = groupsQuery.data?.data?.map((m: any) => m.groups).filter(Boolean) || [];
+  const groupMembersData = groupsQuery.data?.data || [];
+  const groups = groupMembersData
+    .map((m: any) => ({
+      ...m.groups,
+      _role: m.role,
+    }))
+    .filter((g: any) => {
+      if (!g) return false;
+      // Filter out archived groups unless user is admin/creator
+      if (g.is_archived) {
+        return g._role === 'admin' || g.created_by === identity?.id;
+      }
+      return true;
+    });
   const friendships = friendshipsQuery.data?.data || [];
   const loadingGroups = groupsQuery.isLoading;
   const loadingFriendships = friendshipsQuery.isLoading;

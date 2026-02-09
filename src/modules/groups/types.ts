@@ -6,6 +6,9 @@ export interface Group {
   created_at: string;
   updated_at: string;
   simplify_debts: boolean;
+  is_archived: boolean;
+  archived_at: string | null;
+  archived_by: string | null;
 }
 
 export interface GroupMember {
