@@ -11,6 +11,7 @@ import {
   EyeIcon,
   CalendarIcon,
   UsersIcon,
+  ArchiveIcon,
 } from '@/components/ui/icons';
 
 export interface BalanceSummary {
@@ -33,17 +34,20 @@ export interface GroupCardProps {
     created_at: string;
     member_count: number;
     members: GroupMemberPreview[];
+    is_archived?: boolean;
   };
   balanceSummary?: BalanceSummary;
   isLoading?: boolean;
+  canManage?: boolean;
 }
 
-export function GroupCard({ group, balanceSummary, isLoading }: GroupCardProps) {
+export function GroupCard({ group, balanceSummary, isLoading, canManage }: GroupCardProps) {
   const go = useGo();
 
   const you_owe = balanceSummary?.you_owe ?? 0;
   const owed_to_you = balanceSummary?.owed_to_you ?? 0;
   const isSettled = you_owe === 0 && owed_to_you === 0;
+  const isArchived = group.is_archived ?? false;
 
   const getInitials = (name: string) => {
     return name
@@ -55,13 +59,17 @@ export function GroupCard({ group, balanceSummary, isLoading }: GroupCardProps) 
   };
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-200 border-2 hover:border-primary/50">
+    <Card className={`group hover:shadow-lg transition-all duration-200 border-2 hover:border-primary/50 ${isArchived ? 'opacity-75 border-amber-200' : ''}`}>
       <CardHeader className="pb-3">
         {/* Group Icon + Name */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="p-2 rounded-lg bg-primary/10 shrink-0">
-              <Users2Icon className="h-5 w-5 text-primary" />
+            <div className={`p-2 rounded-lg shrink-0 ${isArchived ? 'bg-amber-100' : 'bg-primary/10'}`}>
+              {isArchived ? (
+                <ArchiveIcon className="h-5 w-5 text-amber-600" />
+              ) : (
+                <Users2Icon className="h-5 w-5 text-primary" />
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="font-bold text-lg truncate">
@@ -76,10 +84,16 @@ export function GroupCard({ group, balanceSummary, isLoading }: GroupCardProps) 
           </div>
 
           {/* Status Badge */}
-          {!isLoading && isSettled && (
-            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 shrink-0">
-              Settled
+          {isArchived ? (
+            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 shrink-0">
+              Archived
             </Badge>
+          ) : (
+            !isLoading && isSettled && (
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 shrink-0">
+                Settled
+              </Badge>
+            )
           )}
         </div>
 
@@ -156,14 +170,16 @@ export function GroupCard({ group, balanceSummary, isLoading }: GroupCardProps) 
             <EyeIcon className="h-4 w-4 mr-2" />
             View
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
-            title="Add Expense"
-          >
-            <PlusIcon className="h-4 w-4" />
-          </Button>
+          {(!isArchived || canManage) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
+              title="Add Expense"
+            >
+              <PlusIcon className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

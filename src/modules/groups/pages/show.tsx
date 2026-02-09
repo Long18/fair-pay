@@ -49,7 +49,9 @@ import {
   SparklesIcon,
   CheckCircle2Icon,
   HistoryIcon,
-  PieChartIcon
+  PieChartIcon,
+  ArchiveIcon,
+  ArchiveRestoreIcon,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 export const GroupShow = () => {
@@ -198,6 +200,37 @@ export const GroupShow = () => {
   const currentUserMember = allMembers.find((m: any) => m.user_id === identity?.id);
   const isAdmin = currentUserMember?.role === "admin";
   const isCreator = group?.created_by === identity?.id;
+  const isArchived = group?.is_archived ?? false;
+  // Admin/creator can still fully manage archived groups; regular members get restricted view
+  const canManage = isAdmin || isCreator;
+
+  const updateGroupMutation = useUpdate();
+
+  const handleArchiveToggle = () => {
+    if (!group?.id || !identity?.id) return;
+    const newArchived = !isArchived;
+
+    updateGroupMutation.mutate(
+      {
+        resource: "groups",
+        id: group.id,
+        values: {
+          is_archived: newArchived,
+          archived_at: newArchived ? new Date().toISOString() : null,
+          archived_by: newArchived ? identity.id : null,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success(newArchived ? "Group archived" : "Group restored");
+          groupQuery.refetch();
+        },
+        onError: (error) => {
+          toast.error(`Failed to ${newArchived ? "archive" : "restore"} group: ${error.message}`);
+        },
+      }
+    );
+  };
 
   const handleSettleUp = (toUserId: string, userName: string, amount: number) => {
     setSelectedSettlement({ userId: toUserId, userName, amount });
@@ -406,6 +439,12 @@ export const GroupShow = () => {
                       <CardTitle className="text-2xl sm:text-3xl font-bold truncate">
                         {group.name}
                       </CardTitle>
+                      {isArchived && (
+                        <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-300 mt-1">
+                          <ArchiveIcon className="h-3 w-3 mr-1" />
+                          Archived
+                        </Badge>
+                      )}
                       {group.description && (
                         <p className="text-muted-foreground mt-2 text-sm sm:text-base line-clamp-2">
                           {group.description}
@@ -433,14 +472,17 @@ export const GroupShow = () => {
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t">
-                <Button
-                  className="w-full sm:w-auto"
-                  size="lg"
-                  onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
-                >
-                  <PlusIcon className="h-4 w-4 mr-2" />
-                  Add Expense
-                </Button>
+                {/* Add Expense - hidden for non-admin members on archived groups */}
+                {(!isArchived || canManage) && (
+                  <Button
+                    className="w-full sm:w-auto"
+                    size="lg"
+                    onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
+                  >
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Add Expense
+                  </Button>
+                )}
                 <div className="flex gap-2">
                   {isAdmin && (
                     <Button
@@ -453,6 +495,48 @@ export const GroupShow = () => {
                       <span className="hidden sm:inline">Edit Group</span>
                       <span className="sm:hidden">Edit</span>
                     </Button>
+                  )}
+                  {/* Archive/Unarchive - only admin/creator */}
+                  {canManage && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          className={cn("flex-1 sm:flex-none", isArchived && "border-amber-300 text-amber-700 hover:bg-amber-50")}
+                        >
+                          {isArchived ? (
+                            <>
+                              <ArchiveRestoreIcon className="h-4 w-4 sm:mr-2" />
+                              <span className="hidden sm:inline">Restore</span>
+                            </>
+                          ) : (
+                            <>
+                              <ArchiveIcon className="h-4 w-4 sm:mr-2" />
+                              <span className="hidden sm:inline">Archive</span>
+                            </>
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            {isArchived ? "Restore Group?" : "Archive Group?"}
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {isArchived
+                              ? "This will restore the group. Members will be able to view expenses and add new ones again."
+                              : "Archived groups are read-only for members. They can only see balances and member list. Admins and the group creator can still manage everything."}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleArchiveToggle}>
+                            {isArchived ? "Restore" : "Archive"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   )}
                   {isCreator && (
                     <AlertDialog>
@@ -488,8 +572,25 @@ export const GroupShow = () => {
           </CardHeader>
         </Card>
 
-        {/* Quick Actions */}
-        {isAdmin && unsettledCount > 0 && (
+        {/* Archived Banner for regular members */}
+        {isArchived && !canManage && (
+          <Card className="border-2 border-amber-300 bg-amber-50">
+            <CardContent className="py-4">
+              <div className="flex items-center gap-3">
+                <ArchiveIcon className="h-5 w-5 text-amber-600 shrink-0" />
+                <div>
+                  <p className="font-medium text-amber-900">This group has been archived</p>
+                  <p className="text-sm text-amber-700">
+                    You can view balances and members, but cannot add or view expenses.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Quick Actions - hidden for non-admin on archived groups */}
+        {isAdmin && unsettledCount > 0 && (!isArchived || canManage) && (
           <div className="flex justify-end">
             <Button
               variant="default"
@@ -516,7 +617,7 @@ export const GroupShow = () => {
         {/* States Section */}
         <div className="space-y-6">
           {/* Empty State - No Expenses Yet */}
-          {balances.every(b => b.balance === 0) && expenses.length === 0 && (
+          {balances.every(b => b.balance === 0) && expenses.length === 0 && (!isArchived || canManage) && (
             <Card className="border-2 border-dashed">
               <CardContent className="py-16 text-center">
                 <div className="space-y-4">
@@ -540,7 +641,7 @@ export const GroupShow = () => {
           )}
 
           {/* All Settled State - Has Expenses */}
-          {balances.every(b => b.balance === 0) && expenses.length > 0 && (
+          {balances.every(b => b.balance === 0) && expenses.length > 0 && (!isArchived || canManage) && (
             <Card className="border-2 bg-gradient-to-br from-green-50 to-emerald-50">
               <CardContent className="py-16 text-center">
                 <div className="space-y-4">
@@ -572,8 +673,8 @@ export const GroupShow = () => {
           )}
         </div>
 
-        {/* Category Breakdown - Insights Section */}
-        {categoryBreakdown.length > 0 && (
+        {/* Category Breakdown - Insights Section (hidden for non-admin on archived groups) */}
+        {categoryBreakdown.length > 0 && (!isArchived || canManage) && (
           <ExpandableCard
             title="Spending by Category"
             subtitle="See where your money goes"
@@ -587,7 +688,8 @@ export const GroupShow = () => {
           </ExpandableCard>
         )}
 
-        {/* Recent Expenses Section */}
+        {/* Recent Expenses Section (hidden for non-admin on archived groups) */}
+        {(!isArchived || canManage) && (
         <ExpandableCard
           title="Recent Expenses"
           subtitle={`${expenses.length} expense(s)`}
@@ -601,6 +703,7 @@ export const GroupShow = () => {
         >
           <ExpenseList groupId={group.id} members={membersList} />
         </ExpandableCard>
+        )}
 
         {/* Members Section */}
         <Card className="border-2">
@@ -611,7 +714,7 @@ export const GroupShow = () => {
                 <CardTitle className="text-lg">Members</CardTitle>
                 <Badge variant="secondary">{allMembers.length}</Badge>
               </div>
-              {isAdmin && (
+              {isAdmin && (!isArchived || canManage) && (
                 <Button
                   variant="outline"
                   size="sm"
