@@ -5,10 +5,9 @@
 
 import { useState, useCallback } from 'react'
 import type {
-  PublicDebtResponse,
-  DetailedDebtResponse,
   PublicDebtSummary,
   DetailedDebtData,
+  WhoOwesWhoPair,
   PaginationMetadata
 } from '@/types/all-users-debt'
 
@@ -151,4 +150,83 @@ export function useAllUsersDebtDetailed(token?: string, baseUrl?: string) {
     authenticated: true,
     token
   })
+}
+
+/**
+ * Hook for who-owes-who public endpoint
+ */
+export function useWhoOwesWho(baseUrl?: string) {
+  const [state, setState] = useState<{
+    data: WhoOwesWhoPair[] | null
+    loading: boolean
+    error: string | null
+    pagination: PaginationMetadata | null
+  }>({
+    data: null,
+    loading: false,
+    error: null,
+    pagination: null
+  })
+
+  const fetchWhoOwesWho = useCallback(
+    async (limit: number = 50, offset: number = 0) => {
+      setState({ data: null, loading: true, error: null, pagination: null })
+
+      try {
+        const base = baseUrl || '/api/debt'
+        const url = new URL(
+          `${base}/who-owes-who`,
+          typeof window !== 'undefined' ? window.location.origin : 'http://localhost'
+        )
+        url.searchParams.append('limit', Math.min(limit, 100).toString())
+        url.searchParams.append('offset', offset.toString())
+
+        const response = await fetch(url.toString(), {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        })
+
+        const responseData = await response.json()
+
+        if (!response.ok) {
+          setState({
+            data: null,
+            loading: false,
+            error: responseData.error || `HTTP ${response.status}: ${response.statusText}`,
+            pagination: null
+          })
+          return { success: false, error: responseData.error || 'Failed to fetch' }
+        }
+
+        if (responseData.success) {
+          setState({
+            data: responseData.data || [],
+            loading: false,
+            error: null,
+            pagination: responseData.pagination || null
+          })
+        } else {
+          setState({
+            data: null,
+            loading: false,
+            error: responseData.error || 'Unknown error',
+            pagination: null
+          })
+        }
+
+        return responseData
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch who-owes-who data'
+        setState({ data: null, loading: false, error: errorMessage, pagination: null })
+        return { success: false, error: errorMessage }
+      }
+    },
+    [baseUrl]
+  )
+
+  const reset = useCallback(() => {
+    setState({ data: null, loading: false, error: null, pagination: null })
+  }, [])
+
+  return { ...state, fetchWhoOwesWho, reset }
 }

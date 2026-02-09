@@ -47,5 +47,14 @@ export interface AllUsersDebtResponse<T> {
   data?: T[]
 }
 
+export interface WhoOwesWhoPair {
+  from_user_id: string
+  from_user_name: string
+  to_user_id: string
+  to_user_name: string
+  amount: number
+}
+
 export type PublicDebtResponse = AllUsersDebtResponse<PublicDebtSummary>
 export type DetailedDebtResponse = AllUsersDebtResponse<DetailedDebtData>
+export type WhoOwesWhoResponse = AllUsersDebtResponse<WhoOwesWhoPair>
