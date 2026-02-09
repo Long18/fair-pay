@@ -1,10 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { BanknoteIcon, CheckCircle2Icon } from "@/components/ui/icons";
+import { BanknoteIcon, CheckCircle2Icon, Trash2Icon } from "@/components/ui/icons";
 import { formatCurrency } from "@/lib/locale-utils";
 import { useTranslation } from "react-i18next";
-import { cn } from "@/lib/utils";
 
 interface WhatToPayNowPanelProps {
   totalAmount: number;
@@ -14,9 +13,12 @@ interface WhatToPayNowPanelProps {
   totalCount: number;
   onSelectAll: (checked: boolean) => void;
   onSettle: () => void;
+  onDelete?: () => void;
   isSettling: boolean;
+  isDeleting?: boolean;
   isAllSelected: boolean;
   iOweThem: boolean;
+  isAdmin?: boolean;
 }
 
 export function WhatToPayNowPanel({
@@ -27,24 +29,18 @@ export function WhatToPayNowPanel({
   totalCount,
   onSelectAll,
   onSettle,
+  onDelete,
   isSettling,
+  isDeleting = false,
   isAllSelected,
   iOweThem,
+  isAdmin = false,
 }: WhatToPayNowPanelProps) {
   const { t } = useTranslation();
 
-  if (!iOweThem) {
-    return (
-      <Card className="border-success/20 bg-success/5 rounded-xl">
-        <CardContent className="p-6 flex items-center justify-center gap-2">
-          <CheckCircle2Icon className="h-5 w-5 text-success" />
-          <span className="typography-body text-success font-medium">
-            {t('debts.theyOweYou', 'They owe you money')}
-          </span>
-        </CardContent>
-      </Card>
-    );
-  }
+  // Creditor view (they owe you) — only show actions if admin or creditor
+  const canSettle = iOweThem || !iOweThem; // both can settle
+  const canDelete = isAdmin;
 
   if (totalAmount === 0) {
     return (
@@ -64,7 +60,9 @@ export function WhatToPayNowPanel({
       <CardHeader>
         <CardTitle className="flex items-center gap-2 typography-section-title">
           <BanknoteIcon className="h-5 w-5" />
-          {t('debts.whatToPayNow', 'What to Pay Now')}
+          {iOweThem
+            ? t('debts.whatToPayNow', 'What to Pay Now')
+            : t('debts.whatTheyOwe', 'What They Owe')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -100,23 +98,45 @@ export function WhatToPayNowPanel({
           </label>
         </div>
 
-        {/* Settle Button */}
-        <Button
-          onClick={onSettle}
-          disabled={isSettling || selectedCount === 0}
-          className="w-full"
-          size="lg"
-        >
-          {isSettling
-            ? t('debts.settling', 'Settling...')
-            : selectedCount > 0
-            ? t('debts.settleSelected', 'Settle Selected')
-            : t('debts.selectExpenses', 'Select expenses to settle')}
-        </Button>
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          {/* Settle Button */}
+          {canSettle && (
+            <Button
+              onClick={onSettle}
+              disabled={isSettling || selectedCount === 0}
+              className="flex-1"
+              size="lg"
+            >
+              {isSettling
+                ? t('debts.settling', 'Settling...')
+                : selectedCount > 0
+                ? t('debts.settleSelected', 'Settle Selected')
+                : t('debts.selectExpenses', 'Select expenses to settle')}
+            </Button>
+          )}
+
+          {/* Delete Button (Admin only) */}
+          {canDelete && onDelete && (
+            <Button
+              onClick={onDelete}
+              disabled={isDeleting || selectedCount === 0}
+              variant="destructive"
+              size="lg"
+            >
+              <Trash2Icon className="h-4 w-4 mr-2" />
+              {isDeleting
+                ? t('debts.deleting', 'Deleting...')
+                : t('debts.deleteSelected', 'Delete')}
+            </Button>
+          )}
+        </div>
 
         {/* Payment Note */}
         <p className="typography-metadata text-center">
-          {t('debts.manualSettlementNote', 'Settlements are marked manually. Actual payment is your responsibility.')}
+          {iOweThem
+            ? t('debts.manualSettlementNote', 'Settlements are marked manually. Actual payment is your responsibility.')
+            : t('debts.creditorSettlementNote', 'Mark expenses as settled when payment is received.')}
         </p>
       </CardContent>
     </Card>
