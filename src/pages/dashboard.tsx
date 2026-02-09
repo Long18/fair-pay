@@ -44,10 +44,10 @@ export const Dashboard = () => {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && identity?.id) {
-        // Only refetch if data is stale (older than 30 seconds)
+        // Only refetch if data is stale (older than 5 seconds)
         const now = Date.now();
         const timeSinceLastRefetch = now - lastRefetchTimeRef.current;
-        const STALE_TIME = 30 * 1000; // 30 seconds
+        const STALE_TIME = 5 * 1000; // 5 seconds
 
         if (timeSinceLastRefetch > STALE_TIME) {
           // Clear any pending debounce
@@ -60,20 +60,35 @@ export const Dashboard = () => {
             console.log('Dashboard visible, refetching stale data...');
             lastRefetchTimeRef.current = Date.now();
             refetchDebts();
-          }, 1000); // 1 second debounce
-        } else {
-          console.log('Dashboard visible, but data is still fresh, skipping refetch');
+          }, 300); // 300ms debounce
+        }
+      }
+    };
+
+    // Also refetch on window focus (covers SPA navigation back to dashboard)
+    const handleFocus = () => {
+      if (identity?.id) {
+        const now = Date.now();
+        const timeSinceLastRefetch = now - lastRefetchTimeRef.current;
+        const STALE_TIME = 5 * 1000;
+
+        if (timeSinceLastRefetch > STALE_TIME) {
+          console.log('Dashboard focused, refetching stale data...');
+          lastRefetchTimeRef.current = Date.now();
+          refetchDebts();
         }
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
 
     return () => {
       if (visibilityDebounceRef.current) {
         clearTimeout(visibilityDebounceRef.current);
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [identity?.id]); // Removed refetchDebts from dependencies to prevent infinite loop

@@ -16,14 +16,10 @@ export function useSettleSplits() {
     setIsSettling(true);
 
     try {
-      // Update splits as settled
-      const { error } = await supabaseClient
-        .from('expense_splits')
-        .update({
-          is_settled: true,
-          settled_at: new Date().toISOString(),
-        })
-        .in('id', splitIds);
+      // Use RPC to properly set settled_amount = computed_amount
+      const { data, error } = await supabaseClient.rpc('settle_splits_batch', {
+        p_split_ids: splitIds,
+      });
 
       if (error) throw error;
 
