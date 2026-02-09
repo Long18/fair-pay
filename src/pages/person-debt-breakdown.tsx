@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -8,9 +8,12 @@ import { ExpenseBreakdownItemSelectable } from "@/components/debts/expense-break
 import { useContributingExpenses } from "@/hooks/use-contributing-expenses";
 import { useDebtSummary } from "@/hooks/use-debt-summary";
 import { useSettleSplits } from "@/hooks/use-settle-splits";
+import { useDeleteSplits } from "@/hooks/use-delete-splits";
 import { useOne } from "@refinedev/core";
 import { Profile } from "@/modules/profile/types";
 import { useTranslation } from "react-i18next";
+import { isAdmin } from "@/lib/rbac";
+import { BulkDeleteDialog } from "@/components/bulk-operations/BulkDeleteDialog";
 import {
   Empty,
   EmptyHeader,
@@ -23,6 +26,12 @@ import { ScaleIcon } from "@/components/ui/icons";
 export const PersonDebtBreakdown = () => {
   const { userId } = useParams<{ userId: string }>();
   const { t } = useTranslation();
+
+  // Admin detection
+  const [userIsAdmin, setUserIsAdmin] = useState(false);
+  useEffect(() => {
+    isAdmin().then(setUserIsAdmin);
+  }, []);
 
   // Fetch counterparty profile
   const { query: counterpartyQuery } = useOne<Profile>({
@@ -44,7 +53,9 @@ export const PersonDebtBreakdown = () => {
 
   // Settlement logic
   const { settle, isSettling } = useSettleSplits();
+  const { deleteSplits, isDeleting } = useDeleteSplits();
   const [selectedSplitIds, setSelectedSplitIds] = useState<Set<string>>(new Set());
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Filter unsettled expenses
   const unsettledExpenses = useMemo(() => {
@@ -85,6 +96,15 @@ export const PersonDebtBreakdown = () => {
     const result = await settle(Array.from(selectedSplitIds));
     if (result.success) {
       setSelectedSplitIds(new Set());
+      refetch();
+    }
+  };
+
+  const handleDelete = async () => {
+    const result = await deleteSplits(Array.from(selectedSplitIds));
+    if (result.success) {
+      setSelectedSplitIds(new Set());
+      setDeleteDialogOpen(false);
       refetch();
     }
   };
@@ -162,9 +182,12 @@ export const PersonDebtBreakdown = () => {
           totalCount={unsettledExpenses.filter(exp => exp.my_share > 0).length}
           onSelectAll={handleSelectAll}
           onSettle={handleSettle}
+          onDelete={() => setDeleteDialogOpen(true)}
           isSettling={isSettling}
+          isDeleting={isDeleting}
           isAllSelected={isAllSelected}
           iOweThem={summary.i_owe_them}
+          isAdmin={userIsAdmin}
         />
 
         {/* Contributing Expenses */}
@@ -216,6 +239,15 @@ export const PersonDebtBreakdown = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <BulkDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleDelete}
+        selectedCount={selectedSplitIds.size}
+        isLoading={isDeleting}
+      />
     </div>
   );
 };
