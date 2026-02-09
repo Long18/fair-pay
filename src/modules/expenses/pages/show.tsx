@@ -28,7 +28,7 @@ import { formatNumber } from "@/lib/locale-utils";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { useTranslation } from "react-i18next";
 import { isAdmin } from "@/lib/rbac";
-import { ArrowLeftIcon, CheckCircle2Icon, PlusIcon, HomeIcon, PencilIcon } from "@/components/ui/icons";
+import { ArrowLeftIcon, CheckCircle2Icon, PlusIcon, HomeIcon, PencilIcon, RepeatIcon, CalendarIcon, PauseIcon, PlayIcon } from "@/components/ui/icons";
 import { SettleSplitDialog } from "../components/settle-split-dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { MarkdownComment } from "../components/markdown-comment";
@@ -43,6 +43,10 @@ import {
 } from "@/components/ui/breadcrumb";
 import { motion, AnimatePresence } from "framer-motion";
 import { dispatchSettlementEvent } from "@/lib/settlement-events";
+import { useQuery } from "@tanstack/react-query";
+import { getFrequencyDescription, RecurringExpense } from "../types/recurring";
+import { format } from "date-fns";
+import { vi, enUS } from "date-fns/locale";
 
 export const ExpenseShow = () => {
   const { id } = useParams<{ id: string }>();
@@ -59,6 +63,29 @@ export const ExpenseShow = () => {
   const [loading, setLoading] = useState(true);
   const [userIsAdmin, setUserIsAdmin] = useState(false);
   const [settlingUserSplit, setSettlingUserSplit] = useState(false);
+
+  const { i18n } = useTranslation();
+  const dateLocale = i18n.language === 'vi' ? vi : enUS;
+
+  // Fetch recurring expense data linked to this expense (as template)
+  const { data: recurringData } = useQuery({
+    queryKey: ['recurring_for_expense', id],
+    queryFn: async () => {
+      const { data, error } = await supabaseClient
+        .from('recurring_expenses')
+        .select('*, expenses!template_expense_id(id, description, amount, currency)')
+        .eq('template_expense_id', id!)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching recurring data:', error);
+        return null;
+      }
+      return data as (RecurringExpense & { expenses?: any }) | null;
+    },
+    enabled: !!id,
+    staleTime: 2 * 60 * 1000,
+  });
 
   const { query: expenseQuery } = useOne<Expense>({
     resource: "expenses",
@@ -563,6 +590,73 @@ export const ExpenseShow = () => {
             <ExpenseAmountDisplay expense={expense} isLoan={isLoan} borrowerName={borrowerName} />
           </CardContent>
         </Card>
+
+        {/* Recurring Expense Info Card */}
+        {recurringData && (
+          <Card className="rounded-xl border-2 shadow-sm hover:shadow-md transition-shadow duration-200 border-blue-200 bg-blue-50/30">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <div className="p-1.5 rounded-md bg-blue-100">
+                    <RepeatIcon className="h-4 w-4 text-blue-600" />
+                  </div>
+                  {t('recurring.scheduleInfo', 'Recurring Schedule')}
+                </CardTitle>
+                <Badge
+                  variant={recurringData.is_active ? 'default' : 'secondary'}
+                  className={recurringData.is_active
+                    ? 'bg-blue-600 hover:bg-blue-700'
+                    : ''
+                  }
+                >
+                  {recurringData.is_active ? (
+                    <><PlayIcon className="h-3 w-3 mr-1" />{t('recurring.active', 'Active')}</>
+                  ) : (
+                    <><PauseIcon className="h-3 w-3 mr-1" />{t('recurring.paused', 'Paused')}</>
+                  )}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">{t('recurring.frequency', 'Frequency')}</p>
+                  <p className="font-medium">
+                    {getFrequencyDescription(recurringData.frequency as any, recurringData.interval)}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">{t('recurring.nextCreation', 'Next creation')}</p>
+                  <div className="flex items-center gap-1">
+                    <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                    <p className="font-medium">
+                      {format(new Date(recurringData.next_occurrence), 'PPP', { locale: dateLocale })}
+                    </p>
+                  </div>
+                </div>
+                {recurringData.end_date && (
+                  <div className="space-y-1">
+                    <p className="text-muted-foreground">{t('recurring.endsOn', 'Ends on')}</p>
+                    <p className="font-medium">
+                      {format(new Date(recurringData.end_date), 'PPP', { locale: dateLocale })}
+                    </p>
+                  </div>
+                )}
+                {recurringData.prepaid_until && (
+                  <div className="space-y-1">
+                    <p className="text-muted-foreground">{t('recurring.prepaid.prepaidUntil', 'Prepaid until')}</p>
+                    <p className="font-medium text-green-600">
+                      {format(new Date(recurringData.prepaid_until), 'PPP', { locale: dateLocale })}
+                    </p>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-3 pt-3 border-t">
+                {t('recurring.templateNote', 'This expense is a recurring template. New expenses are auto-created on schedule.')}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Split Details Card */}
         <Card className="rounded-xl border-2 shadow-sm hover:shadow-md transition-shadow duration-200">

@@ -705,6 +705,22 @@ export const GroupShow = () => {
         </ExpandableCard>
         )}
 
+        {/* Recurring Expenses Section (hidden for non-admin on archived groups) */}
+        {(!isArchived || canManage) && (
+          <ExpandableCard
+            title="Recurring Expenses"
+            subtitle="Auto-created expenses on schedule"
+            badge={
+              <Badge variant="outline" className="gap-1">
+                <RepeatIcon className="h-3 w-3" />
+                Auto
+              </Badge>
+            }
+          >
+            <RecurringExpenseList groupId={group.id} />
+          </ExpandableCard>
+        )}
+
         {/* Members Section */}
         <Card className="border-2">
           <CardHeader>

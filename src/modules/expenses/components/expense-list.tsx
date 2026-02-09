@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ExpenseWithSplits } from "../types";
 import { CategoryIcon } from "./category-icon";
 import { formatDateShort, formatNumber } from "@/lib/locale-utils";
+import { cn } from "@/lib/utils";
 import {
   ExpenseFiltersPanel,
   FilterChip,
@@ -18,7 +19,10 @@ import { useBulkDeleteExpenses } from "@/hooks/use-bulk-operations";
 import { BulkActionBar } from "@/components/bulk-operations/BulkActionBar";
 import { BulkDeleteDialog } from "@/components/bulk-operations/BulkDeleteDialog";
 
-import { EyeIcon, XIcon, CheckSquareIcon } from "@/components/ui/icons";
+import { EyeIcon, XIcon, CheckSquareIcon, RepeatIcon } from "@/components/ui/icons";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { supabaseClient } from "@/utility/supabaseClient";
+import { useQuery } from "@tanstack/react-query";
 interface ExpenseListProps {
   groupId?: string;
   friendshipId?: string;
@@ -37,6 +41,33 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
 
   const contextType = groupId ? 'group' : friendshipId ? 'friend' : undefined;
   const contextId = groupId || friendshipId;
+
+  // Fetch recurring expense template IDs to mark recurring expenses in the list
+  const { data: recurringTemplateIds } = useQuery({
+    queryKey: ['recurring_template_ids', contextId],
+    queryFn: async () => {
+      let query = supabaseClient
+        .from('recurring_expenses')
+        .select('template_expense_id, frequency, interval, is_active');
+
+      if (groupId) query = query.eq('group_id', groupId);
+      else if (friendshipId) query = query.eq('friendship_id', friendshipId);
+
+      const { data } = await query;
+      // Build a Map for O(1) lookups
+      const map = new Map<string, { frequency: string; interval: number; is_active: boolean }>();
+      (data || []).forEach((r: any) => {
+        map.set(r.template_expense_id, {
+          frequency: r.frequency,
+          interval: r.interval,
+          is_active: r.is_active,
+        });
+      });
+      return map;
+    },
+    staleTime: 2 * 60 * 1000,
+    enabled: !!(groupId || friendshipId),
+  });
 
   const {
     crudFilters,
@@ -232,6 +263,26 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
                     <h4 className="font-medium">{expense.description}</h4>
                     {expense.category && (
                       <CategoryIcon category={expense.category} size="sm" />
+                    )}
+                    {recurringTemplateIds?.has(expense.id) && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "gap-1 text-xs px-1.5 py-0",
+                              recurringTemplateIds.get(expense.id)?.is_active
+                                ? "border-blue-300 text-blue-600 bg-blue-50"
+                                : "border-gray-300 text-gray-500 bg-gray-50"
+                            )}
+                          >
+                            <RepeatIcon className="h-3 w-3" />
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Recurring template ({recurringTemplateIds.get(expense.id)?.is_active ? 'Active' : 'Paused'})</p>
+                        </TooltipContent>
+                      </Tooltip>
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">

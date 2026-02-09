@@ -58,6 +58,7 @@ const ExpenseCreate = lazy(() => import("./modules/expenses").then(m => ({ defau
 const ExpenseContextSelector = lazy(() => import("./modules/expenses").then(m => ({ default: m.ExpenseContextSelector })));
 const ExpenseEdit = lazy(() => import("./modules/expenses").then(m => ({ default: m.ExpenseEdit })));
 const ExpenseShow = lazy(() => import("./modules/expenses").then(m => ({ default: m.ExpenseShow })));
+const RecurringExpenseListPage = lazy(() => import("./modules/expenses").then(m => ({ default: m.RecurringExpenseList })));
 
 // Payments module
 const PaymentCreate = lazy(() => import("./modules/payments").then(m => ({ default: m.PaymentCreate })));
@@ -257,6 +258,14 @@ function App() {
                     },
                   },
                   {
+                    name: "recurring_expenses",
+                    list: "/recurring-expenses",
+                    meta: {
+                      label: "Recurring",
+                      icon: <RepeatIcon className="w-5 h-5" />,
+                    },
+                  },
+                  {
                     name: "balances",
                     list: "/balances",
                     meta: {
@@ -424,6 +433,11 @@ function App() {
                         </Suspense>
                       } />
                     </Route>
+                    <Route path="/recurring-expenses" element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RecurringExpenseListPage />
+                      </Suspense>
+                    } />
                     <Route path="/payments">
                       <Route path="create" element={
                         <Suspense fallback={<PageLoader />}>
