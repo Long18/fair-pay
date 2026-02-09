@@ -379,6 +379,21 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
             </div>
           )}
 
+          {/* Prominent Pay Upfront Button — visible for active recurring without member prepaid */}
+          {recurring.is_active && (!memberPrepaidInfo || memberPrepaidInfo.length === 0) && (
+            <div className="pt-3 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full gap-2 border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800"
+                onClick={() => setShowPrepaidDialog(true)}
+              >
+                <BanknoteIcon className="h-4 w-4" />
+                {t('recurring.prepaid.payUpfront', 'Pay upfront')}
+              </Button>
+            </div>
+          )}
+
           {/* Per-Member Prepaid Balances Section */}
           {memberPrepaidInfo && memberPrepaidInfo.length > 0 && (
             <Collapsible open={showPrepaidHistory} onOpenChange={setShowPrepaidHistory}>
@@ -403,7 +418,7 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full"
+                  className="w-full gap-2 border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800"
                   onClick={() => setShowPrepaidDialog(true)}
                 >
                   <BanknoteIcon className="mr-2 h-4 w-4" />
