@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabaseClient } from '@/utility/supabaseClient';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { dispatchSettlementEvent } from '@/lib/settlement-events';
 
 export function useSettleSplits() {
   const { t } = useTranslation();
@@ -29,6 +30,7 @@ export function useSettleSplits() {
         })
       );
 
+      dispatchSettlementEvent();
       return { success: true };
     } catch (error) {
       console.error('Error settling splits:', error);

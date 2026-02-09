@@ -42,6 +42,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { motion, AnimatePresence } from "framer-motion";
+import { dispatchSettlementEvent } from "@/lib/settlement-events";
 
 export const ExpenseShow = () => {
   const { id } = useParams<{ id: string }>();
@@ -220,6 +221,7 @@ export const ExpenseShow = () => {
         setIsLoadingSplits(false);
       }
       setSettleAllDialogOpen(false);
+      dispatchSettlementEvent();
     } catch (error: any) {
       console.error('Error settling expense:', error);
       toast.error(t('expenses.settleError', {
@@ -285,6 +287,7 @@ export const ExpenseShow = () => {
       }
       setSettleSplitDialogOpen(false);
       setSelectedSplit(null);
+      dispatchSettlementEvent();
     } catch (error: any) {
       console.error('Error settling split:', error);
       toast.error(t('expenses.splitSettleError', {

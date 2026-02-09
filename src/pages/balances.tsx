@@ -88,6 +88,7 @@ import {
   FilterIcon,
 } from "@/components/ui/icons";
 
+import { dispatchSettlementEvent } from "@/lib/settlement-events";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
@@ -306,6 +307,7 @@ export const BalancesPage = () => {
       );
       toast.success(t("balances.settleAllSuccess", "All debts settled successfully"));
       setSettleAllDialogOpen(false);
+      dispatchSettlementEvent();
       refetch();
       refetchBalance();
     } catch {
