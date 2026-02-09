@@ -2,6 +2,7 @@ import { useGetIdentity } from "@refinedev/core";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { Profile } from "@/modules/profile/types";
 import { useEffect, useState, useCallback, useRef } from "react";
+import { onSettlementEvent } from "@/lib/settlement-events";
 
 export interface AggregatedDebt {
     counterparty_id: string;
@@ -230,6 +231,14 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
             supabaseClient.removeChannel(splitsChannel);
         };
     }, [identity?.id, debouncedFetchDebts]); // debouncedFetchDebts is now stable
+
+    // Listen for settlement events from other components (profile page, expense page, etc.)
+    useEffect(() => {
+        return onSettlementEvent(() => {
+            console.log('Settlement event received, refetching debts...');
+            fetchDebtsRef.current();
+        });
+    }, []);
 
     return { data, isLoading, error, refetch: fetchDebts };
 };

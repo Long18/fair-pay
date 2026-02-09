@@ -60,6 +60,7 @@ import { ProfileFriendsList } from "../components/profile-friends-list";
 import { SwipeableTabs } from "../components/swipeable-tabs";
 import { PullToRefresh } from "../components/pull-to-refresh";
 import { EmptyActivities, EmptyBalances } from "../components/profile-empty-states";
+import { dispatchSettlementEvent } from "@/lib/settlement-events";
 
 interface DebtSummary {
   counterparty_id: string;
@@ -473,6 +474,7 @@ export const ProfileShowUnified = () => {
         }
         setSettleDialogOpen(false);
         fetchDebts(showHistory);
+        dispatchSettlementEvent();
       } else {
         toast.error(t('profile.settleError', 'Failed to settle debts'));
       }
