@@ -67,35 +67,35 @@ export const SimplifiedBalanceView = ({
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+        <Card className="rounded-lg">
+          <CardContent className="p-3 sm:pt-6 sm:p-6">
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">You are owed</p>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
+              <p className="text-[10px] sm:text-sm text-muted-foreground leading-tight">You are owed</p>
+              <p className="text-base sm:text-2xl font-bold text-green-600 dark:text-green-400 mt-0.5 sm:mt-1 truncate">
                 {formatCurrency(totalOwedToMe)}
               </p>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="rounded-lg">
+          <CardContent className="p-3 sm:pt-6 sm:p-6">
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">You owe</p>
-              <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
+              <p className="text-[10px] sm:text-sm text-muted-foreground leading-tight">You owe</p>
+              <p className="text-base sm:text-2xl font-bold text-red-600 dark:text-red-400 mt-0.5 sm:mt-1 truncate">
                 {formatCurrency(totalIOwe)}
               </p>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="rounded-lg">
+          <CardContent className="p-3 sm:pt-6 sm:p-6">
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">Net balance</p>
+              <p className="text-[10px] sm:text-sm text-muted-foreground leading-tight">Net balance</p>
               <p
-                className={`text-2xl font-bold mt-1 ${
+                className={`text-base sm:text-2xl font-bold mt-0.5 sm:mt-1 truncate ${
                   netBalance > 0
                     ? "text-green-600 dark:text-green-400"
                     : netBalance < 0
