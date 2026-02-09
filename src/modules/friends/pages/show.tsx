@@ -22,6 +22,7 @@ import {
   RepeatIcon,
   Loader2Icon,
   ShareIcon,
+  CalendarIcon,
 } from "@/components/ui/icons";
 import { SwipeableTabs, PullToRefresh, EmptyBalances } from "@/modules/profile";
 import { Breadcrumb, createBreadcrumbs } from "@/components/refine-ui/layout/breadcrumb";
@@ -273,7 +274,7 @@ export const FriendShow = () => {
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
-              onClick={() => go({ to: "/friends" })}
+              onClick={() => go({ to: "/connections?tab=friends" })}
               className="rounded-lg md:hidden"
             >
               <ArrowLeftIcon size={16} className="mr-2" />
@@ -298,7 +299,6 @@ export const FriendShow = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              {/* Background gradient */}
               <div className="absolute inset-0 h-32 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-xl" />
 
               <div className="relative flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 p-6">
@@ -308,9 +308,9 @@ export const FriendShow = () => {
                   whileTap={{ scale: 0.95 }}
                   className="relative"
                 >
-                  <Avatar className="h-24 w-24 sm:h-32 sm:w-32 border-4 border-background shadow-xl">
+                  <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-4 border-background shadow-xl">
                     <AvatarImage src={friendProfile.avatar_url || undefined} />
-                    <AvatarFallback className="text-2xl sm:text-3xl bg-gradient-to-br from-primary/20 to-primary/10">
+                    <AvatarFallback className="text-xl sm:text-2xl bg-gradient-to-br from-primary/20 to-primary/10">
                       {friendProfile.full_name
                         ?.split(" ")
                         .map((n: string) => n[0])
@@ -321,9 +321,9 @@ export const FriendShow = () => {
                 </motion.div>
 
                 {/* Friend Info */}
-                <div className="flex-1 text-center sm:text-left">
-                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-4 mb-2">
-                    <h1 className="text-2xl sm:text-3xl font-bold">{friendProfile.full_name}</h1>
+                <div className="flex-1 text-center sm:text-left min-w-0">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 mb-2">
+                    <h1 className="text-2xl sm:text-3xl font-bold truncate max-w-full">{friendProfile.full_name}</h1>
                     <Badge variant="secondary" className="rounded-full">
                       {t('friends.friendsSince', {
                         date: formatDateShort(friendship.created_at),
@@ -331,6 +331,11 @@ export const FriendShow = () => {
                       })}
                     </Badge>
                   </div>
+
+                  <p className="text-xs text-muted-foreground mb-3">
+                    <CalendarIcon className="h-3 w-3 inline mr-1" />
+                    {t('friends.since', 'Since')} {formatDateShort(friendship.created_at)}
+                  </p>
 
                   {/* Action Buttons */}
                   <div className="flex gap-2 justify-center sm:justify-start">
@@ -386,19 +391,43 @@ export const FriendShow = () => {
                 <TabsContent value="activity" className="mt-0">
                   <Card className="rounded-xl">
                     <CardHeader>
-                      <CardTitle>{t('expenses.title', 'Expenses')}</CardTitle>
+                      <div className="flex items-center justify-between">
+                        <CardTitle>{t('expenses.title', 'Expenses')}</CardTitle>
+                        {expenses.length > 0 && (
+                          <Badge variant="secondary">
+                            {expenses.length} {t('common.items', 'items')}
+                          </Badge>
+                        )}
+                      </div>
                     </CardHeader>
                     <CardContent>
-                      <EnhancedActivityList
-                        activities={enhancedActivities}
-                        currentUserId={identity?.id || ""}
-                        currency="VND"
-                        isLoading={isLoadingActivities}
-                        showSummary={true}
-                        showFilters={true}
-                        showSort={true}
-                        showTimeGrouping={true}
-                      />
+                      {expenses.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                          <div className="text-5xl mb-4">🎉</div>
+                          <p className="font-semibold text-lg">{t('friends.readyToTrack', 'Ready to track expenses!')}</p>
+                          <p className="text-muted-foreground mt-2 max-w-sm">
+                            {t('friends.addFirstExpense', 'Add your first expense to start splitting costs.')}
+                          </p>
+                          <Button
+                            className="mt-4 rounded-lg"
+                            onClick={handleAddExpense}
+                          >
+                            <PlusIcon size={16} className="mr-2" />
+                            {t('expenses.addExpense', 'Add Expense')}
+                          </Button>
+                        </div>
+                      ) : (
+                        <EnhancedActivityList
+                          activities={enhancedActivities}
+                          currentUserId={identity?.id || ""}
+                          currency="VND"
+                          isLoading={isLoadingActivities}
+                          showSummary={true}
+                          showFilters={true}
+                          showSort={true}
+                          showTimeGrouping={true}
+                        />
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>
@@ -413,19 +442,17 @@ export const FriendShow = () => {
                       {balances.length === 0 ? (
                         <EmptyBalances onAction={handleAddExpense} />
                       ) : (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-                          <div>
-                            <SimplifiedBalanceView
-                              balances={balances}
-                              currentUserId={identity?.id || ""}
-                              simplifyDebts={false}
-                              onSettleUp={handleSettleUp}
-                              currency="VND"
-                            />
-                          </div>
+                        <div className="space-y-6">
+                          <SimplifiedBalanceView
+                            balances={balances}
+                            currentUserId={identity?.id || ""}
+                            simplifyDebts={false}
+                            onSettleUp={handleSettleUp}
+                            currency="VND"
+                          />
                           {payments.length > 0 && (
                             <div>
-                              <h3 className="text-lg font-semibold mb-4">{t('payments.history', 'Payment History')}</h3>
+                              <h3 className="text-base font-semibold mb-3">{t('payments.history', 'Payment History')}</h3>
                               <PaymentList
                                 friendshipId={friendship.id}
                                 currency="VND"
