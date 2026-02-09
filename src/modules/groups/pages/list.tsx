@@ -195,8 +195,16 @@ export const GroupListContent = () => {
     } else if (filterType === 'archived') {
       filtered = filtered.filter((g) => g.is_archived);
     } else {
-      // 'all' - show non-archived by default
-      filtered = filtered.filter((g) => !g.is_archived);
+      // 'all' - hide archived groups only for non-admin members
+      filtered = filtered.filter((g) => {
+        if (!g.is_archived) return true;
+        // Show archived groups if user is admin or creator
+        const isGroupAdmin = g.groupMembers.some(
+          (m: any) => m.user_id === identity?.id && m.role === 'admin'
+        );
+        const isGroupCreator = g.created_by === identity?.id;
+        return isGroupAdmin || isGroupCreator;
+      });
     }
 
     // Sort
