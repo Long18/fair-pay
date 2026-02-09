@@ -739,5 +739,14 @@
         "multiRecordSuccess": "Prepaid recorded for {{count}} member(s)",
         "partialSuccess": "Prepaid recorded for {{success}} of {{total}} member(s)",
         "allFailed": "Failed to record prepaid for all members"
+    },
+    "history": {
+        "title": "History",
+        "noSettledDebts": "No settled transactions yet",
+        "noSettledDebtsDescription": "When you settle debts with friends, they will appear here.",
+        "searchByName": "Search by name...",
+        "settledCount": "{{count}} settled transaction(s)",
+        "noResults": "No results found for \"{{query}}\"",
+        "totalTransacted": "Total"
     }
 }
