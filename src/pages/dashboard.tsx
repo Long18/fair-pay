@@ -4,6 +4,7 @@ import { Profile } from "@/modules/profile/types";
 import { FloatingActionButton } from "@/components/dashboard/FloatingActionButton";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardStates";
 import { BalanceTable } from "@/components/dashboard/BalanceTable";
+import { SettledHistoryList } from "@/components/dashboard/SettledHistoryList";
 import { EnhancedActivityList } from "@/components/dashboard/enhanced-activity";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
@@ -19,11 +20,18 @@ import { DashboardTracker } from "@/lib/analytics/index";
 export const Dashboard = () => {
   const { data: identity } = useGetIdentity<Profile>();
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = usePersistedState<"balances" | "activity">("dashboard-tab", "balances");
-  const [showHistory, setShowHistory] = useState(false);
+  const [activeTab, setActiveTab] = usePersistedState<"balances" | "activity" | "history">("dashboard-tab", "balances");
+
+  // Active debts (no history)
   const { data: debts = [], isLoading: debtsLoading, refetch: refetchDebts, error: debtsError } = useAggregatedDebts({
-    includeHistory: showHistory
+    includeHistory: false
   });
+
+  // History debts (only fetched when history tab is active)
+  const { data: historyDebts = [], isLoading: historyLoading } = useAggregatedDebts({
+    includeHistory: activeTab === "history"
+  });
+
   const {
     activities,
     isLoading: activitiesLoading
@@ -33,39 +41,27 @@ export const Dashboard = () => {
   const visibilityDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const lastRefetchTimeRef = useRef<number>(0);
 
-  // Handle history toggle
-  const handleHistoryToggle = (checked: boolean) => {
-    setShowHistory(checked);
-    // Track toggle event
-    DashboardTracker.viewToggled(`show_settled_${checked}`);
-  };
-
   // Refetch data when component mounts or becomes visible (with debounce and stale time check)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && identity?.id) {
-        // Only refetch if data is stale (older than 5 seconds)
         const now = Date.now();
         const timeSinceLastRefetch = now - lastRefetchTimeRef.current;
-        const STALE_TIME = 5 * 1000; // 5 seconds
+        const STALE_TIME = 5 * 1000;
 
         if (timeSinceLastRefetch > STALE_TIME) {
-          // Clear any pending debounce
           if (visibilityDebounceRef.current) {
             clearTimeout(visibilityDebounceRef.current);
           }
-
-          // Debounce the refetch
           visibilityDebounceRef.current = setTimeout(() => {
             console.log('Dashboard visible, refetching stale data...');
             lastRefetchTimeRef.current = Date.now();
             refetchDebts();
-          }, 300); // 300ms debounce
+          }, 300);
         }
       }
     };
 
-    // Also refetch on window focus (covers SPA navigation back to dashboard)
     const handleFocus = () => {
       if (identity?.id) {
         const now = Date.now();
@@ -91,14 +87,13 @@ export const Dashboard = () => {
       window.removeEventListener('focus', handleFocus);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [identity?.id]); // Removed refetchDebts from dependencies to prevent infinite loop
+  }, [identity?.id]);
 
   useEffect(() => {
     if (!debtsLoading && !activitiesLoading) {
       const timer = setTimeout(() => {
         setLoading(false);
 
-        // Track balance check when data is loaded
         if (identity?.id && debts.length > 0) {
           DashboardTracker.balanceChecked({
             hasDebts: true,
@@ -112,8 +107,7 @@ export const Dashboard = () => {
 
   const isAuthenticated = !!identity;
 
-  // Process debts for balance table
-  // Zero-balance filtering is handled by backend SQL (HAVING clause) and hook layer
+  // Process debts for balance table (active only)
   const balances = useMemo(() => {
     return debts.map(d => ({
       counterparty_id: d.counterparty_id,
@@ -139,7 +133,7 @@ export const Dashboard = () => {
           <PageHeader title={t('dashboard.title', 'Dashboard')} />
 
           <PageContent>
-            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "balances" | "activity")} className="space-y-6">
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "balances" | "activity" | "history")} className="space-y-6">
               <div className="flex items-center justify-center w-full">
                 <TabsList>
                   <TabsTrigger value="balances" className="px-6">
@@ -148,30 +142,21 @@ export const Dashboard = () => {
                   <TabsTrigger value="activity" className="px-6">
                     {t('dashboard.recentActivity', 'Activity')}
                   </TabsTrigger>
+                  <TabsTrigger value="history" className="px-6 gap-1.5">
+                    <HistoryIcon className="h-4 w-4" />
+                    {t('history.title', 'History')}
+                  </TabsTrigger>
                 </TabsList>
               </div>
 
               <TabsContent value="balances" className="space-y-4 mt-6">
-                {isAuthenticated && showHistory && (
-                  <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg text-xs text-muted-foreground mb-3">
-                    <HistoryIcon className="h-4 w-4" />
-                    <span>{t('dashboard.showingSettledDebts', 'Showing settled debts')}</span>
-                    <button
-                      onClick={() => handleHistoryToggle(false)}
-                      className="ml-auto text-muted-foreground hover:text-foreground transition-colors"
-                      aria-label="Hide settled debts"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                )}
                 {debtsError && (
                   <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
                     {t('dashboard.errorLoadingDebts', 'Failed to load debts. Please try again.')}
                   </div>
                 )}
                 <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
-                  <BalanceTable balances={balances} disabled={!isAuthenticated} showHistory={showHistory} showExpenseBreakdown={!showHistory} />
+                  <BalanceTable balances={balances} disabled={!isAuthenticated} showHistory={false} showExpenseBreakdown={true} />
                 </div>
               </TabsContent>
 
@@ -186,6 +171,15 @@ export const Dashboard = () => {
                     showFilters={true}
                     showSort={true}
                     showTimeGrouping={true}
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="history" className="space-y-4 mt-6">
+                <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
+                  <SettledHistoryList
+                    debts={historyDebts}
+                    isLoading={historyLoading}
                   />
                 </div>
               </TabsContent>
