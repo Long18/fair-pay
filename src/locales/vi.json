@@ -320,6 +320,7 @@
         "pageDescription": "Quản lý lịch trình tạo chi phí tự động",
         "memberShares": "Phần chia mỗi thành viên mỗi kỳ",
         "edit": "Chỉnh sửa",
+        "recurringTemplate": "Mẫu định kỳ",
         "prepaid": {
             "payUpfront": "Trả trước",
             "prepaidUntil": "Đã trả trước đến",

@@ -15,6 +15,7 @@ import {
 } from "@/components/filters";
 import { PaginationControls, PaginationMetadata } from "@/components/ui/pagination-controls";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useBulkDeleteExpenses } from "@/hooks/use-bulk-operations";
 import { BulkActionBar } from "@/components/bulk-operations/BulkActionBar";
 import { BulkDeleteDialog } from "@/components/bulk-operations/BulkDeleteDialog";
@@ -31,6 +32,7 @@ interface ExpenseListProps {
 
 export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseListProps) => {
   const go = useGo();
+  const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
   const [selectionMode, setSelectionMode] = useState(false);
@@ -280,7 +282,7 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
                           </Badge>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Recurring template ({recurringTemplateIds.get(expense.id)?.is_active ? 'Active' : 'Paused'})</p>
+                          <p>{t('recurring.recurringTemplate', 'Recurring template')} ({recurringTemplateIds.get(expense.id)?.is_active ? t('recurring.active') : t('recurring.paused')})</p>
                         </TooltipContent>
                       </Tooltip>
                     )}
