@@ -16,6 +16,8 @@ interface ExpenseBreakdownItemSelectableProps {
   expenseDate: string;
   groupName?: string | null;
   myShare: number;
+  direction: 'i_owe' | 'they_owe';
+  paidByName: string;
   status: 'paid' | 'unpaid' | 'partial';
   isSettled: boolean;
   isSelected: boolean;
@@ -31,6 +33,8 @@ export function ExpenseBreakdownItemSelectable({
   expenseDate,
   groupName,
   myShare,
+  direction,
+  paidByName,
   status,
   isSettled,
   isSelected,
@@ -38,6 +42,8 @@ export function ExpenseBreakdownItemSelectable({
 }: ExpenseBreakdownItemSelectableProps) {
   const { t } = useTranslation();
   const go = useGo();
+
+  const isIOwe = direction === 'i_owe';
 
   const formatDate = (dateString: string) => {
     try {
@@ -60,8 +66,12 @@ export function ExpenseBreakdownItemSelectable({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 py-3 px-4 rounded-lg transition-colors border",
-        isSelected && "border-primary bg-primary/5",
+        "flex items-center gap-3 py-3 pr-4 rounded-lg transition-colors border relative",
+        // Left color accent for direction
+        isIOwe
+          ? "pl-4 border-l-[3px] border-l-red-400 dark:border-l-red-500"
+          : "pl-4 border-l-[3px] border-l-green-400 dark:border-l-green-500",
+        isSelected && "border-primary bg-primary/5 !border-l-primary",
         !isSelected && "border-transparent hover:bg-muted/50",
         isSettled && "opacity-60"
       )}
@@ -87,6 +97,16 @@ export function ExpenseBreakdownItemSelectable({
           <PaymentStateBadge state={status} size="sm" />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Paid by indicator */}
+          <span className={cn(
+            "text-xs font-medium px-1.5 py-0.5 rounded",
+            isIOwe
+              ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300"
+              : "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300"
+          )}>
+            {paidByName} {t('debts.paid', 'paid')}
+          </span>
+          <span className="typography-metadata">•</span>
           <span className="typography-metadata">
             {formatDate(expenseDate)}
           </span>
@@ -105,12 +125,22 @@ export function ExpenseBreakdownItemSelectable({
         </div>
       </div>
 
-      {/* My Share - Prominent */}
-      <div className="flex flex-col items-end ml-4">
-        <span className="text-xs text-muted-foreground mb-1">
-          {t('expense.myShare', 'My Share')}
+      {/* Share amount with direction context */}
+      <div className="flex flex-col items-end ml-4 shrink-0">
+        <span className={cn(
+          "text-xs mb-1",
+          isIOwe ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
+        )}>
+          {isIOwe
+            ? t('debts.youOweLabel', 'You owe')
+            : t('debts.theyOweLabel', 'They owe')}
         </span>
-        <span className={cn("typography-amount-prominent", isSelected && "text-primary")}>
+        <span className={cn(
+          "typography-amount-prominent",
+          isSelected && "text-primary",
+          !isSelected && isIOwe && "text-red-600 dark:text-red-400",
+          !isSelected && !isIOwe && "text-green-600 dark:text-green-400"
+        )}>
           {formatCurrency(myShare, currency)}
         </span>
       </div>

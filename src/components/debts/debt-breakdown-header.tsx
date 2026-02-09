@@ -14,6 +14,8 @@ interface DebtBreakdownHeaderProps {
   netAmount: number;
   iOweThem: boolean;
   currency: string;
+  totalIOwe: number;
+  totalTheyOwe: number;
   unpaidCount?: number;
   partialCount?: number;
   paidCount?: number;
@@ -26,6 +28,8 @@ export function DebtBreakdownHeader({
   netAmount,
   iOweThem,
   currency,
+  totalIOwe,
+  totalTheyOwe,
   unpaidCount = 0,
   partialCount = 0,
   paidCount: _paidCount = 0,
@@ -99,6 +103,28 @@ export function DebtBreakdownHeader({
             {formatCurrency(netAmount, currency)}
           </p>
         </div>
+
+        {/* Balance Breakdown */}
+        {(totalIOwe > 0 || totalTheyOwe > 0) && (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
+              <p className="text-xs text-red-600 dark:text-red-400 mb-0.5">
+                {t('debts.youOweTotal', 'You owe {{name}}', { name: counterpartyName.split(' ')[0] })}
+              </p>
+              <p className="text-lg font-semibold tabular-nums text-red-700 dark:text-red-300">
+                {formatCurrency(totalIOwe, currency)}
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
+              <p className="text-xs text-green-600 dark:text-green-400 mb-0.5">
+                {t('debts.theyOweTotal', '{{name}} owes you', { name: counterpartyName.split(' ')[0] })}
+              </p>
+              <p className="text-lg font-semibold tabular-nums text-green-700 dark:text-green-300">
+                {formatCurrency(totalTheyOwe, currency)}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
