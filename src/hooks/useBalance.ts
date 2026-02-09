@@ -35,11 +35,13 @@ export const useBalance = (options?: UseBalanceOptions) => {
       queryFn: async () => {
         if (!identity?.id) throw new Error("User not authenticated");
 
-        const rpcParams: Record<string, string> = { p_user_id: identity.id };
-        if (dateRange) {
-          rpcParams.p_start_date = dateRange.start.toISOString();
-          rpcParams.p_end_date = dateRange.end.toISOString();
-        }
+        // Always pass all params explicitly to avoid PostgREST ambiguity
+        // between get_user_balance(uuid) and get_user_balance(uuid, timestamptz, timestamptz)
+        const rpcParams: Record<string, string | null> = {
+          p_user_id: identity.id,
+          p_start_date: dateRange ? dateRange.start.toISOString() : null,
+          p_end_date: dateRange ? dateRange.end.toISOString() : null,
+        };
 
         const { data, error } = await supabaseClient.rpc(
           'get_user_balance',
