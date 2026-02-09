@@ -106,6 +106,8 @@ import {
   Star,
   QrCode,
   ExternalLink,
+  Archive,
+  ArchiveRestore,
 } from "lucide-react";
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -875,4 +877,12 @@ export const QrCodeIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
 
 export const ExternalLinkIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
   <ExternalLink size={size} {...props} />
+);
+
+export const ArchiveIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Archive size={size} {...props} />
+);
+
+export const ArchiveRestoreIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <ArchiveRestore size={size} {...props} />
 );

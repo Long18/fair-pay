@@ -29,7 +29,7 @@ export const ConnectionsPage = () => {
     resource: "groups",
     pagination: { mode: "off" },
     meta: {
-      select: "id",
+      select: "id, is_archived",
     },
   });
 
@@ -41,7 +41,10 @@ export const ConnectionsPage = () => {
     },
   });
 
-  const groupCount = groupsQuery.data?.data?.length ?? 0;
+  const groupCount = useMemo(() => {
+    const allGroups = groupsQuery.data?.data || [];
+    return allGroups.filter((g) => !g.is_archived).length;
+  }, [groupsQuery.data]);
   const acceptedFriendsCount = useMemo(() => {
     if (!identity?.id) return 0;
     const friendships = friendshipsQuery.data?.data || [];
