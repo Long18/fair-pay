@@ -1,13 +1,14 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useOne, useList, useDelete, useGo, useGetIdentity, useUpdate, useCreate } from "@refinedev/core";
-import { useParams } from "react-router";
+import { useParams, useSearchParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Group, GroupMember } from "../types";
 import { Profile } from "@/modules/profile/types";
 import { MemberList } from "../components/member-list";
 import { AddMemberModal } from "../components/add-member-modal";
-import { ExpenseList, RecurringExpenseList } from "@/modules/expenses";
+import { RecurringExpenseList } from "@/modules/expenses";
 import { SimplifiedBalanceView, PaymentList, useBalanceCalculation } from "@/modules/payments";
 import { SimplifiedDebtsToggle } from "@/components/dashboard/SimplifiedDebtsToggle";
 import { useSimplifiedDebts } from "@/hooks/use-simplified-debts";
@@ -16,12 +17,18 @@ import { useCategoryBreakdown } from "@/hooks/use-category-breakdown";
 import { SettleAllDialog } from "@/components/bulk-operations/SettleAllDialog";
 import { QuickSettlementDialog } from "@/components/payments/quick-settlement-dialog";
 import { PaymentMethod } from "@/lib/payment-methods";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { formatNumber } from "@/lib/locale-utils";
+import { formatNumber, formatDate } from "@/lib/locale-utils";
 import { toast } from "sonner";
-import { ExpandableCard } from "@/components/ui/expandable-card";
 import { CategoryBreakdown } from "@/components/groups/category-breakdown";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,36 +38,42 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { formatDate } from "@/lib/locale-utils";
-
 import {
   ArrowLeftIcon,
   PencilIcon,
   Trash2Icon,
   PlusIcon,
-  ArrowRightIcon,
   ReceiptIcon,
   RepeatIcon,
   UsersIcon,
   Users2Icon,
   CalendarIcon,
-  SparklesIcon,
   CheckCircle2Icon,
-  HistoryIcon,
-  PieChartIcon,
+  BanknoteIcon,
   ArchiveIcon,
   ArchiveRestoreIcon,
+  MoreVerticalIcon,
+  ShareIcon,
+  Loader2Icon,
+  PieChartIcon,
 } from "@/components/ui/icons";
-import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
+import { Breadcrumb, createBreadcrumbs } from "@/components/refine-ui/layout/breadcrumb";
+import { SwipeableTabs, PullToRefresh, EmptyBalances } from "@/modules/profile";
+import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
+import { EnhancedActivityList } from "@/components/dashboard/enhanced-activity-list";
+
 export const GroupShow = () => {
   const { id } = useParams<{ id: string }>();
   const go = useGo();
+  const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [addMemberModalOpen, setAddMemberModalOpen] = useState(false);
   const [useServerSimplification, setUseServerSimplification] = useState(() => {
-    // Load preference from localStorage
     const saved = localStorage.getItem(`group-${id}-use-server-simplification`);
     return saved === "true";
   });
@@ -71,68 +84,59 @@ export const GroupShow = () => {
     userName: string;
     amount: number;
   } | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+
+  // Tab from URL
+  const activeTab = searchParams.get('tab') || 'activity';
+  const handleTabChange = (tab: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('tab', tab);
+    setSearchParams(newParams, { replace: true });
+  };
 
   const { query: groupQuery } = useOne<Group>({
     resource: "groups",
     id: id!,
-    meta: {
-      select: "*",
-    },
+    meta: { select: "*" },
   });
 
   const { query: membersQuery } = useList<GroupMember>({
     resource: "group_members",
-    filters: [
-      {
-        field: "group_id",
-        operator: "eq",
-        value: id,
-      },
-    ],
-    pagination: {
-      mode: "off",
-    },
-    queryOptions: {
-      enabled: !!id,
-    },
-    meta: {
-      select: "*, profiles!user_id(*)",
-    },
+    filters: [{ field: "group_id", operator: "eq", value: id }],
+    pagination: { mode: "off" },
+    queryOptions: { enabled: !!id },
+    meta: { select: "*, profiles!user_id(*)" },
   });
 
   const deleteGroupMutation = useDelete();
   const deleteMemberMutation = useDelete();
   const updateMemberMutation = useUpdate();
   const createPaymentMutation = useCreate();
+  const updateGroupMutation = useUpdate();
 
-  // Fetch expenses for balance calculation
   const { query: expensesQuery } = useList({
     resource: "expenses",
     filters: [{ field: "group_id", operator: "eq", value: id }],
-    meta: {
-      select: "*, expense_splits(*)",
-    },
+    meta: { select: "*, expense_splits(*)" },
     queryOptions: {
-      staleTime: 2 * 60 * 1000, // 2 minutes - data is fresh
-      gcTime: 5 * 60 * 1000, // 5 minutes - keep in cache
-      refetchOnWindowFocus: false, // Don't refetch on window focus
+      staleTime: 2 * 60 * 1000,
+      gcTime: 5 * 60 * 1000,
+      refetchOnWindowFocus: false,
     },
   });
 
-  // Fetch payments for balance calculation
   const { query: paymentsQuery } = useList({
     resource: "payments",
     filters: [{ field: "group_id", operator: "eq", value: id }],
     queryOptions: {
-      staleTime: 2 * 60 * 1000, // 2 minutes - data is fresh
-      gcTime: 5 * 60 * 1000, // 5 minutes - keep in cache
-      refetchOnWindowFocus: false, // Don't refetch on window focus
+      staleTime: 2 * 60 * 1000,
+      gcTime: 5 * 60 * 1000,
+      refetchOnWindowFocus: false,
     },
   });
 
-  // Fetch server-side simplified debts
   const {
-    simplifiedDebts,
     isLoading: isLoadingSimplified,
     transactionCount: simplifiedCount,
   } = useSimplifiedDebts({
@@ -140,7 +144,6 @@ export const GroupShow = () => {
     enabled: useServerSimplification && !!id,
   });
 
-  // Bulk operations
   const settleAllMutation = useSettleAllGroupDebts();
 
   const { data: groupData, isLoading: isLoadingGroup } = groupQuery;
@@ -151,9 +154,6 @@ export const GroupShow = () => {
   const expenses: any[] = expensesQuery.data?.data || [];
   const payments: any[] = paymentsQuery.data?.data || [];
 
-  const refetch = membersQuery.refetch;
-
-  // Calculate balances
   const membersList = allMembers.map((m: any) => ({
     id: m.user_id,
     full_name: m.profiles?.full_name || "Unknown",
@@ -167,33 +167,24 @@ export const GroupShow = () => {
     members: membersList,
   });
 
-  // Category breakdown for insights
-  const { breakdown: categoryBreakdown, isLoading: isLoadingCategories } = useCategoryBreakdown(
-    'all_time',
-    undefined,
-    id
-  );
+  const { breakdown: categoryBreakdown } = useCategoryBreakdown('all_time', undefined, id);
 
-  // Calculate member stats (expense count, total paid)
+  const {
+    activities: enhancedActivities,
+    isLoading: isLoadingActivities,
+  } = useEnhancedActivity({ groupId: id });
+
   const memberStats = useMemo(() => {
     const stats: Record<string, { expense_count: number; total_paid: number }> = {};
-
     allMembers.forEach((member: any) => {
-      const memberExpenses = expenses.filter((e: any) => {
-        const splits = e.expense_splits || [];
-        return splits.some((s: any) => s.user_id === member.user_id);
-      });
-
+      const memberExpenses = expenses.filter((e: any) =>
+        (e.expense_splits || []).some((s: any) => s.user_id === member.user_id)
+      );
       const totalPaid = expenses
         .filter((e: any) => e.paid_by_user_id === member.user_id)
         .reduce((sum: number, e: any) => sum + e.amount, 0);
-
-      stats[member.user_id] = {
-        expense_count: memberExpenses.length,
-        total_paid: totalPaid,
-      };
+      stats[member.user_id] = { expense_count: memberExpenses.length, total_paid: totalPaid };
     });
-
     return stats;
   }, [allMembers, expenses]);
 
@@ -201,15 +192,38 @@ export const GroupShow = () => {
   const isAdmin = currentUserMember?.role === "admin";
   const isCreator = group?.created_by === identity?.id;
   const isArchived = group?.is_archived ?? false;
-  // Admin/creator can still fully manage archived groups; regular members get restricted view
   const canManage = isAdmin || isCreator;
 
-  const updateGroupMutation = useUpdate();
+  const unsettledSplits = expenses.flatMap((e: any) =>
+    (e.expense_splits || []).filter((s: any) => !s.is_settled)
+  );
+  const unsettledCount = unsettledSplits.length;
+  const unsettledTotal = unsettledSplits.reduce(
+    (sum: number, s: any) => sum + (s.computed_amount - (s.settled_amount || 0)),
+    0
+  );
+
+  // Handlers
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        groupQuery.refetch(),
+        membersQuery.refetch(),
+        expensesQuery.refetch(),
+        paymentsQuery.refetch(),
+      ]);
+      toast.success(t('common.refreshed', 'Data refreshed'));
+    } catch {
+      toast.error(t('common.refreshError', 'Failed to refresh'));
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [groupQuery, membersQuery, expensesQuery, paymentsQuery, t]);
 
   const handleArchiveToggle = () => {
     if (!group?.id || !identity?.id) return;
     const newArchived = !isArchived;
-
     updateGroupMutation.mutate(
       {
         resource: "groups",
@@ -224,6 +238,7 @@ export const GroupShow = () => {
         onSuccess: () => {
           toast.success(newArchived ? "Group archived" : "Group restored");
           groupQuery.refetch();
+          setShowArchiveDialog(false);
         },
         onError: (error) => {
           toast.error(`Failed to ${newArchived ? "archive" : "restore"} group: ${error.message}`);
@@ -232,8 +247,9 @@ export const GroupShow = () => {
     );
   };
 
-  const handleSettleUp = (toUserId: string, userName: string, amount: number) => {
-    setSelectedSettlement({ userId: toUserId, userName, amount });
+  const handleSettleUp = (toUserId: string, amount: number) => {
+    const member = membersList.find(m => m.id === toUserId);
+    setSelectedSettlement({ userId: toUserId, userName: member?.full_name || "Unknown", amount });
     setQuickSettleDialogOpen(true);
   };
 
@@ -244,7 +260,6 @@ export const GroupShow = () => {
     notes: string;
   }) => {
     if (!selectedSettlement || !identity?.id || !group?.id) return;
-
     try {
       await createPaymentMutation.mutateAsync({
         resource: "payments",
@@ -259,21 +274,11 @@ export const GroupShow = () => {
           created_by: identity.id,
         },
       });
-
-      // Success feedback
-      toast.success(
-        `Payment of ${formatNumber(data.amount)} ₫ to ${selectedSettlement.userName} recorded!`
-      );
-
-      // Close dialog
+      toast.success(`Payment of ${formatNumber(data.amount)} ₫ to ${selectedSettlement.userName} recorded!`);
       setQuickSettleDialogOpen(false);
       setSelectedSettlement(null);
-
-      // Refresh data
       expensesQuery.refetch();
       paymentsQuery.refetch();
-
-      // Show remaining balance toast if partial payment
       if (data.amount < selectedSettlement.amount) {
         const remaining = selectedSettlement.amount - data.amount;
         setTimeout(() => {
@@ -281,10 +286,7 @@ export const GroupShow = () => {
             action: {
               label: "Pay More",
               onClick: () => {
-                setSelectedSettlement({
-                  ...selectedSettlement,
-                  amount: remaining,
-                });
+                setSelectedSettlement({ ...selectedSettlement, amount: remaining });
                 setQuickSettleDialogOpen(true);
               },
             },
@@ -298,19 +300,16 @@ export const GroupShow = () => {
 
   const handleToggleSimplification = (enabled: boolean) => {
     setUseServerSimplification(enabled);
-    // Save preference to localStorage
     localStorage.setItem(`group-${id}-use-server-simplification`, enabled.toString());
   };
 
   const handleSettleAll = async () => {
     if (!id) return;
-
     await settleAllMutation.mutateAsync(
       { groupId: id },
       {
         onSuccess: () => {
           setSettleAllDialogOpen(false);
-          // Refetch all data
           groupQuery.refetch();
           membersQuery.refetch();
           expensesQuery.refetch();
@@ -320,24 +319,10 @@ export const GroupShow = () => {
     );
   };
 
-  // Calculate unsettled splits count and total
-  const unsettledSplits = expenses.flatMap((e: any) =>
-    (e.expense_splits || []).filter((s: any) => !s.is_settled)
-  );
-  const unsettledCount = unsettledSplits.length;
-  const unsettledTotal = unsettledSplits.reduce(
-    (sum: number, s: any) => sum + (s.computed_amount - (s.settled_amount || 0)),
-    0
-  );
-
   const handleDeleteGroup = () => {
     if (!group?.id) return;
-
     deleteGroupMutation.mutate(
-      {
-        resource: "groups",
-        id: group.id,
-      },
+      { resource: "groups", id: group.id },
       {
         onSuccess: () => {
           toast.success("Group deleted successfully");
@@ -352,426 +337,473 @@ export const GroupShow = () => {
 
   const handleRemoveMember = (memberId: string) => {
     deleteMemberMutation.mutate(
+      { resource: "group_members", id: memberId },
       {
-        resource: "group_members",
-        id: memberId,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Member removed successfully");
-          refetch();
-        },
-        onError: (error) => {
-          toast.error(`Failed to remove member: ${error.message}`);
-        },
+        onSuccess: () => { toast.success("Member removed"); membersQuery.refetch(); },
+        onError: (error) => { toast.error(`Failed to remove member: ${error.message}`); },
       }
     );
   };
 
   const handleToggleRole = (memberId: string, currentRole: string) => {
     const newRole = currentRole === "admin" ? "member" : "admin";
-
     updateMemberMutation.mutate(
-      {
-        resource: "group_members",
-        id: memberId,
-        values: { role: newRole },
-      },
+      { resource: "group_members", id: memberId, values: { role: newRole } },
       {
         onSuccess: () => {
-          toast.success(
-            `Member ${newRole === "admin" ? "promoted to admin" : "changed to member"}`
-          );
-          refetch();
+          toast.success(`Member ${newRole === "admin" ? "promoted to admin" : "changed to member"}`);
+          membersQuery.refetch();
         },
-        onError: (error) => {
-          toast.error(`Failed to update role: ${error.message}`);
-        },
+        onError: (error) => { toast.error(`Failed to update role: ${error.message}`); },
       }
     );
   };
 
+  const handleShare = async () => {
+    const groupUrl = `${window.location.origin}/groups/show/${id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: group?.name || 'Group',
+          text: `Check out ${group?.name} on FairPay`,
+          url: groupUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(groupUrl);
+        toast.success(t('common.linkCopied', 'Link copied to clipboard'));
+      }
+    } catch {
+      // User cancelled share
+    }
+  };
+
+  // Loading state
   if (isLoadingGroup || !group) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Loading group...</p>
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="flex items-center justify-center h-64">
+          <Loader2Icon size={32} className="animate-spin text-muted-foreground" />
         </div>
       </div>
     );
   }
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2) || "?";
-  };
+  const getInitials = (name: string) =>
+    name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?";
+
+  const totalExpenseAmount = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const tabs = ["activity", "balances", "members", ...((!isArchived || canManage) ? ["recurring"] : [])];
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-4xl">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="mb-4 sm:mb-6"
-        onClick={() => go({ to: "/groups" })}
-      >
-        <ArrowLeftIcon className="h-4 w-4 mr-2" />
-        <span className="hidden sm:inline">Back to Groups</span>
-        <span className="sm:hidden">Back</span>
-      </Button>
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className="container mx-auto px-4 py-4 sm:py-8 max-w-4xl pb-20 sm:pb-8">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="space-y-6"
+        >
+          {/* Breadcrumb (Desktop) */}
+          <Breadcrumb
+            items={[
+              createBreadcrumbs.home(),
+              createBreadcrumbs.groups(),
+              createBreadcrumbs.groupDetail(group.name),
+            ]}
+          />
 
-      <div className="space-y-6">
-        {/* Group Header Card */}
-        <Card className="border-2">
-          <CardHeader className="pb-4">
-            <div className="flex flex-col gap-6">
-              <div className="space-y-3">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="p-2 rounded-lg bg-primary/10 shrink-0">
-                      <Users2Icon className="h-6 w-6 text-primary" />
+          {/* Back + Share */}
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              onClick={() => go({ to: "/connections?tab=groups" })}
+              className="rounded-lg md:hidden"
+            >
+              <ArrowLeftIcon size={16} className="mr-2" />
+              {t('common.back', 'Back')}
+            </Button>
+            <Button
+              onClick={handleShare}
+              variant="outline"
+              size="sm"
+              className="rounded-lg ml-auto"
+            >
+              <ShareIcon size={16} className="mr-2 sm:mr-0" />
+              <span className="sm:sr-only">{t('common.share', 'Share')}</span>
+            </Button>
+          </div>
+
+          {/* Group Header */}
+          <Card className="rounded-xl overflow-hidden">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="absolute inset-0 h-32 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-xl" />
+
+              <div className="relative flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 p-6">
+                {/* Group Avatar */}
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="relative">
+                  <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-4 border-background shadow-xl">
+                    <AvatarFallback className="text-xl sm:text-2xl bg-gradient-to-br from-primary/20 to-primary/10">
+                      {getInitials(group.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  {isArchived && (
+                    <div className="absolute -bottom-1 -right-1 bg-amber-100 border-2 border-background rounded-full p-1">
+                      <ArchiveIcon className="h-3.5 w-3.5 text-amber-700" />
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <CardTitle className="text-2xl sm:text-3xl font-bold truncate">
-                        {group.name}
-                      </CardTitle>
+                  )}
+                </motion.div>
+
+                {/* Group Info */}
+                <div className="flex-1 text-center sm:text-left min-w-0">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 mb-2">
+                    <h1 className="text-2xl sm:text-3xl font-bold truncate max-w-full">
+                      {group.name}
+                    </h1>
+                    <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
                       {isArchived && (
-                        <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-300 mt-1">
-                          <ArchiveIcon className="h-3 w-3 mr-1" />
+                        <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-300 rounded-full">
                           Archived
                         </Badge>
                       )}
-                      {group.description && (
-                        <p className="text-muted-foreground mt-2 text-sm sm:text-base line-clamp-2">
-                          {group.description}
-                        </p>
-                      )}
+                      <Badge variant="secondary" className="rounded-full">
+                        <UsersIcon className="h-3 w-3 mr-1" />
+                        {allMembers.length}
+                      </Badge>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-4 text-xs sm:text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1.5">
-                    <CalendarIcon className="h-4 w-4" />
-                    <span>
-                      Created{" "}
-                      {formatDate(group.created_at, {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <UsersIcon className="h-4 w-4" />
-                    <span>{allMembers.length} {allMembers.length === 1 ? 'member' : 'members'}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t">
-                {/* Add Expense - hidden for non-admin members on archived groups */}
-                {(!isArchived || canManage) && (
-                  <Button
-                    className="w-full sm:w-auto"
-                    size="lg"
-                    onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
-                  >
-                    <PlusIcon className="h-4 w-4 mr-2" />
-                    Add Expense
-                  </Button>
-                )}
-                <div className="flex gap-2">
-                  {isAdmin && (
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="flex-1 sm:flex-none"
-                      onClick={() => go({ to: `/groups/edit/${group.id}` })}
-                    >
-                      <PencilIcon className="h-4 w-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Edit Group</span>
-                      <span className="sm:hidden">Edit</span>
-                    </Button>
+
+                  {group.description && (
+                    <p className="text-muted-foreground text-sm sm:text-base line-clamp-2 mb-3">
+                      {group.description}
+                    </p>
                   )}
-                  {/* Archive/Unarchive - only admin/creator */}
-                  {canManage && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="lg"
-                          className={cn("flex-1 sm:flex-none", isArchived && "border-amber-300 text-amber-700 hover:bg-amber-50")}
-                        >
-                          {isArchived ? (
+
+                  <p className="text-xs text-muted-foreground mb-3">
+                    <CalendarIcon className="h-3 w-3 inline mr-1" />
+                    {t('groups.createdOn', 'Created')} {formatDate(group.created_at, { year: "numeric", month: "short", day: "numeric" })}
+                  </p>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 justify-center sm:justify-start flex-wrap">
+                    {(!isArchived || canManage) && (
+                      <Button
+                        onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
+                        variant="default"
+                        size="sm"
+                        className="rounded-lg"
+                      >
+                        <PlusIcon size={16} className="mr-2" />
+                        {t('expenses.addExpense', 'Add Expense')}
+                      </Button>
+                    )}
+                    {isAdmin && unsettledCount > 0 && (!isArchived || canManage) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-lg"
+                        onClick={() => setSettleAllDialogOpen(true)}
+                      >
+                        <CheckCircle2Icon size={16} className="mr-2" />
+                        {t('groups.settleAll', 'Settle All')} ({unsettledCount})
+                      </Button>
+                    )}
+
+                    {/* More actions dropdown */}
+                    {canManage && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="rounded-lg">
+                            <MoreVerticalIcon size={16} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {isAdmin && (
+                            <DropdownMenuItem onClick={() => go({ to: `/groups/edit/${group.id}` })}>
+                              <PencilIcon className="mr-2 h-4 w-4" />
+                              {t('groups.editGroup', 'Edit Group')}
+                            </DropdownMenuItem>
+                          )}
+                          {isAdmin && (!isArchived || canManage) && (
+                            <DropdownMenuItem onClick={() => setAddMemberModalOpen(true)}>
+                              <PlusIcon className="mr-2 h-4 w-4" />
+                              {t('groups.addMember', 'Add Member')}
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setShowArchiveDialog(true)}>
+                            {isArchived ? (
+                              <>
+                                <ArchiveRestoreIcon className="mr-2 h-4 w-4" />
+                                {t('groups.restore', 'Restore Group')}
+                              </>
+                            ) : (
+                              <>
+                                <ArchiveIcon className="mr-2 h-4 w-4" />
+                                {t('groups.archive', 'Archive Group')}
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          {isCreator && (
                             <>
-                              <ArchiveRestoreIcon className="h-4 w-4 sm:mr-2" />
-                              <span className="hidden sm:inline">Restore</span>
-                            </>
-                          ) : (
-                            <>
-                              <ArchiveIcon className="h-4 w-4 sm:mr-2" />
-                              <span className="hidden sm:inline">Archive</span>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => setShowDeleteDialog(true)}
+                                className="text-destructive"
+                              >
+                                <Trash2Icon className="mr-2 h-4 w-4" />
+                                {t('groups.deleteGroup', 'Delete Group')}
+                              </DropdownMenuItem>
                             </>
                           )}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            {isArchived ? "Restore Group?" : "Archive Group?"}
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            {isArchived
-                              ? "This will restore the group. Members will be able to view expenses and add new ones again."
-                              : "Archived groups are read-only for members. They can only see balances and member list. Admins and the group creator can still manage everything."}
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleArchiveToggle}>
-                            {isArchived ? "Restore" : "Archive"}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                  {isCreator && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="lg" className="flex-1 sm:flex-none">
-                          <Trash2Icon className="h-4 w-4 sm:mr-2" />
-                          <span className="hidden sm:inline">Delete Group</span>
-                          <span className="sm:hidden">Delete</span>
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Group?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently
-                            delete the group and all associated data.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={handleDeleteGroup}
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          </CardHeader>
-        </Card>
-
-        {/* Archived Banner for regular members */}
-        {isArchived && !canManage && (
-          <Card className="border-2 border-amber-300 bg-amber-50">
-            <CardContent className="py-4">
-              <div className="flex items-center gap-3">
-                <ArchiveIcon className="h-5 w-5 text-amber-600 shrink-0" />
-                <div>
-                  <p className="font-medium text-amber-900">This group has been archived</p>
-                  <p className="text-sm text-amber-700">
-                    You can view balances and members, but cannot add or view expenses.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
+            </motion.div>
           </Card>
-        )}
 
-        {/* Quick Actions - hidden for non-admin on archived groups */}
-        {isAdmin && unsettledCount > 0 && (!isArchived || canManage) && (
-          <div className="flex justify-end">
-            <Button
-              variant="default"
-              size="lg"
-              onClick={() => setSettleAllDialogOpen(true)}
-            >
-              <CheckCircle2Icon className="h-4 w-4 mr-2" />
-              Settle All ({unsettledCount})
-            </Button>
-          </div>
-        )}
-
-        {/* Debt Simplification Toggle */}
-        {allMembers.length >= 3 && balances.some(b => b.balance !== 0) && (
-          <SimplifiedDebtsToggle
-            isSimplified={useServerSimplification}
-            onToggle={handleToggleSimplification}
-            rawCount={balances.filter(b => b.balance !== 0).length}
-            simplifiedCount={simplifiedCount}
-            disabled={isLoadingSimplified}
-          />
-        )}
-
-        {/* States Section */}
-        <div className="space-y-6">
-          {/* Empty State - No Expenses Yet */}
-          {balances.every(b => b.balance === 0) && expenses.length === 0 && (!isArchived || canManage) && (
-            <Card className="border-2 border-dashed">
-              <CardContent className="py-16 text-center">
-                <div className="space-y-4">
-                  <div className="text-6xl mb-2">🎉</div>
+          {/* Archived Banner for regular members */}
+          {isArchived && !canManage && (
+            <Card className="border-amber-300 bg-amber-50 rounded-xl">
+              <CardContent className="py-4">
+                <div className="flex items-center gap-3">
+                  <ArchiveIcon className="h-5 w-5 text-amber-600 shrink-0" />
                   <div>
-                    <p className="font-semibold text-xl">Ready to track expenses!</p>
-                    <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-                      Add your first group expense to start splitting costs with members.
+                    <p className="font-medium text-amber-900">{t('groups.archivedTitle', 'This group has been archived')}</p>
+                    <p className="text-sm text-amber-700">
+                      {t('groups.archivedDescription', 'You can view balances and members, but cannot add or view expenses.')}
                     </p>
                   </div>
-                  <Button
-                    size="lg"
-                    onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
-                  >
-                    <PlusIcon className="h-4 w-4 mr-2" />
-                    Add First Expense
-                  </Button>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* All Settled State - Has Expenses */}
-          {balances.every(b => b.balance === 0) && expenses.length > 0 && (!isArchived || canManage) && (
-            <Card className="border-2 bg-gradient-to-br from-green-50 to-emerald-50">
-              <CardContent className="py-16 text-center">
-                <div className="space-y-4">
-                  <div className="text-6xl mb-2">✅</div>
-                  <div>
-                    <p className="font-semibold text-xl text-green-900">All settled up!</p>
-                    <p className="text-green-700 mt-2">
-                      {expenses.length} expense(s) tracked, all balances cleared.
-                    </p>
-                  </div>
-                  <div className="flex justify-center gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => go({ to: `/groups/${group.id}/expenses` })}
-                    >
-                      <HistoryIcon className="h-4 w-4 mr-2" />
-                      View History
-                    </Button>
-                    <Button
-                      onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
-                    >
-                      <PlusIcon className="h-4 w-4 mr-2" />
-                      Add Another
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Category Breakdown - Insights Section (hidden for non-admin on archived groups) */}
-        {categoryBreakdown.length > 0 && (!isArchived || canManage) && (
-          <ExpandableCard
-            title="Spending by Category"
-            subtitle="See where your money goes"
-            badge={<Badge variant="outline">Insights</Badge>}
+          {/* Tabs */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, type: "spring", stiffness: 100, damping: 15 }}
+            className="w-full"
           >
-            <CategoryBreakdown
-              breakdown={categoryBreakdown}
-              totalAmount={categoryBreakdown.reduce((sum, c) => sum + c.amount, 0)}
-              currency="₫"
-            />
-          </ExpandableCard>
-        )}
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+              <TabsList className="grid w-full rounded-lg" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
+                <TabsTrigger value="activity" className="rounded-lg">
+                  <ReceiptIcon size={16} className="mr-2 sm:mr-0 lg:mr-2" />
+                  <span className="hidden lg:inline">{t('groups.activity', 'Activity')}</span>
+                </TabsTrigger>
+                <TabsTrigger value="balances" className="rounded-lg">
+                  <BanknoteIcon size={16} className="mr-2 sm:mr-0 lg:mr-2" />
+                  <span className="hidden lg:inline">{t('balances.title', 'Balances')}</span>
+                </TabsTrigger>
+                <TabsTrigger value="members" className="rounded-lg">
+                  <UsersIcon size={16} className="mr-2 sm:mr-0 lg:mr-2" />
+                  <span className="hidden lg:inline">{t('groups.members', 'Members')}</span>
+                </TabsTrigger>
+                {(!isArchived || canManage) && (
+                  <TabsTrigger value="recurring" className="rounded-lg">
+                    <RepeatIcon size={16} className="mr-2 sm:mr-0 lg:mr-2" />
+                    <span className="hidden lg:inline">{t('expenses.recurring', 'Recurring')}</span>
+                  </TabsTrigger>
+                )}
+              </TabsList>
 
-        {/* Recent Expenses Section (hidden for non-admin on archived groups) */}
-        {(!isArchived || canManage) && (
-        <ExpandableCard
-          title="Recent Expenses"
-          subtitle={`${expenses.length} expense(s)`}
-          badge={
-            expenses.length > 0 && (
-              <Badge variant="secondary">
-                {formatNumber(expenses.reduce((sum, e) => sum + e.amount, 0))} ₫
-              </Badge>
-            )
-          }
-        >
-          <ExpenseList groupId={group.id} members={membersList} />
-        </ExpandableCard>
-        )}
+              <SwipeableTabs
+                tabs={tabs}
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+                className="mt-4"
+              >
+                {/* Activity Tab */}
+                <TabsContent value="activity" className="mt-0">
+                  <Card className="rounded-xl">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle>{t('groups.activity', 'Activity')}</CardTitle>
+                        {totalExpenseAmount > 0 && (
+                          <Badge variant="secondary">
+                            {formatNumber(totalExpenseAmount)} ₫
+                          </Badge>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {expenses.length === 0 && (!isArchived || canManage) ? (
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                          <div className="text-5xl mb-4">🎉</div>
+                          <p className="font-semibold text-lg">{t('groups.readyToTrack', 'Ready to track expenses!')}</p>
+                          <p className="text-muted-foreground mt-2 max-w-sm">
+                            {t('groups.addFirstExpense', 'Add your first group expense to start splitting costs.')}
+                          </p>
+                          <Button
+                            className="mt-4 rounded-lg"
+                            onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
+                          >
+                            <PlusIcon size={16} className="mr-2" />
+                            {t('expenses.addExpense', 'Add Expense')}
+                          </Button>
+                        </div>
+                      ) : (
+                        <EnhancedActivityList
+                          activities={enhancedActivities}
+                          currentUserId={identity?.id || ""}
+                          currency="VND"
+                          isLoading={isLoadingActivities}
+                          showSummary={true}
+                          showFilters={true}
+                          showSort={true}
+                          showTimeGrouping={true}
+                        />
+                      )}
+                    </CardContent>
+                  </Card>
 
-        {/* Recurring Expenses Section (hidden for non-admin on archived groups) */}
-        {(!isArchived || canManage) && (
-          <ExpandableCard
-            title="Recurring Expenses"
-            subtitle="Auto-created expenses on schedule"
-            badge={
-              <Badge variant="outline" className="gap-1">
-                <RepeatIcon className="h-3 w-3" />
-                Auto
-              </Badge>
-            }
-          >
-            <RecurringExpenseList groupId={group.id} />
-          </ExpandableCard>
-        )}
+                  {/* Category Breakdown */}
+                  {categoryBreakdown.length > 0 && (!isArchived || canManage) && (
+                    <Card className="rounded-xl mt-4">
+                      <CardHeader>
+                        <div className="flex items-center gap-2">
+                          <PieChartIcon size={16} className="text-primary" />
+                          <CardTitle className="text-base">{t('groups.spendingByCategory', 'Spending by Category')}</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <CategoryBreakdown
+                          breakdown={categoryBreakdown}
+                          totalAmount={categoryBreakdown.reduce((sum, c) => sum + c.amount, 0)}
+                          currency="₫"
+                        />
+                      </CardContent>
+                    </Card>
+                  )}
+                </TabsContent>
 
-        {/* Members Section */}
-        <Card className="border-2">
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <UsersIcon className="h-5 w-5 text-primary" />
-                <CardTitle className="text-lg">Members</CardTitle>
-                <Badge variant="secondary">{allMembers.length}</Badge>
-              </div>
-              {isAdmin && (!isArchived || canManage) && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setAddMemberModalOpen(true)}
-                >
-                  <PlusIcon className="h-4 w-4 mr-2" />
-                  Add Member
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <AddMemberModal
-              groupId={group.id}
-              open={addMemberModalOpen}
-              onOpenChange={setAddMemberModalOpen}
-              onSuccess={() => {
-                membersQuery.refetch();
-                setAddMemberModalOpen(false);
-              }}
-            />
-            <MemberList
-              members={allMembers.map((m: any) => ({
-                ...m,
-                profile: m.profiles,
-              }))}
-              currentUserId={identity?.id || ""}
-              creatorId={group.created_by}
-              isAdmin={isAdmin}
-              onRemoveMember={handleRemoveMember}
-              onToggleRole={handleToggleRole}
-              isLoading={isLoadingMembers}
-              showPagination={false}
-              showStats={true}
-              memberStats={memberStats}
-              showHeader={false}
-            />
-          </CardContent>
-        </Card>
+                {/* Balances Tab */}
+                <TabsContent value="balances" className="mt-0">
+                  <Card className="rounded-xl">
+                    <CardHeader>
+                      <CardTitle>{t('balances.title', 'Balances')}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {/* Debt Simplification Toggle */}
+                      {allMembers.length >= 3 && balances.some(b => b.balance !== 0) && (
+                        <div className="mb-4">
+                          <SimplifiedDebtsToggle
+                            isSimplified={useServerSimplification}
+                            onToggle={handleToggleSimplification}
+                            rawCount={balances.filter(b => b.balance !== 0).length}
+                            simplifiedCount={simplifiedCount}
+                            disabled={isLoadingSimplified}
+                          />
+                        </div>
+                      )}
 
-        {/* Settle All Dialog */}
+                      {balances.every(b => b.balance === 0) && expenses.length > 0 ? (
+                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                          <div className="text-4xl mb-3">✅</div>
+                          <p className="font-semibold text-lg text-green-900">{t('groups.allSettled', 'All settled up!')}</p>
+                          <p className="text-green-700 text-sm mt-1">
+                            {expenses.length} {t('groups.expensesTracked', 'expense(s) tracked, all balances cleared.')}
+                          </p>
+                        </div>
+                      ) : balances.length === 0 ? (
+                        <EmptyBalances onAction={() => go({ to: `/groups/${group.id}/expenses/create` })} />
+                      ) : (
+                        <div className="space-y-6">
+                          <SimplifiedBalanceView
+                            balances={balances}
+                            currentUserId={identity?.id || ""}
+                            simplifyDebts={useServerSimplification}
+                            onSettleUp={handleSettleUp}
+                            currency="VND"
+                          />
+                          {payments.length > 0 && (
+                            <div>
+                              <h3 className="text-base font-semibold mb-3">{t('payments.history', 'Payment History')}</h3>
+                              <PaymentList groupId={group.id} currency="VND" />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Members Tab */}
+                <TabsContent value="members" className="mt-0">
+                  <Card className="rounded-xl">
+                    <CardHeader>
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <CardTitle>{t('groups.members', 'Members')}</CardTitle>
+                          <Badge variant="secondary">{allMembers.length}</Badge>
+                        </div>
+                        {isAdmin && (!isArchived || canManage) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-lg"
+                            onClick={() => setAddMemberModalOpen(true)}
+                          >
+                            <PlusIcon size={16} className="mr-2" />
+                            {t('groups.addMember', 'Add Member')}
+                          </Button>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <MemberList
+                        members={allMembers.map((m: any) => ({ ...m, profile: m.profiles }))}
+                        currentUserId={identity?.id || ""}
+                        creatorId={group.created_by}
+                        isAdmin={isAdmin}
+                        onRemoveMember={handleRemoveMember}
+                        onToggleRole={handleToggleRole}
+                        isLoading={isLoadingMembers}
+                        showPagination={false}
+                        showStats={true}
+                        memberStats={memberStats}
+                        showHeader={false}
+                      />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Recurring Tab */}
+                {(!isArchived || canManage) && (
+                  <TabsContent value="recurring" className="mt-0">
+                    <Card className="rounded-xl">
+                      <CardHeader>
+                        <CardTitle>{t('expenses.recurring', 'Recurring Expenses')}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <RecurringExpenseList groupId={group.id} />
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                )}
+              </SwipeableTabs>
+            </Tabs>
+          </motion.div>
+        </motion.div>
+
+        {/* Modals & Dialogs */}
+        <AddMemberModal
+          groupId={group.id}
+          open={addMemberModalOpen}
+          onOpenChange={setAddMemberModalOpen}
+          onSuccess={() => {
+            membersQuery.refetch();
+            setAddMemberModalOpen(false);
+          }}
+        />
+
         <SettleAllDialog
           open={settleAllDialogOpen}
           onOpenChange={setSettleAllDialogOpen}
@@ -781,7 +813,6 @@ export const GroupShow = () => {
           isLoading={settleAllMutation.isPending}
         />
 
-        {/* Quick Settlement Dialog */}
         {selectedSettlement && (
           <QuickSettlementDialog
             open={quickSettleDialogOpen}
@@ -795,7 +826,47 @@ export const GroupShow = () => {
             onConfirm={handleConfirmSettlement}
           />
         )}
+
+        {/* Archive Dialog */}
+        <AlertDialog open={showArchiveDialog} onOpenChange={setShowArchiveDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {isArchived ? t('groups.restoreTitle', 'Restore Group?') : t('groups.archiveTitle', 'Archive Group?')}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {isArchived
+                  ? t('groups.restoreDescription', 'This will restore the group. Members will be able to view expenses and add new ones again.')
+                  : t('groups.archiveDescription', 'Archived groups are read-only for members. Admins and the group creator can still manage everything.')}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('common.cancel', 'Cancel')}</AlertDialogCancel>
+              <AlertDialogAction onClick={handleArchiveToggle}>
+                {isArchived ? t('groups.restore', 'Restore') : t('groups.archive', 'Archive')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Delete Dialog */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('groups.deleteTitle', 'Delete Group?')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('groups.deleteDescription', 'This action cannot be undone. This will permanently delete the group and all associated data.')}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('common.cancel', 'Cancel')}</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteGroup}>
+                {t('common.delete', 'Delete')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
-    </div>
+    </PullToRefresh>
   );
 };
