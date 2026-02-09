@@ -738,5 +738,14 @@
         "multiRecordSuccess": "Đã ghi nhận trả trước cho {{count}} thành viên",
         "partialSuccess": "Đã ghi nhận trả trước cho {{success}} trong {{total}} thành viên",
         "allFailed": "Không thể ghi nhận trả trước cho tất cả thành viên"
+    },
+    "history": {
+        "title": "Lịch sử",
+        "noSettledDebts": "Chưa có giao dịch đã thanh toán",
+        "noSettledDebtsDescription": "Khi bạn thanh toán nợ với bạn bè, chúng sẽ xuất hiện ở đây.",
+        "searchByName": "Tìm theo tên...",
+        "settledCount": "{{count}} giao dịch đã thanh toán",
+        "noResults": "Không tìm thấy kết quả cho \"{{query}}\"",
+        "totalTransacted": "Tổng"
     }
 }
