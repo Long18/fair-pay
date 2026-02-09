@@ -47,7 +47,7 @@ export const PersonDebtBreakdown = () => {
 
   // Current user identity
   const { data: identity } = useGetIdentity<Profile>();
-  const myName = identity?.full_name?.split(' ')[0] || t('debts.you', 'You');
+  const myName = identity?.full_name || t('debts.you', 'You');
 
   // Fetch counterparty profile
   const { query: counterpartyQuery } = useOne<Profile>({
@@ -271,7 +271,7 @@ export const PersonDebtBreakdown = () => {
                     myShare={expense.my_share}
                     direction={expense.direction}
                     paidByName={expense.direction === 'i_owe'
-                      ? counterparty.data.full_name.split(' ')[0]
+                      ? counterparty.data.full_name
                       : myName}
                     status={expense.status}
                     isSettled={expense.is_settled}
