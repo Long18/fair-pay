@@ -126,7 +126,7 @@ export const ExpenseEdit = () => {
       mode: "off", // Disable pagination to get all members
     },
     meta: {
-      select: "*, profiles!user_id(id, full_name)",
+      select: "*, profiles!user_id(id, full_name, avatar_url)",
     },
     queryOptions: {
       enabled: isGroupContext,
@@ -138,7 +138,7 @@ export const ExpenseEdit = () => {
     resource: "friendships",
     id: expense?.friendship_id!,
     meta: {
-      select: "*, user_a_profile:profiles!user_a(id, full_name), user_b_profile:profiles!user_b(id, full_name)",
+      select: "*, user_a_profile:profiles!user_a(id, full_name, avatar_url), user_b_profile:profiles!user_b(id, full_name, avatar_url)",
     },
     queryOptions: {
       enabled: isFriendContext,
@@ -156,7 +156,7 @@ export const ExpenseEdit = () => {
       },
     ],
     meta: {
-      select: "*, user_a_profile:profiles!user_a(id, full_name), user_b_profile:profiles!user_b(id, full_name)",
+      select: "*, user_a_profile:profiles!user_a(id, full_name, avatar_url), user_b_profile:profiles!user_b(id, full_name, avatar_url)",
     },
     pagination: {
       mode: "off",
@@ -174,6 +174,7 @@ export const ExpenseEdit = () => {
       return membersQuery.data?.data?.map((m: any) => ({
         id: m.profiles.id,
         full_name: m.profiles.full_name,
+        avatar_url: m.profiles.avatar_url || null,
       })) || [];
     }
 
@@ -189,10 +190,12 @@ export const ExpenseEdit = () => {
         {
           id: identity!.id,
           full_name: "You",
+          avatar_url: identity!.avatar_url || null,
         },
         {
           id: isUserA ? userBId : userAId,
           full_name: friendProfile?.full_name || "Friend",
+          avatar_url: friendProfile?.avatar_url || null,
         },
       ];
     }
@@ -215,6 +218,7 @@ export const ExpenseEdit = () => {
         return {
           id: friendId,
           full_name: friendProfile?.full_name || "Friend",
+          avatar_url: friendProfile?.avatar_url || null,
         };
       })
       .filter((friend) => friend.id !== undefined && friend.id !== null); // Filter out invalid friends
@@ -223,7 +227,7 @@ export const ExpenseEdit = () => {
   // Combine members + friends for group context (remove duplicates)
   const allAvailableMembers = useMemo(() => {
     const seenIds = new Set<string>();
-    const combined: { id: string; full_name: string }[] = [];
+    const combined: { id: string; full_name: string; avatar_url?: string | null }[] = [];
 
     if (isGroupContext) {
       // Add all group members first
