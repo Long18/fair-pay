@@ -29,7 +29,17 @@ export const ConnectionsPage = () => {
     resource: "groups",
     pagination: { mode: "off" },
     meta: {
-      select: "id, is_archived",
+      select: "id, is_archived, created_by, group_members!inner(user_id, role)",
+    },
+    filters: [
+      {
+        field: "group_members.user_id",
+        operator: "eq",
+        value: identity?.id,
+      },
+    ],
+    queryOptions: {
+      enabled: !!identity?.id,
     },
   });
 
@@ -43,8 +53,16 @@ export const ConnectionsPage = () => {
 
   const groupCount = useMemo(() => {
     const allGroups = groupsQuery.data?.data || [];
-    return allGroups.filter((g) => !g.is_archived).length;
-  }, [groupsQuery.data]);
+    return allGroups.filter((g: any) => {
+      if (!g.is_archived) return true;
+      // Show archived groups if user is admin or creator
+      const isGroupAdmin = g.group_members?.some(
+        (m: any) => m.user_id === identity?.id && m.role === 'admin'
+      );
+      const isGroupCreator = g.created_by === identity?.id;
+      return isGroupAdmin || isGroupCreator;
+    }).length;
+  }, [groupsQuery.data, identity?.id]);
   const acceptedFriendsCount = useMemo(() => {
     if (!identity?.id) return 0;
     const friendships = friendshipsQuery.data?.data || [];
