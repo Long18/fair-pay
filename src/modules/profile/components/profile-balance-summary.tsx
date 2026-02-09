@@ -137,13 +137,13 @@ export const ProfileBalanceSummary = ({
                 {currency}
               </Badge>
             )}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               <motion.div variants={itemVariants} className="text-center">
-                <p className="text-xs text-muted-foreground mb-1">
+                <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1 leading-tight">
                   {t('profile.netBalance', 'Net Balance')}
                 </p>
                 <p className={cn(
-                  "font-bold text-lg",
+                  "font-bold text-sm sm:text-lg truncate",
                   netBalance > 0 ? "text-green-600 dark:text-green-400" :
                   netBalance < 0 ? "text-red-600 dark:text-red-400" :
                   "text-muted-foreground"
@@ -153,7 +153,7 @@ export const ProfileBalanceSummary = ({
                 <Badge
                   variant={netBalance > 0 ? "default" : netBalance < 0 ? "destructive" : "secondary"}
                   className={cn(
-                    "mt-1 text-xs",
+                    "mt-0.5 sm:mt-1 text-[10px] sm:text-xs",
                     netBalance > 0 && "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
                   )}
                 >
@@ -164,25 +164,25 @@ export const ProfileBalanceSummary = ({
               </motion.div>
 
               <motion.div variants={itemVariants} className="text-center">
-                <p className="text-xs text-muted-foreground mb-1">
+                <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1 leading-tight">
                   {t('profile.owedToYou', 'Owed to You')}
                 </p>
-                <p className="font-bold text-lg text-green-600 dark:text-green-400">
+                <p className="font-bold text-sm sm:text-lg text-green-600 dark:text-green-400 truncate">
                   {displayAmount(totalOwedToMe, currency)}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
                   {owedToMeCount} {t('profile.debts', 'debts')}
                 </p>
               </motion.div>
 
               <motion.div variants={itemVariants} className="text-center">
-                <p className="text-xs text-muted-foreground mb-1">
+                <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1 leading-tight">
                   {t('profile.youOweTotal', 'You Owe')}
                 </p>
-                <p className="font-bold text-lg text-red-600 dark:text-red-400">
+                <p className="font-bold text-sm sm:text-lg text-red-600 dark:text-red-400 truncate">
                   {displayAmount(totalIOwe, currency)}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
                   {iOweCount} {t('profile.debts', 'debts')}
                 </p>
               </motion.div>
@@ -212,7 +212,7 @@ export const ProfileBalanceSummary = ({
             </div>
           )}
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
             {/* Net Balance Card */}
             <motion.div variants={itemVariants}>
               <Card className="relative overflow-hidden rounded-lg">
@@ -222,21 +222,23 @@ export const ProfileBalanceSummary = ({
                   netBalance < 0 ? "bg-gradient-to-br from-red-500 to-rose-500" :
                   "bg-gradient-to-br from-gray-500 to-slate-500"
                 )} />
-                <div className="relative p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-muted-foreground">
+                <div className="relative p-3 sm:p-6">
+                  <div className="flex items-center justify-between mb-1 sm:mb-2">
+                    <p className="text-[10px] sm:text-sm font-medium text-muted-foreground leading-tight">
                       {t('profile.netBalance', 'Net Balance')}
                     </p>
-                    {netBalance === 0 ? (
-                      <CheckCircle2Icon size={20} className="text-muted-foreground" />
-                    ) : netBalance > 0 ? (
-                      <ArrowUpIcon size={20} className="text-green-600 dark:text-green-400" />
-                    ) : (
-                      <ArrowDownIcon size={20} className="text-red-600 dark:text-red-400" />
-                    )}
+                    <span className="hidden sm:block">
+                      {netBalance === 0 ? (
+                        <CheckCircle2Icon size={20} className="text-muted-foreground" />
+                      ) : netBalance > 0 ? (
+                        <ArrowUpIcon size={20} className="text-green-600 dark:text-green-400" />
+                      ) : (
+                        <ArrowDownIcon size={20} className="text-red-600 dark:text-red-400" />
+                      )}
+                    </span>
                   </div>
                   <p className={cn(
-                    "text-2xl font-bold mb-2",
+                    "text-base sm:text-2xl font-bold mb-1 sm:mb-2 truncate",
                     netBalance > 0 ? "text-green-600 dark:text-green-400" :
                     netBalance < 0 ? "text-red-600 dark:text-red-400" :
                     "text-muted-foreground"
@@ -246,7 +248,7 @@ export const ProfileBalanceSummary = ({
                   <Badge
                     variant={netBalance > 0 ? "default" : netBalance < 0 ? "destructive" : "secondary"}
                     className={cn(
-                      "rounded-full",
+                      "rounded-full text-[10px] sm:text-xs",
                       netBalance > 0 && "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
                     )}
                   >
@@ -262,20 +264,20 @@ export const ProfileBalanceSummary = ({
             <motion.div variants={itemVariants}>
               <Card className="relative overflow-hidden rounded-lg">
                 <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-emerald-500/10" />
-                <div className="relative p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-muted-foreground">
+                <div className="relative p-3 sm:p-6">
+                  <div className="flex items-center justify-between mb-1 sm:mb-2">
+                    <p className="text-[10px] sm:text-sm font-medium text-muted-foreground leading-tight">
                       {t('profile.owedToYou', 'Owed to You')}
                     </p>
-                    <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                    <div className="hidden sm:flex items-center gap-1 text-green-600 dark:text-green-400">
                       <UsersIcon size={16} />
                       <span className="text-sm font-medium">{owedToMeCount}</span>
                     </div>
                   </div>
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400 mb-2">
+                  <p className="text-base sm:text-2xl font-bold text-green-600 dark:text-green-400 mb-1 sm:mb-2 truncate">
                     {displayAmount(totalOwedToMe, currency)}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">
                     {owedToMeCount === 0
                       ? t('profile.noOneOwesYou', 'No one owes you')
                       : t('profile.peopleOweYou', {
@@ -292,20 +294,20 @@ export const ProfileBalanceSummary = ({
             <motion.div variants={itemVariants}>
               <Card className="relative overflow-hidden rounded-lg">
                 <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-rose-500/10" />
-                <div className="relative p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-muted-foreground">
+                <div className="relative p-3 sm:p-6">
+                  <div className="flex items-center justify-between mb-1 sm:mb-2">
+                    <p className="text-[10px] sm:text-sm font-medium text-muted-foreground leading-tight">
                       {t('profile.youOweTotal', 'You Owe')}
                     </p>
-                    <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
+                    <div className="hidden sm:flex items-center gap-1 text-red-600 dark:text-red-400">
                       <UsersIcon size={16} />
                       <span className="text-sm font-medium">{iOweCount}</span>
                     </div>
                   </div>
-                  <p className="text-2xl font-bold text-red-600 dark:text-red-400 mb-2">
+                  <p className="text-base sm:text-2xl font-bold text-red-600 dark:text-red-400 mb-1 sm:mb-2 truncate">
                     {displayAmount(totalIOwe, currency)}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">
                     {iOweCount === 0
                       ? t('profile.youOweNoOne', 'You owe no one')
                       : t('profile.youOwePeople', {
