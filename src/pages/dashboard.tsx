@@ -10,7 +10,6 @@ import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageContent } from "@/components/ui/page-content";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { HistoryIcon } from "@/components/ui/icons";
 import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
 import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
 import { usePersistedState } from "@/hooks/use-persisted-state";
@@ -142,8 +141,7 @@ export const Dashboard = () => {
                   <TabsTrigger value="activity" className="px-6">
                     {t('dashboard.recentActivity', 'Activity')}
                   </TabsTrigger>
-                  <TabsTrigger value="history" className="px-6 gap-1.5">
-                    <HistoryIcon className="h-4 w-4" />
+                  <TabsTrigger value="history" className="px-6">
                     {t('history.title', 'History')}
                   </TabsTrigger>
                 </TabsList>
