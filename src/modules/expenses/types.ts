@@ -66,6 +66,7 @@ export interface ExpenseFormValues {
     paid_by_user_id: string;
     split_method: 'equal' | 'exact' | 'percentage';
     comment?: string;
+    is_loan?: boolean;
     is_recurring?: boolean;
     recurring?: {
         frequency: 'weekly' | 'bi_weekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom';
