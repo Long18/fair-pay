@@ -412,7 +412,7 @@ export const GroupShow = () => {
   };
 
   return (
-    <div className="container px-4 sm:px-6 py-4 sm:py-8 max-w-7xl">
+    <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-4xl">
       <Button
         variant="ghost"
         size="sm"
