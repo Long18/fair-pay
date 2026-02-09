@@ -48,7 +48,7 @@ export const ExpenseCreate = () => {
       mode: "off", // Disable pagination to get all members
     },
     meta: {
-      select: "*, profiles!user_id(id, full_name)",
+      select: "*, profiles!user_id(id, full_name, avatar_url)",
     },
     queryOptions: {
       enabled: isGroupContext,
@@ -60,7 +60,7 @@ export const ExpenseCreate = () => {
     resource: "friendships",
     id: friendshipId!,
     meta: {
-      select: "*, user_a_profile:profiles!user_a(id, full_name), user_b_profile:profiles!user_b(id, full_name)",
+      select: "*, user_a_profile:profiles!user_a(id, full_name, avatar_url), user_b_profile:profiles!user_b(id, full_name, avatar_url)",
     },
     queryOptions: {
       enabled: isFriendContext,
@@ -75,6 +75,7 @@ export const ExpenseCreate = () => {
       return membersQuery.data?.data?.map((m: any) => ({
         id: m.profiles.id,
         full_name: m.profiles.full_name,
+        avatar_url: m.profiles.avatar_url || null,
       })) || [];
     }
 
@@ -102,10 +103,12 @@ export const ExpenseCreate = () => {
         {
           id: identity!.id,
           full_name: "You",
+          avatar_url: identity!.avatar_url || null,
         },
         {
           id: friendId,
           full_name: friendProfile?.full_name || "Friend",
+          avatar_url: friendProfile?.avatar_url || null,
         },
       ].filter(m => m.id !== undefined && m.id !== null); // Ensure valid IDs
 

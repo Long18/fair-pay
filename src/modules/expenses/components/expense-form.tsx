@@ -66,7 +66,7 @@ type ExpenseFormSchema = z.infer<typeof expenseSchema>;
 
 interface ExpenseFormProps {
   groupId?: string;
-  members: Array<{ id: string; full_name: string }>;
+  members: Array<{ id: string; full_name: string; avatar_url?: string | null }>;
   currentUserId: string;
   onSubmit: (values: ExpenseFormValues) => void;
   defaultValues?: Partial<ExpenseFormValues>;
