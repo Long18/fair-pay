@@ -363,7 +363,7 @@ export const BalancesPage = () => {
         { label: "Total Received", value: `${summary.totalReceived} ₫` },
         { label: "Net Balance", value: `${summary.netBalance} ₫` },
         { label: "Expense Count", value: `${summary.expenseCount}` },
-        { label: "Average Expense", value: `${summary.averageExpense.toFixed(2)} ₫` },
+        { label: "Average Expense", value: `${Math.round(summary.averageExpense)} ₫` },
         { label: "You Owe", value: `${totalIOwe} ₫` },
         { label: "Owed to You", value: `${totalOwedToMe} ₫` },
       ],

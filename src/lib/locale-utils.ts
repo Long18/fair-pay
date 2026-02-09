@@ -9,9 +9,14 @@ export function formatNumber(value: number): string {
 
 /**
  * Format a currency amount with optional currency symbol
+ * Rounds to nearest whole number for VND (>0.50 rounds up, ≤0.50 truncates)
  */
 export function formatCurrency(amount: number, currency?: string): string {
-  const formattedAmount = Math.abs(amount).toLocaleString(DEFAULT_LOCALE);
+  const rounded = Math.round(Math.abs(amount));
+  const formattedAmount = rounded.toLocaleString(DEFAULT_LOCALE, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
   const currencySymbol = currency || DEFAULT_CURRENCY_SYMBOL;
   return `${formattedAmount} ${currencySymbol}`;
 }

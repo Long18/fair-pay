@@ -235,21 +235,24 @@ export function formatCurrency(
 
     let formatted: string;
 
-    if (compact && Math.abs(amount) >= 1000) {
+    // Round to whole number for zero-decimal currencies (VND, JPY, KRW)
+    const roundedAmount = decimals === 0 ? Math.round(amount) : amount;
+
+    if (compact && Math.abs(roundedAmount) >= 1000) {
       // Compact notation for large numbers
       formatted = new Intl.NumberFormat(locale, {
         notation: 'compact',
         minimumFractionDigits: 0,
         maximumFractionDigits: 1,
         signDisplay,
-      }).format(amount);
+      }).format(roundedAmount);
     } else {
       // Standard notation
       formatted = new Intl.NumberFormat(locale, {
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals,
         signDisplay,
-      }).format(amount);
+      }).format(roundedAmount);
     }
 
     if (showSymbol) {
