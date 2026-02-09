@@ -14,6 +14,7 @@ import { Profile } from "@/modules/profile/types";
 import { useTranslation } from "react-i18next";
 import { isAdmin } from "@/lib/rbac";
 import { BulkDeleteDialog } from "@/components/bulk-operations/BulkDeleteDialog";
+import { PaginationControls, PaginationMetadata } from "@/components/ui/pagination-controls";
 import {
   Empty,
   EmptyHeader,
@@ -22,6 +23,8 @@ import {
   EmptyDescription,
 } from "@/components/ui/empty";
 import { ScaleIcon } from "@/components/ui/icons";
+
+const PAGE_SIZE = 10;
 
 export const PersonDebtBreakdown = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -56,6 +59,7 @@ export const PersonDebtBreakdown = () => {
   const { deleteSplits, isDeleting } = useDeleteSplits();
   const [selectedSplitIds, setSelectedSplitIds] = useState<Set<string>>(new Set());
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Filter unsettled expenses
   const unsettledExpenses = useMemo(() => {
@@ -68,6 +72,27 @@ export const PersonDebtBreakdown = () => {
       .filter(exp => selectedSplitIds.has(exp.id))
       .reduce((sum, exp) => sum + exp.my_share, 0);
   }, [expenses, selectedSplitIds]);
+
+  // Pagination
+  const totalPages = Math.ceil(expenses.length / PAGE_SIZE);
+  const paginatedExpenses = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return expenses.slice(start, start + PAGE_SIZE);
+  }, [expenses, currentPage]);
+
+  const paginationMetadata: PaginationMetadata = useMemo(() => ({
+    totalItems: expenses.length,
+    totalPages,
+    currentPage,
+    pageSize: PAGE_SIZE,
+  }), [expenses.length, totalPages, currentPage]);
+
+  // Reset page when expenses change
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
 
   const handleSelectChange = (splitId: string, checked: boolean) => {
     setSelectedSplitIds(prev => {
@@ -217,7 +242,7 @@ export const PersonDebtBreakdown = () => {
               </Empty>
             ) : (
               <div className="space-y-2">
-                {expenses.map((expense) => (
+                {paginatedExpenses.map((expense) => (
                   <ExpenseBreakdownItemSelectable
                     key={expense.id}
                     id={expense.expense_id}
@@ -234,6 +259,14 @@ export const PersonDebtBreakdown = () => {
                     onSelectChange={handleSelectChange}
                   />
                 ))}
+                {paginationMetadata.totalPages > 1 && (
+                  <div className="mt-4 pt-4 border-t">
+                    <PaginationControls
+                      metadata={paginationMetadata}
+                      onPageChange={setCurrentPage}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
