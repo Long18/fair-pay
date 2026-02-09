@@ -169,7 +169,7 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
         }
         debounceTimerRef.current = setTimeout(() => {
             fetchDebtsRef.current();
-        }, 500); // 500ms debounce
+        }, 200); // 200ms debounce for faster UI updates after settlement
     }, []); // No dependencies to prevent recreation
 
     useEffect(() => {
