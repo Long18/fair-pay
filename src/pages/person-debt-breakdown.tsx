@@ -11,7 +11,7 @@ import { useContributingExpenses } from "@/hooks/use-contributing-expenses";
 import { useDebtSummary } from "@/hooks/use-debt-summary";
 import { useSettleSplits } from "@/hooks/use-settle-splits";
 import { useDeleteSplits } from "@/hooks/use-delete-splits";
-import { useOne } from "@refinedev/core";
+import { useOne, useGetIdentity } from "@refinedev/core";
 import { Profile } from "@/modules/profile/types";
 import { useTranslation } from "react-i18next";
 import { isAdmin } from "@/lib/rbac";
@@ -44,6 +44,10 @@ export const PersonDebtBreakdown = () => {
   useEffect(() => {
     isAdmin().then(setUserIsAdmin);
   }, []);
+
+  // Current user identity
+  const { data: identity } = useGetIdentity<Profile>();
+  const myName = identity?.full_name?.split(' ')[0] || t('debts.you', 'You');
 
   // Fetch counterparty profile
   const { query: counterpartyQuery } = useOne<Profile>({
@@ -193,6 +197,8 @@ export const PersonDebtBreakdown = () => {
           netAmount={summary.net_amount}
           iOweThem={summary.i_owe_them}
           currency={summary.currency}
+          totalIOwe={summary.total_i_owe}
+          totalTheyOwe={summary.total_they_owe}
           unpaidCount={summary.unpaid_count}
           partialCount={summary.partial_count}
           paidCount={summary.paid_count}
@@ -263,6 +269,10 @@ export const PersonDebtBreakdown = () => {
                     expenseDate={expense.expense_date}
                     groupName={expense.group_name}
                     myShare={expense.my_share}
+                    direction={expense.direction}
+                    paidByName={expense.direction === 'i_owe'
+                      ? counterparty.data.full_name.split(' ')[0]
+                      : myName}
                     status={expense.status}
                     isSettled={expense.is_settled}
                     isSelected={selectedSplitIds.has(expense.id)}
