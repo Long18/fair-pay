@@ -34,13 +34,19 @@ export interface UseAggregatedDebtsOptions {
  */
 export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
     const { includeHistory = false, dateRange } = options;
-    const { data: identity } = useGetIdentity<Profile>();
+    const { data: identity, isLoading: identityLoading } = useGetIdentity<Profile>();
     const [data, setData] = useState<AggregatedDebt[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     const fetchDebts = useCallback(async () => {
+        // Wait for identity to finish loading before deciding which path to take
+        // This prevents showing public demo data while auth state is still resolving
+        if (identityLoading) {
+            return;
+        }
+
         setIsLoading(true);
         try {
             let result;
@@ -55,24 +61,33 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
                 result = response.data;
                 rpcError = response.error;
             } else {
-                // Authenticated: Check if user has any expenses first
-                // Skip expensive debt aggregation query if user has no debts
-                const { count: expenseCount, error: countError } = await supabaseClient
-                    .from("expenses")
-                    .select("id", { count: "exact", head: true })
-                    .or(`paid_by_user_id.eq.${identity.id},created_by.eq.${identity.id}`);
+                // Authenticated: Check if user is involved in any expenses
+                // Check as split participant OR as payer
+                const [splitCheck, payerCheck] = await Promise.all([
+                    supabaseClient
+                        .from("expense_splits")
+                        .select("id", { count: "exact", head: true })
+                        .eq("user_id", identity.id),
+                    supabaseClient
+                        .from("expenses")
+                        .select("id", { count: "exact", head: true })
+                        .eq("paid_by_user_id", identity.id),
+                ]);
+
+                const countError = splitCheck.error || payerCheck.error;
+                const splitCount = (splitCheck.count || 0) + (payerCheck.count || 0);
 
                 if (countError) {
-                    console.error("Error checking expenses:", countError);
+                    console.error("Error checking expense splits:", countError);
                     rpcError = countError;
                     result = [];
-                } else if (!expenseCount || expenseCount === 0) {
-                    // User has no expenses, return empty debts immediately
-                    console.log("User has no expenses, skipping debt aggregation query");
+                } else if (!splitCount || splitCount === 0) {
+                    // User has no expense splits, return empty debts immediately
+                    console.log("User has no expense splits, skipping debt aggregation query");
                     result = [];
                     rpcError = null;
                 } else {
-                    // Authenticated: Fetch user's real data only if they have expenses
+                    // Authenticated: Fetch user's real data only if they have splits
                     const functionName = includeHistory
                         ? "get_user_debts_history"
                         : "get_user_debts_aggregated";
@@ -141,7 +156,7 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
         } finally {
             setIsLoading(false);
         }
-    }, [identity?.id, includeHistory, dateRange?.start?.toISOString(), dateRange?.end?.toISOString()]);
+    }, [identity?.id, identityLoading, includeHistory, dateRange?.start?.toISOString(), dateRange?.end?.toISOString()]);
 
     // Debounced version of fetchDebts for real-time subscriptions
     // Use useRef to maintain a stable reference to avoid infinite loops
