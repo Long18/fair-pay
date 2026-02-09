@@ -19,7 +19,7 @@ export function SpendingSummaryStats({ summary }: SpendingSummaryStatsProps) {
           <TrendingDownIcon className="h-4 w-4 text-destructive" />
         </CardHeader>
         <CardContent>
-          <div className="text-xl sm:text-2xl font-bold text-destructive">
+          <div className="text-xl sm:text-2xl font-bold text-destructive tabular-nums">
             {formatNumber(summary.totalSpent)} ₫
           </div>
           <p className="text-xs text-muted-foreground mt-1">
@@ -34,7 +34,7 @@ export function SpendingSummaryStats({ summary }: SpendingSummaryStatsProps) {
           <TrendingUpIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
         </CardHeader>
         <CardContent>
-          <div className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">
+          <div className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400 tabular-nums">
             {formatNumber(summary.totalReceived)} ₫
           </div>
           <p className="text-xs text-muted-foreground mt-1">
@@ -49,7 +49,7 @@ export function SpendingSummaryStats({ summary }: SpendingSummaryStatsProps) {
           <ArrowUpDownIcon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className={`text-xl sm:text-2xl font-bold ${summary.netBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+          <div className={`text-xl sm:text-2xl font-bold tabular-nums ${summary.netBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
             {summary.netBalance >= 0 ? '+' : ''}{formatNumber(summary.netBalance)} ₫
           </div>
           <p className="text-xs text-muted-foreground mt-1">
@@ -64,7 +64,7 @@ export function SpendingSummaryStats({ summary }: SpendingSummaryStatsProps) {
           <ReceiptIcon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-xl sm:text-2xl font-bold">
+          <div className="text-xl sm:text-2xl font-bold tabular-nums">
             {formatNumber(summary.averageExpense)} ₫
           </div>
           <p className="text-xs text-muted-foreground mt-1">

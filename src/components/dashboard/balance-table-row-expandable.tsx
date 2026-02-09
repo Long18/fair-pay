@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useGo } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,8 +8,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { CheckIcon, ChevronDownIcon, ChevronRightIcon, UserIcon } from "@/components/ui/icons";
+import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from "@/components/ui/icons";
 import { PaymentStateBadge } from "@/components/ui/payment-state-badge";
 import { ContributingExpensesList } from "@/components/dashboard/contributing-expenses-list";
 import { useContributingExpenses } from "@/hooks/use-contributing-expenses";
@@ -63,15 +61,10 @@ export function BalanceTableRowExpandable({
     }
   };
 
-  const statusColors = balance.i_owe_them
-    ? getOweStatusColors('owe')
-    : getOweStatusColors('owed');
-
   const amountValue = Number(balance.remaining_amount !== undefined ? balance.remaining_amount : balance.amount);
   const isFullySettled = amountValue === 0;
 
-  // Desktop: Table Row Layout
-  const renderDesktopRow = () => (
+  return (
     <>
       <TableRow
         className={cn(
@@ -122,18 +115,18 @@ export function BalanceTableRowExpandable({
         <TableCell className="text-right">
           <div className="flex items-center justify-end gap-2">
             {isFullySettled ? (
-              <span className={cn("flex items-center gap-1 typography-amount", getPaymentStateColors('paid').text)}>
+              <span className={cn("flex items-center gap-1 typography-amount tabular-nums", getPaymentStateColors('paid').text)}>
                 <CheckIcon className="h-4 w-4" />
                 {formatCurrency(0, currency)}
               </span>
             ) : (
-              <span className="typography-amount-prominent">
+              <span className="typography-amount-prominent tabular-nums">
                 {formatCurrency(amountValue, currency)}
               </span>
             )}
             <motion.div
               animate={{ rotate: isExpanded ? 180 : 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.15 }}
             >
               <ChevronDownIcon className="h-5 w-5 text-muted-foreground shrink-0" />
             </motion.div>
@@ -150,15 +143,13 @@ export function BalanceTableRowExpandable({
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
                 className="overflow-hidden"
               >
                 <div className="p-4 border-t bg-muted/10">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="typography-card-title">
-                      {t('dashboard.contributingExpenses', 'Contributing Expenses')}
-                    </h4>
-                  </div>
+                  <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                    {t('dashboard.contributingExpenses', 'Contributing Expenses')}
+                  </h4>
 
                   <ContributingExpensesList
                     expenses={expenses}
@@ -166,31 +157,18 @@ export function BalanceTableRowExpandable({
                     isLoading={isLoading}
                   />
 
-                  <div className="flex items-center gap-2 mt-4">
-                    <Button
-                      variant="default"
-                      size="sm"
-                      className="flex-1"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        go({ to: `/debts/${balance.counterparty_id}` });
-                      }}
-                    >
-                      {t('dashboard.viewFullBreakdown', 'View Full Breakdown')}
-                      <ChevronRightIcon className="h-4 w-4 ml-1" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        go({ to: `/profile/${balance.counterparty_id}` });
-                      }}
-                    >
-                      <UserIcon className="h-4 w-4 mr-1" />
-                      {t('profile.view', 'Profile')}
-                    </Button>
-                  </div>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="w-full mt-3 gap-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      go({ to: `/debts/${balance.counterparty_id}` });
+                    }}
+                  >
+                    {t('dashboard.viewFullBreakdown', 'View Details')}
+                    <ChevronRightIcon className="h-4 w-4" />
+                  </Button>
                 </div>
               </motion.div>
             </TableCell>
@@ -199,8 +177,6 @@ export function BalanceTableRowExpandable({
       </AnimatePresence>
     </>
   );
-
-  return renderDesktopRow();
 }
 
 // Mobile Card Wrapper Component
@@ -232,12 +208,12 @@ export function BalanceTableRowExpandableMobile({
   const isFullySettled = amountValue === 0;
 
   return (
-    <div className="border rounded-lg overflow-hidden bg-card transition-shadow hover:shadow-md">
+    <div className="border rounded-md overflow-hidden bg-card transition-shadow hover:shadow-sm">
       {/* Main Card - Clickable to expand */}
       <div
         onClick={() => !disabled && onToggleExpand()}
         className={cn(
-          "flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30 transition-colors",
+          "flex items-center justify-between p-3 cursor-pointer hover:bg-muted/30 transition-colors",
           disabled && "opacity-50 cursor-not-allowed"
         )}
       >
@@ -269,15 +245,15 @@ export function BalanceTableRowExpandableMobile({
               )}
               {balance.transaction_count !== undefined && (
                 <>
-                  <span className="typography-metadata">•</span>
-                  <span className="typography-metadata">
+                  <span className="typography-metadata">·</span>
+                  <span className="typography-metadata tabular-nums">
                     {balance.transaction_count} {t('dashboard.expenses', 'expenses')}
                   </span>
                 </>
               )}
               {balance.last_transaction_date && (
                 <>
-                  <span className="typography-metadata">•</span>
+                  <span className="typography-metadata">·</span>
                   <span className="typography-metadata">
                     {t('dashboard.last', 'Last')}: {formatDate(balance.last_transaction_date)}
                   </span>
@@ -286,23 +262,23 @@ export function BalanceTableRowExpandableMobile({
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-3 ml-4">
+        <div className="flex items-center gap-2 ml-3">
           {isFullySettled ? (
-            <span className={cn("flex items-center gap-1 typography-amount", getPaymentStateColors('paid').text)}>
+            <span className={cn("flex items-center gap-1 typography-amount tabular-nums", getPaymentStateColors('paid').text)}>
               <CheckIcon className="h-4 w-4" />
               {formatCurrency(0, currency)}
             </span>
           ) : (
-            <span className={cn("typography-amount-prominent", statusColors.text)}>
+            <span className={cn("typography-amount-prominent tabular-nums", statusColors.text)}>
               {balance.i_owe_them ? '-' : '+'}
               {formatCurrency(Math.abs(amountValue), currency)}
             </span>
           )}
           <motion.div
             animate={{ rotate: isExpanded ? 180 : 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.15 }}
           >
-            <ChevronDownIcon className="h-5 w-5 text-muted-foreground shrink-0" />
+            <ChevronDownIcon className="h-4 w-4 text-muted-foreground shrink-0" />
           </motion.div>
         </div>
       </div>
@@ -314,15 +290,13 @@ export function BalanceTableRowExpandableMobile({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
             className="border-t bg-muted/10 overflow-hidden"
           >
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="typography-card-title">
-                  {t('dashboard.contributingExpenses', 'Contributing Expenses')}
-                </h4>
-              </div>
+            <div className="p-3 space-y-3">
+              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                {t('dashboard.contributingExpenses', 'Contributing Expenses')}
+              </h4>
 
               <ContributingExpensesList
                 expenses={expenses}
@@ -330,31 +304,18 @@ export function BalanceTableRowExpandableMobile({
                 isLoading={isLoading}
               />
 
-              <div className="flex items-center gap-2 mt-4">
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="flex-1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    go({ to: `/debts/${balance.counterparty_id}` });
-                  }}
-                >
-                  {t('dashboard.viewFullBreakdown', 'View Full Breakdown')}
-                  <ChevronRightIcon className="h-4 w-4 ml-1" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    go({ to: `/profile/${balance.counterparty_id}` });
-                  }}
-                >
-                  <UserIcon className="h-4 w-4 mr-1" />
-                  {t('profile.view', 'Profile')}
-                </Button>
-              </div>
+              <Button
+                variant="default"
+                size="sm"
+                className="w-full gap-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  go({ to: `/debts/${balance.counterparty_id}` });
+                }}
+              >
+                {t('dashboard.viewFullBreakdown', 'View Details')}
+                <ChevronRightIcon className="h-4 w-4" />
+              </Button>
             </div>
           </motion.div>
         )}

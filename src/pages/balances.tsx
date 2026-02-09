@@ -548,32 +548,36 @@ export const BalancesPage = () => {
               </SelectContent>
             </Select>
 
-            {/* Chart Type */}
-            <Select value={chartType} onValueChange={(v) => setChartType(v as "pie" | "bar")}>
-              <SelectTrigger
-                id="chart-type"
-                className="h-8 w-auto min-w-[100px] text-xs border-border bg-card rounded-lg px-3 shadow-none focus:ring-1 focus:ring-primary/30"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pie">Pie Chart</SelectItem>
-                <SelectItem value="bar">Bar Chart</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Chart Type – only relevant on charts tab */}
+            {activeTab === "charts" && (
+              <Select value={chartType} onValueChange={(v) => setChartType(v as "pie" | "bar")}>
+                <SelectTrigger
+                  id="chart-type"
+                  className="h-8 w-auto min-w-[100px] text-xs border-border bg-card rounded-lg px-3 shadow-none focus:ring-1 focus:ring-primary/30"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pie">Pie Chart</SelectItem>
+                  <SelectItem value="bar">Bar Chart</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
 
-            {/* Comparison toggle – inline pill */}
-            <div className="flex items-center gap-2 ml-auto sm:ml-2 pl-3 border-l border-border">
-              <Label htmlFor="show-comparison" className="text-xs text-muted-foreground cursor-pointer whitespace-nowrap">
-                {t("reports.showComparison", "Compare")}
-              </Label>
-              <Switch
-                id="show-comparison"
-                checked={showComparison}
-                onCheckedChange={setShowComparison}
-                className="h-4 w-7"
-              />
-            </div>
+            {/* Comparison toggle – only relevant on charts tab */}
+            {activeTab === "charts" && (
+              <div className="flex items-center gap-2 ml-auto sm:ml-2 pl-3 border-l border-border">
+                <Label htmlFor="show-comparison" className="text-xs text-muted-foreground cursor-pointer whitespace-nowrap">
+                  {t("reports.showComparison", "Compare")}
+                </Label>
+                <Switch
+                  id="show-comparison"
+                  checked={showComparison}
+                  onCheckedChange={setShowComparison}
+                  className="h-4 w-7"
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -887,12 +891,22 @@ export const BalancesPage = () => {
                       <TabsContent value="you-owe" className="space-y-3 mt-0">
                         {iOwe.length > 0 ? (
                           <>
-                            <div className="flex justify-end">
+                            {/* Settle All banner */}
+                            <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-md bg-gradient-to-r from-red-50 to-transparent dark:from-red-950/20 dark:to-transparent border border-red-100 dark:border-red-900/30">
+                              <p className="text-sm text-foreground">
+                                <span className="text-muted-foreground">{t("balances.youOweTotal", "You owe")}</span>{" "}
+                                <span className="font-bold tabular-nums text-red-600 dark:text-red-400">
+                                  {formatNumber(totalIOwe)} ₫
+                                </span>{" "}
+                                <span className="text-muted-foreground">
+                                  {t("balances.toPeople", "to {{count}} people", { count: iOwe.length })}
+                                </span>
+                              </p>
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setSettleAllDialogOpen(true)}
-                                className="gap-2 h-8 text-xs border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800/40 dark:text-green-400 dark:hover:bg-green-950/30"
+                                className="gap-1.5 h-8 text-xs shrink-0 border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800/40 dark:text-green-400 dark:hover:bg-green-950/30"
                                 aria-label={t("balances.settleAll", "Settle All")}
                               >
                                 <CheckCircle2Icon className="h-3.5 w-3.5" />
