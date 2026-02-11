@@ -31,9 +31,10 @@ import { format } from "date-fns";
 import { formatCurrency } from "@/lib/locale-utils";
 
 interface SettledDebt {
-  counterparty_id: string;
+  counterparty_id: string | null;
   counterparty_name: string;
   counterparty_avatar_url?: string | null;
+  counterparty_email?: string;
   amount: string | number;
   currency?: string;
   i_owe_them: boolean;
@@ -66,7 +67,7 @@ function SettledRowExpandable({
 }) {
   const { t } = useTranslation();
   const go = useGo();
-  const { expenses, isLoading } = useContributingExpenses(debt.counterparty_id);
+  const { expenses, isLoading } = useContributingExpenses(debt.counterparty_id || "");
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "";
@@ -146,11 +147,13 @@ function SettledRowExpandable({
                   <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
                     {t("dashboard.contributingExpenses", "Contributing Expenses")}
                   </h4>
-                  <ContributingExpensesList expenses={expenses} counterpartyId={debt.counterparty_id} isLoading={isLoading} />
+                  <ContributingExpensesList expenses={expenses} counterpartyId={debt.counterparty_id || ""} isLoading={isLoading} />
+                  {debt.counterparty_id && (
                   <Button variant="default" size="sm" className="w-full mt-3 gap-2" onClick={(e) => { e.stopPropagation(); go({ to: `/profile/${debt.counterparty_id}` }); }}>
                     {t("dashboard.viewFullBreakdown", "View Details")}
                     <ChevronRightIcon className="h-4 w-4" />
                   </Button>
+                  )}
                 </div>
               </motion.div>
             </TableCell>
@@ -175,7 +178,7 @@ function SettledCardExpandable({
 }) {
   const { t } = useTranslation();
   const go = useGo();
-  const { expenses, isLoading } = useContributingExpenses(debt.counterparty_id);
+  const { expenses, isLoading } = useContributingExpenses(debt.counterparty_id || "");
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "";
@@ -243,11 +246,13 @@ function SettledCardExpandable({
               <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 {t("dashboard.contributingExpenses", "Contributing Expenses")}
               </h4>
-              <ContributingExpensesList expenses={expenses} counterpartyId={debt.counterparty_id} isLoading={isLoading} />
+              <ContributingExpensesList expenses={expenses} counterpartyId={debt.counterparty_id || ""} isLoading={isLoading} />
+              {debt.counterparty_id && (
               <Button variant="default" size="sm" className="w-full gap-2" onClick={(e) => { e.stopPropagation(); go({ to: `/profile/${debt.counterparty_id}` }); }}>
                 {t("dashboard.viewFullBreakdown", "View Details")}
                 <ChevronRightIcon className="h-4 w-4" />
               </Button>
+              )}
             </div>
           </motion.div>
         )}
@@ -336,11 +341,11 @@ export function SettledHistoryList({ debts, isLoading = false, pageSize = 10 }: 
       <div className="block md:hidden space-y-3">
         {paginatedDebts.map((debt) => (
           <SettledCardExpandable
-            key={debt.counterparty_id}
+            key={debt.counterparty_id || debt.counterparty_email || debt.counterparty_name}
             debt={debt}
             currency={debt.currency || "VND"}
-            isExpanded={expandedRows.has(debt.counterparty_id)}
-            onToggleExpand={() => toggleRow(debt.counterparty_id)}
+            isExpanded={expandedRows.has(debt.counterparty_id || debt.counterparty_email || debt.counterparty_name)}
+            onToggleExpand={() => toggleRow(debt.counterparty_id || debt.counterparty_email || debt.counterparty_name)}
           />
         ))}
       </div>
@@ -361,12 +366,12 @@ export function SettledHistoryList({ debts, isLoading = false, pageSize = 10 }: 
           <TableBody>
             {paginatedDebts.map((debt, index) => (
               <SettledRowExpandable
-                key={debt.counterparty_id}
+                key={debt.counterparty_id || debt.counterparty_email || debt.counterparty_name}
                 debt={debt}
                 index={index}
                 currency={debt.currency || "VND"}
-                isExpanded={expandedRows.has(debt.counterparty_id)}
-                onToggleExpand={() => toggleRow(debt.counterparty_id)}
+                isExpanded={expandedRows.has(debt.counterparty_id || debt.counterparty_email || debt.counterparty_name)}
+                onToggleExpand={() => toggleRow(debt.counterparty_id || debt.counterparty_email || debt.counterparty_name)}
               />
             ))}
           </TableBody>

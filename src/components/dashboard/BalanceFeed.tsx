@@ -15,9 +15,9 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
   const go = useGo();
   const { t } = useTranslation();
 
-  const handleRowClick = (counterpartyId: string) => {
-    if (!disabled) {
-      go({ to: `/profile/${counterpartyId}` });
+  const handleRowClick = (debt: typeof debts[0]) => {
+    if (!disabled && debt.counterparty_id) {
+      go({ to: `/profile/${debt.counterparty_id}` });
     }
   };
 
@@ -183,13 +183,14 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
           </h3>
           {owedToMe.map((debt) => (
             <BalanceRow
-              key={debt.counterparty_id}
+              key={debt.counterparty_id || debt.counterparty_email || debt.counterparty_name}
               counterpartyName={debt.counterparty_name}
               groupName="Friend"
               amount={debt.amount}
               iOweThemFlag={debt.i_owe_them}
-              onClick={() => handleRowClick(debt.counterparty_id)}
+              onClick={() => handleRowClick(debt)}
               disabled={disabled}
+              isPendingEmail={!debt.counterparty_id && !!debt.counterparty_email}
             />
           ))}
         </div>
@@ -202,13 +203,14 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
           </h3>
           {iOwe.map((debt) => (
             <BalanceRow
-              key={debt.counterparty_id}
+              key={debt.counterparty_id || debt.counterparty_email || debt.counterparty_name}
               counterpartyName={debt.counterparty_name}
               groupName="Friend"
               amount={debt.amount}
               iOweThemFlag={debt.i_owe_them}
-              onClick={() => handleRowClick(debt.counterparty_id)}
+              onClick={() => handleRowClick(debt)}
               disabled={disabled}
+              isPendingEmail={!debt.counterparty_id && !!debt.counterparty_email}
             />
           ))}
         </div>
