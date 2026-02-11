@@ -5,9 +5,10 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { onSettlementEvent } from "@/lib/settlement-events";
 
 export interface AggregatedDebt {
-    counterparty_id: string;
+    counterparty_id: string | null; // NULL for pending email participants
     counterparty_name: string;
     counterparty_avatar_url?: string;
+    counterparty_email?: string; // Email for pending (unregistered) participants
     amount: number;
     currency: string;
     i_owe_them: boolean;
@@ -130,7 +131,9 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
             }
 
             if (debts.length > 0) {
-                const counterpartyIds = debts.map((d: { counterparty_id: string }) => d.counterparty_id).filter(Boolean);
+                const counterpartyIds = debts
+                    .map((d: { counterparty_id: string }) => d.counterparty_id)
+                    .filter((id: string) => id != null && id !== '');
                 if (counterpartyIds.length > 0) {
                     const { data: profiles } = await supabaseClient
                         .from("profiles")

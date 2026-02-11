@@ -31,9 +31,10 @@ import { formatCurrency } from "@/lib/locale-utils";
 import { BalanceTableRowExpandable, BalanceTableRowExpandableMobile } from "./balance-table-row-expandable";
 
 interface Balance {
-  counterparty_id: string;
+  counterparty_id: string | null;
   counterparty_name: string;
   counterparty_avatar_url?: string | null;
+  counterparty_email?: string;
   amount: string | number;
   currency?: string;
   i_owe_them: boolean;
@@ -150,12 +151,12 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
           if (showExpenseBreakdown && !showHistory) {
             return (
               <BalanceTableRowExpandableMobile
-                key={balance.counterparty_id}
+                key={balance.counterparty_id || balance.counterparty_email || balance.counterparty_name}
                 balance={balance}
                 disabled={disabled}
                 currency={balance.currency || "VND"}
-                isExpanded={expandedRows.has(balance.counterparty_id)}
-                onToggleExpand={() => toggleRow(balance.counterparty_id)}
+                isExpanded={expandedRows.has(balance.counterparty_id || balance.counterparty_email || balance.counterparty_name)}
+                onToggleExpand={() => toggleRow(balance.counterparty_id || balance.counterparty_email || balance.counterparty_name)}
               />
             );
           }
@@ -164,13 +165,13 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
           const fullySettled = isFullySettled(balance);
           return (
             <Card
-              key={balance.counterparty_id}
+              key={balance.counterparty_id || balance.counterparty_email || balance.counterparty_name}
               className={cn(
                 "hover:shadow-md transition-shadow cursor-pointer",
                 disabled && "opacity-50 cursor-not-allowed",
                 fullySettled && `opacity-60 ${getPaymentStateColors('paid').bg}`
               )}
-              onClick={() => !disabled && go({ to: `/profile/${balance.counterparty_id}` })}
+              onClick={() => !disabled && balance.counterparty_id && go({ to: `/profile/${balance.counterparty_id}` })}
             >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between gap-3">
@@ -265,13 +266,13 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
               if (showExpenseBreakdown && !showHistory) {
                 return (
                   <BalanceTableRowExpandable
-                    key={balance.counterparty_id}
+                    key={balance.counterparty_id || balance.counterparty_email || balance.counterparty_name}
                     balance={balance}
                     index={index}
                     disabled={disabled}
                     currency={balance.currency || "VND"}
-                    isExpanded={expandedRows.has(balance.counterparty_id)}
-                    onToggleExpand={() => toggleRow(balance.counterparty_id)}
+                    isExpanded={expandedRows.has(balance.counterparty_id || balance.counterparty_email || balance.counterparty_name)}
+                    onToggleExpand={() => toggleRow(balance.counterparty_id || balance.counterparty_email || balance.counterparty_name)}
                   />
                 );
               }
@@ -280,14 +281,14 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
               const fullySettled = isFullySettled(balance);
               return (
                 <TableRow
-                  key={balance.counterparty_id}
+                  key={balance.counterparty_id || balance.counterparty_email || balance.counterparty_name}
                   className={cn(
                     "cursor-pointer transition-colors",
                     index % 2 === 0 && "bg-muted/50 dark:bg-muted/30",
                     disabled && "opacity-50 cursor-not-allowed",
                     fullySettled && `opacity-60 ${getPaymentStateColors('paid').bg}`
                   )}
-                  onClick={() => !disabled && go({ to: `/profile/${balance.counterparty_id}` })}
+                  onClick={() => !disabled && balance.counterparty_id && go({ to: `/profile/${balance.counterparty_id}` })}
                 >
                   <TableCell>
                     <div className="relative">

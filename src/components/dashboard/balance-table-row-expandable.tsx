@@ -18,9 +18,10 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
 interface Balance {
-  counterparty_id: string;
+  counterparty_id: string | null;
   counterparty_name: string;
   counterparty_avatar_url?: string | null;
+  counterparty_email?: string;
   amount: string | number;
   currency?: string;
   i_owe_them: boolean;
@@ -50,7 +51,7 @@ export function BalanceTableRowExpandable({
 }: BalanceTableRowExpandableProps) {
   const { t } = useTranslation();
   const go = useGo();
-  const { expenses, isLoading } = useContributingExpenses(balance.counterparty_id);
+  const { expenses, isLoading } = useContributingExpenses(balance.counterparty_id || "");
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
@@ -153,10 +154,11 @@ export function BalanceTableRowExpandable({
 
                   <ContributingExpensesList
                     expenses={expenses}
-                    counterpartyId={balance.counterparty_id}
+                    counterpartyId={balance.counterparty_id || ""}
                     isLoading={isLoading}
                   />
 
+                  {balance.counterparty_id && (
                   <Button
                     variant="default"
                     size="sm"
@@ -169,6 +171,7 @@ export function BalanceTableRowExpandable({
                     {t('dashboard.viewFullBreakdown', 'View Details')}
                     <ChevronRightIcon className="h-4 w-4" />
                   </Button>
+                  )}
                 </div>
               </motion.div>
             </TableCell>
@@ -189,7 +192,7 @@ export function BalanceTableRowExpandableMobile({
 }: Omit<BalanceTableRowExpandableProps, 'index'>) {
   const { t } = useTranslation();
   const go = useGo();
-  const { expenses, isLoading } = useContributingExpenses(balance.counterparty_id);
+  const { expenses, isLoading } = useContributingExpenses(balance.counterparty_id || "");
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
@@ -300,10 +303,11 @@ export function BalanceTableRowExpandableMobile({
 
               <ContributingExpensesList
                 expenses={expenses}
-                counterpartyId={balance.counterparty_id}
+                counterpartyId={balance.counterparty_id || ""}
                 isLoading={isLoading}
               />
 
+              {balance.counterparty_id && (
               <Button
                 variant="default"
                 size="sm"
@@ -316,6 +320,7 @@ export function BalanceTableRowExpandableMobile({
                 {t('dashboard.viewFullBreakdown', 'View Details')}
                 <ChevronRightIcon className="h-4 w-4" />
               </Button>
+              )}
             </div>
           </motion.div>
         )}
