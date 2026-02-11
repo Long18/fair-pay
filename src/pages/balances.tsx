@@ -298,8 +298,9 @@ export const BalancesPage = () => {
     setIsSettling(true);
     try {
       const { supabaseClient } = await import("@/utility/supabaseClient");
+      const settleableDebts = iOwe.filter((debt) => debt.counterparty_id != null);
       await Promise.all(
-        iOwe.map((debt) =>
+        settleableDebts.map((debt) =>
           supabaseClient.rpc("settle_all_debts_with_person", {
             p_counterparty_id: debt.counterparty_id,
           })

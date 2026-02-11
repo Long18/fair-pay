@@ -130,10 +130,10 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
         <div className="space-y-1.5">
           {paginatedDebts.map((debt) => (
             <DebtRow
-              key={debt.counterparty_id}
+              key={debt.counterparty_id || debt.counterparty_email || debt.counterparty_name}
               debt={debt}
-              isExpanded={expandedId === debt.counterparty_id}
-              onToggle={() => toggleExpand(debt.counterparty_id)}
+              isExpanded={expandedId === (debt.counterparty_id || debt.counterparty_email || debt.counterparty_name)}
+              onToggle={() => toggleExpand(debt.counterparty_id || debt.counterparty_email || debt.counterparty_name)}
             />
           ))}
         </div>
@@ -166,7 +166,7 @@ const DebtRow: React.FC<DebtRowProps> = React.memo(
     const { t } = useTranslation();
     const go = useGo();
     const { expenses, isLoading } = useContributingExpenses(
-      isExpanded ? debt.counterparty_id : ""
+      isExpanded ? (debt.counterparty_id || "") : ""
     );
 
     return (
@@ -262,12 +262,13 @@ const DebtRow: React.FC<DebtRowProps> = React.memo(
                   </h4>
                   <ContributingExpensesList
                     expenses={expenses}
-                    counterpartyId={debt.counterparty_id}
+                    counterpartyId={debt.counterparty_id || ""}
                     isLoading={isLoading}
                   />
                 </div>
 
-                {/* Single primary CTA */}
+                {/* Single primary CTA - hidden for pending email participants */}
+                {debt.counterparty_id && (
                 <Button
                   variant="default"
                   size="sm"
@@ -280,6 +281,7 @@ const DebtRow: React.FC<DebtRowProps> = React.memo(
                   {t("dashboard.viewFullBreakdown", "View Details")}
                   <ChevronRightIcon className="h-3.5 w-3.5" />
                 </Button>
+                )}
               </div>
             </motion.div>
           )}
