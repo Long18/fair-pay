@@ -23,24 +23,24 @@ export function SettingsPage() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <div>
-        <h1 className="text-3xl font-bold">{t('settings.title')}</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-bold">{t('settings.title')}</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           {t('settings.subtitle')}
         </p>
       </div>
 
-      <Tabs defaultValue="display" className="space-y-6">
-        <TabsList className="grid w-full max-w-md grid-cols-3">
-          <TabsTrigger value="display" className="flex items-center gap-2">
-            <SettingsIcon className="h-4 w-4" />
+      <Tabs defaultValue="display" className="space-y-4 sm:space-y-6">
+        <TabsList className="grid w-full grid-cols-3 sm:max-w-md">
+          <TabsTrigger value="display" className="flex items-center gap-1.5 text-xs sm:text-sm sm:gap-2">
+            <SettingsIcon className="h-4 w-4 shrink-0" />
             <span className="hidden sm:inline">{t('settings.display')}</span>
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
-            <BellIcon className="h-4 w-4" />
+          <TabsTrigger value="notifications" className="flex items-center gap-1.5 text-xs sm:text-sm sm:gap-2">
+            <BellIcon className="h-4 w-4 shrink-0" />
             <span className="hidden sm:inline">{t('settings.notifications')}</span>
           </TabsTrigger>
-          <TabsTrigger value="privacy" className="flex items-center gap-2">
-            <AlertCircleIcon className="h-4 w-4" />
+          <TabsTrigger value="privacy" className="flex items-center gap-1.5 text-xs sm:text-sm sm:gap-2">
+            <AlertCircleIcon className="h-4 w-4 shrink-0" />
             <span className="hidden sm:inline">{t('settings.privacy')}</span>
           </TabsTrigger>
         </TabsList>
