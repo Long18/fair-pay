@@ -50,7 +50,7 @@ export function PrivacySettingsForm({ settings, onSave, isUpdating }: PrivacySet
           control={form.control}
           name="allow_friend_requests"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+            <FormItem className="flex flex-col gap-3 rounded-lg border p-3 sm:p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-0.5">
                 <FormLabel className="text-base">
                   {t('settings.allowFriendRequests')}
@@ -73,7 +73,7 @@ export function PrivacySettingsForm({ settings, onSave, isUpdating }: PrivacySet
           control={form.control}
           name="allow_group_invites"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+            <FormItem className="flex flex-col gap-3 rounded-lg border p-3 sm:p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-0.5">
                 <FormLabel className="text-base">
                   {t('settings.allowGroupInvites')}
@@ -108,11 +108,11 @@ export function PrivacySettingsForm({ settings, onSave, isUpdating }: PrivacySet
                   className="flex flex-col space-y-1"
                 >
                   {PROFILE_VISIBILITY_OPTIONS.map((option) => (
-                    <FormItem key={option.value} className="flex items-center space-x-3 space-y-0 rounded-lg border p-4">
+                    <FormItem key={option.value} className="flex items-center space-x-3 space-y-0 rounded-lg border p-3 sm:p-4">
                       <FormControl>
                         <RadioGroupItem value={option.value} />
                       </FormControl>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <FormLabel className="font-normal cursor-pointer">
                           {option.label}
                         </FormLabel>

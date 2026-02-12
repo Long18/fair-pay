@@ -10,6 +10,7 @@ export function useUserSettings() {
   const { query } = useOne<UserSettings>({
     resource: 'user_settings',
     id: identity?.id || '',
+    meta: { idColumnName: 'user_id' },
     queryOptions: {
       enabled: !!identity?.id,
     },
@@ -35,6 +36,7 @@ export function useUserSettings() {
         {
           resource: 'user_settings',
           id: identity.id,
+          meta: { idColumnName: 'user_id' },
           values: {
             ...values,
             updated_at: new Date().toISOString(),
