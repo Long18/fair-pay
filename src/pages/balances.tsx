@@ -783,33 +783,23 @@ export const BalancesPage = () => {
                       </CardContent>
                     </Card>
                   ) : debts.length === 0 ? (
-                    /* empty / all settled – hero empty state */
+                    /* empty / all settled – congratulations state */
                     <Card className="border-0 shadow-sm">
                       <CardContent className="py-20 text-center">
                         <div className="space-y-4 max-w-sm mx-auto">
                           <div className="flex justify-center">
                             <div className="h-20 w-20 rounded-2xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center">
-                              <CheckCircle2Icon className="h-10 w-10 text-green-500 dark:text-green-400" />
+                              <span className="text-4xl">🎉</span>
                             </div>
                           </div>
                           <div className="space-y-1.5">
-                            <h3 className="text-lg font-semibold text-foreground">
-                              {t("balances.allSettledUp", "All Settled Up")}
+                            <h3 className="text-lg font-semibold text-green-600 dark:text-green-400">
+                              {t("balances.congratsDebtFree", "Chúc mừng, bạn đã hết nợ!")}
                             </h3>
                             <p className="text-sm text-muted-foreground">
-                              {t("balances.noOutstandingDebts", "No outstanding debts or credits with anyone")}
+                              {t("balances.noOneOwesYou", "Không ai đang nợ bạn và bạn cũng không nợ ai.")}
                             </p>
                           </div>
-                          {identity && (
-                            <Button
-                              onClick={() => go({ to: "/expenses/create" })}
-                              className="gap-2 mt-2"
-                              size="sm"
-                            >
-                              <PlusIcon className="h-3.5 w-3.5" />
-                              {t("balances.addExpense", "Add Expense")}
-                            </Button>
-                          )}
                         </div>
                       </CardContent>
                     </Card>

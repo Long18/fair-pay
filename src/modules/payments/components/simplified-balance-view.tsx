@@ -8,6 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useTranslation } from "react-i18next";
 import { useSimplifiedBalances, useMySimplifiedDebts } from "../hooks/use-simplified-balances";
 import { UserBalance } from "../types";
 import { formatCurrency as formatCurrencyUtil } from "@/lib/locale-utils";
@@ -28,6 +29,7 @@ export const SimplifiedBalanceView = ({
   onSettleUp,
   currency = "VND",
 }: SimplifiedBalanceViewProps) => {
+  const { t } = useTranslation();
   const simplifiedBalances = useSimplifiedBalances({
     balances,
     simplify: simplifyDebts,
@@ -232,19 +234,19 @@ export const SimplifiedBalanceView = ({
         </Card>
       )}
 
-      {/* All Settled */}
+      {/* All Settled - Congratulations */}
       {iOwe.length === 0 && owesMe.length === 0 && (
         <Card>
           <CardContent className="py-12 text-center">
             <div className="flex flex-col items-center gap-3">
-              <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-950/30 flex items-center justify-center">
-                <span className="text-3xl">✓</span>
+              <div className="w-16 h-16 rounded-2xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center">
+                <span className="text-3xl">🎉</span>
               </div>
-              <p className="text-lg font-medium text-green-600">
-                All settled up!
+              <p className="text-lg font-semibold text-green-600 dark:text-green-400">
+                {t('dashboard.congratsDebtFree', 'Chúc mừng, bạn đã hết nợ!')}
               </p>
               <p className="text-sm text-muted-foreground max-w-md">
-                No outstanding balances. Everyone has paid their share.
+                {t('dashboard.everyonePaidShare', 'Mọi người đã thanh toán phần của mình.')}
               </p>
             </div>
           </CardContent>

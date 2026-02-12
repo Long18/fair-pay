@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { UserBalance } from "../types";
 import { formatCurrency as formatCurrencyUtil } from "@/lib/locale-utils";
+import { useTranslation } from "react-i18next";
 
 import { ArrowDownIcon, ArrowUpIcon } from "@/components/ui/icons";
 interface BalanceSummaryProps {
@@ -19,6 +20,7 @@ export const BalanceSummary = ({
   onSettleUp,
   currency = "VND",
 }: BalanceSummaryProps) => {
+  const { t } = useTranslation();
   const currentUserBalance = balances.find(b => b.user_id === currentUserId);
   const myBalance = currentUserBalance?.balance || 0;
 
@@ -163,15 +165,20 @@ export const BalanceSummary = ({
         </Card>
       )}
 
-      {/* All Settled */}
+      {/* All Settled - Congratulations */}
       {totalIOwe === 0 && totalOwedToMe === 0 && (
         <Card>
           <CardContent className="py-8 text-center">
-            <p className="text-lg font-medium text-green-600">
-              ✓ All settled up!
+            <div className="flex justify-center mb-3">
+              <div className="h-12 w-12 rounded-2xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center">
+                <span className="text-2xl">🎉</span>
+              </div>
+            </div>
+            <p className="text-lg font-semibold text-green-600 dark:text-green-400">
+              {t('dashboard.congratsDebtFree', 'Chúc mừng, bạn đã hết nợ!')}
             </p>
             <p className="text-sm text-muted-foreground mt-2">
-              No outstanding balances in this group
+              {t('dashboard.noOutstandingInGroup', 'Nhóm này không còn khoản nợ nào.')}
             </p>
           </CardContent>
         </Card>

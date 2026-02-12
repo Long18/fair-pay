@@ -111,6 +111,7 @@ import {
   LayoutDashboard,
   HeartHandshake,
   ScrollText,
+  PartyPopper,
 } from "lucide-react";
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -896,6 +897,10 @@ export const LayoutDashboardIcon: React.FC<IconProps> = ({ size = 24, ...props }
 
 export const HeartHandshakeIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
   <HeartHandshake size={size} {...props} />
+);
+
+export const PartyPopperIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <PartyPopper size={size} {...props} />
 );
 
 export const ScrollTextIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (

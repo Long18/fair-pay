@@ -110,7 +110,7 @@ export function DashboardTopCards({ disabled = false }: DashboardTopCardsProps) 
                 ? `You are owed overall`
                 : netBalance < 0
                 ? `You owe overall`
-                : `All settled up`
+                : t('dashboard.congratsClean', 'Tuyệt vời, sạch nợ!')
               }
             </p>
           </div>

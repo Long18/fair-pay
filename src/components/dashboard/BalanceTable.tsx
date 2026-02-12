@@ -116,28 +116,21 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
       <Empty className="py-12">
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            <ScaleIcon className="h-8 w-8" />
+            <div className="h-12 w-12 rounded-2xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center">
+              <span className="text-2xl">🎉</span>
+            </div>
           </EmptyMedia>
-          <EmptyTitle>
-            {t('dashboard.allSettledUpNoDebts', 'All settled up!')}
+          <EmptyTitle className="text-green-600 dark:text-green-400">
+            {disabled
+              ? t('dashboard.loginToSeeBalances', 'Log in to view your balances')
+              : t('dashboard.congratsDebtFree', 'Chúc mừng, bạn đã hết nợ!')}
           </EmptyTitle>
           <EmptyDescription>
             {disabled
-              ? t('dashboard.loginToSeeBalances', 'Log in to view your balances and track expenses')
-              : t('dashboard.noOutstandingBalances', 'You have no outstanding balances. Everyone is settled up!')}
+              ? t('dashboard.loginToSeeBalancesDesc', 'Log in to view your balances and track expenses')
+              : t('dashboard.noOneOwesYou', 'Không ai đang nợ bạn và bạn cũng không nợ ai.')}
           </EmptyDescription>
         </EmptyHeader>
-        {!disabled && (
-          <EmptyContent className="flex flex-col gap-3">
-            <Button
-              onClick={() => go({ to: "/expenses/create" })}
-              className="gap-2"
-            >
-              <PlusCircleIcon className="h-4 w-4" />
-              {t('dashboard.addExpense', 'Add Expense')}
-            </Button>
-          </EmptyContent>
-        )}
       </Empty>
     );
   }
