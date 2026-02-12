@@ -36,6 +36,17 @@ import {
   ArrowDownIcon,
 } from "@/components/ui/icons";
 import type { AdminStats } from "../types";
+
+interface RecentActivityItem {
+  id: string;
+  action: string;
+  entity_type: string;
+  entity_id: string;
+  actor_id: string;
+  actor_email: string | null;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+}
 import { formatNumber } from "@/lib/locale-utils";
 
 // ─── Trend Indicator ────────────────────────────────────────────────
@@ -114,7 +125,15 @@ function useAdminStats() {
     queryFn: async () => {
       const { data, error } = await supabaseClient.rpc("get_admin_stats");
       if (error) throw error;
-      return data as unknown as AdminStats;
+      // RPC returns snake_case keys, map to camelCase
+      const raw = data as Record<string, number>;
+      return {
+        totalUsers: raw.total_users ?? 0,
+        totalGroups: raw.total_groups ?? 0,
+        totalExpenses: raw.total_expenses ?? 0,
+        totalPayments: raw.total_payments ?? 0,
+        activeUsersLast7Days: raw.active_users_7d ?? 0,
+      } satisfies AdminStats;
     },
     staleTime: 60_000,
   });
@@ -221,23 +240,23 @@ function useCategoryBreakdown() {
 }
 
 function useRecentActivity() {
-  return useQuery({
+  return useQuery<RecentActivityItem[]>({
     queryKey: ["admin", "recent-activity"],
     queryFn: async () => {
       const { data, error } = await supabaseClient.rpc("read_audit_trail", {
         p_limit: 5,
       });
       if (error) throw error;
-      return (data ?? []) as Array<{
-        id: string;
-        action: string;
-        entity_type: string;
-        entity_id: string;
-        actor_id: string;
-        actor_email?: string;
-        metadata?: Record<string, unknown>;
-        created_at: string;
-      }>;
+      return (data ?? []).map((row: any) => ({
+        id: row.id as string,
+        action: row.action_type as string,
+        entity_type: row.entity_type as string,
+        entity_id: row.entity_id as string,
+        actor_id: row.actor as string,
+        actor_email: (row.actor_email ?? row.actor_name ?? null) as string | null,
+        metadata: row.metadata as Record<string, unknown> | undefined,
+        created_at: (row.action_timestamp ?? row.created_at) as string,
+      }));
     },
     staleTime: 30_000,
   });

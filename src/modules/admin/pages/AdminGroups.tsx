@@ -4,6 +4,7 @@ import { useDelete } from "@refinedev/core";
 import type { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
 
+import { supabaseClient } from "@/utility/supabaseClient";
 import { DataTable } from "@/components/refine-ui/data-table/data-table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -86,6 +87,63 @@ function GroupDetailSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const [members, setMembers] = useState<Array<{ id: string; full_name: string; avatar_url: string | null; role: string }>>([]);
+  const [expenses, setExpenses] = useState<Array<{ id: string; description: string; amount: number; expense_date: string; paid_by_name: string }>>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+  const [loadingExpenses, setLoadingExpenses] = useState(false);
+
+  useEffect(() => {
+    if (!group || !open) {
+      setMembers([]);
+      setExpenses([]);
+      return;
+    }
+
+    // Fetch members
+    setLoadingMembers(true);
+    supabaseClient
+      .from("group_members")
+      .select("role, profiles!group_members_user_id_fkey(id, full_name, avatar_url)")
+      .eq("group_id", group.id)
+      .then(({ data, error }) => {
+        if (!error && data) {
+          setMembers(
+            data.map((m: any) => ({
+              id: m.profiles?.id ?? "",
+              full_name: m.profiles?.full_name ?? "Không rõ",
+              avatar_url: m.profiles?.avatar_url ?? null,
+              role: m.role ?? "member",
+            })),
+          );
+        }
+        setLoadingMembers(false);
+      });
+
+    // Fetch recent expenses
+    setLoadingExpenses(true);
+    supabaseClient
+      .from("expenses")
+      .select("id, description, amount, expense_date, profiles!expenses_paid_by_user_id_fkey(full_name)")
+      .eq("group_id", group.id)
+      .is("deleted_at", null)
+      .order("expense_date", { ascending: false })
+      .limit(10)
+      .then(({ data, error }) => {
+        if (!error && data) {
+          setExpenses(
+            data.map((e: any) => ({
+              id: e.id,
+              description: e.description ?? "",
+              amount: e.amount ?? 0,
+              expense_date: e.expense_date,
+              paid_by_name: e.profiles?.full_name ?? "Không rõ",
+            })),
+          );
+        }
+        setLoadingExpenses(false);
+      });
+  }, [group?.id, open]);
+
   if (!group) return null;
 
   return (
@@ -100,34 +158,70 @@ function GroupDetailSheet({
 
         <Tabs defaultValue="members" className="mt-6">
           <TabsList className="w-full">
-            <TabsTrigger value="members" className="flex-1">Members</TabsTrigger>
-            <TabsTrigger value="expenses" className="flex-1">Expenses</TabsTrigger>
-            <TabsTrigger value="balances" className="flex-1">Balances</TabsTrigger>
+            <TabsTrigger value="members" className="flex-1">Thành viên ({group.member_count})</TabsTrigger>
+            <TabsTrigger value="expenses" className="flex-1">Chi phí</TabsTrigger>
           </TabsList>
 
           <TabsContent value="members" className="mt-4">
-            <div className="space-y-3">
-              <DetailRow label="Số thành viên" value={<Badge variant="secondary">{group.member_count}</Badge>} />
-              <DetailRow label="Người tạo" value={group.creator_name} />
+            {loadingMembers ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : members.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                Chi tiết thành viên sẽ được bổ sung sau.
+                Không có thành viên
               </p>
-            </div>
+            ) : (
+              <div className="space-y-2">
+                {members.map((m) => (
+                  <div key={m.id} className="flex items-center gap-3 rounded-lg border p-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={m.avatar_url ?? undefined} alt={m.full_name} />
+                      <AvatarFallback className="text-xs">
+                        {m.full_name?.[0]?.toUpperCase() ?? "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{m.full_name}</p>
+                    </div>
+                    <Badge variant={m.role === "admin" ? "default" : "secondary"} className="text-xs">
+                      {m.role === "admin" ? "Admin" : "Member"}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="expenses" className="mt-4">
             <div className="space-y-3">
               <DetailRow label="Tổng chi phí" value={formatNumber(group.total_expenses)} />
-              <p className="text-sm text-muted-foreground text-center py-8">
-                Chi tiết chi phí sẽ được bổ sung sau.
-              </p>
+              {loadingExpenses ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : expenses.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Chưa có chi phí nào
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {expenses.map((e) => (
+                    <div key={e.id} className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{e.description}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {e.paid_by_name} · {formatDate(e.expense_date)}
+                        </p>
+                      </div>
+                      <span className="text-sm font-mono tabular-nums ml-3">
+                        {formatNumber(e.amount)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          </TabsContent>
-
-          <TabsContent value="balances" className="mt-4">
-            <p className="text-sm text-muted-foreground text-center py-8">
-              Chức năng xem số dư sẽ được bổ sung sau.
-            </p>
           </TabsContent>
         </Tabs>
       </SheetContent>

@@ -87,6 +87,34 @@ function UserDetailSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const [groups, setGroups] = useState<Array<{ id: string; name: string; role: string }>>([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+
+  useEffect(() => {
+    if (!user || !open) {
+      setGroups([]);
+      return;
+    }
+
+    setLoadingGroups(true);
+    supabaseClient
+      .from("group_members")
+      .select("role, groups!group_members_group_id_fkey(id, name)")
+      .eq("user_id", user.id)
+      .then(({ data, error }) => {
+        if (!error && data) {
+          setGroups(
+            data.map((m: any) => ({
+              id: m.groups?.id ?? "",
+              name: m.groups?.name ?? "Không rõ",
+              role: m.role ?? "member",
+            })),
+          );
+        }
+        setLoadingGroups(false);
+      });
+  }, [user?.id, open]);
+
   if (!user) return null;
 
   return (
@@ -108,8 +136,7 @@ function UserDetailSheet({
         <Tabs defaultValue="profile" className="mt-6">
           <TabsList className="w-full">
             <TabsTrigger value="profile" className="flex-1">Profile</TabsTrigger>
-            <TabsTrigger value="groups" className="flex-1">Groups</TabsTrigger>
-            <TabsTrigger value="balances" className="flex-1">Balances</TabsTrigger>
+            <TabsTrigger value="groups" className="flex-1">Groups ({groups.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="mt-4 space-y-4">
@@ -129,15 +156,26 @@ function UserDetailSheet({
           </TabsContent>
 
           <TabsContent value="groups" className="mt-4">
-            <p className="text-sm text-muted-foreground text-center py-8">
-              Chức năng xem nhóm sẽ được bổ sung sau.
-            </p>
-          </TabsContent>
-
-          <TabsContent value="balances" className="mt-4">
-            <p className="text-sm text-muted-foreground text-center py-8">
-              Chức năng xem số dư sẽ được bổ sung sau.
-            </p>
+            {loadingGroups ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+              </div>
+            ) : groups.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Chưa tham gia nhóm nào
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {groups.map((g) => (
+                  <div key={g.id} className="flex items-center justify-between rounded-lg border p-3">
+                    <span className="text-sm font-medium">{g.name}</span>
+                    <Badge variant={g.role === "admin" ? "default" : "secondary"} className="text-xs">
+                      {g.role === "admin" ? "Admin" : "Member"}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </SheetContent>
