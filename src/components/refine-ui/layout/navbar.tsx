@@ -42,6 +42,7 @@ import { LanguageToggle } from "@/components/ui/language-toggle";
 import { NotificationPanel } from "@/modules/notifications";
 import { SearchModal, useSearchShortcut } from "@/components/global-search";
 import { Profile } from "@/modules/profile/types";
+import { useIsAdmin } from "@/modules/admin/hooks/use-is-admin";
 
 import {
   FairPayIcon,
@@ -53,6 +54,7 @@ import {
   BanknoteIcon,
   ListIcon,
   PanelLeftIcon,
+  LayoutDashboardIcon,
 } from "@/components/ui/icons";
 
 // ============ Main NavBar Component ============
@@ -404,7 +406,7 @@ function UserDropdown() {
   const isMobile = useIsMobile();
 
   // Check if user is admin
-  const isAdmin = identity?.email === import.meta.env.VITE_ADMIN_EMAIL;
+  const { isAdmin } = useIsAdmin();
 
   if (!authProvider?.getIdentity) {
     return null;
@@ -470,6 +472,11 @@ function UserDropdown() {
 
         {isAdmin && (
           <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => go({ to: "/admin" })}>
+              <LayoutDashboardIcon className="h-4 w-4" />
+              <span>Admin Dashboard</span>
+            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => go({ to: "/settings/donation" })}
             >
