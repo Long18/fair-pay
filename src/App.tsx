@@ -79,6 +79,19 @@ const DonationWidget = lazy(() => import("./components/donation-widget").then(m 
 const PrivacyPage = lazy(() => import("./pages/privacy").then(m => ({ default: m.PrivacyPage })));
 const TermsPage = lazy(() => import("./pages/terms").then(m => ({ default: m.TermsPage })));
 
+// Admin module - lazy loaded
+const AdminGuard = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminGuard })));
+const AdminLayout = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminLayout })));
+const AdminOverview = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminOverview })));
+const AdminUsers = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminUsers })));
+const AdminGroups = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminGroups })));
+const AdminExpenses = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminExpenses })));
+const AdminPayments = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminPayments })));
+const AdminFriendships = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminFriendships })));
+const AdminNotifications = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminNotifications })));
+const AdminAuditLogs = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminAuditLogs })));
+const AdminDonationSettings = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminDonationSettings })));
+
 // Optimized loading fallback component
 // Profile Edit Redirect Component
 const ProfileEditRedirect = () => {
@@ -331,6 +344,35 @@ function App() {
                         </ErrorBoundary>
                       </Suspense>
                     } />
+                  </Route>
+
+                  {/* Admin routes - lazy loaded, separate layout */}
+                  <Route
+                    path="/admin"
+                    element={
+                      <Authenticated
+                        key="authenticated-admin"
+                        fallback={<CatchAllNavigate to="/login" />}
+                      >
+                        <Suspense fallback={<PageLoader />}>
+                          <AdminGuard>
+                            <AdminLayout>
+                              <Outlet />
+                            </AdminLayout>
+                          </AdminGuard>
+                        </Suspense>
+                      </Authenticated>
+                    }
+                  >
+                    <Route index element={<Suspense fallback={<PageLoader />}><AdminOverview /></Suspense>} />
+                    <Route path="users" element={<Suspense fallback={<PageLoader />}><AdminUsers /></Suspense>} />
+                    <Route path="groups" element={<Suspense fallback={<PageLoader />}><AdminGroups /></Suspense>} />
+                    <Route path="expenses" element={<Suspense fallback={<PageLoader />}><AdminExpenses /></Suspense>} />
+                    <Route path="payments" element={<Suspense fallback={<PageLoader />}><AdminPayments /></Suspense>} />
+                    <Route path="friendships" element={<Suspense fallback={<PageLoader />}><AdminFriendships /></Suspense>} />
+                    <Route path="notifications" element={<Suspense fallback={<PageLoader />}><AdminNotifications /></Suspense>} />
+                    <Route path="audit-logs" element={<Suspense fallback={<PageLoader />}><AdminAuditLogs /></Suspense>} />
+                    <Route path="donation-settings" element={<Suspense fallback={<PageLoader />}><AdminDonationSettings /></Suspense>} />
                   </Route>
 
                   {/* Authenticated routes - require login */}
