@@ -8,12 +8,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useTranslation } from "react-i18next";
 
 interface DashboardTopCardsProps {
   disabled?: boolean;
 }
 
 export function DashboardTopCards({ disabled = false }: DashboardTopCardsProps) {
+  const { t } = useTranslation();
   const globalBalance = useGlobalBalance();
 
   const totalOwed = Math.abs(globalBalance.total_i_owe);
