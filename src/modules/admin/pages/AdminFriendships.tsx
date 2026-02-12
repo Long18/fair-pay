@@ -4,6 +4,7 @@ import { useDelete } from "@refinedev/core";
 import type { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
 
+import { supabaseClient } from "@/utility/supabaseClient";
 import { DataTable } from "@/components/refine-ui/data-table/data-table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -152,7 +153,15 @@ function DeleteFriendshipDialog({
 
 // ─── Row Actions ────────────────────────────────────────────────────
 
-function RowActions({ onDelete }: { onDelete: () => void }) {
+function RowActions({
+  status,
+  onAccept,
+  onDelete,
+}: {
+  status: string;
+  onAccept: () => void;
+  onDelete: () => void;
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -162,6 +171,11 @@ function RowActions({ onDelete }: { onDelete: () => void }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        {status === "pending" && (
+          <DropdownMenuItem onClick={onAccept}>
+            Chấp nhận kết bạn
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onDelete} className="text-destructive">
           Xóa tình bạn
@@ -261,6 +275,8 @@ export function AdminFriendships() {
         enableSorting: false,
         cell: ({ row }) => (
           <RowActions
+            status={row.original.status}
+            onAccept={() => handleAccept(row.original)}
             onDelete={() => {
               setDeleteFriendship(row.original);
               setDeleteDialogOpen(true);
@@ -337,6 +353,26 @@ export function AdminFriendships() {
       },
     );
   }, [deleteFriendship, deleteMutation, table.refineCore.tableQuery]);
+
+  // ─── Accept Handler ──────────────────────────────────────────────
+
+  const handleAccept = useCallback(
+    async (friendship: FriendshipRow) => {
+      try {
+        const { data, error } = await supabaseClient.rpc("admin_accept_friendship", {
+          p_friendship_id: friendship.id,
+        });
+        if (error) throw error;
+        toast.success(
+          `Đã chấp nhận kết bạn giữa "${friendship.user_a_name}" và "${friendship.user_b_name}"`,
+        );
+        table.refineCore.tableQuery.refetch();
+      } catch (err: any) {
+        toast.error(`Lỗi: ${err.message ?? "Không thể chấp nhận kết bạn"}`);
+      }
+    },
+    [table.refineCore.tableQuery],
+  );
 
   // ─── Clear Filters ──────────────────────────────────────────────
 
