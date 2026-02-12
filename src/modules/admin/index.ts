@@ -7,3 +7,4 @@ export { AdminUsers } from "./pages/AdminUsers";
 export { AdminGroups } from "./pages/AdminGroups";
 export { AdminExpenses } from "./pages/AdminExpenses";
 export { AdminPayments } from "./pages/AdminPayments";
+export { AdminFriendships } from "./pages/AdminFriendships";
