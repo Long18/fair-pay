@@ -20,9 +20,8 @@ import {
   EmptyMedia,
   EmptyTitle,
   EmptyDescription,
-  EmptyContent,
 } from "@/components/ui/empty";
-import { CheckIcon, ScaleIcon, PlusCircleIcon } from "@/components/ui/icons";
+import { CheckIcon, CheckCircle2Icon } from "@/components/ui/icons";
 import { PaymentStateBadge } from "@/components/ui/payment-state-badge";
 import { getOweStatusColors, getPaymentStateColors } from "@/lib/status-colors";
 import { cn } from "@/lib/utils";
@@ -116,19 +115,17 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
       <Empty className="py-12">
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            <div className="h-12 w-12 rounded-2xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center">
-              <span className="text-2xl">🎉</span>
-            </div>
+            <CheckCircle2Icon className="h-5 w-5 text-green-500" />
           </EmptyMedia>
-          <EmptyTitle className="text-green-600 dark:text-green-400">
+          <EmptyTitle>
             {disabled
               ? t('dashboard.loginToSeeBalances', 'Log in to view your balances')
-              : t('dashboard.congratsDebtFree', 'Chúc mừng, bạn đã hết nợ!')}
+              : t('dashboard.debtFreeTitle', "You're debt-free")}
           </EmptyTitle>
           <EmptyDescription>
             {disabled
               ? t('dashboard.loginToSeeBalancesDesc', 'Log in to view your balances and track expenses')
-              : t('dashboard.noOneOwesYou', 'Không ai đang nợ bạn và bạn cũng không nợ ai.')}
+              : t('dashboard.debtFreeDescription', "No one owes you and you don't owe anyone.")}
           </EmptyDescription>
         </EmptyHeader>
       </Empty>
