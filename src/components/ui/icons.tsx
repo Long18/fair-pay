@@ -108,6 +108,9 @@ import {
   ExternalLink,
   Archive,
   ArchiveRestore,
+  LayoutDashboard,
+  HeartHandshake,
+  ScrollText,
 } from "lucide-react";
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -885,4 +888,16 @@ export const ArchiveIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
 
 export const ArchiveRestoreIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
   <ArchiveRestore size={size} {...props} />
+);
+
+export const LayoutDashboardIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <LayoutDashboard size={size} {...props} />
+);
+
+export const HeartHandshakeIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <HeartHandshake size={size} {...props} />
+);
+
+export const ScrollTextIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <ScrollText size={size} {...props} />
 );
