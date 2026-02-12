@@ -216,7 +216,7 @@ export function AdminAuditLogs() {
 
   // ─── Fetch audit_logs via Refine useList ────────────────────────
 
-  const { data: auditLogsData, isLoading: logsLoading } = useList<any>({
+  const { query: auditLogsQuery } = useList<any>({
     resource: "audit_logs",
     pagination: { pageSize: 100 },
     sorters: [{ field: "created_at", order: "desc" }],
@@ -224,6 +224,8 @@ export function AdminAuditLogs() {
       select: "*, profiles!audit_logs_user_id_fkey(full_name, email)",
     },
   });
+  const auditLogsData = auditLogsQuery.data;
+  const logsLoading = auditLogsQuery.isLoading;
 
   // ─── Fetch audit_trail via RPC ──────────────────────────────────
 

@@ -209,20 +209,20 @@ export function AdminPayments() {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   // Fetch groups for filter dropdown
-  const { data: groupsData } = useList({
+  const { query: groupsQuery } = useList({
     resource: "groups",
     pagination: { pageSize: 200 },
     meta: { select: "id, name" },
   });
-  const groups = groupsData?.data ?? [];
+  const groups = groupsQuery.data?.data ?? [];
 
   // Fetch profiles for sender/receiver filter dropdowns
-  const { data: profilesData } = useList({
+  const { query: profilesQuery } = useList({
     resource: "profiles",
     pagination: { pageSize: 200 },
     meta: { select: "id, full_name" },
   });
-  const profiles = profilesData?.data ?? [];
+  const profiles = profilesQuery.data?.data ?? [];
 
   // Build filters for Refine useTable
   const filters = useMemo(() => {
