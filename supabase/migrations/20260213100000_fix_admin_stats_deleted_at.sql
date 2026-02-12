@@ -8,7 +8,7 @@ RETURNS JSONB
 SECURITY DEFINER
 SET search_path = public, pg_temp
 LANGUAGE plpgsql
-AS $
+AS $$
 BEGIN
   IF NOT is_admin() THEN
     RAISE EXCEPTION 'Only administrators can view admin stats';
@@ -26,4 +26,4 @@ BEGIN
     )
   );
 END;
-$;
+$$;
