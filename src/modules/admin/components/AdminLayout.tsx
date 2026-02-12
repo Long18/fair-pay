@@ -1,7 +1,25 @@
+import { useState, useEffect, useCallback } from "react";
 import { useGetIdentity } from "@refinedev/core";
 import { Link, Outlet, useLocation } from "react-router";
 import { Profile } from "@/modules/profile/types";
 import { ThemeSelector } from "@/components/refine-ui/theme/theme-selector";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import {
   FairPayIcon,
   LayoutDashboardIcon,
@@ -13,33 +31,13 @@ import {
   BellIcon,
   ScrollTextIcon,
   HeartIcon,
+  PanelLeftIcon,
+  ArrowLeftIcon,
 } from "@/components/ui/icons";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarHeader,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 
-const SIDEBAR_ITEMS = [
+// ─── Nav Items Config ───────────────────────────────────────────────
+
+const NAV_ITEMS = [
   { key: "overview", label: "Overview", icon: LayoutDashboardIcon, path: "/admin" },
   { key: "users", label: "Users", icon: UsersIcon, path: "/admin/users" },
   { key: "groups", label: "Groups", icon: GroupIcon, path: "/admin/groups" },
@@ -48,21 +46,10 @@ const SIDEBAR_ITEMS = [
   { key: "friendships", label: "Friendships", icon: HeartHandshakeIcon, path: "/admin/friendships" },
   { key: "notifications", label: "Notifications", icon: BellIcon, path: "/admin/notifications" },
   { key: "audit-logs", label: "Audit Logs", icon: ScrollTextIcon, path: "/admin/audit-logs" },
-  { key: "donation-settings", label: "Donation Settings", icon: HeartIcon, path: "/admin/donation-settings" },
+  { key: "donation", label: "Donation", icon: HeartIcon, path: "/admin/donation-settings" },
 ] as const;
 
-/** Map route segments to breadcrumb labels */
-const BREADCRUMB_LABELS: Record<string, string> = {
-  admin: "Admin Dashboard",
-  users: "Users",
-  groups: "Groups",
-  expenses: "Expenses",
-  payments: "Payments",
-  friendships: "Friendships",
-  notifications: "Notifications",
-  "audit-logs": "Audit Logs",
-  "donation-settings": "Donation Settings",
-};
+// ─── Helpers ────────────────────────────────────────────────────────
 
 function getInitials(name: string): string {
   return name
@@ -73,126 +60,275 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
-export function AdminLayout() {
-  const { pathname } = useLocation();
-  const { data: identity } = useGetIdentity<Profile>();
+function isActive(itemPath: string, pathname: string): boolean {
+  return itemPath === "/admin"
+    ? pathname === "/admin"
+    : pathname.startsWith(itemPath);
+}
 
-  // Derive breadcrumb from pathname
-  const segments = pathname.split("/").filter(Boolean);
-  const pageSegment = segments[1]; // e.g. "users" from "/admin/users"
-  const pageLabel = pageSegment ? BREADCRUMB_LABELS[pageSegment] : undefined;
+// ─── Main Layout ────────────────────────────────────────────────────
+
+export function AdminLayout() {
+  const isMobile = useIsMobile();
 
   return (
-    <SidebarProvider>
-      <Sidebar collapsible="icon">
-        {/* Sidebar Header */}
-        <SidebarHeader>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton size="lg" asChild tooltip="FairPay Admin">
-                <Link to="/admin">
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                    <FairPayIcon size={20} />
-                  </div>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">FairPay Admin</span>
-                  </div>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarHeader>
+    <div className="flex flex-col min-h-screen">
+      <AdminNavBar isMobile={isMobile} />
+      <main
+        className={cn(
+          "@container/main",
+          "container",
+          "mx-auto",
+          "relative",
+          "w-full",
+          "flex",
+          "flex-col",
+          "flex-1",
+          "px-2",
+          "pt-16",
+          "md:pt-20",
+          "md:px-4",
+          "lg:px-6",
+          "lg:pt-24",
+          "pb-6"
+        )}
+      >
+        <Outlet />
+      </main>
+    </div>
+  );
+}
 
-        {/* Sidebar Navigation */}
-        <SidebarContent>
-          <SidebarGroup>
-            <SidebarMenu>
-              {SIDEBAR_ITEMS.map((item) => {
-                const isActive =
-                  item.path === "/admin"
-                    ? pathname === "/admin"
-                    : pathname.startsWith(item.path);
+// ─── Floating Navbar ────────────────────────────────────────────────
 
-                return (
-                  <SidebarMenuItem key={item.key}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
-                      <Link to={item.path}>
-                        <item.icon />
-                        <span>{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroup>
-        </SidebarContent>
+function AdminNavBar({ isMobile }: { isMobile: boolean }) {
+  return (
+    <nav
+      className={cn(
+        "fixed",
+        "inset-x-0",
+        "top-0",
+        "z-40",
+        "mx-auto",
+        "max-w-6xl",
+        "w-full",
+        "h-14",
+        "md:h-16",
+        "rounded-b-3xl",
+        "bg-background/80",
+        "backdrop-blur-md",
+        "shadow-lg",
+        "border",
+        "border-border/50",
+        "flex",
+        "items-center",
+        "justify-between",
+        "gap-2",
+        "md:gap-4",
+        "px-3",
+        "md:px-6",
+        "py-2",
+        "md:py-3",
+        "transition-all",
+        "duration-300",
+        "ease-out",
+        "safe-area-inset-top"
+      )}
+      role="navigation"
+      aria-label="Admin navigation"
+    >
+      {/* Left: Mobile menu + Logo */}
+      <div className="flex items-center gap-2">
+        {isMobile && <MobileAdminMenu />}
+        <AdminLogo />
+      </div>
 
-        {/* Sidebar Footer */}
-        <SidebarFooter>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarTrigger className="w-full justify-start" />
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
-      </Sidebar>
+      {/* Center: Desktop nav items */}
+      <DesktopAdminNav />
 
-      <SidebarInset>
-        {/* Header Bar */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 px-4 lg:px-6">
-          {/* Left: trigger + separator + breadcrumb */}
-          <div className="flex items-center gap-2">
-            <SidebarTrigger />
-            <Separator orientation="vertical" className="h-6" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  {pageLabel ? (
-                    <BreadcrumbLink asChild>
-                      <Link to="/admin">Admin Dashboard</Link>
-                    </BreadcrumbLink>
-                  ) : (
-                    <BreadcrumbPage>Admin Dashboard</BreadcrumbPage>
+      {/* Right: Actions */}
+      <AdminActions />
+    </nav>
+  );
+}
+
+// ─── Logo ───────────────────────────────────────────────────────────
+
+function AdminLogo() {
+  return (
+    <Link
+      to="/admin"
+      className={cn(
+        "flex items-center gap-2",
+        "hover:opacity-80",
+        "transition-opacity",
+        "focus:outline-none",
+        "focus-visible:ring-2",
+        "focus-visible:ring-primary",
+        "focus-visible:ring-offset-2",
+        "rounded-lg"
+      )}
+    >
+      <FairPayIcon className="w-10 h-10" />
+      <span className="text-base md:text-lg font-bold">Admin</span>
+    </Link>
+  );
+}
+
+// ─── Desktop Nav Items ──────────────────────────────────────────────
+
+function DesktopAdminNav() {
+  const { pathname } = useLocation();
+  const isMobile = useIsMobile();
+
+  if (isMobile) return null;
+
+  return (
+    <TooltipProvider delayDuration={0}>
+      <div className="hidden md:flex items-center gap-1 lg:gap-2">
+        {NAV_ITEMS.map((item) => {
+          const active = isActive(item.path, pathname);
+          const Icon = item.icon;
+          return (
+            <Tooltip key={item.key}>
+              <TooltipTrigger asChild>
+                <Link
+                  to={item.path}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-lg",
+                    "text-sm font-medium",
+                    "transition-all duration-200",
+                    active
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
                   )}
-                </BreadcrumbItem>
-                {pageLabel && (
-                  <>
-                    <BreadcrumbSeparator />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage>{pageLabel}</BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </>
-                )}
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
+                >
+                  <Icon className={cn("w-5 h-5 shrink-0", active ? "text-primary" : "text-muted-foreground")} />
+                  <span className="hidden lg:inline">{item.label}</span>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="lg:hidden">
+                <span className="text-xs font-medium">{item.label}</span>
+              </TooltipContent>
+            </Tooltip>
+          );
+        })}
+      </div>
+    </TooltipProvider>
+  );
+}
 
-          {/* Right: theme toggle, avatar, back button */}
-          <div className="flex items-center gap-2 ml-auto">
-            <ThemeSelector />
-            {identity && (
-              <div className="flex items-center gap-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={identity.avatar_url ?? undefined} alt={identity.full_name} />
-                  <AvatarFallback>{getInitials(identity.full_name)}</AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-medium hidden md:inline">
-                  {identity.full_name}
-                </span>
-              </div>
-            )}
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/">Quay về FairPay</Link>
-            </Button>
-          </div>
-        </header>
+// ─── Right Actions ──────────────────────────────────────────────────
 
-        {/* Main Content */}
-        <div className="flex-1 p-6">
-          <Outlet />
+function AdminActions() {
+  const { data: identity } = useGetIdentity<Profile>();
+
+  return (
+    <div className="flex items-center gap-1 md:gap-2">
+      <div className="hidden sm:block">
+        <ThemeSelector className="h-9 w-9 md:h-10 md:w-10" />
+      </div>
+
+      {identity && (
+        <div className="flex items-center gap-2">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={identity.avatar_url ?? undefined} alt={identity.full_name} />
+            <AvatarFallback className="text-xs">{getInitials(identity.full_name)}</AvatarFallback>
+          </Avatar>
+          <span className="text-sm font-medium hidden md:inline">
+            {identity.full_name}
+          </span>
         </div>
-      </SidebarInset>
-    </SidebarProvider>
+      )}
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/">
+              <ArrowLeftIcon className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">FairPay</span>
+            </Link>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          <span className="text-xs">Quay về FairPay</span>
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  );
+}
+
+// ─── Mobile Menu ────────────────────────────────────────────────────
+
+function MobileAdminMenu() {
+  const [open, setOpen] = useState(false);
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && open) setOpen(false);
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [open]);
+
+  const handleItemClick = useCallback(() => setOpen(false), []);
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="flex md:hidden h-10 w-10 rounded-lg hover:bg-accent"
+          aria-label="Open admin menu"
+          aria-expanded={open}
+        >
+          <PanelLeftIcon className="h-5 w-5" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="w-[280px] sm:w-[320px] p-0 safe-area-inset-top">
+        <SheetHeader className="p-4 border-b">
+          <SheetTitle className="flex items-center gap-3">
+            <FairPayIcon className="w-10 h-10" />
+            <span className="text-lg font-bold">FairPay Admin</span>
+          </SheetTitle>
+        </SheetHeader>
+
+        <nav className="flex flex-col p-4 gap-1" role="navigation">
+          {NAV_ITEMS.map((item) => {
+            const active = isActive(item.path, pathname);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.key}
+                to={item.path}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-lg",
+                  "text-base font-medium",
+                  "transition-all duration-200",
+                  active
+                    ? "bg-primary/10 text-primary"
+                    : "text-foreground hover:bg-accent"
+                )}
+                onClick={handleItemClick}
+              >
+                <Icon className={cn("w-5 h-5 shrink-0", active ? "text-primary" : "text-muted-foreground")} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-background">
+          <Button variant="outline" className="w-full" asChild>
+            <Link to="/">
+              <ArrowLeftIcon className="h-4 w-4 mr-2" />
+              Quay về FairPay
+            </Link>
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
