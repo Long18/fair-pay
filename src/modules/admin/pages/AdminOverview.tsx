@@ -150,7 +150,6 @@ function useExpenseTrend() {
         .from("expenses")
         .select("expense_date, amount")
         .gte("expense_date", thirtyDaysAgo.toISOString().split("T")[0])
-        .is("deleted_at", null)
         .order("expense_date", { ascending: true });
 
       if (error) throw error;
@@ -216,8 +215,7 @@ function useCategoryBreakdown() {
     queryFn: async () => {
       const { data, error } = await supabaseClient
         .from("expenses")
-        .select("category, amount")
-        .is("deleted_at", null);
+        .select("category, amount");
 
       if (error) throw error;
 
