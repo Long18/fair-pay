@@ -104,9 +104,18 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
           </Card>
         </div>
 
-        <div className="text-center py-8 text-muted-foreground">
-          <p className="text-sm">All settled up! 🎉</p>
-          <p className="text-xs mt-1">No outstanding debts</p>
+        <div className="text-center py-12 text-muted-foreground">
+          <div className="flex justify-center mb-4">
+            <div className="h-16 w-16 rounded-2xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center">
+              <span className="text-3xl">🎉</span>
+            </div>
+          </div>
+          <p className="text-lg font-semibold text-green-600 dark:text-green-400">
+            {t('dashboard.congratsDebtFree', 'Chúc mừng, bạn đã hết nợ!')}
+          </p>
+          <p className="text-sm mt-1.5 max-w-xs mx-auto">
+            {t('dashboard.noOneOwesYou', 'Không ai đang nợ bạn và bạn cũng không nợ ai.')}
+          </p>
         </div>
       </div>
     );

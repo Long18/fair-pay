@@ -706,10 +706,14 @@ export const GroupShow = () => {
 
                       {balances.every(b => b.balance === 0) && expenses.length > 0 ? (
                         <div className="flex flex-col items-center justify-center py-8 text-center">
-                          <div className="text-4xl mb-3">✅</div>
-                          <p className="font-semibold text-lg text-green-900">{t('groups.allSettled', 'All settled up!')}</p>
-                          <p className="text-green-700 text-sm mt-1">
-                            {expenses.length} {t('groups.expensesTracked', 'expense(s) tracked, all balances cleared.')}
+                          <div className="h-14 w-14 rounded-2xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center mb-3">
+                            <span className="text-3xl">🎉</span>
+                          </div>
+                          <p className="font-semibold text-lg text-green-600 dark:text-green-400">
+                            {t('groups.congratsSettled', 'Chúc mừng, nhóm đã hết nợ!')}
+                          </p>
+                          <p className="text-muted-foreground text-sm mt-1">
+                            {expenses.length} {t('groups.expensesTracked', 'chi phí đã được theo dõi, tất cả đã thanh toán.')}
                           </p>
                         </div>
                       ) : balances.length === 0 ? (
