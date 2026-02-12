@@ -172,7 +172,7 @@ export function ReminderSettingsComponent() {
               </div>
 
               {/* Daily Digest */}
-              <div className="flex items-center justify-between space-x-2">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:space-x-2">
                 <div className="space-y-0.5">
                   <Label htmlFor="daily-digest" className="text-sm font-medium">
                     {t("settings.dailyDigest", "Daily digest")}
@@ -189,7 +189,7 @@ export function ReminderSettingsComponent() {
               </div>
 
               {/* Weekly Digest */}
-              <div className="flex items-center justify-between space-x-2">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:space-x-2">
                 <div className="space-y-0.5">
                   <Label htmlFor="weekly-digest" className="text-sm font-medium">
                     {t("settings.weeklyDigest", "Weekly digest")}
@@ -235,7 +235,7 @@ export function ReminderSettingsComponent() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Enable Calendar Sync */}
-          <div className="flex items-center justify-between space-x-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:space-x-2">
             <div className="space-y-0.5">
               <Label htmlFor="calendar-sync" className="text-base">
                 {t("settings.enableCalendarSync", "Enable calendar sync")}
