@@ -10,7 +10,6 @@ export const PAYMENT_METHODS = {
   vietqr: { icon: '📱', label: 'VietQR', color: 'text-blue-600' },
   zalopay: { icon: '🔵', label: 'ZaloPay', color: 'text-blue-500' },
   vnpay: { icon: '🔴', label: 'VNPay', color: 'text-red-600' },
-  payos: { icon: '💳', label: 'payOS', color: 'text-emerald-600' },
   other: { icon: '📋', label: 'Other', color: 'text-gray-600' },
 } as const;
 
