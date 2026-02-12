@@ -80,17 +80,17 @@ const PrivacyPage = lazy(() => import("./pages/privacy").then(m => ({ default: m
 const TermsPage = lazy(() => import("./pages/terms").then(m => ({ default: m.TermsPage })));
 
 // Admin module - lazy loaded
-const AdminGuard = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminGuard })));
-const AdminLayout = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminLayout })));
-const AdminOverview = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminOverview })));
-const AdminUsers = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminUsers })));
-const AdminGroups = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminGroups })));
-const AdminExpenses = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminExpenses })));
-const AdminPayments = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminPayments })));
-const AdminFriendships = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminFriendships })));
-const AdminNotifications = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminNotifications })));
-const AdminAuditLogs = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminAuditLogs })));
-const AdminDonationSettings = lazy(() => import("./modules/admin").then(m => ({ default: m.AdminDonationSettings })));
+import { AdminGuard } from "./modules/admin/components/AdminGuard";
+import { AdminLayout } from "./modules/admin/components/AdminLayout";
+const AdminOverview = lazy(() => import("./modules/admin/pages/AdminOverview").then(m => ({ default: m.AdminOverview })));
+const AdminUsers = lazy(() => import("./modules/admin/pages/AdminUsers").then(m => ({ default: m.AdminUsers })));
+const AdminGroups = lazy(() => import("./modules/admin/pages/AdminGroups").then(m => ({ default: m.AdminGroups })));
+const AdminExpenses = lazy(() => import("./modules/admin/pages/AdminExpenses").then(m => ({ default: m.AdminExpenses })));
+const AdminPayments = lazy(() => import("./modules/admin/pages/AdminPayments").then(m => ({ default: m.AdminPayments })));
+const AdminFriendships = lazy(() => import("./modules/admin/pages/AdminFriendships").then(m => ({ default: m.AdminFriendships })));
+const AdminNotifications = lazy(() => import("./modules/admin/pages/AdminNotifications").then(m => ({ default: m.AdminNotifications })));
+const AdminAuditLogs = lazy(() => import("./modules/admin/pages/AdminAuditLogs").then(m => ({ default: m.AdminAuditLogs })));
+const AdminDonationSettings = lazy(() => import("./modules/admin/pages/AdminDonationSettings").then(m => ({ default: m.AdminDonationSettings })));
 
 // Optimized loading fallback component
 // Profile Edit Redirect Component
@@ -356,9 +356,7 @@ function App() {
                       >
                         <Suspense fallback={<PageLoader />}>
                           <AdminGuard>
-                            <AdminLayout>
-                              <Outlet />
-                            </AdminLayout>
+                            <AdminLayout />
                           </AdminGuard>
                         </Suspense>
                       </Authenticated>
