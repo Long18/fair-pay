@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { useOne, useUpdate } from "@refinedev/core";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+
+import { supabaseClient } from "@/utility/supabaseClient";
 
 import {
   Card,
@@ -79,19 +81,43 @@ function ImagePreview({ url }: { url: string }) {
 
 // ─── Main Component ───────────────────────────────────────────────
 
-const SETTINGS_ID = 1;
+const SETTINGS_QUERY_KEY = ["admin", "donation-settings"];
 
 export function AdminDonationSettings() {
-  const { result, query } = useOne({
-    resource: "donation_settings",
-    id: SETTINGS_ID,
+  const queryClient = useQueryClient();
+
+  const { data: settings, isLoading } = useQuery({
+    queryKey: SETTINGS_QUERY_KEY,
+    queryFn: async () => {
+      const { data, error } = await supabaseClient
+        .from("donation_settings")
+        .select("*")
+        .single();
+      if (error) {
+        if (error.code === "PGRST116") return null; // no rows
+        throw error;
+      }
+      return data;
+    },
+    staleTime: 60_000,
   });
 
-  const { mutate: updateSettings, mutation } = useUpdate({
-    resource: "donation_settings",
+  const updateMutation = useMutation({
+    mutationFn: async (values: Record<string, unknown>) => {
+      if (!settings?.id) throw new Error("No donation settings row found");
+      const { data, error } = await supabaseClient
+        .from("donation_settings")
+        .update(values)
+        .eq("id", settings.id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SETTINGS_QUERY_KEY });
+    },
   });
-
-  const settings = result as any;
 
   const form = useForm<DonationSettingsFormValues>({
     resolver: zodResolver(donationSettingsSchema),
@@ -136,26 +162,23 @@ export function AdminDonationSettings() {
 
   const onSubmit = useCallback(
     (values: DonationSettingsFormValues) => {
-      updateSettings(
+      updateMutation.mutate(
         {
-          id: SETTINGS_ID,
-          values: {
-            is_enabled: values.is_enabled,
-            avatar_image_url: values.avatar_image_url || null,
-            qr_code_image_url: values.qr_code_image_url || null,
-            cta_text: { en: values.cta_text_en, vi: values.cta_text_vi },
-            donate_message: {
-              en: values.donate_message_en,
-              vi: values.donate_message_vi,
-            },
-            bank_info: values.bank_name
-              ? {
-                  bank_name: values.bank_name,
-                  account_number: values.account_number,
-                  account_holder: values.account_holder,
-                }
-              : null,
+          is_enabled: values.is_enabled,
+          avatar_image_url: values.avatar_image_url || null,
+          qr_code_image_url: values.qr_code_image_url || null,
+          cta_text: { en: values.cta_text_en, vi: values.cta_text_vi },
+          donate_message: {
+            en: values.donate_message_en,
+            vi: values.donate_message_vi,
           },
+          bank_info: values.bank_name
+            ? {
+                bank_name: values.bank_name,
+                account_number: values.account_number,
+                account_holder: values.account_holder,
+              }
+            : null,
         },
         {
           onSuccess: () => {
@@ -169,14 +192,14 @@ export function AdminDonationSettings() {
         }
       );
     },
-    [updateSettings]
+    [updateMutation]
   );
 
   const avatarUrl = form.watch("avatar_image_url");
   const qrCodeUrl = form.watch("qr_code_image_url");
-  const isSaving = mutation.isPending;
+  const isSaving = updateMutation.isPending;
 
-  if (query.isLoading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" />
