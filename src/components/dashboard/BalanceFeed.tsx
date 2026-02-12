@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTranslation } from "react-i18next";
 
-import { ArrowDownIcon, ArrowUpIcon, WalletIcon } from "@/components/ui/icons";
+import { ArrowDownIcon, ArrowUpIcon, WalletIcon, CheckCircle2Icon } from "@/components/ui/icons";
 interface BalanceFeedProps {
   disabled?: boolean;
 }
@@ -104,17 +104,17 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
           </Card>
         </div>
 
-        <div className="text-center py-12 text-muted-foreground">
-          <div className="flex justify-center mb-4">
-            <div className="h-16 w-16 rounded-2xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center">
-              <span className="text-3xl">🎉</span>
+        <div className="text-center py-12">
+          <div className="flex justify-center mb-3">
+            <div className="size-10 rounded-lg bg-muted flex items-center justify-center">
+              <CheckCircle2Icon className="h-5 w-5 text-green-500" />
             </div>
           </div>
-          <p className="text-lg font-semibold text-green-600 dark:text-green-400">
-            {t('dashboard.congratsDebtFree', 'Chúc mừng, bạn đã hết nợ!')}
+          <p className="text-base font-medium tracking-tight">
+            {t('dashboard.debtFreeTitle', "You're debt-free")}
           </p>
-          <p className="text-sm mt-1.5 max-w-xs mx-auto">
-            {t('dashboard.noOneOwesYou', 'Không ai đang nợ bạn và bạn cũng không nợ ai.')}
+          <p className="text-sm text-muted-foreground mt-1">
+            {t('dashboard.debtFreeDescription', "No one owes you and you don't owe anyone.")}
           </p>
         </div>
       </div>

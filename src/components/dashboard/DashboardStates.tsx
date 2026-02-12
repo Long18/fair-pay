@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useGo } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
 
-import { FilePlusIcon } from "@/components/ui/icons";
+import { FilePlusIcon, CheckCircle2Icon } from "@/components/ui/icons";
 export function DashboardSkeleton() {
   return (
     <div className="space-y-6">
@@ -53,15 +53,15 @@ export function DashboardEmptyState({ disabled = false }: DashboardEmptyStatePro
   }
 
   return (
-    <div className="flex flex-col items-center justify-center p-12 text-center rounded-xl bg-gradient-to-b from-green-50/50 to-transparent dark:from-green-950/20 dark:to-transparent">
-      <div className="h-16 w-16 rounded-2xl bg-green-100 dark:bg-green-950/40 flex items-center justify-center mb-4">
-        <span className="text-3xl">🎉</span>
+    <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed rounded-xl bg-muted/10">
+      <div className="size-10 rounded-lg bg-muted flex items-center justify-center mb-4">
+        <CheckCircle2Icon className="h-5 w-5 text-green-500" />
       </div>
-      <h3 className="text-lg font-semibold text-green-600 dark:text-green-400">
-        {t('dashboard.congratsDebtFree', 'Chúc mừng, bạn đã hết nợ!')}
+      <h3 className="text-lg font-medium tracking-tight">
+        {t('dashboard.debtFreeTitle', "You're debt-free")}
       </h3>
-      <p className="text-muted-foreground text-sm max-w-xs mt-2">
-        {t('dashboard.noOneOwesYou', 'Không ai đang nợ bạn và bạn cũng không nợ ai.')}
+      <p className="text-muted-foreground text-sm max-w-xs mt-1">
+        {t('dashboard.debtFreeDescription', "No one owes you and you don't owe anyone.")}
       </p>
     </div>
   );
