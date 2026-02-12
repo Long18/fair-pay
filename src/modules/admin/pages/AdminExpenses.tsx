@@ -358,8 +358,7 @@ export function AdminExpenses() {
   // Build filters for Refine useTable
   const filters = useMemo(() => {
     const f: Array<{ field: string; operator: string; value: unknown }> = [];
-    // Always filter out soft-deleted and payment records
-    f.push({ field: "deleted_at", operator: "null", value: true });
+    // Filter out payment records (is_payment expenses are settlement records)
     f.push({ field: "is_payment", operator: "eq", value: false });
     if (debouncedSearch) {
       f.push({ field: "description", operator: "contains", value: debouncedSearch });

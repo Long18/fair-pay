@@ -25,7 +25,7 @@ BEGIN
   RETURN jsonb_build_object(
     'total_users', (SELECT COUNT(*) FROM profiles),
     'total_groups', (SELECT COUNT(*) FROM groups),
-    'total_expenses', (SELECT COUNT(*) FROM expenses WHERE deleted_at IS NULL),
+    'total_expenses', (SELECT COUNT(*) FROM expenses),
     'total_payments', (SELECT COUNT(*) FROM payments),
     'active_users_7d', (
       SELECT COUNT(DISTINCT paid_by_user_id)
