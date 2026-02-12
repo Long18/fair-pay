@@ -13,7 +13,7 @@ import { useSimplifiedBalances, useMySimplifiedDebts } from "../hooks/use-simpli
 import { UserBalance } from "../types";
 import { formatCurrency as formatCurrencyUtil } from "@/lib/locale-utils";
 
-import { ArrowRightIcon, InfoIcon } from "@/components/ui/icons";
+import { ArrowRightIcon, InfoIcon, CheckCircle2Icon } from "@/components/ui/icons";
 interface SimplifiedBalanceViewProps {
   balances: UserBalance[];
   currentUserId: string;
@@ -234,19 +234,19 @@ export const SimplifiedBalanceView = ({
         </Card>
       )}
 
-      {/* All Settled - Congratulations */}
+      {/* All Settled - Clean State */}
       {iOwe.length === 0 && owesMe.length === 0 && (
         <Card>
           <CardContent className="py-12 text-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-16 h-16 rounded-2xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center">
-                <span className="text-3xl">🎉</span>
+            <div className="flex flex-col items-center gap-2">
+              <div className="size-10 rounded-lg bg-muted flex items-center justify-center">
+                <CheckCircle2Icon className="h-5 w-5 text-green-500" />
               </div>
-              <p className="text-lg font-semibold text-green-600 dark:text-green-400">
-                {t('dashboard.congratsDebtFree', 'Chúc mừng, bạn đã hết nợ!')}
+              <p className="text-base font-medium tracking-tight">
+                {t('dashboard.debtFreeTitle', "You're debt-free")}
               </p>
               <p className="text-sm text-muted-foreground max-w-md">
-                {t('dashboard.everyonePaidShare', 'Mọi người đã thanh toán phần của mình.')}
+                {t('dashboard.everyonePaidShare', 'Everyone has paid their share.')}
               </p>
             </div>
           </CardContent>

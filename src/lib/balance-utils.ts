@@ -31,7 +31,7 @@ export const useFormattedBalance = () => {
 };
 
 function getStatusMessage(netBalance: number): string {
-  if (netBalance === 0) return 'Sạch nợ! 🎉';
+  if (netBalance === 0) return 'Clean slate';
   if (netBalance > 0) return `You are owed ₫${netBalance.toLocaleString('vi-VN')}`;
   return `You owe ₫${Math.abs(netBalance).toLocaleString('vi-VN')}`;
 }

@@ -783,21 +783,21 @@ export const BalancesPage = () => {
                       </CardContent>
                     </Card>
                   ) : debts.length === 0 ? (
-                    /* empty / all settled – congratulations state */
+                    /* empty / all settled – clean empty state */
                     <Card className="border-0 shadow-sm">
                       <CardContent className="py-20 text-center">
-                        <div className="space-y-4 max-w-sm mx-auto">
+                        <div className="space-y-3 max-w-sm mx-auto">
                           <div className="flex justify-center">
-                            <div className="h-20 w-20 rounded-2xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center">
-                              <span className="text-4xl">🎉</span>
+                            <div className="size-10 rounded-lg bg-muted flex items-center justify-center">
+                              <CheckCircle2Icon className="h-5 w-5 text-green-500" />
                             </div>
                           </div>
-                          <div className="space-y-1.5">
-                            <h3 className="text-lg font-semibold text-green-600 dark:text-green-400">
-                              {t("balances.congratsDebtFree", "Chúc mừng, bạn đã hết nợ!")}
+                          <div className="space-y-1">
+                            <h3 className="text-lg font-medium tracking-tight">
+                              {t("dashboard.debtFreeTitle", "You're debt-free")}
                             </h3>
                             <p className="text-sm text-muted-foreground">
-                              {t("balances.noOneOwesYou", "Không ai đang nợ bạn và bạn cũng không nợ ai.")}
+                              {t("dashboard.debtFreeDescription", "No one owes you and you don't owe anyone.")}
                             </p>
                           </div>
                         </div>

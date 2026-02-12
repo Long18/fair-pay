@@ -6,7 +6,7 @@ import { UserBalance } from "../types";
 import { formatCurrency as formatCurrencyUtil } from "@/lib/locale-utils";
 import { useTranslation } from "react-i18next";
 
-import { ArrowDownIcon, ArrowUpIcon } from "@/components/ui/icons";
+import { ArrowDownIcon, ArrowUpIcon, CheckCircle2Icon } from "@/components/ui/icons";
 interface BalanceSummaryProps {
   balances: UserBalance[];
   currentUserId: string;
@@ -165,21 +165,21 @@ export const BalanceSummary = ({
         </Card>
       )}
 
-      {/* All Settled - Congratulations */}
+      {/* All Settled - Clean State */}
       {totalIOwe === 0 && totalOwedToMe === 0 && (
         <Card>
           <CardContent className="py-8 text-center">
-            <div className="flex justify-center mb-3">
-              <div className="h-12 w-12 rounded-2xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center">
-                <span className="text-2xl">🎉</span>
+            <div className="flex flex-col items-center gap-2">
+              <div className="size-10 rounded-lg bg-muted flex items-center justify-center">
+                <CheckCircle2Icon className="h-5 w-5 text-green-500" />
               </div>
+              <p className="text-base font-medium tracking-tight">
+                {t('dashboard.debtFreeTitle', "You're debt-free")}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {t('dashboard.everyonePaidShare', 'Everyone has paid their share.')}
+              </p>
             </div>
-            <p className="text-lg font-semibold text-green-600 dark:text-green-400">
-              {t('dashboard.congratsDebtFree', 'Chúc mừng, bạn đã hết nợ!')}
-            </p>
-            <p className="text-sm text-muted-foreground mt-2">
-              {t('dashboard.noOutstandingInGroup', 'Nhóm này không còn khoản nợ nào.')}
-            </p>
           </CardContent>
         </Card>
       )}
