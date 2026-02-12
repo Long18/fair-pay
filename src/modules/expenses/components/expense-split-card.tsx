@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2Icon, ChevronDownIcon } from "@/components/ui/icons";
-import { VietQRPaymentButton } from "@/modules/payments/components/vietqr-payment-button";
+import { PaymentMethodDropdown } from "@/modules/payments/components/payment-method-dropdown";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PaymentStateBadge } from "@/components/ui/payment-state-badge";
 import { formatNumber } from "@/lib/locale-utils";
@@ -251,7 +251,7 @@ export const ExpenseSplitCard = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div>
-                    <VietQRPaymentButton
+                    <PaymentMethodDropdown
                       split={split}
                       payeeId={split.user_id}
                       onPaymentComplete={onPaymentComplete}
@@ -259,7 +259,7 @@ export const ExpenseSplitCard = ({
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="top" maxWidth="300px">
-                  {t('expenses.vietqrTooltip', 'Pay now using VietQR bank transfer')}
+                  {t('expenses.payTooltip', 'Pay now via available payment methods')}
                 </TooltipContent>
               </Tooltip>
             )}
@@ -330,7 +330,7 @@ export const ExpenseSplitCard = ({
                 )}
 
                 {isCurrentUser && !isSplitSettled && !isPayer && split.user_id && (
-                  <VietQRPaymentButton
+                  <PaymentMethodDropdown
                     split={split}
                     payeeId={split.user_id}
                     onPaymentComplete={onPaymentComplete}
