@@ -1,10 +1,18 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
-import { useTable } from "@refinedev/react-table";
 import { useGetIdentity, useUpdate } from "@refinedev/core";
-import type { ColumnDef } from "@tanstack/react-table";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  getFilteredRowModel,
+  type ColumnDef,
+  type SortingState,
+} from "@tanstack/react-table";
 import { toast } from "sonner";
 
-import { DataTable } from "@/components/refine-ui/data-table/data-table";
+import { flexRender } from "@tanstack/react-table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -31,6 +39,14 @@ import {
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   Empty,
   EmptyMedia,
   EmptyHeader,
@@ -45,6 +61,7 @@ import {
   FilterIcon,
 } from "@/components/ui/icons";
 import { formatDate } from "@/lib/locale-utils";
+import { supabaseClient } from "@/utility/supabaseClient";
 import type { Profile } from "@/modules/profile/types";
 import type { AdminUserRow } from "../types";
 
@@ -190,19 +207,6 @@ export function AdminUsers() {
   const [selectedUser, setSelectedUser] = useState<AdminUserRow | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  // Build filters for Refine useTable
-  const filters = useMemo(() => {
-    const f: Array<{ field: string; operator: string; value: unknown }> = [];
-    if (debouncedSearch) {
-      f.push({
-        field: "full_name",
-        operator: "contains",
-        value: debouncedSearch,
-      });
-    }
-    return f;
-  }, [debouncedSearch]);
-
   // ─── Column Definitions ─────────────────────────────────────────
 
   const columns = useMemo<ColumnDef<AdminUserRow>[]>(
@@ -278,44 +282,49 @@ export function AdminUsers() {
 
   // ─── Table Setup ────────────────────────────────────────────────
 
-  const table = useTable<AdminUserRow>({
-    columns,
-    refineCoreProps: {
-      resource: "profiles",
-      meta: { select: "*, user_roles(role)" },
-      pagination: { pageSize: 10 },
-      filters: {
-        permanent: filters as any,
-      },
-      sorters: {
-        initial: [{ field: "created_at", order: "desc" }],
-      },
-      queryOptions: {
-        select: (data) => {
-          // Transform the joined data to flatten user_roles
-          const transformed = data.data.map((profile: any) => ({
-            id: profile.id,
-            full_name: profile.full_name ?? "",
-            email: profile.email ?? "",
-            avatar_url: profile.avatar_url,
-            role: profile.user_roles?.[0]?.role ?? "user",
-            created_at: profile.created_at,
-          }));
-
-          // Apply client-side role filter
-          const filtered =
-            roleFilter === "all"
-              ? transformed
-              : transformed.filter((u: AdminUserRow) => u.role === roleFilter);
-
-          return {
-            ...data,
-            data: filtered,
-            total: roleFilter === "all" ? data.total : filtered.length,
-          };
-        },
-      },
+  const { data: usersData, isLoading } = useQuery({
+    queryKey: ["admin", "users"],
+    queryFn: async () => {
+      const { data, error } = await supabaseClient.rpc("get_admin_users");
+      if (error) throw error;
+      return (data ?? []) as AdminUserRow[];
     },
+    staleTime: 30_000,
+  });
+
+  // Client-side filtering
+  const filteredData = useMemo(() => {
+    let result = usersData ?? [];
+    if (debouncedSearch) {
+      const q = debouncedSearch.toLowerCase();
+      result = result.filter(
+        (u) =>
+          u.full_name?.toLowerCase().includes(q) ||
+          u.email?.toLowerCase().includes(q),
+      );
+    }
+    if (roleFilter !== "all") {
+      result = result.filter((u) => u.role === roleFilter);
+    }
+    return result;
+  }, [usersData, debouncedSearch, roleFilter]);
+
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "created_at", desc: true },
+  ]);
+
+  const queryClient = useQueryClient();
+
+  const reactTable = useReactTable({
+    data: filteredData,
+    columns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
   });
 
   // ─── Role Toggle Handler ────────────────────────────────────────
@@ -339,7 +348,7 @@ export function AdminUsers() {
             toast.success(
               `Đã ${newRole === "admin" ? "nâng cấp" : "hạ cấp"} vai trò của ${user.full_name}`,
             );
-            table.refineCore.tableQuery.refetch();
+            queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
           },
           onError: (error) => {
             toast.error(`Lỗi: ${error.message}`);
@@ -347,7 +356,7 @@ export function AdminUsers() {
         },
       );
     },
-    [identity?.id, updateMutation, table.refineCore.tableQuery],
+    [identity?.id, updateMutation, queryClient],
   );
 
   // ─── Clear Filters ──────────────────────────────────────────────
@@ -359,8 +368,8 @@ export function AdminUsers() {
 
   const hasActiveFilters = search !== "" || roleFilter !== "all";
   const isEmptyResult =
-    !table.refineCore.tableQuery.isLoading &&
-    table.reactTable.getRowModel().rows.length === 0;
+    !isLoading &&
+    reactTable.getRowModel().rows.length === 0;
 
   // ─── Render ─────────────────────────────────────────────────────
 
@@ -438,7 +447,77 @@ export function AdminUsers() {
               </EmptyContent>
             </Empty>
           ) : (
-            <DataTable table={table} />
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  {reactTable.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <TableHead key={header.id} style={{ width: header.getSize() }}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="h-24 text-center">
+                        Đang tải...
+                      </TableCell>
+                    </TableRow>
+                  ) : reactTable.getRowModel().rows.length ? (
+                    reactTable.getRowModel().rows.map((row) => (
+                      <TableRow key={row.original?.id ?? row.id}>
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id} style={{ width: cell.column.getSize() }}>
+                            <div className="truncate">
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </div>
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="h-24 text-center">
+                        Không có dữ liệu
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {!isLoading && reactTable.getRowModel().rows.length > 0 && (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Trang {reactTable.getState().pagination.pageIndex + 1} / {reactTable.getPageCount()}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => reactTable.previousPage()}
+                  disabled={!reactTable.getCanPreviousPage()}
+                >
+                  Trước
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => reactTable.nextPage()}
+                  disabled={!reactTable.getCanNextPage()}
+                >
+                  Sau
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
