@@ -17,6 +17,7 @@ import routerProvider, {
 } from "@refinedev/react-router";
 import { dataProvider, liveProvider } from "@refinedev/supabase";
 import { BrowserRouter, Outlet, Route, Routes, Navigate } from "react-router";
+import { AnimatedOutlet } from "./components/animated-outlet";
 import "./App.css";
 import authProvider from "./authProvider";
 import { supabaseClient } from "./utility";
@@ -293,7 +294,7 @@ function App() {
                   <Route
                     element={
                       <Layout>
-                        <Outlet />
+                        <AnimatedOutlet />
                       </Layout>
                     }
                   >
@@ -382,7 +383,7 @@ function App() {
                       >
                         <Layout>
                           <ErrorBoundary>
-                            <Outlet />
+                            <AnimatedOutlet />
                           </ErrorBoundary>
                         </Layout>
                       </Authenticated>

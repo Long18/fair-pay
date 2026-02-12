@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useGetIdentity } from "@refinedev/core";
-import { Link, Outlet, useLocation } from "react-router";
+import { Link, useLocation } from "react-router";
+import { AnimatedOutlet } from "@/components/animated-outlet";
 import { Profile } from "@/modules/profile/types";
 import { ThemeSelector } from "@/components/refine-ui/theme/theme-selector";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -93,7 +94,7 @@ export function AdminLayout() {
           "pb-6"
         )}
       >
-        <Outlet />
+        <AnimatedOutlet />
       </main>
     </div>
   );
