@@ -10,3 +10,4 @@ export { AdminPayments } from "./pages/AdminPayments";
 export { AdminFriendships } from "./pages/AdminFriendships";
 export { AdminNotifications } from "./pages/AdminNotifications";
 export { AdminAuditLogs } from "./pages/AdminAuditLogs";
+export { AdminDonationSettings } from "./pages/AdminDonationSettings";
