@@ -170,7 +170,7 @@ function AdminLogo() {
       )}
     >
       <FairPayIcon className="w-10 h-10" />
-      <span className="text-base md:text-lg font-bold">Admin</span>
+      <span className="text-base md:text-lg font-bold hidden lg:inline">Admin</span>
     </Link>
   );
 }
@@ -185,7 +185,7 @@ function DesktopAdminNav() {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="hidden md:flex items-center gap-1 lg:gap-2">
+      <div className="hidden md:flex items-center gap-0.5 lg:gap-1 overflow-x-auto scrollbar-none">
         {NAV_ITEMS.map((item) => {
           const active = isActive(item.path, pathname);
           const Icon = item.icon;
@@ -195,21 +195,37 @@ function DesktopAdminNav() {
                 <Link
                   to={item.path}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-lg",
-                    "text-sm font-medium",
-                    "transition-all duration-200",
+                    "relative flex items-center gap-2 rounded-full",
+                    "text-sm font-medium whitespace-nowrap",
+                    "transition-all duration-300 ease-out",
                     active
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                      ? "bg-primary/10 text-primary px-3 py-2"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/60 p-2"
                   )}
                 >
-                  <Icon className={cn("w-5 h-5 shrink-0", active ? "text-primary" : "text-muted-foreground")} />
-                  <span className="hidden lg:inline">{item.label}</span>
+                  <Icon
+                    className={cn(
+                      "w-[18px] h-[18px] shrink-0 transition-colors duration-200",
+                      active ? "text-primary" : "text-muted-foreground"
+                    )}
+                  />
+                  <span
+                    className={cn(
+                      "inline-grid transition-all duration-300 ease-out overflow-hidden",
+                      active
+                        ? "grid-cols-[1fr] opacity-100"
+                        : "grid-cols-[0fr] opacity-0"
+                    )}
+                  >
+                    <span className="min-w-0 overflow-hidden">{item.label}</span>
+                  </span>
                 </Link>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="lg:hidden">
-                <span className="text-xs font-medium">{item.label}</span>
-              </TooltipContent>
+              {!active && (
+                <TooltipContent side="bottom">
+                  <span className="text-xs font-medium">{item.label}</span>
+                </TooltipContent>
+              )}
             </Tooltip>
           );
         })}
