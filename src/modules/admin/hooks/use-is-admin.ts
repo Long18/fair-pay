@@ -14,14 +14,10 @@ export function useIsAdmin(): { isAdmin: boolean; isLoading: boolean } {
   const { data: isAdmin, isLoading: roleLoading } = useQuery({
     queryKey: ["user_roles", "is_admin", identity?.id],
     queryFn: async () => {
-      const { data, error } = await supabaseClient
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", identity!.id)
-        .single();
-
-      if (error || !data) return false;
-      return data.role === "admin";
+      // Use is_admin() RPC which is SECURITY DEFINER — bypasses RLS
+      const { data, error } = await supabaseClient.rpc("is_admin");
+      if (error) return false;
+      return data === true;
     },
     enabled: !!identity?.id,
     staleTime: 5 * 60 * 1000, // 5 minutes
