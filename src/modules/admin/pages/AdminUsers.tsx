@@ -485,7 +485,7 @@ export function AdminUsers() {
               </EmptyContent>
             </Empty>
           ) : (
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   {reactTable.getHeaderGroups().map((headerGroup) => (

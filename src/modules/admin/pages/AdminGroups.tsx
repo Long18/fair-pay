@@ -125,7 +125,6 @@ function GroupDetailSheet({
       .from("expenses")
       .select("id, description, amount, expense_date, profiles!expenses_paid_by_user_id_fkey(full_name)")
       .eq("group_id", group.id)
-      .is("deleted_at", null)
       .order("expense_date", { ascending: false })
       .limit(10)
       .then(({ data, error }) => {
