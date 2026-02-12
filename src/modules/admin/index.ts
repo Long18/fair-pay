@@ -5,3 +5,4 @@ export { AdminLayout } from "./components/AdminLayout";
 export { AdminOverview } from "./pages/AdminOverview";
 export { AdminUsers } from "./pages/AdminUsers";
 export { AdminGroups } from "./pages/AdminGroups";
+export { AdminExpenses } from "./pages/AdminExpenses";
