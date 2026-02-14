@@ -168,7 +168,10 @@ Deno.serve(async (req: Request) => {
     const html = buildCheckoutHtml(formAction, formFields)
     return new Response(html, {
       status: 200,
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Content-Security-Policy': "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; form-action https://pay.sepay.vn https://sandbox.pay.sepay.vn; img-src 'self' data:",
+      },
     })
   }
 
