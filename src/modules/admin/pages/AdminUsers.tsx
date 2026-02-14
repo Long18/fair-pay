@@ -48,6 +48,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -73,6 +82,8 @@ import {
   AlertTriangleIcon,
   Loader2Icon,
   UserPlusIcon,
+  PencilIcon,
+  PlusIcon,
 } from "@/components/ui/icons";
 import { formatDate } from "@/lib/locale-utils";
 import { supabaseClient } from "@/utility/supabaseClient";
@@ -256,18 +267,148 @@ function DeleteUserDialog({
   );
 }
 
+// ─── Create User Dialog ──────────────────────────────────────────────
+
+function CreateUserDialog({
+  open,
+  onOpenChange,
+  onSubmit,
+  isCreating,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: { full_name: string; email: string; role: string }) => void;
+  isCreating: boolean;
+}) {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("user");
+
+  useEffect(() => {
+    if (!open) {
+      setFullName("");
+      setEmail("");
+      setRole("user");
+    }
+  }, [open]);
+
+  const handleSubmit = () => {
+    if (!fullName || !email) {
+      toast.error("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+    onSubmit({ full_name: fullName, email, role });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Tạo người dùng mới</DialogTitle>
+          <DialogDescription>Thêm hồ sơ người dùng mới vào hệ thống</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 mt-2">
+          <div className="space-y-2">
+            <Label htmlFor="user-name">Họ tên</Label>
+            <Input id="user-name" placeholder="Nhập họ tên..." value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="user-email">Email</Label>
+            <Input id="user-email" type="email" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="user-role">Vai trò</Label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger id="user-role"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="user">User</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter className="mt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isCreating}>Hủy</Button>
+          <Button onClick={handleSubmit} disabled={isCreating || !fullName || !email}>
+            {isCreating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Tạo người dùng
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Edit User Dialog ───────────────────────────────────────────────
+
+function EditUserDialog({
+  user,
+  open,
+  onOpenChange,
+  onSubmit,
+  isUpdating,
+}: {
+  user: AdminUserRow | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: { full_name: string; email: string }) => void;
+  isUpdating: boolean;
+}) {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    if (user && open) {
+      setFullName(user.full_name);
+      setEmail(user.email);
+    }
+  }, [user, open]);
+
+  if (!user) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Chỉnh sửa hồ sơ</DialogTitle>
+          <DialogDescription>Cập nhật thông tin người dùng &ldquo;{user.full_name}&rdquo;</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 mt-2">
+          <div className="space-y-2">
+            <Label htmlFor="edit-user-name">Họ tên</Label>
+            <Input id="edit-user-name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-user-email">Email</Label>
+            <Input id="edit-user-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter className="mt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isUpdating}>Hủy</Button>
+          <Button onClick={() => onSubmit({ full_name: fullName, email })} disabled={isUpdating || !fullName || !email}>
+            {isUpdating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Lưu
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Row Actions ────────────────────────────────────────────────────
 
 function RowActions({
   user,
   isSelf,
   onViewDetail,
+  onEdit,
   onToggleRole,
   onDelete,
 }: {
   user: AdminUserRow;
   isSelf: boolean;
   onViewDetail: () => void;
+  onEdit: () => void;
   onToggleRole: () => void;
   onDelete: () => void;
 }) {
@@ -282,6 +423,10 @@ function RowActions({
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={onViewDetail}>
           Xem chi tiết
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onEdit}>
+          <PencilIcon className="mr-2 h-4 w-4" />
+          Chỉnh sửa hồ sơ
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={onToggleRole}
@@ -377,6 +522,15 @@ export function AdminUsers() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [regPeriod, setRegPeriod] = useState<string>("7");
 
+  // Create state
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+
+  // Edit state
+  const [editUser, setEditUser] = useState<AdminUserRow | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+
   // ─── Fetch Users ────────────────────────────────────────────────
 
   const { data: usersData, isLoading } = useQuery({
@@ -464,6 +618,10 @@ export function AdminUsers() {
             onViewDetail={() => {
               setSelectedUser(row.original);
               setSheetOpen(true);
+            }}
+            onEdit={() => {
+              setEditUser(row.original);
+              setEditDialogOpen(true);
             }}
             onToggleRole={() => handleToggleRole(row.original)}
             onDelete={() => {
@@ -569,6 +727,67 @@ export function AdminUsers() {
     }
   }, [deleteUser, queryClient]);
 
+  // ─── Create User Handler ────────────────────────────────────────
+
+  const handleCreateUser = useCallback(async (data: { full_name: string; email: string; role: string }) => {
+    setIsCreating(true);
+    try {
+      // Create profile directly (admin-created user without auth account)
+      const { error } = await supabaseClient
+        .from("profiles")
+        .insert({
+          full_name: data.full_name,
+          email: data.email,
+        });
+      if (error) throw error;
+
+      // If role is admin, also set user_roles (need the new profile id)
+      if (data.role === "admin") {
+        const { data: newProfile } = await supabaseClient
+          .from("profiles")
+          .select("id")
+          .eq("email", data.email)
+          .single();
+        if (newProfile) {
+          await supabaseClient
+            .from("user_roles")
+            .upsert({ user_id: newProfile.id, role: "admin" });
+        }
+      }
+
+      toast.success(`Đã tạo người dùng "${data.full_name}"`);
+      setCreateDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    } catch (err: any) {
+      toast.error(`Lỗi: ${err.message ?? "Không thể tạo người dùng"}`);
+    } finally {
+      setIsCreating(false);
+    }
+  }, [queryClient]);
+
+  // ─── Edit User Handler ──────────────────────────────────────────
+
+  const handleEditUser = useCallback(async (data: { full_name: string; email: string }) => {
+    if (!editUser) return;
+    setIsUpdating(true);
+    try {
+      const { error } = await supabaseClient
+        .from("profiles")
+        .update({ full_name: data.full_name, email: data.email })
+        .eq("id", editUser.id);
+      if (error) throw error;
+
+      toast.success(`Đã cập nhật hồ sơ "${data.full_name}"`);
+      setEditDialogOpen(false);
+      setEditUser(null);
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    } catch (err: any) {
+      toast.error(`Lỗi: ${err.message ?? "Không thể cập nhật hồ sơ"}`);
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [editUser, queryClient]);
+
   // ─── Clear Filters ──────────────────────────────────────────────
 
   const clearFilters = useCallback(() => {
@@ -613,6 +832,13 @@ export function AdminUsers() {
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => setCreateDialogOpen(true)}
+                >
+                  <PlusIcon className="mr-2 h-4 w-4" />
+                  Tạo người dùng
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -833,6 +1059,28 @@ export function AdminUsers() {
         }}
         onConfirm={handleDeleteUser}
         isDeleting={isDeleting}
+      />
+
+      {/* Create User Dialog */}
+      <CreateUserDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onSubmit={handleCreateUser}
+        isCreating={isCreating}
+      />
+
+      {/* Edit User Dialog */}
+      <EditUserDialog
+        user={editUser}
+        open={editDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !isUpdating) {
+            setEditDialogOpen(false);
+            setEditUser(null);
+          }
+        }}
+        onSubmit={handleEditUser}
+        isUpdating={isUpdating}
       />
     </div>
   );

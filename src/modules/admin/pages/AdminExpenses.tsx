@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { useTable } from "@refinedev/react-table";
-import { useList } from "@refinedev/core";
+import { useList, useCreate, useUpdate } from "@refinedev/core";
 import type { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
 
@@ -63,6 +63,7 @@ import {
   EmptyDescription,
   EmptyContent,
 } from "@/components/ui/empty";
+import { Label } from "@/components/ui/label";
 import {
   SearchIcon,
   ReceiptIcon,
@@ -70,6 +71,8 @@ import {
   Loader2Icon,
   AlertTriangleIcon,
   FilterIcon,
+  PlusIcon,
+  PencilIcon,
 } from "@/components/ui/icons";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
 
@@ -298,13 +301,230 @@ function DeleteExpenseDialog({
   );
 }
 
+// ─── Create Expense Dialog ───────────────────────────────────────────
+
+function CreateExpenseDialog({
+  open,
+  onOpenChange,
+  onSubmit,
+  isCreating,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: {
+    description: string;
+    amount: number;
+    currency: string;
+    expense_date: string;
+    group_id: string | null;
+    paid_by_user_id: string;
+  }) => void;
+  isCreating: boolean;
+}) {
+  const [description, setDescription] = useState("");
+  const [amount, setAmount] = useState("");
+  const [currency, setCurrency] = useState("VND");
+  const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split("T")[0]);
+  const [groupId, setGroupId] = useState<string>("none");
+  const [paidByUserId, setPaidByUserId] = useState("");
+
+  const [profiles, setProfiles] = useState<Array<{ id: string; full_name: string }>>([]);
+  const [groupsList, setGroupsList] = useState<Array<{ id: string; name: string }>>([]);
+
+  useEffect(() => {
+    if (!open) return;
+    Promise.all([
+      supabaseClient.from("profiles").select("id, full_name").order("full_name"),
+      supabaseClient.from("groups").select("id, name").order("name"),
+    ]).then(([profilesRes, groupsRes]) => {
+      if (profilesRes.data) setProfiles(profilesRes.data);
+      if (groupsRes.data) setGroupsList(groupsRes.data);
+    });
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      setDescription("");
+      setAmount("");
+      setCurrency("VND");
+      setExpenseDate(new Date().toISOString().split("T")[0]);
+      setGroupId("none");
+      setPaidByUserId("");
+    }
+  }, [open]);
+
+  const handleSubmit = () => {
+    if (!description || !amount || !paidByUserId || !expenseDate) {
+      toast.error("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+    onSubmit({
+      description,
+      amount: Number(amount),
+      currency,
+      expense_date: expenseDate,
+      group_id: groupId === "none" ? null : groupId,
+      paid_by_user_id: paidByUserId,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Tạo chi phí mới</DialogTitle>
+          <DialogDescription>Thêm chi phí mới vào hệ thống</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 mt-2">
+          <div className="space-y-2">
+            <Label htmlFor="exp-desc">Mô tả</Label>
+            <Input id="exp-desc" placeholder="Mô tả chi phí..." value={description} onChange={(e) => setDescription(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="exp-amount">Số tiền</Label>
+              <Input id="exp-amount" type="number" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="exp-currency">Tiền tệ</Label>
+              <Select value={currency} onValueChange={setCurrency}>
+                <SelectTrigger id="exp-currency"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="VND">VND</SelectItem>
+                  <SelectItem value="USD">USD</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="exp-date">Ngày chi</Label>
+            <Input id="exp-date" type="date" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="exp-paid-by">Người trả</Label>
+            <Select value={paidByUserId} onValueChange={setPaidByUserId}>
+              <SelectTrigger id="exp-paid-by"><SelectValue placeholder="Chọn người trả" /></SelectTrigger>
+              <SelectContent>
+                {profiles.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="exp-group">Nhóm (tùy chọn)</Label>
+            <Select value={groupId} onValueChange={setGroupId}>
+              <SelectTrigger id="exp-group"><SelectValue placeholder="Không có nhóm" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Không có nhóm (Bạn bè)</SelectItem>
+                {groupsList.map((g) => (
+                  <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isCreating}>Hủy</Button>
+          <Button onClick={handleSubmit} disabled={isCreating || !description || !amount || !paidByUserId}>
+            {isCreating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Tạo chi phí
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Edit Expense Dialog ────────────────────────────────────────────
+
+function EditExpenseDialog({
+  expense,
+  open,
+  onOpenChange,
+  onSubmit,
+  isUpdating,
+}: {
+  expense: ExpenseRow | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: { description: string; amount: number; expense_date: string; group_id: string | null }) => void;
+  isUpdating: boolean;
+}) {
+  const [description, setDescription] = useState("");
+  const [amount, setAmount] = useState("");
+  const [expenseDate, setExpenseDate] = useState("");
+  const [groupId, setGroupId] = useState<string>("none");
+  const [groupsList, setGroupsList] = useState<Array<{ id: string; name: string }>>([]);
+
+  useEffect(() => {
+    if (expense && open) {
+      setDescription(expense.description);
+      setAmount(String(expense.amount));
+      setExpenseDate(expense.expense_date?.split("T")[0] ?? "");
+      setGroupId(expense.group_id ?? "none");
+      supabaseClient.from("groups").select("id, name").order("name").then(({ data }) => {
+        if (data) setGroupsList(data);
+      });
+    }
+  }, [expense, open]);
+
+  if (!expense) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Chỉnh sửa chi phí</DialogTitle>
+          <DialogDescription>Cập nhật thông tin chi phí (không thay đổi chia tiền)</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 mt-2">
+          <div className="space-y-2">
+            <Label htmlFor="edit-exp-desc">Mô tả</Label>
+            <Input id="edit-exp-desc" value={description} onChange={(e) => setDescription(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-exp-amount">Số tiền</Label>
+            <Input id="edit-exp-amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-exp-date">Ngày chi</Label>
+            <Input id="edit-exp-date" type="date" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-exp-group">Nhóm</Label>
+            <Select value={groupId} onValueChange={setGroupId}>
+              <SelectTrigger id="edit-exp-group"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Không có nhóm (Bạn bè)</SelectItem>
+                {groupsList.map((g) => (
+                  <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isUpdating}>Hủy</Button>
+          <Button onClick={() => onSubmit({ description, amount: Number(amount), expense_date: expenseDate, group_id: groupId === "none" ? null : groupId })} disabled={isUpdating || !description || !amount}>
+            {isUpdating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Lưu
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Row Actions ────────────────────────────────────────────────────
 
 function RowActions({
   onViewDetail,
+  onEdit,
   onDelete,
 }: {
   onViewDetail: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   return (
@@ -318,6 +538,10 @@ function RowActions({
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={onViewDetail}>
           Xem chi tiết
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onEdit}>
+          <PencilIcon className="mr-2 h-4 w-4" />
+          Chỉnh sửa
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onDelete} className="text-destructive">
@@ -346,6 +570,17 @@ export function AdminExpenses() {
   const [deleteExpense, setDeleteExpense] = useState<ExpenseRow | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Create state
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const createMutation = useCreate();
+
+  // Edit state
+  const [editExpense, setEditExpense] = useState<ExpenseRow | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const updateMutation = useUpdate();
 
   // Fetch groups for filter dropdown
   const { query: groupsQuery } = useList({
@@ -470,6 +705,10 @@ export function AdminExpenses() {
               setSelectedExpense(row.original);
               setDetailOpen(true);
             }}
+            onEdit={() => {
+              setEditExpense(row.original);
+              setEditDialogOpen(true);
+            }}
             onDelete={() => {
               setDeleteExpense(row.original);
               setDeleteDialogOpen(true);
@@ -563,6 +802,78 @@ export function AdminExpenses() {
     }
   }, [deleteExpense, table.refineCore.tableQuery]);
 
+  // ─── Create Handler ─────────────────────────────────────────────
+
+  const handleCreate = useCallback(
+    (data: { description: string; amount: number; currency: string; expense_date: string; group_id: string | null; paid_by_user_id: string }) => {
+      setIsCreating(true);
+      createMutation.mutate(
+        {
+          resource: "expenses",
+          values: {
+            description: data.description,
+            amount: data.amount,
+            currency: data.currency,
+            expense_date: data.expense_date,
+            group_id: data.group_id,
+            paid_by_user_id: data.paid_by_user_id,
+            context_type: data.group_id ? "group" : "friend",
+            is_payment: false,
+          },
+        },
+        {
+          onSuccess: () => {
+            toast.success("Đã tạo chi phí mới");
+            setCreateDialogOpen(false);
+            setIsCreating(false);
+            table.refineCore.tableQuery.refetch();
+          },
+          onError: (error) => {
+            toast.error(`Lỗi: ${error.message}`);
+            setIsCreating(false);
+          },
+        },
+      );
+    },
+    [createMutation, table.refineCore.tableQuery],
+  );
+
+  // ─── Edit Handler ──────────────────────────────────────────────
+
+  const handleEdit = useCallback(
+    (data: { description: string; amount: number; expense_date: string; group_id: string | null }) => {
+      if (!editExpense) return;
+      setIsUpdating(true);
+      updateMutation.mutate(
+        {
+          resource: "expenses",
+          id: editExpense.id,
+          values: {
+            description: data.description,
+            amount: data.amount,
+            expense_date: data.expense_date,
+            group_id: data.group_id,
+            context_type: data.group_id ? "group" : "friend",
+          },
+        },
+        {
+          onSuccess: () => {
+            toast.success("Đã cập nhật chi phí");
+            setEditDialogOpen(false);
+            setEditExpense(null);
+            setIsUpdating(false);
+            table.refineCore.tableQuery.refetch();
+          },
+          onError: (error) => {
+            toast.error(`Lỗi: ${error.message}`);
+            setIsUpdating(false);
+          },
+        },
+      );
+    },
+    [editExpense, updateMutation, table.refineCore.tableQuery],
+  );
+
   // ─── Clear Filters ──────────────────────────────────────────────
 
   const clearFilters = useCallback(() => {
@@ -601,6 +912,13 @@ export function AdminExpenses() {
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => setCreateDialogOpen(true)}
+            >
+              <PlusIcon className="mr-2 h-4 w-4" />
+              Tạo chi phí
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -755,6 +1073,28 @@ export function AdminExpenses() {
         }}
         onConfirm={handleDelete}
         isDeleting={isDeleting}
+      />
+
+      {/* Create Expense Dialog */}
+      <CreateExpenseDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onSubmit={handleCreate}
+        isCreating={isCreating}
+      />
+
+      {/* Edit Expense Dialog */}
+      <EditExpenseDialog
+        expense={editExpense}
+        open={editDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !isUpdating) {
+            setEditDialogOpen(false);
+            setEditExpense(null);
+          }
+        }}
+        onSubmit={handleEdit}
+        isUpdating={isUpdating}
       />
     </div>
   );

@@ -45,6 +45,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Empty,
   EmptyMedia,
   EmptyHeader,
@@ -59,6 +66,8 @@ import {
   Loader2Icon,
   AlertTriangleIcon,
   PencilIcon,
+  UserPlusIcon,
+  UserMinusIcon,
 } from "@/components/ui/icons";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
 
@@ -102,14 +111,15 @@ function GroupDetailSheet({
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [loadingExpenses, setLoadingExpenses] = useState(false);
 
-  useEffect(() => {
-    if (!group || !open) {
-      setMembers([]);
-      setExpenses([]);
-      return;
-    }
+  // Add member state
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [allProfiles, setAllProfiles] = useState<Array<{ id: string; full_name: string; avatar_url: string | null }>>([]);
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [addingMember, setAddingMember] = useState(false);
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
 
-    // Fetch members
+  const fetchMembers = useCallback(() => {
+    if (!group) return;
     setLoadingMembers(true);
     supabaseClient
       .from("group_members")
@@ -128,6 +138,16 @@ function GroupDetailSheet({
         }
         setLoadingMembers(false);
       });
+  }, [group?.id]);
+
+  useEffect(() => {
+    if (!group || !open) {
+      setMembers([]);
+      setExpenses([]);
+      return;
+    }
+
+    fetchMembers();
 
     // Fetch recent expenses
     setLoadingExpenses(true);
@@ -151,90 +171,218 @@ function GroupDetailSheet({
         }
         setLoadingExpenses(false);
       });
-  }, [group?.id, open]);
+  }, [group?.id, open, fetchMembers]);
+
+  // Fetch all profiles when add member dialog opens
+  useEffect(() => {
+    if (!addMemberOpen) return;
+    supabaseClient
+      .from("profiles")
+      .select("id, full_name, avatar_url")
+      .order("full_name")
+      .then(({ data }) => {
+        if (data) setAllProfiles(data);
+      });
+  }, [addMemberOpen]);
+
+  // Filter out existing members from the add list
+  const availableProfiles = useMemo(() => {
+    const memberIds = new Set(members.map((m) => m.id));
+    return allProfiles.filter((p) => !memberIds.has(p.id));
+  }, [allProfiles, members]);
+
+  const handleAddMember = useCallback(async () => {
+    if (!group || !selectedUserId) return;
+    setAddingMember(true);
+    try {
+      const { error } = await supabaseClient
+        .from("group_members")
+        .insert({ group_id: group.id, user_id: selectedUserId, role: "member" });
+      if (error) {
+        if (error.code === "23505") {
+          toast.error("Người dùng đã là thành viên của nhóm");
+        } else {
+          throw error;
+        }
+      } else {
+        toast.success("Đã thêm thành viên vào nhóm");
+        setAddMemberOpen(false);
+        setSelectedUserId("");
+        fetchMembers();
+      }
+    } catch (err: any) {
+      toast.error(`Lỗi: ${err.message}`);
+    } finally {
+      setAddingMember(false);
+    }
+  }, [group, selectedUserId, fetchMembers]);
+
+  const handleRemoveMember = useCallback(async (userId: string) => {
+    if (!group) return;
+    setRemovingMemberId(userId);
+    try {
+      const { error } = await supabaseClient
+        .from("group_members")
+        .delete()
+        .eq("group_id", group.id)
+        .eq("user_id", userId);
+      if (error) throw error;
+      toast.success("Đã xóa thành viên khỏi nhóm");
+      fetchMembers();
+    } catch (err: any) {
+      toast.error(`Lỗi: ${err.message}`);
+    } finally {
+      setRemovingMemberId(null);
+    }
+  }, [group, fetchMembers]);
 
   if (!group) return null;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="sm:max-w-lg">
-        <SheetHeader>
-          <SheetTitle>{group.name}</SheetTitle>
-          <p className="text-sm text-muted-foreground">
-            Tạo bởi {group.creator_name} · {formatDate(group.created_at)}
-          </p>
-        </SheetHeader>
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="right" className="sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle>{group.name}</SheetTitle>
+            <p className="text-sm text-muted-foreground">
+              Tạo bởi {group.creator_name} · {formatDate(group.created_at)}
+            </p>
+          </SheetHeader>
 
-        <Tabs defaultValue="members" className="mt-6">
-          <TabsList className="w-full">
-            <TabsTrigger value="members" className="flex-1">Thành viên ({group.member_count})</TabsTrigger>
-            <TabsTrigger value="expenses" className="flex-1">Chi phí</TabsTrigger>
-          </TabsList>
+          <Tabs defaultValue="members" className="mt-6">
+            <TabsList className="w-full">
+              <TabsTrigger value="members" className="flex-1">Thành viên ({members.length})</TabsTrigger>
+              <TabsTrigger value="expenses" className="flex-1">Chi phí</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="members" className="mt-4">
-            {loadingMembers ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
+            <TabsContent value="members" className="mt-4">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm text-muted-foreground">{members.length} thành viên</span>
+                <Button size="sm" variant="outline" onClick={() => setAddMemberOpen(true)}>
+                  <UserPlusIcon className="mr-2 h-4 w-4" />
+                  Thêm
+                </Button>
               </div>
-            ) : members.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                Không có thành viên
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {members.map((m) => (
-                  <div key={m.id} className="flex items-center gap-3 rounded-lg border p-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={m.avatar_url ?? undefined} alt={m.full_name} />
-                      <AvatarFallback className="text-xs">
-                        {m.full_name?.[0]?.toUpperCase() ?? "?"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{m.full_name}</p>
-                    </div>
-                    <Badge variant={m.role === "admin" ? "default" : "secondary"} className="text-xs">
-                      {m.role === "admin" ? "Admin" : "Member"}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="expenses" className="mt-4">
-            <div className="space-y-3">
-              <DetailRow label="Tổng chi phí" value={formatNumber(group.total_expenses)} />
-              {loadingExpenses ? (
+              {loadingMembers ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
-              ) : expenses.length === 0 ? (
+              ) : members.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  Chưa có chi phí nào
+                  Không có thành viên
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {expenses.map((e) => (
-                    <div key={e.id} className="flex items-center justify-between rounded-lg border p-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium truncate">{e.description}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {e.paid_by_name} · {formatDate(e.expense_date)}
-                        </p>
+                  {members.map((m) => (
+                    <div key={m.id} className="flex items-center gap-3 rounded-lg border p-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={m.avatar_url ?? undefined} alt={m.full_name} />
+                        <AvatarFallback className="text-xs">
+                          {m.full_name?.[0]?.toUpperCase() ?? "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{m.full_name}</p>
                       </div>
-                      <span className="text-sm font-mono tabular-nums ml-3">
-                        {formatNumber(e.amount)}
-                      </span>
+                      <Badge variant={m.role === "admin" ? "default" : "secondary"} className="text-xs">
+                        {m.role === "admin" ? "Admin" : "Member"}
+                      </Badge>
+                      {m.role !== "admin" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleRemoveMember(m.id)}
+                          disabled={removingMemberId === m.id}
+                        >
+                          {removingMemberId === m.id ? (
+                            <Loader2Icon className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <UserMinusIcon className="h-3.5 w-3.5" />
+                          )}
+                          <span className="sr-only">Xóa thành viên</span>
+                        </Button>
+                      )}
                     </div>
                   ))}
                 </div>
               )}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </SheetContent>
-    </Sheet>
+            </TabsContent>
+
+            <TabsContent value="expenses" className="mt-4">
+              <div className="space-y-3">
+                <DetailRow label="Tổng chi phí" value={formatNumber(group.total_expenses)} />
+                {loadingExpenses ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : expenses.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Chưa có chi phí nào
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {expenses.map((e) => (
+                      <div key={e.id} className="flex items-center justify-between rounded-lg border p-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{e.description}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {e.paid_by_name} · {formatDate(e.expense_date)}
+                          </p>
+                        </div>
+                        <span className="text-sm font-mono tabular-nums ml-3">
+                          {formatNumber(e.amount)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </SheetContent>
+      </Sheet>
+
+      {/* Add Member Dialog */}
+      <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Thêm thành viên</DialogTitle>
+            <DialogDescription>
+              Thêm người dùng vào nhóm &ldquo;{group.name}&rdquo;
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 mt-2">
+            <Label htmlFor="add-member-select">Chọn người dùng</Label>
+            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+              <SelectTrigger id="add-member-select">
+                <SelectValue placeholder="Chọn người dùng..." />
+              </SelectTrigger>
+              <SelectContent>
+                {availableProfiles.length === 0 ? (
+                  <SelectItem value="__none" disabled>Không còn người dùng nào</SelectItem>
+                ) : (
+                  availableProfiles.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.full_name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setAddMemberOpen(false)} disabled={addingMember}>
+              Hủy
+            </Button>
+            <Button onClick={handleAddMember} disabled={addingMember || !selectedUserId}>
+              {addingMember ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Thêm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

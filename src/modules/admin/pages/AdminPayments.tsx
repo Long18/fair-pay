@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { useTable } from "@refinedev/react-table";
-import { useList, useDelete } from "@refinedev/core";
+import { useList, useDelete, useCreate, useUpdate } from "@refinedev/core";
 import type { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
 
@@ -39,6 +39,14 @@ import {
   CollapsibleContent,
 } from "@/components/ui/collapsible";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -59,8 +67,11 @@ import {
   FilterIcon,
   AlertTriangleIcon,
   Loader2Icon,
+  PlusIcon,
+  PencilIcon,
 } from "@/components/ui/icons";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
+import { supabaseClient } from "@/utility/supabaseClient";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -237,13 +248,233 @@ function DeletePaymentDialog({
   );
 }
 
+// ─── Create Payment Dialog ───────────────────────────────────────────
+
+function CreatePaymentDialog({
+  open,
+  onOpenChange,
+  onSubmit,
+  isCreating,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: {
+    from_user: string;
+    to_user: string;
+    amount: number;
+    currency: string;
+    payment_date: string;
+    group_id: string | null;
+    note: string;
+  }) => void;
+  isCreating: boolean;
+}) {
+  const [fromUser, setFromUser] = useState("");
+  const [toUser, setToUser] = useState("");
+  const [amount, setAmount] = useState("");
+  const [currency, setCurrency] = useState("VND");
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split("T")[0]);
+  const [groupId, setGroupId] = useState<string>("none");
+  const [note, setNote] = useState("");
+
+  const [profilesList, setProfilesList] = useState<Array<{ id: string; full_name: string }>>([]);
+  const [groupsList, setGroupsList] = useState<Array<{ id: string; name: string }>>([]);
+
+  useEffect(() => {
+    if (!open) return;
+    Promise.all([
+      supabaseClient.from("profiles").select("id, full_name").order("full_name"),
+      supabaseClient.from("groups").select("id, name").order("name"),
+    ]).then(([profilesRes, groupsRes]) => {
+      if (profilesRes.data) setProfilesList(profilesRes.data);
+      if (groupsRes.data) setGroupsList(groupsRes.data);
+    });
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      setFromUser("");
+      setToUser("");
+      setAmount("");
+      setCurrency("VND");
+      setPaymentDate(new Date().toISOString().split("T")[0]);
+      setGroupId("none");
+      setNote("");
+    }
+  }, [open]);
+
+  const handleSubmit = () => {
+    if (!fromUser || !toUser || !amount || !paymentDate) {
+      toast.error("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+    if (fromUser === toUser) {
+      toast.error("Người gửi và người nhận không thể giống nhau");
+      return;
+    }
+    onSubmit({
+      from_user: fromUser,
+      to_user: toUser,
+      amount: Number(amount),
+      currency,
+      payment_date: paymentDate,
+      group_id: groupId === "none" ? null : groupId,
+      note,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Tạo thanh toán mới</DialogTitle>
+          <DialogDescription>Thêm thanh toán thủ công vào hệ thống</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 mt-2">
+          <div className="space-y-2">
+            <Label htmlFor="pay-from">Người gửi</Label>
+            <Select value={fromUser} onValueChange={setFromUser}>
+              <SelectTrigger id="pay-from"><SelectValue placeholder="Chọn người gửi" /></SelectTrigger>
+              <SelectContent>
+                {profilesList.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pay-to">Người nhận</Label>
+            <Select value={toUser} onValueChange={setToUser}>
+              <SelectTrigger id="pay-to"><SelectValue placeholder="Chọn người nhận" /></SelectTrigger>
+              <SelectContent>
+                {profilesList.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="pay-amount">Số tiền</Label>
+              <Input id="pay-amount" type="number" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pay-currency">Tiền tệ</Label>
+              <Select value={currency} onValueChange={setCurrency}>
+                <SelectTrigger id="pay-currency"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="VND">VND</SelectItem>
+                  <SelectItem value="USD">USD</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pay-date">Ngày thanh toán</Label>
+            <Input id="pay-date" type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pay-group">Nhóm (tùy chọn)</Label>
+            <Select value={groupId} onValueChange={setGroupId}>
+              <SelectTrigger id="pay-group"><SelectValue placeholder="Không có nhóm" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Không có nhóm (Bạn bè)</SelectItem>
+                {groupsList.map((g) => (
+                  <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pay-note">Ghi chú (tùy chọn)</Label>
+            <Input id="pay-note" placeholder="Ghi chú..." value={note} onChange={(e) => setNote(e.target.value)} />
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isCreating}>Hủy</Button>
+          <Button onClick={handleSubmit} disabled={isCreating || !fromUser || !toUser || !amount}>
+            {isCreating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Tạo thanh toán
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Edit Payment Dialog ────────────────────────────────────────────
+
+function EditPaymentDialog({
+  payment,
+  open,
+  onOpenChange,
+  onSubmit,
+  isUpdating,
+}: {
+  payment: PaymentRow | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: { amount: number; payment_date: string; note: string }) => void;
+  isUpdating: boolean;
+}) {
+  const [amount, setAmount] = useState("");
+  const [paymentDate, setPaymentDate] = useState("");
+  const [note, setNote] = useState("");
+
+  useEffect(() => {
+    if (payment && open) {
+      setAmount(String(payment.amount));
+      setPaymentDate(payment.payment_date?.split("T")[0] ?? "");
+      setNote(payment.note ?? "");
+    }
+  }, [payment, open]);
+
+  if (!payment) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Chỉnh sửa thanh toán</DialogTitle>
+          <DialogDescription>
+            Cập nhật thông tin thanh toán từ {payment.from_user_name} đến {payment.to_user_name}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 mt-2">
+          <div className="space-y-2">
+            <Label htmlFor="edit-pay-amount">Số tiền</Label>
+            <Input id="edit-pay-amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-pay-date">Ngày thanh toán</Label>
+            <Input id="edit-pay-date" type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-pay-note">Ghi chú</Label>
+            <Input id="edit-pay-note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ghi chú..." />
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isUpdating}>Hủy</Button>
+          <Button onClick={() => onSubmit({ amount: Number(amount), payment_date: paymentDate, note })} disabled={isUpdating || !amount}>
+            {isUpdating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Lưu
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Row Actions ────────────────────────────────────────────────────
 
 function RowActions({
   onViewDetail,
+  onEdit,
   onDelete,
 }: {
   onViewDetail: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   return (
@@ -258,6 +489,10 @@ function RowActions({
         <DropdownMenuItem onClick={onViewDetail}>
           Xem chi tiết
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={onEdit}>
+          <PencilIcon className="mr-2 h-4 w-4" />
+          Chỉnh sửa
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onDelete} className="text-destructive">
           Xóa thanh toán
@@ -271,6 +506,8 @@ function RowActions({
 
 export function AdminPayments() {
   const deleteMutation = useDelete();
+  const createMutation = useCreate();
+  const updateMutation = useUpdate();
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
@@ -286,6 +523,15 @@ export function AdminPayments() {
   const [deletePayment, setDeletePayment] = useState<PaymentRow | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Create state
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+
+  // Edit state
+  const [editPayment, setEditPayment] = useState<PaymentRow | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Fetch groups for filter dropdown
   const { query: groupsQuery } = useList({
@@ -430,6 +676,10 @@ export function AdminPayments() {
               setSelectedPayment(row.original);
               setSheetOpen(true);
             }}
+            onEdit={() => {
+              setEditPayment(row.original);
+              setEditDialogOpen(true);
+            }}
             onDelete={() => {
               setDeletePayment(row.original);
               setDeleteDialogOpen(true);
@@ -521,6 +771,76 @@ export function AdminPayments() {
     );
   }, [deletePayment, deleteMutation, table.refineCore.tableQuery]);
 
+  // ─── Create Handler ─────────────────────────────────────────────
+
+  const handleCreate = useCallback(
+    (data: { from_user: string; to_user: string; amount: number; currency: string; payment_date: string; group_id: string | null; note: string }) => {
+      setIsCreating(true);
+      createMutation.mutate(
+        {
+          resource: "payments",
+          values: {
+            from_user: data.from_user,
+            to_user: data.to_user,
+            amount: data.amount,
+            currency: data.currency,
+            payment_date: data.payment_date,
+            group_id: data.group_id,
+            context_type: data.group_id ? "group" : "friend",
+            note: data.note || null,
+          },
+        },
+        {
+          onSuccess: () => {
+            toast.success("Đã tạo thanh toán mới");
+            setCreateDialogOpen(false);
+            setIsCreating(false);
+            table.refineCore.tableQuery.refetch();
+          },
+          onError: (error) => {
+            toast.error(`Lỗi: ${error.message}`);
+            setIsCreating(false);
+          },
+        },
+      );
+    },
+    [createMutation, table.refineCore.tableQuery],
+  );
+
+  // ─── Edit Handler ──────────────────────────────────────────────
+
+  const handleEdit = useCallback(
+    (data: { amount: number; payment_date: string; note: string }) => {
+      if (!editPayment) return;
+      setIsUpdating(true);
+      updateMutation.mutate(
+        {
+          resource: "payments",
+          id: editPayment.id,
+          values: {
+            amount: data.amount,
+            payment_date: data.payment_date,
+            note: data.note || null,
+          },
+        },
+        {
+          onSuccess: () => {
+            toast.success("Đã cập nhật thanh toán");
+            setEditDialogOpen(false);
+            setEditPayment(null);
+            setIsUpdating(false);
+            table.refineCore.tableQuery.refetch();
+          },
+          onError: (error) => {
+            toast.error(`Lỗi: ${error.message}`);
+            setIsUpdating(false);
+          },
+        },
+      );
+    },
+    [editPayment, updateMutation, table.refineCore.tableQuery],
+  );
+
   const hasActiveFilters =
     search !== "" ||
     groupFilter !== "all" ||
@@ -546,6 +866,13 @@ export function AdminPayments() {
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => setCreateDialogOpen(true)}
+            >
+              <PlusIcon className="mr-2 h-4 w-4" />
+              Tạo thanh toán
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -699,6 +1026,28 @@ export function AdminPayments() {
         }}
         onConfirm={handleDelete}
         isDeleting={isDeleting}
+      />
+
+      {/* Create Payment Dialog */}
+      <CreatePaymentDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onSubmit={handleCreate}
+        isCreating={isCreating}
+      />
+
+      {/* Edit Payment Dialog */}
+      <EditPaymentDialog
+        payment={editPayment}
+        open={editDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !isUpdating) {
+            setEditDialogOpen(false);
+            setEditPayment(null);
+          }
+        }}
+        onSubmit={handleEdit}
+        isUpdating={isUpdating}
       />
     </div>
   );
