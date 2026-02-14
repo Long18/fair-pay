@@ -86,6 +86,9 @@ import {
   PencilIcon,
   PlusIcon,
   ChevronDownIcon,
+  ArchiveIcon,
+  ArchiveRestoreIcon,
+  StarIcon,
 } from "@/components/ui/icons";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
 import type { Profile } from "@/modules/profile/types";
@@ -96,11 +99,14 @@ import type { AdminUserRow } from "../types";
 interface GroupRow {
   id: string;
   name: string;
+  description: string | null;
+  avatar_url: string | null;
   created_by: string;
   creator_name: string;
   creator_avatar: string | null;
   member_count: number;
   total_expenses: number;
+  is_archived: boolean;
   created_at: string;
 }
 
@@ -416,12 +422,14 @@ function GroupDetailDialog({
   onOpenChange,
   onEdit,
   onDelete,
+  onArchiveToggle,
 }: {
   group: GroupRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onEdit: () => void;
   onDelete: () => void;
+  onArchiveToggle?: () => void;
 }) {
   const [members, setMembers] = useState<Array<{ id: string; full_name: string; avatar_url: string | null; role: string }>>([]);
   const [expenses, setExpenses] = useState<Array<{ id: string; description: string; amount: number; expense_date: string; paid_by_name: string }>>([]);
@@ -434,6 +442,7 @@ function GroupDetailDialog({
   const [selectedUserId, setSelectedUserId] = useState("");
   const [addingMember, setAddingMember] = useState(false);
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
+  const [togglingRoleId, setTogglingRoleId] = useState<string | null>(null);
 
   const fetchMembers = useCallback(() => {
     if (!group) return;
@@ -550,6 +559,26 @@ function GroupDetailDialog({
     }
   }, [group, fetchMembers]);
 
+  const handleToggleRole = useCallback(async (userId: string, currentRole: string) => {
+    if (!group) return;
+    setTogglingRoleId(userId);
+    const newRole = currentRole === "admin" ? "member" : "admin";
+    try {
+      const { error } = await supabaseClient
+        .from("group_members")
+        .update({ role: newRole })
+        .eq("group_id", group.id)
+        .eq("user_id", userId);
+      if (error) throw error;
+      toast.success(newRole === "admin" ? "Đã nâng cấp thành Admin" : "Đã hạ cấp thành Member");
+      fetchMembers();
+    } catch (err: any) {
+      toast.error(`Lỗi: ${err.message}`);
+    } finally {
+      setTogglingRoleId(null);
+    }
+  }, [group, fetchMembers]);
+
   if (!group) return null;
 
   return (
@@ -557,10 +586,27 @@ function GroupDetailDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>{group.name}</DialogTitle>
-            <DialogDescription>
-              Tạo bởi {group.creator_name} · {formatDate(group.created_at)}
-            </DialogDescription>
+            <div className="flex items-center gap-3">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={group.avatar_url ?? undefined} alt={group.name} />
+                <AvatarFallback className="text-sm font-semibold bg-primary/10 text-primary">
+                  {group.name?.[0]?.toUpperCase() ?? "?"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <DialogTitle className="truncate">{group.name}</DialogTitle>
+                  {group.is_archived && (
+                    <Badge className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800 text-xs shrink-0">
+                      Archived
+                    </Badge>
+                  )}
+                </div>
+                <DialogDescription>
+                  Tạo bởi {group.creator_name} · {formatDate(group.created_at)}
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
           <Tabs defaultValue="members" className="flex-1 overflow-hidden flex flex-col">
@@ -597,21 +643,36 @@ function GroupDetailDialog({
                       <Badge variant={m.role === "admin" ? "default" : "secondary"} className="text-xs">
                         {m.role === "admin" ? "Admin" : "Member"}
                       </Badge>
-                      {m.role !== "admin" && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                          onClick={() => handleRemoveMember(m.id)}
-                          disabled={removingMemberId === m.id}
-                        >
-                          {removingMemberId === m.id ? (
-                            <Loader2Icon className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <UserMinusIcon className="h-3.5 w-3.5" />
-                          )}
-                        </Button>
-                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground"
+                            disabled={removingMemberId === m.id || togglingRoleId === m.id}
+                          >
+                            {(removingMemberId === m.id || togglingRoleId === m.id) ? (
+                              <Loader2Icon className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <MoreHorizontalIcon className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleToggleRole(m.id, m.role)}>
+                            <StarIcon className="mr-2 h-4 w-4" />
+                            {m.role === "admin" ? "Hạ cấp thành Member" : "Nâng cấp thành Admin"}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => handleRemoveMember(m.id)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <UserMinusIcon className="mr-2 h-4 w-4" />
+                            Xóa khỏi nhóm
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   ))}
                 </div>
@@ -645,11 +706,20 @@ function GroupDetailDialog({
           </Tabs>
 
           {/* Actions inside modal */}
-          <div className="flex gap-2 pt-2 border-t">
+          <div className="flex flex-wrap gap-2 pt-2 border-t">
             <Button size="sm" variant="outline" onClick={onEdit}>
               <PencilIcon className="mr-2 h-4 w-4" />
-              Đổi tên nhóm
+              Chỉnh sửa nhóm
             </Button>
+            {onArchiveToggle && (
+              <Button size="sm" variant="outline" onClick={onArchiveToggle}>
+                {group.is_archived ? (
+                  <><ArchiveRestoreIcon className="mr-2 h-4 w-4" />Khôi phục</>
+                ) : (
+                  <><ArchiveIcon className="mr-2 h-4 w-4" />Lưu trữ</>
+                )}
+              </Button>
+            )}
             <Button size="sm" variant="destructive" onClick={onDelete}>
               Xóa nhóm
             </Button>
@@ -862,31 +932,53 @@ function EditGroupDialog({
   group: GroupRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (newName: string) => void;
+  onConfirm: (data: { name: string; description: string }) => void;
   isUpdating: boolean;
 }) {
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
 
   useEffect(() => {
-    if (group && open) setName(group.name);
+    if (group && open) {
+      setName(group.name);
+      setDescription(group.description ?? "");
+    }
   }, [group, open]);
 
   if (!group) return null;
+
+  const hasChanges = name.trim() !== group.name || description.trim() !== (group.description ?? "");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Đổi tên nhóm</DialogTitle>
-          <DialogDescription>Thay đổi tên hiển thị của nhóm &ldquo;{group.name}&rdquo;</DialogDescription>
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={group.avatar_url ?? undefined} alt={group.name} />
+              <AvatarFallback className="text-sm bg-primary/10 text-primary">
+                {group.name?.[0]?.toUpperCase() ?? "?"}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <DialogTitle>Chỉnh sửa nhóm</DialogTitle>
+              <DialogDescription>Cập nhật thông tin nhóm &ldquo;{group.name}&rdquo;</DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
-        <div className="space-y-2 mt-2">
-          <Label htmlFor="group-name">Tên nhóm</Label>
-          <Input id="group-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nhập tên nhóm mới..." />
+        <div className="space-y-4 mt-2">
+          <div className="space-y-2">
+            <Label htmlFor="group-name">Tên nhóm</Label>
+            <Input id="group-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nhập tên nhóm..." />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="group-description">Mô tả</Label>
+            <Input id="group-description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Mô tả nhóm (tùy chọn)..." />
+          </div>
         </div>
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isUpdating}>Hủy</Button>
-          <Button onClick={() => onConfirm(name.trim())} disabled={isUpdating || !name.trim() || name.trim() === group.name}>
+          <Button onClick={() => onConfirm({ name: name.trim(), description: description.trim() })} disabled={isUpdating || !name.trim() || !hasChanges}>
             {isUpdating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
             Lưu
           </Button>
@@ -1362,6 +1454,9 @@ function GroupsTab() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
+  // Archive
+  const [isArchiving, setIsArchiving] = useState(false);
+
   const filters = useMemo(() => {
     const f: Array<{ field: string; operator: string; value: unknown }> = [];
     if (debouncedSearch) f.push({ field: "name", operator: "contains", value: debouncedSearch });
@@ -1369,9 +1464,34 @@ function GroupsTab() {
   }, [debouncedSearch]);
 
   const columns = useMemo<ColumnDef<GroupRow>[]>(() => [
-    { id: "name", header: "Tên nhóm", accessorKey: "name", size: 200 },
     {
-      id: "creator", header: "Người tạo", accessorKey: "creator_name", size: 180, enableSorting: false,
+      id: "name", header: "Tên nhóm", accessorKey: "name", size: 220,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2.5">
+          <Avatar className="h-8 w-8 shrink-0">
+            <AvatarImage src={row.original.avatar_url ?? undefined} alt={row.original.name} />
+            <AvatarFallback className="text-xs bg-primary/10 text-primary">
+              {row.original.name?.[0]?.toUpperCase() ?? "?"}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-medium truncate">{row.original.name}</span>
+              {row.original.is_archived && (
+                <Badge className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800 text-[10px] px-1.5 py-0">
+                  Archived
+                </Badge>
+              )}
+            </div>
+            {row.original.description && (
+              <p className="text-xs text-muted-foreground truncate max-w-[180px]">{row.original.description}</p>
+            )}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: "creator", header: "Người tạo", accessorKey: "creator_name", size: 160, enableSorting: false,
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
           <Avatar className="h-7 w-7">
@@ -1383,15 +1503,15 @@ function GroupsTab() {
       ),
     },
     {
-      id: "member_count", header: "Thành viên", accessorKey: "member_count", size: 100,
+      id: "member_count", header: "Thành viên", accessorKey: "member_count", size: 90,
       cell: ({ getValue }) => <Badge variant="secondary">{getValue() as number}</Badge>,
     },
     {
-      id: "total_expenses", header: () => <div className="text-right">Tổng chi phí</div>, accessorKey: "total_expenses", size: 140,
+      id: "total_expenses", header: () => <div className="text-right">Tổng chi phí</div>, accessorKey: "total_expenses", size: 130,
       cell: ({ getValue }) => <div className="text-right font-mono tabular-nums">{formatNumber(getValue() as number)}</div>,
     },
     {
-      id: "created_at", header: "Ngày tạo", accessorKey: "created_at", size: 120,
+      id: "created_at", header: "Ngày tạo", accessorKey: "created_at", size: 110,
       cell: ({ getValue }) => formatDate(getValue() as string),
     },
     {
@@ -1404,7 +1524,14 @@ function GroupsTab() {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => { setSelectedGroup(row.original); setDetailOpen(true); }}>Xem chi tiết</DropdownMenuItem>
             <DropdownMenuItem onClick={() => { setEditGroup(row.original); setEditDialogOpen(true); }}>
-              <PencilIcon className="mr-2 h-4 w-4" />Đổi tên nhóm
+              <PencilIcon className="mr-2 h-4 w-4" />Chỉnh sửa nhóm
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleArchiveToggle(row.original)}>
+              {row.original.is_archived ? (
+                <><ArchiveRestoreIcon className="mr-2 h-4 w-4" />Khôi phục</>
+              ) : (
+                <><ArchiveIcon className="mr-2 h-4 w-4" />Lưu trữ</>
+              )}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => { setDeleteGroup(row.original); setDeleteDialogOpen(true); }} className="text-destructive">Xóa nhóm</DropdownMenuItem>
@@ -1428,11 +1555,14 @@ function GroupsTab() {
           data: data.data.map((group: any) => ({
             id: group.id,
             name: group.name ?? "",
+            description: group.description ?? null,
+            avatar_url: group.avatar_url ?? null,
             created_by: group.created_by ?? "",
             creator_name: group.profiles?.full_name ?? "Không rõ",
             creator_avatar: group.profiles?.avatar_url ?? null,
             member_count: group.group_members?.[0]?.count ?? 0,
             total_expenses: group.total_expenses ?? 0,
+            is_archived: group.is_archived ?? false,
             created_at: group.created_at,
           })),
         }),
@@ -1452,17 +1582,45 @@ function GroupsTab() {
     );
   }, [deleteGroup, deleteMutation, table.refineCore.tableQuery]);
 
-  const handleEdit = useCallback((newName: string) => {
-    if (!editGroup || !newName) return;
+  const handleEdit = useCallback((data: { name: string; description: string }) => {
+    if (!editGroup || !data.name) return;
     setIsUpdating(true);
     updateMutation.mutate(
-      { resource: "groups", id: editGroup.id, values: { name: newName } },
+      { resource: "groups", id: editGroup.id, values: { name: data.name, description: data.description || null } },
       {
-        onSuccess: () => { toast.success(`Đã đổi tên nhóm thành "${newName}"`); setEditDialogOpen(false); setEditGroup(null); setIsUpdating(false); table.refineCore.tableQuery.refetch(); },
+        onSuccess: () => { toast.success(`Đã cập nhật nhóm "${data.name}"`); setEditDialogOpen(false); setEditGroup(null); setIsUpdating(false); table.refineCore.tableQuery.refetch(); },
         onError: (error) => { toast.error(`Lỗi: ${error.message}`); setIsUpdating(false); },
       },
     );
   }, [editGroup, updateMutation, table.refineCore.tableQuery]);
+
+  const handleArchiveToggle = useCallback((group: GroupRow) => {
+    setIsArchiving(true);
+    const newArchived = !group.is_archived;
+    updateMutation.mutate(
+      {
+        resource: "groups",
+        id: group.id,
+        values: {
+          is_archived: newArchived,
+          archived_at: newArchived ? new Date().toISOString() : null,
+          archived_by: null,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success(newArchived ? `Đã lưu trữ nhóm "${group.name}"` : `Đã khôi phục nhóm "${group.name}"`);
+          setIsArchiving(false);
+          table.refineCore.tableQuery.refetch();
+          // Also refresh detail dialog if open
+          if (detailOpen && selectedGroup?.id === group.id) {
+            setSelectedGroup({ ...group, is_archived: newArchived });
+          }
+        },
+        onError: (error) => { toast.error(`Lỗi: ${error.message}`); setIsArchiving(false); },
+      },
+    );
+  }, [updateMutation, table.refineCore.tableQuery, detailOpen, selectedGroup]);
 
   const clearFilters = useCallback(() => setSearch(""), []);
   const hasActiveFilters = search !== "";
@@ -1503,6 +1661,7 @@ function GroupsTab() {
         onOpenChange={setDetailOpen}
         onEdit={() => { setDetailOpen(false); setEditGroup(selectedGroup); setEditDialogOpen(true); }}
         onDelete={() => { setDetailOpen(false); setDeleteGroup(selectedGroup); setDeleteDialogOpen(true); }}
+        onArchiveToggle={() => { if (selectedGroup) handleArchiveToggle(selectedGroup); }}
       />
       <DeleteConfirmDialog
         title="Xác nhận xóa nhóm"
