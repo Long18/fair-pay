@@ -11,7 +11,7 @@ RETURNS JSONB
 SECURITY DEFINER
 SET search_path = public, pg_temp
 LANGUAGE plpgsql
-AS $
+AS $$
 DECLARE
   v_total_users       BIGINT;
   v_total_groups      BIGINT;
@@ -73,4 +73,4 @@ BEGIN
     'curr_payments_30d', (SELECT COUNT(*) FROM payments WHERE created_at >= NOW() - INTERVAL '30 days')
   );
 END;
-$;
+$$;
