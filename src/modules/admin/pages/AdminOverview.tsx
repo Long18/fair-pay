@@ -52,6 +52,13 @@ import { formatNumber } from "@/lib/locale-utils";
 // ─── Trend Indicator ────────────────────────────────────────────────
 
 function TrendIndicator({ value, isPositive }: { value: number; isPositive: boolean }) {
+  if (value === 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-xs font-medium text-muted-foreground">
+        —
+      </span>
+    );
+  }
   const Icon = isPositive ? ArrowUpIcon : ArrowDownIcon;
   const colorClass = isPositive ? "text-emerald-600" : "text-red-500";
   return (
@@ -61,6 +68,12 @@ function TrendIndicator({ value, isPositive }: { value: number; isPositive: bool
       {value}%
     </span>
   );
+}
+
+/** Compute percentage change between current and previous values. */
+function calcTrendPercent(current: number, previous: number): number {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return Math.round(((current - previous) / previous) * 100);
 }
 
 // ─── Stat Card Skeleton ─────────────────────────────────────────────
@@ -125,7 +138,6 @@ function useAdminStats() {
     queryFn: async () => {
       const { data, error } = await supabaseClient.rpc("get_admin_stats");
       if (error) throw error;
-      // RPC returns snake_case keys, map to camelCase
       const raw = data as Record<string, number>;
       return {
         totalUsers: raw.total_users ?? 0,
@@ -133,6 +145,13 @@ function useAdminStats() {
         totalExpenses: raw.total_expenses ?? 0,
         totalPayments: raw.total_payments ?? 0,
         activeUsersLast7Days: raw.active_users_7d ?? 0,
+        prevTotalUsers: raw.prev_total_users ?? 0,
+        prevTotalGroups: raw.prev_total_groups ?? 0,
+        currExpenses30d: raw.curr_expenses_30d ?? 0,
+        prevExpenses30d: raw.prev_expenses_30d ?? 0,
+        currPayments30d: raw.curr_payments_30d ?? 0,
+        prevPayments30d: raw.prev_payments_30d ?? 0,
+        prevActiveUsers7d: raw.prev_active_7d ?? 0,
       } satisfies AdminStats;
     },
     staleTime: 60_000,
@@ -313,6 +332,29 @@ export function AdminOverview() {
           : STAT_CARDS.map((card) => {
               const Icon = card.icon;
               const value = stats?.[card.key] ?? 0;
+
+              // Compute trend % based on comparison period
+              let trendPercent = 0;
+              if (stats) {
+                switch (card.key) {
+                  case "totalUsers":
+                    trendPercent = calcTrendPercent(stats.totalUsers, stats.prevTotalUsers);
+                    break;
+                  case "totalGroups":
+                    trendPercent = calcTrendPercent(stats.totalGroups, stats.prevTotalGroups);
+                    break;
+                  case "totalExpenses":
+                    trendPercent = calcTrendPercent(stats.currExpenses30d, stats.prevExpenses30d);
+                    break;
+                  case "totalPayments":
+                    trendPercent = calcTrendPercent(stats.currPayments30d, stats.prevPayments30d);
+                    break;
+                  case "activeUsersLast7Days":
+                    trendPercent = calcTrendPercent(stats.activeUsersLast7Days, stats.prevActiveUsers7d);
+                    break;
+                }
+              }
+
               return (
                 <Card key={card.key} className="p-6">
                   <div className="flex items-center gap-4">
@@ -324,8 +366,7 @@ export function AdminOverview() {
                     <div className="flex flex-col gap-1">
                       <span className="text-sm text-muted-foreground">{card.label}</span>
                       <span className="text-2xl font-bold">{formatNumber(value)}</span>
-                      {/* Trend placeholder — real trend requires historical comparison */}
-                      <TrendIndicator value={0} isPositive={true} />
+                      <TrendIndicator value={Math.abs(trendPercent)} isPositive={trendPercent >= 0} />
                     </div>
                   </div>
                 </Card>
