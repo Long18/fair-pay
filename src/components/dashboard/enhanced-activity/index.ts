@@ -1,6 +1,6 @@
 // Enhanced Activity List Components
 export { EnhancedActivityList } from "../enhanced-activity-list";
-export type { EnhancedActivityListProps } from "../enhanced-activity-list";
+export type { EnhancedActivityListProps, PaginationMode } from "../enhanced-activity-list";
 
 export { EnhancedActivityRow } from "../enhanced-activity-row";
 export type {

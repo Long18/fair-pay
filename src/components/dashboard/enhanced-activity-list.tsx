@@ -11,6 +11,7 @@ import { ActivitySortControls, type SortOption } from "./activity-sort-controls"
 import { ActivitySummary } from "./activity-summary";
 import { ActivityTimePeriodGroup } from "./activity-time-period-group";
 import { EnhancedActivityRow, type EnhancedActivityItem } from "./enhanced-activity-row";
+import { PaginationControls, type PaginationMetadata } from "@/components/ui/pagination-controls";
 import { useProgressiveDisclosure } from "@/hooks/use-progressive-disclosure";
 import {
   groupActivitiesByTimePeriod,
@@ -26,6 +27,8 @@ import type { SupportedCurrency } from "@/lib/format-utils";
 // Component Props
 // =============================================
 
+export type PaginationMode = "progressive" | "pagination";
+
 export interface EnhancedActivityListProps {
   activities: EnhancedActivityItem[];
   currentUserId: string;
@@ -35,6 +38,9 @@ export interface EnhancedActivityListProps {
   showFilters?: boolean;
   showSort?: boolean;
   showTimeGrouping?: boolean;
+  showActions?: boolean;
+  paginationMode?: PaginationMode;
+  pageSize?: number;
   className?: string;
 }
 
@@ -51,9 +57,13 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
   showFilters = true,
   showSort = true,
   showTimeGrouping = true,
+  showActions = false,
+  paginationMode = "progressive",
+  pageSize = 10,
   className,
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const listRef = React.useRef<HTMLDivElement>(null);
 
   // URL state management
   const activeFilter = (searchParams.get("filter") as PaymentStateFilter) || "all";
@@ -63,6 +73,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
   const [expandedActivityIds, setExpandedActivityIds] = React.useState<Set<string>>(new Set());
   const [collapsedGroupPeriods, setCollapsedGroupPeriods] = React.useState<Set<string>>(new Set());
   const [isSummaryCollapsed, setIsSummaryCollapsed] = React.useState(false);
+  const [currentPage, setCurrentPage] = React.useState(1);
 
   // Filter activities
   const filteredActivities = React.useMemo(() => {
@@ -105,17 +116,47 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
     });
   }, [sortedActivities, duplicateIds]);
 
-  // Progressive disclosure
+  // Progressive disclosure (used when paginationMode === "progressive")
   const {
-    visibleItems,
+    visibleItems: progressiveItems,
     hasMore,
     loadMore,
-    totalCount,
+    totalCount: progressiveTotalCount,
     visibleCount,
   } = useProgressiveDisclosure(activitiesWithContext, {
-    initialCount: 10,
-    incrementCount: 10,
+    initialCount: pageSize,
+    incrementCount: pageSize,
   });
+
+  // Pagination logic (used when paginationMode === "pagination")
+  const totalPages = Math.ceil(activitiesWithContext.length / pageSize);
+
+  const paginatedItems = React.useMemo(() => {
+    if (paginationMode !== "pagination") return [];
+    const start = (currentPage - 1) * pageSize;
+    return activitiesWithContext.slice(start, start + pageSize);
+  }, [activitiesWithContext, currentPage, pageSize, paginationMode]);
+
+  const paginationMetadata: PaginationMetadata = React.useMemo(() => ({
+    totalItems: activitiesWithContext.length,
+    totalPages,
+    currentPage,
+    pageSize,
+  }), [activitiesWithContext.length, totalPages, currentPage, pageSize]);
+
+  // Reset page when filter/sort changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFilter, activeSort]);
+
+  const handlePageChange = React.useCallback((page: number) => {
+    setCurrentPage(page);
+    // Scroll to top of list
+    listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  // Select visible items based on mode
+  const visibleItems = paginationMode === "pagination" ? paginatedItems : progressiveItems;
 
   // Group by time period (if enabled)
   const timeGroups = React.useMemo(() => {
@@ -282,7 +323,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
   }
 
   return (
-    <div className={cn("space-y-4", className)}>
+    <div ref={listRef} className={cn("space-y-4", className)}>
       {/* Summary Section */}
       {showSummary && (
         <ActivitySummary
@@ -329,6 +370,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
               onToggleActivity={handleToggleActivity}
               onToggleGroup={() => handleToggleGroup(group.period)}
               duplicateIds={duplicateIds}
+              showActions={showActions}
             />
           ))
         ) : (
@@ -342,22 +384,34 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
                 isExpanded={expandedActivityIds.has(activity.id)}
                 onToggleExpand={() => handleToggleActivity(activity.id)}
                 showDuplicateContext={duplicateIds.has(activity.id)}
+                showActions={showActions}
               />
             ))}
           </div>
         )}
 
-        {/* Load More Button */}
-        {hasMore && (
-          <div className="text-center pt-4">
-            <Button
-              variant="outline"
-              onClick={loadMore}
-              className="rounded-lg"
-            >
-              Load More ({visibleCount} of {totalCount})
-            </Button>
-          </div>
+        {/* Pagination or Load More */}
+        {paginationMode === "pagination" ? (
+          activitiesWithContext.length > pageSize && (
+            <div className="pt-4">
+              <PaginationControls
+                metadata={paginationMetadata}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          )
+        ) : (
+          hasMore && (
+            <div className="text-center pt-4">
+              <Button
+                variant="outline"
+                onClick={loadMore}
+                className="rounded-lg"
+              >
+                Load More ({visibleCount} of {progressiveTotalCount})
+              </Button>
+            </div>
+          )
         )}
       </div>
     </div>
