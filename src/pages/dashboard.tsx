@@ -9,12 +9,13 @@ import { EnhancedActivityList } from "@/components/dashboard/enhanced-activity";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageContent } from "@/components/ui/page-content";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
 import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useTranslation } from "react-i18next";
 import { DashboardTracker } from "@/lib/analytics/index";
+import { WalletIcon, ActivityIcon, HistoryIcon } from "@/components/ui/icons";
+import { cn } from "@/lib/utils";
 
 export const Dashboard = () => {
   const { data: identity } = useGetIdentity<Profile>();
@@ -130,33 +131,63 @@ export const Dashboard = () => {
           <PageHeader title={t('dashboard.title', 'Dashboard')} />
 
           <PageContent>
-            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "balances" | "activity" | "history")} className="space-y-6">
-              <div className="flex items-center justify-center w-full">
-                <TabsList>
-                  <TabsTrigger value="balances" className="px-6">
-                    {t('balances.title', 'Balances')}
-                  </TabsTrigger>
-                  <TabsTrigger value="activity" className="px-6">
-                    {t('dashboard.recentActivity', 'Activity')}
-                  </TabsTrigger>
-                  <TabsTrigger value="history" className="px-6">
-                    {t('history.title', 'History')}
-                  </TabsTrigger>
-                </TabsList>
+            {/* Tab Switcher */}
+            <div className="flex items-center justify-center w-full">
+              <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
+                {([
+                  { key: "balances" as const, label: t('balances.title', 'Balances'), icon: WalletIcon, count: balances.length },
+                  { key: "activity" as const, label: t('dashboard.recentActivity', 'Activity'), icon: ActivityIcon, count: activities.length },
+                  { key: "history" as const, label: t('history.title', 'History'), icon: HistoryIcon, count: historyDebts.length },
+                ]).map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.key;
+                  return (
+                    <button
+                      key={tab.key}
+                      onClick={() => setActiveTab(tab.key)}
+                      className={cn(
+                        "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all cursor-pointer",
+                        isActive
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span>{tab.label}</span>
+                      {tab.count > 0 && (
+                        <span
+                          className={cn(
+                            "text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center",
+                            isActive
+                              ? "bg-primary/10 text-primary"
+                              : "bg-muted-foreground/10 text-muted-foreground"
+                          )}
+                        >
+                          {tab.count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
+            </div>
 
-              <TabsContent value="balances" className="space-y-4 mt-6">
-                {debtsError && (
-                  <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
-                    {t('dashboard.errorLoadingDebts', 'Failed to load debts. Please try again.')}
+            {/* Tab Content */}
+            <div className="space-y-4 mt-6">
+              {activeTab === "balances" && (
+                <>
+                  {debtsError && (
+                    <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
+                      {t('dashboard.errorLoadingDebts', 'Failed to load debts. Please try again.')}
+                    </div>
+                  )}
+                  <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
+                    <BalanceTable balances={balances} disabled={!isAuthenticated} showHistory={false} showExpenseBreakdown={true} />
                   </div>
-                )}
-                <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
-                  <BalanceTable balances={balances} disabled={!isAuthenticated} showHistory={false} showExpenseBreakdown={true} />
-                </div>
-              </TabsContent>
+                </>
+              )}
 
-              <TabsContent value="activity" className="space-y-4 mt-6">
+              {activeTab === "activity" && (
                 <div className="bg-card border rounded-lg shadow-sm overflow-hidden p-4">
                   <EnhancedActivityList
                     activities={activities}
@@ -172,17 +203,17 @@ export const Dashboard = () => {
                     pageSize={10}
                   />
                 </div>
-              </TabsContent>
+              )}
 
-              <TabsContent value="history" className="space-y-4 mt-6">
+              {activeTab === "history" && (
                 <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
                   <SettledHistoryList
                     debts={historyDebts}
                     isLoading={historyLoading}
                   />
                 </div>
-              </TabsContent>
-            </Tabs>
+              )}
+            </div>
           </PageContent>
         </PageContainer>
       )}
