@@ -15,25 +15,25 @@ export const PaymentIssuesChart = ({
   systemErrors = 1,
 }: PaymentIssuesChartProps) => {
   const data = [
-    { name: "a", value: systemErrors, color: "#FFBB4F" },
-    { name: "x", value: customerErrors, color: "#FFDA93" },
-    { name: "o", value: fraudBlocks, color: "#FF7576" },
-    { name: "n", value: bankErrors, color: "#80E0E5" },
+    { name: "a", value: systemErrors, color: "var(--status-warning, oklch(0.75 0.15 80))" },
+    { name: "x", value: customerErrors, color: "var(--status-warning-border, oklch(0.88 0.08 80))" },
+    { name: "o", value: fraudBlocks, color: "var(--chart-negative, oklch(0.577 0.245 27.325))" },
+    { name: "n", value: bankErrors, color: "var(--status-info, oklch(0.598 0.365 217.2))" },
   ];
 
   const totalErrors = customerErrors + fraudBlocks + bankErrors + systemErrors;
 
   const issueTypes = [
-    { label: "Customer errors", color: "#FFDA93" },
-    { label: "Fraud blocks", color: "#FF7576" },
-    { label: "Bank errors", color: "#80E0E5" },
-    { label: "System errors", color: "#FFBB4F" },
+    { label: "Customer errors", color: "var(--status-warning-border, oklch(0.88 0.08 80))" },
+    { label: "Fraud blocks", color: "var(--chart-negative, oklch(0.577 0.245 27.325))" },
+    { label: "Bank errors", color: "var(--status-info, oklch(0.598 0.365 217.2))" },
+    { label: "System errors", color: "var(--status-warning, oklch(0.75 0.15 80))" },
   ];
 
   return (
-    <Card className="border-[#F2F2F2]">
+    <Card className="border-border">
       <CardHeader>
-        <CardTitle className="text-base font-bold text-[#333]">
+        <CardTitle className="text-base font-bold text-foreground">
           Payment issues
         </CardTitle>
       </CardHeader>
@@ -45,7 +45,7 @@ export const PaymentIssuesChart = ({
               axisLine={false}
               tickLine={false}
               tick={{
-                fill: "#BDBDBD",
+                fill: "var(--chart-axis, oklch(0.65 0 0))",
                 fontSize: "var(--font-size-chart-md)",
                 fontFamily: "var(--font-sans)",
               }}
@@ -61,10 +61,10 @@ export const PaymentIssuesChart = ({
 
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-[#FFA14E]">
+            <span className="text-sm font-semibold text-status-warning">
               Total number of errors:
             </span>
-            <span className="text-lg font-bold text-[#FFA14E]">
+            <span className="text-lg font-bold text-status-warning">
               {totalErrors}
             </span>
           </div>
@@ -77,7 +77,7 @@ export const PaymentIssuesChart = ({
                 className="w-[22px] h-[22px] rounded-full"
                 style={{ backgroundColor: issue.color }}
               />
-              <span className="text-xs font-semibold text-[#828282]">
+              <span className="text-xs font-semibold text-muted-foreground">
                 {issue.label}
               </span>
             </div>

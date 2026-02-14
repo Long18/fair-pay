@@ -29,20 +29,20 @@ export const CreditorCard = ({
   };
 
   return (
-    <DataCard className="border-gray-200">
+    <DataCard className="border-border">
       <DataCard.Header
         title={
           <div className="flex items-center gap-3">
             {logo ? (
               <img src={logo} alt={name} className="h-10 w-10 object-contain" />
             ) : (
-              <div className="h-10 w-10 bg-gray-200 rounded-lg flex items-center justify-center">
-                <span className="text-lg font-bold text-gray-600">{name.charAt(0)}</span>
+              <div className="h-10 w-10 bg-muted rounded-lg flex items-center justify-center">
+                <span className="text-lg font-bold text-muted-foreground">{name.charAt(0)}</span>
               </div>
             )}
             <div>
-              <div className="text-base font-bold text-gray-900">{name}</div>
-              <p className="text-xs text-gray-600">{description}</p>
+              <div className="text-base font-bold text-foreground">{name}</div>
+              <p className="text-xs text-muted-foreground">{description}</p>
             </div>
           </div>
         }
@@ -51,7 +51,7 @@ export const CreditorCard = ({
             variant="ghost"
             size="icon"
             onClick={onMenuClick}
-            className="h-8 w-8 text-gray-500 hover:text-gray-700"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
           >
             <MoreVerticalIcon className="h-4 w-4" />
           </Button>
@@ -73,7 +73,7 @@ export const CreditorCard = ({
                   cx="32"
                   cy="32"
                   r="28"
-                  stroke="#FEF3C7"
+                  stroke="var(--status-warning-bg, oklch(0.95 0.05 80))"
                   strokeWidth="6"
                   fill="none"
                 />
@@ -81,16 +81,16 @@ export const CreditorCard = ({
                   cx="32"
                   cy="32"
                   r="28"
-                  stroke="#F59E0B"
+                  stroke="var(--status-warning, oklch(0.75 0.15 80))"
                   strokeWidth="6"
                   fill="none"
                   strokeDasharray={`${(instalmentsLeft / 20) * 176} 176`}
                   strokeLinecap="round"
                 />
               </svg>
-              <span className="absolute text-lg font-bold text-gray-900">{instalmentsLeft}</span>
+              <span className="absolute text-lg font-bold text-foreground">{instalmentsLeft}</span>
             </div>
-            <p className="text-xs text-gray-600">Instalments Left</p>
+            <p className="text-xs text-muted-foreground">Instalments Left</p>
           </div>
 
           <div className="text-center">
@@ -100,7 +100,7 @@ export const CreditorCard = ({
                   cx="32"
                   cy="32"
                   r="28"
-                  stroke="#D1FAE5"
+                  stroke="var(--status-success-bg, oklch(0.95 0.05 160))"
                   strokeWidth="6"
                   fill="none"
                 />
@@ -108,16 +108,16 @@ export const CreditorCard = ({
                   cx="32"
                   cy="32"
                   r="28"
-                  stroke="#10B981"
+                  stroke="var(--status-success, oklch(0.65 0.15 160))"
                   strokeWidth="6"
                   fill="none"
                   strokeDasharray="176 176"
                   strokeLinecap="round"
                 />
               </svg>
-              <span className="absolute text-sm font-bold text-green-600">₫{formatCurrency(amountPaid)}</span>
+              <span className="absolute text-sm font-bold text-semantic-positive">₫{formatCurrency(amountPaid)}</span>
             </div>
-            <p className="text-xs text-gray-600">Paid</p>
+            <p className="text-xs text-muted-foreground">Paid</p>
           </div>
 
           <div className="text-center">
@@ -127,7 +127,7 @@ export const CreditorCard = ({
                   cx="32"
                   cy="32"
                   r="28"
-                  stroke="#FEE2E2"
+                  stroke="var(--status-error-bg, oklch(0.95 0.05 27))"
                   strokeWidth="6"
                   fill="none"
                 />
@@ -135,16 +135,16 @@ export const CreditorCard = ({
                   cx="32"
                   cy="32"
                   r="28"
-                  stroke="#EF4444"
+                  stroke="var(--status-error, oklch(0.577 0.245 27.325))"
                   strokeWidth="6"
                   fill="none"
                   strokeDasharray={`${(amountDue / (amountPaid + amountDue)) * 176} 176`}
                   strokeLinecap="round"
                 />
               </svg>
-              <span className="absolute text-sm font-bold text-red-600">₫{formatCurrency(amountDue)}</span>
+              <span className="absolute text-sm font-bold text-semantic-negative">₫{formatCurrency(amountDue)}</span>
             </div>
-            <p className="text-xs text-gray-600">Due</p>
+            <p className="text-xs text-muted-foreground">Due</p>
           </div>
         </div>
       </DataCard.Content>

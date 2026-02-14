@@ -40,9 +40,9 @@ export const PublicLeaderboard = ({ users, title, type }: PublicLeaderboardProps
   };
 
   return (
-    <Card className="border-[#F2F2F2]">
+    <Card className="border-border">
       <CardHeader>
-        <CardTitle className="text-lg font-bold text-[#333] flex items-center gap-2">
+        <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
           {type === "debtors" ? "📉" : "📈"}
           {title}
         </CardTitle>
@@ -52,22 +52,22 @@ export const PublicLeaderboard = ({ users, title, type }: PublicLeaderboardProps
           {users.map((user) => (
             <div
               key={user.id}
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#F9F9F9] transition-colors"
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-elevated transition-colors"
             >
               <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="flex items-center justify-center w-8 text-lg font-bold text-[#828282]">
+                <div className="flex items-center justify-center w-8 text-lg font-bold text-muted-foreground">
                   {getBadgeEmoji(user.badge) || `#${user.rank}`}
                 </div>
                 <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-[#FFA14E] text-white">
+                  <AvatarFallback className="bg-avatar-fallback text-avatar-fallback-foreground">
                     {getInitials(user.name)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[#333] truncate">
+                  <p className="text-sm font-medium text-foreground truncate">
                     {user.name}
                   </p>
-                  <p className="text-xs text-[#828282]">
+                  <p className="text-xs text-muted-foreground">
                     {type === "debtors" ? t("dashboard.owes") : t("dashboard.isOwed")}
                   </p>
                 </div>
@@ -75,7 +75,7 @@ export const PublicLeaderboard = ({ users, title, type }: PublicLeaderboardProps
               <div className="text-right">
                 <p
                   className={`text-sm font-bold ${
-                    type === "debtors" ? "text-[#EB5757]" : "text-[#6FCF97]"
+                    type === "debtors" ? "text-semantic-negative" : "text-semantic-positive"
                   }`}
                 >
                   ₫{formatAmount(user.balance)}

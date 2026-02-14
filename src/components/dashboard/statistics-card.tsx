@@ -23,25 +23,25 @@ export const StatisticsCard = ({
   };
 
   return (
-    <DataCard className="border-gray-200">
+    <DataCard className="border-border">
       <DataCard.Header title="Statistics" />
       <DataCard.Content className="space-y-6">
         <div className="flex flex-col items-center gap-3">
-          <CircularProgress percentage={percentage} color="#4CAF50" />
+          <CircularProgress percentage={percentage} color="var(--chart-positive, oklch(0.65 0.17 155))" />
           <div className="text-center">
-            <p className="text-lg font-bold text-gray-900">{title}</p>
-            <p className="text-sm text-gray-500">{subtitle}</p>
+            <p className="text-lg font-bold text-foreground">{title}</p>
+            <p className="text-sm text-muted-foreground">{subtitle}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
           <div className="text-center">
-            <div className="text-3xl font-bold text-gray-900">{instalmentsLeft}</div>
-            <div className="text-sm text-gray-600 mt-1">Instalments Left</div>
+            <div className="text-3xl font-bold text-foreground">{instalmentsLeft}</div>
+            <div className="text-sm text-muted-foreground mt-1">Instalments Left</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-red-500">₫{formatCurrency(amountDue)}</div>
-            <div className="text-sm text-gray-600 mt-1">Amount Due</div>
+            <div className="text-3xl font-bold text-destructive">₫{formatCurrency(amountDue)}</div>
+            <div className="text-sm text-muted-foreground mt-1">Amount Due</div>
           </div>
         </div>
       </DataCard.Content>
