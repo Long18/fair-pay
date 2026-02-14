@@ -31,6 +31,7 @@ import {
   Users2Icon,
   CameraIcon,
   Loader2Icon,
+  StarIcon,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -48,12 +49,20 @@ interface ExtendedMember extends Member {
   avatar_url?: string | null;
 }
 
+export interface ExistingMember {
+  id: string;
+  full_name: string;
+  avatar_url: string | null;
+  role: "admin" | "member";
+}
+
 interface GroupFormProps {
   onSubmit: (values: GroupFormValues) => void;
   defaultValues?: Partial<GroupFormValues>;
   isLoading?: boolean;
   availableMembers?: ExtendedMember[];
   currentUserId?: string;
+  existingMembers?: ExistingMember[];
 }
 
 export const GroupForm = ({
@@ -62,6 +71,7 @@ export const GroupForm = ({
   isLoading,
   availableMembers = [],
   currentUserId,
+  existingMembers = [],
 }: GroupFormProps) => {
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>(
     defaultValues?.member_ids || []
@@ -315,6 +325,50 @@ export const GroupForm = ({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Existing Members (edit mode) */}
+              {existingMembers.length > 0 && (
+                <div className="space-y-3">
+                  <FormLabel className="text-sm font-medium flex items-center gap-2">
+                    <UsersIcon className="h-4 w-4" />
+                    Current Members
+                    <Badge variant="outline" className="ml-1 text-xs">
+                      {existingMembers.length}
+                    </Badge>
+                  </FormLabel>
+                  <div className="space-y-1.5">
+                    {existingMembers.map((member) => (
+                      <div
+                        key={member.id}
+                        className={cn(
+                          "flex items-center gap-3 rounded-lg border px-3 py-2.5",
+                          member.role === "admin" && "border-primary/30 bg-primary/5"
+                        )}
+                      >
+                        <Avatar className="h-8 w-8 shrink-0">
+                          <AvatarImage src={member.avatar_url || undefined} alt={member.full_name} />
+                          <AvatarFallback className="text-xs">
+                            {getInitials(member.full_name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium flex-1 truncate">
+                          {member.full_name}
+                        </span>
+                        {member.id === currentUserId && (
+                          <Badge variant="secondary" className="text-xs shrink-0">You</Badge>
+                        )}
+                        <Badge
+                          variant={member.role === "admin" ? "default" : "outline"}
+                          className="text-xs shrink-0"
+                        >
+                          {member.role === "admin" && <StarIcon className="h-3 w-3 mr-1" />}
+                          {member.role === "admin" ? "Admin" : "Member"}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {availableMembers.length > 0 ? (
                 <>
                   <div className="space-y-2">

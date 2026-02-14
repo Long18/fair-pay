@@ -53,6 +53,7 @@ export const GroupEdit = () => {
       id: m.user_id,
       full_name: m.profiles?.full_name || "Unknown",
       avatar_url: m.profiles?.avatar_url || null,
+      role: m.role as "admin" | "member",
     }));
   }, [membersQuery.data]);
 
@@ -180,6 +181,7 @@ export const GroupEdit = () => {
         }}
         isLoading={isSubmitting}
         availableMembers={availableMembers}
+        existingMembers={currentMembers}
         currentUserId={identity?.id}
       />
     </div>
