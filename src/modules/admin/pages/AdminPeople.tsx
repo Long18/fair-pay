@@ -907,6 +907,59 @@ function FriendshipStatusBadge({ status }: { status: keyof typeof FRIENDSHIP_STA
   return <Badge className={config.className}>{config.label}</Badge>;
 }
 
+// ─── New Registration Card ──────────────────────────────────────────
+
+function NewRegistrationCard({
+  user,
+  onViewDetail,
+}: {
+  user: AdminUserRow;
+  onViewDetail: () => void;
+}) {
+  const daysSinceRegistration = Math.floor(
+    (Date.now() - new Date(user.created_at).getTime()) / (1000 * 60 * 60 * 24),
+  );
+
+  return (
+    <div
+      className="flex items-center gap-3 rounded-lg border p-4 cursor-pointer hover:bg-accent/50 transition-colors"
+      onClick={onViewDetail}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onViewDetail(); }}
+    >
+      <Avatar className="h-10 w-10">
+        <AvatarImage src={user.avatar_url ?? undefined} alt={user.full_name} />
+        <AvatarFallback>{user.full_name?.[0]?.toUpperCase() ?? "?"}</AvatarFallback>
+      </Avatar>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{user.full_name}</p>
+        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+      </div>
+      <div className="text-right shrink-0">
+        <p className="text-xs text-muted-foreground">{formatDate(user.created_at)}</p>
+        <Badge
+          variant="secondary"
+          className={
+            daysSinceRegistration <= 1
+              ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800 text-xs mt-1"
+              : daysSinceRegistration <= 7
+                ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800 text-xs mt-1"
+                : "text-xs mt-1"
+          }
+        >
+          {daysSinceRegistration === 0
+            ? "Hôm nay"
+            : daysSinceRegistration === 1
+              ? "Hôm qua"
+              : `${daysSinceRegistration} ngày trước`}
+        </Badge>
+      </div>
+    </div>
+  );
+}
+
+
 // ═══════════════════════════════════════════════════════════════════
 // ─── USERS TAB ──────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════
@@ -939,6 +992,10 @@ function UsersTab() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
+  // New registrations
+  const [activeSubTab, setActiveSubTab] = useState("all-users");
+  const [regPeriod, setRegPeriod] = useState<string>("7");
+
   // Fetch Users
   const { data: usersData, isLoading } = useQuery({
     queryKey: ["admin", "users"],
@@ -949,6 +1006,16 @@ function UsersTab() {
     },
     staleTime: 30_000,
   });
+
+  // New Registrations
+  const newRegistrations = useMemo(() => {
+    if (!usersData) return [];
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - Number(regPeriod));
+    return usersData
+      .filter((u) => new Date(u.created_at) >= cutoff)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [usersData, regPeriod]);
 
   // Client-side filtering
   const filteredData = useMemo(() => {
@@ -1093,97 +1160,174 @@ function UsersTab() {
 
   return (
     <>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div>
-            <CardTitle>Quản lý người dùng</CardTitle>
-            <CardDescription>Xem và quản lý tất cả người dùng trong hệ thống</CardDescription>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-              <PlusIcon className="mr-2 h-4 w-4" />
-              Tạo người dùng
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setShowFilters((v) => !v)}>
-              <FilterIcon className="mr-2 h-4 w-4" />
-              Bộ lọc
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="relative max-w-sm">
-            <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Tìm kiếm theo tên hoặc email..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
-          </div>
-          {showFilters && (
-            <div className="flex items-center gap-3 flex-wrap">
-              <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="w-[150px]"><SelectValue placeholder="Vai trò" /></SelectTrigger>
+      <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
+        <TabsList>
+          <TabsTrigger value="all-users" className="gap-2">
+            <UsersIcon className="h-4 w-4" />
+            Tất cả người dùng
+          </TabsTrigger>
+          <TabsTrigger value="new-registrations" className="gap-2">
+            <UserPlusIcon className="h-4 w-4" />
+            Đăng ký mới
+            {newRegistrations.length > 0 && (
+              <Badge variant="secondary" className="ml-1 text-xs">
+                {newRegistrations.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        {/* ── All Users Sub-Tab ──────────────────────────────────── */}
+        <TabsContent value="all-users" className="mt-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <div>
+                <CardTitle>Quản lý người dùng</CardTitle>
+                <CardDescription>Xem và quản lý tất cả người dùng trong hệ thống</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+                  <PlusIcon className="mr-2 h-4 w-4" />
+                  Tạo người dùng
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setShowFilters((v) => !v)}>
+                  <FilterIcon className="mr-2 h-4 w-4" />
+                  Bộ lọc
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="relative max-w-sm">
+                <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input placeholder="Tìm kiếm theo tên hoặc email..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+              </div>
+              {showFilters && (
+                <div className="flex items-center gap-3 flex-wrap">
+                  <Select value={roleFilter} onValueChange={setRoleFilter}>
+                    <SelectTrigger className="w-[150px]"><SelectValue placeholder="Vai trò" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả vai trò</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="user">User</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {hasActiveFilters && <Button variant="ghost" size="sm" onClick={clearFilters}>Xóa bộ lọc</Button>}
+                </div>
+              )}
+
+              {isEmptyResult && hasActiveFilters ? (
+                <Empty className="min-h-[400px]">
+                  <EmptyMedia variant="icon"><UsersIcon className="h-6 w-6" /></EmptyMedia>
+                  <EmptyHeader>
+                    <EmptyTitle>Không tìm thấy người dùng</EmptyTitle>
+                    <EmptyDescription>Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</EmptyDescription>
+                  </EmptyHeader>
+                  <EmptyContent><Button variant="outline" onClick={clearFilters}>Xóa bộ lọc</Button></EmptyContent>
+                </Empty>
+              ) : (
+                <div className="rounded-md border overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      {reactTable.getHeaderGroups().map((headerGroup) => (
+                        <TableRow key={headerGroup.id}>
+                          {headerGroup.headers.map((header) => (
+                            <TableHead key={header.id} style={{ width: header.getSize() }}>
+                              {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                            </TableHead>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </TableHeader>
+                    <TableBody>
+                      {isLoading ? (
+                        <TableRow><TableCell colSpan={columns.length} className="h-24 text-center">Đang tải...</TableCell></TableRow>
+                      ) : reactTable.getRowModel().rows.length ? (
+                        reactTable.getRowModel().rows.map((row) => (
+                          <TableRow key={row.original?.id ?? row.id}>
+                            {row.getVisibleCells().map((cell) => (
+                              <TableCell key={cell.id} style={{ width: cell.column.getSize() }}>
+                                <div className="truncate">{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow><TableCell colSpan={columns.length} className="h-24 text-center">Không có dữ liệu</TableCell></TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+
+              {!isLoading && reactTable.getRowModel().rows.length > 0 && (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">Trang {reactTable.getState().pagination.pageIndex + 1} / {reactTable.getPageCount()}</p>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => reactTable.previousPage()} disabled={!reactTable.getCanPreviousPage()}>Trước</Button>
+                    <Button variant="outline" size="sm" onClick={() => reactTable.nextPage()} disabled={!reactTable.getCanNextPage()}>Sau</Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── New Registrations Sub-Tab ──────────────────────────── */}
+        <TabsContent value="new-registrations" className="mt-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <div>
+                <CardTitle>Đăng ký mới</CardTitle>
+                <CardDescription>Người dùng mới đăng ký trong khoảng thời gian đã chọn</CardDescription>
+              </div>
+              <Select value={regPeriod} onValueChange={setRegPeriod}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tất cả vai trò</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="1">Hôm nay</SelectItem>
+                  <SelectItem value="7">7 ngày qua</SelectItem>
+                  <SelectItem value="30">30 ngày qua</SelectItem>
+                  <SelectItem value="90">90 ngày qua</SelectItem>
                 </SelectContent>
               </Select>
-              {hasActiveFilters && <Button variant="ghost" size="sm" onClick={clearFilters}>Xóa bộ lọc</Button>}
-            </div>
-          )}
-
-          {isEmptyResult && hasActiveFilters ? (
-            <Empty className="min-h-[400px]">
-              <EmptyMedia variant="icon"><UsersIcon className="h-6 w-6" /></EmptyMedia>
-              <EmptyHeader>
-                <EmptyTitle>Không tìm thấy người dùng</EmptyTitle>
-                <EmptyDescription>Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent><Button variant="outline" onClick={clearFilters}>Xóa bộ lọc</Button></EmptyContent>
-            </Empty>
-          ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  {reactTable.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <TableHead key={header.id} style={{ width: header.getSize() }}>
-                          {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                        </TableHead>
-                      ))}
-                    </TableRow>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : newRegistrations.length === 0 ? (
+                <Empty className="min-h-[300px]">
+                  <EmptyMedia variant="icon">
+                    <UserPlusIcon className="h-6 w-6" />
+                  </EmptyMedia>
+                  <EmptyHeader>
+                    <EmptyTitle>Không có đăng ký mới</EmptyTitle>
+                    <EmptyDescription>Không có người dùng nào đăng ký trong khoảng thời gian này</EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {newRegistrations.length} người dùng mới
+                  </p>
+                  {newRegistrations.map((user) => (
+                    <NewRegistrationCard
+                      key={user.id}
+                      user={user}
+                      onViewDetail={() => {
+                        setSelectedUser(user);
+                        setDetailOpen(true);
+                      }}
+                    />
                   ))}
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow><TableCell colSpan={columns.length} className="h-24 text-center">Đang tải...</TableCell></TableRow>
-                  ) : reactTable.getRowModel().rows.length ? (
-                    reactTable.getRowModel().rows.map((row) => (
-                      <TableRow key={row.original?.id ?? row.id}>
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id} style={{ width: cell.column.getSize() }}>
-                            <div className="truncate">{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow><TableCell colSpan={columns.length} className="h-24 text-center">Không có dữ liệu</TableCell></TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-
-          {!isLoading && reactTable.getRowModel().rows.length > 0 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">Trang {reactTable.getState().pagination.pageIndex + 1} / {reactTable.getPageCount()}</p>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => reactTable.previousPage()} disabled={!reactTable.getCanPreviousPage()}>Trước</Button>
-                <Button variant="outline" size="sm" onClick={() => reactTable.nextPage()} disabled={!reactTable.getCanNextPage()}>Sau</Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <UserDetailDialog
         user={selectedUser}
