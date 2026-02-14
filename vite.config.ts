@@ -132,6 +132,16 @@ export default defineConfig({
                 entryFileNames: 'assets/[name]-[hash].js',
                 chunkFileNames: 'assets/[name]-[hash].js',
                 assetFileNames: 'assets/[name]-[hash].[ext]',
+                manualChunks: {
+                    'vendor-react': ['react', 'react-dom', 'react-router'],
+                    'vendor-refine': ['@refinedev/core', '@refinedev/react-router', '@refinedev/supabase'],
+                    'vendor-supabase': ['@supabase/supabase-js'],
+                    'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-popover', '@radix-ui/react-select', '@radix-ui/react-tooltip', '@radix-ui/react-dropdown-menu'],
+                    'vendor-form': ['react-hook-form', '@hookform/resolvers', 'zod'],
+                    'vendor-table': ['@tanstack/react-table'],
+                    'vendor-date': ['date-fns', 'dayjs'],
+                    'vendor-i18n': ['i18next', 'react-i18next'],
+                },
             },
 
             treeshake: {

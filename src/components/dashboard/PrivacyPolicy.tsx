@@ -94,7 +94,7 @@ export const PrivacyPolicy = () => {
               {t("privacy.section6.title", "6. Contact Us")}
             </h2>
             <p>
-              {t("privacy.section6.content", "If you have questions about this Privacy Policy, please contact us through the app or email us at privacy@fairpay.app")}
+              {t("privacy.section6.content", "If you have questions about this Privacy Policy, please contact us through the app or email us at us.thanhlong18@gmail.com")}
             </p>
           </section>
         </CardContent>
