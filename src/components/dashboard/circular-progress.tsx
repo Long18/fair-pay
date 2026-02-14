@@ -9,7 +9,7 @@ export const CircularProgress = ({
   percentage,
   size = 120,
   strokeWidth = 8,
-  color = "#4CAF50",
+  color = "var(--chart-positive, oklch(0.65 0.17 155))",
 }: CircularProgressProps) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
@@ -22,7 +22,7 @@ export const CircularProgress = ({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#E5E7EB"
+          stroke="var(--chart-grid, oklch(0.95 0 0))"
           strokeWidth={strokeWidth}
           fill="none"
         />

@@ -20,9 +20,9 @@ export const WeeklyEarningsChart = ({ data }: WeeklyEarningsChartProps) => {
   const chartData = data || defaultData;
 
   return (
-    <Card className="border-[#F2F2F2]">
+    <Card className="border-border">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-base font-semibold text-[#828282]">
+        <CardTitle className="text-base font-semibold text-muted-foreground">
           Last 30 days
         </CardTitle>
         <button className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-muted">
@@ -35,7 +35,8 @@ export const WeeklyEarningsChart = ({ data }: WeeklyEarningsChartProps) => {
           >
             <path
               d="M10 5L15 10L10 15"
-              stroke="#828282"
+              stroke="currentColor"
+              className="text-muted-foreground"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -46,13 +47,13 @@ export const WeeklyEarningsChart = ({ data }: WeeklyEarningsChartProps) => {
       <CardContent className="pt-6">
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="0" stroke="#F2F2F2" vertical={false} />
+            <CartesianGrid strokeDasharray="0" stroke="var(--chart-grid, oklch(0.95 0 0))" vertical={false} />
             <XAxis
               dataKey="week"
               axisLine={false}
               tickLine={false}
               tick={{
-                fill: "#969696",
+                fill: "var(--chart-axis, oklch(0.65 0 0))",
                 fontSize: "var(--font-size-chart-lg)",
                 fontFamily: "var(--font-sans)",
               }}
@@ -62,7 +63,7 @@ export const WeeklyEarningsChart = ({ data }: WeeklyEarningsChartProps) => {
               axisLine={false}
               tickLine={false}
               tick={{
-                fill: "#969696",
+                fill: "var(--chart-axis, oklch(0.65 0 0))",
                 fontSize: "var(--font-size-chart-lg)",
                 fontFamily: "var(--font-sans)",
               }}
@@ -71,7 +72,7 @@ export const WeeklyEarningsChart = ({ data }: WeeklyEarningsChartProps) => {
             />
             <Bar
               dataKey="amount"
-              fill="#ECCCFF"
+              fill="var(--chart-2, oklch(0.678 0.376 213.1))"
               radius={[15, 15, 0, 0]}
               barSize={79}
             />

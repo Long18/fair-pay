@@ -198,7 +198,7 @@ const DebtRow: React.FC<DebtRowProps> = React.memo(
               src={debt.counterparty_avatar_url || undefined}
               alt={debt.counterparty_name}
             />
-            <AvatarFallback className="bg-[#FFA14E] text-white text-xs sm:text-sm">
+            <AvatarFallback className="bg-avatar-fallback text-avatar-fallback-foreground text-xs sm:text-sm">
               {debt.counterparty_name.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>

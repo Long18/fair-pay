@@ -75,8 +75,8 @@ export const BalanceChart = ({
       balance: {
         label: "Balance",
         theme: {
-          light: isPositive ? "#10b981" : "#ef4444",
-          dark: isPositive ? "#22c55e" : "#f87171",
+          light: isPositive ? "oklch(0.65 0.17 155)" : "oklch(0.577 0.245 27.325)",
+          dark: isPositive ? "oklch(0.7 0.17 155)" : "oklch(0.704 0.191 22.216)",
         },
       },
     } satisfies ChartConfig;

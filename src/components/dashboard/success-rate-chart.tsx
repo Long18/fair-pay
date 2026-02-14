@@ -18,12 +18,12 @@ export const SuccessRateChart = ({
     { name: "Unsuccessful", value: unsuccessful },
   ];
 
-  const COLORS = ["#A6D997", "#DFEEDB"];
+  const COLORS = ["var(--chart-positive, oklch(0.65 0.17 155))", "var(--chart-grid, oklch(0.95 0 0))"];
 
   return (
-    <Card className="border-[#F2F2F2]">
+    <Card className="border-border">
       <CardHeader>
-        <CardTitle className="text-base font-bold text-[#333]">
+        <CardTitle className="text-base font-bold text-foreground">
           Success rate
         </CardTitle>
       </CardHeader>
@@ -49,7 +49,7 @@ export const SuccessRateChart = ({
             </PieChart>
           </ResponsiveContainer>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-lg font-bold text-[#89B27C]">
+            <span className="text-lg font-bold text-chart-positive">
               {successRate}%
             </span>
           </div>
@@ -58,24 +58,24 @@ export const SuccessRateChart = ({
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <div className="w-[22px] h-[22px] rounded-lg bg-[#DFEEDB]" />
-              <span className="text-xs font-semibold text-[#828282]">
+              <div className="w-[22px] h-[22px] rounded-lg bg-chart-grid" />
+              <span className="text-xs font-semibold text-muted-foreground">
                 Unsuccessful
               </span>
             </div>
-            <div className="text-[32px] font-semibold text-[#333] leading-none ml-7">
+            <div className="text-[32px] font-semibold text-foreground leading-none ml-7">
               {unsuccessful}
             </div>
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <div className="w-[22px] h-[22px] rounded-lg bg-[#A6D997]" />
-              <span className="text-xs font-semibold text-[#828282]">
+              <div className="w-[22px] h-[22px] rounded-lg bg-chart-positive" />
+              <span className="text-xs font-semibold text-muted-foreground">
                 Successful
               </span>
             </div>
-            <div className="text-[32px] font-semibold text-[#333] leading-none ml-7">
+            <div className="text-[32px] font-semibold text-foreground leading-none ml-7">
               {successful}
             </div>
           </div>

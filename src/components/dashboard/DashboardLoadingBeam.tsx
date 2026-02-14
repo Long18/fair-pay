@@ -91,14 +91,14 @@ export function DashboardLoadingBeam() {
         </div>
 
         {/* Beams: left nodes → center */}
-        <AnimatedBeam containerRef={containerRef} fromRef={topLeftRef} toRef={centerRef} curvature={-0.2} duration={2.5} delay={0} gradientStartColor="#3b82f6" gradientStopColor="#6366f1" />
-        <AnimatedBeam containerRef={containerRef} fromRef={leftRef} toRef={centerRef} curvature={0} duration={2.8} delay={0.3} gradientStartColor="#3b82f6" gradientStopColor="#8b5cf6" />
-        <AnimatedBeam containerRef={containerRef} fromRef={bottomLeftRef} toRef={centerRef} curvature={0.2} duration={2.6} delay={0.6} gradientStartColor="#6366f1" gradientStopColor="#a855f7" />
+        <AnimatedBeam containerRef={containerRef} fromRef={topLeftRef} toRef={centerRef} curvature={-0.2} duration={2.5} delay={0} gradientStartColor="var(--primary, oklch(0.598 0.365 217.2))" gradientStopColor="var(--chart-1, oklch(0.598 0.365 217.2))" />
+        <AnimatedBeam containerRef={containerRef} fromRef={leftRef} toRef={centerRef} curvature={0} duration={2.8} delay={0.3} gradientStartColor="var(--primary, oklch(0.598 0.365 217.2))" gradientStopColor="var(--chart-2, oklch(0.678 0.376 213.1))" />
+        <AnimatedBeam containerRef={containerRef} fromRef={bottomLeftRef} toRef={centerRef} curvature={0.2} duration={2.6} delay={0.6} gradientStartColor="var(--chart-1, oklch(0.598 0.365 217.2))" gradientStopColor="var(--chart-2, oklch(0.678 0.376 213.1))" />
 
         {/* Beams: center → right nodes */}
-        <AnimatedBeam containerRef={containerRef} fromRef={centerRef} toRef={topRightRef} curvature={-0.2} duration={2.5} delay={0.1} gradientStartColor="#22c55e" gradientStopColor="#10b981" />
-        <AnimatedBeam containerRef={containerRef} fromRef={centerRef} toRef={rightRef} curvature={0} duration={2.8} delay={0.4} gradientStartColor="#f59e0b" gradientStopColor="#eab308" />
-        <AnimatedBeam containerRef={containerRef} fromRef={centerRef} toRef={bottomRightRef} curvature={0.2} duration={2.6} delay={0.7} gradientStartColor="#8b5cf6" gradientStopColor="#6366f1" />
+        <AnimatedBeam containerRef={containerRef} fromRef={centerRef} toRef={topRightRef} curvature={-0.2} duration={2.5} delay={0.1} gradientStartColor="var(--chart-positive, oklch(0.65 0.17 155))" gradientStopColor="var(--status-success, oklch(0.65 0.15 160))" />
+        <AnimatedBeam containerRef={containerRef} fromRef={centerRef} toRef={rightRef} curvature={0} duration={2.8} delay={0.4} gradientStartColor="var(--status-warning, oklch(0.75 0.15 80))" gradientStopColor="var(--chart-5, oklch(0.75 0.15 80))" />
+        <AnimatedBeam containerRef={containerRef} fromRef={centerRef} toRef={bottomRightRef} curvature={0.2} duration={2.6} delay={0.7} gradientStartColor="var(--chart-2, oklch(0.678 0.376 213.1))" gradientStopColor="var(--chart-1, oklch(0.598 0.365 217.2))" />
       </div>
 
       {/* Loading text */}
