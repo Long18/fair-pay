@@ -1,10 +1,14 @@
 /**
  * SePay Create Order Edge Function
  *
- * Generates signed form fields for SePay checkout.
- * Frontend auto-submits a hidden form to SePay's endpoint.
- * CSP form-action whitelist in vercel.json allows this.
- * SECRET_KEY never leaves the server.
+ * QR Bank Transfer flow:
+ * 1. Creates payment order in DB
+ * 2. Fetches payee's bank info from sepay_config
+ * 3. Generates QR URL from qr.sepay.vn with payment code
+ * 4. Returns QR URL + payment code to frontend
+ *
+ * User scans QR → transfers → SePay webhook confirms payment.
+ * No HMAC signature needed — QR is just a VietQR image.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -14,8 +18,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const SEPAY_SANDBOX_URL = 'https://sandbox.pay.sepay.vn/v1/checkout/init'
-const SEPAY_PRODUCTION_URL = 'https://pay.sepay.vn/v1/checkout/init'
+const QR_BASE_URL = 'https://qr.sepay.vn/img'
 
 interface CreateOrderRequest {
   source_type: 'DEBT' | 'EXPENSE'
@@ -24,9 +27,6 @@ interface CreateOrderRequest {
   amount: number
   currency: string
   description: string
-  success_url?: string
-  error_url?: string
-  cancel_url?: string
 }
 
 Deno.serve(async (req: Request) => {
@@ -61,7 +61,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const body: CreateOrderRequest = await req.json()
-    const { source_type, source_id, payee_user_id, amount, currency, description } = body
+    const { source_type, source_id, payee_user_id, amount, currency } = body
 
     if (!source_type || !source_id || !payee_user_id || !amount || !currency) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
@@ -77,7 +77,7 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    // Fetch payee's SePay config
+    // Fetch payee's SePay config (bank account info)
     const { data: payeeSettings, error: settingsError } = await serviceClient
       .from('user_settings')
       .select('sepay_config')
@@ -92,86 +92,46 @@ Deno.serve(async (req: Request) => {
     }
 
     const sepayConfig = payeeSettings.sepay_config as {
-      merchant_id: string
-      secret_key: string
-      environment: 'sandbox' | 'production'
+      bank_account_number: string
+      bank_name: string
+      api_token?: string
+      account_holder_name?: string
     }
 
-    if (!sepayConfig.merchant_id || !sepayConfig.secret_key) {
-      return new Response(JSON.stringify({ error: 'Payee SePay config incomplete' }), {
+    if (!sepayConfig.bank_account_number || !sepayConfig.bank_name) {
+      return new Response(JSON.stringify({ error: 'Payee SePay bank config incomplete' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    const invoiceNumber = `FP-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`
-    const customData = `${source_type}|${source_id}|${user.id}|${Date.now()}`
+    // Generate unique payment code for matching webhook
+    const paymentCode = `FP${Date.now().toString(36).toUpperCase()}${crypto.randomUUID().slice(0, 4).toUpperCase()}`
+    const roundedAmount = Math.round(amount)
 
-    const baseUrl = body.success_url?.replace(/\/[^/]*$/, '') || 'https://long-pay.vercel.app'
-    const successUrl = body.success_url || `${baseUrl}/payments/sepay/success?invoice=${invoiceNumber}`
-    const errorUrl = body.error_url || `${baseUrl}/payments/sepay/error?invoice=${invoiceNumber}`
-    const cancelUrl = body.cancel_url || `${baseUrl}/payments/sepay/cancel?invoice=${invoiceNumber}`
-
-    // Build form fields in exact order required by SePay for signature
-    const formFields: Record<string, string> = {
-      merchant_id: sepayConfig.merchant_id,
-      operation: 'PURCHASE',
-      payment_method: 'BANK_TRANSFER',
-      order_invoice_number: invoiceNumber,
-      order_amount: Math.round(amount).toString(),
-      currency: currency || 'VND',
-      order_description: description || `FairPay payment ${invoiceNumber}`,
-      customer_id: user.id,
-      success_url: successUrl,
-      error_url: errorUrl,
-      cancel_url: cancelUrl,
-      custom_data: customData,
-    }
-
-    // HMAC-SHA256 signature (fields excluding merchant_id and signature)
-    const signatureString = [
-      formFields.operation,
-      formFields.payment_method,
-      formFields.order_invoice_number,
-      formFields.order_amount,
-      formFields.currency,
-      formFields.order_description,
-      formFields.customer_id,
-      formFields.success_url,
-      formFields.error_url,
-      formFields.cancel_url,
-      formFields.custom_data,
-    ].join('')
-
-    const encoder = new TextEncoder()
-    const keyData = encoder.encode(sepayConfig.secret_key)
-    const msgData = encoder.encode(signatureString)
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-    )
-    const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, msgData)
-    formFields.signature = Array.from(new Uint8Array(signatureBuffer))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('')
-
-    const formAction = sepayConfig.environment === 'production'
-      ? SEPAY_PRODUCTION_URL
-      : SEPAY_SANDBOX_URL
+    // Build QR URL
+    const qrParams = new URLSearchParams({
+      acc: sepayConfig.bank_account_number,
+      bank: sepayConfig.bank_name,
+      amount: roundedAmount.toString(),
+      des: paymentCode,
+    })
+    const qrUrl = `${QR_BASE_URL}?${qrParams.toString()}`
 
     // Store order in database
     const { data: order, error: insertError } = await serviceClient
       .from('sepay_payment_orders')
       .insert({
-        order_invoice_number: invoiceNumber,
+        order_invoice_number: paymentCode,
         source_type,
         source_id,
         payer_user_id: user.id,
         payee_user_id,
-        amount: Math.round(amount),
+        amount: roundedAmount,
         currency: currency || 'VND',
         status: 'PENDING',
-        sepay_checkout_url: formAction,
-        custom_data: customData,
+        sepay_checkout_url: qrUrl,
+        custom_data: `${source_type}|${source_id}|${user.id}`,
       })
       .select()
       .single()
@@ -184,19 +144,19 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    console.log('Order created:', invoiceNumber, 'env:', sepayConfig.environment)
+    console.log('QR order created:', paymentCode, 'bank:', sepayConfig.bank_name)
 
     return new Response(JSON.stringify({
       success: true,
       order: {
         id: order.id,
-        invoice_number: invoiceNumber,
-        amount: Math.round(amount),
+        invoice_number: paymentCode,
+        amount: roundedAmount,
         currency: currency || 'VND',
         status: 'PENDING',
       },
-      form_action: formAction,
-      form_fields: formFields,
+      qr_url: qrUrl,
+      payment_code: paymentCode,
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
