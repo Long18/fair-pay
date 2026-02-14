@@ -81,21 +81,15 @@ function Tooltip({
     };
   }, []);
 
-  // On mobile, use controlled state for tap behavior
-  // On desktop, use default hover behavior
-  const tooltipProps = isMobile
-    ? {
-        open,
-        onOpenChange: setOpen,
-        delayDuration: 0, // Instant on mobile tap
-      }
-    : {
-        delayDuration, // 300ms delay on desktop hover
-      };
-
   return (
     <TooltipProvider delayDuration={delayDuration}>
-      <TooltipPrimitive.Root data-slot="tooltip" {...tooltipProps} {...props}>
+      <TooltipPrimitive.Root
+        data-slot="tooltip"
+        open={open}
+        onOpenChange={setOpen}
+        delayDuration={isMobile ? 0 : delayDuration}
+        {...props}
+      >
         {children}
       </TooltipPrimitive.Root>
     </TooltipProvider>
