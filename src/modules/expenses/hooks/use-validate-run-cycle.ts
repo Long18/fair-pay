@@ -29,8 +29,15 @@ export function useValidateRunCycle() {
     setIsRunning(true);
 
     try {
-      // Target cycle date — defaults to next_occurrence (the pending cycle)
-      const targetDate = cycleDate ?? recurring.next_occurrence.split('T')[0];
+      // Target cycle date — extract YYYY-MM-DD in local timezone to avoid UTC boundary issues
+      // (e.g. "2026-02-01T00:00:00+07:00" split by T gives wrong date if server returns UTC)
+      const dateObj = new Date(recurring.next_occurrence);
+      const localDate = [
+        dateObj.getFullYear(),
+        String(dateObj.getMonth() + 1).padStart(2, '0'),
+        String(dateObj.getDate()).padStart(2, '0'),
+      ].join('-');
+      const targetDate = cycleDate ?? localDate;
 
       const { data, error } = await supabaseClient.rpc(
         'process_single_recurring_instance',
@@ -91,7 +98,9 @@ export function useValidateRunCycle() {
         deactivated: result.deactivated as boolean | undefined,
       };
     } catch (err) {
-      const errMsg = err instanceof Error ? err.message : 'Unknown error';
+      // PostgrestError is not an instance of Error — it has a `.message` property directly
+      console.error('[validate-run-cycle] RPC error:', err);
+      const errMsg = (err as { message?: string })?.message ?? 'Unknown error';
       toast.error(t('recurring.cycle.executionFailed', 'Cycle execution failed: {{error}}', { error: errMsg }));
       return {
         success: false,
