@@ -1,7 +1,8 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { useTable } from "@refinedev/react-table";
-import { useList } from "@refinedev/core";
+import { useList, useDelete } from "@refinedev/core";
 import type { ColumnDef } from "@tanstack/react-table";
+import { toast } from "sonner";
 
 import { DataTable } from "@/components/refine-ui/data-table/data-table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -13,8 +14,19 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -45,6 +57,8 @@ import {
   CreditCardIcon,
   MoreHorizontalIcon,
   FilterIcon,
+  AlertTriangleIcon,
+  Loader2Icon,
 } from "@/components/ui/icons";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
 
@@ -173,9 +187,65 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
   );
 }
 
+// ─── Delete Payment Dialog ───────────────────────────────────────────
+
+function DeletePaymentDialog({
+  payment,
+  open,
+  onOpenChange,
+  onConfirm,
+  isDeleting,
+}: {
+  payment: PaymentRow | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+  isDeleting: boolean;
+}) {
+  if (!payment) return null;
+
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <div className="flex items-center gap-2">
+            <AlertTriangleIcon className="h-5 w-5 text-destructive" />
+            <AlertDialogTitle>Xác nhận xóa thanh toán</AlertDialogTitle>
+          </div>
+          <AlertDialogDescription>
+            Bạn có chắc chắn muốn xóa thanh toán {formatNumber(payment.amount)} {payment.currency} từ
+            &ldquo;{payment.from_user_name}&rdquo; đến &ldquo;{payment.to_user_name}&rdquo;?
+            Hành động này không thể hoàn tác.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isDeleting}>Hủy</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={(e) => {
+              e.preventDefault();
+              onConfirm();
+            }}
+            disabled={isDeleting}
+          >
+            {isDeleting ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Xóa
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 // ─── Row Actions ────────────────────────────────────────────────────
 
-function RowActions({ onViewDetail }: { onViewDetail: () => void }) {
+function RowActions({
+  onViewDetail,
+  onDelete,
+}: {
+  onViewDetail: () => void;
+  onDelete: () => void;
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -188,6 +258,10 @@ function RowActions({ onViewDetail }: { onViewDetail: () => void }) {
         <DropdownMenuItem onClick={onViewDetail}>
           Xem chi tiết
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={onDelete} className="text-destructive">
+          Xóa thanh toán
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -196,6 +270,8 @@ function RowActions({ onViewDetail }: { onViewDetail: () => void }) {
 // ─── Main Component ─────────────────────────────────────────────────
 
 export function AdminPayments() {
+  const deleteMutation = useDelete();
+
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
   const [showFilters, setShowFilters] = useState(false);
@@ -207,6 +283,9 @@ export function AdminPayments() {
 
   const [selectedPayment, setSelectedPayment] = useState<PaymentRow | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [deletePayment, setDeletePayment] = useState<PaymentRow | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch groups for filter dropdown
   const { query: groupsQuery } = useList({
@@ -351,6 +430,10 @@ export function AdminPayments() {
               setSelectedPayment(row.original);
               setSheetOpen(true);
             }}
+            onDelete={() => {
+              setDeletePayment(row.original);
+              setDeleteDialogOpen(true);
+            }}
           />
         ),
       },
@@ -410,6 +493,33 @@ export function AdminPayments() {
     setDateFrom("");
     setDateTo("");
   }, []);
+
+  // ─── Delete Handler ─────────────────────────────────────────────
+
+  const handleDelete = useCallback(() => {
+    if (!deletePayment) return;
+
+    setIsDeleting(true);
+    deleteMutation.mutate(
+      {
+        resource: "payments",
+        id: deletePayment.id,
+      },
+      {
+        onSuccess: () => {
+          toast.success(`Đã xóa thanh toán ${formatNumber(deletePayment.amount)} ${deletePayment.currency}`);
+          setDeleteDialogOpen(false);
+          setDeletePayment(null);
+          setIsDeleting(false);
+          table.refineCore.tableQuery.refetch();
+        },
+        onError: (error) => {
+          toast.error(`Lỗi: ${error.message}`);
+          setIsDeleting(false);
+        },
+      },
+    );
+  }, [deletePayment, deleteMutation, table.refineCore.tableQuery]);
 
   const hasActiveFilters =
     search !== "" ||
@@ -575,6 +685,20 @@ export function AdminPayments() {
         payment={selectedPayment}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
+      />
+
+      {/* Delete Payment Dialog */}
+      <DeletePaymentDialog
+        payment={deletePayment}
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) {
+            setDeleteDialogOpen(false);
+            setDeletePayment(null);
+          }
+        }}
+        onConfirm={handleDelete}
+        isDeleting={isDeleting}
       />
     </div>
   );
