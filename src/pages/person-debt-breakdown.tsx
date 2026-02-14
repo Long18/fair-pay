@@ -200,6 +200,7 @@ export const PersonDebtBreakdown = () => {
           partialCount={summary.partial_count}
           paidCount={summary.paid_count}
           counterpartyId={userId!}
+          onPaymentComplete={refetch}
         />
 
         {/* Contributing Expenses */}

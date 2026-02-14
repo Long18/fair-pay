@@ -21,7 +21,9 @@ import {
 import { QrCodeIcon, CreditCardIcon, ChevronDownIcon } from '@/components/ui/icons';
 import { ExpenseSplit } from '@/modules/expenses/types';
 import { VietQRPaymentDialog } from './vietqr-payment-dialog';
+import { SepayPaymentDialog } from './sepay-payment-dialog';
 import { usePayeeBankSettings } from '@/hooks/use-bank-settings';
+import { usePayeeSepaySettings } from '@/hooks/use-sepay-settings';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/haptics';
 
@@ -48,10 +50,12 @@ export function PaymentMethodDropdown({
 }: PaymentMethodDropdownProps) {
   const { t } = useTranslation();
   const [vietqrDialogOpen, setVietqrDialogOpen] = useState(false);
+  const [sepayDialogOpen, setSepayDialogOpen] = useState(false);
 
   const { isConfigured: isVietQRConfigured, isLoading } = usePayeeBankSettings(payeeId);
+  const { isConfigured: isSepayConfigured, isLoading: isSepayLoading } = usePayeeSepaySettings(payeeId);
 
-  if (isLoading) return null;
+  if (isLoading || isSepayLoading) return null;
   if (split.is_settled) return null;
 
   const remainingAmount = split.computed_amount - (split.settled_amount || 0);
@@ -67,8 +71,14 @@ export function PaymentMethodDropdown({
     }});
   }
 
+  if (isSepayConfigured) {
+    methods.push({ id: 'sepay', handler: () => {
+      triggerHaptic('medium');
+      setSepayDialogOpen(true);
+    }});
+  }
+
   // Future: add more methods here
-  // if (someOtherMethodAvailable) { methods.push({ id: 'other', handler: ... }); }
 
   if (methods.length === 0) return null;
 
@@ -78,6 +88,15 @@ export function PaymentMethodDropdown({
 
   const handleVietQRPaymentComplete = () => {
     setVietqrDialogOpen(false);
+    onPaymentComplete?.();
+  };
+
+  const handleSepayDialogClose = (open: boolean) => {
+    setSepayDialogOpen(open);
+  };
+
+  const handleSepayPaymentComplete = () => {
+    setSepayDialogOpen(false);
     onPaymentComplete?.();
   };
 
@@ -93,14 +112,33 @@ export function PaymentMethodDropdown({
     />
   );
 
+  const sepayDialog = (
+    <SepayPaymentDialog
+      open={sepayDialogOpen}
+      onOpenChange={handleSepayDialogClose}
+      payeeId={payeeId}
+      payeeName={split.profiles?.full_name || 'recipient'}
+      amount={remainingAmount}
+      sourceType="EXPENSE"
+      sourceId={split.expense_id || split.id}
+      description={`FairPay: ${split.expense_id?.slice(0, 8)}`}
+      onPaymentComplete={handleSepayPaymentComplete}
+    />
+  );
+
   // Single method: render as a simple button
   if (methods.length === 1) {
+    const method = methods[0];
+    const label = method.id === 'vietqr'
+      ? t('payments.payViaVietQR', 'Pay via VietQR')
+      : t('payments.payViaSePay', 'Pay via SePay');
+
     return (
       <>
         <Button
           variant="default"
           size="sm"
-          onClick={methods[0].handler}
+          onClick={method.handler}
           disabled={disabled}
           className={cn(
             "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white min-h-[44px]",
@@ -108,9 +146,10 @@ export function PaymentMethodDropdown({
           )}
         >
           <QrCodeIcon className="h-4 w-4 mr-2" />
-          {t('payments.payViaVietQR', 'Pay via VietQR')}
+          {label}
         </Button>
         {vietqrDialog}
+        {sepayDialog}
       </>
     );
   }
@@ -149,10 +188,25 @@ export function PaymentMethodDropdown({
               </div>
             </DropdownMenuItem>
           )}
+          {isSepayConfigured && (
+            <DropdownMenuItem
+              onClick={methods.find(m => m.id === 'sepay')?.handler}
+              className="cursor-pointer py-2.5"
+            >
+              <CreditCardIcon className="h-4 w-4 mr-2.5 text-green-600" />
+              <div className="flex flex-col">
+                <span className="font-medium">{t('payments.sepay.label', 'SePay')}</span>
+                <span className="text-xs text-muted-foreground">
+                  {t('payments.sepay.sublabel', 'Pay via SePay gateway')}
+                </span>
+              </div>
+            </DropdownMenuItem>
+          )}
           {/* Future payment methods go here */}
         </DropdownMenuContent>
       </DropdownMenu>
       {vietqrDialog}
+      {sepayDialog}
     </>
   );
 }
