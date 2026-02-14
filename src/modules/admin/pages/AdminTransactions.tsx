@@ -958,6 +958,7 @@ function PaymentsTab() {
       pagination: { pageSize: 10 },
       filters: { permanent: filters as any },
       sorters: { initial: [{ field: "payment_date", order: "desc" }] },
+      syncWithLocation: false,
       queryOptions: {
         select: (data) => {
           const transformed = data.data.map((payment: any) => ({
