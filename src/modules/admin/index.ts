@@ -1,4 +1,4 @@
-export type { AdminStats, AdminUserRow, AuditLogEntry } from "./types";
+export type { AdminStats, AdminUserRow, AuditLogEntry, AuditLogsResponse, AuditStats, AuditFilterOptions } from "./types";
 export { useIsAdmin } from "./hooks/use-is-admin";
 export { AdminGuard } from "./components/AdminGuard";
 export { AdminLayout } from "./components/AdminLayout";
