@@ -185,6 +185,7 @@ GRANT SELECT ON admin_audit_unified TO authenticated;
 -- =============================================
 -- 5. Server-side RPC for paginated audit log queries
 -- =============================================
+DROP FUNCTION IF EXISTS read_admin_audit_logs(TEXT, TEXT, TEXT, UUID, TIMESTAMPTZ, TIMESTAMPTZ, INTEGER, INTEGER);
 CREATE OR REPLACE FUNCTION read_admin_audit_logs(
   p_search TEXT DEFAULT NULL,
   p_action_type TEXT DEFAULT NULL,
@@ -291,6 +292,7 @@ GRANT EXECUTE ON FUNCTION read_admin_audit_logs(TEXT, TEXT, TEXT, UUID, TIMESTAM
 -- =============================================
 -- 6. Audit stats RPC for dashboard analytics
 -- =============================================
+DROP FUNCTION IF EXISTS get_audit_stats();
 CREATE OR REPLACE FUNCTION get_audit_stats()
 RETURNS JSONB
 SECURITY DEFINER
@@ -339,6 +341,7 @@ GRANT EXECUTE ON FUNCTION get_audit_stats() TO authenticated;
 -- =============================================
 -- 7. Retention: cleanup old audit logs (callable by admin)
 -- =============================================
+DROP FUNCTION IF EXISTS cleanup_old_audit_logs(INTEGER);
 CREATE OR REPLACE FUNCTION cleanup_old_audit_logs(p_days_to_keep INTEGER DEFAULT 90)
 RETURNS JSONB
 SECURITY DEFINER
@@ -381,6 +384,7 @@ GRANT EXECUTE ON FUNCTION cleanup_old_audit_logs(INTEGER) TO authenticated;
 -- =============================================
 -- 8. Get distinct filter values for frontend dropdowns
 -- =============================================
+DROP FUNCTION IF EXISTS get_audit_filter_options();
 CREATE OR REPLACE FUNCTION get_audit_filter_options()
 RETURNS JSONB
 SECURITY DEFINER
