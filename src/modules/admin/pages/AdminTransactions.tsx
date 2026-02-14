@@ -77,6 +77,9 @@ import {
   PencilIcon,
 } from "@/components/ui/icons";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
+import { getCategoryMeta } from "@/modules/expenses/lib/categories";
+import { AdminCreateExpenseDialog } from "../components/AdminCreateExpenseDialog";
+import { AdminEditExpenseDialog } from "../components/AdminEditExpenseDialog";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -85,6 +88,7 @@ interface ExpenseRow {
   description: string;
   amount: number;
   currency: string;
+  category: string | null;
   expense_date: string;
   context_type: string;
   group_id: string | null;
@@ -225,6 +229,20 @@ function ExpenseDetailDialog({
             <DetailItem label="Số tiền" value={`${formatNumber(expense.amount)} ${expense.currency}`} />
             <DetailItem label="Người trả" value={expense.paid_by_name} />
             <DetailItem label="Nhóm" value={expense.group_name ?? "Bạn bè"} />
+            <DetailItem label="Danh mục" value={
+              (() => {
+                const cat = getCategoryMeta(expense.category);
+                const CatIcon = cat.icon;
+                return (
+                  <div className="flex items-center gap-1.5">
+                    <span className={`inline-flex items-center justify-center h-5 w-5 rounded ${cat.bgColor}`}>
+                      <CatIcon size={12} className={cat.color} />
+                    </span>
+                    <span>{cat.name}</span>
+                  </div>
+                );
+              })()
+            } />
             <DetailItem label="Trạng thái" value={
               expense.is_settled
                 ? <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800">Đã thanh toán</Badge>
@@ -335,164 +353,11 @@ function PaymentDetailDialog({
   );
 }
 
-// ─── Create Expense Dialog ───────────────────────────────────────────
+// ─── Create Expense Dialog (uses shared ExpenseForm) ─────────────
+// See AdminCreateExpenseDialog component
 
-function CreateExpenseDialog({
-  open, onOpenChange, onSubmit, isCreating,
-}: {
-  open: boolean; onOpenChange: (open: boolean) => void;
-  onSubmit: (data: { description: string; amount: number; currency: string; expense_date: string; group_id: string | null; paid_by_user_id: string }) => void;
-  isCreating: boolean;
-}) {
-  const [description, setDescription] = useState("");
-  const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState("VND");
-  const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split("T")[0]);
-  const [groupId, setGroupId] = useState<string>("none");
-  const [paidByUserId, setPaidByUserId] = useState("");
-  const [profiles, setProfiles] = useState<Array<{ id: string; full_name: string }>>([]);
-  const [groupsList, setGroupsList] = useState<Array<{ id: string; name: string }>>([]);
-
-  useEffect(() => {
-    if (!open) return;
-    Promise.all([
-      supabaseClient.from("profiles").select("id, full_name").order("full_name"),
-      supabaseClient.from("groups").select("id, name").order("name"),
-    ]).then(([profilesRes, groupsRes]) => {
-      if (profilesRes.data) setProfiles(profilesRes.data);
-      if (groupsRes.data) setGroupsList(groupsRes.data);
-    });
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) { setDescription(""); setAmount(""); setCurrency("VND"); setExpenseDate(new Date().toISOString().split("T")[0]); setGroupId("none"); setPaidByUserId(""); }
-  }, [open]);
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Tạo chi phí mới</DialogTitle>
-          <DialogDescription>Thêm chi phí mới vào hệ thống</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 mt-2">
-          <div className="space-y-2">
-            <Label htmlFor="exp-desc">Mô tả</Label>
-            <Input id="exp-desc" placeholder="Mô tả chi phí..." value={description} onChange={(e) => setDescription(e.target.value)} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="exp-amount">Số tiền</Label>
-              <Input id="exp-amount" type="number" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="exp-currency">Tiền tệ</Label>
-              <Select value={currency} onValueChange={setCurrency}>
-                <SelectTrigger id="exp-currency"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="VND">VND</SelectItem>
-                  <SelectItem value="USD">USD</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="exp-date">Ngày chi</Label>
-            <Input id="exp-date" type="date" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="exp-paid-by">Người trả</Label>
-            <Select value={paidByUserId} onValueChange={setPaidByUserId}>
-              <SelectTrigger id="exp-paid-by"><SelectValue placeholder="Chọn người trả" /></SelectTrigger>
-              <SelectContent>
-                {profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="exp-group">Nhóm (tùy chọn)</Label>
-            <Select value={groupId} onValueChange={setGroupId}>
-              <SelectTrigger id="exp-group"><SelectValue placeholder="Không có nhóm" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Không có nhóm (Bạn bè)</SelectItem>
-                {groupsList.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isCreating}>Hủy</Button>
-          <Button onClick={() => {
-            if (!description || !amount || !paidByUserId || !expenseDate) { toast.error("Vui lòng điền đầy đủ thông tin"); return; }
-            onSubmit({ description, amount: Number(amount), currency, expense_date: expenseDate, group_id: groupId === "none" ? null : groupId, paid_by_user_id: paidByUserId });
-          }} disabled={isCreating || !description || !amount || !paidByUserId}>
-            {isCreating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Tạo chi phí
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ─── Edit Expense Dialog ────────────────────────────────────────────
-
-function EditExpenseDialog({
-  expense, open, onOpenChange, onSubmit, isUpdating,
-}: {
-  expense: ExpenseRow | null; open: boolean; onOpenChange: (open: boolean) => void;
-  onSubmit: (data: { description: string; amount: number; expense_date: string; group_id: string | null }) => void;
-  isUpdating: boolean;
-}) {
-  const [description, setDescription] = useState("");
-  const [amount, setAmount] = useState("");
-  const [expenseDate, setExpenseDate] = useState("");
-  const [groupId, setGroupId] = useState<string>("none");
-  const [groupsList, setGroupsList] = useState<Array<{ id: string; name: string }>>([]);
-
-  useEffect(() => {
-    if (expense && open) {
-      setDescription(expense.description); setAmount(String(expense.amount));
-      setExpenseDate(expense.expense_date?.split("T")[0] ?? ""); setGroupId(expense.group_id ?? "none");
-      supabaseClient.from("groups").select("id, name").order("name").then(({ data }) => { if (data) setGroupsList(data); });
-    }
-  }, [expense, open]);
-
-  if (!expense) return null;
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Chỉnh sửa chi phí</DialogTitle>
-          <DialogDescription>Cập nhật thông tin chi phí (không thay đổi chia tiền)</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 mt-2">
-          <div className="space-y-2"><Label>Mô tả</Label><Input value={description} onChange={(e) => setDescription(e.target.value)} /></div>
-          <div className="space-y-2"><Label>Số tiền</Label><Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
-          <div className="space-y-2"><Label>Ngày chi</Label><Input type="date" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} /></div>
-          <div className="space-y-2">
-            <Label>Nhóm</Label>
-            <Select value={groupId} onValueChange={setGroupId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Không có nhóm (Bạn bè)</SelectItem>
-                {groupsList.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isUpdating}>Hủy</Button>
-          <Button onClick={() => onSubmit({ description, amount: Number(amount), expense_date: expenseDate, group_id: groupId === "none" ? null : groupId })} disabled={isUpdating || !description || !amount}>
-            {isUpdating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Lưu
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
+// ─── Edit Expense Dialog (uses shared ExpenseForm) ──────────────
+// See AdminEditExpenseDialog component
 
 // ─── Create Payment Dialog ───────────────────────────────────────────
 
@@ -653,12 +518,8 @@ function ExpensesTab() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const createMutation = useCreate();
-  const [editExpense, setEditExpense] = useState<ExpenseRow | null>(null);
+  const [editExpenseId, setEditExpenseId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const updateMutation = useUpdate();
 
   const { query: groupsQuery } = useList({ resource: "groups", pagination: { pageSize: 200 }, meta: { select: "id, name" } });
   const groups = groupsQuery.data?.data ?? [];
@@ -677,6 +538,21 @@ function ExpensesTab() {
 
   const columns = useMemo<ColumnDef<ExpenseRow>[]>(() => [
     { id: "description", header: "Mô tả", accessorKey: "description", size: 200 },
+    {
+      id: "category", header: "Danh mục", accessorKey: "category", size: 120, enableSorting: false,
+      cell: ({ row }) => {
+        const cat = getCategoryMeta(row.original.category);
+        const CatIcon = cat.icon;
+        return (
+          <div className="flex items-center gap-1.5">
+            <span className={`inline-flex items-center justify-center h-5 w-5 rounded ${cat.bgColor}`}>
+              <CatIcon size={12} className={cat.color} />
+            </span>
+            <span className="text-sm">{cat.name}</span>
+          </div>
+        );
+      },
+    },
     {
       id: "amount", header: () => <div className="text-right">Số tiền</div>, accessorKey: "amount", size: 140,
       cell: ({ row }) => <div className="text-right font-mono tabular-nums">{formatNumber(row.original.amount)}</div>,
@@ -711,7 +587,7 @@ function ExpensesTab() {
           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontalIcon className="h-4 w-4" /></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => { setSelectedExpense(row.original); setDetailOpen(true); }}>Xem chi tiết</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { setEditExpense(row.original); setEditDialogOpen(true); }}><PencilIcon className="mr-2 h-4 w-4" />Chỉnh sửa</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { setEditExpenseId(row.original.id); setEditDialogOpen(true); }}><PencilIcon className="mr-2 h-4 w-4" />Chỉnh sửa</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => { setDeleteExpense(row.original); setDeleteDialogOpen(true); }} className="text-destructive">Xóa chi phí</DropdownMenuItem>
           </DropdownMenuContent>
@@ -735,7 +611,8 @@ function ExpensesTab() {
             const allSettled = splits.length > 0 && splits.every((s: any) => s.is_settled);
             return {
               id: expense.id, description: expense.description ?? "", amount: expense.amount ?? 0,
-              currency: expense.currency ?? "VND", expense_date: expense.expense_date,
+              currency: expense.currency ?? "VND", category: expense.category ?? null,
+              expense_date: expense.expense_date,
               context_type: expense.context_type, group_id: expense.group_id,
               group_name: expense.groups?.name ?? null, paid_by_user_id: expense.paid_by_user_id,
               paid_by_name: expense.profiles?.full_name ?? "Không rõ",
@@ -762,22 +639,9 @@ function ExpensesTab() {
     finally { setIsDeleting(false); }
   }, [deleteExpense, table.refineCore.tableQuery]);
 
-  const handleCreate = useCallback((data: { description: string; amount: number; currency: string; expense_date: string; group_id: string | null; paid_by_user_id: string }) => {
-    setIsCreating(true);
-    createMutation.mutate(
-      { resource: "expenses", values: { description: data.description, amount: data.amount, currency: data.currency, expense_date: data.expense_date, group_id: data.group_id, paid_by_user_id: data.paid_by_user_id, context_type: data.group_id ? "group" : "friend", is_payment: false } },
-      { onSuccess: () => { toast.success("Đã tạo chi phí mới"); setCreateDialogOpen(false); setIsCreating(false); table.refineCore.tableQuery.refetch(); }, onError: (error) => { toast.error(`Lỗi: ${error.message}`); setIsCreating(false); } },
-    );
-  }, [createMutation, table.refineCore.tableQuery]);
-
-  const handleEdit = useCallback((data: { description: string; amount: number; expense_date: string; group_id: string | null }) => {
-    if (!editExpense) return;
-    setIsUpdating(true);
-    updateMutation.mutate(
-      { resource: "expenses", id: editExpense.id, values: { description: data.description, amount: data.amount, expense_date: data.expense_date, group_id: data.group_id, context_type: data.group_id ? "group" : "friend" } },
-      { onSuccess: () => { toast.success("Đã cập nhật chi phí"); setEditDialogOpen(false); setEditExpense(null); setIsUpdating(false); table.refineCore.tableQuery.refetch(); }, onError: (error) => { toast.error(`Lỗi: ${error.message}`); setIsUpdating(false); } },
-    );
-  }, [editExpense, updateMutation, table.refineCore.tableQuery]);
+  const handleRefetch = useCallback(() => {
+    table.refineCore.tableQuery.refetch();
+  }, [table.refineCore.tableQuery]);
 
   const clearFilters = useCallback(() => { setSearch(""); setGroupFilter("all"); setStatusFilter("all"); setDateFrom(""); setDateTo(""); setAmountMin(""); setAmountMax(""); }, []);
   const hasActiveFilters = search !== "" || groupFilter !== "all" || statusFilter !== "all" || dateFrom !== "" || dateTo !== "" || amountMin !== "" || amountMax !== "";
@@ -828,14 +692,14 @@ function ExpensesTab() {
       </Card>
 
       <ExpenseDetailDialog expense={selectedExpense} open={detailOpen} onOpenChange={setDetailOpen}
-        onEdit={() => { setDetailOpen(false); setEditExpense(selectedExpense); setEditDialogOpen(true); }}
+        onEdit={() => { setDetailOpen(false); setEditExpenseId(selectedExpense?.id ?? null); setEditDialogOpen(true); }}
         onDelete={() => { setDetailOpen(false); setDeleteExpense(selectedExpense); setDeleteDialogOpen(true); }}
       />
       <DeleteConfirmDialog title="Xác nhận xóa chi phí" description={`Bạn có chắc chắn muốn xóa chi phí "${deleteExpense?.description ?? ""}" (${formatNumber(deleteExpense?.amount ?? 0)})? Chi phí sẽ được soft-delete.`}
         open={deleteDialogOpen} onOpenChange={(o) => { if (!o && !isDeleting) { setDeleteDialogOpen(false); setDeleteExpense(null); } }} onConfirm={handleDelete} isDeleting={isDeleting}
       />
-      <CreateExpenseDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} onSubmit={handleCreate} isCreating={isCreating} />
-      <EditExpenseDialog expense={editExpense} open={editDialogOpen} onOpenChange={(o) => { if (!o && !isUpdating) { setEditDialogOpen(false); setEditExpense(null); } }} onSubmit={handleEdit} isUpdating={isUpdating} />
+      <AdminCreateExpenseDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} onSuccess={handleRefetch} />
+      <AdminEditExpenseDialog expenseId={editExpenseId} open={editDialogOpen} onOpenChange={(o) => { if (!o) { setEditDialogOpen(false); setEditExpenseId(null); } }} onSuccess={handleRefetch} />
     </>
   );
 }
