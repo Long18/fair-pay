@@ -66,6 +66,7 @@ COMMENT ON COLUMN recurring_prepaid_payments.expense_id IS 'Reference to the exp
 ALTER TABLE recurring_prepaid_payments ENABLE ROW LEVEL SECURITY;
 
 -- Users can view prepaid payments for their recurring expenses
+DROP POLICY IF EXISTS "Users can view prepaid payments for their recurring expenses" ON recurring_prepaid_payments;
 CREATE POLICY "Users can view prepaid payments for their recurring expenses"
   ON recurring_prepaid_payments FOR SELECT
   TO authenticated
@@ -78,6 +79,7 @@ CREATE POLICY "Users can view prepaid payments for their recurring expenses"
   );
 
 -- Users can create prepaid payments for their recurring expenses
+DROP POLICY IF EXISTS "Users can create prepaid payments for their recurring expenses" ON recurring_prepaid_payments;
 CREATE POLICY "Users can create prepaid payments for their recurring expenses"
   ON recurring_prepaid_payments FOR INSERT
   TO authenticated
@@ -91,6 +93,7 @@ CREATE POLICY "Users can create prepaid payments for their recurring expenses"
   );
 
 -- Users can delete their own prepaid payments
+DROP POLICY IF EXISTS "Users can delete their own prepaid payments" ON recurring_prepaid_payments;
 CREATE POLICY "Users can delete their own prepaid payments"
   ON recurring_prepaid_payments FOR DELETE
   TO authenticated

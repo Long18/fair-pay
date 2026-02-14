@@ -24,13 +24,13 @@ CREATE TABLE IF NOT EXISTS member_prepaid_balances (
 );
 
 -- Create indexes for efficient queries
-CREATE INDEX idx_member_prepaid_balances_recurring
+CREATE INDEX IF NOT EXISTS idx_member_prepaid_balances_recurring
   ON member_prepaid_balances(recurring_expense_id);
 
-CREATE INDEX idx_member_prepaid_balances_user
+CREATE INDEX IF NOT EXISTS idx_member_prepaid_balances_user
   ON member_prepaid_balances(user_id);
 
-CREATE INDEX idx_member_prepaid_balances_balance
+CREATE INDEX IF NOT EXISTS idx_member_prepaid_balances_balance
   ON member_prepaid_balances(balance_amount)
   WHERE balance_amount > 0;
 
@@ -92,16 +92,16 @@ CREATE TABLE IF NOT EXISTS prepaid_consumption_log (
 );
 
 -- Create indexes for efficient queries
-CREATE INDEX idx_prepaid_consumption_recurring
+CREATE INDEX IF NOT EXISTS idx_prepaid_consumption_recurring
   ON prepaid_consumption_log(recurring_expense_id);
 
-CREATE INDEX idx_prepaid_consumption_instance
+CREATE INDEX IF NOT EXISTS idx_prepaid_consumption_instance
   ON prepaid_consumption_log(expense_instance_id);
 
-CREATE INDEX idx_prepaid_consumption_user
+CREATE INDEX IF NOT EXISTS idx_prepaid_consumption_user
   ON prepaid_consumption_log(user_id);
 
-CREATE INDEX idx_prepaid_consumption_date
+CREATE INDEX IF NOT EXISTS idx_prepaid_consumption_date
   ON prepaid_consumption_log(consumed_at DESC);
 
 -- Add table comments
@@ -121,6 +121,7 @@ COMMENT ON COLUMN prepaid_consumption_log.amount_consumed IS
 ALTER TABLE member_prepaid_balances ENABLE ROW LEVEL SECURITY;
 
 -- Users can view prepaid balances for recurring expenses they have access to
+DROP POLICY IF EXISTS "Users can view prepaid balances for their recurring expenses" ON member_prepaid_balances;
 CREATE POLICY "Users can view prepaid balances for their recurring expenses"
   ON member_prepaid_balances FOR SELECT
   TO authenticated
@@ -134,12 +135,13 @@ CREATE POLICY "Users can view prepaid balances for their recurring expenses"
         )
         OR e.friendship_id IN (
           SELECT id FROM friendships
-          WHERE user_id = auth.uid() OR friend_id = auth.uid()
+          WHERE user_a = auth.uid() OR user_b = auth.uid()
         )
     )
   );
 
 -- Service role can manage all prepaid balances
+DROP POLICY IF EXISTS "Service role can manage prepaid balances" ON member_prepaid_balances;
 CREATE POLICY "Service role can manage prepaid balances"
   ON member_prepaid_balances FOR ALL
   TO service_role
@@ -153,6 +155,7 @@ CREATE POLICY "Service role can manage prepaid balances"
 ALTER TABLE prepaid_consumption_log ENABLE ROW LEVEL SECURITY;
 
 -- Users can view consumption log for recurring expenses they have access to
+DROP POLICY IF EXISTS "Users can view consumption log for their recurring expenses" ON prepaid_consumption_log;
 CREATE POLICY "Users can view consumption log for their recurring expenses"
   ON prepaid_consumption_log FOR SELECT
   TO authenticated
@@ -166,12 +169,13 @@ CREATE POLICY "Users can view consumption log for their recurring expenses"
         )
         OR e.friendship_id IN (
           SELECT id FROM friendships
-          WHERE user_id = auth.uid() OR friend_id = auth.uid()
+          WHERE user_a = auth.uid() OR user_b = auth.uid()
         )
     )
   );
 
 -- Service role can manage all consumption logs
+DROP POLICY IF EXISTS "Service role can manage consumption logs" ON prepaid_consumption_log;
 CREATE POLICY "Service role can manage consumption logs"
   ON prepaid_consumption_log FOR ALL
   TO service_role

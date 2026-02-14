@@ -7,6 +7,9 @@
 -- Add prepaid_until and end_date to support prepaid period skipping
 -- ========================================
 
+-- Drop existing function first (return type changed — CREATE OR REPLACE cannot alter return type)
+DROP FUNCTION IF EXISTS get_due_recurring_expenses();
+
 CREATE OR REPLACE FUNCTION get_due_recurring_expenses()
 RETURNS TABLE (
   id UUID,
@@ -23,7 +26,7 @@ RETURNS TABLE (
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
-AS $
+AS $$
 BEGIN
   RETURN QUERY
   SELECT
@@ -43,7 +46,7 @@ BEGIN
     AND re.next_occurrence <= CURRENT_DATE
     AND (re.end_date IS NULL OR re.end_date >= CURRENT_DATE);
 END;
-$;
+$$;
 
 COMMENT ON FUNCTION get_due_recurring_expenses() IS 
 'Get all recurring expenses that are due for processing.
