@@ -115,9 +115,8 @@ export function useSepaySettings(): UseSepaySettingsReturn {
   }, [loadSettings]);
 
   const isConfigured = Boolean(
-    sepayConfig?.merchant_id &&
-    sepayConfig?.secret_key &&
-    sepayConfig?.environment
+    sepayConfig?.bank_account_number &&
+    sepayConfig?.bank_name
   );
 
   return {
@@ -158,8 +157,8 @@ export function usePayeeSepaySettings(userId: string | undefined) {
           return;
         }
 
-        const config = data.sepay_config as { merchant_id?: string; secret_key?: string };
-        setIsConfigured(Boolean(config.merchant_id && config.secret_key));
+        const config = data.sepay_config as { bank_account_number?: string; bank_name?: string };
+        setIsConfigured(Boolean(config.bank_account_number && config.bank_name));
       } catch {
         setIsConfigured(false);
       } finally {

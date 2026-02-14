@@ -1,27 +1,23 @@
 /**
- * SePay Payment Dialog
+ * SePay QR Payment Dialog
  *
- * Shows SePay checkout flow with animated beam during processing.
- * Creates order via edge function, auto-submits hidden form to SePay, polls for status.
- * CSP form-action whitelist in vercel.json allows form submission to pay.sepay.vn.
+ * Shows VietQR code for bank transfer payment.
+ * Creates order via edge function, displays QR from qr.sepay.vn, polls for status.
+ * SePay detects the transfer via webhook and confirms payment.
  */
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AnimatedBeam } from '@/components/ui/animated-beam';
 import { toast } from 'sonner';
 import {
   CheckCircle2Icon,
   AlertCircleIcon,
-  ExternalLinkIcon,
-  WalletIcon,
-  FairPayIcon,
-  BanknoteIcon,
+  CopyIcon,
 } from '@/components/ui/icons';
 import { formatNumber } from '@/lib/locale-utils';
 import { triggerHaptic } from '@/lib/haptics';
@@ -55,8 +51,8 @@ export function SepayPaymentDialog({
   const { t } = useTranslation();
   const {
     order,
-    formAction,
-    formFields,
+    qrUrl,
+    paymentCode,
     status,
     isCreating,
     isPolling,
@@ -66,17 +62,12 @@ export function SepayPaymentDialog({
     reset,
   } = useSepayOrder();
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const payerRef = useRef<HTMLDivElement>(null);
-  const sepayRef = useRef<HTMLDivElement>(null);
-  const payeeRef = useRef<HTMLDivElement>(null);
-  const formRef = useRef<HTMLFormElement>(null);
-  const hasSubmittedRef = useRef(false);
+  const hasCreatedRef = useRef(false);
 
   // Create order when dialog opens
   useEffect(() => {
-    if (open && !order && !isCreating && !error) {
-      hasSubmittedRef.current = false;
+    if (open && !order && !isCreating && !error && !hasCreatedRef.current) {
+      hasCreatedRef.current = true;
       createOrder({
         source_type: sourceType,
         source_id: sourceId,
@@ -87,18 +78,6 @@ export function SepayPaymentDialog({
     }
   }, [open, order, isCreating, error, createOrder, sourceType, sourceId, payeeId, amount, description]);
 
-  // Auto-submit form when data is ready
-  useEffect(() => {
-    if (formAction && formFields && formRef.current && !hasSubmittedRef.current) {
-      hasSubmittedRef.current = true;
-      triggerHaptic('medium');
-      const timer = setTimeout(() => {
-        formRef.current?.submit();
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [formAction, formFields]);
-
   useEffect(() => {
     if (status === 'PAID') {
       triggerHaptic('success');
@@ -107,17 +86,18 @@ export function SepayPaymentDialog({
     }
   }, [status, t, onPaymentComplete]);
 
-  const handleManualRedirect = useCallback(() => {
-    if (formRef.current) {
-      triggerHaptic('medium');
-      formRef.current.submit();
+  const handleCopyCode = () => {
+    if (paymentCode) {
+      navigator.clipboard.writeText(paymentCode);
+      triggerHaptic('light');
+      toast.success(t('payments.sepay.codeCopied', 'Payment code copied!'));
     }
-  }, []);
+  };
 
   const handleClose = (nextOpen: boolean) => {
     if (!nextOpen) {
       stopPolling();
-      hasSubmittedRef.current = false;
+      hasCreatedRef.current = false;
       setTimeout(reset, 300);
     }
     onOpenChange(nextOpen);
@@ -130,14 +110,8 @@ export function SepayPaymentDialog({
   const footerButtons = (
     <div className="flex gap-2 w-full">
       <Button variant="outline" onClick={() => handleClose(false)} className="flex-1 min-h-[44px]">
-        {t('common.close', 'Close')}
+        {isPaid ? t('common.done', 'Done') : t('common.close', 'Close')}
       </Button>
-      {formAction && formFields && !isPaid && !isFailed && (
-        <Button onClick={handleManualRedirect} className="flex-1 min-h-[44px]">
-          <ExternalLinkIcon className="h-4 w-4 mr-2" />
-          {t('payments.sepay.goToPayment', 'Go to Payment')}
-        </Button>
-      )}
     </div>
   );
 
@@ -145,20 +119,11 @@ export function SepayPaymentDialog({
     <BottomSheet
       open={open}
       onOpenChange={handleClose}
-      title={t('payments.sepay.title', 'Pay via SePay')}
-      description={t('payments.sepay.description', 'Complete payment through SePay gateway')}
+      title={t('payments.sepay.title', 'Pay via QR Transfer')}
+      description={t('payments.sepay.description', 'Scan QR code with your banking app to transfer')}
       footer={footerButtons}
     >
       <div className="space-y-4">
-        {/* Hidden form for SePay redirect */}
-        {formAction && formFields && (
-          <form ref={formRef} method="POST" action={formAction} style={{ display: 'none' }}>
-            {Object.entries(formFields).map(([name, value]) => (
-              <input key={name} type="hidden" name={name} value={value} />
-            ))}
-          </form>
-        )}
-
         <div className="text-center py-2">
           <p className="text-sm text-muted-foreground mb-1">
             {t('payments.sepay.payTo', 'Pay to')} {payeeName}
@@ -172,10 +137,10 @@ export function SepayPaymentDialog({
 
         {isCreating && (
           <div className="flex flex-col items-center py-8">
-            <Skeleton className="h-24 w-full max-w-xs rounded-lg" />
+            <Skeleton className="h-48 w-48 rounded-lg" />
             <Skeleton className="h-4 w-32 mt-4" />
             <p className="text-sm text-muted-foreground mt-2">
-              {t('payments.sepay.creating', 'Creating payment order...')}
+              {t('payments.sepay.creating', 'Creating payment QR...')}
             </p>
           </div>
         )}
@@ -187,43 +152,55 @@ export function SepayPaymentDialog({
           </Alert>
         )}
 
-        {isPending && !isCreating && (
+        {isPending && !isCreating && qrUrl && (
           <div className="flex flex-col items-center space-y-4">
-            <div
-              ref={containerRef}
-              className="relative flex w-full max-w-xs mx-auto items-center justify-between px-6"
-              style={{ minHeight: 80 }}
-            >
-              <div ref={payerRef} className="relative z-10 flex items-center justify-center rounded-xl border bg-background p-2.5 shadow-sm size-10 animate-beam-node-float">
-                <WalletIcon size={16} className="text-primary" />
-              </div>
-              <div ref={sepayRef} className="relative z-10 flex items-center justify-center rounded-2xl border-2 border-primary/30 bg-background p-3 shadow-lg animate-beam-pulse">
-                <FairPayIcon size={28} className="rounded-md" />
-              </div>
-              <div ref={payeeRef} className="relative z-10 flex items-center justify-center rounded-xl border bg-background p-2.5 shadow-sm size-10 animate-beam-node-float" style={{ animationDelay: '0.3s' }}>
-                <BanknoteIcon size={16} className="text-green-500" />
-              </div>
-              <AnimatedBeam containerRef={containerRef} fromRef={payerRef} toRef={sepayRef} curvature={-0.15} duration={2.2} delay={0} gradientStartColor="#3b82f6" gradientStopColor="#6366f1" />
-              <AnimatedBeam containerRef={containerRef} fromRef={sepayRef} toRef={payeeRef} curvature={-0.15} duration={2.2} delay={0.2} gradientStartColor="#22c55e" gradientStopColor="#10b981" />
+            {/* QR Code Image */}
+            <div className="bg-white p-3 rounded-xl shadow-sm border">
+              <img
+                src={qrUrl}
+                alt="QR Payment Code"
+                className="w-48 h-48 sm:w-56 sm:h-56"
+                loading="eager"
+              />
             </div>
 
-            <p className="text-sm text-muted-foreground animate-beam-pulse">
-              {formAction
-                ? t('payments.sepay.redirecting', 'Redirecting to SePay payment page...')
-                : t('payments.sepay.waitingForPayment', 'Waiting for payment confirmation...')}
+            {/* Momo text per project rules */}
+            <p className="text-xs text-center" style={{ color: '#D82D8B' }}>
+              {t('settings.donation.includeMomo', 'Include Momo')}
             </p>
 
-            {formAction && formFields && (
-              <Button variant="outline" onClick={handleManualRedirect} className="min-h-[44px]">
-                <ExternalLinkIcon className="h-4 w-4 mr-2" />
-                {t('payments.sepay.goToPayment', 'Go to Payment')}
-              </Button>
+            {/* Payment code */}
+            {paymentCode && (
+              <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-4 py-2">
+                <span className="text-xs text-muted-foreground">
+                  {t('payments.sepay.paymentCode', 'Payment code')}:
+                </span>
+                <code className="text-sm font-mono font-semibold">{paymentCode}</code>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCopyCode}
+                  className="h-7 w-7 p-0"
+                  aria-label="Copy payment code"
+                >
+                  <CopyIcon className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             )}
+
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+              <p className="text-sm text-muted-foreground">
+                {t('payments.sepay.waitingForPayment', 'Waiting for payment confirmation...')}
+              </p>
+            </div>
 
             <Alert>
               <AlertCircleIcon className="h-4 w-4" />
-              <AlertDescription>
-                {t('payments.sepay.instructions', 'Complete the payment on the SePay page. This dialog will update automatically when you return.')}
+              <AlertDescription className="text-xs">
+                {t('payments.sepay.qrInstructions',
+                  'Open your banking app, scan the QR code, and complete the transfer. Payment will be confirmed automatically within seconds.'
+                )}
               </AlertDescription>
             </Alert>
           </div>
