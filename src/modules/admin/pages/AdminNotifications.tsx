@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { useTable } from "@refinedev/react-table";
-import { useDelete, useList, useCreate } from "@refinedev/core";
+import { useDelete, useList, useCreate, useUpdate } from "@refinedev/core";
 import type { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
 
@@ -62,6 +62,7 @@ import {
   FilterIcon,
   MoreHorizontalIcon,
   PlusIcon,
+  PencilIcon,
   AlertTriangleIcon,
   Loader2Icon,
 } from "@/components/ui/icons";
@@ -306,11 +307,106 @@ function CreateNotificationDialog({
   );
 }
 
+// ─── Edit Notification Dialog ───────────────────────────────────────
+
+function EditNotificationDialog({
+  notification,
+  open,
+  onOpenChange,
+  onSubmit,
+  isUpdating,
+}: {
+  notification: NotificationRow | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: { type: string; title: string; message: string }) => void;
+  isUpdating: boolean;
+}) {
+  const [type, setType] = useState("");
+  const [title, setTitle] = useState("");
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (notification && open) {
+      setType(notification.type);
+      setTitle(notification.title);
+      setMessage(notification.message);
+    }
+  }, [notification, open]);
+
+  if (!notification) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Chỉnh sửa thông báo</DialogTitle>
+          <DialogDescription>
+            Cập nhật nội dung thông báo gửi đến {notification.user_name}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 mt-2">
+          <div className="space-y-2">
+            <Label htmlFor="edit-notif-type">Loại thông báo</Label>
+            <Select value={type} onValueChange={setType}>
+              <SelectTrigger id="edit-notif-type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {NOTIFICATION_TYPES.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t.replace(/_/g, " ")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-notif-title">Tiêu đề</Label>
+            <Input
+              id="edit-notif-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-notif-message">Nội dung</Label>
+            <Textarea
+              id="edit-notif-message"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={3}
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="mt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isUpdating}>
+            Hủy
+          </Button>
+          <Button
+            onClick={() => onSubmit({ type, title, message })}
+            disabled={isUpdating || !title || !message}
+          >
+            {isUpdating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Lưu
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Row Actions ────────────────────────────────────────────────────
 
 function RowActions({
+  onEdit,
   onDelete,
 }: {
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   return (
@@ -322,6 +418,11 @@ function RowActions({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={onEdit}>
+          <PencilIcon className="mr-2 h-4 w-4" />
+          Chỉnh sửa
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onDelete} className="text-destructive">
           Xóa thông báo
         </DropdownMenuItem>
@@ -335,6 +436,7 @@ function RowActions({
 export function AdminNotifications() {
   const deleteMutation = useDelete();
   const createMutation = useCreate();
+  const updateMutation = useUpdate();
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
@@ -352,6 +454,11 @@ export function AdminNotifications() {
   // Create state
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+
+  // Edit state
+  const [editNotification, setEditNotification] = useState<NotificationRow | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Build filters for Refine useTable
   const filters = useMemo(() => {
@@ -441,6 +548,10 @@ export function AdminNotifications() {
         enableSorting: false,
         cell: ({ row }) => (
           <RowActions
+            onEdit={() => {
+              setEditNotification(row.original);
+              setEditDialogOpen(true);
+            }}
             onDelete={() => {
               setDeleteNotification(row.original);
               setDeleteDialogOpen(true);
@@ -566,6 +677,40 @@ export function AdminNotifications() {
       );
     },
     [createMutation, table.refineCore.tableQuery],
+  );
+
+  // ─── Edit Handler ───────────────────────────────────────────────
+
+  const handleEdit = useCallback(
+    (data: { type: string; title: string; message: string }) => {
+      if (!editNotification) return;
+      setIsUpdating(true);
+      updateMutation.mutate(
+        {
+          resource: "notifications",
+          id: editNotification.id,
+          values: {
+            type: data.type,
+            title: data.title,
+            message: data.message,
+          },
+        },
+        {
+          onSuccess: () => {
+            toast.success("Đã cập nhật thông báo");
+            setEditDialogOpen(false);
+            setEditNotification(null);
+            setIsUpdating(false);
+            table.refineCore.tableQuery.refetch();
+          },
+          onError: (error) => {
+            toast.error(`Lỗi: ${error.message}`);
+            setIsUpdating(false);
+          },
+        },
+      );
+    },
+    [editNotification, updateMutation, table.refineCore.tableQuery],
   );
 
   // ─── Render ─────────────────────────────────────────────────────
@@ -725,6 +870,20 @@ export function AdminNotifications() {
         onOpenChange={setCreateDialogOpen}
         onSubmit={handleCreate}
         isCreating={isCreating}
+      />
+
+      {/* Edit Notification Dialog */}
+      <EditNotificationDialog
+        notification={editNotification}
+        open={editDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !isUpdating) {
+            setEditDialogOpen(false);
+            setEditNotification(null);
+          }
+        }}
+        onSubmit={handleEdit}
+        isUpdating={isUpdating}
       />
     </div>
   );
