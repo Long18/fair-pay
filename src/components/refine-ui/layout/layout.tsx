@@ -12,6 +12,7 @@ export function Layout({ children }: PropsWithChildren) {
       <div className="flex flex-col min-h-screen">
         <NavBar />
         <main
+          id="main-content"
           className={cn(
             "@container/main",
             "container",
