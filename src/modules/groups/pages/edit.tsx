@@ -6,7 +6,7 @@ import { Group, GroupMember, GroupFormValues } from "../types";
 import { Friendship } from "@/modules/friends/types";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { LoadingBeam } from "@/components/ui/loading-beam";
 import { ArrowLeftIcon } from "@/components/ui/icons";
 import type { Profile } from "@/modules/profile/types";
 
@@ -125,14 +125,8 @@ export const GroupEdit = () => {
 
   if (isLoadingGroup) {
     return (
-      <div className="container mx-auto max-w-2xl px-4 py-6 space-y-6">
-        <Skeleton className="h-8 w-32" />
-        <div className="space-y-4">
-          <Skeleton className="h-20 w-20 rounded-full mx-auto" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-16 w-full" />
-        </div>
+      <div className="container mx-auto max-w-2xl px-4 py-6">
+        <LoadingBeam text="Đang tải nhóm..." />
       </div>
     );
   }
