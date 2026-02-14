@@ -70,12 +70,6 @@ export function useMemberPrepaid() {
   const recordMultiMember = async (params: RecordMultiMemberPrepaidParams) => {
     setIsRecording(true);
     try {
-      console.log('Recording prepaid with params:', {
-        recurringExpenseId: params.recurringExpenseId,
-        memberMonths: params.memberMonths,
-        paidByUserId: params.paidByUserId,
-      });
-
       const { data, error } = await supabaseClient.rpc('record_multi_member_prepaid', {
         p_recurring_expense_id: params.recurringExpenseId,
         p_member_months: params.memberMonths,
@@ -87,7 +81,6 @@ export function useMemberPrepaid() {
         throw error;
       }
 
-      console.log('RPC result:', data);
       const result = data as RecordMultiMemberPrepaidResult;
 
       // Invalidate queries to refresh data
