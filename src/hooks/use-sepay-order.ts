@@ -2,13 +2,11 @@
  * SePay Order Hook
  *
  * Creates SePay checkout orders and polls for payment status.
- * Uses edge functions for order creation (returns signed form data).
- * Frontend auto-submits a hidden form to redirect to SePay payment page.
+ * Edge function POSTs to SePay server-side and returns checkout_url.
+ * Frontend opens checkout URL via window.open() to avoid CSP issues.
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { useGetIdentity } from '@refinedev/core';
-import { Profile } from '@/modules/profile/types';
 import {
   createSepayOrder,
   fetchSepayOrderById,
@@ -21,8 +19,7 @@ const MAX_POLL_DURATION = 15 * 60 * 1000; // 15 minutes
 
 interface UseSepayOrderReturn {
   order: SepayPaymentOrder | null;
-  formAction: string | null;
-  formFields: Record<string, string> | null;
+  checkoutUrl: string | null;
   status: SepayOrderStatus | null;
   isCreating: boolean;
   isPolling: boolean;
@@ -33,10 +30,8 @@ interface UseSepayOrderReturn {
 }
 
 export function useSepayOrder(): UseSepayOrderReturn {
-  const { data: identity } = useGetIdentity<Profile>();
   const [order, setOrder] = useState<SepayPaymentOrder | null>(null);
-  const [formAction, setFormAction] = useState<string | null>(null);
-  const [formFields, setFormFields] = useState<Record<string, string> | null>(null);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [status, setStatus] = useState<SepayOrderStatus | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
@@ -58,22 +53,24 @@ export function useSepayOrder(): UseSepayOrderReturn {
     pollStartRef.current = Date.now();
 
     pollRef.current = setInterval(async () => {
-      // Stop after max duration
       if (Date.now() - pollStartRef.current > MAX_POLL_DURATION) {
         stopPolling();
         setStatus('EXPIRED');
         return;
       }
 
-      const updated = await fetchSepayOrderById(orderId);
-      if (!updated) return;
+      try {
+        const updated = await fetchSepayOrderById(orderId);
+        if (!updated) return;
 
-      setOrder(updated);
-      setStatus(updated.status);
+        setOrder(updated);
+        setStatus(updated.status);
 
-      // Stop polling on terminal states
-      if (['PAID', 'FAILED', 'CANCELLED', 'EXPIRED'].includes(updated.status)) {
-        stopPolling();
+        if (['PAID', 'FAILED', 'CANCELLED', 'EXPIRED'].includes(updated.status)) {
+          stopPolling();
+        }
+      } catch {
+        // Silently ignore poll errors (e.g. RLS issues) to avoid log spam
       }
     }, POLL_INTERVAL);
   }, [stopPolling]);
@@ -95,18 +92,14 @@ export function useSepayOrder(): UseSepayOrderReturn {
         return false;
       }
 
-      // Store form data for auto-submission
-      setFormAction(result.form_action || null);
-      setFormFields(result.form_fields || null);
+      setCheckoutUrl(result.checkout_url || null);
       setStatus(result.order.status);
 
-      // Fetch full order from DB
       const fullOrder = await fetchSepayOrderById(result.order.id);
       if (fullOrder) {
         setOrder(fullOrder);
       }
 
-      // Start polling for payment status
       startPolling(result.order.id);
       return true;
     } catch (err: any) {
@@ -120,22 +113,19 @@ export function useSepayOrder(): UseSepayOrderReturn {
   const reset = useCallback(() => {
     stopPolling();
     setOrder(null);
-    setFormAction(null);
-    setFormFields(null);
+    setCheckoutUrl(null);
     setStatus(null);
     setError(null);
     setIsCreating(false);
   }, [stopPolling]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => stopPolling();
   }, [stopPolling]);
 
   return {
     order,
-    formAction,
-    formFields,
+    checkoutUrl,
     status,
     isCreating,
     isPolling,

@@ -33,9 +33,11 @@ export interface CreateSepayOrderResult {
     currency: string;
     status: SepayOrderStatus;
   };
-  /** SePay checkout form action URL */
+  /** SePay checkout URL (captured server-side from redirect) */
+  checkout_url?: string;
+  /** SePay checkout form action URL (fallback) */
   form_action?: string;
-  /** Signed form fields to POST to SePay */
+  /** Signed form fields to POST to SePay (fallback) */
   form_fields?: Record<string, string>;
   error?: string;
   details?: unknown;
