@@ -4,6 +4,14 @@ export interface AdminStats {
   totalExpenses: number;
   totalPayments: number;
   activeUsersLast7Days: number;
+  // Previous-period data for trend calculation
+  prevTotalUsers: number;
+  prevTotalGroups: number;
+  currExpenses30d: number;
+  prevExpenses30d: number;
+  currPayments30d: number;
+  prevPayments30d: number;
+  prevActiveUsers7d: number;
 }
 
 export interface AdminUserRow {
