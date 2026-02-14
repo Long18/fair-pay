@@ -49,7 +49,6 @@ class Analytics {
     }
 
     this.isInitialized = true;
-    console.log(`📊 Analytics initialized: ${this.provider}`);
   }
 
   private initGoogleAnalytics() {
@@ -77,12 +76,10 @@ class Analytics {
 
   private initMixpanel() {
     // Placeholder for Mixpanel initialization
-    console.log('Mixpanel initialization - add SDK');
   }
 
   private initAmplitude() {
     // Placeholder for Amplitude initialization
-    console.log('Amplitude initialization - add SDK');
   }
 
   /**
@@ -90,7 +87,6 @@ class Analytics {
    */
   track(event: AnalyticsEvent) {
     if (!this.isInitialized || this.provider === 'none') {
-      console.log(`[Analytics] ${event.category}: ${event.action}`, event.properties);
       return;
     }
 
@@ -120,12 +116,10 @@ class Analytics {
 
   private trackMixpanel(event: AnalyticsEvent) {
     // Placeholder for Mixpanel tracking
-    console.log('Mixpanel track', event);
   }
 
   private trackAmplitude(event: AnalyticsEvent) {
     // Placeholder for Amplitude tracking
-    console.log('Amplitude track', event);
   }
 
   /**
@@ -133,7 +127,6 @@ class Analytics {
    */
   pageView(path: string, title?: string) {
     if (!this.isInitialized || this.provider === 'none') {
-      console.log(`[Analytics] Page view: ${path}`);
       return;
     }
 
@@ -147,10 +140,8 @@ class Analytics {
         }
         break;
       case 'mixpanel':
-        console.log('Mixpanel page view', path);
         break;
       case 'amplitude':
-        console.log('Amplitude page view', path);
         break;
     }
   }
@@ -171,10 +162,8 @@ class Analytics {
         }
         break;
       case 'mixpanel':
-        console.log('Mixpanel identify', userId, properties);
         break;
       case 'amplitude':
-        console.log('Amplitude identify', userId, properties);
         break;
     }
   }
@@ -194,10 +183,8 @@ class Analytics {
         }
         break;
       case 'mixpanel':
-        console.log('Mixpanel reset');
         break;
       case 'amplitude':
-        console.log('Amplitude reset');
         break;
     }
   }

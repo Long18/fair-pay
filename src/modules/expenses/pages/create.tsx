@@ -89,16 +89,6 @@ export const ExpenseCreate = () => {
       const friendProfile = isUserA ? friendship.user_b_profile : friendship.user_a_profile;
       const friendId = isUserA ? userBId : userAId;
 
-      console.log('[ExpenseCreate] Friend context data:', {
-        friendship,
-        userAId,
-        userBId,
-        currentUserId: identity?.id,
-        isUserA,
-        friendId,
-        friendProfile
-      });
-
       const friendMembers = [
         {
           id: identity!.id,
