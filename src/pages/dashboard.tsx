@@ -53,7 +53,6 @@ export const Dashboard = () => {
             clearTimeout(visibilityDebounceRef.current);
           }
           visibilityDebounceRef.current = setTimeout(() => {
-            console.log('Dashboard visible, refetching stale data...');
             lastRefetchTimeRef.current = Date.now();
             refetchDebts();
           }, 300);
@@ -68,7 +67,6 @@ export const Dashboard = () => {
         const STALE_TIME = 5 * 1000;
 
         if (timeSinceLastRefetch > STALE_TIME) {
-          console.log('Dashboard focused, refetching stale data...');
           lastRefetchTimeRef.current = Date.now();
           refetchDebts();
         }

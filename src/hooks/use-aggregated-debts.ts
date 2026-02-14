@@ -85,7 +85,6 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
                     result = [];
                 } else if (!splitCount || splitCount === 0) {
                     // User has no expense splits, return empty debts immediately
-                    console.log("User has no expense splits, skipping debt aggregation query");
                     result = [];
                     rpcError = null;
                 } else {
@@ -184,8 +183,6 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
     useEffect(() => {
         if (!identity?.id) return;
 
-        console.log('Setting up real-time subscriptions for user:', identity.id);
-
         // Subscribe to changes in expenses table
         const expensesChannel = supabaseClient
             .channel('expenses-changes')
@@ -197,12 +194,10 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
                     table: 'expenses',
                 },
                 (payload) => {
-                    console.log('Expense changed, scheduling debounced refetch...', payload);
                     debouncedFetchDebts();
                 }
             )
             .subscribe((status) => {
-                console.log('Expenses subscription status:', status);
             });
 
         // Subscribe to changes in expense_splits table
@@ -216,17 +211,14 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
                     table: 'expense_splits',
                 },
                 (payload) => {
-                    console.log('Expense split changed, scheduling debounced refetch...', payload);
                     debouncedFetchDebts();
                 }
             )
             .subscribe((status) => {
-                console.log('Expense splits subscription status:', status);
             });
 
         // Cleanup subscriptions on unmount
         return () => {
-            console.log('Cleaning up real-time subscriptions');
             if (debounceTimerRef.current) {
                 clearTimeout(debounceTimerRef.current);
             }
@@ -238,7 +230,6 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
     // Listen for settlement events from other components (profile page, expense page, etc.)
     useEffect(() => {
         return onSettlementEvent(() => {
-            console.log('Settlement event received, refetching debts...');
             fetchDebtsRef.current();
         });
     }, []);

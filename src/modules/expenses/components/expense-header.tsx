@@ -44,7 +44,6 @@ export const ExpenseHeader = ({
         });
       } catch (err) {
         // User cancelled or share failed
-        console.log('Share cancelled or failed');
       }
     } else {
       // Fallback to copying URL

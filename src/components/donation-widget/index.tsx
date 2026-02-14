@@ -177,7 +177,7 @@ export function DonationWidget() {
 
       <TooltipProvider delayDuration={300}>
         <div ref={animationRef} className="fixed bottom-6 left-6 z-50 floating-widget">
-          <Tooltip open={showRandomTooltip ? true : undefined}>
+          <Tooltip open={showRandomTooltip} onOpenChange={setShowRandomTooltip}>
             <TooltipTrigger asChild>
               <button
                 onClick={() => setIsDialogOpen(true)}
