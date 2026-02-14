@@ -26,6 +26,7 @@ interface ExpenseSplitCardProps {
   expense: {
     is_payment?: boolean;
     currency: string;
+    paid_by_user_id: string;
   };
   isCurrentUser: boolean;
   isPayer: boolean;
@@ -253,7 +254,7 @@ export const ExpenseSplitCard = ({
                   <div>
                     <PaymentMethodDropdown
                       split={split}
-                      payeeId={split.user_id}
+                      payeeId={expense.paid_by_user_id}
                       onPaymentComplete={onPaymentComplete}
                     />
                   </div>
@@ -332,7 +333,7 @@ export const ExpenseSplitCard = ({
                 {isCurrentUser && !isSplitSettled && !isPayer && split.user_id && (
                   <PaymentMethodDropdown
                     split={split}
-                    payeeId={split.user_id}
+                    payeeId={expense.paid_by_user_id}
                     onPaymentComplete={onPaymentComplete}
                     className="flex-1 min-h-[44px]"
                   />
