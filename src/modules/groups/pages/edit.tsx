@@ -32,11 +32,12 @@ export const GroupEdit = () => {
     }
 
     setIsSubmitting(true);
+    const { member_ids, ...groupData } = values;
     updateMutation.mutate(
       {
         resource: "groups",
         id: group.id,
-        values,
+        values: groupData,
       },
       {
         onSuccess: () => {
