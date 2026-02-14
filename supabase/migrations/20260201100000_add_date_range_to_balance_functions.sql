@@ -19,6 +19,7 @@
 -- Must DROP first: changing the parameter list creates a new overload,
 -- and the old signature would remain alongside it.
 DROP FUNCTION IF EXISTS public.get_user_balance(UUID);
+DROP FUNCTION IF EXISTS public.get_user_balance(UUID, TIMESTAMPTZ, TIMESTAMPTZ);
 
 CREATE OR REPLACE FUNCTION public.get_user_balance(
     p_user_id   UUID,
@@ -120,6 +121,7 @@ GRANT EXECUTE ON FUNCTION public.get_user_balance(UUID, TIMESTAMPTZ, TIMESTAMPTZ
 -- 2. get_user_debts_aggregated
 -- ============================================================
 DROP FUNCTION IF EXISTS get_user_debts_aggregated(UUID);
+DROP FUNCTION IF EXISTS get_user_debts_aggregated(UUID, TIMESTAMPTZ, TIMESTAMPTZ);
 
 CREATE OR REPLACE FUNCTION get_user_debts_aggregated(
     p_user_id    UUID,
