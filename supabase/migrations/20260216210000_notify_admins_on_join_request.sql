@@ -8,7 +8,7 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, pg_temp
-AS $
+AS $$
 DECLARE
   v_admin RECORD;
   v_requester_name TEXT;
@@ -48,7 +48,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$;
+$$;
 
 -- Trigger on insert
 CREATE TRIGGER trg_notify_admins_on_join_request
