@@ -78,6 +78,9 @@ import {
 } from "@/components/ui/icons";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
 import { getCategoryMeta } from "@/modules/expenses/lib/categories";
+import { MarkdownComment } from "@/modules/expenses/components/markdown-comment";
+import { AttachmentList } from "@/modules/expenses/components/attachment-list";
+import { Attachment } from "@/modules/expenses/types";
 import { AdminCreateExpenseDialog } from "../components/AdminCreateExpenseDialog";
 import { AdminEditExpenseDialog } from "../components/AdminEditExpenseDialog";
 
@@ -195,24 +198,44 @@ function ExpenseDetailDialog({
 }) {
   const [splits, setSplits] = useState<ExpenseSplit[]>([]);
   const [loadingSplits, setLoadingSplits] = useState(false);
+  const [comment, setComment] = useState<string | null>(null);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
 
   useEffect(() => {
-    if (!expense || !open) { setSplits([]); return; }
+    if (!expense || !open) { setSplits([]); setComment(null); setAttachments([]); return; }
     setLoadingSplits(true);
-    supabaseClient
-      .from("expense_splits")
-      .select("*, profiles!expense_splits_user_id_fkey(full_name)")
-      .eq("expense_id", expense.id)
-      .then(({ data, error }) => {
-        if (!error && data) {
-          setSplits(data.map((s: any) => ({
-            id: s.id, user_id: s.user_id, user_name: s.profiles?.full_name ?? "Không rõ",
-            split_method: s.split_method, computed_amount: s.computed_amount,
-            is_settled: s.is_settled ?? false, settled_amount: s.settled_amount ?? 0,
-          })));
-        }
-        setLoadingSplits(false);
-      });
+
+    // Fetch splits, comment, and attachments in parallel
+    Promise.all([
+      supabaseClient
+        .from("expense_splits")
+        .select("*, profiles!expense_splits_user_id_fkey(full_name)")
+        .eq("expense_id", expense.id),
+      supabaseClient
+        .from("expenses")
+        .select("comment")
+        .eq("id", expense.id)
+        .single(),
+      supabaseClient
+        .from("attachments")
+        .select("*")
+        .eq("expense_id", expense.id),
+    ]).then(([splitsRes, commentRes, attachmentsRes]) => {
+      if (!splitsRes.error && splitsRes.data) {
+        setSplits(splitsRes.data.map((s: any) => ({
+          id: s.id, user_id: s.user_id, user_name: s.profiles?.full_name ?? "Không rõ",
+          split_method: s.split_method, computed_amount: s.computed_amount,
+          is_settled: s.is_settled ?? false, settled_amount: s.settled_amount ?? 0,
+        })));
+      }
+      if (!commentRes.error && commentRes.data) {
+        setComment(commentRes.data.comment);
+      }
+      if (!attachmentsRes.error && attachmentsRes.data) {
+        setAttachments(attachmentsRes.data);
+      }
+      setLoadingSplits(false);
+    });
   }, [expense?.id, open]);
 
   if (!expense) return null;
@@ -249,6 +272,18 @@ function ExpenseDetailDialog({
                 : <Badge className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800">Chờ xử lý</Badge>
             } />
           </div>
+
+          {/* Comment section - parity with Client show page */}
+          {comment && comment.trim() !== "" && (
+            <div>
+              <h4 className="text-sm font-medium mb-2">Ghi chú</h4>
+              <div className="rounded-md border p-3 bg-muted/30">
+                <MarkdownComment content={comment} className="text-sm" />
+              </div>
+            </div>
+          )}
+
+          {/* Splits section */}
           <div>
             <h4 className="text-sm font-medium mb-2">Chia tiền</h4>
             {loadingSplits ? (
@@ -284,6 +319,14 @@ function ExpenseDetailDialog({
               </div>
             )}
           </div>
+
+          {/* Attachments section - parity with Client show page */}
+          {attachments.length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium mb-2">Tệp đính kèm ({attachments.length})</h4>
+              <AttachmentList attachments={attachments} canDelete={false} />
+            </div>
+          )}
         </div>
         <div className="flex gap-2 pt-2 border-t">
           <Button size="sm" variant="outline" onClick={onEdit}><PencilIcon className="mr-2 h-4 w-4" />Chỉnh sửa</Button>
