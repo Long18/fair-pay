@@ -5,7 +5,14 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { PaymentStateBadge } from "@/components/ui/payment-state-badge";
 import { OweStatusIndicator } from "@/components/ui/owe-status-indicator";
-import { ChevronDownIcon, ChevronRightIcon } from "@/components/ui/icons";
+import { ChevronDownIcon, ChevronRightIcon, MoreVerticalIcon, EyeIcon, CheckCircle2Icon } from "@/components/ui/icons";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { SupportedCurrency } from "@/lib/format-utils";
 import type { PaymentEvent, EnhancedActivityItem } from "@/types/activity";
@@ -23,6 +30,7 @@ export interface EnhancedActivityRowProps {
   isExpanded: boolean;
   onToggleExpand: () => void;
   showDuplicateContext?: boolean;
+  showActions?: boolean;
   className?: string;
 }
 
@@ -41,6 +49,7 @@ export const EnhancedActivityRow = React.forwardRef<
       isExpanded,
       onToggleExpand,
       showDuplicateContext = false,
+      showActions = false,
       className,
     },
     ref
@@ -48,8 +57,11 @@ export const EnhancedActivityRow = React.forwardRef<
     const go = useGo();
 
     const handleRowClick = (e: React.MouseEvent) => {
-      // Don't navigate if clicking the expand button
-      if ((e.target as HTMLElement).closest("[data-expand-control]")) {
+      // Don't navigate if clicking the expand button or dropdown
+      if (
+        (e.target as HTMLElement).closest("[data-expand-control]") ||
+        (e.target as HTMLElement).closest("[data-action-menu]")
+      ) {
         return;
       }
       go({ to: `/expenses/show/${activity.id}` });
@@ -60,7 +72,18 @@ export const EnhancedActivityRow = React.forwardRef<
       onToggleExpand();
     };
 
+    const handleQuickView = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      go({ to: `/expenses/show/${activity.id}` });
+    };
+
+    const handleBulkSettlement = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      go({ to: `/expenses/show/${activity.id}?action=settle` });
+    };
+
     const hasPaymentEvents = activity.paymentEvents.length > 0;
+    const showBulkSettlement = activity.paymentState !== "paid";
 
     return (
       <div ref={ref} className={cn("space-y-0", className)}>
@@ -147,21 +170,54 @@ export const EnhancedActivityRow = React.forwardRef<
             )}
           </div>
 
-          {/* Right Section: Amount */}
-          <div className="text-right flex-shrink-0">
-            <p className={cn(
-              "font-bold text-lg",
-              activity.oweStatus.direction === "owe" && "text-semantic-negative",
-              activity.oweStatus.direction === "owed" && "text-semantic-positive",
-              activity.oweStatus.direction === "neutral" && "text-foreground"
-            )}>
-              {new Intl.NumberFormat("en-US", {
-                style: "decimal",
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 2,
-              }).format(activity.amount)}{" "}
-              {activity.currency}
-            </p>
+          {/* Right Section: Amount + Actions */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="text-right">
+              <p className={cn(
+                "font-bold text-lg",
+                activity.oweStatus.direction === "owe" && "text-semantic-negative",
+                activity.oweStatus.direction === "owed" && "text-semantic-positive",
+                activity.oweStatus.direction === "neutral" && "text-foreground"
+              )}>
+                {new Intl.NumberFormat("en-US", {
+                  style: "decimal",
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 2,
+                }).format(activity.amount)}{" "}
+                {activity.currency}
+              </p>
+            </div>
+
+            {/* Action Dropdown */}
+            {showActions && (
+              <div data-action-menu>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
+                      aria-label="Transaction actions"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreVerticalIcon className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleQuickView}>
+                      <EyeIcon className="mr-2 h-4 w-4" />
+                      Quick View
+                    </DropdownMenuItem>
+                    {showBulkSettlement && (
+                      <DropdownMenuItem onClick={handleBulkSettlement}>
+                        <CheckCircle2Icon className="mr-2 h-4 w-4" />
+                        Bulk Settlement
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
           </div>
         </div>
 
