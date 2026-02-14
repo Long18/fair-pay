@@ -39,7 +39,7 @@
             ]
         },
         {
-            "source": "/(favicon.ico|robots.txt|sitemap.xml|sitemap_index.xml|sitemap-index.xml|sitemaps.xml|sitemap1.xml|post-sitemap.xml|browserconfig.xml)",
+            "source": "/(favicon.ico|robots.txt|sitemap.xml|sitemap_index.xml|sitemap-index.xml|sitemaps.xml|sitemap1.xml|post-sitemap.xml|page-sitemap.xml|news-sitemap.xml|browserconfig.xml)",
             "headers": [
                 {
                     "key": "Cache-Control",
