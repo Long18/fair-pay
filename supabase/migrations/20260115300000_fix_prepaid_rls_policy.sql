@@ -14,6 +14,7 @@ GRANT ALL ON recurring_prepaid_payments TO service_role;
 -- Allows SECURITY DEFINER functions to bypass RLS
 -- ========================================
 
+DROP POLICY IF EXISTS "Service role can manage prepaid payments" ON recurring_prepaid_payments;
 CREATE POLICY "Service role can manage prepaid payments"
   ON recurring_prepaid_payments FOR ALL
   TO service_role

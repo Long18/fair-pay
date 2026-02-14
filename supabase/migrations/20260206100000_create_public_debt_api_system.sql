@@ -19,25 +19,29 @@ CREATE TABLE IF NOT EXISTS public.api_secrets (
 ALTER TABLE public.api_secrets ENABLE ROW LEVEL SECURITY;
 
 -- Users can only see their own API secrets
+DROP POLICY IF EXISTS "Users can view own API secrets" ON public.api_secrets;
 CREATE POLICY "Users can view own API secrets" ON public.api_secrets
   FOR SELECT USING (auth.uid() = user_id OR auth.uid() = created_by);
 
 -- Users can create API secrets (inserting will auto-set created_by)
+DROP POLICY IF EXISTS "Users can create API secrets" ON public.api_secrets;
 CREATE POLICY "Users can create API secrets" ON public.api_secrets
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Users can update their own API secrets
+DROP POLICY IF EXISTS "Users can update own API secrets" ON public.api_secrets;
 CREATE POLICY "Users can update own API secrets" ON public.api_secrets
   FOR UPDATE USING (auth.uid() = user_id);
 
 -- Users can delete their own API secrets
+DROP POLICY IF EXISTS "Users can delete own API secrets" ON public.api_secrets;
 CREATE POLICY "Users can delete own API secrets" ON public.api_secrets
   FOR DELETE USING (auth.uid() = user_id);
 
 -- 2. Create indexes for performance
-CREATE INDEX idx_api_secrets_user_id ON public.api_secrets(user_id);
-CREATE INDEX idx_api_secrets_token ON public.api_secrets(secret_token) WHERE is_active = true;
-CREATE INDEX idx_api_secrets_expires_at ON public.api_secrets(expires_at) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_api_secrets_user_id ON public.api_secrets(user_id);
+CREATE INDEX IF NOT EXISTS idx_api_secrets_token ON public.api_secrets(secret_token) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_api_secrets_expires_at ON public.api_secrets(expires_at) WHERE is_active = true;
 
 -- 3. Create function to get comprehensive debt data with secret validation
 CREATE OR REPLACE FUNCTION public.get_user_debt_by_secret(

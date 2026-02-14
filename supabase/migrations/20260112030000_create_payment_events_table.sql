@@ -60,23 +60,23 @@ CREATE TABLE IF NOT EXISTS payment_events (
 -- =============================================
 
 -- Primary query pattern: Get all events for an expense, sorted by time
-CREATE INDEX idx_payment_events_expense_created 
+CREATE INDEX IF NOT EXISTS idx_payment_events_expense_created 
   ON payment_events(expense_id, created_at DESC);
 
 -- Query by split (for individual split history)
-CREATE INDEX idx_payment_events_split_id 
+CREATE INDEX IF NOT EXISTS idx_payment_events_split_id 
   ON payment_events(split_id) 
   WHERE split_id IS NOT NULL;
 
 -- Query by user (for user activity history)
-CREATE INDEX idx_payment_events_from_user 
+CREATE INDEX IF NOT EXISTS idx_payment_events_from_user 
   ON payment_events(from_user_id, created_at DESC);
 
-CREATE INDEX idx_payment_events_to_user 
+CREATE INDEX IF NOT EXISTS idx_payment_events_to_user 
   ON payment_events(to_user_id, created_at DESC);
 
 -- Query by event type (for analytics)
-CREATE INDEX idx_payment_events_type 
+CREATE INDEX IF NOT EXISTS idx_payment_events_type 
   ON payment_events(event_type, created_at DESC);
 
 -- =============================================

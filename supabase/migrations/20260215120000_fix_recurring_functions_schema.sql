@@ -34,6 +34,9 @@ CHECK (frequency IN ('daily', 'weekly', 'bi_weekly', 'monthly', 'quarterly', 'ye
 -- These columns live on the template expense, not on recurring_expenses
 -- ========================================
 
+-- Drop existing function first (return type may differ)
+DROP FUNCTION IF EXISTS get_due_recurring_expenses();
+
 CREATE OR REPLACE FUNCTION get_due_recurring_expenses()
 RETURNS TABLE (
   id UUID,
@@ -51,7 +54,7 @@ RETURNS TABLE (
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, pg_temp
-AS $
+AS $$
 BEGIN
   RETURN QUERY
   SELECT
@@ -72,7 +75,7 @@ BEGIN
     AND re.next_occurrence <= CURRENT_DATE
     AND (re.end_date IS NULL OR re.end_date >= CURRENT_DATE);
 END;
-$;
+$$;
 
 COMMENT ON FUNCTION get_due_recurring_expenses() IS
 'Get all recurring expenses due for processing.
@@ -94,7 +97,7 @@ CREATE OR REPLACE FUNCTION calculate_next_occurrence(
 )
 RETURNS DATE
 LANGUAGE plpgsql
-AS $
+AS $$
 BEGIN
   CASE p_frequency
     WHEN 'daily' THEN RETURN p_current_date + (p_interval_value * INTERVAL '1 day');
@@ -107,7 +110,7 @@ BEGIN
     ELSE RAISE EXCEPTION 'Invalid frequency: %', p_frequency;
   END CASE;
 END;
-$;
+$$;
 
 COMMENT ON FUNCTION calculate_next_occurrence(DATE, TEXT, INT) IS
 'Calculate next occurrence date based on frequency and interval.
