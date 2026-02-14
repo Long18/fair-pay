@@ -29,18 +29,21 @@ export interface CreateSepayOrderResult {
   order?: {
     id: string;
     invoice_number: string;
-    checkout_url: string;
     amount: number;
     currency: string;
     status: SepayOrderStatus;
   };
+  /** SePay checkout form action URL */
+  form_action?: string;
+  /** Signed form fields to POST to SePay */
+  form_fields?: Record<string, string>;
   error?: string;
   details?: unknown;
 }
 
 /**
  * Create a SePay checkout order via edge function.
- * Returns the order with checkout_url for redirect/QR display.
+ * Returns the order with form data for browser redirect to SePay.
  */
 export async function createSepayOrder(
   params: CreateSepayOrderParams

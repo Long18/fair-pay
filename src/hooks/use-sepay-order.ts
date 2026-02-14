@@ -2,7 +2,8 @@
  * SePay Order Hook
  *
  * Creates SePay checkout orders and polls for payment status.
- * Uses edge functions for order creation, direct DB polling for status.
+ * Uses edge functions for order creation (returns signed form data).
+ * Frontend auto-submits a hidden form to redirect to SePay payment page.
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
@@ -20,7 +21,8 @@ const MAX_POLL_DURATION = 15 * 60 * 1000; // 15 minutes
 
 interface UseSepayOrderReturn {
   order: SepayPaymentOrder | null;
-  checkoutUrl: string | null;
+  formAction: string | null;
+  formFields: Record<string, string> | null;
   status: SepayOrderStatus | null;
   isCreating: boolean;
   isPolling: boolean;
@@ -33,7 +35,8 @@ interface UseSepayOrderReturn {
 export function useSepayOrder(): UseSepayOrderReturn {
   const { data: identity } = useGetIdentity<Profile>();
   const [order, setOrder] = useState<SepayPaymentOrder | null>(null);
-  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [formAction, setFormAction] = useState<string | null>(null);
+  const [formFields, setFormFields] = useState<Record<string, string> | null>(null);
   const [status, setStatus] = useState<SepayOrderStatus | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
@@ -92,7 +95,9 @@ export function useSepayOrder(): UseSepayOrderReturn {
         return false;
       }
 
-      setCheckoutUrl(result.order.checkout_url);
+      // Store form data for auto-submission
+      setFormAction(result.form_action || null);
+      setFormFields(result.form_fields || null);
       setStatus(result.order.status);
 
       // Fetch full order from DB
@@ -101,7 +106,7 @@ export function useSepayOrder(): UseSepayOrderReturn {
         setOrder(fullOrder);
       }
 
-      // Start polling
+      // Start polling for payment status
       startPolling(result.order.id);
       return true;
     } catch (err: any) {
@@ -115,7 +120,8 @@ export function useSepayOrder(): UseSepayOrderReturn {
   const reset = useCallback(() => {
     stopPolling();
     setOrder(null);
-    setCheckoutUrl(null);
+    setFormAction(null);
+    setFormFields(null);
     setStatus(null);
     setError(null);
     setIsCreating(false);
@@ -128,7 +134,8 @@ export function useSepayOrder(): UseSepayOrderReturn {
 
   return {
     order,
-    checkoutUrl,
+    formAction,
+    formFields,
     status,
     isCreating,
     isPolling,

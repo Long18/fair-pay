@@ -1,9 +1,15 @@
 /**
  * SePay Create Order Edge Function
  *
- * Creates a SePay checkout order for QR bank transfer payment.
- * Stores the order mapping in sepay_payment_orders table.
+ * Generates signed form fields for SePay checkout.
+ * The frontend auto-submits a hidden form to SePay's endpoint.
  * SECRET_KEY never leaves the server.
+ *
+ * Flow:
+ * 1. Frontend calls this function with order params
+ * 2. Function generates HMAC-SHA256 signature using secret_key
+ * 3. Returns form fields + form action URL to frontend
+ * 4. Frontend auto-submits hidden form → browser redirects to SePay
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -13,7 +19,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const SEPAY_SANDBOX_URL = 'https://sandbox.sepay.vn/v1/checkout/init'
+// SePay checkout form action URLs (from official docs)
+const SEPAY_SANDBOX_URL = 'https://sandbox.pay.sepay.vn/v1/checkout/init'
 const SEPAY_PRODUCTION_URL = 'https://pay.sepay.vn/v1/checkout/init'
 
 interface CreateOrderRequest {
@@ -117,9 +124,10 @@ Deno.serve(async (req: Request) => {
     const errorUrl = body.error_url || `${baseUrl}/payments/sepay/error?invoice=${invoiceNumber}`
     const cancelUrl = body.cancel_url || `${baseUrl}/payments/sepay/cancel?invoice=${invoiceNumber}`
 
-    // Build SePay checkout payload
-    // Field order matters for signature! Must match SDK parameter list exactly.
-    const checkoutPayload = {
+    // Build form fields in exact order required by SePay for signature
+    // IMPORTANT: Field order must match SDK parameter list exactly
+    const formFields: Record<string, string> = {
+      merchant_id: sepayConfig.merchant_id,
       operation: 'PURCHASE',
       payment_method: 'BANK_TRANSFER',
       order_invoice_number: invoiceNumber,
@@ -133,22 +141,22 @@ Deno.serve(async (req: Request) => {
       custom_data: customData,
     }
 
-    // Generate signature: HMAC-SHA256 of concatenated field values
+    // Generate HMAC-SHA256 signature
+    // Concatenate field values in exact order (excluding merchant_id and signature)
     const signatureString = [
-      checkoutPayload.operation,
-      checkoutPayload.payment_method,
-      checkoutPayload.order_invoice_number,
-      checkoutPayload.order_amount,
-      checkoutPayload.currency,
-      checkoutPayload.order_description,
-      checkoutPayload.customer_id,
-      checkoutPayload.success_url,
-      checkoutPayload.error_url,
-      checkoutPayload.cancel_url,
-      checkoutPayload.custom_data,
+      formFields.operation,
+      formFields.payment_method,
+      formFields.order_invoice_number,
+      formFields.order_amount,
+      formFields.currency,
+      formFields.order_description,
+      formFields.customer_id,
+      formFields.success_url,
+      formFields.error_url,
+      formFields.cancel_url,
+      formFields.custom_data,
     ].join('')
 
-    // HMAC-SHA256 signature
     const encoder = new TextEncoder()
     const keyData = encoder.encode(sepayConfig.secret_key)
     const msgData = encoder.encode(signatureString)
@@ -160,38 +168,15 @@ Deno.serve(async (req: Request) => {
       .map(b => b.toString(16).padStart(2, '0'))
       .join('')
 
-    // Call SePay API
-    const sepayUrl = sepayConfig.environment === 'production'
+    // Add signature to form fields
+    formFields.signature = signature
+
+    // Determine form action URL
+    const formAction = sepayConfig.environment === 'production'
       ? SEPAY_PRODUCTION_URL
       : SEPAY_SANDBOX_URL
 
-    const sepayResponse = await fetch(sepayUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${sepayConfig.merchant_id}`,
-      },
-      body: JSON.stringify({
-        ...checkoutPayload,
-        merchant_id: sepayConfig.merchant_id,
-        signature,
-      }),
-    })
-
-    // Safe parse - SePay may return non-JSON (empty body, HTML error, etc.)
-    const sepayResponseText = await sepayResponse.text()
-    console.log('SePay API status:', sepayResponse.status)
-    console.log('SePay API response:', sepayResponseText.substring(0, 500))
-
-    let sepayResult: any = null
-    try {
-      sepayResult = JSON.parse(sepayResponseText)
-    } catch {
-      console.error('SePay returned non-JSON:', sepayResponseText.substring(0, 200))
-      sepayResult = { error: 'Non-JSON response', raw: sepayResponseText.substring(0, 200) }
-    }
-
-    // Store order in database regardless of SePay response
+    // Store order in database
     const { data: order, error: insertError } = await serviceClient
       .from('sepay_payment_orders')
       .insert({
@@ -202,8 +187,8 @@ Deno.serve(async (req: Request) => {
         payee_user_id,
         amount: Math.round(amount),
         currency: currency || 'VND',
-        status: sepayResponse.ok ? 'PENDING' : 'FAILED',
-        sepay_checkout_url: sepayResult?.checkout_url || sepayResult?.data?.checkout_url || null,
+        status: 'PENDING',
+        sepay_checkout_url: formAction,
         custom_data: customData,
       })
       .select()
@@ -217,28 +202,20 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    if (!sepayResponse.ok) {
-      console.error('SePay API error:', sepayResult)
-      return new Response(JSON.stringify({
-        error: 'SePay checkout creation failed',
-        details: sepayResult,
-        order_id: order.id,
-      }), {
-        status: 502,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
+    console.log('Order created:', invoiceNumber, 'env:', sepayConfig.environment)
 
     return new Response(JSON.stringify({
       success: true,
       order: {
         id: order.id,
         invoice_number: invoiceNumber,
-        checkout_url: sepayResult?.checkout_url || sepayResult?.data?.checkout_url,
         amount: Math.round(amount),
-        currency,
+        currency: currency || 'VND',
         status: 'PENDING',
       },
+      // Form data for frontend to auto-submit
+      form_action: formAction,
+      form_fields: formFields,
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
