@@ -1,12 +1,16 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeftIcon, UserIcon, PlusIcon } from "@/components/ui/icons";
+import { ArrowLeftIcon, UserIcon, PlusIcon, CreditCardIcon } from "@/components/ui/icons";
 import { formatCurrency } from "@/lib/locale-utils";
 import { getOweStatusColors } from "@/lib/status-colors";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useGo } from "@refinedev/core";
+import { useState } from "react";
+import { usePayeeSepaySettings } from "@/hooks/use-sepay-settings";
+import { SepayPaymentDialog } from "@/modules/payments/components/sepay-payment-dialog";
+import { triggerHaptic } from "@/lib/haptics";
 
 interface DebtBreakdownHeaderProps {
   counterpartyName: string;
@@ -20,6 +24,7 @@ interface DebtBreakdownHeaderProps {
   partialCount?: number;
   paidCount?: number;
   counterpartyId: string;
+  onPaymentComplete?: () => void;
 }
 
 export function DebtBreakdownHeader({
@@ -34,9 +39,13 @@ export function DebtBreakdownHeader({
   partialCount = 0,
   paidCount: _paidCount = 0,
   counterpartyId,
+  onPaymentComplete,
 }: DebtBreakdownHeaderProps) {
   const { t } = useTranslation();
   const go = useGo();
+  const [sepayDialogOpen, setSepayDialogOpen] = useState(false);
+
+  const { isConfigured: isSepayConfigured } = usePayeeSepaySettings(counterpartyId);
 
   const statusColors = iOweThem ? getOweStatusColors('owe') : getOweStatusColors('owed');
   const statusText = iOweThem
@@ -128,6 +137,20 @@ export function DebtBreakdownHeader({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
+          {iOweThem && isSepayConfigured && netAmount > 0 && (
+            <Button
+              variant="default"
+              size="sm"
+              className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white"
+              onClick={() => {
+                triggerHaptic('medium');
+                setSepayDialogOpen(true);
+              }}
+            >
+              <CreditCardIcon className="h-4 w-4 mr-2" />
+              {t('payments.payViaSePay', 'Pay via SePay')}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -148,6 +171,25 @@ export function DebtBreakdownHeader({
           </Button>
         </div>
       </div>
+
+      {/* SePay Payment Dialog */}
+      {isSepayConfigured && (
+        <SepayPaymentDialog
+          open={sepayDialogOpen}
+          onOpenChange={setSepayDialogOpen}
+          payeeId={counterpartyId}
+          payeeName={counterpartyName}
+          amount={netAmount}
+          currency={currency}
+          sourceType="DEBT"
+          sourceId={counterpartyId}
+          description={`FairPay debt: ${counterpartyName}`}
+          onPaymentComplete={() => {
+            setSepayDialogOpen(false);
+            onPaymentComplete?.();
+          }}
+        />
+      )}
     </div>
   );
 }

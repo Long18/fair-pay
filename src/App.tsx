@@ -74,6 +74,7 @@ const NotificationList = lazy(() => import("./modules/notifications").then(m => 
 const SettingsPage = lazy(() => import("./modules/settings").then(m => ({ default: m.SettingsPage })));
 const DonationSettings = lazy(() => import("./modules/settings").then(m => ({ default: m.DonationSettings })));
 const BankSettings = lazy(() => import("./modules/settings/pages/bank-settings").then(m => ({ default: m.BankSettingsPage })));
+const SepaySettings = lazy(() => import("./modules/settings/pages/sepay-settings").then(m => ({ default: m.SepaySettingsPage })));
 const DonationWidget = lazy(() => import("./components/donation-widget").then(m => ({ default: m.DonationWidget })));
 
 // Legal pages
@@ -503,6 +504,11 @@ function App() {
                     <Route path="/settings/bank" element={
                       <Suspense fallback={<PageLoader />}>
                         <BankSettings />
+                      </Suspense>
+                    } />
+                    <Route path="/settings/sepay" element={
+                      <Suspense fallback={<PageLoader />}>
+                        <SepaySettings />
                       </Suspense>
                     } />
                     <Route path="/profile/edit" element={

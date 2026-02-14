@@ -12,6 +12,33 @@ export interface BankInfo {
   accountName?: string;  // Account holder name
 }
 
+export interface SepayConfig {
+  merchant_id: string;
+  secret_key: string;
+  environment: 'sandbox' | 'production';
+}
+
+export type SepayOrderStatus = 'PENDING' | 'PAID' | 'FAILED' | 'CANCELLED' | 'EXPIRED';
+
+export interface SepayPaymentOrder {
+  id: string;
+  order_invoice_number: string;
+  source_type: 'DEBT' | 'EXPENSE';
+  source_id: string;
+  payer_user_id: string;
+  payee_user_id: string;
+  amount: number;
+  currency: string;
+  status: SepayOrderStatus;
+  sepay_checkout_url?: string;
+  custom_data?: string;
+  webhook_payload?: Record<string, unknown>;
+  webhook_processed_at?: string;
+  expires_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface UserSettings {
   user_id: string;
 
@@ -31,9 +58,12 @@ export interface UserSettings {
   allow_group_invites: boolean;
   profile_visibility: 'public' | 'friends' | 'private';
 
-  // Banking payment fields (NEW)
+  // Banking payment fields
   bank_info: BankInfo | null;
   qr_code_image_url: string | null;
+
+  // SePay Payment Gateway config
+  sepay_config: SepayConfig | null;
 
   // Timestamps
   created_at: string;
