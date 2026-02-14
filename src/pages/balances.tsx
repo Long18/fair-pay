@@ -37,7 +37,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
+import { LoadingBeam } from "@/components/ui/loading-beam";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -585,36 +585,10 @@ export const BalancesPage = () => {
         </div>
 
         {/* ──────────────────────────────────────────────────────────────
-            LOADING SKELETONS (reports section)
+            LOADING (reports section)
         ────────────────────────────────────────────────────────────── */}
         {isReportsLoading && (
-          <>
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-              {[1, 2, 3, 4].map((i) => (
-                <Card key={i} className="border-0 shadow-sm animate-pulse">
-                  <CardContent className="pt-5 pb-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <Skeleton className="h-3 w-20" />
-                      <Skeleton className="h-7 w-7 rounded-lg" />
-                    </div>
-                    <Skeleton className="h-7 w-28 mb-2" />
-                    <Skeleton className="h-2.5 w-20" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
-              {[1, 2].map((i) => (
-                <Card key={i} className="border-0 shadow-sm animate-pulse">
-                  <CardContent className="pt-5 pb-4">
-                    <Skeleton className="h-4 w-36 mb-1.5" />
-                    <Skeleton className="h-3 w-24 mb-4" />
-                    <Skeleton className="h-[280px] w-full rounded-lg" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </>
+          <LoadingBeam text="Đang tải báo cáo..." />
         )}
 
         {/* ──────────────────────────────────────────────────────────────
@@ -767,21 +741,7 @@ export const BalancesPage = () => {
                 {/* ─── Balances Tab ──────────────────────────────────── */}
                 <TabsContent value="balances" className="space-y-4 mt-2 animate-fade-in">
                   {isBalancesLoading ? (
-                    <Card className="border-0 shadow-sm animate-pulse">
-                      <CardContent className="pt-5 space-y-4">
-                        <Skeleton className="h-4 w-32" />
-                        {[1, 2, 3].map((i) => (
-                          <div key={i} className="flex items-center gap-3 py-2">
-                            <Skeleton className="h-9 w-9 rounded-full" />
-                            <div className="flex-1 space-y-1.5">
-                              <Skeleton className="h-3.5 w-3/4" />
-                              <Skeleton className="h-2.5 w-1/2" />
-                            </div>
-                            <Skeleton className="h-3.5 w-16" />
-                          </div>
-                        ))}
-                      </CardContent>
-                    </Card>
+                    <LoadingBeam text="Đang tải số dư..." />
                   ) : debts.length === 0 ? (
                     /* empty / all settled – clean empty state */
                     <Card className="border-0 shadow-sm">

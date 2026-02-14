@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useSearchParams } from "react-router";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { LoadingBeam } from "@/components/ui/loading-beam";
 import { ActivityIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { debounce } from "@/lib/performance";
@@ -259,18 +259,8 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
   // Loading state
   if (isLoading) {
     return (
-      <div className={cn("space-y-4", className)}>
-        {showSummary && (
-          <div className="h-32 bg-muted rounded-lg animate-pulse" />
-        )}
-        {showFilters && (
-          <div className="h-12 bg-muted rounded-lg animate-pulse" />
-        )}
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-24 rounded-lg" />
-          ))}
-        </div>
+      <div className={cn("", className)}>
+        <LoadingBeam text="Đang tải hoạt động..." />
       </div>
     );
   }

@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { LoadingBeam } from "@/components/ui/loading-beam";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -155,10 +155,7 @@ export const PersonDebtBreakdown = () => {
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="space-y-6">
-          <Skeleton className="h-64 w-full rounded-xl" />
-          <Skeleton className="h-96 w-full rounded-xl" />
-        </div>
+        <LoadingBeam text={t("debts.loading", "Đang tải chi tiết...")} />
       </div>
     );
   }
