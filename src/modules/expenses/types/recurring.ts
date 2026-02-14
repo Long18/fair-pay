@@ -27,6 +27,7 @@ export interface RecurringExpense {
   is_active: boolean;
   prepaid_until: string | null;
   last_prepaid_at: string | null;
+  last_created_at: string | null;
   created_at: string;
   updated_at: string;
 
