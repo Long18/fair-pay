@@ -1,15 +1,14 @@
 /**
  * SePay Create Order Edge Function
  *
- * Generates signed form fields for SePay checkout.
- * The frontend auto-submits a hidden form to SePay's endpoint.
- * SECRET_KEY never leaves the server.
+ * Creates a SePay checkout order by:
+ * 1. Generating HMAC-SHA256 signed form fields
+ * 2. POSTing form-encoded data to SePay server-side
+ * 3. Capturing the redirect URL from SePay's 302 response
+ * 4. Returning checkout_url to frontend for window.open()
  *
- * Flow:
- * 1. Frontend calls this function with order params
- * 2. Function generates HMAC-SHA256 signature using secret_key
- * 3. Returns form fields + form action URL to frontend
- * 4. Frontend auto-submits hidden form → browser redirects to SePay
+ * This avoids CSP form-action restrictions on Vercel.
+ * SECRET_KEY never leaves the server.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -19,7 +18,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// SePay checkout form action URLs (from official docs)
 const SEPAY_SANDBOX_URL = 'https://sandbox.pay.sepay.vn/v1/checkout/init'
 const SEPAY_PRODUCTION_URL = 'https://pay.sepay.vn/v1/checkout/init'
 
@@ -53,12 +51,9 @@ Deno.serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
 
-    // User client (respects RLS)
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     })
-
-    // Service client (bypasses RLS for order creation)
     const serviceClient = createClient(supabaseUrl, supabaseServiceKey)
 
     // Get current user
@@ -73,7 +68,6 @@ Deno.serve(async (req: Request) => {
     const body: CreateOrderRequest = await req.json()
     const { source_type, source_id, payee_user_id, amount, currency, description } = body
 
-    // Validate required fields
     if (!source_type || !source_id || !payee_user_id || !amount || !currency) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
         status: 400,
@@ -125,7 +119,6 @@ Deno.serve(async (req: Request) => {
     const cancelUrl = body.cancel_url || `${baseUrl}/payments/sepay/cancel?invoice=${invoiceNumber}`
 
     // Build form fields in exact order required by SePay for signature
-    // IMPORTANT: Field order must match SDK parameter list exactly
     const formFields: Record<string, string> = {
       merchant_id: sepayConfig.merchant_id,
       operation: 'PURCHASE',
@@ -168,13 +161,55 @@ Deno.serve(async (req: Request) => {
       .map(b => b.toString(16).padStart(2, '0'))
       .join('')
 
-    // Add signature to form fields
     formFields.signature = signature
 
-    // Determine form action URL
-    const formAction = sepayConfig.environment === 'production'
+    const sepayUrl = sepayConfig.environment === 'production'
       ? SEPAY_PRODUCTION_URL
       : SEPAY_SANDBOX_URL
+
+    // POST form-encoded data to SePay server-side to capture redirect URL
+    // This avoids CSP form-action restrictions on Vercel
+    const formBody = new URLSearchParams(formFields).toString()
+
+    let checkoutUrl: string | null = null
+    try {
+      const sepayResponse = await fetch(sepayUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formBody,
+        redirect: 'manual', // Don't follow redirects — capture Location header
+      })
+
+      // SePay returns 302 redirect to the payment page
+      if (sepayResponse.status >= 300 && sepayResponse.status < 400) {
+        checkoutUrl = sepayResponse.headers.get('Location')
+      } else if (sepayResponse.ok) {
+        // Some endpoints return 200 with the URL in the body or as final URL
+        // Try to extract from response
+        const responseText = await sepayResponse.text()
+        // If it's a URL, use it directly
+        if (responseText.startsWith('http')) {
+          checkoutUrl = responseText.trim()
+        } else {
+          // Try parsing as JSON
+          try {
+            const json = JSON.parse(responseText)
+            checkoutUrl = json.checkout_url || json.url || json.redirect_url || null
+          } catch {
+            console.log('SePay response (not JSON):', responseText.slice(0, 500))
+          }
+        }
+      }
+
+      if (!checkoutUrl) {
+        console.error('SePay did not return redirect. Status:', sepayResponse.status)
+        console.error('Headers:', Object.fromEntries(sepayResponse.headers.entries()))
+        // Fallback: return the form data so frontend can try alternative approaches
+      }
+    } catch (fetchError) {
+      console.error('Error posting to SePay:', fetchError)
+      // Non-fatal: we still have the order, just no checkout URL
+    }
 
     // Store order in database
     const { data: order, error: insertError } = await serviceClient
@@ -188,7 +223,7 @@ Deno.serve(async (req: Request) => {
         amount: Math.round(amount),
         currency: currency || 'VND',
         status: 'PENDING',
-        sepay_checkout_url: formAction,
+        sepay_checkout_url: checkoutUrl || sepayUrl,
         custom_data: customData,
       })
       .select()
@@ -202,7 +237,7 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    console.log('Order created:', invoiceNumber, 'env:', sepayConfig.environment)
+    console.log('Order created:', invoiceNumber, 'checkout_url:', checkoutUrl ? 'captured' : 'fallback')
 
     return new Response(JSON.stringify({
       success: true,
@@ -213,8 +248,9 @@ Deno.serve(async (req: Request) => {
         currency: currency || 'VND',
         status: 'PENDING',
       },
-      // Form data for frontend to auto-submit
-      form_action: formAction,
+      checkout_url: checkoutUrl,
+      // Keep form data as fallback
+      form_action: sepayUrl,
       form_fields: formFields,
     }), {
       status: 200,
