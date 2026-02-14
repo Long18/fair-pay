@@ -489,20 +489,26 @@ export const GroupShow = () => {
 
                   {/* Member Avatars */}
                   {membersList.length > 0 && (
-                    <div className="flex items-center mb-3">
-                      {membersList.slice(0, 5).map((member) => (
-                        <Avatar key={member.id} className="h-8 w-8 border-2 border-background -ml-2 first:ml-0">
-                          <AvatarImage src={member.avatar_url || undefined} alt={member.full_name} />
-                          <AvatarFallback className="text-[10px]">
-                            {getInitials(member.full_name)}
-                          </AvatarFallback>
-                        </Avatar>
-                      ))}
-                      {membersList.length > 5 && (
-                        <div className="h-8 w-8 rounded-full bg-muted border-2 border-background -ml-2 flex items-center justify-center">
-                          <span className="text-[10px] font-medium">+{membersList.length - 5}</span>
-                        </div>
-                      )}
+                    <div className="flex items-center justify-center sm:justify-start gap-2 mb-3">
+                      <div className="flex items-center">
+                        {membersList.slice(0, 5).map((member) => (
+                          <Avatar key={member.id} className="h-8 w-8 border-2 border-background -ml-2 first:ml-0">
+                            <AvatarImage src={member.avatar_url || undefined} alt={member.full_name} />
+                            <AvatarFallback className="text-[10px]">
+                              {getInitials(member.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                        ))}
+                        {membersList.length > 5 && (
+                          <div className="h-8 w-8 rounded-full bg-muted border-2 border-background -ml-2 flex items-center justify-center">
+                            <span className="text-[10px] font-medium">+{membersList.length - 5}</span>
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground truncate max-w-[200px] sm:max-w-[300px]">
+                        {membersList.slice(0, 3).map(m => m.full_name.split(' ')[0]).join(', ')}
+                        {membersList.length > 3 && ` +${membersList.length - 3}`}
+                      </span>
                     </div>
                   )}
 
