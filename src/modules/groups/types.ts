@@ -2,6 +2,7 @@ export interface Group {
   id: string;
   name: string;
   description: string | null;
+  avatar_url: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -29,6 +30,7 @@ export interface GroupFormValues {
   description?: string;
   simplify_debts?: boolean;
   member_ids?: string[];
+  avatar_url?: string;
 }
 
 export interface AddMemberFormValues {

@@ -4,13 +4,12 @@ import { useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/ui/page-container";
-import { PageHeader } from "@/components/ui/page-header";
 import { PageContent } from "@/components/ui/page-content";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { PlusIcon, UserPlusIcon } from "@/components/ui/icons";
+import { PlusIcon, UserPlusIcon, UsersIcon, UserIcon } from "@/components/ui/icons";
 import { AddFriendModal } from "@/modules/friends/components/add-friend-modal";
 import { GroupListContent } from "@/modules/groups";
 import { FriendListContent } from "@/modules/friends";
+import { cn } from "@/lib/utils";
 import type { Group } from "@/modules/groups/types";
 import type { Friendship } from "@/modules/friends/types";
 import type { Profile } from "@/modules/profile/types";
@@ -22,118 +21,115 @@ export const ConnectionsPage = () => {
   const go = useGo();
   const { data: identity } = useGetIdentity<Profile>();
   const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab =
+    searchParams.get("tab") === "friends" ? "friends" : DEFAULT_TAB;
 
-  const activeTab = searchParams.get("tab") === "friends" ? "friends" : DEFAULT_TAB;
+  const setActiveTab = (tab: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("tab", tab);
+    setSearchParams(newParams, { replace: true });
+  };
 
+  // Counts for tab badges
   const { query: groupsQuery } = useList<Group>({
     resource: "groups",
     pagination: { mode: "off" },
     meta: {
-      select: "id, is_archived, created_by, group_members!inner(user_id, role)",
+      select: "id, group_members!inner(user_id)",
     },
     filters: [
-      {
-        field: "group_members.user_id",
-        operator: "eq",
-        value: identity?.id,
-      },
+      { field: "group_members.user_id", operator: "eq", value: identity?.id },
     ],
-    queryOptions: {
-      enabled: !!identity?.id,
-    },
+    queryOptions: { enabled: !!identity?.id },
   });
 
   const { query: friendshipsQuery } = useList<Friendship>({
     resource: "friendships",
     pagination: { mode: "off" },
-    meta: {
-      select: "id, status, user_a, user_b, created_by",
-    },
+    meta: { select: "id, status" },
+    filters: [{ field: "status", operator: "eq", value: "accepted" }],
   });
 
-  const groupCount = useMemo(() => {
-    const allGroups = groupsQuery.data?.data || [];
-    return allGroups.filter((g: any) => {
-      if (!g.is_archived) return true;
-      // Show archived groups if user is admin or creator
-      const isGroupAdmin = g.group_members?.some(
-        (m: any) => m.user_id === identity?.id && m.role === 'admin'
-      );
-      const isGroupCreator = g.created_by === identity?.id;
-      return isGroupAdmin || isGroupCreator;
-    }).length;
-  }, [groupsQuery.data, identity?.id]);
-  const acceptedFriendsCount = useMemo(() => {
-    if (!identity?.id) return 0;
-    const friendships = friendshipsQuery.data?.data || [];
-    return friendships.filter((friendship) => friendship.status === "accepted").length;
-  }, [friendshipsQuery.data, identity?.id]);
+  const groupCount = groupsQuery.data?.data?.length ?? 0;
+  const friendCount = friendshipsQuery.data?.data?.length ?? 0;
+
+  const tabs = [
+    { key: "groups", label: t("connections.groups", "Groups"), icon: UsersIcon, count: groupCount },
+    { key: "friends", label: t("connections.friends", "Friends"), icon: UserIcon, count: friendCount },
+  ];
 
   return (
     <PageContainer variant="default">
-      <PageHeader
-        title={t("connections.title", "Connections")}
-        description={t("connections.subtitle", "Manage groups and friends in one place")}
-        action={
-          <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row">
-            <Button
-              onClick={() => go({ to: "/groups/create" })}
-              size="lg"
-              className="w-full sm:w-auto"
-            >
-              <PlusIcon className="mr-2 h-5 w-5" />
-              {t("groups.createGroup", "Create Group")}
-            </Button>
-            <AddFriendModal
-              trigger={
-                <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                  <UserPlusIcon className="mr-2 h-5 w-5" />
-                  {t("friends.addFriend", "Add Friend")}
-                </Button>
-              }
-            />
-          </div>
-        }
-      />
-
       <PageContent>
-        <div className="space-y-3 sm:space-y-4">
-          <div className="flex items-center justify-center w-full">
-            <ToggleGroup
-              type="single"
-              value={activeTab}
-              onValueChange={(value) => {
-                if (!value) return;
-                setSearchParams({ tab: value }, { replace: true });
-              }}
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto"
-            >
-              <ToggleGroupItem value="groups" className="flex-1 sm:flex-none min-w-[7rem]">
-                {t("connections.tabs.groups", "Groups")}
-              </ToggleGroupItem>
-              <ToggleGroupItem value="friends" className="flex-1 sm:flex-none min-w-[7rem]">
-                {t("connections.tabs.friends", "Friends")}
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              {t("connections.summary", "{{groups}} groups • {{friends}} friends", {
-                groups: groupCount,
-                friends: acceptedFriendsCount,
-              })}
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+              {t("connections.title", "Connections")}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {t("connections.subtitle", "Manage your groups and friends")}
             </p>
-            <div className="hidden sm:block text-xs text-muted-foreground">
-              {activeTab === "groups"
-                ? t("connections.tabs.groups", "Groups")
-                : t("connections.tabs.friends", "Friends")}
-            </div>
+          </div>
+          <div className="flex gap-2">
+            {activeTab === "groups" ? (
+              <Button size="sm" onClick={() => go({ to: "/groups/create" })}>
+                <PlusIcon className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">
+                  {t("groups.create", "New Group")}
+                </span>
+              </Button>
+            ) : (
+              <AddFriendModal
+                trigger={
+                  <Button size="sm" variant="outline">
+                    <UserPlusIcon className="h-4 w-4 mr-2" />
+                    <span className="hidden sm:inline">
+                      {t("friends.addFriend", "Add Friend")}
+                    </span>
+                  </Button>
+                }
+              />
+            )}
           </div>
         </div>
 
+        {/* Tab Switcher */}
+        <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
+                  isActive
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                <span>{tab.label}</span>
+                {tab.count > 0 && (
+                  <span
+                    className={cn(
+                      "text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "bg-muted-foreground/10 text-muted-foreground"
+                    )}
+                  >
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Tab Content */}
         {activeTab === "groups" ? <GroupListContent /> : <FriendListContent />}
       </PageContent>
     </PageContainer>
