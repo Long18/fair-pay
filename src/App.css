@@ -986,3 +986,41 @@
 .will-change-scroll {
   will-change: scroll-position;
 }
+
+/* AnimatedBeam keyframes */
+@keyframes beam-dash {
+  from {
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dashoffset: -1000;
+  }
+}
+
+@keyframes beam-pulse {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes beam-node-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-beam-pulse {
+  animation: beam-pulse 2s ease-in-out infinite;
+}
+
+.animate-beam-node-float {
+  animation: beam-node-float 3s ease-in-out infinite;
+}
