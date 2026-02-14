@@ -234,7 +234,7 @@ const authProvider: AuthProvider = {
 
         return {
             success: true,
-            redirectTo: "/",
+            redirectTo: "/login",
         };
     },
     onError: async (error) => {
