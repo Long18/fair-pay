@@ -61,16 +61,9 @@ export const ConnectionsPage = () => {
   return (
     <PageContainer variant="default">
       <PageContent>
-        {/* Header */}
+        {/* Header Actions */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              {t("connections.title", "Connections")}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {t("connections.subtitle", "Manage your groups and friends")}
-            </p>
-          </div>
+          <div />
           <div className="flex gap-2">
             {activeTab === "groups" ? (
               <Button size="sm" onClick={() => go({ to: "/groups/create" })}>

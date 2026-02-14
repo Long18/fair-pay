@@ -25,7 +25,6 @@ import { useSpendingInsights } from "@/hooks/use-spending-insights";
 
 // Layout primitives
 import { PageContainer } from "@/components/ui/page-container";
-import { PageHeader } from "@/components/ui/page-header";
 import { PageContent } from "@/components/ui/page-content";
 
 // UI components
@@ -399,55 +398,43 @@ export const BalancesPage = () => {
   return (
     <PageContainer variant="default" withBackground fullHeight>
       {/* ──────────────────────────────────────────────────────────────────
-          PAGE HEADER – title row with refresh + export actions
+          PAGE ACTIONS – refresh + export buttons (no title)
       ────────────────────────────────────────────────────────────────── */}
-      <PageHeader
-        title={t("balances.reportsAndBalancesTitle", "Insights")}
-        description={t(
-          "balances.reportsAndBalancesDescription",
-          "Spending analytics and balance overview"
-        )}
-        titleId="balances-page-title"
-        descriptionId="balances-page-description"
-        action={
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button
-              onClick={handleExportCSV}
-              variant="ghost"
-              size="sm"
-              disabled={isReportsLoading || breakdown.length === 0}
-              className="gap-1.5 text-muted-foreground hover:text-foreground"
-              aria-label={t("reports.exportCSV", "Export CSV")}
-            >
-              <DownloadIcon className="h-4 w-4" />
-              <span className="hidden sm:inline text-xs">CSV</span>
-            </Button>
-            <Button
-              onClick={handleExportPDF}
-              variant="ghost"
-              size="sm"
-              disabled={isReportsLoading || breakdown.length === 0}
-              className="gap-1.5 text-muted-foreground hover:text-foreground"
-              aria-label={t("reports.exportPDF", "Export PDF")}
-            >
-              <FileTextIcon className="h-4 w-4" />
-              <span className="hidden sm:inline text-xs">PDF</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={isRefreshing || isBalancesLoading}
-              className="gap-2"
-              aria-label={t("balances.refresh", "Refresh")}
-              aria-describedby="balances-page-description"
-            >
-              <RefreshCwIcon className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} aria-hidden="true" />
-              <span className="hidden sm:inline text-xs">{t("balances.refresh", "Refresh")}</span>
-            </Button>
-          </div>
-        }
-      />
+      <div className="flex items-center justify-end gap-2 px-4 sm:px-6">
+        <Button
+          onClick={handleExportCSV}
+          variant="ghost"
+          size="sm"
+          disabled={isReportsLoading || breakdown.length === 0}
+          className="gap-1.5 text-muted-foreground hover:text-foreground"
+          aria-label={t("reports.exportCSV", "Export CSV")}
+        >
+          <DownloadIcon className="h-4 w-4" />
+          <span className="hidden sm:inline text-xs">CSV</span>
+        </Button>
+        <Button
+          onClick={handleExportPDF}
+          variant="ghost"
+          size="sm"
+          disabled={isReportsLoading || breakdown.length === 0}
+          className="gap-1.5 text-muted-foreground hover:text-foreground"
+          aria-label={t("reports.exportPDF", "Export PDF")}
+        >
+          <FileTextIcon className="h-4 w-4" />
+          <span className="hidden sm:inline text-xs">PDF</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isRefreshing || isBalancesLoading}
+          className="gap-2"
+          aria-label={t("balances.refresh", "Refresh")}
+        >
+          <RefreshCwIcon className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} aria-hidden="true" />
+          <span className="hidden sm:inline text-xs">{t("balances.refresh", "Refresh")}</span>
+        </Button>
+      </div>
 
       <PageContent>
         {/* ──────────────────────────────────────────────────────────────
