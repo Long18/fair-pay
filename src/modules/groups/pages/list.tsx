@@ -151,6 +151,7 @@ export const GroupListContent = () => {
         id: group.id,
         name: group.name,
         description: group.description,
+        avatar_url: group.avatar_url ?? null,
         created_at: group.created_at,
         created_by: group.created_by,
         is_archived: group.is_archived ?? false,
