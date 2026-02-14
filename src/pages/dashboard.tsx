@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useGetIdentity } from "@refinedev/core";
 import { Profile } from "@/modules/profile/types";
 import { FloatingActionButton } from "@/components/dashboard/FloatingActionButton";
-import { DashboardSkeleton } from "@/components/dashboard/DashboardStates";
+import { DashboardLoadingBeam } from "@/components/dashboard/DashboardLoadingBeam";
 import { BalanceTable } from "@/components/dashboard/BalanceTable";
 import { SettledHistoryList } from "@/components/dashboard/SettledHistoryList";
 import { EnhancedActivityList } from "@/components/dashboard/enhanced-activity";
@@ -124,7 +124,7 @@ export const Dashboard = () => {
   return (
     <>
       {loading ? (
-        <DashboardSkeleton />
+        <DashboardLoadingBeam />
       ) : (
         <PageContainer variant="default">
           <PageHeader title={t('dashboard.title', 'Dashboard')} />
