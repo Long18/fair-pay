@@ -112,6 +112,9 @@ import {
   HeartHandshake,
   ScrollText,
   PartyPopper,
+  LogIn,
+  Clock3,
+  UserCheck,
 } from "lucide-react";
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -905,4 +908,16 @@ export const PartyPopperIcon: React.FC<IconProps> = ({ size = 24, ...props }) =>
 
 export const ScrollTextIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
   <ScrollText size={size} {...props} />
+);
+
+export const LogInIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <LogIn size={size} {...props} />
+);
+
+export const Clock3Icon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Clock3 size={size} {...props} />
+);
+
+export const UserCheckIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <UserCheck size={size} {...props} />
 );

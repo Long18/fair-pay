@@ -15,9 +15,12 @@ import { EmptyGroupsState } from '../components/empty-groups-state';
 import { Group, GroupMember } from '../types';
 import { Profile } from '@/modules/profile/types';
 import { calculateBalances } from '@/modules/payments/hooks/use-balance-calculation';
+import { useJoinRequests } from '../hooks/use-join-request';
+import { supabaseClient } from '@/utility/supabaseClient';
+import { useQuery } from '@tanstack/react-query';
 import { PlusIcon, SearchIcon } from '@/components/ui/icons';
 
-type FilterType = 'all' | 'active' | 'settled' | 'admin' | 'archived';
+type FilterType = 'all' | 'active' | 'settled' | 'admin' | 'archived' | 'discover';
 type SortType = 'recent' | 'oldest' | 'name' | 'balance';
 
 export const GroupListContent = () => {
@@ -28,8 +31,19 @@ export const GroupListContent = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 9;
 
-  // Fetch groups with members
-  const { query: groupsQuery } = useList<Group>({
+  // Fetch ALL groups with member counts via RPC
+  const { data: allGroupsData, isLoading: isLoadingAllGroups } = useQuery({
+    queryKey: ['all-groups-with-counts'],
+    queryFn: async () => {
+      const { data, error } = await supabaseClient.rpc('get_all_groups_with_member_counts');
+      if (error) throw error;
+      return data as Array<Group & { member_count: number }>;
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+
+  // Fetch groups where user IS a member (with full member details)
+  const { query: myGroupsQuery } = useList<Group>({
     resource: 'groups',
     pagination: { mode: 'off' },
     meta: {
@@ -61,61 +75,70 @@ export const GroupListContent = () => {
     },
   });
 
-  const groups = groupsQuery.data?.data || [];
+  // Join request hook
+  const {
+    getRequestStatus,
+    requestJoin,
+    requestingGroupId,
+  } = useJoinRequests();
+
+  const allGroups = allGroupsData || [];
+  const myGroups = myGroupsQuery.data?.data || [];
   const expenses = expensesQuery.data?.data || [];
   const payments = paymentsQuery.data?.data || [];
-  const isLoadingGroups = groupsQuery.isLoading;
+  const isLoadingMyGroups = myGroupsQuery.isLoading;
   const isLoadingExpenses = expensesQuery.isLoading;
   const isLoadingPayments = paymentsQuery.isLoading;
 
-  // Calculate balance summaries for each group
+  // Build a Set of group IDs the user is a member of
+  const myGroupIds = useMemo(() => {
+    const ids = new Set<string>();
+    myGroups.forEach((g: any) => {
+      const members = g.group_members || [];
+      if (members.some((m: any) => m.user_id === identity?.id)) {
+        ids.add(g.id);
+      }
+    });
+    return ids;
+  }, [myGroups, identity?.id]);
+
+  // Build a map of my groups with full member data
+  const myGroupsMap = useMemo(() => {
+    const map = new Map<string, any>();
+    myGroups.forEach((g: any) => {
+      map.set(g.id, g);
+    });
+    return map;
+  }, [myGroups]);
+
+  // Calculate balance summaries for each group (only for member groups)
   const balanceSummaries = useMemo(() => {
     if (!identity?.id) return {};
 
     const summaries: Record<string, BalanceSummary> = {};
 
-    groups.forEach((group: any) => {
+    myGroups.forEach((group: any) => {
       const groupMembers = group.group_members || [];
       const groupExpenses = expenses.filter((e: any) => e.group_id === group.id);
       const groupPayments = payments.filter((p: any) => p.group_id === group.id);
 
-      // Build member list for balance calculation
       const membersList = groupMembers.map((m: any) => ({
         id: m.user_id,
         full_name: m.profiles?.full_name || 'Unknown',
         avatar_url: m.profiles?.avatar_url,
       }));
 
-      // Calculate balances (cast to any for flexibility with API data)
       const balances = calculateBalances(
         groupExpenses as any,
         groupPayments as any,
         membersList
       );
 
-      // Find current user's balance
       const myBalance = balances.find((b) => b.user_id === identity.id);
 
-      // Calculate "you owe" and "owed to you" from current user's perspective
       let you_owe = 0;
       let owed_to_you = 0;
 
-      balances.forEach((balance) => {
-        if (balance.user_id === identity.id) return;
-
-        // If their balance is positive (they're owed money) and my balance is negative
-        // then I owe them money
-        if (balance.balance > 0 && myBalance && myBalance.balance < 0) {
-          you_owe += Math.min(Math.abs(myBalance.balance), balance.balance);
-        }
-        // If their balance is negative (they owe money) and my balance is positive
-        // then they owe me money
-        if (balance.balance < 0 && myBalance && myBalance.balance > 0) {
-          owed_to_you += Math.min(myBalance.balance, Math.abs(balance.balance));
-        }
-      });
-
-      // Simplified: use absolute balance for summary
       if (myBalance) {
         if (myBalance.balance < 0) {
           you_owe = Math.abs(myBalance.balance);
@@ -134,12 +157,14 @@ export const GroupListContent = () => {
     });
 
     return summaries;
-  }, [groups, expenses, payments, identity?.id]);
+  }, [myGroups, expenses, payments, identity?.id]);
 
-  // Transform groups for display
+  // Transform all groups for display
   const groupsWithData = useMemo(() => {
-    return groups.map((group: any) => {
-      const groupMembers = group.group_members || [];
+    return allGroups.map((group) => {
+      const isMember = myGroupIds.has(group.id);
+      const myGroupData = myGroupsMap.get(group.id);
+      const groupMembers = isMember ? (myGroupData?.group_members || []) : [];
 
       const members: GroupMemberPreview[] = groupMembers.map((m: any) => ({
         id: m.user_id,
@@ -155,12 +180,13 @@ export const GroupListContent = () => {
         created_at: group.created_at,
         created_by: group.created_by,
         is_archived: group.is_archived ?? false,
-        member_count: groupMembers.length,
+        member_count: group.member_count,
         members,
-        groupMembers, // Keep full data for filtering
+        groupMembers,
+        isMember,
       };
     });
-  }, [groups]);
+  }, [allGroups, myGroupIds, myGroupsMap]);
 
   // Filter and sort groups
   const filteredGroups = useMemo(() => {
@@ -177,13 +203,17 @@ export const GroupListContent = () => {
     }
 
     // Filter
-    if (filterType === 'active') {
+    if (filterType === 'discover') {
+      filtered = filtered.filter((g) => !g.isMember && !g.is_archived);
+    } else if (filterType === 'active') {
       filtered = filtered.filter((g) => {
+        if (!g.isMember) return false;
         const summary = balanceSummaries[g.id];
         return !g.is_archived && summary && (summary.you_owe > 0 || summary.owed_to_you > 0);
       });
     } else if (filterType === 'settled') {
       filtered = filtered.filter((g) => {
+        if (!g.isMember) return false;
         const summary = balanceSummaries[g.id];
         return !g.is_archived && summary && summary.you_owe === 0 && summary.owed_to_you === 0;
       });
@@ -194,12 +224,14 @@ export const GroupListContent = () => {
         )
       );
     } else if (filterType === 'archived') {
-      filtered = filtered.filter((g) => g.is_archived);
+      filtered = filtered.filter((g) => g.is_archived && g.isMember);
     } else {
-      // 'all' - hide archived groups only for non-admin members
+      // 'all' - show member groups + non-member non-archived groups
       filtered = filtered.filter((g) => {
+        // Always show non-archived groups
         if (!g.is_archived) return true;
-        // Show archived groups if user is admin or creator
+        // For archived, only show if user is admin or creator
+        if (!g.isMember) return false;
         const isGroupAdmin = g.groupMembers.some(
           (m: any) => m.user_id === identity?.id && m.role === 'admin'
         );
@@ -210,6 +242,12 @@ export const GroupListContent = () => {
 
     // Sort
     filtered.sort((a, b) => {
+      // Always put member groups first (except in discover mode)
+      if (filterType !== 'discover') {
+        if (a.isMember && !b.isMember) return -1;
+        if (!a.isMember && b.isMember) return 1;
+      }
+
       switch (sortBy) {
         case 'name':
           return a.name.localeCompare(b.name);
@@ -259,15 +297,14 @@ export const GroupListContent = () => {
     pageSize,
   };
 
-  const isLoading = isLoadingGroups || isLoadingExpenses || isLoadingPayments;
-  const hasGroups = groups.length > 0;
+  const isLoading = isLoadingAllGroups || isLoadingMyGroups || isLoadingExpenses || isLoadingPayments;
+  const hasGroups = allGroups.length > 0;
 
   return (
     <div className="space-y-6">
-      {/* Search & Filters - Only show if has groups */}
+      {/* Search & Filters */}
       {hasGroups && (
         <div className="flex flex-col sm:flex-row gap-3">
-          {/* Search */}
           <div className="relative flex-1">
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -279,7 +316,6 @@ export const GroupListContent = () => {
             />
           </div>
 
-          {/* Filter Dropdown */}
           <Select
             value={filterType}
             onValueChange={(v) => setFilterType(v as FilterType)}
@@ -289,6 +325,7 @@ export const GroupListContent = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Groups</SelectItem>
+              <SelectItem value="discover">Discover</SelectItem>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="settled">Settled</SelectItem>
               <SelectItem value="admin">I'm Admin</SelectItem>
@@ -296,7 +333,6 @@ export const GroupListContent = () => {
             </SelectContent>
           </Select>
 
-          {/* Sort Dropdown */}
           <Select
             value={sortBy}
             onValueChange={(v) => setSortBy(v as SortType)}
@@ -342,6 +378,10 @@ export const GroupListContent = () => {
                   balanceSummary={balanceSummaries[group.id]}
                   isLoading={isLoading}
                   canManage={isGroupAdmin || isGroupCreator}
+                  isMember={group.isMember}
+                  joinRequestStatus={!group.isMember ? getRequestStatus(group.id) : null}
+                  onRequestJoin={requestJoin}
+                  isRequestingJoin={requestingGroupId === group.id}
                 />
               );
             })}

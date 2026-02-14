@@ -10,6 +10,9 @@ import {
   EyeIcon,
   UsersIcon,
   ArchiveIcon,
+  LogInIcon,
+  Clock3Icon,
+  Loader2Icon,
 } from '@/components/ui/icons';
 
 export interface BalanceSummary {
@@ -38,9 +41,22 @@ export interface GroupCardProps {
   balanceSummary?: BalanceSummary;
   isLoading?: boolean;
   canManage?: boolean;
+  isMember?: boolean;
+  joinRequestStatus?: 'pending' | 'approved' | 'rejected' | null;
+  onRequestJoin?: (groupId: string) => void;
+  isRequestingJoin?: boolean;
 }
 
-export function GroupCard({ group, balanceSummary, isLoading, canManage }: GroupCardProps) {
+export function GroupCard({
+  group,
+  balanceSummary,
+  isLoading,
+  canManage,
+  isMember = true,
+  joinRequestStatus,
+  onRequestJoin,
+  isRequestingJoin,
+}: GroupCardProps) {
   const go = useGo();
 
   const you_owe = balanceSummary?.you_owe ?? 0;
@@ -51,10 +67,18 @@ export function GroupCard({ group, balanceSummary, isLoading, canManage }: Group
   const getInitials = (name: string) =>
     name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) || '?';
 
+  const handleCardClick = () => {
+    if (isMember) {
+      go({ to: `/groups/show/${group.id}` });
+    }
+  };
+
   return (
     <Card
-      className="group cursor-pointer hover:shadow-md transition-all duration-200 hover:border-primary/30"
-      onClick={() => go({ to: `/groups/show/${group.id}` })}
+      className={`group transition-all duration-200 hover:border-primary/30 ${
+        isMember ? 'cursor-pointer hover:shadow-md' : 'hover:shadow-sm'
+      }`}
+      onClick={handleCardClick}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start gap-3">
@@ -78,9 +102,14 @@ export function GroupCard({ group, balanceSummary, isLoading, canManage }: Group
                   Archived
                 </Badge>
               )}
-              {!isLoading && !isArchived && isSettled && (
+              {isMember && !isLoading && !isArchived && isSettled && (
                 <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs shrink-0">
                   Settled
+                </Badge>
+              )}
+              {!isMember && (
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs shrink-0">
+                  Not joined
                 </Badge>
               )}
             </div>
@@ -98,8 +127,8 @@ export function GroupCard({ group, balanceSummary, isLoading, canManage }: Group
           </div>
         </div>
 
-        {/* Member Avatars */}
-        {group.members.length > 0 && (
+        {/* Member Avatars - only show for members */}
+        {isMember && group.members.length > 0 && (
           <div className="flex items-center mt-3">
             {group.members.slice(0, 5).map((member) => (
               <Avatar key={member.id} className="h-7 w-7 border-2 border-background -ml-1.5 first:ml-0">
@@ -119,8 +148,8 @@ export function GroupCard({ group, balanceSummary, isLoading, canManage }: Group
       </CardHeader>
 
       <CardContent className="pt-0 space-y-3">
-        {/* Balance Summary */}
-        {!isLoading && !isSettled && (
+        {/* Balance Summary - only for members */}
+        {isMember && !isLoading && !isSettled && (
           <div className="p-2.5 rounded-lg bg-accent/50 space-y-1.5">
             {you_owe > 0 && (
               <div className="flex justify-between items-center">
@@ -141,7 +170,7 @@ export function GroupCard({ group, balanceSummary, isLoading, canManage }: Group
           </div>
         )}
 
-        {isLoading && (
+        {isMember && isLoading && (
           <div className="p-2.5 rounded-lg bg-accent/50">
             <div className="h-4 bg-muted rounded animate-pulse w-2/3" />
           </div>
@@ -149,24 +178,72 @@ export function GroupCard({ group, balanceSummary, isLoading, canManage }: Group
 
         {/* Actions */}
         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-          <Button
-            variant="default"
-            size="sm"
-            className="flex-1"
-            onClick={() => go({ to: `/groups/show/${group.id}` })}
-          >
-            <EyeIcon className="h-4 w-4 mr-2" />
-            View
-          </Button>
-          {(!isArchived || canManage) && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
-              title="Add Expense"
-            >
-              <PlusIcon className="h-4 w-4" />
-            </Button>
+          {isMember ? (
+            <>
+              <Button
+                variant="default"
+                size="sm"
+                className="flex-1"
+                onClick={() => go({ to: `/groups/show/${group.id}` })}
+              >
+                <EyeIcon className="h-4 w-4 mr-2" />
+                View
+              </Button>
+              {(!isArchived || canManage) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
+                  title="Add Expense"
+                >
+                  <PlusIcon className="h-4 w-4" />
+                </Button>
+              )}
+            </>
+          ) : (
+            <>
+              {joinRequestStatus === 'pending' ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 text-amber-600 border-amber-300 hover:bg-amber-50"
+                  disabled
+                >
+                  <Clock3Icon className="h-4 w-4 mr-2" />
+                  Request Pending
+                </Button>
+              ) : joinRequestStatus === 'rejected' ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => onRequestJoin?.(group.id)}
+                  disabled={isRequestingJoin}
+                >
+                  {isRequestingJoin ? (
+                    <Loader2Icon className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <LogInIcon className="h-4 w-4 mr-2" />
+                  )}
+                  Request Again
+                </Button>
+              ) : (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => onRequestJoin?.(group.id)}
+                  disabled={isRequestingJoin}
+                >
+                  {isRequestingJoin ? (
+                    <Loader2Icon className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <LogInIcon className="h-4 w-4 mr-2" />
+                  )}
+                  Request to Join
+                </Button>
+              )}
+            </>
           )}
         </div>
       </CardContent>
