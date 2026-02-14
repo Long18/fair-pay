@@ -36,6 +36,7 @@ CREATE INDEX IF NOT EXISTS idx_sepay_orders_status ON sepay_payment_orders(statu
 CREATE INDEX IF NOT EXISTS idx_sepay_orders_invoice ON sepay_payment_orders(order_invoice_number);
 
 -- Updated_at trigger
+DROP TRIGGER IF EXISTS update_sepay_payment_orders_updated_at ON sepay_payment_orders;
 CREATE TRIGGER update_sepay_payment_orders_updated_at
   BEFORE UPDATE ON sepay_payment_orders
   FOR EACH ROW
@@ -44,22 +45,25 @@ CREATE TRIGGER update_sepay_payment_orders_updated_at
 -- 3. RLS Policies
 ALTER TABLE sepay_payment_orders ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own payment orders" ON sepay_payment_orders;
 CREATE POLICY "Users can view own payment orders"
   ON sepay_payment_orders FOR SELECT
   TO authenticated
   USING (payer_user_id = auth.uid() OR payee_user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can create own payment orders" ON sepay_payment_orders;
 CREATE POLICY "Users can create own payment orders"
   ON sepay_payment_orders FOR INSERT
   TO authenticated
   WITH CHECK (payer_user_id = auth.uid());
 
+DROP POLICY IF EXISTS "System can update payment orders" ON sepay_payment_orders;
 CREATE POLICY "System can update payment orders"
   ON sepay_payment_orders FOR UPDATE
   TO authenticated
   USING (payer_user_id = auth.uid() OR payee_user_id = auth.uid());
 
--- Allow service_role (edge functions) full access
+DROP POLICY IF EXISTS "Service role full access" ON sepay_payment_orders;
 CREATE POLICY "Service role full access"
   ON sepay_payment_orders FOR ALL
   TO service_role
@@ -67,7 +71,7 @@ CREATE POLICY "Service role full access"
   WITH CHECK (true);
 
 -- 4. Allow users to read payee's sepay_config (for checking if SePay is configured)
--- This extends the existing RLS on user_settings
+DROP POLICY IF EXISTS "Users can view payee sepay config" ON user_settings;
 CREATE POLICY "Users can view payee sepay config"
   ON user_settings FOR SELECT
   TO authenticated
@@ -82,7 +86,8 @@ CREATE POLICY "Users can view payee sepay config"
     )
   );
 
--- Admin policy for sepay_payment_orders
+-- Admin policy (will be dropped by next migration to fix RLS recursion)
+DROP POLICY IF EXISTS "Admin full access to payment orders" ON sepay_payment_orders;
 CREATE POLICY "Admin full access to payment orders"
   ON sepay_payment_orders FOR ALL
   TO authenticated
