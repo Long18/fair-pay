@@ -84,11 +84,8 @@ const TermsPage = lazy(() => import("./pages/terms").then(m => ({ default: m.Ter
 import { AdminGuard } from "./modules/admin/components/AdminGuard";
 import { AdminLayout } from "./modules/admin/components/AdminLayout";
 const AdminOverview = lazy(() => import("./modules/admin/pages/AdminOverview").then(m => ({ default: m.AdminOverview })));
-const AdminUsers = lazy(() => import("./modules/admin/pages/AdminUsers").then(m => ({ default: m.AdminUsers })));
-const AdminGroups = lazy(() => import("./modules/admin/pages/AdminGroups").then(m => ({ default: m.AdminGroups })));
-const AdminExpenses = lazy(() => import("./modules/admin/pages/AdminExpenses").then(m => ({ default: m.AdminExpenses })));
-const AdminPayments = lazy(() => import("./modules/admin/pages/AdminPayments").then(m => ({ default: m.AdminPayments })));
-const AdminFriendships = lazy(() => import("./modules/admin/pages/AdminFriendships").then(m => ({ default: m.AdminFriendships })));
+const AdminPeople = lazy(() => import("./modules/admin/pages/AdminPeople").then(m => ({ default: m.AdminPeople })));
+const AdminTransactions = lazy(() => import("./modules/admin/pages/AdminTransactions").then(m => ({ default: m.AdminTransactions })));
 const AdminNotifications = lazy(() => import("./modules/admin/pages/AdminNotifications").then(m => ({ default: m.AdminNotifications })));
 const AdminAuditLogs = lazy(() => import("./modules/admin/pages/AdminAuditLogs").then(m => ({ default: m.AdminAuditLogs })));
 const AdminDonationSettings = lazy(() => import("./modules/admin/pages/AdminDonationSettings").then(m => ({ default: m.AdminDonationSettings })));
@@ -364,11 +361,8 @@ function App() {
                     }
                   >
                     <Route index element={<Suspense fallback={<PageLoader />}><AdminOverview /></Suspense>} />
-                    <Route path="users" element={<Suspense fallback={<PageLoader />}><AdminUsers /></Suspense>} />
-                    <Route path="groups" element={<Suspense fallback={<PageLoader />}><AdminGroups /></Suspense>} />
-                    <Route path="expenses" element={<Suspense fallback={<PageLoader />}><AdminExpenses /></Suspense>} />
-                    <Route path="payments" element={<Suspense fallback={<PageLoader />}><AdminPayments /></Suspense>} />
-                    <Route path="friendships" element={<Suspense fallback={<PageLoader />}><AdminFriendships /></Suspense>} />
+                    <Route path="people" element={<Suspense fallback={<PageLoader />}><AdminPeople /></Suspense>} />
+                    <Route path="transactions" element={<Suspense fallback={<PageLoader />}><AdminTransactions /></Suspense>} />
                     <Route path="notifications" element={<Suspense fallback={<PageLoader />}><AdminNotifications /></Suspense>} />
                     <Route path="audit-logs" element={<Suspense fallback={<PageLoader />}><AdminAuditLogs /></Suspense>} />
                     <Route path="donation-settings" element={<Suspense fallback={<PageLoader />}><AdminDonationSettings /></Suspense>} />
