@@ -31,45 +31,6 @@ interface CreateOrderRequest {
   cancel_url?: string
 }
 
-/**
- * Serve an HTML page that auto-submits a form to SePay.
- * This runs in the user's browser tab opened via window.open().
- */
-function buildCheckoutHtml(formAction: string, formFields: Record<string, string>): string {
-  const inputs = Object.entries(formFields)
-    .map(([name, value]) => `<input type="hidden" name="${name}" value="${escapeHtml(value)}" />`)
-    .join('\n      ')
-
-  return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Redirecting to SePay...</title>
-  <style>
-    body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f8fafc; }
-    .loader { text-align: center; }
-    .spinner { width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    p { color: #64748b; font-size: 14px; }
-  </style>
-</head>
-<body>
-  <div class="loader">
-    <div class="spinner"></div>
-    <p>Redirecting to SePay payment page...</p>
-  </div>
-  <form id="sepay-form" method="POST" action="${escapeHtml(formAction)}">
-      ${inputs}
-  </form>
-  <script>document.getElementById('sepay-form').submit();</script>
-</body>
-</html>`
-}
-
-function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -165,14 +126,47 @@ Deno.serve(async (req: Request) => {
       ? SEPAY_PRODUCTION_URL
       : SEPAY_SANDBOX_URL
 
-    const html = buildCheckoutHtml(formAction, formFields)
-    return new Response(html, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Content-Security-Policy': "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; form-action https://pay.sepay.vn https://sandbox.pay.sepay.vn; img-src 'self' data:",
-      },
-    })
+    // POST form data to SePay server-side, following redirects to get final payment URL
+    const formBody = new URLSearchParams(formFields).toString()
+    try {
+      const sepayResp = await fetch(formAction, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9,vi;q=0.8',
+        },
+        body: formBody,
+        redirect: 'follow', // Follow all redirects to get final URL
+      })
+
+      // The final URL after redirects is the payment page
+      const finalUrl = sepayResp.url
+      if (finalUrl && finalUrl !== formAction) {
+        // Redirect browser to the SePay payment page
+        return new Response(null, {
+          status: 302,
+          headers: { 'Location': finalUrl },
+        })
+      }
+
+      // If no redirect happened, try to extract URL from response
+      // or just redirect to the form action as last resort
+      console.log('SePay response status:', sepayResp.status, 'url:', sepayResp.url)
+      
+      // Pass through SePay's HTML response directly
+      const body = await sepayResp.text()
+      return new Response(body, {
+        status: sepayResp.status,
+        headers: {
+          'Content-Type': sepayResp.headers.get('Content-Type') || 'text/html',
+        },
+      })
+    } catch (fetchErr) {
+      console.error('SePay fetch error:', fetchErr)
+      return new Response('Failed to connect to SePay', { status: 502 })
+    }
   }
 
   // POST mode: create order and return checkout URL
