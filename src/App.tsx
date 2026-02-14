@@ -79,6 +79,8 @@ const DonationWidget = lazy(() => import("./components/donation-widget").then(m 
 // Legal pages
 const PrivacyPage = lazy(() => import("./pages/privacy").then(m => ({ default: m.PrivacyPage })));
 const TermsPage = lazy(() => import("./pages/terms").then(m => ({ default: m.TermsPage })));
+const AboutPage = lazy(() => import("./pages/about").then(m => ({ default: m.AboutPage })));
+const ContactPage = lazy(() => import("./pages/contact").then(m => ({ default: m.ContactPage })));
 
 // Admin module - lazy loaded
 import { AdminGuard } from "./modules/admin/components/AdminGuard";
@@ -306,6 +308,16 @@ function App() {
                     <Route path="/terms" element={
                       <Suspense fallback={<PageLoader />}>
                         <TermsPage />
+                      </Suspense>
+                    } />
+                    <Route path="/about" element={
+                      <Suspense fallback={<PageLoader />}>
+                        <AboutPage />
+                      </Suspense>
+                    } />
+                    <Route path="/contact" element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ContactPage />
                       </Suspense>
                     } />
 

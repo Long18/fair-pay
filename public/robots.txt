@@ -9,6 +9,7 @@ Disallow: /login
 Disallow: /register
 Disallow: /forgot-password
 Disallow: /oauth
+Disallow: /admin
 
 # Sitemap location
 Sitemap: https://long-pay.vercel.app/sitemap.xml
