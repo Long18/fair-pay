@@ -114,11 +114,11 @@ class Analytics {
     });
   }
 
-  private trackMixpanel(event: AnalyticsEvent) {
+  private trackMixpanel(_event: AnalyticsEvent) {
     // Placeholder for Mixpanel tracking
   }
 
-  private trackAmplitude(event: AnalyticsEvent) {
+  private trackAmplitude(_event: AnalyticsEvent) {
     // Placeholder for Amplitude tracking
   }
 
