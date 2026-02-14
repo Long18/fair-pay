@@ -137,7 +137,7 @@ const queryClientConfig = {
       gcTime: 10 * 60 * 1000, // 10 minutes - keep in memory (formerly cacheTime)
       refetchOnWindowFocus: false, // Don't refetch when window regains focus
       refetchOnReconnect: true, // Refetch when user comes back online
-      refetchOnMount: false, // Don't refetch when component mounts if data is fresh
+      refetchOnMount: true, // Refetch stale data on mount (needed for auth state after logout)
       retry: 1, // Retry failed requests once
       retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
     },
