@@ -141,13 +141,16 @@ export type Database = {
           created_at: string
           created_by: string
           currency: string
+          cycle_date: string | null
           description: string
           expense_date: string
           friendship_id: string | null
+          generated_at: string | null
           group_id: string | null
           id: string
           is_payment: boolean
           paid_by_user_id: string
+          recurring_expense_id: string | null
           updated_at: string
         }
         Insert: {
@@ -157,13 +160,16 @@ export type Database = {
           created_at?: string
           created_by: string
           currency?: string
+          cycle_date?: string | null
           description: string
           expense_date?: string
           friendship_id?: string | null
+          generated_at?: string | null
           group_id?: string | null
           id?: string
           is_payment?: boolean
           paid_by_user_id: string
+          recurring_expense_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -173,13 +179,16 @@ export type Database = {
           created_at?: string
           created_by?: string
           currency?: string
+          cycle_date?: string | null
           description?: string
           expense_date?: string
           friendship_id?: string | null
+          generated_at?: string | null
           group_id?: string | null
           id?: string
           is_payment?: boolean
           paid_by_user_id?: string
+          recurring_expense_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -209,6 +218,13 @@ export type Database = {
             columns: ["paid_by_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_recurring_expense_id_fkey"
+            columns: ["recurring_expense_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_expenses"
             referencedColumns: ["id"]
           },
         ]
