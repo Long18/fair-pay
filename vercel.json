@@ -39,7 +39,16 @@
             ]
         },
         {
-            "source": "/(favicon.ico|robots.txt|sitemap.xml|sitemap_index.xml|sitemap-index.xml|sitemaps.xml|sitemap1.xml|post-sitemap.xml|page-sitemap.xml|news-sitemap.xml|browserconfig.xml)",
+            "source": "/:path(favicon.ico|robots.txt|browserconfig.xml)",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=86400"
+                }
+            ]
+        },
+        {
+            "source": "/:file*.xml",
             "headers": [
                 {
                     "key": "Cache-Control",

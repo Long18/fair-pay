@@ -193,11 +193,11 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
                     schema: 'public',
                     table: 'expenses',
                 },
-                (payload) => {
+                (_payload) => {
                     debouncedFetchDebts();
                 }
             )
-            .subscribe((status) => {
+            .subscribe((_status) => {
             });
 
         // Subscribe to changes in expense_splits table
@@ -210,11 +210,11 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
                     schema: 'public',
                     table: 'expense_splits',
                 },
-                (payload) => {
+                (_payload) => {
                     debouncedFetchDebts();
                 }
             )
-            .subscribe((status) => {
+            .subscribe((_status) => {
             });
 
         // Cleanup subscriptions on unmount
