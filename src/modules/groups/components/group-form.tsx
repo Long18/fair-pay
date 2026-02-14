@@ -119,6 +119,11 @@ export const GroupForm = ({
       return;
     }
 
+    if (!currentUserId) {
+      toast.error("You must be logged in to upload an avatar");
+      return;
+    }
+
     // Show preview immediately
     const reader = new FileReader();
     reader.onloadend = () => setAvatarPreview(reader.result as string);
@@ -127,7 +132,8 @@ export const GroupForm = ({
     setIsUploadingAvatar(true);
     try {
       const fileExt = file.name.split(".").pop();
-      const filePath = `groups/${Date.now()}.${fileExt}`;
+      // RLS requires first folder = auth.uid()
+      const filePath = `${currentUserId}/group-${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabaseClient.storage
         .from("avatars")
