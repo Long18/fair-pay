@@ -2,10 +2,10 @@
  * SePay Payment Dialog
  *
  * Shows SePay checkout flow with animated beam during processing.
- * Creates order via edge function, opens checkout URL, polls for status.
+ * Creates order via edge function, auto-submits form to SePay, polls for status.
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
@@ -55,7 +55,8 @@ export function SepayPaymentDialog({
   const { t } = useTranslation();
   const {
     order,
-    checkoutUrl,
+    formAction,
+    formFields,
     status,
     isCreating,
     isPolling,
@@ -70,10 +71,13 @@ export function SepayPaymentDialog({
   const payerRef = useRef<HTMLDivElement>(null);
   const sepayRef = useRef<HTMLDivElement>(null);
   const payeeRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const hasSubmittedRef = useRef(false);
 
   // Create order when dialog opens
   useEffect(() => {
     if (open && !order && !isCreating && !error) {
+      hasSubmittedRef.current = false;
       createOrder({
         source_type: sourceType,
         source_id: sourceId,
@@ -84,6 +88,19 @@ export function SepayPaymentDialog({
     }
   }, [open, order, isCreating, error, createOrder, sourceType, sourceId, payeeId, amount, description]);
 
+  // Auto-submit form to SePay when form data is ready
+  useEffect(() => {
+    if (formAction && formFields && formRef.current && !hasSubmittedRef.current) {
+      hasSubmittedRef.current = true;
+      triggerHaptic('medium');
+      // Small delay to let user see the "redirecting" state
+      const timer = setTimeout(() => {
+        formRef.current?.submit();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [formAction, formFields]);
+
   // Handle payment completion
   useEffect(() => {
     if (status === 'PAID') {
@@ -93,21 +110,22 @@ export function SepayPaymentDialog({
     }
   }, [status, t, onPaymentComplete]);
 
+  // Manual redirect to SePay (fallback button)
+  const handleManualRedirect = useCallback(() => {
+    if (formRef.current) {
+      triggerHaptic('medium');
+      formRef.current.submit();
+    }
+  }, []);
+
   // Reset on close
   const handleClose = (nextOpen: boolean) => {
     if (!nextOpen) {
       stopPolling();
-      // Delay reset to allow close animation
+      hasSubmittedRef.current = false;
       setTimeout(reset, 300);
     }
     onOpenChange(nextOpen);
-  };
-
-  const handleOpenCheckout = () => {
-    if (checkoutUrl) {
-      triggerHaptic('medium');
-      window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
-    }
   };
 
   const isPending = status === 'PENDING' || isPolling;
@@ -123,13 +141,13 @@ export function SepayPaymentDialog({
       >
         {t('common.close', 'Close')}
       </Button>
-      {checkoutUrl && !isPaid && !isFailed && (
+      {formAction && formFields && !isPaid && !isFailed && (
         <Button
-          onClick={handleOpenCheckout}
+          onClick={handleManualRedirect}
           className="flex-1 min-h-[44px]"
         >
           <ExternalLinkIcon className="h-4 w-4 mr-2" />
-          {t('payments.sepay.openCheckout', 'Open Checkout')}
+          {t('payments.sepay.goToPayment', 'Go to Payment')}
         </Button>
       )}
     </div>
@@ -144,6 +162,20 @@ export function SepayPaymentDialog({
       footer={footerButtons}
     >
       <div className="space-y-4">
+        {/* Hidden form for SePay redirect */}
+        {formAction && formFields && (
+          <form
+            ref={formRef}
+            method="POST"
+            action={formAction}
+            style={{ display: 'none' }}
+          >
+            {Object.entries(formFields).map(([name, value]) => (
+              <input key={name} type="hidden" name={name} value={value} />
+            ))}
+          </form>
+        )}
+
         {/* Amount Display */}
         <div className="text-center py-2">
           <p className="text-sm text-muted-foreground mb-1">
@@ -229,18 +261,21 @@ export function SepayPaymentDialog({
             </div>
 
             <p className="text-sm text-muted-foreground animate-beam-pulse">
-              {t('payments.sepay.waitingForPayment', 'Waiting for payment confirmation...')}
+              {formAction
+                ? t('payments.sepay.redirecting', 'Redirecting to SePay payment page...')
+                : t('payments.sepay.waitingForPayment', 'Waiting for payment confirmation...')
+              }
             </p>
 
-            {/* Checkout Link */}
-            {checkoutUrl && (
+            {/* Manual redirect button */}
+            {formAction && formFields && (
               <Button
                 variant="outline"
-                onClick={handleOpenCheckout}
+                onClick={handleManualRedirect}
                 className="min-h-[44px]"
               >
                 <ExternalLinkIcon className="h-4 w-4 mr-2" />
-                {t('payments.sepay.openCheckout', 'Open Checkout')}
+                {t('payments.sepay.goToPayment', 'Go to Payment')}
               </Button>
             )}
 
@@ -248,7 +283,7 @@ export function SepayPaymentDialog({
               <AlertCircleIcon className="h-4 w-4" />
               <AlertDescription>
                 {t('payments.sepay.instructions',
-                  'Complete the payment in the SePay checkout page. This dialog will update automatically.'
+                  'Complete the payment on the SePay page. This dialog will update automatically when you return.'
                 )}
               </AlertDescription>
             </Alert>
