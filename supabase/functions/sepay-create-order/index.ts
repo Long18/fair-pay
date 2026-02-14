@@ -1,14 +1,12 @@
 /**
  * SePay Create Order Edge Function
  *
- * Creates a SePay checkout order by:
- * 1. Generating HMAC-SHA256 signed form fields
- * 2. POSTing form-encoded data to SePay server-side
- * 3. Capturing the redirect URL from SePay's 302 response
- * 4. Returning checkout_url to frontend for window.open()
+ * Two modes:
+ * - POST: Creates order, generates signed form fields, returns checkout_url
+ * - GET with ?order_id=X: Serves auto-submitting HTML form that POSTs to SePay
  *
- * This avoids CSP form-action restrictions on Vercel.
- * SECRET_KEY never leaves the server.
+ * This bypasses Vercel's CSP form-action restriction because the form
+ * submission happens from the edge function's domain, not Vercel's.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -33,11 +31,148 @@ interface CreateOrderRequest {
   cancel_url?: string
 }
 
+/**
+ * Serve an HTML page that auto-submits a form to SePay.
+ * This runs in the user's browser tab opened via window.open().
+ */
+function buildCheckoutHtml(formAction: string, formFields: Record<string, string>): string {
+  const inputs = Object.entries(formFields)
+    .map(([name, value]) => `<input type="hidden" name="${name}" value="${escapeHtml(value)}" />`)
+    .join('\n      ')
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Redirecting to SePay...</title>
+  <style>
+    body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f8fafc; }
+    .loader { text-align: center; }
+    .spinner { width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    p { color: #64748b; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="loader">
+    <div class="spinner"></div>
+    <p>Redirecting to SePay payment page...</p>
+  </div>
+  <form id="sepay-form" method="POST" action="${escapeHtml(formAction)}">
+      ${inputs}
+  </form>
+  <script>document.getElementById('sepay-form').submit();</script>
+</body>
+</html>`
+}
+
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
+  const serviceClient = createClient(supabaseUrl, supabaseServiceKey)
+
+  // GET mode: serve checkout HTML page for a given order
+  if (req.method === 'GET') {
+    const url = new URL(req.url)
+    const orderId = url.searchParams.get('order_id')
+    if (!orderId) {
+      return new Response('Missing order_id', { status: 400 })
+    }
+
+    // Fetch order + payee config
+    const { data: order, error: orderError } = await serviceClient
+      .from('sepay_payment_orders')
+      .select('*')
+      .eq('id', orderId)
+      .single()
+
+    if (orderError || !order) {
+      return new Response('Order not found', { status: 404 })
+    }
+
+    if (order.status !== 'PENDING') {
+      return new Response('Order is no longer pending', { status: 400 })
+    }
+
+    // Fetch payee's SePay config to rebuild form fields
+    const { data: payeeSettings } = await serviceClient
+      .from('user_settings')
+      .select('sepay_config')
+      .eq('user_id', order.payee_user_id)
+      .single()
+
+    if (!payeeSettings?.sepay_config) {
+      return new Response('Payee SePay config not found', { status: 400 })
+    }
+
+    const sepayConfig = payeeSettings.sepay_config as {
+      merchant_id: string
+      secret_key: string
+      environment: 'sandbox' | 'production'
+    }
+
+    // Rebuild form fields and signature
+    const formFields: Record<string, string> = {
+      merchant_id: sepayConfig.merchant_id,
+      operation: 'PURCHASE',
+      payment_method: 'BANK_TRANSFER',
+      order_invoice_number: order.order_invoice_number,
+      order_amount: Math.round(order.amount).toString(),
+      currency: order.currency || 'VND',
+      order_description: `FairPay payment ${order.order_invoice_number}`,
+      customer_id: order.payer_user_id,
+      success_url: order.sepay_checkout_url?.includes('success') ? order.sepay_checkout_url : `https://long-pay.vercel.app/payments/sepay/success?invoice=${order.order_invoice_number}`,
+      error_url: `https://long-pay.vercel.app/payments/sepay/error?invoice=${order.order_invoice_number}`,
+      cancel_url: `https://long-pay.vercel.app/payments/sepay/cancel?invoice=${order.order_invoice_number}`,
+      custom_data: order.custom_data || '',
+    }
+
+    const signatureString = [
+      formFields.operation,
+      formFields.payment_method,
+      formFields.order_invoice_number,
+      formFields.order_amount,
+      formFields.currency,
+      formFields.order_description,
+      formFields.customer_id,
+      formFields.success_url,
+      formFields.error_url,
+      formFields.cancel_url,
+      formFields.custom_data,
+    ].join('')
+
+    const encoder = new TextEncoder()
+    const keyData = encoder.encode(sepayConfig.secret_key)
+    const msgData = encoder.encode(signatureString)
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    )
+    const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, msgData)
+    formFields.signature = Array.from(new Uint8Array(signatureBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+
+    const formAction = sepayConfig.environment === 'production'
+      ? SEPAY_PRODUCTION_URL
+      : SEPAY_SANDBOX_URL
+
+    const html = buildCheckoutHtml(formAction, formFields)
+    return new Response(html, {
+      status: 200,
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    })
+  }
+
+  // POST mode: create order and return checkout URL
   try {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
@@ -47,16 +182,10 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
-
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     })
-    const serviceClient = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Get current user
     const { data: { user }, error: userError } = await userClient.auth.getUser()
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -109,7 +238,6 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    // Generate unique invoice number
     const invoiceNumber = `FP-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`
     const customData = `${source_type}|${source_id}|${user.id}|${Date.now()}`
 
@@ -117,99 +245,6 @@ Deno.serve(async (req: Request) => {
     const successUrl = body.success_url || `${baseUrl}/payments/sepay/success?invoice=${invoiceNumber}`
     const errorUrl = body.error_url || `${baseUrl}/payments/sepay/error?invoice=${invoiceNumber}`
     const cancelUrl = body.cancel_url || `${baseUrl}/payments/sepay/cancel?invoice=${invoiceNumber}`
-
-    // Build form fields in exact order required by SePay for signature
-    const formFields: Record<string, string> = {
-      merchant_id: sepayConfig.merchant_id,
-      operation: 'PURCHASE',
-      payment_method: 'BANK_TRANSFER',
-      order_invoice_number: invoiceNumber,
-      order_amount: Math.round(amount).toString(),
-      currency: currency || 'VND',
-      order_description: description || `FairPay payment ${invoiceNumber}`,
-      customer_id: user.id,
-      success_url: successUrl,
-      error_url: errorUrl,
-      cancel_url: cancelUrl,
-      custom_data: customData,
-    }
-
-    // Generate HMAC-SHA256 signature
-    // Concatenate field values in exact order (excluding merchant_id and signature)
-    const signatureString = [
-      formFields.operation,
-      formFields.payment_method,
-      formFields.order_invoice_number,
-      formFields.order_amount,
-      formFields.currency,
-      formFields.order_description,
-      formFields.customer_id,
-      formFields.success_url,
-      formFields.error_url,
-      formFields.cancel_url,
-      formFields.custom_data,
-    ].join('')
-
-    const encoder = new TextEncoder()
-    const keyData = encoder.encode(sepayConfig.secret_key)
-    const msgData = encoder.encode(signatureString)
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-    )
-    const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, msgData)
-    const signature = Array.from(new Uint8Array(signatureBuffer))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('')
-
-    formFields.signature = signature
-
-    const sepayUrl = sepayConfig.environment === 'production'
-      ? SEPAY_PRODUCTION_URL
-      : SEPAY_SANDBOX_URL
-
-    // POST form-encoded data to SePay server-side to capture redirect URL
-    // This avoids CSP form-action restrictions on Vercel
-    const formBody = new URLSearchParams(formFields).toString()
-
-    let checkoutUrl: string | null = null
-    try {
-      const sepayResponse = await fetch(sepayUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: formBody,
-        redirect: 'manual', // Don't follow redirects — capture Location header
-      })
-
-      // SePay returns 302 redirect to the payment page
-      if (sepayResponse.status >= 300 && sepayResponse.status < 400) {
-        checkoutUrl = sepayResponse.headers.get('Location')
-      } else if (sepayResponse.ok) {
-        // Some endpoints return 200 with the URL in the body or as final URL
-        // Try to extract from response
-        const responseText = await sepayResponse.text()
-        // If it's a URL, use it directly
-        if (responseText.startsWith('http')) {
-          checkoutUrl = responseText.trim()
-        } else {
-          // Try parsing as JSON
-          try {
-            const json = JSON.parse(responseText)
-            checkoutUrl = json.checkout_url || json.url || json.redirect_url || null
-          } catch {
-            console.log('SePay response (not JSON):', responseText.slice(0, 500))
-          }
-        }
-      }
-
-      if (!checkoutUrl) {
-        console.error('SePay did not return redirect. Status:', sepayResponse.status)
-        console.error('Headers:', Object.fromEntries(sepayResponse.headers.entries()))
-        // Fallback: return the form data so frontend can try alternative approaches
-      }
-    } catch (fetchError) {
-      console.error('Error posting to SePay:', fetchError)
-      // Non-fatal: we still have the order, just no checkout URL
-    }
 
     // Store order in database
     const { data: order, error: insertError } = await serviceClient
@@ -223,7 +258,7 @@ Deno.serve(async (req: Request) => {
         amount: Math.round(amount),
         currency: currency || 'VND',
         status: 'PENDING',
-        sepay_checkout_url: checkoutUrl || sepayUrl,
+        sepay_checkout_url: successUrl,
         custom_data: customData,
       })
       .select()
@@ -237,7 +272,10 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    console.log('Order created:', invoiceNumber, 'checkout_url:', checkoutUrl ? 'captured' : 'fallback')
+    // Build checkout URL: points to this same edge function in GET mode
+    const checkoutUrl = `${supabaseUrl}/functions/v1/sepay-create-order?order_id=${order.id}`
+
+    console.log('Order created:', invoiceNumber, 'checkout:', checkoutUrl)
 
     return new Response(JSON.stringify({
       success: true,
@@ -249,9 +287,6 @@ Deno.serve(async (req: Request) => {
         status: 'PENDING',
       },
       checkout_url: checkoutUrl,
-      // Keep form data as fallback
-      form_action: sepayUrl,
-      form_fields: formFields,
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
