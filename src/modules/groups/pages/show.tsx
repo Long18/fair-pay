@@ -64,6 +64,7 @@ import { Breadcrumb, createBreadcrumbs } from "@/components/refine-ui/layout/bre
 import { SwipeableTabs, PullToRefresh, EmptyBalances } from "@/modules/profile";
 import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
 import { EnhancedActivityList } from "@/components/dashboard/enhanced-activity-list";
+import { JoinRequestsList } from "../components/join-requests-list";
 
 export const GroupShow = () => {
   const { id } = useParams<{ id: string }>();
@@ -609,6 +610,14 @@ export const GroupShow = () => {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* Join Requests for admins */}
+          {isAdmin && id && (
+            <JoinRequestsList
+              groupId={id}
+              onRequestProcessed={() => membersQuery.refetch()}
+            />
           )}
 
           {/* Tabs */}
