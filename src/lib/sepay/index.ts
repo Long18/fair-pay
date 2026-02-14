@@ -47,6 +47,9 @@ export async function createSepayOrder(
 ): Promise<CreateSepayOrderResult> {
   const { data, error } = await supabaseClient.functions.invoke(CREATE_ORDER_FUNCTION, {
     body: params,
+    headers: {
+      Authorization: `Bearer ${(await supabaseClient.auth.getSession()).data.session?.access_token}`,
+    },
   });
 
   if (error) {
