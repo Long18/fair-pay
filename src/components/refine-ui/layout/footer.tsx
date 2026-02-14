@@ -1,10 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { useGo } from "@refinedev/core";
 import { cn } from "@/lib/utils";
 
 export const Footer = () => {
   const { t } = useTranslation();
-  const go = useGo();
 
   return (
     <footer
@@ -24,25 +22,24 @@ export const Footer = () => {
           <span className="hidden md:inline">{t('footer.tagline', 'Split expenses fairly')}</span>
         </div>
 
-        <div className="flex items-center gap-4 text-sm">
-          <button
-            onClick={() => go({ to: "/privacy" })}
+        <nav aria-label="Footer navigation" className="flex items-center gap-4 text-sm">
+          <a
+            href="/privacy"
             className="text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
           >
             {t('footer.privacy', 'Privacy Policy')}
-          </button>
+          </a>
           <span className="text-muted-foreground">•</span>
-          <button
-            onClick={() => go({ to: "/terms" })}
+          <a
+            href="/terms"
             className="text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
           >
             {t('footer.terms', 'Terms of Service')}
-          </button>
-        </div>
+          </a>
+        </nav>
       </div>
     </footer>
   );
 };
 
 Footer.displayName = "Footer";
-
