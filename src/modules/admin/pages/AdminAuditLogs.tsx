@@ -386,6 +386,34 @@ export function AdminAuditLogs() {
 
   return (
     <div className="space-y-6">
+      {/* Summary Stats */}
+      {!isLoading && mergedEntries.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground">Tổng nhật ký</div>
+            <div className="text-xl font-semibold mt-1">{filteredEntries.length}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground">INSERT</div>
+            <div className="text-xl font-semibold mt-1 text-emerald-600 dark:text-emerald-400">
+              {filteredEntries.filter(e => e.action_type === "INSERT").length}
+            </div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground">UPDATE</div>
+            <div className="text-xl font-semibold mt-1 text-violet-600 dark:text-violet-400">
+              {filteredEntries.filter(e => e.action_type === "UPDATE").length}
+            </div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground">DELETE</div>
+            <div className="text-xl font-semibold mt-1 text-red-600 dark:text-red-400">
+              {filteredEntries.filter(e => e.action_type === "DELETE").length}
+            </div>
+          </Card>
+        </div>
+      )}
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div>
@@ -402,6 +430,11 @@ export function AdminAuditLogs() {
             >
               <FilterIcon className="mr-2 h-4 w-4" />
               Bộ lọc
+              {hasActiveFilters && (
+                <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">{
+                  [actionFilter !== "all", tableFilter !== "all", actorFilter !== "all", dateFrom, dateTo, search].filter(Boolean).length
+                }</Badge>
+              )}
             </Button>
           </div>
         </CardHeader>
@@ -542,7 +575,7 @@ export function AdminAuditLogs() {
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
-                    <TableRow>
+                    <TableRow className="bg-muted/50">
                       <TableHead className="w-[160px]">Thời gian</TableHead>
                       <TableHead className="w-[180px]">Người thực hiện</TableHead>
                       <TableHead className="w-[140px]">Loại thao tác</TableHead>
@@ -554,34 +587,38 @@ export function AdminAuditLogs() {
                     {pagedEntries.map((entry) => (
                       <TableRow
                         key={entry.id}
-                        className="cursor-pointer"
+                        className="cursor-pointer hover:bg-accent/50 transition-colors group"
                         onClick={() => {
                           setSelectedEntry(entry);
                           setDetailOpen(true);
                         }}
                       >
-                        <TableCell className="text-sm">
+                        <TableCell className="text-sm font-mono text-muted-foreground tabular-nums">
                           {formatDate(entry.timestamp)}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Avatar className="h-7 w-7">
-                              <AvatarFallback className="text-xs">
+                              <AvatarFallback className="text-xs bg-primary/10 text-primary">
                                 {(entry.actor_name || entry.actor_email || "?")[0].toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            <span className="text-sm truncate max-w-[120px]">
-                              {entry.actor_name || entry.actor_email || "System"}
-                            </span>
+                            <div className="min-w-0">
+                              <span className="text-sm truncate block max-w-[120px]">
+                                {entry.actor_name || entry.actor_email || "System"}
+                              </span>
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
                           <ActionBadge action={entry.action_type} />
                         </TableCell>
-                        <TableCell className="text-sm">
-                          {entry.table_name ?? entry.entity_type ?? "—"}
+                        <TableCell>
+                          <Badge variant="outline" className="font-mono text-xs">
+                            {entry.table_name ?? entry.entity_type ?? "—"}
+                          </Badge>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground truncate max-w-[200px]">
+                        <TableCell className="text-sm text-muted-foreground truncate max-w-[200px] group-hover:text-foreground transition-colors">
                           {getDetailSummary(entry)}
                         </TableCell>
                       </TableRow>

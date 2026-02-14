@@ -1,0 +1,1606 @@
+import { useMemo, useState, useCallback, useEffect } from "react";
+import { useGetIdentity, useUpdate, useDelete } from "@refinedev/core";
+import { useTable } from "@refinedev/react-table";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  getFilteredRowModel,
+  flexRender,
+  type ColumnDef,
+  type SortingState,
+} from "@tanstack/react-table";
+import { toast } from "sonner";
+
+import { supabaseClient } from "@/utility/supabaseClient";
+import { DataTable } from "@/components/refine-ui/data-table/data-table";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Empty,
+  EmptyMedia,
+  EmptyHeader,
+  EmptyTitle,
+  EmptyDescription,
+  EmptyContent,
+} from "@/components/ui/empty";
+import {
+  SearchIcon,
+  UsersIcon,
+  GroupIcon,
+  HeartHandshakeIcon,
+  MoreHorizontalIcon,
+  FilterIcon,
+  AlertTriangleIcon,
+  Loader2Icon,
+  UserPlusIcon,
+  UserMinusIcon,
+  PencilIcon,
+  PlusIcon,
+} from "@/components/ui/icons";
+import { formatDate, formatNumber } from "@/lib/locale-utils";
+import type { Profile } from "@/modules/profile/types";
+import type { AdminUserRow } from "../types";
+
+// ─── Shared Types ───────────────────────────────────────────────────
+
+interface GroupRow {
+  id: string;
+  name: string;
+  created_by: string;
+  creator_name: string;
+  creator_avatar: string | null;
+  member_count: number;
+  total_expenses: number;
+  created_at: string;
+}
+
+interface FriendshipRow {
+  id: string;
+  user_a_id: string;
+  user_a_name: string;
+  user_a_avatar: string | null;
+  user_b_id: string;
+  user_b_name: string;
+  user_b_avatar: string | null;
+  status: "pending" | "accepted" | "rejected";
+  created_at: string;
+}
+
+// ─── Debounce Hook ──────────────────────────────────────────────────
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
+// ─── User Detail Dialog (replaces Sheet) ────────────────────────────
+
+function UserDetailDialog({
+  user,
+  open,
+  onOpenChange,
+  onEdit,
+  onToggleRole,
+  onDelete,
+  isSelf,
+}: {
+  user: AdminUserRow | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onEdit: () => void;
+  onToggleRole: () => void;
+  onDelete: () => void;
+  isSelf: boolean;
+}) {
+  const [groups, setGroups] = useState<Array<{ id: string; name: string; role: string }>>([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+
+  // Add to group state
+  const [addGroupOpen, setAddGroupOpen] = useState(false);
+  const [allGroups, setAllGroups] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [addingToGroup, setAddingToGroup] = useState(false);
+  const [removingGroupId, setRemovingGroupId] = useState<string | null>(null);
+
+  const fetchGroups = useCallback(() => {
+    if (!user) return;
+    setLoadingGroups(true);
+    supabaseClient
+      .from("group_members")
+      .select("role, groups!group_members_group_id_fkey(id, name)")
+      .eq("user_id", user.id)
+      .then(({ data, error }) => {
+        if (!error && data) {
+          setGroups(
+            data.map((m: any) => ({
+              id: m.groups?.id ?? "",
+              name: m.groups?.name ?? "Không rõ",
+              role: m.role ?? "member",
+            })),
+          );
+        }
+        setLoadingGroups(false);
+      });
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user || !open) {
+      setGroups([]);
+      return;
+    }
+    fetchGroups();
+  }, [user?.id, open, fetchGroups]);
+
+  // Fetch all groups when add dialog opens
+  useEffect(() => {
+    if (!addGroupOpen) return;
+    supabaseClient
+      .from("groups")
+      .select("id, name")
+      .order("name")
+      .then(({ data }) => {
+        if (data) setAllGroups(data);
+      });
+  }, [addGroupOpen]);
+
+  const availableGroups = useMemo(() => {
+    const memberGroupIds = new Set(groups.map((g) => g.id));
+    return allGroups.filter((g) => !memberGroupIds.has(g.id));
+  }, [allGroups, groups]);
+
+  const handleAddToGroup = useCallback(async () => {
+    if (!user || !selectedGroupId) return;
+    setAddingToGroup(true);
+    try {
+      const { error } = await supabaseClient
+        .from("group_members")
+        .insert({ group_id: selectedGroupId, user_id: user.id, role: "member" });
+      if (error) {
+        if (error.code === "23505") {
+          toast.error("Người dùng đã là thành viên của nhóm");
+        } else {
+          throw error;
+        }
+      } else {
+        toast.success("Đã thêm vào nhóm");
+        setAddGroupOpen(false);
+        setSelectedGroupId("");
+        fetchGroups();
+      }
+    } catch (err: any) {
+      toast.error(`Lỗi: ${err.message}`);
+    } finally {
+      setAddingToGroup(false);
+    }
+  }, [user, selectedGroupId, fetchGroups]);
+
+  const handleRemoveFromGroup = useCallback(async (groupId: string) => {
+    if (!user) return;
+    setRemovingGroupId(groupId);
+    try {
+      const { error } = await supabaseClient
+        .from("group_members")
+        .delete()
+        .eq("group_id", groupId)
+        .eq("user_id", user.id);
+      if (error) throw error;
+      toast.success("Đã xóa khỏi nhóm");
+      fetchGroups();
+    } catch (err: any) {
+      toast.error(`Lỗi: ${err.message}`);
+    } finally {
+      setRemovingGroupId(null);
+    }
+  }, [user, fetchGroups]);
+
+  if (!user) return null;
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={user.avatar_url ?? undefined} alt={user.full_name} />
+                <AvatarFallback>{user.full_name?.[0]?.toUpperCase() ?? "?"}</AvatarFallback>
+              </Avatar>
+              <div>
+                <DialogTitle>{user.full_name}</DialogTitle>
+                <DialogDescription>{user.email}</DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <Tabs defaultValue="profile" className="flex-1 overflow-hidden flex flex-col">
+            <TabsList className="w-full">
+              <TabsTrigger value="profile" className="flex-1">Hồ sơ</TabsTrigger>
+              <TabsTrigger value="groups" className="flex-1">Nhóm ({groups.length})</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="profile" className="mt-4 space-y-4 overflow-y-auto flex-1">
+              <div className="space-y-3">
+                <DetailRow label="Email" value={user.email} />
+                <DetailRow
+                  label="Vai trò"
+                  value={
+                    <Badge variant={user.role === "admin" ? "default" : "secondary"}>
+                      {user.role === "admin" ? "Admin" : "User"}
+                    </Badge>
+                  }
+                />
+                <DetailRow label="Ngày tạo" value={formatDate(user.created_at)} />
+                <DetailRow label="ID" value={<span className="text-xs font-mono">{user.id}</span>} />
+              </div>
+
+              {/* Actions inside modal */}
+              <div className="flex flex-wrap gap-2 pt-2 border-t">
+                <Button size="sm" variant="outline" onClick={onEdit}>
+                  <PencilIcon className="mr-2 h-4 w-4" />
+                  Chỉnh sửa
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onToggleRole}
+                  disabled={isSelf}
+                >
+                  {user.role === "admin" ? "Hạ cấp thành User" : "Nâng cấp thành Admin"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={onDelete}
+                  disabled={isSelf}
+                >
+                  Xóa người dùng
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="groups" className="mt-4 overflow-y-auto flex-1">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm text-muted-foreground">{groups.length} nhóm</span>
+                <Button size="sm" variant="outline" onClick={() => setAddGroupOpen(true)}>
+                  <PlusIcon className="mr-2 h-4 w-4" />
+                  Thêm vào nhóm
+                </Button>
+              </div>
+              {loadingGroups ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : groups.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Chưa tham gia nhóm nào
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {groups.map((g) => (
+                    <div key={g.id} className="flex items-center justify-between rounded-lg border p-3">
+                      <span className="text-sm font-medium">{g.name}</span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={g.role === "admin" ? "default" : "secondary"} className="text-xs">
+                          {g.role === "admin" ? "Admin" : "Member"}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleRemoveFromGroup(g.id)}
+                          disabled={removingGroupId === g.id}
+                        >
+                          {removingGroupId === g.id ? (
+                            <Loader2Icon className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <UserMinusIcon className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add to Group Dialog */}
+      <Dialog open={addGroupOpen} onOpenChange={setAddGroupOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Thêm vào nhóm</DialogTitle>
+            <DialogDescription>
+              Thêm &ldquo;{user.full_name}&rdquo; vào một nhóm
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 mt-2">
+            <Label>Chọn nhóm</Label>
+            <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Chọn nhóm..." />
+              </SelectTrigger>
+              <SelectContent>
+                {availableGroups.length === 0 ? (
+                  <SelectItem value="__none" disabled>Không còn nhóm nào</SelectItem>
+                ) : (
+                  availableGroups.map((g) => (
+                    <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setAddGroupOpen(false)} disabled={addingToGroup}>Hủy</Button>
+            <Button onClick={handleAddToGroup} disabled={addingToGroup || !selectedGroupId}>
+              {addingToGroup ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Thêm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between py-2 border-b last:border-b-0">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-sm font-medium">{value}</span>
+    </div>
+  );
+}
+
+// ─── Group Detail Dialog (replaces Sheet) ───────────────────────────
+
+function GroupDetailDialog({
+  group,
+  open,
+  onOpenChange,
+  onEdit,
+  onDelete,
+}: {
+  group: GroupRow | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const [members, setMembers] = useState<Array<{ id: string; full_name: string; avatar_url: string | null; role: string }>>([]);
+  const [expenses, setExpenses] = useState<Array<{ id: string; description: string; amount: number; expense_date: string; paid_by_name: string }>>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+  const [loadingExpenses, setLoadingExpenses] = useState(false);
+
+  // Add member state
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [allProfiles, setAllProfiles] = useState<Array<{ id: string; full_name: string; avatar_url: string | null }>>([]);
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [addingMember, setAddingMember] = useState(false);
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
+
+  const fetchMembers = useCallback(() => {
+    if (!group) return;
+    setLoadingMembers(true);
+    supabaseClient
+      .from("group_members")
+      .select("role, profiles!group_members_user_id_fkey(id, full_name, avatar_url)")
+      .eq("group_id", group.id)
+      .then(({ data, error }) => {
+        if (!error && data) {
+          setMembers(
+            data.map((m: any) => ({
+              id: m.profiles?.id ?? "",
+              full_name: m.profiles?.full_name ?? "Không rõ",
+              avatar_url: m.profiles?.avatar_url ?? null,
+              role: m.role ?? "member",
+            })),
+          );
+        }
+        setLoadingMembers(false);
+      });
+  }, [group?.id]);
+
+  useEffect(() => {
+    if (!group || !open) {
+      setMembers([]);
+      setExpenses([]);
+      return;
+    }
+
+    fetchMembers();
+
+    setLoadingExpenses(true);
+    supabaseClient
+      .from("expenses")
+      .select("id, description, amount, expense_date, profiles!expenses_paid_by_user_id_fkey(full_name)")
+      .eq("group_id", group.id)
+      .order("expense_date", { ascending: false })
+      .limit(10)
+      .then(({ data, error }) => {
+        if (!error && data) {
+          setExpenses(
+            data.map((e: any) => ({
+              id: e.id,
+              description: e.description ?? "",
+              amount: e.amount ?? 0,
+              expense_date: e.expense_date,
+              paid_by_name: e.profiles?.full_name ?? "Không rõ",
+            })),
+          );
+        }
+        setLoadingExpenses(false);
+      });
+  }, [group?.id, open, fetchMembers]);
+
+  useEffect(() => {
+    if (!addMemberOpen) return;
+    supabaseClient
+      .from("profiles")
+      .select("id, full_name, avatar_url")
+      .order("full_name")
+      .then(({ data }) => {
+        if (data) setAllProfiles(data);
+      });
+  }, [addMemberOpen]);
+
+  const availableProfiles = useMemo(() => {
+    const memberIds = new Set(members.map((m) => m.id));
+    return allProfiles.filter((p) => !memberIds.has(p.id));
+  }, [allProfiles, members]);
+
+  const handleAddMember = useCallback(async () => {
+    if (!group || !selectedUserId) return;
+    setAddingMember(true);
+    try {
+      const { error } = await supabaseClient
+        .from("group_members")
+        .insert({ group_id: group.id, user_id: selectedUserId, role: "member" });
+      if (error) {
+        if (error.code === "23505") {
+          toast.error("Người dùng đã là thành viên của nhóm");
+        } else {
+          throw error;
+        }
+      } else {
+        toast.success("Đã thêm thành viên vào nhóm");
+        setAddMemberOpen(false);
+        setSelectedUserId("");
+        fetchMembers();
+      }
+    } catch (err: any) {
+      toast.error(`Lỗi: ${err.message}`);
+    } finally {
+      setAddingMember(false);
+    }
+  }, [group, selectedUserId, fetchMembers]);
+
+  const handleRemoveMember = useCallback(async (userId: string) => {
+    if (!group) return;
+    setRemovingMemberId(userId);
+    try {
+      const { error } = await supabaseClient
+        .from("group_members")
+        .delete()
+        .eq("group_id", group.id)
+        .eq("user_id", userId);
+      if (error) throw error;
+      toast.success("Đã xóa thành viên khỏi nhóm");
+      fetchMembers();
+    } catch (err: any) {
+      toast.error(`Lỗi: ${err.message}`);
+    } finally {
+      setRemovingMemberId(null);
+    }
+  }, [group, fetchMembers]);
+
+  if (!group) return null;
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>{group.name}</DialogTitle>
+            <DialogDescription>
+              Tạo bởi {group.creator_name} · {formatDate(group.created_at)}
+            </DialogDescription>
+          </DialogHeader>
+
+          <Tabs defaultValue="members" className="flex-1 overflow-hidden flex flex-col">
+            <TabsList className="w-full">
+              <TabsTrigger value="members" className="flex-1">Thành viên ({members.length})</TabsTrigger>
+              <TabsTrigger value="expenses" className="flex-1">Chi phí</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="members" className="mt-4 overflow-y-auto flex-1">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm text-muted-foreground">{members.length} thành viên</span>
+                <Button size="sm" variant="outline" onClick={() => setAddMemberOpen(true)}>
+                  <UserPlusIcon className="mr-2 h-4 w-4" />
+                  Thêm
+                </Button>
+              </div>
+              {loadingMembers ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : members.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">Không có thành viên</p>
+              ) : (
+                <div className="space-y-2">
+                  {members.map((m) => (
+                    <div key={m.id} className="flex items-center gap-3 rounded-lg border p-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={m.avatar_url ?? undefined} alt={m.full_name} />
+                        <AvatarFallback className="text-xs">{m.full_name?.[0]?.toUpperCase() ?? "?"}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{m.full_name}</p>
+                      </div>
+                      <Badge variant={m.role === "admin" ? "default" : "secondary"} className="text-xs">
+                        {m.role === "admin" ? "Admin" : "Member"}
+                      </Badge>
+                      {m.role !== "admin" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleRemoveMember(m.id)}
+                          disabled={removingMemberId === m.id}
+                        >
+                          {removingMemberId === m.id ? (
+                            <Loader2Icon className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <UserMinusIcon className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="expenses" className="mt-4 overflow-y-auto flex-1">
+              <div className="space-y-3">
+                <DetailRow label="Tổng chi phí" value={formatNumber(group.total_expenses)} />
+                {loadingExpenses ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : expenses.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">Chưa có chi phí nào</p>
+                ) : (
+                  <div className="space-y-2">
+                    {expenses.map((e) => (
+                      <div key={e.id} className="flex items-center justify-between rounded-lg border p-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{e.description}</p>
+                          <p className="text-xs text-muted-foreground">{e.paid_by_name} · {formatDate(e.expense_date)}</p>
+                        </div>
+                        <span className="text-sm font-mono tabular-nums ml-3">{formatNumber(e.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          {/* Actions inside modal */}
+          <div className="flex gap-2 pt-2 border-t">
+            <Button size="sm" variant="outline" onClick={onEdit}>
+              <PencilIcon className="mr-2 h-4 w-4" />
+              Đổi tên nhóm
+            </Button>
+            <Button size="sm" variant="destructive" onClick={onDelete}>
+              Xóa nhóm
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Member Dialog */}
+      <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Thêm thành viên</DialogTitle>
+            <DialogDescription>Thêm người dùng vào nhóm &ldquo;{group.name}&rdquo;</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 mt-2">
+            <Label>Chọn người dùng</Label>
+            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Chọn người dùng..." />
+              </SelectTrigger>
+              <SelectContent>
+                {availableProfiles.length === 0 ? (
+                  <SelectItem value="__none" disabled>Không còn người dùng nào</SelectItem>
+                ) : (
+                  availableProfiles.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setAddMemberOpen(false)} disabled={addingMember}>Hủy</Button>
+            <Button onClick={handleAddMember} disabled={addingMember || !selectedUserId}>
+              {addingMember ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Thêm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+// ─── Shared Confirmation Dialogs ────────────────────────────────────
+
+function DeleteConfirmDialog({
+  title,
+  description,
+  open,
+  onOpenChange,
+  onConfirm,
+  isDeleting,
+}: {
+  title: string;
+  description: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+  isDeleting: boolean;
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <div className="flex items-center gap-2">
+            <AlertTriangleIcon className="h-5 w-5 text-destructive" />
+            <AlertDialogTitle>{title}</AlertDialogTitle>
+          </div>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isDeleting}>Hủy</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={(e) => { e.preventDefault(); onConfirm(); }}
+            disabled={isDeleting}
+          >
+            {isDeleting ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Xóa
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+// ─── Create User Dialog ──────────────────────────────────────────────
+
+function CreateUserDialog({
+  open,
+  onOpenChange,
+  onSubmit,
+  isCreating,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: { full_name: string; email: string; role: string }) => void;
+  isCreating: boolean;
+}) {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("user");
+
+  useEffect(() => {
+    if (!open) { setFullName(""); setEmail(""); setRole("user"); }
+  }, [open]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Tạo người dùng mới</DialogTitle>
+          <DialogDescription>Thêm hồ sơ người dùng mới vào hệ thống</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 mt-2">
+          <div className="space-y-2">
+            <Label htmlFor="user-name">Họ tên</Label>
+            <Input id="user-name" placeholder="Nhập họ tên..." value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="user-email">Email</Label>
+            <Input id="user-email" type="email" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="user-role">Vai trò</Label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger id="user-role"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="user">User</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter className="mt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isCreating}>Hủy</Button>
+          <Button onClick={() => { if (!fullName || !email) { toast.error("Vui lòng điền đầy đủ thông tin"); return; } onSubmit({ full_name: fullName, email, role }); }} disabled={isCreating || !fullName || !email}>
+            {isCreating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Tạo người dùng
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Edit User Dialog ───────────────────────────────────────────────
+
+function EditUserDialog({
+  user,
+  open,
+  onOpenChange,
+  onSubmit,
+  isUpdating,
+}: {
+  user: AdminUserRow | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: { full_name: string; email: string }) => void;
+  isUpdating: boolean;
+}) {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    if (user && open) { setFullName(user.full_name); setEmail(user.email); }
+  }, [user, open]);
+
+  if (!user) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Chỉnh sửa hồ sơ</DialogTitle>
+          <DialogDescription>Cập nhật thông tin người dùng &ldquo;{user.full_name}&rdquo;</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 mt-2">
+          <div className="space-y-2">
+            <Label htmlFor="edit-user-name">Họ tên</Label>
+            <Input id="edit-user-name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-user-email">Email</Label>
+            <Input id="edit-user-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter className="mt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isUpdating}>Hủy</Button>
+          <Button onClick={() => onSubmit({ full_name: fullName, email })} disabled={isUpdating || !fullName || !email}>
+            {isUpdating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Lưu
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Edit Group Name Dialog ─────────────────────────────────────────
+
+function EditGroupDialog({
+  group,
+  open,
+  onOpenChange,
+  onConfirm,
+  isUpdating,
+}: {
+  group: GroupRow | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: (newName: string) => void;
+  isUpdating: boolean;
+}) {
+  const [name, setName] = useState("");
+
+  useEffect(() => {
+    if (group && open) setName(group.name);
+  }, [group, open]);
+
+  if (!group) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Đổi tên nhóm</DialogTitle>
+          <DialogDescription>Thay đổi tên hiển thị của nhóm &ldquo;{group.name}&rdquo;</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2 mt-2">
+          <Label htmlFor="group-name">Tên nhóm</Label>
+          <Input id="group-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nhập tên nhóm mới..." />
+        </div>
+        <DialogFooter className="mt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isUpdating}>Hủy</Button>
+          <Button onClick={() => onConfirm(name.trim())} disabled={isUpdating || !name.trim() || name.trim() === group.name}>
+            {isUpdating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Lưu
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Friendship Status Badge ────────────────────────────────────────
+
+const FRIENDSHIP_STATUS = {
+  accepted: { label: "Đã chấp nhận", className: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800" },
+  pending: { label: "Chờ xử lý", className: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800" },
+  rejected: { label: "Từ chối", className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800" },
+} as const;
+
+function FriendshipStatusBadge({ status }: { status: keyof typeof FRIENDSHIP_STATUS }) {
+  const config = FRIENDSHIP_STATUS[status];
+  return <Badge className={config.className}>{config.label}</Badge>;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ─── USERS TAB ──────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+
+function UsersTab() {
+  const { data: identity } = useGetIdentity<Profile>();
+  const updateMutation = useUpdate();
+  const queryClient = useQueryClient();
+
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Detail dialog
+  const [selectedUser, setSelectedUser] = useState<AdminUserRow | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+
+  // Delete
+  const [deleteUser, setDeleteUser] = useState<AdminUserRow | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Create
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+
+  // Edit
+  const [editUser, setEditUser] = useState<AdminUserRow | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Fetch Users
+  const { data: usersData, isLoading } = useQuery({
+    queryKey: ["admin", "users"],
+    queryFn: async () => {
+      const { data, error } = await supabaseClient.rpc("get_admin_users");
+      if (error) throw error;
+      return (data ?? []) as AdminUserRow[];
+    },
+    staleTime: 30_000,
+  });
+
+  // Client-side filtering
+  const filteredData = useMemo(() => {
+    let result = usersData ?? [];
+    if (debouncedSearch) {
+      const q = debouncedSearch.toLowerCase();
+      result = result.filter((u) => u.full_name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q));
+    }
+    if (roleFilter !== "all") {
+      result = result.filter((u) => u.role === roleFilter);
+    }
+    return result;
+  }, [usersData, debouncedSearch, roleFilter]);
+
+  // Columns
+  const columns = useMemo<ColumnDef<AdminUserRow>[]>(() => [
+    {
+      id: "avatar", header: "", accessorKey: "avatar_url", size: 50, enableSorting: false,
+      cell: ({ row }) => (
+        <Avatar className="h-8 w-8">
+          <AvatarImage src={row.original.avatar_url ?? undefined} alt={row.original.full_name} />
+          <AvatarFallback className="text-xs">{row.original.full_name?.[0]?.toUpperCase() ?? "?"}</AvatarFallback>
+        </Avatar>
+      ),
+    },
+    { id: "full_name", header: "Tên", accessorKey: "full_name", size: 180 },
+    { id: "email", header: "Email", accessorKey: "email", size: 220 },
+    {
+      id: "role", header: "Vai trò", accessorFn: (row) => row.role, size: 100,
+      cell: ({ row }) => (
+        <Badge variant={row.original.role === "admin" ? "default" : "secondary"}>
+          {row.original.role === "admin" ? "Admin" : "User"}
+        </Badge>
+      ),
+    },
+    {
+      id: "created_at", header: "Ngày tạo", accessorKey: "created_at", size: 120,
+      cell: ({ getValue }) => formatDate(getValue() as string),
+    },
+    {
+      id: "actions", header: "", size: 50, enableSorting: false,
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreHorizontalIcon className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => { setSelectedUser(row.original); setDetailOpen(true); }}>
+              Xem chi tiết
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { setEditUser(row.original); setEditDialogOpen(true); }}>
+              <PencilIcon className="mr-2 h-4 w-4" />
+              Chỉnh sửa
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => { setDeleteUser(row.original); setDeleteDialogOpen(true); }} disabled={identity?.id === row.original.id} className="text-destructive">
+              {identity?.id === row.original.id ? "Không thể xóa chính mình" : "Xóa người dùng"}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ], [identity?.id]);
+
+  const [sorting, setSorting] = useState<SortingState>([{ id: "created_at", desc: true }]);
+
+  const reactTable = useReactTable({
+    data: filteredData,
+    columns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
+  });
+
+  // Handlers
+  const handleToggleRole = useCallback((user: AdminUserRow) => {
+    if (identity?.id === user.id) { toast.warning("Không thể thay đổi vai trò của chính mình"); return; }
+    const newRole = user.role === "admin" ? "user" : "admin";
+    updateMutation.mutate(
+      { resource: "user_roles", id: user.id, values: { role: newRole } },
+      {
+        onSuccess: () => { toast.success(`Đã ${newRole === "admin" ? "nâng cấp" : "hạ cấp"} vai trò của ${user.full_name}`); queryClient.invalidateQueries({ queryKey: ["admin", "users"] }); },
+        onError: (error) => { toast.error(`Lỗi: ${error.message}`); },
+      },
+    );
+  }, [identity?.id, updateMutation, queryClient]);
+
+  const handleDeleteUser = useCallback(async () => {
+    if (!deleteUser) return;
+    setIsDeleting(true);
+    try {
+      const { error } = await supabaseClient.from("profiles").delete().eq("id", deleteUser.id);
+      if (error) throw error;
+      toast.success(`Đã xóa người dùng "${deleteUser.full_name}"`);
+      setDeleteDialogOpen(false); setDeleteUser(null);
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    } catch (err: any) {
+      toast.error(`Lỗi: ${err.message ?? "Không thể xóa người dùng"}`);
+    } finally { setIsDeleting(false); }
+  }, [deleteUser, queryClient]);
+
+  const handleCreateUser = useCallback(async (data: { full_name: string; email: string; role: string }) => {
+    setIsCreating(true);
+    try {
+      const { error } = await supabaseClient.from("profiles").insert({ full_name: data.full_name, email: data.email });
+      if (error) throw error;
+      if (data.role === "admin") {
+        const { data: newProfile } = await supabaseClient.from("profiles").select("id").eq("email", data.email).single();
+        if (newProfile) await supabaseClient.from("user_roles").upsert({ user_id: newProfile.id, role: "admin" });
+      }
+      toast.success(`Đã tạo người dùng "${data.full_name}"`);
+      setCreateDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    } catch (err: any) {
+      toast.error(`Lỗi: ${err.message ?? "Không thể tạo người dùng"}`);
+    } finally { setIsCreating(false); }
+  }, [queryClient]);
+
+  const handleEditUser = useCallback(async (data: { full_name: string; email: string }) => {
+    if (!editUser) return;
+    setIsUpdating(true);
+    try {
+      const { error } = await supabaseClient.from("profiles").update({ full_name: data.full_name, email: data.email }).eq("id", editUser.id);
+      if (error) throw error;
+      toast.success(`Đã cập nhật hồ sơ "${data.full_name}"`);
+      setEditDialogOpen(false); setEditUser(null);
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    } catch (err: any) {
+      toast.error(`Lỗi: ${err.message ?? "Không thể cập nhật hồ sơ"}`);
+    } finally { setIsUpdating(false); }
+  }, [editUser, queryClient]);
+
+  const clearFilters = useCallback(() => { setSearch(""); setRoleFilter("all"); }, []);
+  const hasActiveFilters = search !== "" || roleFilter !== "all";
+  const isEmptyResult = !isLoading && reactTable.getRowModel().rows.length === 0;
+
+  return (
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div>
+            <CardTitle>Quản lý người dùng</CardTitle>
+            <CardDescription>Xem và quản lý tất cả người dùng trong hệ thống</CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+              <PlusIcon className="mr-2 h-4 w-4" />
+              Tạo người dùng
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setShowFilters((v) => !v)}>
+              <FilterIcon className="mr-2 h-4 w-4" />
+              Bộ lọc
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="relative max-w-sm">
+            <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder="Tìm kiếm theo tên hoặc email..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          </div>
+          {showFilters && (
+            <div className="flex items-center gap-3 flex-wrap">
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="w-[150px]"><SelectValue placeholder="Vai trò" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả vai trò</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="user">User</SelectItem>
+                </SelectContent>
+              </Select>
+              {hasActiveFilters && <Button variant="ghost" size="sm" onClick={clearFilters}>Xóa bộ lọc</Button>}
+            </div>
+          )}
+
+          {isEmptyResult && hasActiveFilters ? (
+            <Empty className="min-h-[400px]">
+              <EmptyMedia variant="icon"><UsersIcon className="h-6 w-6" /></EmptyMedia>
+              <EmptyHeader>
+                <EmptyTitle>Không tìm thấy người dùng</EmptyTitle>
+                <EmptyDescription>Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent><Button variant="outline" onClick={clearFilters}>Xóa bộ lọc</Button></EmptyContent>
+            </Empty>
+          ) : (
+            <div className="rounded-md border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  {reactTable.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <TableHead key={header.id} style={{ width: header.getSize() }}>
+                          {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow><TableCell colSpan={columns.length} className="h-24 text-center">Đang tải...</TableCell></TableRow>
+                  ) : reactTable.getRowModel().rows.length ? (
+                    reactTable.getRowModel().rows.map((row) => (
+                      <TableRow key={row.original?.id ?? row.id}>
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id} style={{ width: cell.column.getSize() }}>
+                            <div className="truncate">{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow><TableCell colSpan={columns.length} className="h-24 text-center">Không có dữ liệu</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
+          {!isLoading && reactTable.getRowModel().rows.length > 0 && (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">Trang {reactTable.getState().pagination.pageIndex + 1} / {reactTable.getPageCount()}</p>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => reactTable.previousPage()} disabled={!reactTable.getCanPreviousPage()}>Trước</Button>
+                <Button variant="outline" size="sm" onClick={() => reactTable.nextPage()} disabled={!reactTable.getCanNextPage()}>Sau</Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <UserDetailDialog
+        user={selectedUser}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onEdit={() => { setDetailOpen(false); setEditUser(selectedUser); setEditDialogOpen(true); }}
+        onToggleRole={() => { if (selectedUser) handleToggleRole(selectedUser); }}
+        onDelete={() => { setDetailOpen(false); setDeleteUser(selectedUser); setDeleteDialogOpen(true); }}
+        isSelf={identity?.id === selectedUser?.id}
+      />
+      <DeleteConfirmDialog
+        title="Xác nhận xóa người dùng"
+        description={`Bạn có chắc chắn muốn xóa người dùng "${deleteUser?.full_name ?? ""}" (${deleteUser?.email ?? ""})? Tất cả dữ liệu liên quan sẽ bị xóa theo. Hành động này không thể hoàn tác.`}
+        open={deleteDialogOpen}
+        onOpenChange={(o) => { if (!o && !isDeleting) { setDeleteDialogOpen(false); setDeleteUser(null); } }}
+        onConfirm={handleDeleteUser}
+        isDeleting={isDeleting}
+      />
+      <CreateUserDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} onSubmit={handleCreateUser} isCreating={isCreating} />
+      <EditUserDialog user={editUser} open={editDialogOpen} onOpenChange={(o) => { if (!o && !isUpdating) { setEditDialogOpen(false); setEditUser(null); } }} onSubmit={handleEditUser} isUpdating={isUpdating} />
+    </>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ─── GROUPS TAB ─────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+
+function GroupsTab() {
+  const deleteMutation = useDelete();
+  const updateMutation = useUpdate();
+
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
+
+  // Detail dialog
+  const [selectedGroup, setSelectedGroup] = useState<GroupRow | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+
+  // Delete
+  const [deleteGroup, setDeleteGroup] = useState<GroupRow | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Edit
+  const [editGroup, setEditGroup] = useState<GroupRow | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const filters = useMemo(() => {
+    const f: Array<{ field: string; operator: string; value: unknown }> = [];
+    if (debouncedSearch) f.push({ field: "name", operator: "contains", value: debouncedSearch });
+    return f;
+  }, [debouncedSearch]);
+
+  const columns = useMemo<ColumnDef<GroupRow>[]>(() => [
+    { id: "name", header: "Tên nhóm", accessorKey: "name", size: 200 },
+    {
+      id: "creator", header: "Người tạo", accessorKey: "creator_name", size: 180, enableSorting: false,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <Avatar className="h-7 w-7">
+            <AvatarImage src={row.original.creator_avatar ?? undefined} alt={row.original.creator_name} />
+            <AvatarFallback className="text-xs">{row.original.creator_name?.[0]?.toUpperCase() ?? "?"}</AvatarFallback>
+          </Avatar>
+          <span className="text-sm">{row.original.creator_name}</span>
+        </div>
+      ),
+    },
+    {
+      id: "member_count", header: "Thành viên", accessorKey: "member_count", size: 100,
+      cell: ({ getValue }) => <Badge variant="secondary">{getValue() as number}</Badge>,
+    },
+    {
+      id: "total_expenses", header: () => <div className="text-right">Tổng chi phí</div>, accessorKey: "total_expenses", size: 140,
+      cell: ({ getValue }) => <div className="text-right font-mono tabular-nums">{formatNumber(getValue() as number)}</div>,
+    },
+    {
+      id: "created_at", header: "Ngày tạo", accessorKey: "created_at", size: 120,
+      cell: ({ getValue }) => formatDate(getValue() as string),
+    },
+    {
+      id: "actions", header: "", size: 50, enableSorting: false,
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontalIcon className="h-4 w-4" /></Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => { setSelectedGroup(row.original); setDetailOpen(true); }}>Xem chi tiết</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { setEditGroup(row.original); setEditDialogOpen(true); }}>
+              <PencilIcon className="mr-2 h-4 w-4" />Đổi tên nhóm
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => { setDeleteGroup(row.original); setDeleteDialogOpen(true); }} className="text-destructive">Xóa nhóm</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ], []);
+
+  const table = useTable<GroupRow>({
+    columns,
+    refineCoreProps: {
+      resource: "groups",
+      meta: { select: "*, profiles!groups_created_by_fkey(full_name, avatar_url), group_members(count)" },
+      pagination: { pageSize: 10 },
+      filters: { permanent: filters as any },
+      sorters: { initial: [{ field: "created_at", order: "desc" }] },
+      queryOptions: {
+        select: (data) => ({
+          ...data,
+          data: data.data.map((group: any) => ({
+            id: group.id,
+            name: group.name ?? "",
+            created_by: group.created_by ?? "",
+            creator_name: group.profiles?.full_name ?? "Không rõ",
+            creator_avatar: group.profiles?.avatar_url ?? null,
+            member_count: group.group_members?.[0]?.count ?? 0,
+            total_expenses: group.total_expenses ?? 0,
+            created_at: group.created_at,
+          })),
+        }),
+      },
+    },
+  });
+
+  const handleDelete = useCallback(() => {
+    if (!deleteGroup) return;
+    setIsDeleting(true);
+    deleteMutation.mutate(
+      { resource: "groups", id: deleteGroup.id },
+      {
+        onSuccess: () => { toast.success(`Đã xóa nhóm "${deleteGroup.name}"`); setDeleteDialogOpen(false); setDeleteGroup(null); setIsDeleting(false); table.refineCore.tableQuery.refetch(); },
+        onError: (error) => { toast.error(`Lỗi: ${error.message}`); setIsDeleting(false); },
+      },
+    );
+  }, [deleteGroup, deleteMutation, table.refineCore.tableQuery]);
+
+  const handleEdit = useCallback((newName: string) => {
+    if (!editGroup || !newName) return;
+    setIsUpdating(true);
+    updateMutation.mutate(
+      { resource: "groups", id: editGroup.id, values: { name: newName } },
+      {
+        onSuccess: () => { toast.success(`Đã đổi tên nhóm thành "${newName}"`); setEditDialogOpen(false); setEditGroup(null); setIsUpdating(false); table.refineCore.tableQuery.refetch(); },
+        onError: (error) => { toast.error(`Lỗi: ${error.message}`); setIsUpdating(false); },
+      },
+    );
+  }, [editGroup, updateMutation, table.refineCore.tableQuery]);
+
+  const clearFilters = useCallback(() => setSearch(""), []);
+  const hasActiveFilters = search !== "";
+  const isEmptyResult = !table.refineCore.tableQuery.isLoading && table.reactTable.getRowModel().rows.length === 0;
+
+  return (
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div>
+            <CardTitle>Quản lý nhóm</CardTitle>
+            <CardDescription>Xem và quản lý tất cả nhóm trong hệ thống</CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="relative max-w-sm">
+            <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder="Tìm kiếm theo tên nhóm..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          </div>
+          {isEmptyResult && hasActiveFilters ? (
+            <Empty className="min-h-[400px]">
+              <EmptyMedia variant="icon"><GroupIcon className="h-6 w-6" /></EmptyMedia>
+              <EmptyHeader>
+                <EmptyTitle>Không tìm thấy nhóm</EmptyTitle>
+                <EmptyDescription>Thử thay đổi từ khóa tìm kiếm</EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent><Button variant="outline" onClick={clearFilters}>Xóa bộ lọc</Button></EmptyContent>
+            </Empty>
+          ) : (
+            <DataTable table={table} />
+          )}
+        </CardContent>
+      </Card>
+
+      <GroupDetailDialog
+        group={selectedGroup}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onEdit={() => { setDetailOpen(false); setEditGroup(selectedGroup); setEditDialogOpen(true); }}
+        onDelete={() => { setDetailOpen(false); setDeleteGroup(selectedGroup); setDeleteDialogOpen(true); }}
+      />
+      <DeleteConfirmDialog
+        title="Xác nhận xóa nhóm"
+        description={`Bạn có chắc chắn muốn xóa nhóm "${deleteGroup?.name ?? ""}"? Hành động này không thể hoàn tác.`}
+        open={deleteDialogOpen}
+        onOpenChange={(o) => { if (!o && !isDeleting) { setDeleteDialogOpen(false); setDeleteGroup(null); } }}
+        onConfirm={handleDelete}
+        isDeleting={isDeleting}
+      />
+      <EditGroupDialog group={editGroup} open={editDialogOpen} onOpenChange={(o) => { if (!o && !isUpdating) { setEditDialogOpen(false); setEditGroup(null); } }} onConfirm={handleEdit} isUpdating={isUpdating} />
+    </>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ─── FRIENDSHIPS TAB ────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+
+function FriendshipsTab() {
+  const deleteMutation = useDelete();
+
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  const [deleteFriendship, setDeleteFriendship] = useState<FriendshipRow | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const filters = useMemo(() => {
+    const f: Array<{ field: string; operator: string; value: unknown }> = [];
+    if (statusFilter !== "all") f.push({ field: "status", operator: "eq", value: statusFilter });
+    return f;
+  }, [statusFilter]);
+
+  const columns = useMemo<ColumnDef<FriendshipRow>[]>(() => [
+    {
+      id: "user_a", header: "Người dùng A", accessorKey: "user_a_name", size: 200, enableSorting: false,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <Avatar className="h-7 w-7">
+            <AvatarImage src={row.original.user_a_avatar ?? undefined} alt={row.original.user_a_name} />
+            <AvatarFallback className="text-xs">{row.original.user_a_name?.[0]?.toUpperCase() ?? "?"}</AvatarFallback>
+          </Avatar>
+          <span className="text-sm">{row.original.user_a_name}</span>
+        </div>
+      ),
+    },
+    {
+      id: "user_b", header: "Người dùng B", accessorKey: "user_b_name", size: 200, enableSorting: false,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <Avatar className="h-7 w-7">
+            <AvatarImage src={row.original.user_b_avatar ?? undefined} alt={row.original.user_b_name} />
+            <AvatarFallback className="text-xs">{row.original.user_b_name?.[0]?.toUpperCase() ?? "?"}</AvatarFallback>
+          </Avatar>
+          <span className="text-sm">{row.original.user_b_name}</span>
+        </div>
+      ),
+    },
+    {
+      id: "status", header: "Trạng thái", accessorKey: "status", size: 140,
+      cell: ({ getValue }) => <FriendshipStatusBadge status={getValue() as keyof typeof FRIENDSHIP_STATUS} />,
+    },
+    {
+      id: "created_at", header: "Ngày tạo", accessorKey: "created_at", size: 120,
+      cell: ({ getValue }) => formatDate(getValue() as string),
+    },
+    {
+      id: "actions", header: "", size: 50, enableSorting: false,
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontalIcon className="h-4 w-4" /></Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {row.original.status === "pending" && (
+              <DropdownMenuItem onClick={() => handleAccept(row.original)}>Chấp nhận kết bạn</DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => { setDeleteFriendship(row.original); setDeleteDialogOpen(true); }} className="text-destructive">Xóa tình bạn</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ], []);
+
+  const table = useTable<FriendshipRow>({
+    columns,
+    refineCoreProps: {
+      resource: "friendships",
+      meta: { select: "*, user_a_profile:profiles!friendships_user_a_fkey(full_name, avatar_url), user_b_profile:profiles!friendships_user_b_fkey(full_name, avatar_url)" },
+      pagination: { pageSize: 10 },
+      filters: { permanent: filters as any },
+      sorters: { initial: [{ field: "created_at", order: "desc" }] },
+      queryOptions: {
+        select: (data) => ({
+          ...data,
+          data: data.data.map((f: any) => ({
+            id: f.id,
+            user_a_id: f.user_a,
+            user_a_name: f.user_a_profile?.full_name ?? "Không rõ",
+            user_a_avatar: f.user_a_profile?.avatar_url ?? null,
+            user_b_id: f.user_b,
+            user_b_name: f.user_b_profile?.full_name ?? "Không rõ",
+            user_b_avatar: f.user_b_profile?.avatar_url ?? null,
+            status: f.status,
+            created_at: f.created_at,
+          })),
+        }),
+      },
+    },
+  });
+
+  const handleDelete = useCallback(() => {
+    if (!deleteFriendship) return;
+    setIsDeleting(true);
+    deleteMutation.mutate(
+      { resource: "friendships", id: deleteFriendship.id },
+      {
+        onSuccess: () => { toast.success(`Đã xóa tình bạn giữa "${deleteFriendship.user_a_name}" và "${deleteFriendship.user_b_name}"`); setDeleteDialogOpen(false); setDeleteFriendship(null); setIsDeleting(false); table.refineCore.tableQuery.refetch(); },
+        onError: (error) => { toast.error(`Lỗi: ${error.message}`); setIsDeleting(false); },
+      },
+    );
+  }, [deleteFriendship, deleteMutation, table.refineCore.tableQuery]);
+
+  const handleAccept = useCallback(async (friendship: FriendshipRow) => {
+    try {
+      const { error } = await supabaseClient.rpc("admin_accept_friendship", { p_friendship_id: friendship.id });
+      if (error) throw error;
+      toast.success(`Đã chấp nhận kết bạn giữa "${friendship.user_a_name}" và "${friendship.user_b_name}"`);
+      table.refineCore.tableQuery.refetch();
+    } catch (err: any) {
+      toast.error(`Lỗi: ${err.message ?? "Không thể chấp nhận kết bạn"}`);
+    }
+  }, [table.refineCore.tableQuery]);
+
+  const clearFilters = useCallback(() => { setSearch(""); setStatusFilter("all"); }, []);
+  const hasActiveFilters = search !== "" || statusFilter !== "all";
+  const isEmptyResult = !table.refineCore.tableQuery.isLoading && table.reactTable.getRowModel().rows.length === 0;
+
+  return (
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div>
+            <CardTitle>Quản lý tình bạn</CardTitle>
+            <CardDescription>Xem và quản lý tất cả kết nối bạn bè trong hệ thống</CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="relative max-w-sm flex-1">
+              <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input placeholder="Tìm kiếm theo tên người dùng..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[160px]"><SelectValue placeholder="Trạng thái" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="pending">Chờ xử lý</SelectItem>
+                <SelectItem value="accepted">Đã chấp nhận</SelectItem>
+                <SelectItem value="rejected">Từ chối</SelectItem>
+              </SelectContent>
+            </Select>
+            {hasActiveFilters && <Button variant="ghost" size="sm" onClick={clearFilters}>Xóa bộ lọc</Button>}
+          </div>
+          {isEmptyResult && hasActiveFilters ? (
+            <Empty className="min-h-[400px]">
+              <EmptyMedia variant="icon"><HeartHandshakeIcon className="h-6 w-6" /></EmptyMedia>
+              <EmptyHeader>
+                <EmptyTitle>Không tìm thấy tình bạn</EmptyTitle>
+                <EmptyDescription>Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent><Button variant="outline" onClick={clearFilters}>Xóa bộ lọc</Button></EmptyContent>
+            </Empty>
+          ) : (
+            <DataTable table={table} />
+          )}
+        </CardContent>
+      </Card>
+
+      <DeleteConfirmDialog
+        title="Xác nhận xóa tình bạn"
+        description={`Bạn có chắc chắn muốn xóa tình bạn giữa "${deleteFriendship?.user_a_name ?? ""}" và "${deleteFriendship?.user_b_name ?? ""}"? Hành động này không thể hoàn tác.`}
+        open={deleteDialogOpen}
+        onOpenChange={(o) => { if (!o && !isDeleting) { setDeleteDialogOpen(false); setDeleteFriendship(null); } }}
+        onConfirm={handleDelete}
+        isDeleting={isDeleting}
+      />
+    </>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ─── MAIN COMPONENT ─────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+
+export function AdminPeople() {
+  return (
+    <div className="space-y-6">
+      <Tabs defaultValue="users">
+        <TabsList>
+          <TabsTrigger value="users" className="gap-2">
+            <UsersIcon className="h-4 w-4" />
+            Người dùng
+          </TabsTrigger>
+          <TabsTrigger value="groups" className="gap-2">
+            <GroupIcon className="h-4 w-4" />
+            Nhóm
+          </TabsTrigger>
+          <TabsTrigger value="friendships" className="gap-2">
+            <HeartHandshakeIcon className="h-4 w-4" />
+            Tình bạn
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users" className="mt-4">
+          <UsersTab />
+        </TabsContent>
+        <TabsContent value="groups" className="mt-4">
+          <GroupsTab />
+        </TabsContent>
+        <TabsContent value="friendships" className="mt-4">
+          <FriendshipsTab />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
