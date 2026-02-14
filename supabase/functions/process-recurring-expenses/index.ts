@@ -20,33 +20,36 @@ interface RecurringExpense {
   end_date: string | null
 }
 
-interface TemplateExpense {
-  id: string
-  description: string
-  amount: number
-  currency: string
-  category: string
-  paid_by_user_id: string
-  context_type: string
-  group_id: string | null
-  friendship_id: string | null
-}
-
-interface ExpenseSplit {
-  user_id: string
-  split_method: string
-  split_value: number
-  computed_amount: number
-}
-
 interface ProcessingResults {
   processed: number
   created: number
   skipped: number
   deactivated: number
+  prepaid_consumed: number
   errors: string[]
+  details: Array<{
+    recurring_id: string
+    cycle_date: string
+    action: string
+    instance_id?: string
+  }>
 }
 
+/**
+ * Process Recurring Expenses Edge Function
+ *
+ * Called via cron (daily recommended) or manually.
+ * For each due recurring expense:
+ *   1. Handles multi-cycle catch-up (if system was down)
+ *   2. Calls process_single_recurring_instance() SQL function for each cycle
+ *   3. The SQL function atomically handles:
+ *      - Idempotency (no duplicate instances)
+ *      - Expense creation with recurring_expense_id + cycle_date
+ *      - Split copying with payer auto-settlement
+ *      - Prepaid balance consumption
+ *      - next_occurrence advancement
+ *      - Deactivation when past end_date
+ */
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -65,6 +68,7 @@ serve(async (req) => {
 
     console.log('Starting recurring expense processing...')
 
+    // Fetch all active recurring expenses that are due
     const { data: dueRecurring, error: fetchError } = await supabase
       .rpc('get_due_recurring_expenses')
 
@@ -75,7 +79,13 @@ serve(async (req) => {
     if (!dueRecurring || dueRecurring.length === 0) {
       console.log('No recurring expenses due for creation')
       return new Response(
-        JSON.stringify({ success: true, processed: 0, skipped: 0, message: 'No recurring expenses due' }),
+        JSON.stringify({
+          success: true,
+          processed: 0,
+          created: 0,
+          skipped: 0,
+          message: 'No recurring expenses due'
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -87,153 +97,107 @@ serve(async (req) => {
       created: 0,
       skipped: 0,
       deactivated: 0,
-      errors: []
+      prepaid_consumed: 0,
+      errors: [],
+      details: []
     }
+
+    const today = new Date().toISOString().split('T')[0]
 
     for (const recurring of dueRecurring as RecurringExpense[]) {
       try {
         results.processed++
 
-        // Check if this period is covered by prepaid payment (Requirements 3.1, 3.2)
-        if (recurring.prepaid_until) {
-          const prepaidUntil = new Date(recurring.prepaid_until)
-          const nextOccurrence = new Date(recurring.next_occurrence)
-          
-          if (nextOccurrence <= prepaidUntil) {
-            // Skip this period - it's prepaid (Requirement 3.2)
-            // Advance next_occurrence to first uncovered period (Requirement 3.3)
-            let newNextOccurrence = nextOccurrence
-            
-            while (newNextOccurrence <= prepaidUntil) {
-              const { data: nextDate, error: calcError } = await supabase
-                .rpc('calculate_next_occurrence', {
-                  p_current_date: newNextOccurrence.toISOString().split('T')[0],
-                  p_frequency: recurring.frequency,
-                  p_interval_value: recurring.interval_value
-                })
-              
-              if (calcError) {
-                throw new Error(`Failed to calculate next occurrence: ${calcError.message}`)
-              }
-              
-              newNextOccurrence = new Date(nextDate)
-            }
-            
-            // Check if we should deactivate (past end_date)
-            const updates: Record<string, unknown> = {
-              next_occurrence: newNextOccurrence.toISOString().split('T')[0]
-            }
-            
-            if (recurring.end_date && newNextOccurrence > new Date(recurring.end_date)) {
-              updates.is_active = false
-              results.deactivated++
-              console.log(`Deactivated recurring ${recurring.id} - next occurrence past end_date`)
-            }
-            
-            // Update next_occurrence to first uncovered period
-            const { error: updateError } = await supabase
-              .from('recurring_expenses')
-              .update(updates)
-              .eq('id', recurring.id)
-            
-            if (updateError) {
-              console.error(`Failed to update recurring expense ${recurring.id}: ${updateError.message}`)
-            }
-            
-            console.log(`Skipped prepaid period for recurring ${recurring.id}, advanced to ${newNextOccurrence.toISOString().split('T')[0]}`)
-            results.skipped++
-            continue
+        // Multi-cycle catch-up: process all missed cycles sequentially
+        // The SQL function handles idempotency, so re-running is safe
+        let currentCycleDate = recurring.next_occurrence
+        const MAX_CATCHUP_CYCLES = 52 // Safety limit: max 1 year of weekly cycles
+
+        let cyclesProcessed = 0
+
+        while (currentCycleDate <= today && cyclesProcessed < MAX_CATCHUP_CYCLES) {
+          // Call the atomic SQL function for this cycle
+          const { data: result, error: processError } = await supabase
+            .rpc('process_single_recurring_instance', {
+              p_recurring_expense_id: recurring.id,
+              p_cycle_date: currentCycleDate
+            })
+
+          if (processError) {
+            const errorMsg = `Error processing recurring ${recurring.id} cycle ${currentCycleDate}: ${processError.message}`
+            console.error(errorMsg)
+            results.errors.push(errorMsg)
+            break // Stop processing this recurring expense on error
           }
+
+          if (result) {
+            const resultObj = typeof result === 'string' ? JSON.parse(result) : result
+
+            if (!resultObj.success) {
+              const errorMsg = `Failed to process recurring ${recurring.id}: ${resultObj.error}`
+              console.error(errorMsg)
+              results.errors.push(errorMsg)
+              break
+            }
+
+            if (resultObj.skipped) {
+              console.log(`Skipped cycle ${currentCycleDate} for recurring ${recurring.id}: ${resultObj.reason}`)
+              results.skipped++
+              results.details.push({
+                recurring_id: recurring.id,
+                cycle_date: currentCycleDate,
+                action: 'skipped'
+              })
+            } else {
+              console.log(`Created instance ${resultObj.instance_id} for recurring ${recurring.id} cycle ${currentCycleDate}`)
+              results.created++
+              results.details.push({
+                recurring_id: recurring.id,
+                cycle_date: currentCycleDate,
+                action: 'created',
+                instance_id: resultObj.instance_id
+              })
+
+              // Track prepaid consumption
+              if (resultObj.prepaid_consumed?.total_consumed > 0) {
+                results.prepaid_consumed++
+              }
+
+              // Track deactivation
+              if (resultObj.deactivated) {
+                results.deactivated++
+                break // No more cycles to process
+              }
+            }
+          }
+
+          // Calculate next cycle date for catch-up loop
+          const { data: nextDate, error: calcError } = await supabase
+            .rpc('calculate_next_occurrence', {
+              p_current_date: currentCycleDate,
+              p_frequency: recurring.frequency,
+              p_interval_value: recurring.interval_value
+            })
+
+          if (calcError) {
+            console.error(`Failed to calculate next occurrence: ${calcError.message}`)
+            break
+          }
+
+          currentCycleDate = nextDate
+
+          // Check end_date
+          if (recurring.end_date && currentCycleDate > recurring.end_date) {
+            break
+          }
+
+          cyclesProcessed++
         }
 
-        // Normal expense creation flow (Requirement 3.5 - resume normal generation)
-        const { data: templateExpense, error: templateError } = await supabase
-          .from('expenses')
-          .select('*')
-          .eq('id', recurring.template_expense_id)
-          .single()
-
-        if (templateError || !templateExpense) {
-          throw new Error(`Template expense not found: ${recurring.template_expense_id}`)
+        if (cyclesProcessed >= MAX_CATCHUP_CYCLES) {
+          console.warn(`Hit max catch-up limit for recurring ${recurring.id}`)
+          results.errors.push(`Recurring ${recurring.id}: hit max catch-up limit of ${MAX_CATCHUP_CYCLES} cycles`)
         }
-
-        const { data: templateSplits, error: splitsError } = await supabase
-          .from('expense_splits')
-          .select('*')
-          .eq('expense_id', recurring.template_expense_id)
-
-        if (splitsError || !templateSplits) {
-          throw new Error(`Template splits not found: ${recurring.template_expense_id}`)
-        }
-
-        const { data: newExpense, error: expenseError } = await supabase
-          .from('expenses')
-          .insert({
-            description: templateExpense.description,
-            amount: templateExpense.amount,
-            currency: templateExpense.currency,
-            category: templateExpense.category,
-            expense_date: recurring.next_occurrence,
-            paid_by_user_id: templateExpense.paid_by_user_id,
-            is_payment: false,
-            context_type: recurring.context_type,
-            group_id: recurring.group_id,
-            friendship_id: recurring.friendship_id,
-            created_by: recurring.created_by
-          })
-          .select()
-          .single()
-
-        if (expenseError || !newExpense) {
-          throw new Error(`Failed to create expense: ${expenseError?.message}`)
-        }
-
-        const newSplits = (templateSplits as ExpenseSplit[]).map(split => ({
-          expense_id: newExpense.id,
-          user_id: split.user_id,
-          split_method: split.split_method,
-          split_value: split.split_value,
-          computed_amount: split.computed_amount
-        }))
-
-        const { error: splitsInsertError } = await supabase
-          .from('expense_splits')
-          .insert(newSplits)
-
-        if (splitsInsertError) {
-          await supabase.from('expenses').delete().eq('id', newExpense.id)
-          throw new Error(`Failed to create splits: ${splitsInsertError.message}`)
-        }
-
-        const { data: nextDate } = await supabase
-          .rpc('calculate_next_occurrence', {
-            p_current_date: recurring.next_occurrence,
-            p_frequency: recurring.frequency,
-            p_interval_value: recurring.interval_value
-          })
-
-        const updates: Record<string, unknown> = {
-          next_occurrence: nextDate,
-          last_created_at: new Date().toISOString()
-        }
-
-        const shouldDeactivate = recurring.end_date && new Date(nextDate) > new Date(recurring.end_date)
-        if (shouldDeactivate) {
-          updates.is_active = false
-          results.deactivated++
-        }
-
-        const { error: updateError } = await supabase
-          .from('recurring_expenses')
-          .update(updates)
-          .eq('id', recurring.id)
-
-        if (updateError) {
-          console.error(`Failed to update recurring expense ${recurring.id}: ${updateError.message}`)
-        }
-
-        console.log(`Created expense ${newExpense.id} from recurring ${recurring.id}`)
-        results.created++
 
       } catch (error) {
         const errorMessage = `Error processing recurring expense ${recurring.id}: ${(error as Error).message}`
@@ -242,7 +206,14 @@ serve(async (req) => {
       }
     }
 
-    console.log('Recurring expense processing complete:', results)
+    console.log('Recurring expense processing complete:', {
+      processed: results.processed,
+      created: results.created,
+      skipped: results.skipped,
+      deactivated: results.deactivated,
+      prepaid_consumed: results.prepaid_consumed,
+      errors: results.errors.length
+    })
 
     return new Response(
       JSON.stringify({
