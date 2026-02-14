@@ -52,6 +52,7 @@ import {
   SettingsIcon,
   HeartIcon,
   BanknoteIcon,
+  CreditCardIcon,
   ListIcon,
   PanelLeftIcon,
   LayoutDashboardIcon,
@@ -486,6 +487,10 @@ function UserDropdown() {
             <DropdownMenuItem onClick={() => go({ to: "/settings/bank" })}>
               <BanknoteIcon className="h-4 w-4" />
               <span>{t("settings.bank.title", "Bank Settings")}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => go({ to: "/settings/sepay" })}>
+              <CreditCardIcon className="h-4 w-4" />
+              <span>{t("settings.sepay.title", "SePay Settings")}</span>
             </DropdownMenuItem>
           </>
         )}
