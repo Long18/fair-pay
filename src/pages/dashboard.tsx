@@ -165,10 +165,13 @@ export const Dashboard = () => {
                     currentUserId={identity?.id || ""}
                     currency="VND"
                     isLoading={activitiesLoading}
-                    showSummary={true}
+                    showSummary={false}
                     showFilters={true}
                     showSort={true}
-                    showTimeGrouping={true}
+                    showTimeGrouping={false}
+                    showActions={true}
+                    paginationMode="pagination"
+                    pageSize={10}
                   />
                 </div>
               </TabsContent>

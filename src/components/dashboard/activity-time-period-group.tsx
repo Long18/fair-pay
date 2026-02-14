@@ -17,6 +17,7 @@ export interface ActivityTimePeriodGroupProps {
   onToggleActivity: (activityId: string) => void;
   onToggleGroup: () => void;
   duplicateIds: Set<string>;
+  showActions?: boolean;
   className?: string;
 }
 
@@ -31,6 +32,7 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
   onToggleActivity,
   onToggleGroup,
   duplicateIds,
+  showActions = false,
   className,
 }) => {
   const hasActivities = group.activities.length > 0;
@@ -83,6 +85,7 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
                 isExpanded={expandedActivityIds.has(activity.id)}
                 onToggleExpand={() => onToggleActivity(activity.id)}
                 showDuplicateContext={duplicateIds.has(activity.id)}
+                showActions={showActions}
               />
             ))}
           </motion.div>
