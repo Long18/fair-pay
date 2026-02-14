@@ -27,10 +27,10 @@ import { toast } from 'sonner';
 import {
   CheckIcon,
   AlertCircleIcon,
-  ShieldIcon,
   TrashIcon,
   ExternalLinkIcon,
   LockIcon,
+  CreditCardIcon,
 } from '@/components/ui/icons';
 import { useSepaySettings } from '@/hooks/use-sepay-settings';
 import { isAdmin } from '@/lib/rbac';
@@ -113,7 +113,7 @@ export function SepaySettings() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ShieldIcon className="h-5 w-5" />
+            <CreditCardIcon className="h-5 w-5" />
             {t('settings.sepay.title', 'SePay Payment Gateway')}
           </CardTitle>
         </CardHeader>
@@ -135,7 +135,7 @@ export function SepaySettings() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ShieldIcon className="h-5 w-5" />
+          <CreditCardIcon className="h-5 w-5" />
           {t('settings.sepay.title', 'SePay Payment Gateway')}
           <Badge variant="secondary" className="ml-2 text-xs">
             {formData.environment === 'production' ? 'Production' : 'Sandbox'}
