@@ -5,7 +5,10 @@ export type NotificationType =
   | 'payment_recorded'
   | 'friend_request'
   | 'friend_accepted'
-  | 'added_to_group';
+  | 'added_to_group'
+  | 'group_join_request'
+  | 'group_join_approved'
+  | 'group_join_rejected';
 
 export interface Notification {
   id: string;
