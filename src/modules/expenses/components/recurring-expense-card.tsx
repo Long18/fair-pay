@@ -39,6 +39,7 @@ import { MemberPrepaidBalanceList } from './member-prepaid-balance-list';
 import { MultiMemberPrepaidDialog } from './multi-member-prepaid-dialog';
 import { useState, useMemo } from 'react';
 import { useUpdateRecurringExpense, useDeleteRecurringExpense } from '../hooks/use-recurring-expenses';
+import { useValidateRunCycle, ValidateRunCycleResult } from '../hooks/use-validate-run-cycle';
 import { useNotification, useGetIdentity, useList } from '@refinedev/core';
 import { formatNumber } from '@/lib/locale-utils';
 import { useTranslation } from 'react-i18next';
@@ -55,6 +56,9 @@ import {
   BanknoteIcon,
   ChevronDownIcon,
   PencilIcon,
+  RefreshCwIcon,
+  Loader2Icon,
+  CheckIcon,
 } from "@/components/ui/icons";
 import { CalendarExportMenu } from "@/components/calendar/calendar-export-menu";
 
@@ -71,8 +75,10 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
   const [showPrepaidHistory, setShowPrepaidHistory] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [cycleResult, setCycleResult] = useState<ValidateRunCycleResult | null>(null);
   const { pauseRecurring, resumeRecurring } = useUpdateRecurringExpense();
   const { deleteRecurring } = useDeleteRecurringExpense();
+  const { validateAndRun, isRunning } = useValidateRunCycle();
   const { open: notify } = useNotification();
   const { data: identity } = useGetIdentity<{ id: string }>();
   const currentUserId = identity?.id || '';
@@ -81,6 +87,22 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
   const template = recurring.template_expense || recurring.expenses;
   const dateLocale = i18n.language === 'vi' ? vi : enUS;
   const language = i18n.language === 'vi' ? 'vi' : 'en';
+
+  // Cycle validation state
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const nextCycleDate = new Date(recurring.next_occurrence);
+  nextCycleDate.setHours(0, 0, 0, 0);
+  const isCycleDue = nextCycleDate <= today;
+  const cyclePeriodLabel = format(nextCycleDate, 'MMM yyyy', { locale: dateLocale });
+
+  const handleValidateRunCycle = async () => {
+    const result = await validateAndRun(recurring);
+    setCycleResult(result);
+    if (result.success) {
+      onUpdate?.();
+    }
+  };
 
   // Get prepaid coverage info (legacy)
   const prepaidCoverageInfo = getPrepaidCoverageStatus(recurring);
@@ -249,6 +271,26 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
                       })}
                     </Badge>
                   )}
+                  {/* Cycle execution status badge */}
+                  {recurring.is_active && cycleResult?.success && (
+                    <Badge
+                      variant={cycleResult.alreadyExecuted ? 'secondary' : 'default'}
+                      className="gap-1"
+                    >
+                      <CheckIcon className="h-3 w-3" />
+                      {cycleResult.alreadyExecuted
+                        ? t('recurring.cycle.alreadyExecutedBadge', 'Already executed')
+                        : t('recurring.cycle.executedBadge', 'Executed {{period}}', { period: cyclePeriodLabel })
+                      }
+                    </Badge>
+                  )}
+                  {/* Cycle due badge — shown when overdue and not yet run */}
+                  {recurring.is_active && isCycleDue && !cycleResult?.success && (
+                    <Badge variant="outline" className="gap-1 border-amber-300 text-amber-700">
+                      <RefreshCwIcon className="h-3 w-3" />
+                      {t('recurring.cycle.dueBadge', 'Cycle due')}
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
@@ -369,6 +411,62 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
               )}
             </div>
           </div>
+
+          {/* Validate & Run Cycle Button */}
+          {recurring.is_active && (
+            <div className="pt-2 border-t">
+              {cycleResult?.success && !cycleResult?.alreadyExecuted ? (
+                // Successfully executed — show confirmation state
+                <div className="flex items-center gap-2 text-sm text-green-700 py-1">
+                  <CheckIcon className="h-4 w-4 shrink-0" />
+                  <span>
+                    {t('recurring.cycle.executedFor', 'Executed for {{period}}', { period: cyclePeriodLabel })}
+                  </span>
+                </div>
+              ) : cycleResult?.alreadyExecuted ? (
+                // Already executed — show info state
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-1">
+                  <CheckIcon className="h-4 w-4 shrink-0" />
+                  <span>
+                    {t('recurring.cycle.alreadyExecutedFor', 'Cycle already executed for {{period}}', { period: cyclePeriodLabel })}
+                  </span>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={`w-full gap-2 ${
+                    isCycleDue
+                      ? 'border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800'
+                      : 'text-muted-foreground'
+                  }`}
+                  onClick={handleValidateRunCycle}
+                  disabled={isRunning || !isCycleDue}
+                  title={
+                    !isCycleDue
+                      ? t('recurring.cycle.notYetDue', 'Next cycle runs on {{date}}', {
+                          date: format(nextCycleDate, 'PPP', { locale: dateLocale }),
+                        })
+                      : undefined
+                  }
+                >
+                  {isRunning ? (
+                    <Loader2Icon className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCwIcon className="h-4 w-4" />
+                  )}
+                  {isRunning
+                    ? t('recurring.cycle.running', 'Running cycle...')
+                    : isCycleDue
+                      ? t('recurring.cycle.validateRun', 'Validate & Run Cycle')
+                      : t('recurring.cycle.pendingExecution', 'Pending — {{date}}', {
+                          date: format(nextCycleDate, 'MMM d', { locale: dateLocale }),
+                        })
+                  }
+                </Button>
+              )}
+            </div>
+          )}
 
           {/* Legacy Prepaid Coverage Info */}
           {hasPrepaidCoverage && recurring.prepaid_until && (
