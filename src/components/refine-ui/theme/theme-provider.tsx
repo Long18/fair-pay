@@ -75,10 +75,9 @@ export function ThemeProvider({
       });
     }
 
-    const themeColor = effectiveTheme === "dark" ? "#252525" : "#f9fafb";
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-    if (metaThemeColor) {
-      metaThemeColor.setAttribute("content", themeColor);
+    if (metaThemeColor && themeColors) {
+      metaThemeColor.setAttribute("content", themeColors.background);
     }
   };
 

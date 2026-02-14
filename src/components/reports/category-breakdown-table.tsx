@@ -144,8 +144,7 @@ export function CategoryBreakdownTable({
                     <TableCell className="text-xs sm:text-sm">
                       <div className="flex items-center gap-2">
                         <div
-                          className="w-3 h-3 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: categoryMeta?.color || "#gray" }}
+                          className={`w-3 h-3 rounded-full flex-shrink-0 ${categoryMeta?.bgColor || "bg-muted-foreground"}`}
                         />
                         <span className="font-medium truncate">
                           {categoryMeta?.name || category.category}

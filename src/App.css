@@ -305,6 +305,20 @@
   --color-semantic-negative: var(--semantic-negative);
   --color-semantic-positive: var(--semantic-positive);
   --color-semantic-neutral: var(--semantic-neutral);
+  --color-status-error: var(--status-error);
+  --color-status-error-foreground: var(--status-error-foreground);
+  --color-status-error-bg: var(--status-error-bg);
+  --color-status-error-border: var(--status-error-border);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-overlay: var(--surface-overlay);
+  --color-text-heading: var(--text-heading);
+  --color-text-secondary: var(--text-secondary);
+  --color-avatar-fallback: var(--avatar-fallback);
+  --color-avatar-fallback-foreground: var(--avatar-fallback-foreground);
+  --color-chart-positive: var(--chart-positive);
+  --color-chart-negative: var(--chart-negative);
+  --color-chart-grid: var(--chart-grid);
+  --color-chart-axis: var(--chart-axis);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -429,6 +443,30 @@
   --semantic-positive: oklch(0.65 0.15 160); /* Green for "owed" */
   --semantic-neutral: oklch(0.556 0 0); /* Gray for neutral */
 
+  /* Status Colors - Error */
+  --status-error: oklch(0.577 0.245 27.325);
+  --status-error-foreground: oklch(0.35 0.18 27);
+  --status-error-bg: oklch(0.95 0.05 27);
+  --status-error-border: oklch(0.88 0.08 27);
+
+  /* Surface Elevation */
+  --surface-elevated: oklch(0.98 0 0);
+  --surface-overlay: oklch(0.97 0 0);
+
+  /* Text Hierarchy */
+  --text-heading: oklch(0.205 0 0);
+  --text-secondary: oklch(0.556 0 0);
+
+  /* Avatar Fallback */
+  --avatar-fallback: oklch(0.7 0.15 60);
+  --avatar-fallback-foreground: oklch(1 0 0);
+
+  /* Chart Semantic Colors */
+  --chart-positive: oklch(0.65 0.17 155);
+  --chart-negative: oklch(0.577 0.245 27.325);
+  --chart-grid: oklch(0.95 0 0);
+  --chart-axis: oklch(0.65 0 0);
+
   /* Sidebar Colors */
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -500,6 +538,30 @@
   --semantic-negative: oklch(0.704 0.191 22.216); /* Softer red for dark mode */
   --semantic-positive: oklch(0.7 0.15 160); /* Brighter green for dark mode */
   --semantic-neutral: oklch(0.708 0 0); /* Lighter gray for dark mode */
+
+  /* Status Colors - Error (Dark Mode) */
+  --status-error: oklch(0.704 0.191 22.216);
+  --status-error-foreground: oklch(0.75 0.15 22);
+  --status-error-bg: oklch(0.25 0.08 22);
+  --status-error-border: oklch(0.35 0.1 22);
+
+  /* Surface Elevation (Dark Mode) */
+  --surface-elevated: oklch(0.22 0 0);
+  --surface-overlay: oklch(0.25 0 0);
+
+  /* Text Hierarchy (Dark Mode) */
+  --text-heading: oklch(0.95 0 0);
+  --text-secondary: oklch(0.65 0 0);
+
+  /* Avatar Fallback (Dark Mode) */
+  --avatar-fallback: oklch(0.65 0.15 60);
+  --avatar-fallback-foreground: oklch(1 0 0);
+
+  /* Chart Semantic Colors (Dark Mode) */
+  --chart-positive: oklch(0.7 0.17 155);
+  --chart-negative: oklch(0.704 0.191 22.216);
+  --chart-grid: oklch(0.25 0 0);
+  --chart-axis: oklch(0.6 0 0);
 
   /* Sidebar Colors for dark mode */
   --sidebar: oklch(0.205 0 0);
