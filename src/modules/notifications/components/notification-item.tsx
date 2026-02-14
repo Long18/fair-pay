@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { Notification } from "../types";
 import { formatDistanceToNow } from "date-fns";
 
-import { ReceiptIcon, HandCoinsIcon, UserPlusIcon, UsersIcon, Trash2Icon, PencilIcon } from "@/components/ui/icons";
+import { ReceiptIcon, HandCoinsIcon, UserPlusIcon, UsersIcon, Trash2Icon, PencilIcon, LogInIcon, UserCheckIcon, XIcon } from "@/components/ui/icons";
 interface NotificationItemProps {
   notification: Notification;
   onMarkAsRead: (id: string) => void;
@@ -46,6 +46,24 @@ const getNotificationMeta = (type: Notification['type']) => {
     case 'expense_deleted':
       return {
         icon: Trash2Icon,
+        iconColor: 'text-red-600',
+        iconBgColor: 'bg-red-100',
+      };
+    case 'group_join_request':
+      return {
+        icon: LogInIcon,
+        iconColor: 'text-amber-600',
+        iconBgColor: 'bg-amber-100',
+      };
+    case 'group_join_approved':
+      return {
+        icon: UserCheckIcon,
+        iconColor: 'text-green-600',
+        iconBgColor: 'bg-green-100',
+      };
+    case 'group_join_rejected':
+      return {
+        icon: XIcon,
         iconColor: 'text-red-600',
         iconBgColor: 'bg-red-100',
       };
