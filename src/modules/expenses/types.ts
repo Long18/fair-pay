@@ -28,6 +28,10 @@ export interface Expense {
     comment?: string | null;
     attachments?: Attachment[];
     expense_splits?: ExpenseSplit[]; // For joined data from Supabase
+    // Recurring expense instance tracking
+    recurring_expense_id?: string | null;
+    cycle_date?: string | null;
+    generated_at?: string | null;
 }
 
 export interface ExpenseSplit {
