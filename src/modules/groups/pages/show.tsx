@@ -460,12 +460,12 @@ export const GroupShow = () => {
                 </motion.div>
 
                 {/* Group Info */}
-                <div className="flex-1 text-center sm:text-left min-w-0">
-                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 mb-2">
-                    <h1 className="text-2xl sm:text-3xl font-bold truncate max-w-full">
+                <div className="flex-1 text-center sm:text-left min-w-0 overflow-hidden">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-1.5 sm:gap-3 mb-2">
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold line-clamp-2 sm:line-clamp-1 break-words max-w-full" title={group.name}>
                       {group.name}
                     </h1>
-                    <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
+                    <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start shrink-0">
                       {isArchived && (
                         <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-300 rounded-full">
                           Archived
@@ -479,7 +479,7 @@ export const GroupShow = () => {
                   </div>
 
                   {group.description && (
-                    <p className="text-muted-foreground text-sm sm:text-base line-clamp-2 mb-3">
+                    <p className="text-muted-foreground text-xs sm:text-sm md:text-base line-clamp-2 sm:line-clamp-3 mb-3 break-words" title={group.description}>
                       {group.description}
                     </p>
                   )}
