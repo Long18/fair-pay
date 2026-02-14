@@ -25,14 +25,40 @@ export interface AdminUserRow {
 
 export interface AuditLogEntry {
   id: string;
+  source: "audit_logs" | "audit_trail";
   timestamp: string;
-  actor_name: string;
-  actor_email: string;
+  actor_id: string | null;
+  actor_name: string | null;
+  actor_email: string | null;
   action_type: string;
-  table_name?: string;
-  entity_type?: string;
+  table_name: string | null;
+  entity_type: string | null;
   entity_id: string;
-  old_data?: Record<string, unknown>;
-  new_data?: Record<string, unknown>;
-  metadata?: Record<string, unknown>;
+  old_data: Record<string, unknown> | null;
+  new_data: Record<string, unknown> | null;
+  metadata: Record<string, unknown> | null;
+}
+
+export interface AuditLogsResponse {
+  data: AuditLogEntry[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface AuditStats {
+  total: number;
+  inserts: number;
+  updates: number;
+  deletes: number;
+  today: number;
+  this_week: number;
+  by_table: Array<{ name: string; count: number }>;
+  by_actor: Array<{ name: string; count: number }>;
+}
+
+export interface AuditFilterOptions {
+  tables: string[];
+  action_types: string[];
+  actors: Array<{ id: string; name: string }>;
 }
