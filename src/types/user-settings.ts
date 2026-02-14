@@ -13,9 +13,14 @@ export interface BankInfo {
 }
 
 export interface SepayConfig {
-  merchant_id: string;
-  secret_key: string;
-  environment: 'sandbox' | 'production';
+  /** SePay API token (from my.sepay.vn → API Token) for webhook auth */
+  api_token: string;
+  /** Bank account number linked to SePay */
+  bank_account_number: string;
+  /** Bank short name (e.g., 'Vietcombank', 'MBBank') — must match SePay's bank list */
+  bank_name: string;
+  /** Account holder name for display */
+  account_holder_name?: string;
 }
 
 export type SepayOrderStatus = 'PENDING' | 'PAID' | 'FAILED' | 'CANCELLED' | 'EXPIRED';

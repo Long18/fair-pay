@@ -1,9 +1,9 @@
 /**
  * SePay Order Hook
  *
- * Creates SePay checkout orders and polls for payment status.
- * Edge function returns signed form fields.
- * Frontend auto-submits hidden form to SePay (CSP allows via vercel.json).
+ * Creates SePay QR payment orders and polls for payment status.
+ * Edge function returns QR URL from qr.sepay.vn.
+ * User scans QR → transfers → SePay webhook confirms payment.
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
@@ -19,8 +19,8 @@ const MAX_POLL_DURATION = 15 * 60 * 1000;
 
 interface UseSepayOrderReturn {
   order: SepayPaymentOrder | null;
-  formAction: string | null;
-  formFields: Record<string, string> | null;
+  qrUrl: string | null;
+  paymentCode: string | null;
   status: SepayOrderStatus | null;
   isCreating: boolean;
   isPolling: boolean;
@@ -32,8 +32,8 @@ interface UseSepayOrderReturn {
 
 export function useSepayOrder(): UseSepayOrderReturn {
   const [order, setOrder] = useState<SepayPaymentOrder | null>(null);
-  const [formAction, setFormAction] = useState<string | null>(null);
-  const [formFields, setFormFields] = useState<Record<string, string> | null>(null);
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
+  const [paymentCode, setPaymentCode] = useState<string | null>(null);
   const [status, setStatus] = useState<SepayOrderStatus | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
@@ -72,7 +72,7 @@ export function useSepayOrder(): UseSepayOrderReturn {
           stopPolling();
         }
       } catch {
-        // Silently ignore poll errors to prevent log spam
+        // Silently ignore poll errors
       }
     }, POLL_INTERVAL);
   }, [stopPolling]);
@@ -94,8 +94,8 @@ export function useSepayOrder(): UseSepayOrderReturn {
         return false;
       }
 
-      setFormAction(result.form_action || null);
-      setFormFields(result.form_fields || null);
+      setQrUrl(result.qr_url || null);
+      setPaymentCode(result.payment_code || null);
       setStatus(result.order.status);
 
       const fullOrder = await fetchSepayOrderById(result.order.id);
@@ -116,8 +116,8 @@ export function useSepayOrder(): UseSepayOrderReturn {
   const reset = useCallback(() => {
     stopPolling();
     setOrder(null);
-    setFormAction(null);
-    setFormFields(null);
+    setQrUrl(null);
+    setPaymentCode(null);
     setStatus(null);
     setError(null);
     setIsCreating(false);
@@ -129,8 +129,8 @@ export function useSepayOrder(): UseSepayOrderReturn {
 
   return {
     order,
-    formAction,
-    formFields,
+    qrUrl,
+    paymentCode,
     status,
     isCreating,
     isPolling,
