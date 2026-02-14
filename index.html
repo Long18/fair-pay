@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#252525" media="(prefers-color-scheme: dark)" />
 
     <!-- SEO Meta Tags -->
-    <meta name="description" content="FairPay - Split expenses with friends and groups. Track costs, settle debts, manage group finances easily. Free app." />
+    <meta name="description" content="FairPay - Split expenses fairly with friends and groups. Track shared costs, settle debts, and manage group finances easily. Free expense splitting app." />
     <meta name="keywords" content="expense splitting, bill splitting, group expenses, shared costs, debt tracking, expense tracker, split bills, fair share calculator" />
     <meta name="author" content="FairPay" />
     <meta name="robots" content="index, follow" />
@@ -117,12 +117,27 @@
   <body>
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-white focus:text-black">Skip to main content</a>
     <noscript>
-      <div style="padding: 20px; text-align: center; font-family: var(--font-sans, 'Soehne', 'Sohne', system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif);">
-        <h1>JavaScript Required</h1>
-        <p>FairPay requires JavaScript to run. Please enable JavaScript in your browser settings.</p>
+      <div style="padding: 20px; text-align: center; font-family: system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;">
+        <h1>FairPay - Expense Splitting Made Easy</h1>
+        <p>FairPay is a free expense splitting application that helps you split bills, track shared costs, and settle debts with friends and groups. Manage group finances easily with real-time balance updates, receipt attachments, and multiple currency support. Create groups, add expenses, and let FairPay calculate who owes whom. Perfect for roommates, travel groups, couples, and any shared expense situation. Sign up today and start splitting expenses fairly.</p>
+        <p>Please enable JavaScript in your browser to use FairPay.</p>
+        <nav>
+          <a href="/privacy">Privacy Policy</a> |
+          <a href="/terms">Terms of Service</a>
+        </nav>
       </div>
     </noscript>
-    <div id="root"></div>
+    <main id="main-content">
+      <div id="root"></div>
+    </main>
+    <footer style="border-top: 1px solid #e5e7eb; padding: 16px 24px; text-align: center; font-size: 14px; color: #6b7280;">
+      <p>&copy; 2025 FairPay - Split expenses fairly with friends and groups</p>
+      <nav aria-label="Footer navigation">
+        <a href="/privacy" style="color: #6b7280; margin: 0 8px;">Privacy Policy</a>
+        <span style="color: #d1d5db;">&bull;</span>
+        <a href="/terms" style="color: #6b7280; margin: 0 8px;">Terms of Service</a>
+      </nav>
+    </footer>
     <script type="module" src="/src/index.tsx"></script>
   </body>
 </html>

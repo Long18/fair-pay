@@ -11,8 +11,7 @@ export function Layout({ children }: PropsWithChildren) {
     <ThemeProvider>
       <div className="flex flex-col min-h-screen">
         <NavBar />
-        <main
-          id="main-content"
+        <div
           className={cn(
             "@container/main",
             "container",
@@ -34,7 +33,7 @@ export function Layout({ children }: PropsWithChildren) {
           )}
         >
           {children}
-        </main>
+        </div>
         <Footer />
       </div>
     </ThemeProvider>
