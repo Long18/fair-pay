@@ -22,7 +22,21 @@ export const Footer = () => {
           <span className="hidden md:inline">{t('footer.tagline', 'Split expenses fairly')}</span>
         </div>
 
-        <nav aria-label="Footer navigation" className="flex items-center gap-4 text-sm">
+        <nav aria-label="Footer navigation" className="flex items-center gap-4 text-sm flex-wrap justify-center">
+          <a
+            href="/about"
+            className="text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
+          >
+            {t('footer.about', 'About')}
+          </a>
+          <span className="text-muted-foreground">•</span>
+          <a
+            href="/contact"
+            className="text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
+          >
+            {t('footer.contact', 'Contact')}
+          </a>
+          <span className="text-muted-foreground">•</span>
           <a
             href="/privacy"
             className="text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
