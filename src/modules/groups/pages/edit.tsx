@@ -1,8 +1,9 @@
-import { useOne, useUpdate, useGo, useGetIdentity } from "@refinedev/core";
-import { useState } from "react";
+import { useOne, useUpdate, useList, useGo, useGetIdentity } from "@refinedev/core";
+import { useState, useMemo } from "react";
 import { useParams } from "react-router";
 import { GroupForm } from "../components/group-form";
-import { Group, GroupFormValues } from "../types";
+import { Group, GroupMember, GroupFormValues } from "../types";
+import { Friendship } from "@/modules/friends/types";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,9 +22,78 @@ export const GroupEdit = () => {
     meta: { select: "*" },
   });
 
+  // Fetch current group members with profiles
+  const { query: membersQuery } = useList<GroupMember>({
+    resource: "group_members",
+    filters: [{ field: "group_id", operator: "eq", value: id }],
+    pagination: { mode: "off" },
+    queryOptions: { enabled: !!id },
+    meta: { select: "*, profiles!user_id(id, full_name, avatar_url)" },
+  });
+
+  // Fetch friends for adding new members
+  const { query: friendsQuery } = useList<Friendship>({
+    resource: "friendships",
+    filters: [{ field: "status", operator: "eq", value: "accepted" }],
+    meta: {
+      select: "*, user_a_profile:profiles!user_a(id, full_name, avatar_url), user_b_profile:profiles!user_b(id, full_name, avatar_url)",
+    },
+    pagination: { mode: "off" },
+    queryOptions: { enabled: !!identity?.id },
+  });
+
   const updateMutation = useUpdate();
   const { data, isLoading: isLoadingGroup } = groupQuery;
   const group = data?.data;
+
+  // Build current members list from group_members query
+  const currentMembers = useMemo(() => {
+    if (!membersQuery.data?.data) return [];
+    return membersQuery.data.data.map((m: any) => ({
+      id: m.user_id,
+      full_name: m.profiles?.full_name || "Unknown",
+      avatar_url: m.profiles?.avatar_url || null,
+    }));
+  }, [membersQuery.data]);
+
+  // Build available members: friends + current members (deduplicated)
+  const availableMembers = useMemo(() => {
+    if (!identity?.id) return currentMembers;
+
+    const memberMap = new Map<string, { id: string; full_name: string; avatar_url: string | null }>();
+
+    // Add current group members first
+    for (const m of currentMembers) {
+      if (m.id !== identity.id) {
+        memberMap.set(m.id, m);
+      }
+    }
+
+    // Add friends
+    if (friendsQuery.data?.data) {
+      for (const friendship of friendsQuery.data.data as any[]) {
+        const isUserA = friendship.user_a === identity.id;
+        const friendProfile = isUserA ? friendship.user_b_profile : friendship.user_a_profile;
+        const friendId = isUserA ? friendship.user_b : friendship.user_a;
+
+        if (friendId !== identity.id && !memberMap.has(friendId)) {
+          memberMap.set(friendId, {
+            id: friendId,
+            full_name: friendProfile?.full_name || "Friend",
+            avatar_url: friendProfile?.avatar_url || null,
+          });
+        }
+      }
+    }
+
+    return Array.from(memberMap.values());
+  }, [identity, currentMembers, friendsQuery.data]);
+
+  // Current member IDs (excluding current user who is auto-added)
+  const currentMemberIds = useMemo(() => {
+    if (!identity?.id) return [];
+    return currentMembers.filter((m) => m.id !== identity.id).map((m) => m.id);
+  }, [currentMembers, identity]);
 
   const handleSubmit = (values: GroupFormValues) => {
     if (!group?.id) {
@@ -54,7 +124,7 @@ export const GroupEdit = () => {
 
   if (isLoadingGroup) {
     return (
-      <div className="container max-w-2xl py-6 space-y-6">
+      <div className="container mx-auto max-w-2xl px-4 py-6 space-y-6">
         <Skeleton className="h-8 w-32" />
         <div className="space-y-4">
           <Skeleton className="h-20 w-20 rounded-full mx-auto" />
@@ -68,7 +138,7 @@ export const GroupEdit = () => {
 
   if (!group) {
     return (
-      <div className="container max-w-2xl py-6">
+      <div className="container mx-auto max-w-2xl px-4 py-6">
         <div className="text-center py-16 space-y-3">
           <p className="text-lg font-medium text-muted-foreground">Group not found</p>
           <Button variant="outline" onClick={() => go({ to: "/groups" })}>
@@ -80,7 +150,7 @@ export const GroupEdit = () => {
   }
 
   return (
-    <div className="container max-w-2xl py-6 space-y-4">
+    <div className="container mx-auto max-w-2xl px-4 py-6 space-y-4">
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"
@@ -106,8 +176,10 @@ export const GroupEdit = () => {
           description: group.description || "",
           simplify_debts: group.simplify_debts,
           avatar_url: group.avatar_url || "",
+          member_ids: currentMemberIds,
         }}
         isLoading={isSubmitting}
+        availableMembers={availableMembers}
         currentUserId={identity?.id}
       />
     </div>
