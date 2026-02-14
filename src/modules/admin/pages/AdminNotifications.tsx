@@ -1,6 +1,8 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { useTable } from "@refinedev/react-table";
+import { useDelete, useList, useCreate } from "@refinedev/core";
 import type { ColumnDef } from "@tanstack/react-table";
+import { toast } from "sonner";
 
 import { DataTable } from "@/components/refine-ui/data-table/data-table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -8,6 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -20,6 +29,26 @@ import {
   CollapsibleContent,
 } from "@/components/ui/collapsible";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
   Empty,
   EmptyMedia,
   EmptyHeader,
@@ -31,8 +60,13 @@ import {
   SearchIcon,
   BellIcon,
   FilterIcon,
+  MoreHorizontalIcon,
+  PlusIcon,
+  AlertTriangleIcon,
+  Loader2Icon,
 } from "@/components/ui/icons";
 import { formatDate } from "@/lib/locale-utils";
+import { supabaseClient } from "@/utility/supabaseClient";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -95,9 +129,213 @@ function ReadStatusBadge({ isRead }: { isRead: boolean }) {
   );
 }
 
+// ─── Delete Notification Dialog ─────────────────────────────────────
+
+function DeleteNotificationDialog({
+  notification,
+  open,
+  onOpenChange,
+  onConfirm,
+  isDeleting,
+}: {
+  notification: NotificationRow | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+  isDeleting: boolean;
+}) {
+  if (!notification) return null;
+
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <div className="flex items-center gap-2">
+            <AlertTriangleIcon className="h-5 w-5 text-destructive" />
+            <AlertDialogTitle>Xác nhận xóa thông báo</AlertDialogTitle>
+          </div>
+          <AlertDialogDescription>
+            Bạn có chắc chắn muốn xóa thông báo &ldquo;{notification.message.slice(0, 60)}...&rdquo;
+            gửi đến {notification.user_name}? Hành động này không thể hoàn tác.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isDeleting}>Hủy</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={(e) => {
+              e.preventDefault();
+              onConfirm();
+            }}
+            disabled={isDeleting}
+          >
+            {isDeleting ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Xóa
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+// ─── Create Notification Dialog ─────────────────────────────────────
+
+function CreateNotificationDialog({
+  open,
+  onOpenChange,
+  onSubmit,
+  isCreating,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: { user_id: string; type: string; title: string; message: string }) => void;
+  isCreating: boolean;
+}) {
+  const [userId, setUserId] = useState("");
+  const [type, setType] = useState("settlement_reminder");
+  const [title, setTitle] = useState("");
+  const [message, setMessage] = useState("");
+
+  // Fetch profiles for user selection
+  const [profiles, setProfiles] = useState<Array<{ id: string; full_name: string }>>([]);
+  useEffect(() => {
+    if (!open) return;
+    supabaseClient
+      .from("profiles")
+      .select("id, full_name")
+      .order("full_name")
+      .then(({ data }) => {
+        if (data) setProfiles(data);
+      });
+  }, [open]);
+
+  const handleSubmit = () => {
+    if (!userId || !title || !message) {
+      toast.error("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+    onSubmit({ user_id: userId, type, title, message });
+  };
+
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setUserId("");
+      setType("settlement_reminder");
+      setTitle("");
+      setMessage("");
+    }
+  }, [open]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Tạo thông báo mới</DialogTitle>
+          <DialogDescription>
+            Gửi thông báo đến người dùng trong hệ thống
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 mt-2">
+          <div className="space-y-2">
+            <Label htmlFor="notif-user">Người nhận</Label>
+            <Select value={userId} onValueChange={setUserId}>
+              <SelectTrigger id="notif-user">
+                <SelectValue placeholder="Chọn người nhận" />
+              </SelectTrigger>
+              <SelectContent>
+                {profiles.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notif-type">Loại thông báo</Label>
+            <Select value={type} onValueChange={setType}>
+              <SelectTrigger id="notif-type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {NOTIFICATION_TYPES.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t.replace(/_/g, " ")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notif-title">Tiêu đề</Label>
+            <Input
+              id="notif-title"
+              placeholder="Tiêu đề thông báo..."
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notif-message">Nội dung</Label>
+            <Textarea
+              id="notif-message"
+              placeholder="Nội dung thông báo..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={3}
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="mt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isCreating}>
+            Hủy
+          </Button>
+          <Button onClick={handleSubmit} disabled={isCreating || !userId || !title || !message}>
+            {isCreating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Gửi thông báo
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Row Actions ────────────────────────────────────────────────────
+
+function RowActions({
+  onDelete,
+}: {
+  onDelete: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <MoreHorizontalIcon className="h-4 w-4" />
+          <span className="sr-only">Mở menu</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={onDelete} className="text-destructive">
+          Xóa thông báo
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 // ─── Main Component ─────────────────────────────────────────────────
 
 export function AdminNotifications() {
+  const deleteMutation = useDelete();
+  const createMutation = useCreate();
+
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
   const [showFilters, setShowFilters] = useState(false);
@@ -105,6 +343,15 @@ export function AdminNotifications() {
   const [readFilter, setReadFilter] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+
+  // Delete state
+  const [deleteNotification, setDeleteNotification] = useState<NotificationRow | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Create state
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   // Build filters for Refine useTable
   const filters = useMemo(() => {
@@ -187,6 +434,20 @@ export function AdminNotifications() {
         size: 120,
         cell: ({ getValue }) => formatDate(getValue() as string),
       },
+      {
+        id: "actions",
+        header: "",
+        size: 50,
+        enableSorting: false,
+        cell: ({ row }) => (
+          <RowActions
+            onDelete={() => {
+              setDeleteNotification(row.original);
+              setDeleteDialogOpen(true);
+            }}
+          />
+        ),
+      },
     ],
     [],
   );
@@ -247,6 +508,66 @@ export function AdminNotifications() {
     !table.refineCore.tableQuery.isLoading &&
     table.reactTable.getRowModel().rows.length === 0;
 
+  // ─── Delete Handler ─────────────────────────────────────────────
+
+  const handleDelete = useCallback(() => {
+    if (!deleteNotification) return;
+
+    setIsDeleting(true);
+    deleteMutation.mutate(
+      {
+        resource: "notifications",
+        id: deleteNotification.id,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Đã xóa thông báo");
+          setDeleteDialogOpen(false);
+          setDeleteNotification(null);
+          setIsDeleting(false);
+          table.refineCore.tableQuery.refetch();
+        },
+        onError: (error) => {
+          toast.error(`Lỗi: ${error.message}`);
+          setIsDeleting(false);
+        },
+      },
+    );
+  }, [deleteNotification, deleteMutation, table.refineCore.tableQuery]);
+
+  // ─── Create Handler ─────────────────────────────────────────────
+
+  const handleCreate = useCallback(
+    (data: { user_id: string; type: string; title: string; message: string }) => {
+      setIsCreating(true);
+      createMutation.mutate(
+        {
+          resource: "notifications",
+          values: {
+            user_id: data.user_id,
+            type: data.type,
+            title: data.title,
+            message: data.message,
+            is_read: false,
+          },
+        },
+        {
+          onSuccess: () => {
+            toast.success("Đã tạo thông báo mới");
+            setCreateDialogOpen(false);
+            setIsCreating(false);
+            table.refineCore.tableQuery.refetch();
+          },
+          onError: (error) => {
+            toast.error(`Lỗi: ${error.message}`);
+            setIsCreating(false);
+          },
+        },
+      );
+    },
+    [createMutation, table.refineCore.tableQuery],
+  );
+
   // ─── Render ─────────────────────────────────────────────────────
 
   return (
@@ -260,6 +581,13 @@ export function AdminNotifications() {
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => setCreateDialogOpen(true)}
+            >
+              <PlusIcon className="mr-2 h-4 w-4" />
+              Tạo thông báo
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -376,6 +704,28 @@ export function AdminNotifications() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Notification Dialog */}
+      <DeleteNotificationDialog
+        notification={deleteNotification}
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) {
+            setDeleteDialogOpen(false);
+            setDeleteNotification(null);
+          }
+        }}
+        onConfirm={handleDelete}
+        isDeleting={isDeleting}
+      />
+
+      {/* Create Notification Dialog */}
+      <CreateNotificationDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onSubmit={handleCreate}
+        isCreating={isCreating}
+      />
     </div>
   );
 }

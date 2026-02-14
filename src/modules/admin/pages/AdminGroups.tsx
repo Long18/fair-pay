@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { useTable } from "@refinedev/react-table";
-import { useDelete } from "@refinedev/core";
+import { useDelete, useUpdate } from "@refinedev/core";
 import type { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
 
@@ -26,6 +26,14 @@ import {
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -35,6 +43,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
 import {
   Empty,
   EmptyMedia,
@@ -49,6 +58,7 @@ import {
   MoreHorizontalIcon,
   Loader2Icon,
   AlertTriangleIcon,
+  PencilIcon,
 } from "@/components/ui/icons";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
 
@@ -286,13 +296,75 @@ function DeleteGroupDialog({
   );
 }
 
+// ─── Edit Group Name Dialog ─────────────────────────────────────────
+
+function EditGroupDialog({
+  group,
+  open,
+  onOpenChange,
+  onConfirm,
+  isUpdating,
+}: {
+  group: GroupRow | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: (newName: string) => void;
+  isUpdating: boolean;
+}) {
+  const [name, setName] = useState("");
+
+  useEffect(() => {
+    if (group && open) {
+      setName(group.name);
+    }
+  }, [group, open]);
+
+  if (!group) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Đổi tên nhóm</DialogTitle>
+          <DialogDescription>
+            Thay đổi tên hiển thị của nhóm &ldquo;{group.name}&rdquo;
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2 mt-2">
+          <Label htmlFor="group-name">Tên nhóm</Label>
+          <Input
+            id="group-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Nhập tên nhóm mới..."
+          />
+        </div>
+        <DialogFooter className="mt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isUpdating}>
+            Hủy
+          </Button>
+          <Button
+            onClick={() => onConfirm(name.trim())}
+            disabled={isUpdating || !name.trim() || name.trim() === group.name}
+          >
+            {isUpdating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Lưu
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Row Actions ────────────────────────────────────────────────────
 
 function RowActions({
   onViewDetail,
+  onEdit,
   onDelete,
 }: {
   onViewDetail: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   return (
@@ -307,6 +379,10 @@ function RowActions({
         <DropdownMenuItem onClick={onViewDetail}>
           Xem chi tiết
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={onEdit}>
+          <PencilIcon className="mr-2 h-4 w-4" />
+          Đổi tên nhóm
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onDelete} className="text-destructive">
           Xóa nhóm
@@ -320,6 +396,7 @@ function RowActions({
 
 export function AdminGroups() {
   const deleteMutation = useDelete();
+  const updateMutation = useUpdate();
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
@@ -328,6 +405,11 @@ export function AdminGroups() {
   const [deleteGroup, setDeleteGroup] = useState<GroupRow | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Edit state
+  const [editGroup, setEditGroup] = useState<GroupRow | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Build filters for Refine useTable
   const filters = useMemo(() => {
@@ -411,6 +493,10 @@ export function AdminGroups() {
               setSelectedGroup(row.original);
               setSheetOpen(true);
             }}
+            onEdit={() => {
+              setEditGroup(row.original);
+              setEditDialogOpen(true);
+            }}
             onDelete={() => {
               setDeleteGroup(row.original);
               setDeleteDialogOpen(true);
@@ -486,6 +572,37 @@ export function AdminGroups() {
       },
     );
   }, [deleteGroup, deleteMutation, table.refineCore.tableQuery]);
+
+  // ─── Edit Handler ───────────────────────────────────────────────
+
+  const handleEdit = useCallback(
+    (newName: string) => {
+      if (!editGroup || !newName) return;
+
+      setIsUpdating(true);
+      updateMutation.mutate(
+        {
+          resource: "groups",
+          id: editGroup.id,
+          values: { name: newName },
+        },
+        {
+          onSuccess: () => {
+            toast.success(`Đã đổi tên nhóm thành "${newName}"`);
+            setEditDialogOpen(false);
+            setEditGroup(null);
+            setIsUpdating(false);
+            table.refineCore.tableQuery.refetch();
+          },
+          onError: (error) => {
+            toast.error(`Lỗi: ${error.message}`);
+            setIsUpdating(false);
+          },
+        },
+      );
+    },
+    [editGroup, updateMutation, table.refineCore.tableQuery],
+  );
 
   // ─── Clear Filters ──────────────────────────────────────────────
 
@@ -567,6 +684,20 @@ export function AdminGroups() {
         }}
         onConfirm={handleDelete}
         isDeleting={isDeleting}
+      />
+
+      {/* Edit Group Name Dialog */}
+      <EditGroupDialog
+        group={editGroup}
+        open={editDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !isUpdating) {
+            setEditDialogOpen(false);
+            setEditGroup(null);
+          }
+        }}
+        onConfirm={handleEdit}
+        isUpdating={isUpdating}
       />
     </div>
   );

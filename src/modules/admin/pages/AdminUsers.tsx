@@ -11,8 +11,8 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 import { toast } from "sonner";
-
 import { flexRender } from "@tanstack/react-table";
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -37,6 +38,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -59,6 +70,9 @@ import {
   UsersIcon,
   MoreHorizontalIcon,
   FilterIcon,
+  AlertTriangleIcon,
+  Loader2Icon,
+  UserPlusIcon,
 } from "@/components/ui/icons";
 import { formatDate } from "@/lib/locale-utils";
 import { supabaseClient } from "@/utility/supabaseClient";
@@ -192,6 +206,56 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
   );
 }
 
+// ─── Delete User Dialog ─────────────────────────────────────────────
+
+function DeleteUserDialog({
+  user,
+  open,
+  onOpenChange,
+  onConfirm,
+  isDeleting,
+}: {
+  user: AdminUserRow | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+  isDeleting: boolean;
+}) {
+  if (!user) return null;
+
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <div className="flex items-center gap-2">
+            <AlertTriangleIcon className="h-5 w-5 text-destructive" />
+            <AlertDialogTitle>Xác nhận xóa người dùng</AlertDialogTitle>
+          </div>
+          <AlertDialogDescription>
+            Bạn có chắc chắn muốn xóa người dùng &ldquo;{user.full_name}&rdquo; ({user.email})?
+            Tất cả dữ liệu liên quan (chi phí, thanh toán, nhóm) sẽ bị xóa theo.
+            Hành động này không thể hoàn tác.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isDeleting}>Hủy</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={(e) => {
+              e.preventDefault();
+              onConfirm();
+            }}
+            disabled={isDeleting}
+          >
+            {isDeleting ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Xóa
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 // ─── Row Actions ────────────────────────────────────────────────────
 
 function RowActions({
@@ -199,11 +263,13 @@ function RowActions({
   isSelf,
   onViewDetail,
   onToggleRole,
+  onDelete,
 }: {
   user: AdminUserRow;
   isSelf: boolean;
   onViewDetail: () => void;
   onToggleRole: () => void;
+  onDelete: () => void;
 }) {
   return (
     <DropdownMenu>
@@ -227,8 +293,68 @@ function RowActions({
               ? "Hạ cấp thành User"
               : "Nâng cấp thành Admin"}
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={onDelete}
+          disabled={isSelf}
+          className="text-destructive"
+        >
+          {isSelf ? "Không thể xóa chính mình" : "Xóa người dùng"}
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+// ─── New Registration Card ──────────────────────────────────────────
+
+function NewRegistrationCard({
+  user,
+  onViewDetail,
+}: {
+  user: AdminUserRow;
+  onViewDetail: () => void;
+}) {
+  const daysSinceRegistration = Math.floor(
+    (Date.now() - new Date(user.created_at).getTime()) / (1000 * 60 * 60 * 24),
+  );
+
+  return (
+    <div
+      className="flex items-center gap-3 rounded-lg border p-4 cursor-pointer hover:bg-accent/50 transition-colors"
+      onClick={onViewDetail}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onViewDetail(); }}
+    >
+      <Avatar className="h-10 w-10">
+        <AvatarImage src={user.avatar_url ?? undefined} alt={user.full_name} />
+        <AvatarFallback>{user.full_name?.[0]?.toUpperCase() ?? "?"}</AvatarFallback>
+      </Avatar>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{user.full_name}</p>
+        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+      </div>
+      <div className="text-right shrink-0">
+        <p className="text-xs text-muted-foreground">{formatDate(user.created_at)}</p>
+        <Badge
+          variant="secondary"
+          className={
+            daysSinceRegistration <= 1
+              ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800 text-xs mt-1"
+              : daysSinceRegistration <= 7
+                ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800 text-xs mt-1"
+                : "text-xs mt-1"
+          }
+        >
+          {daysSinceRegistration === 0
+            ? "Hôm nay"
+            : daysSinceRegistration === 1
+              ? "Hôm qua"
+              : `${daysSinceRegistration} ngày trước`}
+        </Badge>
+      </div>
+    </div>
   );
 }
 
@@ -237,13 +363,42 @@ function RowActions({
 export function AdminUsers() {
   const { data: identity } = useGetIdentity<Profile>();
   const updateMutation = useUpdate();
+  const queryClient = useQueryClient();
 
+  const [activeTab, setActiveTab] = useState("all-users");
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUserRow | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [deleteUser, setDeleteUser] = useState<AdminUserRow | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [regPeriod, setRegPeriod] = useState<string>("7");
+
+  // ─── Fetch Users ────────────────────────────────────────────────
+
+  const { data: usersData, isLoading } = useQuery({
+    queryKey: ["admin", "users"],
+    queryFn: async () => {
+      const { data, error } = await supabaseClient.rpc("get_admin_users");
+      if (error) throw error;
+      return (data ?? []) as AdminUserRow[];
+    },
+    staleTime: 30_000,
+  });
+
+  // ─── New Registrations ──────────────────────────────────────────
+
+  const newRegistrations = useMemo(() => {
+    if (!usersData) return [];
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - Number(regPeriod));
+    return usersData
+      .filter((u) => new Date(u.created_at) >= cutoff)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [usersData, regPeriod]);
 
   // ─── Column Definitions ─────────────────────────────────────────
 
@@ -311,6 +466,10 @@ export function AdminUsers() {
               setSheetOpen(true);
             }}
             onToggleRole={() => handleToggleRole(row.original)}
+            onDelete={() => {
+              setDeleteUser(row.original);
+              setDeleteDialogOpen(true);
+            }}
           />
         ),
       },
@@ -318,19 +477,8 @@ export function AdminUsers() {
     [identity?.id],
   );
 
-  // ─── Table Setup ────────────────────────────────────────────────
+  // ─── Client-side filtering ──────────────────────────────────────
 
-  const { data: usersData, isLoading } = useQuery({
-    queryKey: ["admin", "users"],
-    queryFn: async () => {
-      const { data, error } = await supabaseClient.rpc("get_admin_users");
-      if (error) throw error;
-      return (data ?? []) as AdminUserRow[];
-    },
-    staleTime: 30_000,
-  });
-
-  // Client-side filtering
   const filteredData = useMemo(() => {
     let result = usersData ?? [];
     if (debouncedSearch) {
@@ -350,8 +498,6 @@ export function AdminUsers() {
   const [sorting, setSorting] = useState<SortingState>([
     { id: "created_at", desc: true },
   ]);
-
-  const queryClient = useQueryClient();
 
   const reactTable = useReactTable({
     data: filteredData,
@@ -397,6 +543,32 @@ export function AdminUsers() {
     [identity?.id, updateMutation, queryClient],
   );
 
+  // ─── Delete User Handler ────────────────────────────────────────
+
+  const handleDeleteUser = useCallback(async () => {
+    if (!deleteUser) return;
+
+    setIsDeleting(true);
+    try {
+      // Delete from profiles (cascades to related data)
+      const { error } = await supabaseClient
+        .from("profiles")
+        .delete()
+        .eq("id", deleteUser.id);
+
+      if (error) throw error;
+
+      toast.success(`Đã xóa người dùng "${deleteUser.full_name}"`);
+      setDeleteDialogOpen(false);
+      setDeleteUser(null);
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    } catch (err: any) {
+      toast.error(`Lỗi: ${err.message ?? "Không thể xóa người dùng"}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [deleteUser, queryClient]);
+
   // ─── Clear Filters ──────────────────────────────────────────────
 
   const clearFilters = useCallback(() => {
@@ -413,158 +585,254 @@ export function AdminUsers() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div>
-            <CardTitle>Quản lý người dùng</CardTitle>
-            <CardDescription>
-              Xem và quản lý tất cả người dùng trong hệ thống
-            </CardDescription>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowFilters((v) => !v)}
-            >
-              <FilterIcon className="mr-2 h-4 w-4" />
-              Bộ lọc
-            </Button>
-          </div>
-        </CardHeader>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="all-users" className="gap-2">
+            <UsersIcon className="h-4 w-4" />
+            Tất cả người dùng
+          </TabsTrigger>
+          <TabsTrigger value="new-registrations" className="gap-2">
+            <UserPlusIcon className="h-4 w-4" />
+            Đăng ký mới
+            {newRegistrations.length > 0 && (
+              <Badge variant="secondary" className="ml-1 text-xs">
+                {newRegistrations.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
 
-        <CardContent className="space-y-4">
-          {/* Search Input */}
-          <div className="relative max-w-sm">
-            <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Tìm kiếm theo tên..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-
-          {/* Filter Bar */}
-          {showFilters && (
-            <div className="flex items-center gap-3 flex-wrap">
-              <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Vai trò" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả vai trò</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="user">User</SelectItem>
-                </SelectContent>
-              </Select>
-              {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
-                  Xóa bộ lọc
-                </Button>
-              )}
-            </div>
-          )}
-
-          {/* Data Table or Empty State */}
-          {isEmptyResult && hasActiveFilters ? (
-            <Empty className="min-h-[400px]">
-              <EmptyMedia variant="icon">
-                <UsersIcon className="h-6 w-6" />
-              </EmptyMedia>
-              <EmptyHeader>
-                <EmptyTitle>Không tìm thấy người dùng</EmptyTitle>
-                <EmptyDescription>
-                  Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm
-                </EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent>
-                <Button variant="outline" onClick={clearFilters}>
-                  Xóa bộ lọc
-                </Button>
-              </EmptyContent>
-            </Empty>
-          ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  {reactTable.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <TableHead key={header.id} style={{ width: header.getSize() }}>
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(header.column.columnDef.header, header.getContext())}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={columns.length} className="h-24 text-center">
-                        Đang tải...
-                      </TableCell>
-                    </TableRow>
-                  ) : reactTable.getRowModel().rows.length ? (
-                    reactTable.getRowModel().rows.map((row) => (
-                      <TableRow key={row.original?.id ?? row.id}>
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id} style={{ width: cell.column.getSize() }}>
-                            <div className="truncate">
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                            </div>
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={columns.length} className="h-24 text-center">
-                        Không có dữ liệu
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-
-          {/* Pagination */}
-          {!isLoading && reactTable.getRowModel().rows.length > 0 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Trang {reactTable.getState().pagination.pageIndex + 1} / {reactTable.getPageCount()}
-              </p>
+        {/* ── All Users Tab ──────────────────────────────────────── */}
+        <TabsContent value="all-users" className="mt-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <div>
+                <CardTitle>Quản lý người dùng</CardTitle>
+                <CardDescription>
+                  Xem và quản lý tất cả người dùng trong hệ thống
+                </CardDescription>
+              </div>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => reactTable.previousPage()}
-                  disabled={!reactTable.getCanPreviousPage()}
+                  onClick={() => setShowFilters((v) => !v)}
                 >
-                  Trước
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => reactTable.nextPage()}
-                  disabled={!reactTable.getCanNextPage()}
-                >
-                  Sau
+                  <FilterIcon className="mr-2 h-4 w-4" />
+                  Bộ lọc
                 </Button>
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              {/* Search Input */}
+              <div className="relative max-w-sm">
+                <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Tìm kiếm theo tên hoặc email..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+
+              {/* Filter Bar */}
+              {showFilters && (
+                <div className="flex items-center gap-3 flex-wrap">
+                  <Select value={roleFilter} onValueChange={setRoleFilter}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue placeholder="Vai trò" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả vai trò</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="user">User</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {hasActiveFilters && (
+                    <Button variant="ghost" size="sm" onClick={clearFilters}>
+                      Xóa bộ lọc
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* Data Table or Empty State */}
+              {isEmptyResult && hasActiveFilters ? (
+                <Empty className="min-h-[400px]">
+                  <EmptyMedia variant="icon">
+                    <UsersIcon className="h-6 w-6" />
+                  </EmptyMedia>
+                  <EmptyHeader>
+                    <EmptyTitle>Không tìm thấy người dùng</EmptyTitle>
+                    <EmptyDescription>
+                      Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm
+                    </EmptyDescription>
+                  </EmptyHeader>
+                  <EmptyContent>
+                    <Button variant="outline" onClick={clearFilters}>
+                      Xóa bộ lọc
+                    </Button>
+                  </EmptyContent>
+                </Empty>
+              ) : (
+                <div className="rounded-md border overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      {reactTable.getHeaderGroups().map((headerGroup) => (
+                        <TableRow key={headerGroup.id}>
+                          {headerGroup.headers.map((header) => (
+                            <TableHead key={header.id} style={{ width: header.getSize() }}>
+                              {header.isPlaceholder
+                                ? null
+                                : flexRender(header.column.columnDef.header, header.getContext())}
+                            </TableHead>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </TableHeader>
+                    <TableBody>
+                      {isLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={columns.length} className="h-24 text-center">
+                            Đang tải...
+                          </TableCell>
+                        </TableRow>
+                      ) : reactTable.getRowModel().rows.length ? (
+                        reactTable.getRowModel().rows.map((row) => (
+                          <TableRow key={row.original?.id ?? row.id}>
+                            {row.getVisibleCells().map((cell) => (
+                              <TableCell key={cell.id} style={{ width: cell.column.getSize() }}>
+                                <div className="truncate">
+                                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                </div>
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={columns.length} className="h-24 text-center">
+                            Không có dữ liệu
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+
+              {/* Pagination */}
+              {!isLoading && reactTable.getRowModel().rows.length > 0 && (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    Trang {reactTable.getState().pagination.pageIndex + 1} / {reactTable.getPageCount()}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => reactTable.previousPage()}
+                      disabled={!reactTable.getCanPreviousPage()}
+                    >
+                      Trước
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => reactTable.nextPage()}
+                      disabled={!reactTable.getCanNextPage()}
+                    >
+                      Sau
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── New Registrations Tab ──────────────────────────────── */}
+        <TabsContent value="new-registrations" className="mt-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <div>
+                <CardTitle>Đăng ký mới</CardTitle>
+                <CardDescription>
+                  Người dùng mới đăng ký trong khoảng thời gian đã chọn
+                </CardDescription>
+              </div>
+              <Select value={regPeriod} onValueChange={setRegPeriod}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Hôm nay</SelectItem>
+                  <SelectItem value="7">7 ngày qua</SelectItem>
+                  <SelectItem value="30">30 ngày qua</SelectItem>
+                  <SelectItem value="90">90 ngày qua</SelectItem>
+                </SelectContent>
+              </Select>
+            </CardHeader>
+
+            <CardContent>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : newRegistrations.length === 0 ? (
+                <Empty className="min-h-[300px]">
+                  <EmptyMedia variant="icon">
+                    <UserPlusIcon className="h-6 w-6" />
+                  </EmptyMedia>
+                  <EmptyHeader>
+                    <EmptyTitle>Không có đăng ký mới</EmptyTitle>
+                    <EmptyDescription>
+                      Không có người dùng nào đăng ký trong khoảng thời gian này
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {newRegistrations.length} người dùng mới
+                  </p>
+                  {newRegistrations.map((user) => (
+                    <NewRegistrationCard
+                      key={user.id}
+                      user={user}
+                      onViewDetail={() => {
+                        setSelectedUser(user);
+                        setSheetOpen(true);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* User Detail Sheet */}
       <UserDetailSheet
         user={selectedUser}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
+      />
+
+      {/* Delete User Dialog */}
+      <DeleteUserDialog
+        user={deleteUser}
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) {
+            setDeleteDialogOpen(false);
+            setDeleteUser(null);
+          }
+        }}
+        onConfirm={handleDeleteUser}
+        isDeleting={isDeleting}
       />
     </div>
   );
