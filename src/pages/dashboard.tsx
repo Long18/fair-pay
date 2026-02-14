@@ -7,7 +7,6 @@ import { BalanceTable } from "@/components/dashboard/BalanceTable";
 import { SettledHistoryList } from "@/components/dashboard/SettledHistoryList";
 import { EnhancedActivityList } from "@/components/dashboard/enhanced-activity";
 import { PageContainer } from "@/components/ui/page-container";
-import { PageHeader } from "@/components/ui/page-header";
 import { PageContent } from "@/components/ui/page-content";
 import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
 import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
@@ -128,7 +127,6 @@ export const Dashboard = () => {
         <DashboardLoadingBeam />
       ) : (
         <PageContainer variant="default">
-          <PageHeader title={t('dashboard.title', 'Dashboard')} />
 
           <PageContent>
             {/* Tab Switcher */}
