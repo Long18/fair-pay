@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useGo } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
+import { LoadingBeam } from "@/components/ui/loading-beam";
 import {
   Table,
   TableBody,
@@ -309,10 +310,8 @@ export function SettledHistoryList({ debts, isLoading = false, pageSize = 10 }: 
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-3">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-16 bg-muted/50 rounded-lg animate-pulse" />
-        ))}
+      <div className="p-6">
+        <LoadingBeam text={t("history.loading", "Đang tải lịch sử...")} />
       </div>
     );
   }

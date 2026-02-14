@@ -43,7 +43,7 @@ import { exportToPDF } from "@/utils/export-pdf";
 import { DownloadIcon, Loader2Icon, CalendarIcon, FileTextIcon } from "@/components/ui/icons";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
+import { LoadingBeam } from "@/components/ui/loading-beam";
 
 export function ReportsPage() {
   const [preset, setPreset] = useState<DateRangePreset>("this_month");
@@ -354,44 +354,7 @@ export function ReportsPage() {
       </Card>
 
       {isLoading && (
-        <>
-          {/* Summary Stats Skeleton */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Card key={i} className="border-border animate-pulse">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-4 w-4 rounded" />
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-8 w-32 mb-2" />
-                  <Skeleton className="h-3 w-24" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          {/* Charts Skeleton */}
-          <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
-            <Card className="border-border animate-pulse">
-              <CardHeader className="pb-4">
-                <Skeleton className="h-5 w-40 mb-2" />
-                <Skeleton className="h-4 w-32" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-[300px] w-full rounded" />
-              </CardContent>
-            </Card>
-            <Card className="border-border animate-pulse">
-              <CardHeader className="pb-4">
-                <Skeleton className="h-5 w-40 mb-2" />
-                <Skeleton className="h-4 w-32" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-[300px] w-full rounded" />
-              </CardContent>
-            </Card>
-          </div>
-        </>
+        <LoadingBeam text="Đang tải báo cáo..." />
       )}
 
       {!isLoading && (

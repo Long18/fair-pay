@@ -16,7 +16,7 @@ import {
 } from "recharts";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { LoadingBeam } from "@/components/ui/loading-beam";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   ChartContainer,
@@ -82,11 +82,11 @@ function StatCardSkeleton() {
   return (
     <Card className="p-6">
       <div className="flex items-center gap-4">
-        <Skeleton className="h-10 w-10 rounded-lg" />
+        <div className="h-10 w-10 rounded-lg bg-muted animate-pulse" />
         <div className="flex flex-col gap-2">
-          <Skeleton className="h-3 w-24" />
-          <Skeleton className="h-7 w-16" />
-          <Skeleton className="h-3 w-12" />
+          <div className="h-3 w-24 bg-muted rounded animate-pulse" />
+          <div className="h-7 w-16 bg-muted rounded animate-pulse" />
+          <div className="h-3 w-12 bg-muted rounded animate-pulse" />
         </div>
       </div>
     </Card>
@@ -98,10 +98,10 @@ function StatCardSkeleton() {
 function ActivitySkeleton() {
   return (
     <div className="flex items-start gap-3 py-3">
-      <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+      <div className="h-8 w-8 rounded-full bg-muted animate-pulse shrink-0" />
       <div className="flex flex-col gap-1.5 flex-1">
-        <Skeleton className="h-3.5 w-3/4" />
-        <Skeleton className="h-3 w-20" />
+        <div className="h-3.5 w-3/4 bg-muted rounded animate-pulse" />
+        <div className="h-3 w-20 bg-muted rounded animate-pulse" />
       </div>
     </div>
   );
@@ -382,7 +382,7 @@ export function AdminOverview() {
         </CardHeader>
         <CardContent>
           {trendLoading ? (
-            <Skeleton className="h-[300px] w-full rounded-lg" />
+            <LoadingBeam text="Đang tải biểu đồ..." className="py-8" />
           ) : (
             <ChartContainer config={expenseChartConfig} className="h-[300px] w-full">
               <AreaChart
@@ -442,7 +442,7 @@ export function AdminOverview() {
           </CardHeader>
           <CardContent>
             {regLoading ? (
-              <Skeleton className="h-[280px] w-full rounded-lg" />
+              <LoadingBeam text="Đang tải..." className="py-6" />
             ) : (
               <ChartContainer config={registrationChartConfig} className="h-[280px] w-full">
                 <RechartsBarChart
@@ -491,7 +491,7 @@ export function AdminOverview() {
           </CardHeader>
           <CardContent>
             {catLoading ? (
-              <Skeleton className="h-[280px] w-full rounded-lg" />
+              <LoadingBeam text="Đang tải..." className="py-6" />
             ) : (
               <ChartContainer config={categoryChartConfig} className="h-[280px] w-full">
                 <PieChart>

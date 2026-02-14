@@ -28,6 +28,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Loader2Icon } from "@/components/ui/icons";
+import { LoadingBeam } from "@/components/ui/loading-beam";
 
 // ─── Zod Schema ───────────────────────────────────────────────────
 
@@ -201,9 +202,7 @@ export function AdminDonationSettings() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
+      <LoadingBeam text="Đang tải cài đặt..." />
     );
   }
 
