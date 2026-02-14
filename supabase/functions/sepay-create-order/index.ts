@@ -178,7 +178,18 @@ Deno.serve(async (req: Request) => {
       }),
     })
 
-    const sepayResult = await sepayResponse.json()
+    // Safe parse - SePay may return non-JSON (empty body, HTML error, etc.)
+    const sepayResponseText = await sepayResponse.text()
+    console.log('SePay API status:', sepayResponse.status)
+    console.log('SePay API response:', sepayResponseText.substring(0, 500))
+
+    let sepayResult: any = null
+    try {
+      sepayResult = JSON.parse(sepayResponseText)
+    } catch {
+      console.error('SePay returned non-JSON:', sepayResponseText.substring(0, 200))
+      sepayResult = { error: 'Non-JSON response', raw: sepayResponseText.substring(0, 200) }
+    }
 
     // Store order in database regardless of SePay response
     const { data: order, error: insertError } = await serviceClient
