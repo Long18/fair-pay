@@ -5,6 +5,9 @@ import { toast } from "sonner";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { ExpenseForm } from "@/modules/expenses/components/expense-form";
 import { ExpenseFormValues } from "@/modules/expenses/types";
+import { type AttachmentFile } from "@/modules/expenses/components/attachment-upload";
+import { useAttachments } from "@/modules/expenses/hooks/use-attachments";
+import { useCreateRecurringExpense } from "@/modules/expenses/hooks/use-recurring-expenses";
 import { Profile } from "@/modules/profile/types";
 import {
   Dialog,
@@ -65,6 +68,9 @@ export function AdminCreateExpenseDialog({
   const [members, setMembers] = useState<MemberOption[]>([]);
   const [loadingContext, setLoadingContext] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
+  const { uploadAttachments } = useAttachments();
+  const { createRecurring } = useCreateRecurringExpense();
 
   // Load groups and friendships when dialog opens
   useEffect(() => {
@@ -73,6 +79,7 @@ export function AdminCreateExpenseDialog({
       setSelectedGroupId("");
       setSelectedFriendshipId("");
       setMembers([]);
+      setAttachments([]);
       return;
     }
 
@@ -216,7 +223,26 @@ export function AdminCreateExpenseDialog({
           );
         }
 
-        toast.success("Đã tạo chi phí mới thành công");
+        // Upload attachments if any (same as Client)
+        if (attachments.length > 0 && identity?.id) {
+          const files = attachments.map((a) => a.file);
+          await uploadAttachments(files, expense.id, identity.id);
+        }
+
+        // Create recurring expense if requested (same as Client)
+        if (is_recurring && recurring) {
+          try {
+            const ctxType = contextType;
+            const ctxId = selectedGroupId || selectedFriendshipId;
+            await createRecurring(expense.id, recurring, ctxType, ctxId);
+            toast.success("Đã tạo chi phí và lịch lặp lại thành công");
+          } catch {
+            toast.error("Đã tạo chi phí nhưng không thể tạo lịch lặp lại");
+          }
+        } else {
+          toast.success("Đã tạo chi phí mới thành công");
+        }
+
         onOpenChange(false);
         onSuccess();
       } catch (err: any) {
@@ -225,7 +251,7 @@ export function AdminCreateExpenseDialog({
         setIsSubmitting(false);
       }
     },
-    [identity, contextType, selectedGroupId, selectedFriendshipId, onOpenChange, onSuccess]
+    [identity, contextType, selectedGroupId, selectedFriendshipId, attachments, uploadAttachments, createRecurring, onOpenChange, onSuccess]
   );
 
   return (
@@ -336,6 +362,8 @@ export function AdminCreateExpenseDialog({
               currentUserId={defaultPaidBy}
               onSubmit={handleSubmit}
               isLoading={isSubmitting}
+              attachments={attachments}
+              onAttachmentsChange={setAttachments}
             />
           ) : (
             !loadingContext && (
