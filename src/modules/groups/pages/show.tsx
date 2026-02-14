@@ -17,7 +17,7 @@ import { useCategoryBreakdown } from "@/hooks/use-category-breakdown";
 import { SettleAllDialog } from "@/components/bulk-operations/SettleAllDialog";
 import { QuickSettlementDialog } from "@/components/payments/quick-settlement-dialog";
 import { PaymentMethod } from "@/lib/payment-methods";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { formatNumber, formatDate } from "@/lib/locale-utils";
 import { toast } from "sonner";
@@ -486,6 +486,25 @@ export const GroupShow = () => {
                     <CalendarIcon className="h-3 w-3 inline mr-1" />
                     {t('groups.createdOn', 'Created')} {formatDate(group.created_at, { year: "numeric", month: "short", day: "numeric" })}
                   </p>
+
+                  {/* Member Avatars */}
+                  {membersList.length > 0 && (
+                    <div className="flex items-center mb-3">
+                      {membersList.slice(0, 5).map((member) => (
+                        <Avatar key={member.id} className="h-8 w-8 border-2 border-background -ml-2 first:ml-0">
+                          <AvatarImage src={member.avatar_url || undefined} alt={member.full_name} />
+                          <AvatarFallback className="text-[10px]">
+                            {getInitials(member.full_name)}
+                          </AvatarFallback>
+                        </Avatar>
+                      ))}
+                      {membersList.length > 5 && (
+                        <div className="h-8 w-8 rounded-full bg-muted border-2 border-background -ml-2 flex items-center justify-center">
+                          <span className="text-[10px] font-medium">+{membersList.length - 5}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Action Buttons */}
                   <div className="flex gap-2 justify-center sm:justify-start flex-wrap">
