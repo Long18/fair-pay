@@ -33,8 +33,10 @@ export interface CreateSepayOrderResult {
     currency: string;
     status: SepayOrderStatus;
   };
-  /** Edge function URL that serves auto-submitting form to SePay */
-  checkout_url?: string;
+  /** SePay checkout form action URL */
+  form_action?: string;
+  /** Signed form fields to POST to SePay */
+  form_fields?: Record<string, string>;
   error?: string;
   details?: unknown;
 }

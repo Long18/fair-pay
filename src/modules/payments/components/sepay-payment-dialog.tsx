@@ -2,8 +2,8 @@
  * SePay Payment Dialog
  *
  * Shows SePay checkout flow with animated beam during processing.
- * Creates order via edge function, opens checkout URL via window.open(),
- * polls for payment status.
+ * Creates order via edge function, auto-submits hidden form to SePay, polls for status.
+ * CSP form-action whitelist in vercel.json allows form submission to pay.sepay.vn.
  */
 
 import React, { useEffect, useRef, useCallback } from 'react';
@@ -55,7 +55,8 @@ export function SepayPaymentDialog({
   const { t } = useTranslation();
   const {
     order,
-    checkoutUrl,
+    formAction,
+    formFields,
     status,
     isCreating,
     isPolling,
@@ -65,17 +66,17 @@ export function SepayPaymentDialog({
     reset,
   } = useSepayOrder();
 
-  // Beam refs for animated payment flow
   const containerRef = useRef<HTMLDivElement>(null);
   const payerRef = useRef<HTMLDivElement>(null);
   const sepayRef = useRef<HTMLDivElement>(null);
   const payeeRef = useRef<HTMLDivElement>(null);
-  const hasOpenedRef = useRef(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const hasSubmittedRef = useRef(false);
 
   // Create order when dialog opens
   useEffect(() => {
     if (open && !order && !isCreating && !error) {
-      hasOpenedRef.current = false;
+      hasSubmittedRef.current = false;
       createOrder({
         source_type: sourceType,
         source_id: sourceId,
@@ -86,20 +87,18 @@ export function SepayPaymentDialog({
     }
   }, [open, order, isCreating, error, createOrder, sourceType, sourceId, payeeId, amount, description]);
 
-  // Auto-open checkout URL when ready
+  // Auto-submit form when data is ready
   useEffect(() => {
-    if (checkoutUrl && !hasOpenedRef.current) {
-      hasOpenedRef.current = true;
+    if (formAction && formFields && formRef.current && !hasSubmittedRef.current) {
+      hasSubmittedRef.current = true;
       triggerHaptic('medium');
-      // Small delay so user sees the "redirecting" state
       const timer = setTimeout(() => {
-        window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
-      }, 400);
+        formRef.current?.submit();
+      }, 500);
       return () => clearTimeout(timer);
     }
-  }, [checkoutUrl]);
+  }, [formAction, formFields]);
 
-  // Handle payment completion
   useEffect(() => {
     if (status === 'PAID') {
       triggerHaptic('success');
@@ -108,17 +107,17 @@ export function SepayPaymentDialog({
     }
   }, [status, t, onPaymentComplete]);
 
-  const handleOpenCheckout = useCallback(() => {
-    if (checkoutUrl) {
+  const handleManualRedirect = useCallback(() => {
+    if (formRef.current) {
       triggerHaptic('medium');
-      window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+      formRef.current.submit();
     }
-  }, [checkoutUrl]);
+  }, []);
 
   const handleClose = (nextOpen: boolean) => {
     if (!nextOpen) {
       stopPolling();
-      hasOpenedRef.current = false;
+      hasSubmittedRef.current = false;
       setTimeout(reset, 300);
     }
     onOpenChange(nextOpen);
@@ -130,18 +129,11 @@ export function SepayPaymentDialog({
 
   const footerButtons = (
     <div className="flex gap-2 w-full">
-      <Button
-        variant="outline"
-        onClick={() => handleClose(false)}
-        className="flex-1 min-h-[44px]"
-      >
+      <Button variant="outline" onClick={() => handleClose(false)} className="flex-1 min-h-[44px]">
         {t('common.close', 'Close')}
       </Button>
-      {checkoutUrl && !isPaid && !isFailed && (
-        <Button
-          onClick={handleOpenCheckout}
-          className="flex-1 min-h-[44px]"
-        >
+      {formAction && formFields && !isPaid && !isFailed && (
+        <Button onClick={handleManualRedirect} className="flex-1 min-h-[44px]">
           <ExternalLinkIcon className="h-4 w-4 mr-2" />
           {t('payments.sepay.goToPayment', 'Go to Payment')}
         </Button>
@@ -158,7 +150,15 @@ export function SepayPaymentDialog({
       footer={footerButtons}
     >
       <div className="space-y-4">
-        {/* Amount Display */}
+        {/* Hidden form for SePay redirect */}
+        {formAction && formFields && (
+          <form ref={formRef} method="POST" action={formAction} style={{ display: 'none' }}>
+            {Object.entries(formFields).map(([name, value]) => (
+              <input key={name} type="hidden" name={name} value={value} />
+            ))}
+          </form>
+        )}
+
         <div className="text-center py-2">
           <p className="text-sm text-muted-foreground mb-1">
             {t('payments.sepay.payTo', 'Pay to')} {payeeName}
@@ -170,7 +170,6 @@ export function SepayPaymentDialog({
 
         <Separator />
 
-        {/* Loading / Creating State */}
         {isCreating && (
           <div className="flex flex-col items-center py-8">
             <Skeleton className="h-24 w-full max-w-xs rounded-lg" />
@@ -181,7 +180,6 @@ export function SepayPaymentDialog({
           </div>
         )}
 
-        {/* Error State */}
         {error && (
           <Alert variant="destructive">
             <AlertCircleIcon className="h-4 w-4" />
@@ -189,7 +187,6 @@ export function SepayPaymentDialog({
           </Alert>
         )}
 
-        {/* Pending / Polling State - Animated Beam */}
         {isPending && !isCreating && (
           <div className="flex flex-col items-center space-y-4">
             <div
@@ -197,63 +194,27 @@ export function SepayPaymentDialog({
               className="relative flex w-full max-w-xs mx-auto items-center justify-between px-6"
               style={{ minHeight: 80 }}
             >
-              <div
-                ref={payerRef}
-                className="relative z-10 flex items-center justify-center rounded-xl border bg-background p-2.5 shadow-sm size-10 animate-beam-node-float"
-              >
+              <div ref={payerRef} className="relative z-10 flex items-center justify-center rounded-xl border bg-background p-2.5 shadow-sm size-10 animate-beam-node-float">
                 <WalletIcon size={16} className="text-primary" />
               </div>
-
-              <div
-                ref={sepayRef}
-                className="relative z-10 flex items-center justify-center rounded-2xl border-2 border-primary/30 bg-background p-3 shadow-lg animate-beam-pulse"
-              >
+              <div ref={sepayRef} className="relative z-10 flex items-center justify-center rounded-2xl border-2 border-primary/30 bg-background p-3 shadow-lg animate-beam-pulse">
                 <FairPayIcon size={28} className="rounded-md" />
               </div>
-
-              <div
-                ref={payeeRef}
-                className="relative z-10 flex items-center justify-center rounded-xl border bg-background p-2.5 shadow-sm size-10 animate-beam-node-float"
-                style={{ animationDelay: '0.3s' }}
-              >
+              <div ref={payeeRef} className="relative z-10 flex items-center justify-center rounded-xl border bg-background p-2.5 shadow-sm size-10 animate-beam-node-float" style={{ animationDelay: '0.3s' }}>
                 <BanknoteIcon size={16} className="text-green-500" />
               </div>
-
-              <AnimatedBeam
-                containerRef={containerRef}
-                fromRef={payerRef}
-                toRef={sepayRef}
-                curvature={-0.15}
-                duration={2.2}
-                delay={0}
-                gradientStartColor="#3b82f6"
-                gradientStopColor="#6366f1"
-              />
-              <AnimatedBeam
-                containerRef={containerRef}
-                fromRef={sepayRef}
-                toRef={payeeRef}
-                curvature={-0.15}
-                duration={2.2}
-                delay={0.2}
-                gradientStartColor="#22c55e"
-                gradientStopColor="#10b981"
-              />
+              <AnimatedBeam containerRef={containerRef} fromRef={payerRef} toRef={sepayRef} curvature={-0.15} duration={2.2} delay={0} gradientStartColor="#3b82f6" gradientStopColor="#6366f1" />
+              <AnimatedBeam containerRef={containerRef} fromRef={sepayRef} toRef={payeeRef} curvature={-0.15} duration={2.2} delay={0.2} gradientStartColor="#22c55e" gradientStopColor="#10b981" />
             </div>
 
             <p className="text-sm text-muted-foreground animate-beam-pulse">
-              {checkoutUrl
-                ? t('payments.sepay.waitingForPayment', 'Waiting for payment confirmation...')
-                : t('payments.sepay.redirecting', 'Preparing payment page...')
-              }
+              {formAction
+                ? t('payments.sepay.redirecting', 'Redirecting to SePay payment page...')
+                : t('payments.sepay.waitingForPayment', 'Waiting for payment confirmation...')}
             </p>
 
-            {checkoutUrl && (
-              <Button
-                variant="outline"
-                onClick={handleOpenCheckout}
-                className="min-h-[44px]"
-              >
+            {formAction && formFields && (
+              <Button variant="outline" onClick={handleManualRedirect} className="min-h-[44px]">
                 <ExternalLinkIcon className="h-4 w-4 mr-2" />
                 {t('payments.sepay.goToPayment', 'Go to Payment')}
               </Button>
@@ -262,15 +223,12 @@ export function SepayPaymentDialog({
             <Alert>
               <AlertCircleIcon className="h-4 w-4" />
               <AlertDescription>
-                {t('payments.sepay.instructions',
-                  'Complete the payment on the SePay page. This dialog will update automatically when you return.'
-                )}
+                {t('payments.sepay.instructions', 'Complete the payment on the SePay page. This dialog will update automatically when you return.')}
               </AlertDescription>
             </Alert>
           </div>
         )}
 
-        {/* Success State */}
         {isPaid && (
           <div className="flex flex-col items-center py-8 space-y-4">
             <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-4">
@@ -287,15 +245,13 @@ export function SepayPaymentDialog({
           </div>
         )}
 
-        {/* Failed State */}
         {isFailed && (
           <Alert variant="destructive">
             <AlertCircleIcon className="h-4 w-4" />
             <AlertDescription>
               {status === 'EXPIRED'
                 ? t('payments.sepay.expired', 'Payment order has expired. Please try again.')
-                : t('payments.sepay.failed', 'Payment failed or was cancelled. Please try again.')
-              }
+                : t('payments.sepay.failed', 'Payment failed or was cancelled. Please try again.')}
             </AlertDescription>
           </Alert>
         )}
