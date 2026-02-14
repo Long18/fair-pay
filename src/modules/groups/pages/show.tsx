@@ -446,6 +446,7 @@ export const GroupShow = () => {
                 {/* Group Avatar */}
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="relative">
                   <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-4 border-background shadow-xl">
+                    <AvatarImage src={group.avatar_url || undefined} alt={group.name} />
                     <AvatarFallback className="text-xl sm:text-2xl bg-gradient-to-br from-primary/20 to-primary/10">
                       {getInitials(group.name)}
                     </AvatarFallback>
