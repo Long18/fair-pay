@@ -680,7 +680,7 @@ export const GroupShow = () => {
                           currentUserId={identity?.id || ""}
                           currency="VND"
                           isLoading={isLoadingActivities}
-                          showSummary={true}
+                          showSummary={false}
                           showFilters={true}
                           showSort={true}
                           showTimeGrouping={true}
