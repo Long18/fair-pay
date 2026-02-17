@@ -9,7 +9,8 @@ import { ExpenseSummaryCard } from "../components/expense-summary-card";
 import { ExpenseSplitCard } from "../components/expense-split-card";
 import { Profile } from "@/modules/profile/types";
 import { Badge } from "@/components/ui/badge";
-import { SettleExpenseSection } from "@/components/expenses/settle-expense-section";
+import { CommentSection } from "../components/comment-section";
+import type { CommentUser } from "../types/comments";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -88,7 +89,6 @@ export const ExpenseShow = () => {
   const [selectedSplit, setSelectedSplit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [userIsAdmin, setUserIsAdmin] = useState(false);
-  const [settlingUserSplit, setSettlingUserSplit] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
 
   // Fetch recurring expense data linked to this expense (as template)
@@ -275,34 +275,6 @@ export const ExpenseShow = () => {
     setSettleSplitDialogOpen(true);
   };
 
-  // Handle settle user's own split
-  const handleSettleUserSplit = async () => {
-    if (!userSplit) return;
-    setSettlingUserSplit(true);
-    try {
-      const { error } = await supabaseClient
-        .from("expense_splits")
-        .update({
-          is_settled: true,
-          settled_at: new Date().toISOString(),
-          settled_amount: userSplit.computed_amount,
-        })
-        .eq("id", userSplit.id);
-      if (error) throw error;
-      toast.success(
-        t("expenses.settlementMarked", { defaultValue: "Your payment has been marked as settled" })
-      );
-      await fetchSplits();
-    } catch (error: any) {
-      console.error("Error settling split:", error);
-      toast.error(
-        t("expenses.settleError", { defaultValue: `Failed to settle: ${error.message}` })
-      );
-    } finally {
-      setSettlingUserSplit(false);
-    }
-  };
-
   // Sync displayAttachments with fetched attachments
   useEffect(() => {
     setDisplayAttachments(attachments);
@@ -362,6 +334,35 @@ export const ExpenseShow = () => {
 
   const hasNotes = !!(expense?.comment || displayAttachments.length > 0);
   const notesCount = displayAttachments.length + (expense?.comment ? 1 : 0);
+
+  // Build participants list for comment @mentions
+  const commentParticipants: CommentUser[] = useMemo(() => {
+    const users: CommentUser[] = [];
+    const seen = new Set<string>();
+    if (expense?.profiles?.id && !seen.has(expense.profiles.id)) {
+      seen.add(expense.profiles.id);
+      users.push({
+        id: expense.profiles.id,
+        full_name: expense.profiles.full_name,
+        avatar_url: expense.profiles.avatar_url || null,
+      });
+    }
+    for (const s of splits) {
+      if (s.user_id && !seen.has(s.user_id)) {
+        seen.add(s.user_id);
+        users.push({
+          id: s.user_id,
+          full_name: s.profiles?.full_name || "Unknown",
+          avatar_url: s.profiles?.avatar_url || null,
+        });
+      }
+    }
+    return users;
+  }, [expense, splits]);
+
+  const currentCommentUser: CommentUser | null = identity
+    ? { id: identity.id, full_name: identity.full_name || "", avatar_url: identity.avatar_url || null }
+    : null;
 
   // Skeleton loading state
   if (isLoadingExpense || isLoadingSplits || !expense || loading) {
@@ -474,19 +475,7 @@ export const ExpenseShow = () => {
           onDelete={handleDelete}
         />
 
-        {/* 2. Settle Your Share — compact inline */}
-        {identity?.id && userSplit && !isPaid && (
-          <SettleExpenseSection
-            payerName={payerName}
-            amountOwed={userIOwes}
-            currency={expense.currency}
-            isSettled={userSplit.is_settled || false}
-            onSettle={handleSettleUserSplit}
-            isSettling={settlingUserSplit}
-          />
-        )}
-
-        {/* 3. Split Details */}
+        {/* 2. Split Details */}
         <Card className="rounded-xl border-2 shadow-sm">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between gap-3">
@@ -670,6 +659,15 @@ export const ExpenseShow = () => {
               {t("expenses.addDocuments", "Add Documents")}
             </button>
           )
+        )}
+
+        {/* 5. Comments & Reactions */}
+        {id && (
+          <CommentSection
+            expenseId={id}
+            currentUser={currentCommentUser}
+            participants={commentParticipants}
+          />
         )}
       </motion.div>
 

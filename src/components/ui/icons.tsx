@@ -115,6 +115,10 @@ import {
   LogIn,
   Clock3,
   UserCheck,
+  SmilePlus,
+  Send,
+  CornerDownRight,
+  AtSign,
 } from "lucide-react";
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -920,4 +924,22 @@ export const Clock3Icon: React.FC<IconProps> = ({ size = 24, ...props }) => (
 
 export const UserCheckIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
   <UserCheck size={size} {...props} />
+);
+
+// ============ Comment & Reaction Icons ============
+
+export const SmilePlusIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <SmilePlus size={size} {...props} />
+);
+
+export const SendIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Send size={size} {...props} />
+);
+
+export const CornerDownRightIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <CornerDownRight size={size} {...props} />
+);
+
+export const AtSignIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <AtSign size={size} {...props} />
 );
