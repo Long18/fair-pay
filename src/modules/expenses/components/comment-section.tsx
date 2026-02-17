@@ -1,8 +1,9 @@
-import { useCallback, useMemo, memo } from "react";
+import { useState, useCallback, useMemo, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MessageSquareIcon } from "@/components/ui/icons";
+import { MessageSquareIcon, ChevronDownIcon, ChevronUpIcon } from "@/components/ui/icons";
 import { CommentInput } from "./comment-input";
 import { CommentItem } from "./comment-item";
 import { ReactionBar } from "./reaction-bar";
@@ -16,14 +17,17 @@ interface CommentSectionProps {
   expenseId: string;
   currentUser: CommentUser | null;
   participants: CommentUser[];
+  maxVisible?: number;
 }
 
 export const CommentSection = memo(({
   expenseId,
   currentUser,
   participants,
+  maxVisible = 3,
 }: CommentSectionProps) => {
   const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
   const {
     comments,
     isLoading,
@@ -159,12 +163,38 @@ export const CommentSection = memo(({
 
         {/* Comments list */}
         {comments.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">
+          <p className="text-sm text-muted-foreground text-center py-2">
             {t("expenses.comments.empty", "No comments yet. Be the first to comment!")}
           </p>
         ) : (
           <div className="space-y-4">
-            {comments.map((comment) => (
+            {/* Show older comments toggle */}
+            {comments.length > maxVisible && !expanded && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => setExpanded(true)}
+              >
+                <ChevronDownIcon className="h-3.5 w-3.5 mr-1" />
+                {t("expenses.comments.showAll", {
+                  count: comments.length - maxVisible,
+                  defaultValue: `Show ${comments.length - maxVisible} older comments`,
+                })}
+              </Button>
+            )}
+            {comments.length > maxVisible && expanded && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => setExpanded(false)}
+              >
+                <ChevronUpIcon className="h-3.5 w-3.5 mr-1" />
+                {t("expenses.comments.showLess", "Show less")}
+              </Button>
+            )}
+            {(expanded ? comments : comments.slice(-maxVisible)).map((comment) => (
               <CommentItem
                 key={comment.id}
                 comment={comment}
