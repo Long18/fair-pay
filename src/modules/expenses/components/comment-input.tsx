@@ -1,15 +1,23 @@
-import { useState, useRef, useCallback, useMemo, memo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect, memo } from "react";
+import { useGetIdentity } from "@refinedev/core";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SendIcon, AtSignIcon } from "@/components/ui/icons";
+import { SendIcon, AtSignIcon, UsersIcon, MessageSquareIcon } from "@/components/ui/icons";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { supabaseClient } from "@/utility/supabaseClient";
 import type { CommentUser } from "../types/comments";
+
+// Sentinel UUIDs matching the DB migration
+const MENTION_ALL_ID = "00000000-0000-0000-0000-000000000001";
+const MENTION_HERE_ID = "00000000-0000-0000-0000-000000000002";
 
 interface CommentInputProps {
   currentUser: CommentUser | null;
   participants: CommentUser[];
+  commenters?: CommentUser[];
   onSubmit: (content: string, mentionedUserIds: string[]) => Promise<unknown>;
   isSubmitting: boolean;
   placeholder?: string;
@@ -20,6 +28,7 @@ interface CommentInputProps {
 export const CommentInput = memo(({
   currentUser,
   participants,
+  commenters = [],
   onSubmit,
   isSubmitting,
   placeholder,
@@ -31,7 +40,36 @@ export const CommentInput = memo(({
   const [mentionedIds, setMentionedIds] = useState<Set<string>>(new Set());
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionFilter, setMentionFilter] = useState("");
+  const [friends, setFriends] = useState<CommentUser[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { data: identity } = useGetIdentity<{ id: string }>();
+
+
+  // Fetch friends list for @mention outside participants
+  useEffect(() => {
+    if (!identity?.id) return;
+    const fetchFriends = async () => {
+      const { data } = await supabaseClient
+        .from("friendships")
+        .select("user_a, user_b, user_a_profile:profiles!friendships_user_a_fkey(id, full_name, avatar_url), user_b_profile:profiles!friendships_user_b_fkey(id, full_name, avatar_url)")
+        .eq("status", "accepted")
+        .or(`user_a.eq.${identity.id},user_b.eq.${identity.id}`);
+      if (!data) return;
+      const participantIds = new Set(participants.map((p) => p.id));
+      const friendList: CommentUser[] = [];
+      for (const f of data) {
+        const isUserA = f.user_a === identity.id;
+        const profile = isUserA
+          ? (f.user_b_profile as unknown as CommentUser)
+          : (f.user_a_profile as unknown as CommentUser);
+        if (profile && !participantIds.has(profile.id)) {
+          friendList.push(profile);
+        }
+      }
+      setFriends(friendList);
+    };
+    fetchFriends();
+  }, [identity?.id, participants]);
 
   const handleSubmit = useCallback(async () => {
     const trimmed = content.trim();
@@ -48,40 +86,77 @@ export const CommentInput = memo(({
     }
   }, [handleSubmit]);
 
-  const insertMention = useCallback((user: CommentUser) => {
-    const mention = `@${user.full_name} `;
+  const insertMention = useCallback((id: string, displayName: string) => {
+    const mention = `@${displayName} `;
     const textarea = textareaRef.current;
     if (textarea) {
       const pos = textarea.selectionStart;
-      const before = content.substring(0, pos).replace(/@\w*$/, "");
+      const before = content.substring(0, pos).replace(/@[\w\s]*$/, "");
       const after = content.substring(pos);
       setContent(before + mention + after);
     } else {
       setContent((prev) => prev + mention);
     }
-    setMentionedIds((prev) => new Set(prev).add(user.id));
+    setMentionedIds((prev) => new Set(prev).add(id));
     setMentionOpen(false);
     setMentionFilter("");
     textareaRef.current?.focus();
   }, [content]);
 
+  // Special mention items (@all, @here)
+  const specialItems = useMemo(() => {
+    const items: Array<{ id: string; label: string; description: string; icon: React.ReactNode }> = [];
+    if (participants.length > 1) {
+      items.push({
+        id: MENTION_ALL_ID,
+        label: "@all",
+        description: t("expenses.comments.mentionAll", "Tất cả người tham gia"),
+        icon: <UsersIcon className="h-4 w-4 text-blue-500" />,
+      });
+    }
+    if (commenters.length > 0) {
+      items.push({
+        id: MENTION_HERE_ID,
+        label: "@here",
+        description: t("expenses.comments.mentionHere", "Người đã bình luận"),
+        icon: <MessageSquareIcon className="h-4 w-4 text-green-500" />,
+      });
+    }
+    return items;
+  }, [participants.length, commenters.length, t]);
+
+  // Filter participants (exclude current user)
   const filteredParticipants = useMemo(() => {
-    if (!mentionFilter) return participants.filter((p) => p.id !== currentUser?.id);
     const lower = mentionFilter.toLowerCase();
     return participants.filter(
-      (p) => p.id !== currentUser?.id && p.full_name.toLowerCase().includes(lower)
+      (p) => p.id !== currentUser?.id && (!lower || p.full_name.toLowerCase().includes(lower))
     );
   }, [participants, currentUser?.id, mentionFilter]);
+
+  // Filter friends (exclude current user and participants)
+  const filteredFriends = useMemo(() => {
+    const lower = mentionFilter.toLowerCase();
+    return friends.filter(
+      (f) => !lower || f.full_name.toLowerCase().includes(lower)
+    );
+  }, [friends, mentionFilter]);
+
+  // Filter special items
+  const filteredSpecial = useMemo(() => {
+    if (!mentionFilter) return specialItems;
+    const lower = mentionFilter.toLowerCase();
+    return specialItems.filter((s) => s.label.toLowerCase().includes(lower));
+  }, [specialItems, mentionFilter]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     setContent(val);
     const cursorPos = e.target.selectionStart;
     const textBeforeCursor = val.substring(0, cursorPos);
-    const mentionMatch = textBeforeCursor.match(/@(\w*)$/);
+    const mentionMatch = textBeforeCursor.match(/@([\w\s]*)$/);
     if (mentionMatch) {
       setMentionOpen(true);
-      setMentionFilter(mentionMatch[1]);
+      setMentionFilter(mentionMatch[1].trim());
     } else {
       setMentionOpen(false);
       setMentionFilter("");
@@ -94,6 +169,8 @@ export const CommentInput = memo(({
     .join("")
     .toUpperCase()
     .slice(0, 2) || "?";
+
+  const hasResults = filteredSpecial.length > 0 || filteredParticipants.length > 0 || filteredFriends.length > 0;
 
   return (
     <div className={cn("flex gap-2", compact ? "items-center" : "items-start")}>
@@ -134,28 +211,84 @@ export const CommentInput = memo(({
                   <AtSignIcon className="h-3.5 w-3.5" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent side="top" align="end" className="w-52 p-1">
-                {filteredParticipants.length === 0 ? (
+              <PopoverContent side="top" align="end" className="w-56 p-1 max-h-64 overflow-y-auto">
+                {!hasResults ? (
                   <p className="text-xs text-muted-foreground p-2 text-center">
                     {t("expenses.comments.noParticipants", "No participants found")}
                   </p>
                 ) : (
-                  filteredParticipants.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-accent transition-colors cursor-pointer"
-                      onClick={() => insertMention(p)}
-                    >
-                      <Avatar className="h-5 w-5">
-                        <AvatarImage src={p.avatar_url || undefined} />
-                        <AvatarFallback className="text-[10px]">
-                          {p.full_name?.[0]?.toUpperCase() || "?"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="truncate">{p.full_name}</span>
-                    </button>
-                  ))
+                  <>
+                    {/* Special: @all, @here */}
+                    {filteredSpecial.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-accent transition-colors cursor-pointer"
+                        onClick={() => insertMention(s.id, s.label)}
+                      >
+                        {s.icon}
+                        <div className="flex flex-col items-start min-w-0">
+                          <span className="font-medium text-xs">{s.label}</span>
+                          <span className="text-[10px] text-muted-foreground truncate">{s.description}</span>
+                        </div>
+                      </button>
+                    ))}
+
+                    {filteredSpecial.length > 0 && (filteredParticipants.length > 0 || filteredFriends.length > 0) && (
+                      <Separator className="my-1" />
+                    )}
+
+                    {/* Participants */}
+                    {filteredParticipants.length > 0 && (
+                      <>
+                        <p className="text-[10px] text-muted-foreground px-2 pt-1 pb-0.5 uppercase tracking-wider">
+                          {t("expenses.comments.participants", "Participants")}
+                        </p>
+                        {filteredParticipants.map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-accent transition-colors cursor-pointer"
+                            onClick={() => insertMention(p.id, p.full_name)}
+                          >
+                            <Avatar className="h-5 w-5">
+                              <AvatarImage src={p.avatar_url || undefined} />
+                              <AvatarFallback className="text-[10px]">
+                                {p.full_name?.[0]?.toUpperCase() || "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="truncate">{p.full_name}</span>
+                          </button>
+                        ))}
+                      </>
+                    )}
+
+                    {/* Friends (outside participants) */}
+                    {filteredFriends.length > 0 && (
+                      <>
+                        {filteredParticipants.length > 0 && <Separator className="my-1" />}
+                        <p className="text-[10px] text-muted-foreground px-2 pt-1 pb-0.5 uppercase tracking-wider">
+                          {t("expenses.comments.friends", "Friends")}
+                        </p>
+                        {filteredFriends.map((f) => (
+                          <button
+                            key={f.id}
+                            type="button"
+                            className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-accent transition-colors cursor-pointer"
+                            onClick={() => insertMention(f.id, f.full_name)}
+                          >
+                            <Avatar className="h-5 w-5">
+                              <AvatarImage src={f.avatar_url || undefined} />
+                              <AvatarFallback className="text-[10px]">
+                                {f.full_name?.[0]?.toUpperCase() || "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="truncate">{f.full_name}</span>
+                          </button>
+                        ))}
+                      </>
+                    )}
+                  </>
                 )}
               </PopoverContent>
             </Popover>

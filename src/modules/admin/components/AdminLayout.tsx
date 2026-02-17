@@ -30,6 +30,7 @@ import {
   BellIcon,
   ScrollTextIcon,
   HeartIcon,
+  SmilePlusIcon,
   PanelLeftIcon,
   ArrowLeftIcon,
 } from "@/components/ui/icons";
@@ -43,6 +44,7 @@ const NAV_ITEMS = [
   { key: "notifications", label: "Notifications", icon: BellIcon, path: "/admin/notifications" },
   { key: "audit-logs", label: "Audit Logs", icon: ScrollTextIcon, path: "/admin/audit-logs" },
   { key: "donation", label: "Donation", icon: HeartIcon, path: "/admin/donation-settings" },
+  { key: "reactions", label: "Reactions", icon: SmilePlusIcon, path: "/admin/reactions" },
 ] as const;
 
 // ─── Helpers ────────────────────────────────────────────────────────

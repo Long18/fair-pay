@@ -92,6 +92,7 @@ const AdminTransactions = lazy(() => import("./modules/admin/pages/AdminTransact
 const AdminNotifications = lazy(() => import("./modules/admin/pages/AdminNotifications").then(m => ({ default: m.AdminNotifications })));
 const AdminAuditLogs = lazy(() => import("./modules/admin/pages/AdminAuditLogs").then(m => ({ default: m.AdminAuditLogs })));
 const AdminDonationSettings = lazy(() => import("./modules/admin/pages/AdminDonationSettings").then(m => ({ default: m.AdminDonationSettings })));
+const AdminReactions = lazy(() => import("./modules/admin/pages/AdminReactions").then(m => ({ default: m.AdminReactions })));
 
 // Optimized loading fallback component
 // Profile Edit Redirect Component
@@ -379,6 +380,7 @@ function App() {
                     <Route path="notifications" element={<Suspense fallback={<PageLoader />}><AdminNotifications /></Suspense>} />
                     <Route path="audit-logs" element={<Suspense fallback={<PageLoader />}><AdminAuditLogs /></Suspense>} />
                     <Route path="donation-settings" element={<Suspense fallback={<PageLoader />}><AdminDonationSettings /></Suspense>} />
+                    <Route path="reactions" element={<Suspense fallback={<PageLoader />}><AdminReactions /></Suspense>} />
                   </Route>
 
                   {/* Authenticated routes - require login */}

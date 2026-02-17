@@ -1,4 +1,4 @@
-import { useCallback, memo } from "react";
+import { useCallback, useMemo, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -38,6 +38,27 @@ export const CommentSection = memo(({
     toggleReaction,
     getReactionsForTarget,
   } = useExpenseReactions(expenseId);
+
+  // Derive unique commenters from comments (for @here mention)
+  const derivedCommenters = useMemo(() => {
+    const seen = new Set<string>();
+    const result: CommentUser[] = [];
+    for (const c of comments) {
+      if (!seen.has(c.user_id)) {
+        seen.add(c.user_id);
+        result.push(c.user);
+      }
+      if (c.replies) {
+        for (const r of c.replies) {
+          if (!seen.has(r.user_id)) {
+            seen.add(r.user_id);
+            result.push(r.user);
+          }
+        }
+      }
+    }
+    return result;
+  }, [comments]);
 
   const handleAddComment = useCallback(
     async (content: string, mentionedUserIds: string[]) => {
@@ -154,6 +175,7 @@ export const CommentSection = memo(({
         <CommentInput
           currentUser={currentUser}
           participants={participants}
+          commenters={derivedCommenters}
           onSubmit={handleAddComment}
           isSubmitting={isSubmitting}
         />
