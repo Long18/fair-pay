@@ -1,3 +1,4 @@
+import { useState, useCallback, useMemo, memo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,8 +33,17 @@ import {
   PauseIcon,
   PlayIcon,
   UserIcon,
+  MessageSquareIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
 } from "@/components/ui/icons";
 import { CategoryIcon } from "./category-icon";
+import { CommentInput } from "./comment-input";
+import { CommentItem } from "./comment-item";
+import { ReactionBar } from "./reaction-bar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useExpenseComments } from "../hooks/use-expense-comments";
+import { useReactionTypes, useExpenseReactions } from "../hooks/use-reactions";
 import { formatDate, formatNumber, formatCurrency } from "@/lib/locale-utils";
 import { getOweStatusColors } from "@/lib/status-colors";
 import { useTranslation } from "react-i18next";
@@ -44,6 +54,7 @@ import { format } from "date-fns";
 import { vi, enUS } from "date-fns/locale";
 import { getFrequencyDescription } from "../types/recurring";
 import type { RecurringExpense } from "../types/recurring";
+import type { CommentUser } from "../types/comments";
 
 interface ExpenseSummaryCardProps {
   expense: {
@@ -74,9 +85,12 @@ interface ExpenseSummaryCardProps {
   };
   onEdit: () => void;
   onDelete: () => void;
+  currentUser?: CommentUser | null;
+  participants?: CommentUser[];
+  maxVisibleComments?: number;
 }
 
-export const ExpenseSummaryCard = ({
+export const ExpenseSummaryCard = memo(({
   expense,
   canEdit,
   isLoan,
@@ -85,9 +99,94 @@ export const ExpenseSummaryCard = ({
   userPosition,
   onEdit,
   onDelete,
+  currentUser = null,
+  participants = [],
+  maxVisibleComments = 3,
 }: ExpenseSummaryCardProps) => {
   const { t, i18n } = useTranslation();
   const dateLocale = i18n.language === "vi" ? vi : enUS;
+  const [commentsExpanded, setCommentsExpanded] = useState(false);
+
+  // Comment & reaction hooks
+  const {
+    comments,
+    isLoading: commentsLoading,
+    isSubmitting,
+    totalCount,
+    addComment,
+    updateComment,
+    deleteComment,
+  } = useExpenseComments(expense.id);
+  const { reactionTypes } = useReactionTypes();
+  const {
+    toggleReaction,
+    createAndToggleReaction,
+    getReactionsForTarget,
+  } = useExpenseReactions(expense.id);
+
+  const derivedCommenters = useMemo(() => {
+    const seen = new Set<string>();
+    const result: CommentUser[] = [];
+    for (const c of comments) {
+      if (!seen.has(c.user_id)) { seen.add(c.user_id); result.push(c.user); }
+      if (c.replies) {
+        for (const r of c.replies) {
+          if (!seen.has(r.user_id)) { seen.add(r.user_id); result.push(r.user); }
+        }
+      }
+    }
+    return result;
+  }, [comments]);
+
+  const handleAddComment = useCallback(
+    async (content: string, mentionedUserIds: string[]) => {
+      await addComment(content, undefined, mentionedUserIds);
+    },
+    [addComment],
+  );
+
+  const handleReply = useCallback(
+    (parentId: string) => async (content: string, mentionedUserIds: string[]) => {
+      await addComment(content, parentId, mentionedUserIds);
+    },
+    [addComment],
+  );
+
+  const handleToggleCommentReaction = useCallback(
+    (commentId: string, reactionTypeId: string) => {
+      toggleReaction("comment", commentId, reactionTypeId);
+    },
+    [toggleReaction],
+  );
+
+  const handleToggleExpenseReaction = useCallback(
+    (reactionTypeId: string) => {
+      toggleReaction("expense", expense.id, reactionTypeId);
+    },
+    [toggleReaction, expense.id],
+  );
+
+  const handleCreateAndToggleExpenseReaction = useCallback(
+    (emojiMartId: string, nativeEmoji: string, label: string) => {
+      createAndToggleReaction("expense", expense.id, emojiMartId, nativeEmoji, label);
+    },
+    [createAndToggleReaction, expense.id],
+  );
+
+  const handleCreateAndToggleCommentReaction = useCallback(
+    (commentId: string, emojiMartId: string, nativeEmoji: string, label: string) => {
+      createAndToggleReaction("comment", commentId, emojiMartId, nativeEmoji, label);
+    },
+    [createAndToggleReaction],
+  );
+
+  const getReactionsForComment = useCallback(
+    (commentId: string) => getReactionsForTarget("comment", commentId),
+    [getReactionsForTarget],
+  );
+
+  const expenseReactions = getReactionsForTarget("expense", expense.id);
+  const hasCommentsOrReactions = comments.length > 0 || expenseReactions.length > 0;
 
   const handleShare = async () => {
     const shareUrl = window.location.href;
@@ -358,7 +457,103 @@ export const ExpenseSummaryCard = ({
             </div>
           </>
         )}
+
+        {/* Inline Comments & Reactions */}
+        {(hasCommentsOrReactions || currentUser) && (
+          <>
+            <Separator className="my-4" />
+            <div className="space-y-3">
+              {/* Expense-level reactions */}
+              {(expenseReactions.length > 0 || reactionTypes.length > 0) && (
+                <ReactionBar
+                  reactions={expenseReactions}
+                  reactionTypes={reactionTypes}
+                  onToggle={handleToggleExpenseReaction}
+                  onCreateAndToggle={handleCreateAndToggleExpenseReaction}
+                  size="sm"
+                />
+              )}
+
+              {/* Comments */}
+              {commentsLoading ? (
+                <div className="flex gap-2.5">
+                  <Skeleton className="h-6 w-6 rounded-full shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-3 w-full" />
+                  </div>
+                </div>
+              ) : comments.length > 0 ? (
+                <div className="space-y-3">
+                  {comments.length > maxVisibleComments && !commentsExpanded && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => setCommentsExpanded(true)}
+                    >
+                      <ChevronDownIcon className="h-3.5 w-3.5 mr-1" />
+                      {t("expenses.comments.showAll", {
+                        count: comments.length - maxVisibleComments,
+                        defaultValue: `Show ${comments.length - maxVisibleComments} older comments`,
+                      })}
+                    </Button>
+                  )}
+                  {comments.length > maxVisibleComments && commentsExpanded && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => setCommentsExpanded(false)}
+                    >
+                      <ChevronUpIcon className="h-3.5 w-3.5 mr-1" />
+                      {t("expenses.comments.showLess", "Show less")}
+                    </Button>
+                  )}
+                  {(commentsExpanded ? comments : comments.slice(-maxVisibleComments)).map((comment) => (
+                    <CommentItem
+                      key={comment.id}
+                      comment={comment}
+                      currentUserId={currentUser?.id}
+                      currentUser={currentUser}
+                      participants={participants}
+                      reactions={getReactionsForComment(comment.id)}
+                      reactionTypes={reactionTypes}
+                      onToggleReaction={(rtId) => handleToggleCommentReaction(comment.id, rtId)}
+                      onCreateAndToggleReaction={(emojiMartId, nativeEmoji, label) => handleCreateAndToggleCommentReaction(comment.id, emojiMartId, nativeEmoji, label)}
+                      onReply={handleReply(comment.id)}
+                      onUpdate={updateComment}
+                      onDelete={deleteComment}
+                      isSubmitting={isSubmitting}
+                      getReactionsForComment={getReactionsForComment}
+                      onToggleReplyReaction={handleToggleCommentReaction}
+                      onCreateAndToggleReplyReaction={handleCreateAndToggleCommentReaction}
+                    />
+                  ))}
+                </div>
+              ) : null}
+
+              {/* Comment input */}
+              {currentUser && (
+                <>
+                  {comments.length > 0 && <Separator />}
+                  <CommentInput
+                    currentUser={currentUser}
+                    participants={participants}
+                    commenters={derivedCommenters}
+                    onSubmit={handleAddComment}
+                    isSubmitting={isSubmitting}
+                    customReactions={reactionTypes}
+                    compact={comments.length === 0}
+                  />
+                </>
+              )}
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );
-};
+});
+
+ExpenseSummaryCard.displayName = "ExpenseSummaryCard";
