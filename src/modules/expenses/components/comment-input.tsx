@@ -387,6 +387,9 @@ export const CommentInput = memo(({
               onSelect={(emoji) => {
                 if (emoji.native) {
                   insertEmoji(emoji.native);
+                } else {
+                  // Image/GIF custom reaction — insert shortcode
+                  insertEmoji(`:${emoji.id}:`);
                 }
               }}
               customReactions={customReactions}
