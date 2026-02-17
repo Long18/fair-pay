@@ -23,7 +23,7 @@ export interface SepayConfig {
   account_holder_name?: string;
 }
 
-export type SepayOrderStatus = 'PENDING' | 'PAID' | 'FAILED' | 'CANCELLED' | 'EXPIRED';
+export type SepayOrderStatus = 'PENDING' | 'PAID' | 'PARTIAL_PAID' | 'FAILED' | 'CANCELLED' | 'EXPIRED';
 
 export interface SepayPaymentOrder {
   id: string;
@@ -33,6 +33,7 @@ export interface SepayPaymentOrder {
   payer_user_id: string;
   payee_user_id: string;
   amount: number;
+  paid_amount?: number;
   currency: string;
   status: SepayOrderStatus;
   sepay_checkout_url?: string;

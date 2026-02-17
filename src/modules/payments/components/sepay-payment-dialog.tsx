@@ -83,8 +83,21 @@ export function SepayPaymentDialog({
       triggerHaptic('success');
       toast.success(t('payments.sepay.paymentSuccess', 'Payment confirmed!'));
       onPaymentComplete?.();
+    } else if (status === 'PARTIAL_PAID') {
+      triggerHaptic('medium');
+      const paidAmount = order?.paid_amount ?? 0;
+      const remaining = amount - paidAmount;
+      toast.info(
+        t('payments.sepay.partialPaymentReceived', {
+          defaultValue: `Partial payment received: ${formatNumber(paidAmount)} ${currency}. Remaining: ${formatNumber(remaining)} ${currency}`,
+          paid: formatNumber(paidAmount),
+          remaining: formatNumber(remaining),
+          currency,
+        })
+      );
+      onPaymentComplete?.();
     }
-  }, [status, t, onPaymentComplete]);
+  }, [status, t, onPaymentComplete, order, amount, currency]);
 
   const handleCopyCode = () => {
     if (paymentCode) {
@@ -105,12 +118,13 @@ export function SepayPaymentDialog({
 
   const isPending = status === 'PENDING' || isPolling;
   const isPaid = status === 'PAID';
+  const isPartialPaid = status === 'PARTIAL_PAID';
   const isFailed = status === 'FAILED' || status === 'CANCELLED' || status === 'EXPIRED';
 
   const footerButtons = (
     <div className="flex gap-2 w-full">
       <Button variant="outline" onClick={() => handleClose(false)} className="flex-1 min-h-[44px]">
-        {isPaid ? t('common.done', 'Done') : t('common.close', 'Close')}
+        {isPaid || isPartialPaid ? t('common.done', 'Done') : t('common.close', 'Close')}
       </Button>
     </div>
   );
@@ -217,6 +231,34 @@ export function SepayPaymentDialog({
               </p>
               <p className="text-sm text-muted-foreground mt-1">
                 {t('payments.sepay.paymentConfirmedDesc', 'Your payment has been processed successfully.')}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {isPartialPaid && (
+          <div className="flex flex-col items-center py-8 space-y-4">
+            <div className="rounded-full bg-amber-100 dark:bg-amber-900/30 p-4">
+              <AlertCircleIcon className="h-12 w-12 text-amber-600" />
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-semibold text-amber-700 dark:text-amber-300">
+                {t('payments.sepay.partialPaymentTitle', 'Partial Payment Received')}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {t('payments.sepay.partialPaymentDesc', {
+                  defaultValue: `Received ${formatNumber(order?.paid_amount ?? 0)} ${currency} of ${formatNumber(amount)} ${currency}. The remaining amount has been recorded.`,
+                  paid: formatNumber(order?.paid_amount ?? 0),
+                  total: formatNumber(amount),
+                  currency,
+                })}
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                {t('payments.sepay.partialPaymentRemaining', {
+                  defaultValue: `Remaining: ${formatNumber(amount - (order?.paid_amount ?? 0))} ${currency}`,
+                  remaining: formatNumber(amount - (order?.paid_amount ?? 0)),
+                  currency,
+                })}
               </p>
             </div>
           </div>
