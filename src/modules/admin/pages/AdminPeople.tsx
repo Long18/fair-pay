@@ -1215,10 +1215,10 @@ function UsersTab() {
     const newRole = user.role === "admin" ? "user" : "admin";
     (async () => {
       try {
-        const { error } = await supabaseClient
-          .from("user_roles")
-          .update({ role: newRole })
-          .eq("user_id", user.id);
+        const { data, error } = await supabaseClient.rpc("admin_update_user_role", {
+          p_user_id: user.id,
+          p_new_role: newRole,
+        });
         if (error) throw error;
         toast.success(`Đã ${newRole === "admin" ? "nâng cấp" : "hạ cấp"} vai trò của ${user.full_name}`);
         queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
