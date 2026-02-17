@@ -159,7 +159,7 @@ function AdminNavBar({ isMobile }: { isMobile: boolean }) {
       </div>
 
       {/* Center: Desktop nav items */}
-      <DesktopAdminNav />
+      <DesktopAdminNav scrolled={scrolled} />
 
       {/* Right: Actions */}
       <AdminActions />
@@ -192,7 +192,7 @@ function AdminLogo() {
 
 // ─── Desktop Nav Items ──────────────────────────────────────────────
 
-function DesktopAdminNav() {
+function DesktopAdminNav({ scrolled }: { scrolled: boolean }) {
   const { pathname } = useLocation();
   const isMobile = useIsMobile();
 
@@ -204,6 +204,8 @@ function DesktopAdminNav() {
         {NAV_ITEMS.map((item) => {
           const active = isActive(item.path, pathname);
           const Icon = item.icon;
+          // Show label when: item is active, OR navbar is in full (not scrolled) state
+          const showLabel = active || !scrolled;
           return (
             <Tooltip key={item.key}>
               <TooltipTrigger asChild>
@@ -215,7 +217,9 @@ function DesktopAdminNav() {
                     "transition-all duration-300 ease-out",
                     active
                       ? "bg-primary/10 text-primary px-3 py-2"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/60 p-2"
+                      : showLabel
+                        ? "text-muted-foreground hover:text-foreground hover:bg-accent/60 px-3 py-2"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent/60 p-2"
                   )}
                 >
                   <Icon
@@ -227,7 +231,7 @@ function DesktopAdminNav() {
                   <span
                     className={cn(
                       "inline-grid transition-all duration-300 ease-out overflow-hidden",
-                      active
+                      showLabel
                         ? "grid-cols-[1fr] opacity-100"
                         : "grid-cols-[0fr] opacity-0"
                     )}
@@ -236,7 +240,7 @@ function DesktopAdminNav() {
                   </span>
                 </Link>
               </TooltipTrigger>
-              {!active && (
+              {!showLabel && (
                 <TooltipContent side="bottom">
                   <span className="text-xs font-medium">{item.label}</span>
                 </TooltipContent>
