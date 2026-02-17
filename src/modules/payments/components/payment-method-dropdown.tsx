@@ -18,7 +18,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { QrCodeIcon, CreditCardIcon, ChevronDownIcon } from '@/components/ui/icons';
+import { QrCodeIcon, CreditCardIcon, ChevronDownIcon, SparklesIcon } from '@/components/ui/icons';
+import { Badge } from '@/components/ui/badge';
 import { ExpenseSplit } from '@/modules/expenses/types';
 import { VietQRPaymentDialog } from './vietqr-payment-dialog';
 import { SepayPaymentDialog } from './sepay-payment-dialog';
@@ -129,6 +130,7 @@ export function PaymentMethodDropdown({
   // Single method: render as a simple button
   if (methods.length === 1) {
     const method = methods[0];
+    const isSepay = method.id === 'sepay';
     const label = method.id === 'vietqr'
       ? t('payments.payViaVietQR', 'Pay via VietQR')
       : t('payments.payViaSePay', 'Pay via SePay');
@@ -147,6 +149,12 @@ export function PaymentMethodDropdown({
         >
           <QrCodeIcon className="h-4 w-4 mr-2" />
           {label}
+          {isSepay && (
+            <Badge className="ml-2 bg-emerald-500/20 text-emerald-100 border-emerald-400/30 text-[10px] px-1.5 py-0">
+              <SparklesIcon size={10} className="text-emerald-200" />
+              Best Choice
+            </Badge>
+          )}
         </Button>
         {vietqrDialog}
         {sepayDialog}
@@ -194,8 +202,14 @@ export function PaymentMethodDropdown({
               className="cursor-pointer py-2.5"
             >
               <CreditCardIcon className="h-4 w-4 mr-2.5 text-green-600" />
-              <div className="flex flex-col">
-                <span className="font-medium">{t('payments.sepay.label', 'SePay')}</span>
+              <div className="flex flex-col flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-medium">{t('payments.sepay.label', 'SePay')}</span>
+                  <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25 text-[10px] px-1.5 py-0">
+                    <SparklesIcon size={10} />
+                    Best Choice
+                  </Badge>
+                </div>
                 <span className="text-xs text-muted-foreground">
                   {t('payments.sepay.sublabel', 'Pay via SePay gateway')}
                 </span>
