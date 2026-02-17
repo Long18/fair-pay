@@ -95,6 +95,33 @@ export const useExpenseReactions = (expenseId: string | undefined) => {
     }
   }, [fetchReactions, t]);
 
+  // Auto-create reaction_type for arbitrary emoji then toggle
+  const createAndToggleReaction = useCallback(async (
+    targetType: "expense" | "comment",
+    targetId: string,
+    emojiMartId: string,
+    nativeEmoji: string,
+    label: string
+  ) => {
+    try {
+      const { data: reactionTypeId, error: upsertError } = await supabaseClient.rpc(
+        "upsert_emoji_reaction_type",
+        {
+          p_emoji_mart_id: emojiMartId,
+          p_native_emoji: nativeEmoji,
+          p_label: label,
+        }
+      );
+      if (upsertError) throw upsertError;
+      if (!reactionTypeId) throw new Error("Failed to create reaction type");
+      return await toggleReaction(targetType, targetId, reactionTypeId as string);
+    } catch (error) {
+      console.error("Error creating and toggling reaction:", error);
+      toast.error(t("reactions.error", "Failed to update reaction"));
+      return null;
+    }
+  }, [toggleReaction, t]);
+
   const getReactionsForTarget = useCallback((
     targetType: "expense" | "comment",
     targetId: string
@@ -107,6 +134,7 @@ export const useExpenseReactions = (expenseId: string | undefined) => {
     reactions,
     isLoading,
     toggleReaction,
+    createAndToggleReaction,
     getReactionsForTarget,
     refetch: fetchReactions,
   };

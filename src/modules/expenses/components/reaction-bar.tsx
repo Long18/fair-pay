@@ -10,6 +10,7 @@ interface ReactionBarProps {
   reactions: ReactionSummary[];
   reactionTypes: ReactionType[];
   onToggle: (reactionTypeId: string) => void;
+  onCreateAndToggle?: (emojiMartId: string, nativeEmoji: string, label: string) => void;
   size?: "sm" | "md";
 }
 
@@ -17,12 +18,13 @@ export const ReactionBar = memo(({
   reactions,
   reactionTypes,
   onToggle,
+  onCreateAndToggle,
   size = "sm",
 }: ReactionBarProps) => {
   const [pickerOpen, setPickerOpen] = useState(false);
 
   // Match emoji from picker back to a reaction_type by emoji_mart_id, code, or emoji char
-  const handlePickerSelect = useCallback((emoji: { id: string; native?: string; src?: string }) => {
+  const handlePickerSelect = useCallback((emoji: { id: string; name?: string; native?: string; src?: string }) => {
     // Try matching by emoji_mart_id first (most reliable)
     const byMartId = reactionTypes.find((rt) => rt.emoji_mart_id === emoji.id);
     if (byMartId) {
@@ -46,9 +48,12 @@ export const ReactionBar = memo(({
         return;
       }
     }
-    // No matching reaction_type — could extend later to support arbitrary emoji
+    // No matching reaction_type — auto-create via RPC
+    if (onCreateAndToggle && emoji.native) {
+      onCreateAndToggle(emoji.id, emoji.native, emoji.name || emoji.id);
+    }
     setPickerOpen(false);
-  }, [reactionTypes, onToggle]);
+  }, [reactionTypes, onToggle, onCreateAndToggle]);
 
   return (
     <div className="flex items-center gap-1 flex-wrap">
