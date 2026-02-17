@@ -1060,7 +1060,6 @@ function NewRegistrationCard({
 
 function UsersTab() {
   const { data: identity } = useGetIdentity<Profile>();
-  const updateMutation = useUpdate();
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
@@ -1214,14 +1213,20 @@ function UsersTab() {
   const handleToggleRole = useCallback((user: AdminUserRow) => {
     if (identity?.id === user.id) { toast.warning("Không thể thay đổi vai trò của chính mình"); return; }
     const newRole = user.role === "admin" ? "user" : "admin";
-    updateMutation.mutate(
-      { resource: "user_roles", id: user.id, values: { role: newRole } },
-      {
-        onSuccess: () => { toast.success(`Đã ${newRole === "admin" ? "nâng cấp" : "hạ cấp"} vai trò của ${user.full_name}`); queryClient.invalidateQueries({ queryKey: ["admin", "users"] }); },
-        onError: (error) => { toast.error(`Lỗi: ${error.message}`); },
-      },
-    );
-  }, [identity?.id, updateMutation, queryClient]);
+    (async () => {
+      try {
+        const { error } = await supabaseClient
+          .from("user_roles")
+          .update({ role: newRole })
+          .eq("user_id", user.id);
+        if (error) throw error;
+        toast.success(`Đã ${newRole === "admin" ? "nâng cấp" : "hạ cấp"} vai trò của ${user.full_name}`);
+        queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      } catch (error) {
+        toast.error(`Lỗi: ${error instanceof Error ? error.message : "Không thể thay đổi vai trò"}`);
+      }
+    })();
+  }, [identity?.id, queryClient]);
 
   const handleDeleteUser = useCallback(async () => {
     if (!deleteUser) return;
