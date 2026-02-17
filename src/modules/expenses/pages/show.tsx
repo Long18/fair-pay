@@ -475,7 +475,17 @@ export const ExpenseShow = () => {
           onDelete={handleDelete}
         />
 
-        {/* 2. Split Details */}
+        {/* 2. Comments & Reactions — visible first */}
+        {id && (
+          <CommentSection
+            expenseId={id}
+            currentUser={currentCommentUser}
+            participants={commentParticipants}
+            maxVisible={3}
+          />
+        )}
+
+        {/* 3. Split Details */}
         <Card className="rounded-xl border-2 shadow-sm">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between gap-3">
@@ -661,14 +671,7 @@ export const ExpenseShow = () => {
           )
         )}
 
-        {/* 5. Comments & Reactions */}
-        {id && (
-          <CommentSection
-            expenseId={id}
-            currentUser={currentCommentUser}
-            participants={commentParticipants}
-          />
-        )}
+        {/* Notes & Attachments section ends here */}
       </motion.div>
 
       {/* Settle Split Dialog */}
