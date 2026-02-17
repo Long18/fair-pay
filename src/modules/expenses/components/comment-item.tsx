@@ -185,6 +185,7 @@ export const CommentItem = memo(({
                 placeholder={t("expenses.comments.replyPlaceholder", "Write a reply...")}
                 autoFocus
                 compact
+                customReactions={reactionTypes}
               />
             </div>
           )}
