@@ -12,6 +12,7 @@ import {
   type TreeMenuItem,
 } from "@refinedev/core";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useScrolled } from "@/hooks/use-scrolled";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,7 @@ import {
 
 export function NavBar() {
   const isMobile = useIsMobile();
+  const scrolled = useScrolled(10);
 
   return (
     <nav
@@ -69,23 +71,13 @@ export function NavBar() {
         // Fixed positioning
         "fixed",
         "inset-x-0",
-        "top-0",
         "z-40",
         // Centering and sizing
         "mx-auto",
-        "max-w-6xl",
         "w-full",
         // Height
         "h-14",
         "md:h-16",
-        // Shape
-        "rounded-b-3xl",
-        // Glassmorphism
-        "bg-background/80",
-        "backdrop-blur-md",
-        "shadow-lg",
-        "border",
-        "border-border/50",
         // Layout
         "flex",
         "items-center",
@@ -99,10 +91,37 @@ export function NavBar() {
         "md:py-3",
         // Animation
         "transition-all",
-        "duration-300",
+        "duration-500",
         "ease-out",
         // Safe area for iOS
-        "safe-area-inset-top"
+        "safe-area-inset-top",
+        // ── Scroll-based states ──
+        scrolled
+          ? [
+              // Floating glass pill
+              "max-w-3xl",
+              "lg:max-w-5xl",
+              "top-3",
+              "rounded-2xl",
+              "bg-background/60",
+              "backdrop-blur-xl",
+              "shadow-lg",
+              "shadow-black/5",
+              "dark:shadow-black/20",
+              "border",
+              "border-border/40",
+            ]
+          : [
+              // Full-width solid bar at top
+              "max-w-full",
+              "top-0",
+              "rounded-none",
+              "bg-background/95",
+              "backdrop-blur-sm",
+              "shadow-none",
+              "border-b",
+              "border-border/30",
+            ]
       )}
       role="navigation"
       aria-label="Main navigation"

@@ -5,6 +5,7 @@ import { AnimatedOutlet } from "@/components/animated-outlet";
 import { Profile } from "@/modules/profile/types";
 import { ThemeSelector } from "@/components/refine-ui/theme/theme-selector";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useScrolled } from "@/hooks/use-scrolled";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -97,24 +98,18 @@ export function AdminLayout() {
 // ─── Floating Navbar ────────────────────────────────────────────────
 
 function AdminNavBar({ isMobile }: { isMobile: boolean }) {
+  const scrolled = useScrolled(10);
+
   return (
     <nav
       className={cn(
         "fixed",
         "inset-x-0",
-        "top-0",
         "z-40",
         "mx-auto",
-        "max-w-6xl",
         "w-full",
         "h-14",
         "md:h-16",
-        "rounded-b-3xl",
-        "bg-background/80",
-        "backdrop-blur-md",
-        "shadow-lg",
-        "border",
-        "border-border/50",
         "flex",
         "items-center",
         "justify-between",
@@ -125,9 +120,34 @@ function AdminNavBar({ isMobile }: { isMobile: boolean }) {
         "py-2",
         "md:py-3",
         "transition-all",
-        "duration-300",
+        "duration-500",
         "ease-out",
-        "safe-area-inset-top"
+        "safe-area-inset-top",
+        // ── Scroll-based states ──
+        scrolled
+          ? [
+              "max-w-3xl",
+              "lg:max-w-5xl",
+              "top-3",
+              "rounded-2xl",
+              "bg-background/60",
+              "backdrop-blur-xl",
+              "shadow-lg",
+              "shadow-black/5",
+              "dark:shadow-black/20",
+              "border",
+              "border-border/40",
+            ]
+          : [
+              "max-w-full",
+              "top-0",
+              "rounded-none",
+              "bg-background/95",
+              "backdrop-blur-sm",
+              "shadow-none",
+              "border-b",
+              "border-border/30",
+            ]
       )}
       role="navigation"
       aria-label="Admin navigation"
