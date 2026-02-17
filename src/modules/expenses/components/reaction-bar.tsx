@@ -21,8 +21,15 @@ export const ReactionBar = memo(({
 }: ReactionBarProps) => {
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  // Match emoji from picker back to a reaction_type by code or emoji char
+  // Match emoji from picker back to a reaction_type by emoji_mart_id, code, or emoji char
   const handlePickerSelect = useCallback((emoji: { id: string; native?: string; src?: string }) => {
+    // Try matching by emoji_mart_id first (most reliable)
+    const byMartId = reactionTypes.find((rt) => rt.emoji_mart_id === emoji.id);
+    if (byMartId) {
+      onToggle(byMartId.id);
+      setPickerOpen(false);
+      return;
+    }
     // Try matching by code (custom reactions)
     const byCode = reactionTypes.find((rt) => rt.code === emoji.id);
     if (byCode) {

@@ -4,6 +4,7 @@ export interface ReactionType {
   id: string;
   code: string;
   emoji: string | null;
+  emoji_mart_id: string | null;
   image_url: string | null;
   media_type: "emoji" | "image" | "gif";
   label: string;

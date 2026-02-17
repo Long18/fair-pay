@@ -64,6 +64,7 @@ import type { ReactionType } from "@/modules/expenses/types/comments";
 interface ReactionFormData {
   code: string;
   emoji: string;
+  emoji_mart_id: string;
   image_url: string;
   media_type: "emoji" | "image" | "gif";
   label: string;
@@ -73,6 +74,7 @@ interface ReactionFormData {
 const EMPTY_FORM: ReactionFormData = {
   code: "",
   emoji: "",
+  emoji_mart_id: "",
   image_url: "",
   media_type: "emoji",
   label: "",
@@ -103,6 +105,7 @@ function useUpsertReaction() {
       const payload: Record<string, unknown> = {
         code: form.code.trim(),
         emoji: form.media_type === "emoji" ? form.emoji.trim() : null,
+        emoji_mart_id: form.emoji_mart_id.trim() || null,
         image_url: form.media_type !== "emoji" ? form.image_url.trim() : null,
         media_type: form.media_type,
         label: form.label.trim(),
@@ -196,6 +199,7 @@ function ReactionFormDialog({
       setForm({
         code: editItem.code,
         emoji: editItem.emoji || "",
+        emoji_mart_id: editItem.emoji_mart_id || "",
         image_url: editItem.image_url || "",
         media_type: editItem.media_type,
         label: editItem.label,
@@ -299,6 +303,19 @@ function ReactionFormDialog({
               )}
             </div>
           )}
+
+          <div className="space-y-2">
+            <Label htmlFor="emoji_mart_id">Emoji Mart ID</Label>
+            <Input
+              id="emoji_mart_id"
+              value={form.emoji_mart_id}
+              onChange={(e) => setForm((f) => ({ ...f, emoji_mart_id: e.target.value }))}
+              placeholder="+1, joy, fire..."
+            />
+            <p className="text-[11px] text-muted-foreground">
+              ID trong emoji-mart để matching khi chọn từ picker
+            </p>
+          </div>
 
           <div className="flex items-center gap-2">
             <Switch
