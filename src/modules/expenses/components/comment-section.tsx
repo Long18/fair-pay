@@ -36,6 +36,7 @@ export const CommentSection = memo(({
   const { reactionTypes } = useReactionTypes();
   const {
     toggleReaction,
+    createAndToggleReaction,
     getReactionsForTarget,
   } = useExpenseReactions(expenseId);
 
@@ -88,6 +89,20 @@ export const CommentSection = memo(({
     [toggleReaction, expenseId],
   );
 
+  const handleCreateAndToggleExpenseReaction = useCallback(
+    (emojiMartId: string, nativeEmoji: string, label: string) => {
+      createAndToggleReaction("expense", expenseId, emojiMartId, nativeEmoji, label);
+    },
+    [createAndToggleReaction, expenseId],
+  );
+
+  const handleCreateAndToggleCommentReaction = useCallback(
+    (commentId: string, emojiMartId: string, nativeEmoji: string, label: string) => {
+      createAndToggleReaction("comment", commentId, emojiMartId, nativeEmoji, label);
+    },
+    [createAndToggleReaction],
+  );
+
   const getReactionsForComment = useCallback(
     (commentId: string) => getReactionsForTarget("comment", commentId),
     [getReactionsForTarget],
@@ -135,6 +150,7 @@ export const CommentSection = memo(({
               reactions={getReactionsForTarget("expense", expenseId)}
               reactionTypes={reactionTypes}
               onToggle={handleToggleExpenseReaction}
+              onCreateAndToggle={handleCreateAndToggleExpenseReaction}
               size="md"
             />
             <Separator />
@@ -158,12 +174,14 @@ export const CommentSection = memo(({
                 reactions={getReactionsForComment(comment.id)}
                 reactionTypes={reactionTypes}
                 onToggleReaction={(rtId) => handleToggleCommentReaction(comment.id, rtId)}
+                onCreateAndToggleReaction={(emojiMartId, nativeEmoji, label) => handleCreateAndToggleCommentReaction(comment.id, emojiMartId, nativeEmoji, label)}
                 onReply={handleReply(comment.id)}
                 onUpdate={updateComment}
                 onDelete={deleteComment}
                 isSubmitting={isSubmitting}
                 getReactionsForComment={getReactionsForComment}
                 onToggleReplyReaction={handleToggleCommentReaction}
+                onCreateAndToggleReplyReaction={handleCreateAndToggleCommentReaction}
               />
             ))}
           </div>

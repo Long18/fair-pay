@@ -18,6 +18,7 @@ interface CommentItemProps {
   reactions: ReactionSummary[];
   reactionTypes: ReactionType[];
   onToggleReaction: (reactionTypeId: string) => void;
+  onCreateAndToggleReaction?: (emojiMartId: string, nativeEmoji: string, label: string) => void;
   onReply: (content: string, mentionedUserIds: string[]) => Promise<unknown>;
   onUpdate: (commentId: string, content: string) => Promise<void>;
   onDelete: (commentId: string) => Promise<void>;
@@ -25,6 +26,7 @@ interface CommentItemProps {
   isReply?: boolean;
   getReactionsForComment?: (commentId: string) => ReactionSummary[];
   onToggleReplyReaction?: (commentId: string, reactionTypeId: string) => void;
+  onCreateAndToggleReplyReaction?: (commentId: string, emojiMartId: string, nativeEmoji: string, label: string) => void;
 }
 
 export const CommentItem = memo(({
@@ -35,6 +37,7 @@ export const CommentItem = memo(({
   reactions,
   reactionTypes,
   onToggleReaction,
+  onCreateAndToggleReaction,
   onReply,
   onUpdate,
   onDelete,
@@ -42,6 +45,7 @@ export const CommentItem = memo(({
   isReply = false,
   getReactionsForComment,
   onToggleReplyReaction,
+  onCreateAndToggleReplyReaction,
 }: CommentItemProps) => {
   const { t, i18n } = useTranslation();
   const [replying, setReplying] = useState(false);
@@ -137,6 +141,7 @@ export const CommentItem = memo(({
                 reactions={reactions}
                 reactionTypes={reactionTypes}
                 onToggle={onToggleReaction}
+                onCreateAndToggle={onCreateAndToggleReaction}
                 size="sm"
               />
               {!isReply && (
@@ -202,6 +207,7 @@ export const CommentItem = memo(({
                   reactions={getReactionsForComment?.(reply.id) || []}
                   reactionTypes={reactionTypes}
                   onToggleReaction={(rtId) => onToggleReplyReaction?.(reply.id, rtId)}
+                  onCreateAndToggleReaction={(emojiMartId, nativeEmoji, label) => onCreateAndToggleReplyReaction?.(reply.id, emojiMartId, nativeEmoji, label)}
                   onReply={onReply}
                   onUpdate={onUpdate}
                   onDelete={onDelete}
