@@ -178,6 +178,7 @@ export const CommentSection = memo(({
           commenters={derivedCommenters}
           onSubmit={handleAddComment}
           isSubmitting={isSubmitting}
+          customReactions={reactionTypes}
         />
       </CardContent>
     </Card>
