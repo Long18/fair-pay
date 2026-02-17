@@ -82,14 +82,39 @@ export const CommentItem = memo(({
   }, [onReply]);
 
   const renderContent = (text: string) => {
-    const parts = text.split(/(@\S+)/g);
-    return parts.map((part, i) =>
-      part.startsWith("@") ? (
-        <span key={i} className="text-primary font-medium">{part}</span>
-      ) : (
-        <span key={i}>{part}</span>
-      )
-    );
+    // Split on @mentions and :shortcode: patterns
+    const parts = text.split(/(@\S+|:[a-z0-9_+-]+:)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith("@")) {
+        return <span key={i} className="text-primary font-medium">{part}</span>;
+      }
+      // Check for :shortcode: pattern
+      const shortcodeMatch = part.match(/^:([a-z0-9_+-]+):$/);
+      if (shortcodeMatch) {
+        const code = shortcodeMatch[1];
+        const rt = reactionTypes.find(
+          (r) => r.code === code || r.emoji_mart_id === code
+        );
+        if (rt) {
+          if (rt.media_type === "emoji" && rt.emoji) {
+            return <span key={i}>{rt.emoji}</span>;
+          }
+          if (rt.image_url) {
+            return (
+              <img
+                key={i}
+                src={rt.image_url}
+                alt={rt.label}
+                className="inline-block h-5 w-5 align-text-bottom rounded"
+              />
+            );
+          }
+        }
+        // Not found in DB — render as-is
+        return <span key={i}>{part}</span>;
+      }
+      return <span key={i}>{part}</span>;
+    });
   };
 
   return (
