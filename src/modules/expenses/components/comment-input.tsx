@@ -8,7 +8,18 @@ import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { supabaseClient } from "@/utility/supabaseClient";
+import { init, SearchIndex } from "emoji-mart";
+import emojiData from "@emoji-mart/data";
 import type { CommentUser } from "../types/comments";
+
+// Initialize emoji-mart data for SearchIndex
+init({ data: emojiData });
+
+interface EmojiSuggestion {
+  id: string;
+  name: string;
+  native: string;
+}
 
 // Sentinel UUIDs matching the DB migration
 const MENTION_ALL_ID = "00000000-0000-0000-0000-000000000001";
@@ -41,8 +52,32 @@ export const CommentInput = memo(({
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionFilter, setMentionFilter] = useState("");
   const [friends, setFriends] = useState<CommentUser[]>([]);
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [emojiQuery, setEmojiQuery] = useState("");
+  const [emojiSuggestions, setEmojiSuggestions] = useState<EmojiSuggestion[]>([]);
+  const [emojiSelectedIdx, setEmojiSelectedIdx] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { data: identity } = useGetIdentity<{ id: string }>();
+
+  // Search emoji-mart when emojiQuery changes
+  useEffect(() => {
+    if (!emojiQuery) {
+      setEmojiSuggestions([]);
+      return;
+    }
+    let cancelled = false;
+    SearchIndex.search(emojiQuery).then((results: Array<{ id: string; name: string; skins: Array<{ native?: string }> }>) => {
+      if (cancelled) return;
+      const mapped: EmojiSuggestion[] = (results || []).slice(0, 8).map((e) => ({
+        id: e.id,
+        name: e.name,
+        native: e.skins?.[0]?.native || "",
+      })).filter((e) => e.native);
+      setEmojiSuggestions(mapped);
+      setEmojiSelectedIdx(0);
+    });
+    return () => { cancelled = true; };
+  }, [emojiQuery]);
 
 
   // Fetch friends list for @mention outside participants
@@ -79,12 +114,57 @@ export const CommentInput = memo(({
     setMentionedIds(new Set());
   }, [content, mentionedIds, isSubmitting, onSubmit]);
 
+  // Insert emoji at cursor, replacing the :query text
+  const insertEmoji = useCallback((native: string) => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      const pos = textarea.selectionStart;
+      const before = content.substring(0, pos).replace(/:[\w_+-]*$/, "");
+      const after = content.substring(pos);
+      setContent(before + native + after);
+      requestAnimationFrame(() => {
+        const newPos = before.length + native.length;
+        textarea.selectionStart = newPos;
+        textarea.selectionEnd = newPos;
+        textarea.focus();
+      });
+    } else {
+      setContent((prev) => prev + native);
+    }
+    setEmojiOpen(false);
+    setEmojiQuery("");
+  }, [content]);
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    // Handle emoji suggestion navigation
+    if (emojiOpen && emojiSuggestions.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setEmojiSelectedIdx((prev) => (prev + 1) % emojiSuggestions.length);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setEmojiSelectedIdx((prev) => (prev - 1 + emojiSuggestions.length) % emojiSuggestions.length);
+        return;
+      }
+      if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        insertEmoji(emojiSuggestions[emojiSelectedIdx].native);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setEmojiOpen(false);
+        setEmojiQuery("");
+        return;
+      }
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
-  }, [handleSubmit]);
+  }, [handleSubmit, emojiOpen, emojiSuggestions, emojiSelectedIdx, insertEmoji]);
 
   const insertMention = useCallback((id: string, displayName: string) => {
     const mention = `@${displayName} `;
@@ -149,17 +229,58 @@ export const CommentInput = memo(({
   }, [specialItems, mentionFilter]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const val = e.target.value;
-    setContent(val);
+    let val = e.target.value;
     const cursorPos = e.target.selectionStart;
     const textBeforeCursor = val.substring(0, cursorPos);
+
+    // Auto-replace complete shortcodes like :fire: → 🔥
+    const shortcodeMatch = textBeforeCursor.match(/:([a-z0-9_+-]+):$/);
+    if (shortcodeMatch) {
+      const code = shortcodeMatch[1];
+      SearchIndex.search(code).then((results: Array<{ id: string; skins: Array<{ native?: string }> }>) => {
+        const exact = results?.find((r) => r.id === code || r.id === code.replace(/-/g, "_"));
+        if (exact?.skins?.[0]?.native) {
+          const native = exact.skins[0].native;
+          const beforeShortcode = val.substring(0, cursorPos - shortcodeMatch[0].length);
+          const afterCursor = val.substring(cursorPos);
+          const newVal = beforeShortcode + native + afterCursor;
+          setContent(newVal);
+          setEmojiOpen(false);
+          setEmojiQuery("");
+          requestAnimationFrame(() => {
+            const textarea = textareaRef.current;
+            if (textarea) {
+              const newPos = beforeShortcode.length + native.length;
+              textarea.selectionStart = newPos;
+              textarea.selectionEnd = newPos;
+            }
+          });
+        }
+      });
+    }
+
+    setContent(val);
+
+    // Detect @mention pattern
     const mentionMatch = textBeforeCursor.match(/@([\w\s]*)$/);
     if (mentionMatch) {
       setMentionOpen(true);
       setMentionFilter(mentionMatch[1].trim());
+      setEmojiOpen(false);
+      setEmojiQuery("");
     } else {
       setMentionOpen(false);
       setMentionFilter("");
+
+      // Detect :emoji pattern (only if not inside a completed shortcode)
+      const emojiMatch = textBeforeCursor.match(/:([a-z0-9_+-]{1,})$/);
+      if (emojiMatch && !shortcodeMatch) {
+        setEmojiOpen(true);
+        setEmojiQuery(emojiMatch[1]);
+      } else {
+        setEmojiOpen(false);
+        setEmojiQuery("");
+      }
     }
   }, []);
 
@@ -292,6 +413,31 @@ export const CommentInput = memo(({
                 )}
               </PopoverContent>
             </Popover>
+
+            {/* Emoji shortcode suggest popover */}
+            {emojiOpen && emojiSuggestions.length > 0 && (
+              <div className="absolute left-0 bottom-full mb-1 z-50 w-64 rounded-lg border bg-popover p-1 shadow-md max-h-48 overflow-y-auto">
+                {emojiSuggestions.map((emoji, idx) => (
+                  <button
+                    key={emoji.id}
+                    type="button"
+                    className={cn(
+                      "w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md transition-colors cursor-pointer",
+                      idx === emojiSelectedIdx ? "bg-accent" : "hover:bg-accent/50"
+                    )}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      insertEmoji(emoji.native);
+                    }}
+                    onMouseEnter={() => setEmojiSelectedIdx(idx)}
+                  >
+                    <span className="text-lg leading-none">{emoji.native}</span>
+                    <span className="truncate text-muted-foreground">:{emoji.id}:</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
             <Button
               type="button"
               size="icon"
