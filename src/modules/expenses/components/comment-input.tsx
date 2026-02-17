@@ -186,25 +186,48 @@ export const CommentInput = memo(({
     const shortcodeMatch = textBeforeCursor.match(/:([a-z0-9_+-]+):$/);
     if (shortcodeMatch) {
       const code = shortcodeMatch[1];
-      SearchIndex.search(code).then((results: Array<{ id: string; skins: Array<{ native?: string }> }>) => {
-        const exact = results?.find((r) => r.id === code || r.id === code.replace(/-/g, "_"));
-        if (exact?.skins?.[0]?.native) {
-          const native = exact.skins[0].native;
-          const beforeShortcode = val.substring(0, cursorPos - shortcodeMatch[0].length);
-          const afterCursor = val.substring(cursorPos);
-          const newVal = beforeShortcode + native + afterCursor;
-          setContent(newVal);
-          setEmojiOpen(false);
-          requestAnimationFrame(() => {
-            const textarea = textareaRef.current;
-            if (textarea) {
-              const newPos = beforeShortcode.length + native.length;
-              textarea.selectionStart = newPos;
-              textarea.selectionEnd = newPos;
-            }
-          });
-        }
-      });
+
+      // First check custom reactions from DB by code or emoji_mart_id
+      const customMatch = customReactions.find(
+        (r) => r.code === code || r.emoji_mart_id === code
+      );
+      if (customMatch?.emoji) {
+        const native = customMatch.emoji;
+        const beforeShortcode = val.substring(0, cursorPos - shortcodeMatch[0].length);
+        const afterCursor = val.substring(cursorPos);
+        const newVal = beforeShortcode + native + afterCursor;
+        setContent(newVal);
+        setEmojiOpen(false);
+        requestAnimationFrame(() => {
+          const textarea = textareaRef.current;
+          if (textarea) {
+            const newPos = beforeShortcode.length + native.length;
+            textarea.selectionStart = newPos;
+            textarea.selectionEnd = newPos;
+          }
+        });
+      } else {
+        // Fallback to emoji-mart SearchIndex
+        SearchIndex.search(code).then((results: Array<{ id: string; skins: Array<{ native?: string }> }>) => {
+          const exact = results?.find((r) => r.id === code || r.id === code.replace(/-/g, "_"));
+          if (exact?.skins?.[0]?.native) {
+            const native = exact.skins[0].native;
+            const beforeShortcode = val.substring(0, cursorPos - shortcodeMatch[0].length);
+            const afterCursor = val.substring(cursorPos);
+            const newVal = beforeShortcode + native + afterCursor;
+            setContent(newVal);
+            setEmojiOpen(false);
+            requestAnimationFrame(() => {
+              const textarea = textareaRef.current;
+              if (textarea) {
+                const newPos = beforeShortcode.length + native.length;
+                textarea.selectionStart = newPos;
+                textarea.selectionEnd = newPos;
+              }
+            });
+          }
+        });
+      }
     }
 
     setContent(val);
@@ -225,7 +248,7 @@ export const CommentInput = memo(({
         setEmojiOpen(true);
       }
     }
-  }, []);
+  }, [customReactions]);
 
   const initials = currentUser?.full_name
     ?.split(" ")
