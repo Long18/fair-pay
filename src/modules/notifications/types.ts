@@ -8,7 +8,10 @@ export type NotificationType =
   | 'added_to_group'
   | 'group_join_request'
   | 'group_join_approved'
-  | 'group_join_rejected';
+  | 'group_join_rejected'
+  | 'comment_mention'
+  | 'comment_reply'
+  | 'comment_reaction';
 
 export interface Notification {
   id: string;
