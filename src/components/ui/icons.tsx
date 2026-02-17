@@ -116,6 +116,7 @@ import {
   Clock3,
   UserCheck,
   SmilePlus,
+  Smile,
   Send,
   CornerDownRight,
   AtSign,
@@ -930,6 +931,10 @@ export const UserCheckIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
 
 export const SmilePlusIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
   <SmilePlus size={size} {...props} />
+);
+
+export const SmileIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Smile size={size} {...props} />
 );
 
 export const SendIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
