@@ -67,7 +67,6 @@ interface ReactionFormData {
   image_url: string;
   media_type: "emoji" | "image" | "gif";
   label: string;
-  sort_order: number;
   is_active: boolean;
 }
 
@@ -77,7 +76,6 @@ const EMPTY_FORM: ReactionFormData = {
   image_url: "",
   media_type: "emoji",
   label: "",
-  sort_order: 0,
   is_active: true,
 };
 
@@ -101,20 +99,21 @@ function useReactionTypesList() {
 function useUpsertReaction() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, form }: { id?: string; form: ReactionFormData }) => {
-      const payload = {
+    mutationFn: async ({ id, form, maxSortOrder }: { id?: string; form: ReactionFormData; maxSortOrder: number }) => {
+      const payload: Record<string, unknown> = {
         code: form.code.trim(),
         emoji: form.media_type === "emoji" ? form.emoji.trim() : null,
         image_url: form.media_type !== "emoji" ? form.image_url.trim() : null,
         media_type: form.media_type,
         label: form.label.trim(),
-        sort_order: form.sort_order,
         is_active: form.is_active,
       };
       if (id) {
         const { error } = await supabaseClient.from("reaction_types").update(payload).eq("id", id);
         if (error) throw error;
       } else {
+        // Auto-assign sort_order for new items
+        payload.sort_order = maxSortOrder + 1;
         const { error } = await supabaseClient.from("reaction_types").insert(payload);
         if (error) throw error;
       }
@@ -183,14 +182,12 @@ function ReactionFormDialog({
   editItem,
   onSave,
   isSaving,
-  maxSortOrder,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editItem: ReactionType | null;
   onSave: (form: ReactionFormData, id?: string) => void;
   isSaving: boolean;
-  maxSortOrder: number;
 }) {
   const [form, setForm] = useState<ReactionFormData>(EMPTY_FORM);
 
@@ -202,13 +199,12 @@ function ReactionFormDialog({
         image_url: editItem.image_url || "",
         media_type: editItem.media_type,
         label: editItem.label,
-        sort_order: editItem.sort_order,
         is_active: editItem.is_active,
       });
     } else {
-      setForm({ ...EMPTY_FORM, sort_order: maxSortOrder + 1 });
+      setForm({ ...EMPTY_FORM });
     }
-  }, [editItem, maxSortOrder]);
+  }, [editItem]);
 
   const handleOpenChange = useCallback((v: boolean) => {
     if (v) resetForm();
@@ -304,24 +300,13 @@ function ReactionFormDialog({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="sort_order">Thứ tự</Label>
-              <Input
-                id="sort_order"
-                type="number"
-                value={form.sort_order}
-                onChange={(e) => setForm((f) => ({ ...f, sort_order: parseInt(e.target.value) || 0 }))}
-              />
-            </div>
-            <div className="flex items-end gap-2 pb-1">
-              <Switch
-                id="is_active"
-                checked={form.is_active}
-                onCheckedChange={(v) => setForm((f) => ({ ...f, is_active: v }))}
-              />
-              <Label htmlFor="is_active">Kích hoạt</Label>
-            </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              id="is_active"
+              checked={form.is_active}
+              onCheckedChange={(v) => setForm((f) => ({ ...f, is_active: v }))}
+            />
+            <Label htmlFor="is_active">Kích hoạt</Label>
           </div>
         </div>
 
@@ -366,10 +351,10 @@ export function AdminReactions() {
   }, []);
 
   const handleSave = useCallback((form: ReactionFormData, id?: string) => {
-    upsertMutation.mutate({ id, form }, {
+    upsertMutation.mutate({ id, form, maxSortOrder }, {
       onSuccess: () => setDialogOpen(false),
     });
-  }, [upsertMutation]);
+  }, [upsertMutation, maxSortOrder]);
 
   const handleDelete = useCallback(() => {
     if (!deleteTarget) return;
@@ -509,7 +494,6 @@ export function AdminReactions() {
         editItem={editItem}
         onSave={handleSave}
         isSaving={upsertMutation.isPending}
-        maxSortOrder={maxSortOrder}
       />
 
       {/* Delete Confirmation */}
