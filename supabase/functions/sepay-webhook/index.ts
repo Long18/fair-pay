@@ -4,7 +4,10 @@
  * Receives bank transaction notifications from SePay.
  * When money comes in, SePay sends transaction data.
  * We match the payment code in `content` field to our orders.
- * On match: mark order PAID + settle corresponding splits.
+ * On match: mark order PAID/PARTIAL_PAID + settle corresponding splits.
+ *
+ * Partial payment: if transferAmount < order.amount, settle proportionally
+ * using the existing settle_split partial payment infrastructure.
  *
  * SePay webhook payload:
  * {id, gateway, transactionDate, accountNumber, code, content,
@@ -87,37 +90,16 @@ Deno.serve(async (req: Request) => {
 
     console.log('Detected payment code:', detectedCode)
 
-    // Find matching pending order
+    // Find matching pending or partial order
     const { data: order, error: orderError } = await serviceClient
       .from('sepay_payment_orders')
       .select('*')
       .eq('order_invoice_number', detectedCode)
-      .eq('status', 'PENDING')
+      .in('status', ['PENDING', 'PARTIAL_PAID'])
       .single()
 
     if (orderError || !order) {
-      console.log('No pending order found for code:', detectedCode)
-      return new Response(JSON.stringify({ success: true }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    // Validate amount (allow small rounding differences)
-    if (Math.abs(payload.transferAmount - order.amount) > 1) {
-      console.error('Amount mismatch:', {
-        expected: order.amount,
-        received: payload.transferAmount,
-      })
-      // Still store webhook data for audit
-      await serviceClient
-        .from('sepay_payment_orders')
-        .update({
-          webhook_payload: payload,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', order.id)
-
+      console.log('No pending/partial order found for code:', detectedCode)
       return new Response(JSON.stringify({ success: true }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -133,25 +115,32 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    // Mark order as PAID
+    const transferAmount = payload.transferAmount
+    const previousPaid = Number(order.paid_amount) || 0
+    const totalPaid = previousPaid + transferAmount
+    const isFullyPaid = totalPaid >= order.amount - 1 // allow 1 VND rounding
+    const newStatus = isFullyPaid ? 'PAID' : 'PARTIAL_PAID'
+
+    // Update order status and paid_amount
     await serviceClient
       .from('sepay_payment_orders')
       .update({
-        status: 'PAID',
+        status: newStatus,
+        paid_amount: Math.min(totalPaid, order.amount),
         webhook_payload: payload,
         webhook_processed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq('id', order.id)
 
-    // Settle splits
+    // Settle splits with the actual transfer amount
     if (order.source_type === 'EXPENSE') {
-      await settleExpenseSplits(serviceClient, order)
+      await settleExpenseSplits(serviceClient, order, transferAmount, isFullyPaid)
     } else if (order.source_type === 'DEBT') {
-      await settleDebtSplits(serviceClient, order)
+      await settleDebtSplits(serviceClient, order, transferAmount)
     }
 
-    console.log('Order settled:', detectedCode, 'amount:', payload.transferAmount)
+    console.log(`Order ${newStatus}:`, detectedCode, 'transfer:', transferAmount, 'total_paid:', totalPaid, 'of', order.amount)
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
@@ -170,8 +159,14 @@ Deno.serve(async (req: Request) => {
 
 /**
  * Settle expense splits for a specific expense payment.
+ * If fully paid, settle entire split. If partial, accumulate settled_amount.
  */
-async function settleExpenseSplits(client: any, order: any) {
+async function settleExpenseSplits(
+  client: any,
+  order: any,
+  transferAmount: number,
+  isFullyPaid: boolean
+) {
   try {
     const { data: splits, error } = await client
       .from('expense_splits')
@@ -186,17 +181,36 @@ async function settleExpenseSplits(client: any, order: any) {
     }
 
     for (const split of (splits || [])) {
-      await client
-        .from('expense_splits')
-        .update({
-          is_settled: true,
-          settled_amount: split.computed_amount,
-          settled_at: new Date().toISOString(),
-        })
-        .eq('id', split.id)
+      if (isFullyPaid) {
+        // Full payment: settle entirely
+        await client
+          .from('expense_splits')
+          .update({
+            is_settled: true,
+            settled_amount: split.computed_amount,
+            settled_at: new Date().toISOString(),
+          })
+          .eq('id', split.id)
+      } else {
+        // Partial payment: accumulate settled_amount
+        const currentSettled = Number(split.settled_amount) || 0
+        const splitRemaining = split.computed_amount - currentSettled
+        const settleAmount = Math.min(transferAmount, splitRemaining)
+        const newSettledAmount = currentSettled + settleAmount
+        const isNowFullySettled = newSettledAmount >= split.computed_amount - 0.01
+
+        await client
+          .from('expense_splits')
+          .update({
+            is_settled: isNowFullySettled,
+            settled_amount: newSettledAmount,
+            settled_at: new Date().toISOString(),
+          })
+          .eq('id', split.id)
+      }
     }
 
-    console.log(`Settled ${splits?.length || 0} expense splits for ${order.order_invoice_number}`)
+    console.log(`Settled ${splits?.length || 0} expense splits for ${order.order_invoice_number} (${isFullyPaid ? 'full' : 'partial'})`)
   } catch (err) {
     console.error('Error settling expense splits:', err)
   }
@@ -204,8 +218,9 @@ async function settleExpenseSplits(client: any, order: any) {
 
 /**
  * Settle debt splits between payer and payee.
+ * Uses remainingBudget pattern to distribute transfer amount across splits.
  */
-async function settleDebtSplits(client: any, order: any) {
+async function settleDebtSplits(client: any, order: any, transferAmount: number) {
   try {
     const { data: splits, error } = await client
       .from('expense_splits')
@@ -220,7 +235,7 @@ async function settleDebtSplits(client: any, order: any) {
     }
 
     let totalSettled = 0
-    let remainingBudget = order.amount
+    let remainingBudget = transferAmount
 
     for (const split of (splits || [])) {
       if (remainingBudget <= 0) break
@@ -228,7 +243,7 @@ async function settleDebtSplits(client: any, order: any) {
       const splitRemaining = split.computed_amount - (split.settled_amount || 0)
       const settleAmount = Math.min(splitRemaining, remainingBudget)
       const newSettledAmount = (split.settled_amount || 0) + settleAmount
-      const isFullySettled = newSettledAmount >= split.computed_amount
+      const isFullySettled = newSettledAmount >= split.computed_amount - 0.01
 
       await client
         .from('expense_splits')

@@ -68,7 +68,7 @@ export function useSepayOrder(): UseSepayOrderReturn {
         setOrder(updated);
         setStatus(updated.status);
 
-        if (['PAID', 'FAILED', 'CANCELLED', 'EXPIRED'].includes(updated.status)) {
+        if (['PAID', 'PARTIAL_PAID', 'FAILED', 'CANCELLED', 'EXPIRED'].includes(updated.status)) {
           stopPolling();
         }
       } catch {
