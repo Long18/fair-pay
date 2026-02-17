@@ -9,7 +9,6 @@ import { ExpenseSummaryCard } from "../components/expense-summary-card";
 import { ExpenseSplitCard } from "../components/expense-split-card";
 import { Profile } from "@/modules/profile/types";
 import { Badge } from "@/components/ui/badge";
-import { CommentSection } from "../components/comment-section";
 import type { CommentUser } from "../types/comments";
 import { toast } from "sonner";
 import {
@@ -454,7 +453,7 @@ export const ExpenseShow = () => {
         transition={{ duration: 0.4 }}
         className="space-y-4"
       >
-        {/* 1. Expense Summary — header + amount + position + recurring */}
+        {/* 1. Expense Summary — header + amount + position + recurring + comments */}
         <ExpenseSummaryCard
           expense={expense}
           canEdit={canEdit}
@@ -473,19 +472,12 @@ export const ExpenseShow = () => {
           }
           onEdit={() => go({ to: `/expenses/edit/${expense.id}` })}
           onDelete={handleDelete}
+          currentUser={currentCommentUser}
+          participants={commentParticipants}
+          maxVisibleComments={3}
         />
 
-        {/* 2. Comments & Reactions — visible first */}
-        {id && (
-          <CommentSection
-            expenseId={id}
-            currentUser={currentCommentUser}
-            participants={commentParticipants}
-            maxVisible={3}
-          />
-        )}
-
-        {/* 3. Split Details */}
+        {/* 2. Split Details */}
         <Card className="rounded-xl border-2 shadow-sm">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between gap-3">
@@ -603,7 +595,7 @@ export const ExpenseShow = () => {
           </CardContent>
         </Card>
 
-        {/* 4. Notes & Attachments — collapsible */}
+        {/* 3. Notes & Attachments — collapsible */}
         {hasNotes ? (
           <Card className="rounded-xl border shadow-sm">
             <button
