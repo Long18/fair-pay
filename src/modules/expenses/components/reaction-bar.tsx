@@ -1,9 +1,9 @@
-import { memo, useState } from "react";
+import { memo, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SmilePlusIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { EmojiPickerPopover } from "./emoji-picker-popover";
 import type { ReactionSummary, ReactionType } from "../types/comments";
 
 interface ReactionBarProps {
@@ -21,10 +21,27 @@ export const ReactionBar = memo(({
 }: ReactionBarProps) => {
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  const handleToggle = (reactionTypeId: string) => {
-    onToggle(reactionTypeId);
+  // Match emoji from picker back to a reaction_type by code or emoji char
+  const handlePickerSelect = useCallback((emoji: { id: string; native?: string; src?: string }) => {
+    // Try matching by code (custom reactions)
+    const byCode = reactionTypes.find((rt) => rt.code === emoji.id);
+    if (byCode) {
+      onToggle(byCode.id);
+      setPickerOpen(false);
+      return;
+    }
+    // Try matching by native emoji character
+    if (emoji.native) {
+      const byEmoji = reactionTypes.find((rt) => rt.emoji === emoji.native);
+      if (byEmoji) {
+        onToggle(byEmoji.id);
+        setPickerOpen(false);
+        return;
+      }
+    }
+    // No matching reaction_type — could extend later to support arbitrary emoji
     setPickerOpen(false);
-  };
+  }, [reactionTypes, onToggle]);
 
   return (
     <div className="flex items-center gap-1 flex-wrap">
@@ -59,45 +76,21 @@ export const ReactionBar = memo(({
         </Tooltip>
       ))}
 
-      <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn("rounded-full", size === "sm" ? "h-6 w-6" : "h-7 w-7")}
-            aria-label="Add reaction"
-          >
-            <SmilePlusIcon className={size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"} />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent side="top" align="start" className="w-auto p-2">
-          <div className="flex flex-wrap gap-1 max-w-[240px]">
-            {reactionTypes.map((rt) => {
-              const existing = reactions.find((r) => r.reaction_type_id === rt.id);
-              return (
-                <button
-                  key={rt.id}
-                  type="button"
-                  onClick={() => handleToggle(rt.id)}
-                  className={cn(
-                    "p-1.5 rounded-md hover:bg-accent transition-colors cursor-pointer text-lg",
-                    existing?.user_reacted && "bg-primary/10 ring-1 ring-primary/30"
-                  )}
-                  title={rt.label}
-                >
-                  {rt.media_type === "emoji" && rt.emoji ? (
-                    rt.emoji
-                  ) : rt.image_url ? (
-                    <img src={rt.image_url} alt={rt.label} className="h-5 w-5 rounded" />
-                  ) : (
-                    rt.label
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </PopoverContent>
-      </Popover>
+      <EmojiPickerPopover
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        onSelect={handlePickerSelect}
+        customReactions={reactionTypes}
+      >
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn("rounded-full", size === "sm" ? "h-6 w-6" : "h-7 w-7")}
+          aria-label="Add reaction"
+        >
+          <SmilePlusIcon className={size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"} />
+        </Button>
+      </EmojiPickerPopover>
     </div>
   );
 });
