@@ -63,7 +63,18 @@
         "signInFailed": "Đăng nhập thất bại",
         "signUpFailed": "Đăng ký thất bại",
         "invalidCredentials": "Email hoặc mật khẩu không đúng. Vui lòng thử lại.",
-        "registrationFailed": "Đăng ký thất bại. Vui lòng thử lại."
+        "registrationFailed": "Đăng ký thất bại. Vui lòng thử lại.",
+        "updatePassword": "Cập nhật mật khẩu",
+        "newPassword": "Mật khẩu mới",
+        "confirmNewPassword": "Xác nhận mật khẩu mới",
+        "enterNewPassword": "Nhập mật khẩu mới của bạn bên dưới",
+        "passwordUpdated": "Cập nhật mật khẩu thành công",
+        "passwordUpdateFailed": "Cập nhật mật khẩu thất bại",
+        "updatingPassword": "Đang cập nhật...",
+        "invalidResetLink": "Liên kết không hợp lệ",
+        "invalidResetLinkDescription": "Liên kết đặt lại mật khẩu này không hợp lệ hoặc đã hết hạn.",
+        "requestNewResetLink": "Yêu cầu liên kết mới",
+        "backToLogin": "Quay lại đăng nhập"
     },
     "dashboard": {
         "title": "Trang chủ",

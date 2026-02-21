@@ -88,11 +88,41 @@ const authProvider: AuthProvider = {
             },
         };
     },
-    register: async ({ email, password }) => {
+    register: async ({ email, password, providerName }: { email?: string; password?: string; providerName?: string }) => {
         try {
+            // OAuth registration (e.g. Google)
+            if (providerName) {
+                const { data, error } = await supabaseClient.auth.signInWithOAuth({
+                    provider: providerName,
+                    options: {
+                        redirectTo: window.location.origin,
+                    },
+                });
+
+                if (error) {
+                    ErrorTracker.apiError({
+                        endpoint: 'auth/oauth-register',
+                        errorMessage: error.message,
+                    });
+                    return {
+                        success: false,
+                        error,
+                    };
+                }
+
+                if (data?.url) {
+                    AuthTracker.register('oauth');
+                    return {
+                        success: true,
+                        redirectTo: "/",
+                    };
+                }
+            }
+
+            // Email/password registration
             const { data, error } = await supabaseClient.auth.signUp({
-                email,
-                password,
+                email: email!,
+                password: password!,
             });
 
             if (error) {

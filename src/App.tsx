@@ -36,6 +36,7 @@ import { ErrorBoundary } from "./components/error-boundary";
 import { Login } from "./pages/login";
 import { Register } from "./pages/register";
 import { ForgotPassword } from "./pages/forgot-password";
+import { UpdatePassword } from "./pages/update-password";
 import { OAuthConsent } from "./pages/oauth";
 
 // Dashboard (most common entry point)
@@ -531,6 +532,7 @@ function App() {
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/update-password" element={<UpdatePassword />} />
                   </Route>
                 </Routes>
 
