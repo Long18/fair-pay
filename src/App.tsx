@@ -532,8 +532,8 @@ function App() {
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
-                    <Route path="/update-password" element={<UpdatePassword />} />
                   </Route>
+                  <Route path="/update-password" element={<UpdatePassword />} />
                 </Routes>
 
                 <Toaster />
