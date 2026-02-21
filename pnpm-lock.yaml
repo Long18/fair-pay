@@ -17,6 +17,9 @@ importers:
       '@emoji-mart/react':
         specifier: ^1.1.1
         version: 1.1.1(emoji-mart@5.6.0)(react@19.1.0)
+      '@hcaptcha/react-hcaptcha':
+        specifier: ^2.0.2
+        version: 2.0.2
       '@hookform/resolvers':
         specifier: ^5.0.1
         version: 5.2.2(react-hook-form@7.69.0(react@19.1.0))
@@ -1210,6 +1213,9 @@ packages:
   '@fortawesome/free-solid-svg-icons@7.1.0':
     resolution: {integrity: sha512-Udu3K7SzAo9N013qt7qmm22/wo2hADdheXtBfxFTecp+ogsc0caQNRKEb7pkvvagUGOpG9wJC1ViH6WXs8oXIA==}
     engines: {node: '>=6'}
+
+  '@hcaptcha/react-hcaptcha@2.0.2':
+    resolution: {integrity: sha512-VbuH6VJ6m3BHmVBHs0fL9t+suZd7PQEqCzqL2BiUbBvbHI3XfvSgdiug2QiEPN8zskbPTIV/FfGPF53JCckrow==}
 
   '@hono/node-server@1.19.7':
     resolution: {integrity: sha512-vUcD0uauS7EU2caukW8z5lJKtoGMokxNbJtBiwHgpqxEXokaHCBkQUmCHhjFB1VUTWdqj25QoMkMKzgjq+uhrw==}
@@ -7889,6 +7895,8 @@ snapshots:
   '@fortawesome/free-solid-svg-icons@7.1.0':
     dependencies:
       '@fortawesome/fontawesome-common-types': 7.1.0
+
+  '@hcaptcha/react-hcaptcha@2.0.2': {}
 
   '@hono/node-server@1.19.7(hono@4.11.1)':
     dependencies:
