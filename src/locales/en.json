@@ -63,7 +63,18 @@
         "signInFailed": "Sign in failed",
         "signUpFailed": "Sign up failed",
         "invalidCredentials": "Invalid email or password. Please try again.",
-        "registrationFailed": "Registration failed. Please try again."
+        "registrationFailed": "Registration failed. Please try again.",
+        "updatePassword": "Update Password",
+        "newPassword": "New Password",
+        "confirmNewPassword": "Confirm New Password",
+        "enterNewPassword": "Enter your new password below",
+        "passwordUpdated": "Password updated successfully",
+        "passwordUpdateFailed": "Failed to update password",
+        "updatingPassword": "Updating...",
+        "invalidResetLink": "Invalid Reset Link",
+        "invalidResetLinkDescription": "This password reset link is invalid or has expired.",
+        "requestNewResetLink": "Request a new link",
+        "backToLogin": "Back to login"
     },
     "dashboard": {
         "title": "Dashboard",
