@@ -93,7 +93,7 @@ const authProvider: AuthProvider = {
             // OAuth registration (e.g. Google)
             if (providerName) {
                 const { data, error } = await supabaseClient.auth.signInWithOAuth({
-                    provider: providerName,
+                    provider: providerName as "google",
                     options: {
                         redirectTo: window.location.origin,
                     },
