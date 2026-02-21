@@ -25,7 +25,7 @@ import {
   useRegister,
 } from "@refinedev/core";
 import { Loader2Icon, AlertCircleIcon, MailIcon, LockIcon, CheckCircle2Icon } from "@/components/ui/icons";
-import { TurnstileCaptcha } from "@/components/auth/turnstile-captcha";
+import { CaptchaWidget } from "@/components/auth/captcha-widget";
 
 export const SignUpForm = () => {
   const { t } = useTranslation();
@@ -293,7 +293,7 @@ export const SignUpForm = () => {
               )}
             </div>
 
-            <TurnstileCaptcha
+            <CaptchaWidget
               onVerify={setCaptchaToken}
               onExpire={() => setCaptchaToken(null)}
               onError={() => setCaptchaToken(null)}

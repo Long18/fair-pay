@@ -17,7 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { useForgotPassword, useLink, useRefineOptions } from "@refinedev/core";
-import { TurnstileCaptcha } from "@/components/auth/turnstile-captcha";
+import { CaptchaWidget } from "@/components/auth/captcha-widget";
 
 import {
   ArrowLeftIcon,
@@ -212,7 +212,7 @@ export const ForgotPasswordForm = () => {
               )}
             </div>
 
-            <TurnstileCaptcha
+            <CaptchaWidget
               onVerify={setCaptchaToken}
               onExpire={() => setCaptchaToken(null)}
               onError={() => setCaptchaToken(null)}
