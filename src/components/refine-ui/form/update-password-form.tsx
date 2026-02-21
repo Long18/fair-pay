@@ -126,7 +126,7 @@ export const UpdatePasswordForm = () => {
         onSuccess: () => {
           setIsLoading(false);
         },
-        onError: (err: Error) => {
+        onError: (err) => {
           setIsLoading(false);
           setError(err.message || t("auth.passwordUpdateFailed"));
         },
