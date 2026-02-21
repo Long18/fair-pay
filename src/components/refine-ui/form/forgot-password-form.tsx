@@ -76,9 +76,9 @@ export const ForgotPasswordForm = () => {
           setIsLoading(false);
           setIsSuccess(true);
         },
-        onError: (err: Error) => {
+        onError: (err) => {
           setIsLoading(false);
-          setError(err.message || t("auth.forgotPasswordFailed"));
+          setError(err?.message || t("auth.forgotPasswordFailed"));
           setCaptchaToken(null);
         },
       }
