@@ -17,7 +17,6 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { useForgotPassword, useLink, useRefineOptions } from "@refinedev/core";
-import { CaptchaWidget } from "@/components/auth/captcha-widget";
 
 import {
   ArrowLeftIcon,
@@ -30,7 +29,6 @@ import {
 export const ForgotPasswordForm = () => {
   const { t } = useTranslation();
   const [email, setEmail] = useState("");
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -70,7 +68,7 @@ export const ForgotPasswordForm = () => {
     setIsLoading(true);
 
     forgotPassword(
-      { email, captchaToken: captchaToken ?? undefined },
+      { email },
       {
         onSuccess: () => {
           setIsLoading(false);
@@ -79,7 +77,6 @@ export const ForgotPasswordForm = () => {
         onError: (err) => {
           setIsLoading(false);
           setError(err?.message || t("auth.forgotPasswordFailed"));
-          setCaptchaToken(null);
         },
       }
     );
@@ -211,12 +208,6 @@ export const ForgotPasswordForm = () => {
                 </p>
               )}
             </div>
-
-            <CaptchaWidget
-              onVerify={setCaptchaToken}
-              onExpire={() => setCaptchaToken(null)}
-              onError={() => setCaptchaToken(null)}
-            />
 
             <Button
               type="submit"

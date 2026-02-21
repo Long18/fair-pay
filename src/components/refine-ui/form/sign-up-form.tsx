@@ -25,7 +25,6 @@ import {
   useRegister,
 } from "@refinedev/core";
 import { Loader2Icon, AlertCircleIcon, MailIcon, LockIcon, CheckCircle2Icon } from "@/components/ui/icons";
-import { CaptchaWidget } from "@/components/auth/captcha-widget";
 
 export const SignUpForm = () => {
   const { t } = useTranslation();
@@ -34,7 +33,6 @@ export const SignUpForm = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>(null);
@@ -127,7 +125,7 @@ export const SignUpForm = () => {
     setIsLoading(true);
 
     register(
-      { email, password, captchaToken: captchaToken ?? undefined },
+      { email, password },
       {
         onSuccess: () => {
           setIsLoading(false);
@@ -136,7 +134,6 @@ export const SignUpForm = () => {
           setIsLoading(false);
           const errorMessage = error?.message || t("auth.registrationFailed");
           setError(errorMessage);
-          setCaptchaToken(null);
           open?.({
             type: "error",
             message: t("auth.signUpFailed"),
@@ -292,13 +289,6 @@ export const SignUpForm = () => {
                 </p>
               )}
             </div>
-
-            <CaptchaWidget
-              onVerify={setCaptchaToken}
-              onExpire={() => setCaptchaToken(null)}
-              onError={() => setCaptchaToken(null)}
-              className="mb-1"
-            />
 
             <Button
               type="submit"
