@@ -21,6 +21,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { useLink, useLogin, useRefineOptions, useNotification } from "@refinedev/core";
 import { Loader2Icon, AlertCircleIcon, MailIcon, LockIcon } from "@/components/ui/icons";
+import { TurnstileCaptcha } from "@/components/auth/turnstile-captcha";
 
 export const SignInForm = () => {
   const { t } = useTranslation();
@@ -29,6 +30,7 @@ export const SignInForm = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
@@ -85,7 +87,7 @@ export const SignInForm = () => {
     setIsLoading(true);
 
     login(
-      { email, password },
+      { email, password, captchaToken: captchaToken ?? undefined },
       {
         onSuccess: () => {
           setIsLoading(false);
@@ -94,6 +96,7 @@ export const SignInForm = () => {
           setIsLoading(false);
           const errorMessage = error?.message || t("auth.invalidCredentials");
           setError(errorMessage);
+          setCaptchaToken(null);
           open?.({
             type: "error",
             message: t("auth.signInFailed"),
@@ -210,6 +213,13 @@ export const SignInForm = () => {
                 </p>
               )}
             </div>
+
+            <TurnstileCaptcha
+              onVerify={setCaptchaToken}
+              onExpire={() => setCaptchaToken(null)}
+              onError={() => setCaptchaToken(null)}
+              className="mb-1"
+            />
 
             <Button
               type="submit"

@@ -3,7 +3,7 @@ import { supabaseClient } from "./utility";
 import { AuthTracker, analyticsManager, ErrorTracker } from "./lib/analytics/index";
 
 const authProvider: AuthProvider = {
-    login: async ({ email, password, providerName }) => {
+    login: async ({ email, password, providerName, captchaToken }) => {
         try {
             if (providerName) {
                 const { data, error } = await supabaseClient.auth.signInWithOAuth({
@@ -36,6 +36,7 @@ const authProvider: AuthProvider = {
             const { data, error } = await supabaseClient.auth.signInWithPassword({
                 email,
                 password,
+                options: captchaToken ? { captchaToken } : undefined,
             });
 
             if (error) {
@@ -88,7 +89,7 @@ const authProvider: AuthProvider = {
             },
         };
     },
-    register: async ({ email, password, providerName }: { email?: string; password?: string; providerName?: string }) => {
+    register: async ({ email, password, providerName, captchaToken }: { email?: string; password?: string; providerName?: string; captchaToken?: string }) => {
         try {
             // OAuth registration (e.g. Google)
             if (providerName) {
@@ -123,6 +124,7 @@ const authProvider: AuthProvider = {
             const { data, error } = await supabaseClient.auth.signUp({
                 email: email!,
                 password: password!,
+                options: captchaToken ? { captchaToken } : undefined,
             });
 
             if (error) {
@@ -176,12 +178,13 @@ const authProvider: AuthProvider = {
             },
         };
     },
-    forgotPassword: async ({ email }) => {
+    forgotPassword: async ({ email, captchaToken }) => {
         try {
             const { data, error } = await supabaseClient.auth.resetPasswordForEmail(
                 email,
                 {
                     redirectTo: `${window.location.origin}/update-password`,
+                    captchaToken,
                 }
             );
 
