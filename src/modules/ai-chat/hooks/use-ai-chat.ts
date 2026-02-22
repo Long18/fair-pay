@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useMemo } from 'react';
 import { useGetIdentity } from '@refinedev/core';
 import { supabaseClient } from '@/utility/supabaseClient';
 import type { Profile } from '@/modules/profile/types';
+import { getPuter } from '@/lib/puter-auth';
 import type { ChatMessage, PendingAction, ToolExecuteResponse } from '../types';
 import { PUTER_TOOL_DEFINITIONS } from '../types';
 
@@ -160,6 +161,10 @@ export function useAiChat(): UseAiChatReturn {
 
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || !identity) return;
+    if (!getPuter()?.auth?.isSignedIn()) {
+      setError('Please connect Puter first to use AI chat.');
+      return;
+    }
     setIsLoading(true);
     setError(null);
 
