@@ -1,0 +1,128 @@
+import { memo, useEffect, useRef, useCallback } from 'react';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { SparklesIcon, Trash2Icon } from '@/components/ui/icons';
+import { ChatMessage } from './ChatMessage';
+import { ChatInput } from './ChatInput';
+import { ConfirmActionCard } from './ConfirmActionCard';
+import { useAiChat } from '../hooks/use-ai-chat';
+
+interface ChatPanelProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+const SUGGESTIONS = [
+  'Who owes me money?',
+  'Show my groups',
+  'Add an expense',
+  'Recent expenses',
+];
+
+export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
+  const {
+    messages,
+    isLoading,
+    pendingAction,
+    sendMessage,
+    confirmAction,
+    rejectAction,
+    clearChat,
+  } = useAiChat();
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, pendingAction]);
+
+  const handleSuggestion = useCallback((text: string) => {
+    sendMessage(text);
+  }, [sendMessage]);
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side="right"
+        className="flex flex-col p-0 w-full sm:max-w-md"
+      >
+        <SheetHeader className="px-4 pt-4 pb-2 border-b">
+          <div className="flex items-center justify-between pr-8">
+            <div className="flex items-center gap-2">
+              <SparklesIcon size={18} className="text-primary" />
+              <SheetTitle className="text-base">FairPay Assistant</SheetTitle>
+            </div>
+            {messages.length > 0 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={clearChat}
+                className="h-8 w-8"
+                aria-label="Clear chat"
+              >
+                <Trash2Icon size={14} />
+              </Button>
+            )}
+          </div>
+          <SheetDescription className="sr-only">
+            AI assistant to help manage expenses, groups, and payments
+          </SheetDescription>
+        </SheetHeader>
+
+        <ScrollArea className="flex-1 overflow-hidden">
+          <div ref={scrollRef} className="h-full overflow-y-auto">
+            <div className="px-3 pb-3">
+              {messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <SparklesIcon size={32} className="text-muted-foreground/40 mb-3" />
+                  <p className="text-sm font-medium text-muted-foreground mb-1">
+                    How can I help?
+                  </p>
+                  <p className="text-xs text-muted-foreground/70 mb-4 max-w-[240px]">
+                    Ask about your expenses, groups, balances, or let me help you add transactions.
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {SUGGESTIONS.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => handleSuggestion(s)}
+                        className="rounded-full border px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                messages.map((msg) => (
+                  <ChatMessage key={msg.id} message={msg} />
+                ))
+              )}
+            </div>
+          </div>
+        </ScrollArea>
+
+        {pendingAction && (
+          <ConfirmActionCard
+            action={pendingAction}
+            onConfirm={confirmAction}
+            onReject={rejectAction}
+            isLoading={isLoading}
+          />
+        )}
+
+        <ChatInput onSend={sendMessage} isLoading={isLoading} />
+      </SheetContent>
+    </Sheet>
+  );
+});
