@@ -23,7 +23,7 @@ import authProvider from "./authProvider";
 import { supabaseClient } from "./utility";
 import { useDocumentTitle } from "./hooks/use-document-title";
 import { analyticsManager } from "./lib/analytics/instance";
-import { consumePuterAutoSigninPending, ensurePuterSignedIn } from "./lib/puter-auth";
+import { clearPuterAutoSigninPending, ensurePuterSignedIn, hasPuterAutoSigninPending } from "./lib/puter-auth";
 
 // Core layout components (needed immediately)
 import { ErrorComponent } from "./components/refine-ui/layout/error-component";
@@ -139,10 +139,14 @@ const PuterAuthInitializer = memo(() => {
 
     const syncPuterSession = async () => {
       if (disposed || isSyncing) return;
+      if (!hasPuterAutoSigninPending()) return;
 
       isSyncing = true;
       try {
-        await ensurePuterSignedIn();
+        const result = await ensurePuterSignedIn();
+        if (result === "signed_in" || result === "already_signed_in") {
+          clearPuterAutoSigninPending();
+        }
       } catch (error) {
         // Best-effort sync: browser popup policies can block non-user-gesture auth.
         console.warn("Puter auto sign-in skipped:", error);
@@ -151,9 +155,16 @@ const PuterAuthInitializer = memo(() => {
       }
     };
 
+    void supabaseClient.auth.getSession().then(({ data }) => {
+      if (disposed) return;
+      if (!data.session) return;
+      void syncPuterSession();
+    }).catch((error) => {
+      console.warn("Failed to inspect auth session for Puter sync:", error);
+    });
+
     const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN") return;
-      if (!consumePuterAutoSigninPending()) return;
       void syncPuterSession();
     });
 

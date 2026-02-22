@@ -1,4 +1,5 @@
 const PUTER_AUTO_SIGNIN_FLAG = "fairpay:puter:auto-signin-pending";
+let puterSigninInFlight: Promise<void> | null = null;
 
 type PuterAuthApi = {
   isSignedIn: () => boolean;
@@ -18,6 +19,24 @@ declare global {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const signInWithPuterAuth = async (auth: PuterAuthApi): Promise<"signed_in" | "already_signed_in"> => {
+  if (auth.isSignedIn()) {
+    return "already_signed_in";
+  }
+
+  if (!puterSigninInFlight) {
+    puterSigninInFlight = auth
+      .signIn({ attempt_temp_user_creation: true })
+      .then(() => undefined)
+      .finally(() => {
+        puterSigninInFlight = null;
+      });
+  }
+
+  await puterSigninInFlight;
+  return "signed_in";
+};
+
 export const markPuterAutoSigninPending = (): void => {
   if (typeof window === "undefined") return;
   window.sessionStorage.setItem(PUTER_AUTO_SIGNIN_FLAG, "1");
@@ -30,6 +49,11 @@ export const consumePuterAutoSigninPending = (): boolean => {
     window.sessionStorage.removeItem(PUTER_AUTO_SIGNIN_FLAG);
   }
   return pending;
+};
+
+export const hasPuterAutoSigninPending = (): boolean => {
+  if (typeof window === "undefined") return false;
+  return window.sessionStorage.getItem(PUTER_AUTO_SIGNIN_FLAG) === "1";
 };
 
 export const clearPuterAutoSigninPending = (): void => {
@@ -61,12 +85,13 @@ export const ensurePuterSignedIn = async (): Promise<"signed_in" | "already_sign
   const puter = await waitForPuter();
   if (!puter?.auth) return "unavailable";
 
-  if (puter.auth.isSignedIn()) {
-    return "already_signed_in";
-  }
+  return signInWithPuterAuth(puter.auth);
+};
 
-  await puter.auth.signIn({ attempt_temp_user_creation: true });
-  return "signed_in";
+export const kickoffPuterSigninFromUserGesture = (): Promise<"signed_in" | "already_signed_in" | "unavailable"> => {
+  const puter = getPuter();
+  if (!puter?.auth) return Promise.resolve("unavailable");
+  return signInWithPuterAuth(puter.auth);
 };
 
 export const signOutPuterIfAvailable = (): void => {
@@ -76,4 +101,3 @@ export const signOutPuterIfAvailable = (): void => {
     console.warn("Failed to sign out Puter session", error);
   }
 };
-
