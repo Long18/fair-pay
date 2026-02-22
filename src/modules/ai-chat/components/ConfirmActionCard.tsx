@@ -17,7 +17,7 @@ export const ConfirmActionCard = memo(function ConfirmActionCard({
   isLoading,
 }: ConfirmActionCardProps) {
   return (
-    <div className="mx-3 my-2 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 p-3">
+    <div role="alert" aria-live="assertive" className="mx-3 my-2 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 p-3">
       <div className="flex items-start gap-2 mb-2">
         <AlertCircleIcon size={16} className="text-amber-600 mt-0.5 shrink-0" />
         <div className="text-sm font-medium text-amber-800 dark:text-amber-300">
