@@ -30,6 +30,7 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
   const {
     messages,
     isLoading,
+    error,
     pendingAction,
     sendMessage,
     confirmAction,
@@ -119,6 +120,12 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
             onReject={rejectAction}
             isLoading={isLoading}
           />
+        )}
+
+        {error && (
+          <div role="alert" className="mx-3 mb-1 rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
+            {error}
+          </div>
         )}
 
         <ChatInput onSend={sendMessage} isLoading={isLoading} />

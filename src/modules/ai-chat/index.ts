@@ -6,6 +6,6 @@ export type {
   ChatConversation,
   PendingAction,
   ActionPreview,
-  AiChatRequest,
-  AiChatResponse,
+  ToolExecuteRequest,
+  ToolExecuteResponse,
 } from './types';
