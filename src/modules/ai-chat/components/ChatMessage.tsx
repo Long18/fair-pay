@@ -15,7 +15,7 @@ export const ChatMessage = memo(function ChatMessage({ message }: ChatMessagePro
 
   return (
     <div className={cn('flex gap-3 py-3', isUser ? 'flex-row-reverse' : 'flex-row')}>
-      <Avatar className="h-7 w-7 shrink-0">
+      <Avatar className="h-7 w-7 shrink-0" aria-hidden="true">
         <AvatarFallback className={cn(
           'text-xs',
           isUser ? 'bg-primary text-primary-foreground' : 'bg-muted'
@@ -43,7 +43,7 @@ export const ChatMessage = memo(function ChatMessage({ message }: ChatMessagePro
         {message.metadata?.next_suggestions && message.metadata.next_suggestions.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {message.metadata.next_suggestions.map((s, i) => (
-              <span key={i} className="inline-block rounded-md bg-background/50 px-2 py-0.5 text-xs text-muted-foreground border">
+              <span key={i} className="inline-block rounded-md bg-background/50 px-2 py-0.5 text-xs text-muted-foreground border" aria-hidden="true">
                 {s}
               </span>
             ))}
