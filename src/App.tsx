@@ -23,7 +23,6 @@ import authProvider from "./authProvider";
 import { supabaseClient } from "./utility";
 import { useDocumentTitle } from "./hooks/use-document-title";
 import { analyticsManager } from "./lib/analytics/instance";
-import { clearPuterAutoSigninPending, ensurePuterSignedIn, hasPuterAutoSigninPending } from "./lib/puter-auth";
 
 // Core layout components (needed immediately)
 import { ErrorComponent } from "./components/refine-ui/layout/error-component";
@@ -117,6 +116,9 @@ const PageLoader = memo(() => (
   </div>
 ));
 
+const isVercelAnalyticsEnabled =
+  import.meta.env.PROD && import.meta.env.VITE_ENABLE_VERCEL_ANALYTICS === "true";
+
 // Analytics initializer component to set user identity
 const AnalyticsInitializer = memo(() => {
   const { data: identity } = useGetIdentity();
@@ -128,51 +130,6 @@ const AnalyticsInitializer = memo(() => {
       analyticsManager.setUser('unknown', { anonymous: true });
     }
   }, [identity]);
-
-  return null;
-});
-
-const PuterAuthInitializer = memo(() => {
-  useEffect(() => {
-    let disposed = false;
-    let isSyncing = false;
-
-    const syncPuterSession = async () => {
-      if (disposed || isSyncing) return;
-      if (!hasPuterAutoSigninPending()) return;
-
-      isSyncing = true;
-      try {
-        const result = await ensurePuterSignedIn();
-        if (result === "signed_in" || result === "already_signed_in") {
-          clearPuterAutoSigninPending();
-        }
-      } catch (error) {
-        // Best-effort sync: browser popup policies can block non-user-gesture auth.
-        console.warn("Puter auto sign-in skipped:", error);
-      } finally {
-        isSyncing = false;
-      }
-    };
-
-    void supabaseClient.auth.getSession().then(({ data }) => {
-      if (disposed) return;
-      if (!data.session) return;
-      void syncPuterSession();
-    }).catch((error) => {
-      console.warn("Failed to inspect auth session for Puter sync:", error);
-    });
-
-    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((event) => {
-      if (event !== "SIGNED_IN") return;
-      void syncPuterSession();
-    });
-
-    return () => {
-      disposed = true;
-      subscription.unsubscribe();
-    };
-  }, []);
 
   return null;
 });
@@ -588,8 +545,7 @@ function App() {
                 <UnsavedChangesNotifier />
                 <DocumentTitle />
                 <AnalyticsInitializer />
-                <PuterAuthInitializer />
-                <Analytics />
+                {isVercelAnalyticsEnabled ? <Analytics /> : null}
                 <Suspense fallback={null}>
                   <DonationWidget />
                 </Suspense>
