@@ -23,6 +23,7 @@ import authProvider from "./authProvider";
 import { supabaseClient } from "./utility";
 import { useDocumentTitle } from "./hooks/use-document-title";
 import { analyticsManager } from "./lib/analytics/instance";
+import { consumePuterAutoSigninPending, ensurePuterSignedIn } from "./lib/puter-auth";
 
 // Core layout components (needed immediately)
 import { ErrorComponent } from "./components/refine-ui/layout/error-component";
@@ -127,6 +128,40 @@ const AnalyticsInitializer = memo(() => {
       analyticsManager.setUser('unknown', { anonymous: true });
     }
   }, [identity]);
+
+  return null;
+});
+
+const PuterAuthInitializer = memo(() => {
+  useEffect(() => {
+    let disposed = false;
+    let isSyncing = false;
+
+    const syncPuterSession = async () => {
+      if (disposed || isSyncing) return;
+
+      isSyncing = true;
+      try {
+        await ensurePuterSignedIn();
+      } catch (error) {
+        // Best-effort sync: browser popup policies can block non-user-gesture auth.
+        console.warn("Puter auto sign-in skipped:", error);
+      } finally {
+        isSyncing = false;
+      }
+    };
+
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((event) => {
+      if (event !== "SIGNED_IN") return;
+      if (!consumePuterAutoSigninPending()) return;
+      void syncPuterSession();
+    });
+
+    return () => {
+      disposed = true;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   return null;
 });
@@ -542,6 +577,7 @@ function App() {
                 <UnsavedChangesNotifier />
                 <DocumentTitle />
                 <AnalyticsInitializer />
+                <PuterAuthInitializer />
                 <Analytics />
                 <Suspense fallback={null}>
                   <DonationWidget />
