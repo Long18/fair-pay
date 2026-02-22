@@ -1,6 +1,7 @@
 import { AuthProvider } from "@refinedev/core";
 import { supabaseClient } from "./utility";
 import { AuthTracker, analyticsManager, ErrorTracker } from "./lib/analytics/index";
+import { clearPuterAutoSigninPending, markPuterAutoSigninPending, signOutPuterIfAvailable } from "./lib/puter-auth";
 
 const authProvider: AuthProvider = {
     login: async ({ email, password, providerName }) => {
@@ -25,6 +26,7 @@ const authProvider: AuthProvider = {
                 }
 
                 if (data?.url) {
+                    markPuterAutoSigninPending();
                     AuthTracker.login('oauth', providerName as 'google');
                     return {
                         success: true,
@@ -50,6 +52,7 @@ const authProvider: AuthProvider = {
             }
 
             if (data?.user) {
+                markPuterAutoSigninPending();
                 AuthTracker.login('email');
                 
                 // Fetch profile to get full_name
@@ -111,6 +114,7 @@ const authProvider: AuthProvider = {
                 }
 
                 if (data?.url) {
+                    markPuterAutoSigninPending();
                     AuthTracker.register('oauth');
                     return {
                         success: true,
@@ -137,6 +141,7 @@ const authProvider: AuthProvider = {
             }
 
             if (data) {
+                markPuterAutoSigninPending();
                 AuthTracker.register('email');
                 if (data.user) {
                     // Fetch profile to get full_name (profile should be created via trigger)
@@ -261,6 +266,8 @@ const authProvider: AuthProvider = {
 
         AuthTracker.logout();
         analyticsManager.clearUser();
+        clearPuterAutoSigninPending();
+        signOutPuterIfAvailable();
 
         return {
             success: true,
