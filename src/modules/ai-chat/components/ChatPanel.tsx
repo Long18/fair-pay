@@ -1,4 +1,5 @@
-import { memo, useEffect, useRef, useCallback } from 'react';
+import { memo, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useGetIdentity } from '@refinedev/core';
 import {
   Sheet,
   SheetContent,
@@ -12,7 +13,9 @@ import { SparklesIcon, Trash2Icon } from '@/components/ui/icons';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { ConfirmActionCard } from './ConfirmActionCard';
+import { TypingIndicator } from './TypingIndicator';
 import { useAiChat } from '../hooks/use-ai-chat';
+import type { Profile } from '@/modules/profile/types';
 
 interface ChatPanelProps {
   open: boolean;
@@ -27,6 +30,7 @@ const SUGGESTIONS = [
 ];
 
 export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
+  const { data: identity } = useGetIdentity<Profile>();
   const {
     messages,
     isLoading,
@@ -38,13 +42,18 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
     clearChat,
   } = useAiChat();
 
+  const userInfo = useMemo(() => ({
+    full_name: identity?.full_name,
+    avatar_url: identity?.avatar_url,
+  }), [identity?.full_name, identity?.avatar_url]);
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, pendingAction]);
+  }, [messages, pendingAction, isLoading]);
 
   const handleSuggestion = useCallback((text: string) => {
     sendMessage(text);
@@ -106,9 +115,10 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
                 </div>
               ) : (
                 messages.map((msg) => (
-                  <ChatMessage key={msg.id} message={msg} />
+                  <ChatMessage key={msg.id} message={msg} userInfo={userInfo} />
                 ))
               )}
+              {isLoading && messages.length > 0 && <TypingIndicator />}
             </div>
           </div>
         </ScrollArea>
