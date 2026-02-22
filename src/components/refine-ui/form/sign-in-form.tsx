@@ -21,7 +21,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { useLink, useLogin, useRefineOptions, useNotification } from "@refinedev/core";
 import { Loader2Icon, AlertCircleIcon, MailIcon, LockIcon } from "@/components/ui/icons";
-import { kickoffPuterSigninFromUserGesture } from "@/lib/puter-auth";
 
 export const SignInForm = () => {
   const { t } = useTranslation();
@@ -84,9 +83,6 @@ export const SignInForm = () => {
     }
 
     setIsLoading(true);
-    void kickoffPuterSigninFromUserGesture().catch((puterError) => {
-      console.warn("Puter login preflight skipped:", puterError);
-    });
 
     login(
       { email, password },
@@ -110,9 +106,6 @@ export const SignInForm = () => {
 
   const handleSignInWithGoogle = () => {
     setError(null);
-    void kickoffPuterSigninFromUserGesture().catch((puterError) => {
-      console.warn("Puter login preflight skipped:", puterError);
-    });
     login({ providerName: "google" });
   };
 
