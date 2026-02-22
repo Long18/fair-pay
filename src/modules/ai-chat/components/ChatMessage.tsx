@@ -1,28 +1,55 @@
 import { memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { SparklesIcon, UserIcon } from '@/components/ui/icons';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { SparklesIcon } from '@/components/ui/icons';
 import type { ChatMessage as ChatMessageType } from '../types';
+
+interface UserInfo {
+  full_name?: string;
+  avatar_url?: string | null;
+}
 
 interface ChatMessageProps {
   message: ChatMessageType;
+  userInfo?: UserInfo;
 }
 
-export const ChatMessage = memo(function ChatMessage({ message }: ChatMessageProps) {
+function getInitials(name?: string): string {
+  if (!name) return '?';
+  return name
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase();
+}
+
+export const ChatMessage = memo(function ChatMessage({ message, userInfo }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isError = message.metadata?.status === 'failure';
 
   return (
     <div className={cn('flex gap-3 py-3', isUser ? 'flex-row-reverse' : 'flex-row')}>
-      <Avatar className="h-7 w-7 shrink-0" aria-hidden="true">
-        <AvatarFallback className={cn(
-          'text-xs',
-          isUser ? 'bg-primary text-primary-foreground' : 'bg-muted'
-        )}>
-          {isUser ? <UserIcon size={14} /> : <SparklesIcon size={14} />}
-        </AvatarFallback>
-      </Avatar>
+      {isUser ? (
+        <Avatar className="h-7 w-7 shrink-0 ring-2 ring-primary/20" aria-hidden="true">
+          {userInfo?.avatar_url ? (
+            <AvatarImage src={userInfo.avatar_url} alt={userInfo.full_name ?? 'User'} />
+          ) : null}
+          <AvatarFallback className="bg-primary text-primary-foreground text-[10px] font-semibold">
+            {getInitials(userInfo?.full_name)}
+          </AvatarFallback>
+        </Avatar>
+      ) : (
+        <div className="relative h-7 w-7 shrink-0" aria-hidden="true">
+          <Avatar className="h-7 w-7">
+            <AvatarFallback className="bg-gradient-to-br from-violet-500 to-indigo-600 text-white">
+              <SparklesIcon size={14} />
+            </AvatarFallback>
+          </Avatar>
+          <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background" />
+        </div>
+      )}
 
       <div className={cn(
         'max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed',
