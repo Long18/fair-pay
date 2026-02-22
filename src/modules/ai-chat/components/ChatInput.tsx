@@ -35,17 +35,19 @@ export const ChatInput = memo(function ChatInput({ onSend, isLoading, disabled }
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Ask FairPay Assistant..."
+        placeholder="Ask FairPay Assistant…"
         disabled={disabled || isLoading}
         className="min-h-[40px] max-h-[120px] resize-none text-sm"
         rows={1}
         aria-label="Chat message input"
+        autoComplete="off"
+        spellCheck
       />
       <Button
         size="icon"
         onClick={handleSubmit}
         disabled={!value.trim() || isLoading || disabled}
-        className="shrink-0 h-10 w-10"
+        className="shrink-0 h-11 w-11"
         aria-label="Send message"
       >
         {isLoading ? <Loader2Icon size={16} className="animate-spin" /> : <SendIcon size={16} />}

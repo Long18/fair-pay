@@ -53,12 +53,12 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex flex-col p-0 w-full sm:max-w-md"
+        className="flex flex-col p-0 w-full sm:max-w-md overscroll-contain"
       >
         <SheetHeader className="px-4 pt-4 pb-2 border-b">
           <div className="flex items-center justify-between pr-8">
             <div className="flex items-center gap-2">
-              <SparklesIcon size={18} className="text-primary" />
+              <SparklesIcon size={18} className="text-primary" aria-hidden="true" />
               <SheetTitle className="text-base">FairPay Assistant</SheetTitle>
             </div>
             {messages.length > 0 && (
@@ -66,8 +66,8 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
                 variant="ghost"
                 size="icon"
                 onClick={clearChat}
-                className="h-8 w-8"
-                aria-label="Clear chat"
+                className="h-11 w-11"
+                aria-label="Clear chat history"
               >
                 <Trash2Icon size={14} />
               </Button>
@@ -80,10 +80,10 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
 
         <ScrollArea className="flex-1 overflow-hidden">
           <div ref={scrollRef} className="h-full overflow-y-auto">
-            <div className="px-3 pb-3">
+            <div className="px-3 pb-3" role="log" aria-live="polite" aria-label="Chat messages">
               {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <SparklesIcon size={32} className="text-muted-foreground/40 mb-3" />
+                  <SparklesIcon size={32} className="text-muted-foreground/40 mb-3" aria-hidden="true" />
                   <p className="text-sm font-medium text-muted-foreground mb-1">
                     How can I help?
                   </p>
@@ -96,7 +96,7 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
                         key={s}
                         type="button"
                         onClick={() => handleSuggestion(s)}
-                        className="rounded-full border px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                        className="rounded-full border px-3 py-2.5 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer min-h-[44px]"
                       >
                         {s}
                       </button>
