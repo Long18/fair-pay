@@ -736,7 +736,7 @@ BEGIN
     new_data := jsonb_build_object('field', 'new_value');
 
     INSERT INTO audit_logs (
-      table_name, record_id, action, old_data, new_data, user_id, created_at
+      table_name, record_id, operation, old_data, new_data, user_id, created_at
     )
     VALUES (
       table_name,
