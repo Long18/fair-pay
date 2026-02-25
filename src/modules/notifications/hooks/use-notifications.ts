@@ -103,7 +103,7 @@ export const useNotifications = () => {
 
   // Map joined profile data to flat actor fields
   const notifications: Notification[] = (query.data?.data || []).map((n) => {
-    const profile = (n as Record<string, unknown>).profiles as { full_name?: string; avatar_url?: string } | null;
+    const profile = (n as unknown as Record<string, unknown>).profiles as { full_name?: string; avatar_url?: string } | null;
     return {
       ...n,
       actor_name: profile?.full_name ?? undefined,
