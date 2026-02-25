@@ -89,12 +89,14 @@ CREATE OR REPLACE TRIGGER update_group_join_requests_updated_at
 ALTER TABLE group_join_requests ENABLE ROW LEVEL SECURITY;
 
 -- Users can view their own requests
+DROP POLICY IF EXISTS "Users can view own join requests" ON group_join_requests;
 CREATE POLICY "Users can view own join requests"
   ON group_join_requests FOR SELECT
   TO authenticated
   USING (user_id = auth.uid());
 
 -- Group admins can view requests for their groups
+DROP POLICY IF EXISTS "Group admins can view group join requests" ON group_join_requests;
 CREATE POLICY "Group admins can view group join requests"
   ON group_join_requests FOR SELECT
   TO authenticated
@@ -106,6 +108,7 @@ CREATE POLICY "Group admins can view group join requests"
   );
 
 -- Users can create join requests
+DROP POLICY IF EXISTS "Users can create join requests" ON group_join_requests;
 CREATE POLICY "Users can create join requests"
   ON group_join_requests FOR INSERT
   TO authenticated
@@ -119,12 +122,14 @@ CREATE POLICY "Users can create join requests"
   );
 
 -- Users can cancel their own pending requests
+DROP POLICY IF EXISTS "Users can delete own pending requests" ON group_join_requests;
 CREATE POLICY "Users can delete own pending requests"
   ON group_join_requests FOR DELETE
   TO authenticated
   USING (user_id = auth.uid() AND status = 'pending');
 
 -- Group admins can update requests (approve/reject)
+DROP POLICY IF EXISTS "Group admins can update join requests" ON group_join_requests;
 CREATE POLICY "Group admins can update join requests"
   ON group_join_requests FOR UPDATE
   TO authenticated

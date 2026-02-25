@@ -51,6 +51,7 @@ END;
 $$;
 
 -- Trigger on insert
+DROP TRIGGER IF EXISTS trg_notify_admins_on_join_request ON group_join_requests;
 CREATE TRIGGER trg_notify_admins_on_join_request
   AFTER INSERT ON group_join_requests
   FOR EACH ROW
