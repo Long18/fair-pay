@@ -1,13 +1,73 @@
-import { useEffect, useState, useCallback } from "react";
-import { useGetIdentity, useList, useUpdate } from "@refinedev/core";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useGetIdentity, useList, useUpdate, useGo } from "@refinedev/core";
+import { toast } from "sonner";
 import { supabaseClient } from "@/utility";
 import { Profile } from "@/modules/profile/types";
 import { Notification } from "../types";
+import { NotificationToast } from "../components/notification-toast";
+import { useNotificationSound } from "./use-notification-sound";
 import { formatDistanceToNow } from "date-fns";
+
+/**
+ * Send a browser notification if the tab is not focused and permission is granted.
+ */
+const sendBrowserNotification = (notification: Notification) => {
+  if (
+    typeof window === "undefined" ||
+    !("Notification" in window) ||
+    window.Notification.permission !== "granted" ||
+    document.hasFocus()
+  ) {
+    return;
+  }
+
+  try {
+    const n = new window.Notification(notification.title, {
+      body: notification.message,
+      icon: "/favicon.ico",
+      tag: notification.id, // Prevents duplicate native notifications
+    });
+
+    if (notification.link) {
+      n.onclick = () => {
+        window.focus();
+        window.location.href = notification.link!;
+        n.close();
+      };
+    }
+  } catch {
+    // Browser notification not supported in this context
+  }
+};
+
+/**
+ * Request browser notification permission (once, on first use).
+ */
+const requestNotificationPermission = () => {
+  if (
+    typeof window === "undefined" ||
+    !("Notification" in window) ||
+    window.Notification.permission !== "default"
+  ) {
+    return;
+  }
+  window.Notification.requestPermission().catch(() => {});
+};
 
 export const useNotifications = () => {
   const { data: identity } = useGetIdentity<Profile>();
+  const go = useGo();
   const [unreadCount, setUnreadCount] = useState(0);
+  const { play: playSound } = useNotificationSound();
+  const permissionRequested = useRef(false);
+
+  // Request browser notification permission once
+  useEffect(() => {
+    if (identity?.id && !permissionRequested.current) {
+      permissionRequested.current = true;
+      requestNotificationPermission();
+    }
+  }, [identity?.id]);
 
   const { query } = useList<Notification>({
     resource: "notifications",
@@ -46,6 +106,7 @@ export const useNotifications = () => {
     }
   }, [notifications]);
 
+  // Realtime subscription with optimistic cache + toast + sound + browser notification
   useEffect(() => {
     if (!identity?.id) return;
 
@@ -59,8 +120,31 @@ export const useNotifications = () => {
           table: "notifications",
           filter: `user_id=eq.${identity.id}`,
         },
-        () => {
+        (payload) => {
+          const newNotification = payload.new as Notification;
+
+          // Optimistic: refetch to update React Query cache
           query.refetch();
+
+          // Play sound
+          playSound();
+
+          // Show in-app toast
+          toast(
+            () => NotificationToast({ notification: newNotification }),
+            {
+              duration: 5000,
+              action: newNotification.link
+                ? {
+                    label: "View",
+                    onClick: () => go({ to: newNotification.link! }),
+                  }
+                : undefined,
+            }
+          );
+
+          // Browser notification when tab is not focused
+          sendBrowserNotification(newNotification);
         }
       )
       .on(
@@ -80,7 +164,7 @@ export const useNotifications = () => {
     return () => {
       supabaseClient.removeChannel(channel);
     };
-  }, [identity?.id, query]);
+  }, [identity?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const markAsRead = useCallback(
     (notificationId: string) => {
