@@ -106,25 +106,21 @@ export const useNotifications = () => {
     }
   }, [notifications]);
 
-  // Realtime subscription with optimistic cache + toast + sound + browser notification
+  // Realtime subscription via broadcast (scalable, replaces postgres_changes)
   useEffect(() => {
     if (!identity?.id) return;
 
+    const channelName = `user:${identity.id}:notifications`;
     const channel = supabaseClient
-      .channel(`notifications:${identity.id}`)
+      .channel(channelName)
       .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${identity.id}`,
-        },
+        "broadcast",
+        { event: "notification_created" },
         (payload) => {
-          console.log("[Notifications] Realtime INSERT received:", payload);
-          const newNotification = payload.new as Notification;
+          console.log("[Notifications] Broadcast received:", payload);
+          const newNotification = payload.payload as Notification;
 
-          // Optimistic: refetch to update React Query cache
+          // Refetch to update React Query cache
           query.refetch();
 
           // Play sound
@@ -146,18 +142,6 @@ export const useNotifications = () => {
 
           // Browser notification when tab is not focused
           sendBrowserNotification(newNotification);
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${identity.id}`,
-        },
-        () => {
-          query.refetch();
         }
       )
       .subscribe((status, err) => {
