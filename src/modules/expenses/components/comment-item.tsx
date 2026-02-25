@@ -82,8 +82,24 @@ export const CommentItem = memo(({
   }, [onReply]);
 
   const renderContent = (text: string) => {
-    // Split on @mentions and :shortcode: patterns
-    const parts = text.split(/(@\S+|:[a-z0-9_+-]+:)/g);
+    // Build a regex that matches known mention names (from comment.mentions)
+    // as well as @all/@here, falling back to @\S+ for unknown mentions
+    const mentionNames = comment.mentions
+      .map((m) => m.full_name)
+      .filter(Boolean)
+      .sort((a, b) => b.length - a.length); // longest first to avoid partial matches
+
+    const escapedNames = mentionNames.map((name) =>
+      name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    );
+
+    const mentionAlternatives = escapedNames.length > 0
+      ? `@(?:${escapedNames.join("|")}|all|here)|@\\S+`
+      : `@\\S+`;
+
+    const pattern = new RegExp(`(${mentionAlternatives}|:[a-z0-9_+-]+:)`, "g");
+    const parts = text.split(pattern);
+
     return parts.map((part, i) => {
       if (part.startsWith("@")) {
         return <span key={i} className="text-primary font-medium">{part}</span>;

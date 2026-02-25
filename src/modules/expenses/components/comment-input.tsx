@@ -120,7 +120,7 @@ export const CommentInput = memo(({
     const textarea = textareaRef.current;
     if (textarea) {
       const pos = textarea.selectionStart;
-      const before = content.substring(0, pos).replace(/@[\w\s]*$/, "");
+      const before = content.substring(0, pos).replace(/@[^\n@]*$/, "");
       const after = content.substring(pos);
       setContent(before + mention + after);
     } else {
@@ -233,7 +233,7 @@ export const CommentInput = memo(({
     setContent(val);
 
     // Detect @mention pattern
-    const mentionMatch = textBeforeCursor.match(/@([\w\s]*)$/);
+    const mentionMatch = textBeforeCursor.match(/@([^\n@]*)$/);
     if (mentionMatch) {
       setMentionOpen(true);
       setMentionFilter(mentionMatch[1].trim());
