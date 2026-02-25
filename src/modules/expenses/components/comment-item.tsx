@@ -11,7 +11,7 @@ import { formatDistanceToNow } from "date-fns";
 import { vi, enUS } from "date-fns/locale";
 import type { ExpenseComment, CommentUser, ReactionSummary, ReactionType } from "../types/comments";
 
-/** Escape special regex characters in a string */
+/** Escape special regex characters using loop */
 function escapeRegex(str: string): string {
   const special = new Set([".", "*", "+", "?", "^", "$", "{", "}", "(", ")", "|", "[", "]", "\\"]);
   let result = "";
@@ -54,139 +54,6 @@ export const CommentItem = memo(({
   onUpdate,
   onDelete,
   isSubmitting,
-
-  return (
-    <div className={cn("group", isReply && "ml-8 md:ml-10")}>
-      <div className="flex gap-2.5">
-        <Avatar className={cn("shrink-0", isReply ? "h-6 w-6" : "h-8 w-8")}>
-          <AvatarImage src={comment.user.avatar_url || undefined} alt={comment.user.full_name} />
-          <AvatarFallback className={cn(isReply ? "text-[10px]" : "text-xs")}>{initials}</AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium truncate">{comment.user.full_name}</span>
-            <span className="text-xs text-muted-foreground">{timeAgo}</span>
-            {comment.is_edited && (
-              <span className="text-xs text-muted-foreground italic">
-                ({t("expenses.comments.edited", "edited")})
-              </span>
-            )}
-          </div>
-
-          {editing ? (
-            <div className="mt-1.5 space-y-2">
-              <textarea
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                rows={2}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSaveEdit(); }
-                  if (e.key === "Escape") setEditing(false);
-                }}
-              />
-              <div className="flex gap-1.5">
-                <Button size="sm" variant="default" className="h-7 text-xs" onClick={handleSaveEdit}>
-                  {t("common.save", "Save")}
-                </Button>
-                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditing(false)}>
-                  {t("common.cancel", "Cancel")}
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm mt-0.5 whitespace-pre-wrap break-words">{renderContent(comment.content)}</p>
-          )}
-
-          {!editing && (
-            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              <ReactionBar
-                reactions={reactions}
-                reactionTypes={reactionTypes}
-                onToggle={onToggleReaction}
-                onCreateAndToggle={onCreateAndToggleReaction}
-                size="sm"
-              />
-              {!isReply && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-                  onClick={() => setReplying(!replying)}
-                >
-                  <CornerDownRightIcon className="h-3 w-3 mr-1" />
-                  {t("expenses.comments.reply", "Reply")}
-                </Button>
-              )}
-              {isOwn && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-1.5 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => { setEditing(true); setEditContent(comment.content); }}
-                    aria-label={t("common.edit", "Edit")}
-                  >
-                    <PencilIcon className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-1.5 text-xs text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => onDelete(comment.id)}
-                    aria-label={t("common.delete", "Delete")}
-                  >
-                    <Trash2Icon className="h-3 w-3" />
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
-
-          {replying && (
-            <div className="mt-2">
-              <CommentInput
-                currentUser={currentUser}
-                participants={participants}
-                onSubmit={handleReply}
-                isSubmitting={isSubmitting}
-                placeholder={t("expenses.comments.replyPlaceholder", "Write a reply...")}
-                autoFocus
-                compact
-                customReactions={reactionTypes}
-              />
-            </div>
-          )}
-
-          {!isReply && comment.replies && comment.replies.length > 0 && (
-            <div className="mt-3 space-y-3">
-              {comment.replies.map((reply) => (
-                <CommentItem
-                  key={reply.id}
-                  comment={reply}
-                  currentUserId={currentUserId}
-                  currentUser={currentUser}
-                  participants={participants}
-                  reactions={getReactionsForComment?.(reply.id) || []}
-                  reactionTypes={reactionTypes}
-                  onToggleReaction={(rtId) => onToggleReplyReaction?.(reply.id, rtId)}
-                  onCreateAndToggleReaction={(emojiMartId, nativeEmoji, label) => onCreateAndToggleReplyReaction?.(reply.id, emojiMartId, nativeEmoji, label)}
-                  onReply={onReply}
-                  onUpdate={onUpdate}
-                  onDelete={onDelete}
-                  isSubmitting={isSubmitting}
-                  isReply
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-});
-
-CommentItem.displayName = "CommentItem";
   isReply = false,
   getReactionsForComment,
   onToggleReplyReaction,
@@ -227,12 +94,10 @@ CommentItem.displayName = "CommentItem";
   }, [onReply]);
 
   const renderContent = (text: string) => {
-    // Build a regex that matches known mention names (from comment.mentions)
-    // as well as @all/@here, falling back to @\S+ for unknown mentions
     const mentionNames = comment.mentions
       .map((m) => m.full_name)
       .filter(Boolean)
-      .sort((a, b) => b.length - a.length); // longest first to avoid partial matches
+      .sort((a, b) => b.length - a.length);
 
     const escapedNames = mentionNames.map((name) => escapeRegex(name));
 
@@ -247,7 +112,6 @@ CommentItem.displayName = "CommentItem";
       if (part.startsWith("@")) {
         return <span key={i} className="text-primary font-medium">{part}</span>;
       }
-      // Check for :shortcode: pattern
       const shortcodeMatch = part.match(/^:([a-z0-9_+-]+):$/);
       if (shortcodeMatch) {
         const code = shortcodeMatch[1];
@@ -269,7 +133,6 @@ CommentItem.displayName = "CommentItem";
             );
           }
         }
-        // Not found in DB — render as-is
         return <span key={i}>{part}</span>;
       }
       return <span key={i}>{part}</span>;
