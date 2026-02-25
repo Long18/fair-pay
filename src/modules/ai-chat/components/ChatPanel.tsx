@@ -96,16 +96,6 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
 
   const handleConnectPuter = useCallback(async () => {
     setPuterConnectError(null);
-
-    // Avoid invoking Puter signIn when popups are blocked: its SDK currently spams console on null popup.
-    const popupProbe = window.open('', '_blank', 'popup,width=10,height=10,left=-10000,top=-10000');
-    if (!popupProbe) {
-      setPuterState('disconnected');
-      setPuterConnectError('Popup is blocked by the browser. Allow popups for this site to connect Puter.');
-      return;
-    }
-    popupProbe.close();
-
     setPuterState('connecting');
     try {
       const result = await kickoffPuterSigninFromUserGesture();
