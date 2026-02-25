@@ -121,6 +121,7 @@ export const useNotifications = () => {
           filter: `user_id=eq.${identity.id}`,
         },
         (payload) => {
+          console.log("[Notifications] Realtime INSERT received:", payload);
           const newNotification = payload.new as Notification;
 
           // Optimistic: refetch to update React Query cache
@@ -159,7 +160,9 @@ export const useNotifications = () => {
           query.refetch();
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        console.log("[Notifications] Realtime subscription status:", status, err ?? "");
+      });
 
     return () => {
       supabaseClient.removeChannel(channel);
