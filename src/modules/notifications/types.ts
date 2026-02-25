@@ -16,6 +16,7 @@ export type NotificationType =
 export interface Notification {
   id: string;
   user_id: string;
+  actor_id: string | null;
   type: NotificationType;
   title: string;
   message: string;
@@ -23,6 +24,9 @@ export interface Notification {
   related_id: string | null;
   is_read: boolean;
   created_at: string;
+  /** Joined from profiles via actor_id */
+  actor_name?: string;
+  actor_avatar?: string;
 }
 
 export interface NotificationWithMeta extends Notification {
