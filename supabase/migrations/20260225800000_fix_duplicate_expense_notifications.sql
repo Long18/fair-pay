@@ -74,7 +74,7 @@ BEGIN
     'New Expense Added',
     COALESCE(v_creator_name, 'Someone') || ' added "' || v_expense.description || '" - ' ||
       to_char(v_expense.amount, 'FM999,999,999') || ' ' || v_expense.currency ||
-      '. You owe ' || to_char(COALESCE(NEW.computed_amount, NEW.amount), 'FM999,999,999') || ' ' || v_expense.currency,
+      '. You owe ' || to_char(NEW.computed_amount, 'FM999,999,999') || ' ' || v_expense.currency,
     '/expenses/show/' || v_expense.id::text,
     FALSE,
     NOW()
