@@ -106,19 +106,24 @@ export const useNotifications = () => {
     }
   }, [notifications]);
 
-  // Realtime subscription via broadcast (scalable, replaces postgres_changes)
+  // Realtime subscription via postgres_changes
+  // Requires: notifications in supabase_realtime publication + REPLICA IDENTITY FULL
   useEffect(() => {
     if (!identity?.id) return;
 
-    const channelName = `user:${identity.id}:notifications`;
     const channel = supabaseClient
-      .channel(channelName)
+      .channel(`notifications:${identity.id}`)
       .on(
-        "broadcast",
-        { event: "notification_created" },
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${identity.id}`,
+        },
         (payload) => {
-          console.log("[Notifications] Broadcast received:", payload);
-          const newNotification = payload.payload as Notification;
+          console.log("[Notifications] Realtime INSERT received:", payload);
+          const newNotification = payload.new as Notification;
 
           // Refetch to update React Query cache
           query.refetch();
@@ -142,6 +147,18 @@ export const useNotifications = () => {
 
           // Browser notification when tab is not focused
           sendBrowserNotification(newNotification);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${identity.id}`,
+        },
+        () => {
+          query.refetch();
         }
       )
       .subscribe((status, err) => {
