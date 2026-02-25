@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Notification } from "../types";
 import {
   ReceiptIcon,
@@ -36,14 +37,39 @@ interface NotificationToastProps {
   notification: Notification;
 }
 
+const getInitials = (name?: string) => {
+  if (!name) return "?";
+  return name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+};
+
 export const NotificationToast = ({ notification }: NotificationToastProps) => {
   const meta = iconMap[notification.type] ?? defaultMeta;
   const Icon = meta.icon;
 
   return (
     <div className="flex items-start gap-3 w-full">
-      <div className={cn("flex-shrink-0 rounded-md p-2", meta.bg)}>
-        <Icon className={cn("h-4 w-4", meta.color)} />
+      {/* Avatar with type badge */}
+      <div className="relative flex-shrink-0">
+        <Avatar className="h-9 w-9">
+          {notification.actor_avatar ? (
+            <AvatarImage
+              src={notification.actor_avatar}
+              alt={notification.actor_name || "User"}
+            />
+          ) : null}
+          <AvatarFallback className="text-xs font-medium bg-muted">
+            {getInitials(notification.actor_name)}
+          </AvatarFallback>
+        </Avatar>
+        <div
+          className={cn(
+            "absolute -bottom-0.5 -right-0.5 flex items-center justify-center",
+            "h-4 w-4 rounded-full border-2 border-background",
+            meta.bg
+          )}
+        >
+          <Icon className={cn("h-2 w-2", meta.color)} />
+        </div>
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground truncate">

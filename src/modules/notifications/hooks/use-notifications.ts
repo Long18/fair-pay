@@ -6,6 +6,7 @@ import { Profile } from "@/modules/profile/types";
 import { Notification } from "../types";
 import { NotificationToast } from "../components/notification-toast";
 import { useNotificationSound } from "./use-notification-sound";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { formatDistanceToNow } from "date-fns";
 
 /**
@@ -60,6 +61,9 @@ export const useNotifications = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const { play: playSound } = useNotificationSound();
   const permissionRequested = useRef(false);
+  const isMobile = useIsMobile();
+  const isMobileRef = useRef(isMobile);
+  isMobileRef.current = isMobile;
 
   // Request browser notification permission once
   useEffect(() => {
@@ -87,6 +91,9 @@ export const useNotifications = () => {
     pagination: {
       pageSize: 50,
     },
+    meta: {
+      select: "*, profiles!notifications_actor_id_fkey(full_name, avatar_url)",
+    },
     queryOptions: {
       enabled: !!identity?.id,
     },
@@ -94,7 +101,15 @@ export const useNotifications = () => {
 
   const updateMutation = useUpdate();
 
-  const notifications = query.data?.data || [];
+  // Map joined profile data to flat actor fields
+  const notifications: Notification[] = (query.data?.data || []).map((n) => {
+    const profile = (n as Record<string, unknown>).profiles as { full_name?: string; avatar_url?: string } | null;
+    return {
+      ...n,
+      actor_name: profile?.full_name ?? undefined,
+      actor_avatar: profile?.avatar_url ?? undefined,
+    };
+  });
   const isLoading = query.isLoading;
 
   useEffect(() => {
@@ -127,22 +142,24 @@ export const useNotifications = () => {
           // Refetch to update React Query cache
           query.refetch();
 
-          // Play sound
+          // Play sound (both mobile and desktop)
           playSound();
 
-          // Show in-app toast
-          toast(
-            () => NotificationToast({ notification: newNotification }),
-            {
-              duration: 5000,
-              action: newNotification.link
-                ? {
-                    label: "View",
-                    onClick: () => go({ to: newNotification.link! }),
-                  }
-                : undefined,
-            }
-          );
+          // Show in-app toast only on desktop
+          if (!isMobileRef.current) {
+            toast(
+              () => NotificationToast({ notification: newNotification }),
+              {
+                duration: 5000,
+                action: newNotification.link
+                  ? {
+                      label: "View",
+                      onClick: () => go({ to: newNotification.link! }),
+                    }
+                  : undefined,
+              }
+            );
+          }
 
           // Browser notification when tab is not focused
           sendBrowserNotification(newNotification);

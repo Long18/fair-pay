@@ -49,10 +49,18 @@ export const NotificationList = () => {
         </div>
 
         {/* Notifications */}
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden rounded-xl">
           {isLoading ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="text-sm text-muted-foreground">Loading...</div>
+            <div className="flex flex-col gap-1 p-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-start gap-3 px-4 py-3 animate-pulse">
+                  <div className="h-10 w-10 rounded-full bg-muted flex-shrink-0" />
+                  <div className="flex-1 space-y-2 pt-1">
+                    <div className="h-3 w-3/4 rounded bg-muted" />
+                    <div className="h-3 w-1/2 rounded bg-muted" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-4">

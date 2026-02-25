@@ -1,16 +1,18 @@
 import { useGo } from "@refinedev/core";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useNotifications } from "../hooks/use-notifications";
 import { NotificationItem } from "./notification-item";
-import { useState } from "react";
-
 import { BellIcon } from "@/components/ui/icons";
+
 export const NotificationPanel = () => {
   const go = useGo();
   const {
@@ -21,40 +23,63 @@ export const NotificationPanel = () => {
     markAllAsRead,
   } = useNotifications();
   const [open, setOpen] = useState(false);
+  const isMobile = useIsMobile();
 
-  const displayNotifications = notifications.slice(0, 5);
+  const displayNotifications = notifications.slice(0, 8);
 
+  // On mobile, bell just navigates to /notifications page
+  if (isMobile) {
+    return (
+      <Button
+        variant="ghost"
+        size="icon"
+        className="relative h-9 w-9 rounded-full"
+        aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
+        onClick={() => go({ to: "/notifications" })}
+      >
+        <BellIcon className="h-5 w-5" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 dark:bg-red-600 text-[10px] font-bold text-white">
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
+        )}
+      </Button>
+    );
+  }
+
+  // Desktop: Facebook-style left-aligned popover panel
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
         <Button
           variant="ghost"
           size="icon"
-          className="relative"
+          className="relative h-9 w-9 md:h-10 md:w-10 rounded-full hover:bg-accent"
           aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
         >
-          <BellIcon className="h-5 w-5" />
+          <BellIcon className="h-4 w-4 md:h-5 md:w-5" />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 dark:bg-red-600 text-[10px] font-bold text-white">
+            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 dark:bg-red-600 text-[10px] font-bold text-white animate-in zoom-in-50 duration-200">
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           )}
         </Button>
-      </DropdownMenuTrigger>
+      </PopoverTrigger>
 
-      <DropdownMenuContent
+      <PopoverContent
         align="end"
-        className="w-[380px] p-0"
-        sideOffset={8}
+        side="bottom"
+        sideOffset={12}
+        className="w-[420px] p-0 rounded-xl shadow-xl border border-border/60 bg-popover"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b">
-          <h3 className="font-semibold text-sm">Notifications</h3>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
+          <h3 className="text-base font-semibold text-foreground">Notifications</h3>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
+              className="h-auto px-2 py-1 text-xs text-primary hover:text-primary/80 hover:bg-primary/5 rounded-md"
               onClick={(e) => {
                 e.stopPropagation();
                 markAllAsRead();
@@ -66,40 +91,52 @@ export const NotificationPanel = () => {
         </div>
 
         {/* Notifications List */}
-        <div className="max-h-[500px] overflow-y-auto">
+        <ScrollArea className="max-h-[480px]">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-sm text-muted-foreground">Loading...</div>
+            <div className="flex flex-col gap-3 p-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-start gap-3 animate-pulse">
+                  <div className="h-10 w-10 rounded-full bg-muted" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 w-3/4 rounded bg-muted" />
+                    <div className="h-3 w-1/2 rounded bg-muted" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : displayNotifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 px-4">
-              <BellIcon className="h-12 w-12 text-muted-foreground mb-3" />
+            <div className="flex flex-col items-center justify-center py-14 px-4">
+              <div className="flex items-center justify-center h-14 w-14 rounded-full bg-muted/50 mb-4">
+                <BellIcon className="h-7 w-7 text-muted-foreground" />
+              </div>
               <p className="text-sm font-medium text-foreground mb-1">
                 No new notifications
               </p>
               <p className="text-xs text-muted-foreground text-center">
-                You're all caught up! Check back later.
+                You&apos;re all caught up! Check back later.
               </p>
             </div>
           ) : (
-            displayNotifications.map((notification) => (
-              <NotificationItem
-                key={notification.id}
-                notification={notification}
-                onMarkAsRead={markAsRead}
-                onClose={() => setOpen(false)}
-              />
-            ))
+            <div className="py-1">
+              {displayNotifications.map((notification) => (
+                <NotificationItem
+                  key={notification.id}
+                  notification={notification}
+                  onMarkAsRead={markAsRead}
+                  onClose={() => setOpen(false)}
+                />
+              ))}
+            </div>
           )}
-        </div>
+        </ScrollArea>
 
         {/* Footer */}
-        {notifications.length > 5 && (
-          <div className="border-t p-3">
+        {notifications.length > 8 && (
+          <div className="border-t border-border/40 p-2">
             <Button
               variant="ghost"
               size="sm"
-              className="w-full text-sm"
+              className="w-full text-sm text-primary hover:text-primary/80 hover:bg-primary/5 rounded-lg"
               onClick={() => {
                 go({ to: "/notifications" });
                 setOpen(false);
@@ -109,7 +146,7 @@ export const NotificationPanel = () => {
             </Button>
           </div>
         )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </PopoverContent>
+    </Popover>
   );
 };
