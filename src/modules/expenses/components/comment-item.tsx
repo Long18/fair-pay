@@ -93,6 +93,15 @@ export const CommentItem = memo(({
     setReplying(false);
   }, [onReply]);
 
+  /** Map mention full_name -> user_id for profile card lookups */
+  const mentionMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const m of comment.mentions) {
+      map.set(m.full_name, m.user_id);
+    }
+    return map;
+  }, [comment.mentions]);
+
   const renderContent = (text: string) => {
     const mentionNames = comment.mentions
       .map((m) => m.full_name)
@@ -110,27 +119,21 @@ export const CommentItem = memo(({
 
     return parts.map((part, i) => {
       if (part.startsWith("@")) {
+        const nameWithoutAt = part.slice(1);
+        const userId = mentionMap.get(nameWithoutAt);
+        if (userId) {
+          return <MentionProfileCard key={i} userId={userId} displayText={part} />;
+        }
         return <span key={i} className="text-primary font-medium">{part}</span>;
       }
       const shortcodeMatch = part.match(/^:([a-z0-9_+-]+):$/);
       if (shortcodeMatch) {
         const code = shortcodeMatch[1];
-        const rt = reactionTypes.find(
-          (r) => r.code === code || r.emoji_mart_id === code
-        );
+        const rt = reactionTypes.find((r) => r.code === code || r.emoji_mart_id === code);
         if (rt) {
-          if (rt.media_type === "emoji" && rt.emoji) {
-            return <span key={i}>{rt.emoji}</span>;
-          }
+          if (rt.media_type === "emoji" && rt.emoji) return <span key={i}>{rt.emoji}</span>;
           if (rt.image_url) {
-            return (
-              <img
-                key={i}
-                src={rt.image_url}
-                alt={rt.label}
-                className="inline-block h-5 w-5 align-text-bottom rounded"
-              />
-            );
+            return <img key={i} src={rt.image_url} alt={rt.label} className="inline-block h-5 w-5 align-text-bottom rounded" />;
           }
         }
         return <span key={i}>{part}</span>;
@@ -142,13 +145,19 @@ export const CommentItem = memo(({
   return (
     <div className={cn("group", isReply && "ml-8 md:ml-10")}>
       <div className="flex gap-2.5">
-        <Avatar className={cn("shrink-0", isReply ? "h-6 w-6" : "h-8 w-8")}>
-          <AvatarImage src={comment.user.avatar_url || undefined} alt={comment.user.full_name} />
-          <AvatarFallback className={cn(isReply ? "text-[10px]" : "text-xs")}>{initials}</AvatarFallback>
-        </Avatar>
+        {/* Commenter avatar — wrapped in MentionProfileCard */}
+        <MentionProfileCard userId={comment.user_id} displayText={comment.user.full_name} className="shrink-0">
+          <Avatar className={cn("shrink-0 cursor-pointer", isReply ? "h-6 w-6" : "h-8 w-8")}>
+            <AvatarImage src={comment.user.avatar_url || undefined} alt={comment.user.full_name} />
+            <AvatarFallback className={cn(isReply ? "text-[10px]" : "text-xs")}>{initials}</AvatarFallback>
+          </Avatar>
+        </MentionProfileCard>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium truncate">{comment.user.full_name}</span>
+            {/* Commenter name — wrapped in MentionProfileCard */}
+            <MentionProfileCard userId={comment.user_id} displayText={comment.user.full_name}>
+              <span className="text-sm font-medium truncate cursor-pointer hover:underline">{comment.user.full_name}</span>
+            </MentionProfileCard>
             <span className="text-xs text-muted-foreground">{timeAgo}</span>
             {comment.is_edited && (
               <span className="text-xs text-muted-foreground italic">
