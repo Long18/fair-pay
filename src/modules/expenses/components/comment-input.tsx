@@ -48,6 +48,7 @@ export const CommentInput = memo(({
   const [mentionedIds, setMentionedIds] = useState<Set<string>>(new Set());
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionFilter, setMentionFilter] = useState("");
+  const insertedMentions = useRef<Set<string>>(new Set());
   const [friends, setFriends] = useState<CommentUser[]>([]);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -86,6 +87,7 @@ export const CommentInput = memo(({
     await onSubmit(trimmed, Array.from(mentionedIds));
     setContent("");
     setMentionedIds(new Set());
+    insertedMentions.current.clear();
   }, [content, mentionedIds, isSubmitting, onSubmit]);
 
   // Insert emoji at cursor, replacing the :query text if present
@@ -127,6 +129,7 @@ export const CommentInput = memo(({
       setContent((prev) => prev + mention);
     }
     setMentionedIds((prev) => new Set(prev).add(id));
+    insertedMentions.current.add(displayName);
     setMentionOpen(false);
     setMentionFilter("");
     textareaRef.current?.focus();
@@ -235,9 +238,20 @@ export const CommentInput = memo(({
     // Detect @mention pattern
     const mentionMatch = textBeforeCursor.match(/@([^\n@]*)$/);
     if (mentionMatch) {
-      setMentionOpen(true);
-      setMentionFilter(mentionMatch[1].trim());
-      setEmojiOpen(false);
+      const rawAfterAt = mentionMatch[1];
+      // Check if this @ belongs to an already-inserted mention
+      // e.g. "@Nguyễn Văn A some new text" — the part after @ starts with a known name + space
+      const isCompletedMention = Array.from(insertedMentions.current).some(
+        (name) => rawAfterAt.startsWith(name + " ") || rawAfterAt === name
+      );
+      if (isCompletedMention) {
+        setMentionOpen(false);
+        setMentionFilter("");
+      } else {
+        setMentionOpen(true);
+        setMentionFilter(rawAfterAt.trim());
+        setEmojiOpen(false);
+      }
     } else {
       setMentionOpen(false);
       setMentionFilter("");
