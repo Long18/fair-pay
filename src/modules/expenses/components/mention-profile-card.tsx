@@ -1,4 +1,4 @@
-import { useState, useCallback, memo } from "react";
+import { useState, useCallback, memo, type ReactNode } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ interface MentionProfileCardProps {
   userId: string;
   displayText: string;
   className?: string;
+  children?: ReactNode;
 }
 
 interface ProfileData {
@@ -29,6 +30,7 @@ export const MentionProfileCard = memo(({
   userId,
   displayText,
   className,
+  children,
 }: MentionProfileCardProps) => {
   const { t, i18n } = useTranslation();
   const go = useGo();
@@ -77,17 +79,30 @@ export const MentionProfileCard = memo(({
   return (
     <HoverCard openDelay={200} closeDelay={100} onOpenChange={handleOpenChange}>
       <HoverCardTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "text-primary font-medium cursor-pointer hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:rounded-sm",
-            className
-          )}
-          onClick={handleViewProfile}
-          aria-label={t("expenses.comments.viewProfile", { name: displayText, defaultValue: `View ${displayText}'s profile` })}
-        >
-          {displayText}
-        </button>
+        {children ? (
+          <span
+            role="button"
+            tabIndex={0}
+            className={cn("focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:rounded-sm", className)}
+            onClick={handleViewProfile}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleViewProfile(); } }}
+            aria-label={t("expenses.comments.viewProfile", { name: displayText, defaultValue: `View ${displayText}'s profile` })}
+          >
+            {children}
+          </span>
+        ) : (
+          <button
+            type="button"
+            className={cn(
+              "text-primary font-medium cursor-pointer hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:rounded-sm",
+              className
+            )}
+            onClick={handleViewProfile}
+            aria-label={t("expenses.comments.viewProfile", { name: displayText, defaultValue: `View ${displayText}'s profile` })}
+          >
+            {displayText}
+          </button>
+        )}
       </HoverCardTrigger>
       <HoverCardContent
         align="start"
