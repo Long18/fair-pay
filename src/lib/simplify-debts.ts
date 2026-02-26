@@ -28,7 +28,14 @@ export interface SimplifiedDebts {
 }
 
 /**
- * Simplify debts using greedy algorithm
+ * Round a number to 2 decimal places
+ */
+function roundTo2(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+/**
+ * Simplify debts using greedy algorithm with rounding compensation
  * @param debts Array of debt edges (who owes whom)
  * @returns Simplified debt structure with both original and simplified debts
  */
@@ -41,14 +48,18 @@ export function simplifyDebts(debts: DebtEdge[]): SimplifiedDebts {
     };
   }
 
-  // Step 1: Calculate net balance for each person
+  // Step 1: Calculate net balance for each person, rounded to 2 decimal places (Req 1.2)
   const balances = new Map<string, number>();
 
   for (const debt of debts) {
-    // Debtor loses money (negative balance)
     balances.set(debt.from, (balances.get(debt.from) || 0) - debt.amount);
-    // Creditor gains money (positive balance)
     balances.set(debt.to, (balances.get(debt.to) || 0) + debt.amount);
+  }
+
+  // Round all balances to 2 decimal places and zero out near-zero balances (Req 1.3)
+  for (const [userId, balance] of balances.entries()) {
+    const rounded = roundTo2(balance);
+    balances.set(userId, Math.abs(rounded) <= 0.01 ? 0 : rounded);
   }
 
   // Step 2: Separate into creditors (positive) and debtors (negative)
@@ -56,12 +67,11 @@ export function simplifyDebts(debts: DebtEdge[]): SimplifiedDebts {
   const debtors: Array<{ id: string; amount: number }> = [];
 
   for (const [userId, balance] of balances.entries()) {
-    if (balance > 0.01) {  // Creditor (owed money)
+    if (balance > 0) {
       creditors.push({ id: userId, amount: balance });
-    } else if (balance < -0.01) {  // Debtor (owes money)
-      debtors.push({ id: userId, amount: -balance });  // Store as positive
+    } else if (balance < 0) {
+      debtors.push({ id: userId, amount: -balance });
     }
-    // Skip if balance is ~0 (already settled)
   }
 
   // Sort by amount descending (greedy approach - handle largest debts first)
@@ -77,23 +87,93 @@ export function simplifyDebts(debts: DebtEdge[]): SimplifiedDebts {
     const creditor = creditors[creditorIndex];
     const debtor = debtors[debtorIndex];
 
-    // Determine payment amount (minimum of what's owed and what's needed)
-    const paymentAmount = Math.min(creditor.amount, debtor.amount);
+    const paymentAmount = roundTo2(Math.min(creditor.amount, debtor.amount));
 
-    // Create simplified debt edge
-    simplified.push({
-      from: debtor.id,
-      to: creditor.id,
-      amount: Math.round(paymentAmount * 100) / 100,  // Round to 2 decimals
-    });
+    if (paymentAmount > 0) {
+      simplified.push({
+        from: debtor.id,
+        to: creditor.id,
+        amount: paymentAmount,
+      });
+    }
 
-    // Update remaining amounts
-    creditor.amount -= paymentAmount;
-    debtor.amount -= paymentAmount;
+    creditor.amount = roundTo2(creditor.amount - paymentAmount);
+    debtor.amount = roundTo2(debtor.amount - paymentAmount);
 
-    // Move to next creditor/debtor if current one is settled
-    if (creditor.amount < 0.01) creditorIndex++;
-    if (debtor.amount < 0.01) debtorIndex++;
+    if (creditor.amount <= 0.01) creditorIndex++;
+    if (debtor.amount <= 0.01) debtorIndex++;
+  }
+
+  // Step 4: Rounding compensation (Req 9.5)
+  // Check if rounding caused net balance discrepancy > 0.01 for any member
+  // and adjust the largest transaction to compensate
+  if (simplified.length > 0) {
+    const originalBalances = new Map<string, number>();
+    for (const debt of debts) {
+      originalBalances.set(debt.from, (originalBalances.get(debt.from) || 0) - debt.amount);
+      originalBalances.set(debt.to, (originalBalances.get(debt.to) || 0) + debt.amount);
+    }
+
+    const simplifiedBalances = new Map<string, number>();
+    for (const debt of simplified) {
+      simplifiedBalances.set(debt.from, (simplifiedBalances.get(debt.from) || 0) - debt.amount);
+      simplifiedBalances.set(debt.to, (simplifiedBalances.get(debt.to) || 0) + debt.amount);
+    }
+
+    const allUsers = new Set([...originalBalances.keys(), ...simplifiedBalances.keys()]);
+
+    // Find the user with the largest discrepancy
+    let maxDiscrepancyUser: string | null = null;
+    let maxDiscrepancy = 0;
+
+    for (const userId of allUsers) {
+      const origBalance = roundTo2(originalBalances.get(userId) || 0);
+      const simpBalance = roundTo2(simplifiedBalances.get(userId) || 0);
+      const discrepancy = Math.abs(origBalance - simpBalance);
+
+      if (discrepancy > 0.01 && discrepancy > maxDiscrepancy) {
+        maxDiscrepancy = discrepancy;
+        maxDiscrepancyUser = userId;
+      }
+    }
+
+    if (maxDiscrepancyUser !== null) {
+      const origBalance = roundTo2(originalBalances.get(maxDiscrepancyUser) || 0);
+      const simpBalance = roundTo2(simplifiedBalances.get(maxDiscrepancyUser) || 0);
+      const adjustment = roundTo2(origBalance - simpBalance);
+
+      // Find the largest transaction involving this user and adjust it
+      let largestIdx = -1;
+      let largestAmount = 0;
+
+      for (let i = 0; i < simplified.length; i++) {
+        const edge = simplified[i];
+        if ((edge.from === maxDiscrepancyUser || edge.to === maxDiscrepancyUser) && edge.amount > largestAmount) {
+          largestAmount = edge.amount;
+          largestIdx = i;
+        }
+      }
+
+      if (largestIdx >= 0) {
+        const edge = simplified[largestIdx];
+        // If user is a debtor (from), they need more negative balance → increase amount
+        // If user is a creditor (to), they need more positive balance → increase amount
+        if (edge.from === maxDiscrepancyUser) {
+          // User is debtor: origBalance is more negative than simpBalance → adjustment < 0
+          // Need to increase the debt amount (make balance more negative)
+          edge.amount = roundTo2(edge.amount - adjustment);
+        } else {
+          // User is creditor: origBalance is more positive than simpBalance → adjustment > 0
+          // Need to increase the credit amount (make balance more positive)
+          edge.amount = roundTo2(edge.amount + adjustment);
+        }
+
+        // Remove edge if amount became zero or negative
+        if (edge.amount <= 0) {
+          simplified.splice(largestIdx, 1);
+        }
+      }
+    }
   }
 
   return {
