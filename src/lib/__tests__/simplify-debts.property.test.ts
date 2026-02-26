@@ -116,5 +116,29 @@ describe('Feature: debt-simplification, Property 1: Net Balance Conservation', (
   });
 });
 
+// ============================================================================
+// Property 2: Simplification Preserves Net Balances
+// Feature: debt-simplification, Property 2: Simplification Preserves Net Balances
+// Validates: Requirements 2.2, 8.1
+// ============================================================================
+
+describe('Feature: debt-simplification, Property 2: Simplification Preserves Net Balances', () => {
+  it('areDebtsEquivalent(original, simplified) must return true for any valid input', () => {
+    fc.assert(
+      fc.property(arbitraryDebtEdgeList(0, 20), (debts) => {
+        const result = simplifyDebts(debts);
+
+        expect(areDebtsEquivalent(result.original, result.simplified)).toBe(true);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  it('preserves net balances even for empty input', () => {
+    const result = simplifyDebts([]);
+    expect(areDebtsEquivalent(result.original, result.simplified)).toBe(true);
+  });
+});
+
 // Export generators for reuse in subsequent property test files (1.3-1.8)
 export { arbitraryUserId, arbitraryDebtEdge, arbitraryDebtEdgeList, computeNetBalances, roundTo2 };
