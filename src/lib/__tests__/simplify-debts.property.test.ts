@@ -1,63 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import { simplifyDebts, areDebtsEquivalent } from '../simplify-debts';
-import type { DebtEdge } from '../simplify-debts';
-
-// ============================================================================
-// Generators (reusable across all property tests)
-// ============================================================================
-
-/**
- * Generate a valid user ID (short alphanumeric string simulating UUIDs)
- */
-function arbitraryUserId(): fc.Arbitrary<string> {
-  return fc.stringMatching(/^user_[a-z0-9]{1,6}$/);
-}
-
-/**
- * Generate a random DebtEdge with valid user IDs and positive amount
- * Amount is a positive number with at most 2 decimal places
- */
-function arbitraryDebtEdge(): fc.Arbitrary<DebtEdge> {
-  return fc
-    .record({
-      from: arbitraryUserId(),
-      to: arbitraryUserId(),
-      amount: fc.double({ min: 0.01, max: 100_000, noNaN: true, noDefaultInfinity: true }),
-    })
-    .filter((edge) => edge.from !== edge.to)
-    .map((edge) => ({
-      ...edge,
-      amount: Math.round(edge.amount * 100) / 100,
-    }));
-}
-
-/**
- * Generate a list of DebtEdge with configurable size range
- */
-function arbitraryDebtEdgeList(
-  minSize: number = 0,
-  maxSize: number = 20,
-): fc.Arbitrary<DebtEdge[]> {
-  return fc.array(arbitraryDebtEdge(), { minLength: minSize, maxLength: maxSize });
-}
-
-// ============================================================================
-// Helper: compute net balances from a list of DebtEdges
-// ============================================================================
-
-function computeNetBalances(debts: DebtEdge[]): Map<string, number> {
-  const balances = new Map<string, number>();
-  for (const debt of debts) {
-    balances.set(debt.from, (balances.get(debt.from) || 0) - debt.amount);
-    balances.set(debt.to, (balances.get(debt.to) || 0) + debt.amount);
-  }
-  return balances;
-}
-
-function roundTo2(value: number): number {
-  return Math.round(value * 100) / 100;
-}
+import { arbitraryDebtEdgeList, arbitraryDebtEdge, computeNetBalances, roundTo2 } from './simplify-debts.test-utils';
 
 // ============================================================================
 // Property 1: Net Balance Conservation
@@ -261,5 +205,56 @@ describe('Feature: debt-simplification, Property 6: Round-Trip Consistency', () 
   });
 });
 
-// Export generators for reuse in subsequent property test files
-export { arbitraryUserId, arbitraryDebtEdge, arbitraryDebtEdgeList, computeNetBalances, roundTo2 };
+// ============================================================================
+// Property 7: areDebtsEquivalent Correctness
+// Feature: debt-simplification, Property 7: areDebtsEquivalent Correctness
+// Validates: Requirements 8.4
+// ============================================================================
+
+describe('Feature: debt-simplification, Property 7: areDebtsEquivalent Correctness', () => {
+  it('returns true when two debt lists have identical net balances', () => {
+    fc.assert(
+      fc.property(arbitraryDebtEdgeList(0, 15), (debts) => {
+        // Same list must be equivalent to itself
+        expect(areDebtsEquivalent(debts, debts)).toBe(true);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  it('returns true for empty lists', () => {
+    expect(areDebtsEquivalent([], [])).toBe(true);
+  });
+
+  it('returns false when a debt is added that changes net balances', () => {
+    fc.assert(
+      fc.property(
+        arbitraryDebtEdgeList(1, 10),
+        arbitraryDebtEdge(),
+        (debts, extraEdge) => {
+          // Add an extra edge to create different net balances
+          const modified = [...debts, extraEdge];
+          const balancesOrig = computeNetBalances(debts);
+          const balancesMod = computeNetBalances(modified);
+
+          // Check if balances actually differ
+          let differs = false;
+          const allUsers = new Set([...balancesOrig.keys(), ...balancesMod.keys()]);
+          for (const userId of allUsers) {
+            const b1 = balancesOrig.get(userId) || 0;
+            const b2 = balancesMod.get(userId) || 0;
+            if (Math.abs(b1 - b2) > 0.01) {
+              differs = true;
+              break;
+            }
+          }
+
+          if (differs) {
+            expect(areDebtsEquivalent(debts, modified)).toBe(false);
+          }
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+});
