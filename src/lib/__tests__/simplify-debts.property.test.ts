@@ -238,5 +238,28 @@ describe('Feature: debt-simplification, Property 5: Simplification Idempotence',
   });
 });
 
+// ============================================================================
+// Property 6: Round-Trip Consistency
+// Feature: debt-simplification, Property 6: Round-Trip Consistency
+// Validates: Requirements 8.3
+// ============================================================================
+
+describe('Feature: debt-simplification, Property 6: Round-Trip Consistency', () => {
+  it('converting simplified edges back to net balances and re-simplifying must produce equivalent net balances', () => {
+    fc.assert(
+      fc.property(arbitraryDebtEdgeList(0, 20), (debts) => {
+        const first = simplifyDebts(debts);
+
+        // Convert simplified edges to "net balance edges" by re-simplifying
+        const reSimplified = simplifyDebts(first.simplified);
+
+        // Net balances must be equivalent
+        expect(areDebtsEquivalent(first.simplified, reSimplified.simplified)).toBe(true);
+      }),
+      { numRuns: 100 },
+    );
+  });
+});
+
 // Export generators for reuse in subsequent property test files
 export { arbitraryUserId, arbitraryDebtEdge, arbitraryDebtEdgeList, computeNetBalances, roundTo2 };
