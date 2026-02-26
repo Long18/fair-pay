@@ -140,5 +140,47 @@ describe('Feature: debt-simplification, Property 2: Simplification Preserves Net
   });
 });
 
+// ============================================================================
+// Property 3: Simplification Reduces Transaction Count
+// Feature: debt-simplification, Property 3: Transaction Count Reduction
+// Validates: Requirements 2.1
+// ============================================================================
+
+describe('Feature: debt-simplification, Property 3: Transaction Count Reduction', () => {
+  it('transactionsSaved must equal max(0, original count minus simplified count)', () => {
+    fc.assert(
+      fc.property(arbitraryDebtEdgeList(0, 20), (debts) => {
+        const result = simplifyDebts(debts);
+
+        expect(result.transactionsSaved).toBe(
+          Math.max(0, result.original.length - result.simplified.length),
+        );
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  it('simplified output must not exceed N-1 transactions where N is users with non-zero balances', () => {
+    fc.assert(
+      fc.property(arbitraryDebtEdgeList(1, 20), (debts) => {
+        const result = simplifyDebts(debts);
+        const balances = computeNetBalances(debts);
+
+        // Count users with non-zero net balance (within tolerance)
+        let nonZeroCount = 0;
+        for (const balance of balances.values()) {
+          if (Math.abs(roundTo2(balance)) > 0.01) {
+            nonZeroCount++;
+          }
+        }
+
+        const upperBound = nonZeroCount > 0 ? nonZeroCount - 1 : 0;
+        expect(result.simplified.length).toBeLessThanOrEqual(upperBound);
+      }),
+      { numRuns: 100 },
+    );
+  });
+});
+
 // Export generators for reuse in subsequent property test files (1.3-1.8)
 export { arbitraryUserId, arbitraryDebtEdge, arbitraryDebtEdgeList, computeNetBalances, roundTo2 };
