@@ -2,7 +2,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { InfoIcon } from "@/components/ui/icons";
+import { InfoIcon, Loader2Icon } from "@/components/ui/icons";
 import {
   Tooltip,
   TooltipContent,
@@ -17,6 +17,7 @@ interface SimplifiedDebtsToggleProps {
   rawCount: number;
   simplifiedCount: number;
   disabled?: boolean;
+  isUpdating?: boolean;
 }
 
 /**
@@ -35,6 +36,7 @@ export function SimplifiedDebtsToggle({
   rawCount,
   simplifiedCount,
   disabled = false,
+  isUpdating = false,
 }: SimplifiedDebtsToggleProps) {
   const { t } = useTranslation();
 
@@ -52,8 +54,11 @@ export function SimplifiedDebtsToggle({
           id="simplify-debts"
           checked={isSimplified}
           onCheckedChange={onToggle}
-          disabled={disabled || rawCount === 0}
+          disabled={disabled || isUpdating || rawCount === 0}
         />
+        {isUpdating && (
+          <Loader2Icon className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+        )}
         <Label
           htmlFor="simplify-debts"
           className="text-sm font-medium cursor-pointer"
