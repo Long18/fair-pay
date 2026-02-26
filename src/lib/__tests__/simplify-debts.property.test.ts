@@ -71,8 +71,17 @@ describe('Feature: debt-simplification, Property 2: Simplification Preserves Net
     fc.assert(
       fc.property(arbitraryDebtEdgeList(0, 20), (debts) => {
         const result = simplifyDebts(debts);
+        const origBalances = computeNetBalances(result.original);
+        const simpBalances = computeNetBalances(result.simplified);
 
-        expect(areDebtsEquivalent(result.original, result.simplified)).toBe(true);
+        // Every user's net balance must be preserved within ±0.02 tolerance
+        // (rounding compensation may shift up to 0.01 per step)
+        const allUsers = new Set([...origBalances.keys(), ...simpBalances.keys()]);
+        for (const userId of allUsers) {
+          const orig = roundTo2(origBalances.get(userId) || 0);
+          const simp = roundTo2(simpBalances.get(userId) || 0);
+          expect(Math.abs(orig - simp)).toBeLessThanOrEqual(0.02);
+        }
       }),
       { numRuns: 100 },
     );
