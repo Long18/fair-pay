@@ -143,7 +143,7 @@ export const CommentItem = memo(({
   };
 
   return (
-    <div className={cn("group", isReply && "ml-8 md:ml-10")}>
+    <div id={`comment-${comment.id}`} className={cn("group scroll-mt-20", isReply && "ml-8 md:ml-10")}>
       <div className="flex gap-2.5">
         {/* Commenter avatar — wrapped in MentionProfileCard */}
         <MentionProfileCard userId={comment.user_id} displayText={comment.user.full_name} className="shrink-0">

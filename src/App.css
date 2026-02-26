@@ -1086,3 +1086,14 @@
 .animate-beam-node-float {
   animation: beam-node-float 3s ease-in-out infinite;
 }
+
+/* Scroll-to-comment highlight animation (Facebook-style) */
+@keyframes comment-highlight-fade {
+  0% { background-color: hsl(var(--primary) / 0.15); }
+  100% { background-color: transparent; }
+}
+
+.highlight-comment {
+  animation: comment-highlight-fade 3s ease-out forwards;
+  border-radius: 0.5rem;
+}
