@@ -21,8 +21,37 @@ export const calculateBalances = (
 ): UserBalance[] => {
     // Initialize balance for each member
     const balanceMap = new Map<string, number>();
+    const memberIds = new Set<string>();
     members.forEach(member => {
       balanceMap.set(member.id, 0);
+      memberIds.add(member.id);
+    });
+
+    // Include users from expenses/payments who may have been removed from the group
+    expenses.forEach((expense: any) => {
+      const paidBy = expense.paid_by_user_id;
+      if (!memberIds.has(paidBy)) {
+        balanceMap.set(paidBy, 0);
+        memberIds.add(paidBy);
+      }
+      const splits = expense.splits || expense.expense_splits || [];
+      splits.forEach((split: any) => {
+        if (!memberIds.has(split.user_id)) {
+          balanceMap.set(split.user_id, 0);
+          memberIds.add(split.user_id);
+        }
+      });
+    });
+
+    payments.forEach(payment => {
+      if (!memberIds.has(payment.from_user)) {
+        balanceMap.set(payment.from_user, 0);
+        memberIds.add(payment.from_user);
+      }
+      if (!memberIds.has(payment.to_user)) {
+        balanceMap.set(payment.to_user, 0);
+        memberIds.add(payment.to_user);
+      }
     });
 
     // Process expenses
@@ -62,13 +91,17 @@ export const calculateBalances = (
       }
     });
 
-    // Convert to array and add member details
-    const balances: UserBalance[] = members.map(member => ({
-      user_id: member.id,
-      user_name: member.full_name,
-      avatar_url: member.avatar_url || null,
-      balance: Math.round((balanceMap.get(member.id) || 0) * 100) / 100, // Round to 2 decimals
-    }));
+    // Convert all users in balanceMap (including removed members) to UserBalance array
+    const memberLookup = new Map(members.map(m => [m.id, m]));
+    const balances: UserBalance[] = Array.from(balanceMap.entries()).map(([userId, balance]) => {
+      const member = memberLookup.get(userId);
+      return {
+        user_id: userId,
+        user_name: member?.full_name || "Former Member",
+        avatar_url: member?.avatar_url || null,
+        balance: Math.round(balance * 100) / 100,
+      };
+    });
 
     // Sort: debts first (negative), then credits (positive)
     return balances.sort((a, b) => a.balance - b.balance);
