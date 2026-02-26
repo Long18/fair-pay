@@ -1,5 +1,8 @@
+import { useEffect, useRef } from "react";
 import { useCustom } from "@refinedev/core";
 import { supabaseClient } from "@/utility/supabaseClient";
+import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export interface SimplifiedDebt {
   from_user_id: string;
@@ -22,14 +25,20 @@ interface UseSimplifiedDebtsProps {
  * This reduces complex multi-party transactions into minimal direct payments.
  * Example: Instead of A→B $10, B→C $15, C→A $5, returns: B→C $5 (67% reduction)
  *
+ * Falls back gracefully when server-side RPC is unavailable, returning error state
+ * so consumers can switch to client-side calculation.
+ *
  * @param groupId - The group ID to simplify debts for
  * @param enabled - Whether to enable the query (default: true if groupId exists)
- * @returns Simplified debt list with loading/error states
+ * @returns Simplified debt list with loading/error/fallback states
  */
 export const useSimplifiedDebts = ({
   groupId,
   enabled = true,
 }: UseSimplifiedDebtsProps) => {
+  const { t } = useTranslation();
+  const hasShownFallbackToast = useRef(false);
+
   const result = useCustom<SimplifiedDebt[]>({
     url: "",
     method: "get",
@@ -58,11 +67,26 @@ export const useSimplifiedDebts = ({
     },
   });
 
+  const isError = result.query.isError;
+
+  // Show info toast once when RPC fails, reset when error clears
+  useEffect(() => {
+    if (isError && !hasShownFallbackToast.current) {
+      hasShownFallbackToast.current = true;
+      toast.info(t("debts.usingLocalCalculation", "Using local calculation."));
+    }
+    if (!isError) {
+      hasShownFallbackToast.current = false;
+    }
+  }, [isError, t]);
+
   const simplifiedDebts = result.query.data?.data || [];
 
   return {
     simplifiedDebts,
     isLoading: result.query.isLoading,
+    isError,
+    isFallback: isError,
     error: result.query.error,
     refetch: result.query.refetch,
     // Convenience properties
