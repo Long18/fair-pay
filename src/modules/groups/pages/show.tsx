@@ -11,6 +11,7 @@ import { AddMemberModal } from "../components/add-member-modal";
 import { RecurringExpenseList } from "@/modules/expenses";
 import { SimplifiedBalanceView, PaymentList, useBalanceCalculation } from "@/modules/payments";
 import { SimplifiedDebtsToggle } from "@/components/dashboard/SimplifiedDebtsToggle";
+import { useSimplifyDebtsSetting } from "../hooks/use-simplify-debts-setting";
 import { useSimplifiedDebts } from "@/hooks/use-simplified-debts";
 import { useSettleAllGroupDebts } from "@/hooks/use-bulk-operations";
 import { useCategoryBreakdown } from "@/hooks/use-category-breakdown";
@@ -74,10 +75,6 @@ export const GroupShow = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [addMemberModalOpen, setAddMemberModalOpen] = useState(false);
-  const [useServerSimplification, setUseServerSimplification] = useState(() => {
-    const saved = localStorage.getItem(`group-${id}-use-server-simplification`);
-    return saved === "true";
-  });
   const [settleAllDialogOpen, setSettleAllDialogOpen] = useState(false);
   const [quickSettleDialogOpen, setQuickSettleDialogOpen] = useState(false);
   const [selectedSettlement, setSelectedSettlement] = useState<{
@@ -195,6 +192,17 @@ export const GroupShow = () => {
   const isArchived = group?.is_archived ?? false;
   const canManage = isAdmin || isCreator;
 
+  const {
+    isSimplified: useServerSimplification,
+    isUpdating: isUpdatingSimplification,
+    toggleSimplification,
+    canToggle,
+  } = useSimplifyDebtsSetting({
+    groupId: id!,
+    groupData: group,
+    isAdmin: canManage,
+  });
+
   const unsettledSplits = expenses.flatMap((e: any) =>
     (e.expense_splits || []).filter((s: any) => !s.is_settled)
   );
@@ -297,11 +305,6 @@ export const GroupShow = () => {
     } catch (error: any) {
       toast.error(`Failed to record payment: ${error.message}`);
     }
-  };
-
-  const handleToggleSimplification = (enabled: boolean) => {
-    setUseServerSimplification(enabled);
-    localStorage.setItem(`group-${id}-use-server-simplification`, enabled.toString());
   };
 
   const handleSettleAll = async () => {
@@ -727,14 +730,14 @@ export const GroupShow = () => {
                     </CardHeader>
                     <CardContent>
                       {/* Debt Simplification Toggle */}
-                      {allMembers.length >= 3 && balances.some(b => b.balance !== 0) && (
+                      {canToggle && allMembers.length >= 3 && balances.some(b => b.balance !== 0) && (
                         <div className="mb-4">
                           <SimplifiedDebtsToggle
                             isSimplified={useServerSimplification}
-                            onToggle={handleToggleSimplification}
+                            onToggle={toggleSimplification}
                             rawCount={balances.filter(b => b.balance !== 0).length}
                             simplifiedCount={simplifiedCount}
-                            disabled={isLoadingSimplified}
+                            disabled={isLoadingSimplified || isUpdatingSimplification}
                           />
                         </div>
                       )}
