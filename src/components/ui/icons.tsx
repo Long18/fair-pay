@@ -120,6 +120,7 @@ import {
   Send,
   CornerDownRight,
   AtSign,
+  Undo2,
 } from "lucide-react";
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -947,4 +948,8 @@ export const CornerDownRightIcon: React.FC<IconProps> = ({ size = 24, ...props }
 
 export const AtSignIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
   <AtSign size={size} {...props} />
+);
+
+export const Undo2Icon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Undo2 size={size} {...props} />
 );
