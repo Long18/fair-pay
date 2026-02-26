@@ -162,16 +162,18 @@ export const useNotifications = () => {
                     },
                     createElement(NotificationToast, { notification: n })
                   ),
-                { duration: 5000 }
+                { duration: 5000, position: "bottom-left" }
               );
             };
 
             if (raw.actor_id) {
-              supabaseClient
-                .from("profiles")
-                .select("full_name, avatar_url")
-                .eq("id", raw.actor_id)
-                .single()
+              Promise.resolve(
+                supabaseClient
+                  .from("profiles")
+                  .select("full_name, avatar_url")
+                  .eq("id", raw.actor_id)
+                  .single()
+              )
                 .then(({ data: profile }) => {
                   showToast({
                     ...raw,
