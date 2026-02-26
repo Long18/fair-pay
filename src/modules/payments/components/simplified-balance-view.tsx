@@ -13,7 +13,8 @@ import { useSimplifiedBalances, useMySimplifiedDebts } from "../hooks/use-simpli
 import { UserBalance } from "../types";
 import { formatCurrency as formatCurrencyUtil } from "@/lib/locale-utils";
 
-import { ArrowRightIcon, InfoIcon, CheckCircle2Icon } from "@/components/ui/icons";
+import { ArrowRightIcon, CheckCircle2Icon } from "@/components/ui/icons";
+import { ComparisonBanner } from "./comparison-banner";
 interface SimplifiedBalanceViewProps {
   balances: UserBalance[];
   currentUserId: string;
@@ -47,25 +48,15 @@ export const SimplifiedBalanceView = ({
 
   return (
     <div className="space-y-6">
-      {/* Simplification Info Banner */}
+      {/* Simplification Comparison Banner */}
       {simplifyDebts && simplifiedBalances.transactionsSaved > 0 && (
-        <Card className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-3">
-              <InfoIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-              <div>
-                <p className="font-medium text-blue-900 dark:text-blue-100">
-                  Debts Simplified
-                </p>
-                <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                  {simplifiedBalances.transactionsSaved} transaction
-                  {simplifiedBalances.transactionsSaved !== 1 ? "s" : ""} eliminated.
-                  The payments below represent the most efficient way to settle all debts.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <ComparisonBanner
+          originalCount={simplifiedBalances.originalDebts.length}
+          simplifiedCount={simplifiedBalances.simplifiedDebts.length}
+          originalDebts={simplifiedBalances.originalDebts}
+          simplifiedDebts={simplifiedBalances.simplifiedDebts}
+          currency={currency === "VND" ? "₫" : currency}
+        />
       )}
 
       {/* Summary Cards */}
