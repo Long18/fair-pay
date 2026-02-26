@@ -50,7 +50,7 @@ export const NotificationToast = ({ notification }: NotificationToastProps) => {
     <div className="flex items-start gap-3 w-full">
       {/* Avatar with type badge */}
       <div className="relative flex-shrink-0">
-        <Avatar className="h-9 w-9">
+        <Avatar className="h-10 w-10">
           {notification.actor_avatar ? (
             <AvatarImage
               src={notification.actor_avatar}
@@ -64,20 +64,20 @@ export const NotificationToast = ({ notification }: NotificationToastProps) => {
         <div
           className={cn(
             "absolute -bottom-0.5 -right-0.5 flex items-center justify-center",
-            "h-4 w-4 rounded-full border-2 border-background",
+            "h-5 w-5 rounded-full border-2 border-popover",
             meta.bg
           )}
         >
-          <Icon className={cn("h-2 w-2", meta.color)} />
+          <Icon className={cn("h-2.5 w-2.5", meta.color)} />
         </div>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground truncate">
-          {notification.title}
+        <p className="text-sm text-foreground leading-snug line-clamp-2">
+          <span className="font-semibold">{notification.actor_name || "Someone"}</span>
+          {" "}
+          <span className="text-muted-foreground">{notification.message}</span>
         </p>
-        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-          {notification.message}
-        </p>
+        <p className="text-xs text-primary font-medium mt-1">Just now</p>
       </div>
     </div>
   );

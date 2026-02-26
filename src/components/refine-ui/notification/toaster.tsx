@@ -15,6 +15,7 @@ export function Toaster({ ...props }: ToasterProps) {
   return (
     <Sonner
       theme={effectiveTheme as ToasterProps["theme"]}
+      position="bottom-left"
       className="toaster group"
       style={
         {
