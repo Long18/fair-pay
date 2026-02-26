@@ -16,7 +16,7 @@ RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, pg_temp
-AS $
+AS $$
 DECLARE
   v_current_user_id UUID;
   v_is_system_admin BOOLEAN;
@@ -60,7 +60,7 @@ BEGIN
     'splits_updated', v_updated
   );
 END;
-$;
+$$;
 
 COMMENT ON FUNCTION public.settle_splits_batch(UUID[]) IS
   'Batch settle splits by IDs. Only the payer or system admin can settle. Sets settled_amount = computed_amount for each split.';
@@ -77,7 +77,7 @@ RETURNS JSONB
 SECURITY DEFINER
 SET search_path = public, pg_temp
 LANGUAGE plpgsql
-AS $
+AS $$
 DECLARE
   v_current_user_id UUID;
   v_is_system_admin BOOLEAN;
@@ -215,7 +215,7 @@ BEGIN
     'split_ids', v_split_ids
   );
 END;
-$;
+$$;
 
 COMMENT ON FUNCTION settle_all_splits_for_user(UUID) IS
 'Settle all unpaid splits for a SPECIFIC USER (profile-based operation).
@@ -234,7 +234,7 @@ RETURNS JSONB
 SECURITY DEFINER
 SET search_path = public, pg_temp
 LANGUAGE plpgsql
-AS $
+AS $$
 DECLARE
   v_current_user_id UUID;
   v_is_system_admin BOOLEAN;
@@ -357,7 +357,7 @@ BEGIN
     'split_ids', v_split_ids
   );
 END;
-$;
+$$;
 
 COMMENT ON FUNCTION settle_all_debts_with_person(UUID) IS
 'Settle all outstanding debts between CURRENT USER and specified counterparty.
