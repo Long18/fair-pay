@@ -546,7 +546,8 @@
         "simplified": "Simplified",
         "calculating": "Calculating simplified debts...",
         "allSettled": "All settled up! No debts to simplify.",
-        "optimizedTransactions": "Optimized transactions using Min-Cost Max-Flow algorithm"
+        "optimizedTransactions": "Optimized transactions using Min-Cost Max-Flow algorithm",
+        "usingLocalCalculation": "Using local calculation."
     },
     "bulk": {
         "selected": "{{count}} selected",

@@ -545,7 +545,8 @@
         "simplified": "Đã tối giản",
         "calculating": "Đang tính toán nợ tối giản...",
         "allSettled": "Đã thanh toán hết! Không có nợ cần tối giản.",
-        "optimizedTransactions": "Giao dịch tối ưu sử dụng thuật toán Min-Cost Max-Flow"
+        "optimizedTransactions": "Giao dịch tối ưu sử dụng thuật toán Min-Cost Max-Flow",
+        "usingLocalCalculation": "Đang sử dụng tính toán cục bộ."
     },
     "bulk": {
         "selected": "{{count}} đã chọn",
