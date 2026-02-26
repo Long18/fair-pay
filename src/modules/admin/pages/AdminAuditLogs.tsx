@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { supabaseClient } from "@/utility/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -26,6 +27,16 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -49,6 +60,7 @@ import {
   Loader2Icon,
   DownloadIcon,
   RefreshCwIcon,
+  Undo2Icon,
 } from "@/components/ui/icons";
 import { formatDate } from "@/lib/locale-utils";
 import type { AuditLogEntry, AuditLogsResponse, AuditStats, AuditFilterOptions } from "../types";
@@ -331,6 +343,98 @@ function AuditDetailDialog({
 }
 
 
+// ─── Revert Audit Entry ─────────────────────────────────────────────
+
+function useRevertAuditEntry() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    { success: boolean; reverted_audit_id: string; action: string; table_name: string; record_id: string },
+    Error,
+    string
+  >({
+    mutationFn: async (auditId: string) => {
+      const { data, error } = await supabaseClient.rpc("admin_revert_audit_entry", {
+        p_audit_id: auditId,
+      });
+      if (error) throw new Error(error.message);
+      return data as { success: boolean; reverted_audit_id: string; action: string; table_name: string; record_id: string };
+    },
+    onSuccess: (data) => {
+      toast.success(`Đã hoàn tác thao tác ${data.action} trên bảng ${data.table_name}`);
+      queryClient.invalidateQueries({ queryKey: ["admin-audit-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-audit-stats"] });
+    },
+    onError: (error) => {
+      toast.error(`Lỗi hoàn tác: ${error.message}`);
+    },
+  });
+}
+
+function canRevertEntry(entry: AuditLogEntry): boolean {
+  // Only audit_logs source entries (not audit_trail) can be reverted
+  // Must have old_data (for UPDATE/DELETE) or new_data (for INSERT)
+  if (entry.source !== "audit_logs") return false;
+  if (entry.action_type === "DELETE" && entry.old_data) return true;
+  if (entry.action_type === "UPDATE" && entry.old_data) return true;
+  if (entry.action_type === "INSERT" && entry.entity_id) return true;
+  return false;
+}
+
+function RevertAuditDialog({
+  entry,
+  open,
+  onOpenChange,
+  onConfirm,
+  isReverting,
+}: {
+  entry: AuditLogEntry | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+  isReverting: boolean;
+}) {
+  if (!entry) return null;
+
+  const actionLabel =
+    entry.action_type === "DELETE"
+      ? "khôi phục bản ghi đã xóa"
+      : entry.action_type === "UPDATE"
+        ? "hoàn tác về dữ liệu cũ"
+        : "xóa bản ghi đã tạo";
+
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Xác nhận hoàn tác</AlertDialogTitle>
+          <AlertDialogDescription>
+            Bạn sắp {actionLabel} trong bảng <span className="font-mono font-semibold">{entry.table_name}</span>.
+            Thao tác này sẽ được ghi lại trong audit trail.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isReverting}>Hủy</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm} disabled={isReverting}>
+            {isReverting ? (
+              <>
+                <Loader2Icon className="h-4 w-4 animate-spin mr-2" />
+                Đang hoàn tác...
+              </>
+            ) : (
+              <>
+                <Undo2Icon className="h-4 w-4 mr-2" />
+                Hoàn tác
+              </>
+            )}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+
 // ─── Export CSV ─────────────────────────────────────────────────────
 
 function exportToCsv(entries: AuditLogEntry[]) {
@@ -375,6 +479,10 @@ export function AdminAuditLogs() {
 
   const [selectedEntry, setSelectedEntry] = useState<AuditLogEntry | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [revertEntry, setRevertEntry] = useState<AuditLogEntry | null>(null);
+  const [revertDialogOpen, setRevertDialogOpen] = useState(false);
+
+  const revertMutation = useRevertAuditEntry();
 
   // Reset page when filters change
   useEffect(() => {
@@ -693,6 +801,7 @@ export function AdminAuditLogs() {
                       <TableHead className="w-[130px]">Bảng</TableHead>
                       <TableHead className="w-[80px]">Nguồn</TableHead>
                       <TableHead>Chi tiết</TableHead>
+                      <TableHead className="w-[80px] text-center">Hoàn tác</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -736,6 +845,24 @@ export function AdminAuditLogs() {
                         <TableCell className="text-sm text-muted-foreground truncate max-w-[200px] group-hover:text-foreground transition-colors">
                           {getDetailSummary(entry)}
                         </TableCell>
+                        <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                          {canRevertEntry(entry) ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-orange-600"
+                              aria-label="Hoàn tác thao tác này"
+                              onClick={() => {
+                                setRevertEntry(entry);
+                                setRevertDialogOpen(true);
+                              }}
+                            >
+                              <Undo2Icon className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-muted-foreground/40">—</span>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -764,6 +891,28 @@ export function AdminAuditLogs() {
 
       {/* Detail Dialog */}
       <AuditDetailDialog entry={selectedEntry} open={detailOpen} onOpenChange={setDetailOpen} />
+
+      {/* Revert Dialog */}
+      <RevertAuditDialog
+        entry={revertEntry}
+        open={revertDialogOpen}
+        onOpenChange={(open) => {
+          setRevertDialogOpen(open);
+          if (!open) setRevertEntry(null);
+        }}
+        onConfirm={() => {
+          if (revertEntry) {
+            revertMutation.mutate(revertEntry.id, {
+              onSuccess: () => {
+                setRevertDialogOpen(false);
+                setRevertEntry(null);
+                refetch();
+              },
+            });
+          }
+        }}
+        isReverting={revertMutation.isPending}
+      />
     </div>
   );
 }
