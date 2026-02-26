@@ -79,9 +79,15 @@ export const PersonDebtBreakdown = () => {
     return expenses.filter(exp => !exp.is_settled);
   }, [expenses]);
 
-  const selectableExpenses = useMemo(() => {
-    return unsettledExpenses.filter(exp => exp.my_share > 0);
-  }, [unsettledExpenses]);
+  // Only allow selecting expenses where current user is the PAYER (they_owe direction)
+  // or user is admin — debtors cannot settle their own splits
+  const canSettleExpenses = useMemo(() => {
+    return unsettledExpenses.filter(exp => 
+      exp.my_share > 0 && (userIsAdmin || exp.direction === 'they_owe')
+    );
+  }, [unsettledExpenses, userIsAdmin]);
+
+  const selectableExpenses = canSettleExpenses;
 
   // Calculate selected amount
   const selectedAmount = useMemo(() => {

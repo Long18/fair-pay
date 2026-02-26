@@ -90,6 +90,7 @@ import {
 import { dispatchSettlementEvent } from "@/lib/settlement-events";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { isAdmin } from "@/lib/rbac";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -167,6 +168,14 @@ export const BalancesPage = () => {
   const [settleAllDialogOpen, setSettleAllDialogOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSettling, setIsSettling] = useState(false);
+  const [userIsAdmin, setUserIsAdmin] = useState(false);
+
+  // Check admin status
+  React.useEffect(() => {
+    if (identity?.id) {
+      isAdmin().then(setUserIsAdmin);
+    }
+  }, [identity?.id]);
   const [activeTab, setActiveTab] = usePersistedState<MergedTab>(
     "balances-merged-tab",
     "charts"
@@ -293,11 +302,14 @@ export const BalancesPage = () => {
   };
 
   const handleSettleAll = async () => {
-    if (!identity?.id || iOwe.length === 0) return;
+    if (!identity?.id) return;
+    // Admin can settle iOwe debts (debtor's debts), non-admin can only settle owedToMe (creditor's debts)
+    const debtsToSettle = userIsAdmin ? iOwe : owedToMe;
+    if (debtsToSettle.length === 0) return;
     setIsSettling(true);
     try {
       const { supabaseClient } = await import("@/utility/supabaseClient");
-      const settleableDebts = iOwe.filter((debt) => debt.counterparty_id != null);
+      const settleableDebts = debtsToSettle.filter((debt) => debt.counterparty_id != null);
       await Promise.all(
         settleableDebts.map((debt) =>
           supabaseClient.rpc("settle_all_debts_with_person", {
@@ -848,6 +860,8 @@ export const BalancesPage = () => {
                                 onClick={() => setSettleAllDialogOpen(true)}
                                 className="gap-1.5 h-8 text-xs shrink-0 border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800/40 dark:text-green-400 dark:hover:bg-green-950/30"
                                 aria-label={t("balances.settleAll", "Settle All")}
+                                disabled={!userIsAdmin}
+                                title={!userIsAdmin ? t("balances.onlyAdminCanSettle", "Only admin can settle debts you owe") : undefined}
                               >
                                 <CheckCircle2Icon className="h-3.5 w-3.5" />
                                 {t("balances.settleAll", "Settle All")}
@@ -876,7 +890,24 @@ export const BalancesPage = () => {
                       {/* Owed to You sub-tab */}
                       <TabsContent value="owed-to-you" className="space-y-3 mt-0">
                         {owedToMe.length > 0 ? (
-                          <SimplifiedDebts debts={owedToMe} isLoading={isBalancesLoading} />
+                          <>
+                            <div className="flex items-center justify-between px-1 mb-2">
+                              <p className="text-sm text-muted-foreground">
+                                {t("balances.owedToYouCount", "{{count}} people owe you", { count: owedToMe.length })}
+                              </p>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSettleAllDialogOpen(true)}
+                                className="gap-1.5 h-8 text-xs shrink-0 border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800/40 dark:text-green-400 dark:hover:bg-green-950/30"
+                                aria-label={t("balances.settleAll", "Settle All")}
+                              >
+                                <CheckCircle2Icon className="h-3.5 w-3.5" />
+                                {t("balances.settleAll", "Settle All")}
+                              </Button>
+                            </div>
+                            <SimplifiedDebts debts={owedToMe} isLoading={isBalancesLoading} />
+                          </>
                         ) : (
                           <Card className="border-0 shadow-sm">
                             <CardContent className="py-12 text-center">
@@ -919,11 +950,17 @@ export const BalancesPage = () => {
                 {t("balances.settleAllTitle", "Settle All Debts?")}
               </AlertDialogTitle>
               <AlertDialogDescription>
-                {t("balances.settleAllDescription", {
-                  count: iOwe.length,
-                  amount: formatNumber(totalIOwe),
-                  defaultValue: `Are you sure you want to settle all ${iOwe.length} debts totaling ₫${formatNumber(totalIOwe)}? This action cannot be undone.`,
-                })}
+                {userIsAdmin
+                  ? t("balances.settleAllDescription", {
+                      count: iOwe.length,
+                      amount: formatNumber(totalIOwe),
+                      defaultValue: `Are you sure you want to settle all ${iOwe.length} debts totaling ₫${formatNumber(totalIOwe)}? This action cannot be undone.`,
+                    })
+                  : t("balances.settleAllOwedDescription", {
+                      count: owedToMe.length,
+                      defaultValue: `Mark all ${owedToMe.length} debts owed to you as settled? This action cannot be undone.`,
+                    })
+                }
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
