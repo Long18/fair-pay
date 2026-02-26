@@ -263,6 +263,61 @@ describe('useBalanceCalculation', () => {
       });
     });
 
+    it('should include removed members who have expenses', () => {
+      // user-4 is NOT in mockMembers but paid for an expense
+      const expenses: ExpenseWithSplits[] = [
+        {
+          id: 'exp-1',
+          paid_by_user_id: 'user-4',
+          amount: 100,
+          splits: [
+            { user_id: 'user-1', computed_amount: 50 },
+            { user_id: 'user-4', computed_amount: 50 },
+          ],
+        } as any,
+      ];
+
+      const { result } = renderHook(() =>
+        useBalanceCalculation({
+          expenses,
+          payments: [],
+          currentUserId: 'user-1',
+          members: mockMembers,
+        })
+      );
+
+      const removedMember = result.current.find(b => b.user_id === 'user-4');
+      expect(removedMember).toBeDefined();
+      expect(removedMember?.user_name).toBe('Former Member');
+      expect(removedMember?.balance).toBe(50); // Paid 100, owes 50 = +50
+    });
+
+    it('should include removed members who have payments', () => {
+      const payments: Payment[] = [
+        {
+          id: 'pay-1',
+          from_user: 'user-5',
+          to_user: 'user-1',
+          amount: 30,
+        } as any,
+      ];
+
+      const { result } = renderHook(() =>
+        useBalanceCalculation({
+          expenses: [],
+          payments,
+          currentUserId: 'user-1',
+          members: mockMembers,
+        })
+      );
+
+      const removedMember = result.current.find(b => b.user_id === 'user-5');
+      expect(removedMember).toBeDefined();
+      expect(removedMember?.user_name).toBe('Former Member');
+      expect(removedMember?.avatar_url).toBeNull();
+      expect(removedMember?.balance).toBe(-30); // Paid 30 to user-1
+    });
+
     it('should sort balances (debts first, then credits)', () => {
       const expenses: ExpenseWithSplits[] = [
         {
