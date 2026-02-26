@@ -14,18 +14,26 @@ type UndoableNotificationProps = {
 export function UndoableNotification({
   message,
   description,
-  undoableTimeout = 5,
+  undoableTimeout = 10,
   cancelMutation,
   onClose,
 }: UndoableNotificationProps) {
   const t = useTranslate();
+  const [remaining, setRemaining] = React.useState(undoableTimeout);
 
   React.useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose?.();
-    }, undoableTimeout * 1000);
+    const interval = setInterval(() => {
+      setRemaining((prev) => {
+        if (prev <= 0.1) {
+          clearInterval(interval);
+          onClose?.();
+          return 0;
+        }
+        return prev - 0.1;
+      });
+    }, 100);
 
-    return () => clearTimeout(timer);
+    return () => clearInterval(interval);
   }, [onClose, undoableTimeout]);
 
   const handleUndo = () => {
@@ -33,27 +41,22 @@ export function UndoableNotification({
     onClose?.();
   };
 
+  const progress = (remaining / undoableTimeout) * 100;
+
   return (
     <div
       className={cn(
-        "bg-card",
-        "text-card-foreground",
-        "rounded-lg",
-        "p-4",
-        "shadow-xl",
-        "border",
-        "border-border",
-        "min-w-[320px]",
-        "max-w-md"
+        "bg-card text-card-foreground rounded-lg shadow-xl border border-border",
+        "min-w-[320px] max-w-md overflow-hidden"
       )}
     >
-      <div className={cn("flex", "items-center", "justify-between")}>
-        <div className={cn("flex-1", "mr-4")}>
-          <div className={cn("font-medium", "text-foreground", "text-sm")}>
+      <div className="flex items-center justify-between p-4">
+        <div className="flex-1 mr-4">
+          <div className="font-medium text-foreground text-sm">
             {message}
           </div>
           {description && (
-            <div className={cn("text-muted-foreground", "text-sm", "mt-1")}>
+            <div className="text-muted-foreground text-sm mt-1">
               {description}
             </div>
           )}
@@ -62,20 +65,17 @@ export function UndoableNotification({
           variant="secondary"
           size="sm"
           onClick={handleUndo}
-          className={cn(
-            "bg-secondary",
-            "hover:bg-secondary/80",
-            "text-secondary-foreground",
-            "border-0",
-            "px-4",
-            "py-2",
-            "text-sm",
-            "font-medium",
-            "rounded-md"
-          )}
+          className="px-4 py-2 text-sm font-medium rounded-md"
         >
-          {t("buttons.undo", "Undo")}
+          {t("buttons.undo", "Undo")} ({Math.ceil(remaining)}s)
         </Button>
+      </div>
+      {/* Countdown progress bar */}
+      <div className="h-1 w-full bg-muted">
+        <div
+          className="h-full bg-primary transition-all duration-100 ease-linear"
+          style={{ width: `${progress}%` }}
+        />
       </div>
     </div>
   );

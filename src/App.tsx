@@ -174,6 +174,8 @@ function App() {
                 options={{
                   syncWithLocation: true,
                   warnWhenUnsavedChanges: true,
+                  mutationMode: "undoable",
+                  undoableTimeout: 10000,
                   projectId: "efvxeD-2r07zg-niV06o",
                   // Application branding - controls browser tab title and sidebar display
                   title: {
