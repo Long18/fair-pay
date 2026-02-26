@@ -812,7 +812,7 @@ export const ProfileShowUnified = () => {
           onEditClick={() => setEditMode(true)}
           onShareClick={handleShareProfile}
           onSettleClick={() => setSettleDialogOpen(true)}
-          showSettle={netBalance !== 0 && !isOwnProfile}
+          showSettle={netBalance !== 0 && !isOwnProfile && (netBalance > 0 || isUserAdmin)}
         />
       )}
 
