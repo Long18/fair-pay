@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { createElement, useEffect, useState, useCallback, useRef } from "react";
 import { useGetIdentity, useList, useUpdate, useGo } from "@refinedev/core";
 import { toast } from "sonner";
 import { supabaseClient } from "@/utility";
@@ -136,8 +136,29 @@ export const useNotifications = () => {
           table: "notifications",
           filter: `user_id=eq.${identity.id}`,
         },
-        (payload) => {
-          const newNotification = payload.new as Notification;
+        async (payload) => {
+          const raw = payload.new as Notification;
+
+          // Enrich with actor profile for avatar/name display
+          let enriched = { ...raw };
+          if (raw.actor_id) {
+            try {
+              const { data: profile } = await supabaseClient
+                .from("profiles")
+                .select("full_name, avatar_url")
+                .eq("id", raw.actor_id)
+                .single();
+              if (profile) {
+                enriched = {
+                  ...enriched,
+                  actor_name: profile.full_name ?? undefined,
+                  actor_avatar: profile.avatar_url ?? undefined,
+                };
+              }
+            } catch {
+              // Profile fetch failed — toast will show fallback initials
+            }
+          }
 
           // Refetch to update React Query cache
           query.refetch();
@@ -147,22 +168,25 @@ export const useNotifications = () => {
 
           // Show in-app toast only on desktop
           if (!isMobileRef.current) {
-            toast(
-              () => NotificationToast({ notification: newNotification }),
-              {
-                duration: 5000,
-                action: newNotification.link
-                  ? {
-                      label: "View",
-                      onClick: () => go({ to: newNotification.link! }),
-                    }
-                  : undefined,
-              }
+            toast.custom(
+              (t) =>
+                createElement(
+                  "div",
+                  {
+                    className: "flex items-center gap-3 w-full cursor-pointer",
+                    onClick: () => {
+                      if (enriched.link) go({ to: enriched.link });
+                      toast.dismiss(t);
+                    },
+                  },
+                  createElement(NotificationToast, { notification: enriched })
+                ),
+              { duration: 5000 }
             );
           }
 
           // Browser notification when tab is not focused
-          sendBrowserNotification(newNotification);
+          sendBrowserNotification(enriched);
         }
       )
       .on(
