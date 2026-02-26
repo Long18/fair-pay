@@ -93,5 +93,30 @@
       "tapToOpenBank": "Chạm để mở ứng dụng ngân hàng",
       "tapHint": "Chạm vào mã QR để mở ứng dụng ngân hàng trực tiếp"
     }
+  },
+  "debts": {
+    "simplify": "Tối ưu nợ",
+    "transactions": "giao dịch",
+    "fewer": "ít hơn",
+    "transactionsSaved": "Đã loại bỏ {{count}} giao dịch",
+    "originalTransactions": "Gốc",
+    "simplifiedTransactions": "Tối ưu",
+    "originalDebts": "Nợ gốc",
+    "simplifiedDebts": "Nợ tối ưu",
+    "noDebts": "Không có nợ",
+    "totalTransferred": "Tổng chuyển khoản",
+    "usingLocalCalculation": "Đang sử dụng tính toán cục bộ.",
+    "loading": "Đang tải chi tiết...",
+    "updateError": "Không thể cập nhật cài đặt. Vui lòng thử lại.",
+    "youAreOwed": "Bạn được nợ",
+    "youOwe": "Bạn nợ",
+    "netBalance": "Số dư ròng",
+    "youNeedToPay": "Bạn cần trả",
+    "simplified": "Tối ưu",
+    "simplifiedTooltip": "Đây là các khoản thanh toán tối ưu để thanh toán tất cả nợ. Chi tiết chi tiêu vẫn được giữ nguyên.",
+    "you": "Bạn",
+    "settleUp": "Thanh toán",
+    "youWillReceive": "Bạn sẽ nhận",
+    "waiting": "Đang chờ"
   }
 }
