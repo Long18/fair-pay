@@ -88,6 +88,7 @@ interface ExpenseSummaryCardProps {
   currentUser?: CommentUser | null;
   participants?: CommentUser[];
   maxVisibleComments?: number;
+  initialCommentsExpanded?: boolean;
 }
 
 export const ExpenseSummaryCard = memo(({
@@ -102,10 +103,11 @@ export const ExpenseSummaryCard = memo(({
   currentUser = null,
   participants = [],
   maxVisibleComments = 3,
+  initialCommentsExpanded = false,
 }: ExpenseSummaryCardProps) => {
   const { t, i18n } = useTranslation();
   const dateLocale = i18n.language === "vi" ? vi : enUS;
-  const [commentsExpanded, setCommentsExpanded] = useState(false);
+  const [commentsExpanded, setCommentsExpanded] = useState(initialCommentsExpanded);
 
   // Comment & reaction hooks
   const {
