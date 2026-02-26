@@ -160,7 +160,16 @@ describe('Feature: debt-simplification, Property 3: Transaction Count Reduction'
     );
   });
 
-  it('simplified output must not exceed N-1 transactions where N is users with non-zero balances', () => {
+});
+
+// ============================================================================
+// Property 4: Upper Bound on Simplified Transactions
+// Feature: debt-simplification, Property 4: Upper Bound N-1
+// Validates: Requirements 2.5
+// ============================================================================
+
+describe('Feature: debt-simplification, Property 4: Upper Bound N-1', () => {
+  it('simplified output must contain at most N-1 transactions for N members with non-zero balances', () => {
     fc.assert(
       fc.property(arbitraryDebtEdgeList(1, 20), (debts) => {
         const result = simplifyDebts(debts);
@@ -176,6 +185,21 @@ describe('Feature: debt-simplification, Property 3: Transaction Count Reduction'
 
         const upperBound = nonZeroCount > 0 ? nonZeroCount - 1 : 0;
         expect(result.simplified.length).toBeLessThanOrEqual(upperBound);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  it('when all members have zero net balance, returns empty simplified list', () => {
+    fc.assert(
+      fc.property(arbitraryDebtEdgeList(0, 20), (debts) => {
+        const balances = computeNetBalances(debts);
+        const allZero = [...balances.values()].every((b) => Math.abs(roundTo2(b)) <= 0.01);
+
+        if (allZero) {
+          const result = simplifyDebts(debts);
+          expect(result.simplified.length).toBe(0);
+        }
       }),
       { numRuns: 100 },
     );
