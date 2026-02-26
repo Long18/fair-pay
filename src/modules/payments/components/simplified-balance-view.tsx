@@ -13,6 +13,7 @@ import { useSimplifiedBalances, useMySimplifiedDebts } from "../hooks/use-simpli
 import { UserBalance } from "../types";
 import { formatCurrency as formatCurrencyUtil } from "@/lib/locale-utils";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRightIcon, CheckCircle2Icon } from "@/components/ui/icons";
 import { ComparisonBanner } from "./comparison-banner";
 interface SimplifiedBalanceViewProps {
@@ -21,6 +22,7 @@ interface SimplifiedBalanceViewProps {
   simplifyDebts: boolean;
   onSettleUp?: (toUserId: string, amount: number) => void;
   currency?: string;
+  isLoading?: boolean;
 }
 
 export const SimplifiedBalanceView = ({
@@ -29,8 +31,39 @@ export const SimplifiedBalanceView = ({
   simplifyDebts,
   onSettleUp,
   currency = "VND",
+  isLoading,
 }: SimplifiedBalanceViewProps) => {
   const { t } = useTranslation();
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="rounded-lg">
+              <CardContent className="p-3 sm:pt-6 sm:p-6">
+                <div className="text-center space-y-2">
+                  <Skeleton className="h-3 w-16 mx-auto" />
+                  <Skeleton className="h-6 w-24 mx-auto" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardContent className="pt-6 space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 p-4 border rounded-lg">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-20 ml-auto" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   const simplifiedBalances = useSimplifiedBalances({
     balances,
     simplify: simplifyDebts,
