@@ -97,7 +97,7 @@ export const SimplifiedBalanceView = ({
         <Card className="rounded-lg">
           <CardContent className="p-3 sm:pt-6 sm:p-6">
             <div className="text-center">
-              <p className="text-[10px] sm:text-sm text-muted-foreground leading-tight">You are owed</p>
+              <p className="text-[10px] sm:text-sm text-muted-foreground leading-tight">{t("debts.youAreOwed", "You are owed")}</p>
               <p className="text-base sm:text-2xl font-bold text-green-600 dark:text-green-400 mt-0.5 sm:mt-1 truncate">
                 {formatCurrency(totalOwedToMe)}
               </p>
@@ -108,7 +108,7 @@ export const SimplifiedBalanceView = ({
         <Card className="rounded-lg">
           <CardContent className="p-3 sm:pt-6 sm:p-6">
             <div className="text-center">
-              <p className="text-[10px] sm:text-sm text-muted-foreground leading-tight">You owe</p>
+              <p className="text-[10px] sm:text-sm text-muted-foreground leading-tight">{t("debts.youOwe", "You owe")}</p>
               <p className="text-base sm:text-2xl font-bold text-red-600 dark:text-red-400 mt-0.5 sm:mt-1 truncate">
                 {formatCurrency(totalIOwe)}
               </p>
@@ -119,7 +119,7 @@ export const SimplifiedBalanceView = ({
         <Card className="rounded-lg">
           <CardContent className="p-3 sm:pt-6 sm:p-6">
             <div className="text-center">
-              <p className="text-[10px] sm:text-sm text-muted-foreground leading-tight">Net balance</p>
+              <p className="text-[10px] sm:text-sm text-muted-foreground leading-tight">{t("debts.netBalance", "Net balance")}</p>
               <p
                 className={`text-base sm:text-2xl font-bold mt-0.5 sm:mt-1 truncate ${
                   netBalance > 0
@@ -142,19 +142,18 @@ export const SimplifiedBalanceView = ({
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">You Need to Pay</CardTitle>
+              <CardTitle className="text-lg">{t("debts.youNeedToPay", "You Need to Pay")}</CardTitle>
               {simplifyDebts && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Badge variant="secondary" className="cursor-help">
-                        Simplified
+                        {t("debts.simplified", "Simplified")}
                       </Badge>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="max-w-xs">
-                        These are the optimal payments to settle all your debts.
-                        Individual expense details are preserved.
+                        {t("debts.simplifiedTooltip", "These are the optimal payments to settle all your debts. Individual expense details are preserved.")}
                       </p>
                     </TooltipContent>
                   </Tooltip>
@@ -181,7 +180,7 @@ export const SimplifiedBalanceView = ({
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex items-center gap-2 flex-1">
-                      <span className="text-sm text-muted-foreground">You</span>
+                      <span className="text-sm text-muted-foreground">{t("debts.you", "You")}</span>
                       <ArrowRightIcon className="h-4 w-4 text-muted-foreground" />
                       <span className="font-medium">{debt.to_user_name}</span>
                     </div>
@@ -198,7 +197,7 @@ export const SimplifiedBalanceView = ({
                       size="sm"
                       className="ml-4"
                     >
-                      Settle Up
+                      {t("debts.settleUp", "Settle Up")}
                     </Button>
                   )}
                 </div>
@@ -213,9 +212,9 @@ export const SimplifiedBalanceView = ({
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">You Will Receive</CardTitle>
+              <CardTitle className="text-lg">{t("debts.youWillReceive", "You Will Receive")}</CardTitle>
               {simplifyDebts && (
-                <Badge variant="secondary">Simplified</Badge>
+                <Badge variant="secondary">{t("debts.simplified", "Simplified")}</Badge>
               )}
             </div>
           </CardHeader>
@@ -240,7 +239,7 @@ export const SimplifiedBalanceView = ({
                     <div className="flex items-center gap-2 flex-1">
                       <span className="font-medium">{debt.from_user_name}</span>
                       <ArrowRightIcon className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">You</span>
+                      <span className="text-sm text-muted-foreground">{t("debts.you", "You")}</span>
                     </div>
                     <div className="text-right">
                       <div className="font-semibold text-green-600 dark:text-green-400">
@@ -249,7 +248,7 @@ export const SimplifiedBalanceView = ({
                     </div>
                   </div>
                   <Badge variant="secondary" className="ml-4">
-                    Waiting
+                    {t("debts.waiting", "Waiting")}
                   </Badge>
                 </div>
               ))}

@@ -93,5 +93,30 @@
       "tapToOpenBank": "Tap to open bank app",
       "tapHint": "Tap QR code to open banking app directly"
     }
+  },
+  "debts": {
+    "simplify": "Simplify Debts",
+    "transactions": "transactions",
+    "fewer": "fewer",
+    "transactionsSaved": "{{count}} transaction(s) eliminated",
+    "originalTransactions": "Original",
+    "simplifiedTransactions": "Simplified",
+    "originalDebts": "Original Debts",
+    "simplifiedDebts": "Simplified Debts",
+    "noDebts": "No debts",
+    "totalTransferred": "Total transferred",
+    "usingLocalCalculation": "Using local calculation.",
+    "loading": "Loading details...",
+    "updateError": "Could not update setting. Please try again.",
+    "youAreOwed": "You are owed",
+    "youOwe": "You owe",
+    "netBalance": "Net balance",
+    "youNeedToPay": "You Need to Pay",
+    "simplified": "Simplified",
+    "simplifiedTooltip": "These are the optimal payments to settle all your debts. Individual expense details are preserved.",
+    "you": "You",
+    "settleUp": "Settle Up",
+    "youWillReceive": "You Will Receive",
+    "waiting": "Waiting"
   }
 }
