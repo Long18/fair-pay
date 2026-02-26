@@ -44,6 +44,8 @@ const getNotificationMeta = (type: Notification["type"]) => {
       return { icon: UserCheckIcon, color: "text-green-600", bg: "bg-green-100 dark:bg-green-900/40" };
     case "group_join_rejected":
       return { icon: XIcon, color: "text-red-600", bg: "bg-red-100 dark:bg-red-900/40" };
+    case "expense_comment":
+      return { icon: MessageSquareIcon, color: "text-cyan-600", bg: "bg-cyan-100 dark:bg-cyan-900/40" };
     case "comment_mention":
       return { icon: AtSignIcon, color: "text-blue-600", bg: "bg-blue-100 dark:bg-blue-900/40" };
     case "comment_reply":

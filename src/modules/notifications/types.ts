@@ -11,7 +11,8 @@ export type NotificationType =
   | 'group_join_rejected'
   | 'comment_mention'
   | 'comment_reply'
-  | 'comment_reaction';
+  | 'comment_reaction'
+  | 'expense_comment';
 
 export interface Notification {
   id: string;

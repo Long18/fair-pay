@@ -90,6 +90,22 @@ export const ExpenseShow = () => {
   const [userIsAdmin, setUserIsAdmin] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
 
+  // Scroll-to-comment from notification link hash (Facebook-style)
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash || !hash.startsWith("#comment-")) return;
+    // Wait for comments to render, then scroll
+    const timer = setTimeout(() => {
+      const el = document.getElementById(hash.slice(1));
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.classList.add("highlight-comment");
+        setTimeout(() => el.classList.remove("highlight-comment"), 3000);
+      }
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [loading]);
+
   // Fetch recurring expense data linked to this expense (as template)
   const { data: recurringData } = useQuery({
     queryKey: ["recurring_for_expense", id],
@@ -475,6 +491,7 @@ export const ExpenseShow = () => {
           currentUser={currentCommentUser}
           participants={commentParticipants}
           maxVisibleComments={3}
+          initialCommentsExpanded={window.location.hash.startsWith("#comment-")}
         />
 
         {/* 2. Split Details */}

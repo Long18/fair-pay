@@ -29,6 +29,7 @@ const iconMap: Record<string, { icon: React.ComponentType<{ className?: string }
   comment_mention: { icon: AtSignIcon, color: "text-blue-600", bg: "bg-blue-100 dark:bg-blue-900/40" },
   comment_reply: { icon: MessageSquareIcon, color: "text-teal-600", bg: "bg-teal-100 dark:bg-teal-900/40" },
   comment_reaction: { icon: MessageSquareIcon, color: "text-pink-600", bg: "bg-pink-100 dark:bg-pink-900/40" },
+  expense_comment: { icon: MessageSquareIcon, color: "text-cyan-600", bg: "bg-cyan-100 dark:bg-cyan-900/40" },
 };
 
 const defaultMeta = { icon: ReceiptIcon, color: "text-gray-600", bg: "bg-gray-100 dark:bg-gray-900/40" };
