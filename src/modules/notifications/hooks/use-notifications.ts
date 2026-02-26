@@ -121,13 +121,80 @@ export const useNotifications = () => {
     }
   }, [notifications]);
 
-  // Realtime subscription via postgres_changes
-  // Requires: notifications in supabase_realtime publication + REPLICA IDENTITY FULL
+  // Realtime subscription via postgres_changes + broadcast fallback
+  // postgres_changes: works for trigger-based inserts (expense_added, friend_request, etc.)
+  // broadcast: works for RPC-based inserts (comment, reaction, mention) via broadcast_notification_insert trigger
   useEffect(() => {
     if (!identity?.id) return;
 
+    // Deduplicate: track recently processed notification IDs to avoid double-processing
+    // when both postgres_changes and broadcast fire for the same insert
+    const recentIds = new Set<string>();
+    const DEDUP_TTL = 5000; // 5 seconds
+
+    const handleNewNotification = (raw: Notification) => {
+      // Deduplicate
+      if (recentIds.has(raw.id)) return;
+      recentIds.add(raw.id);
+      setTimeout(() => recentIds.delete(raw.id), DEDUP_TTL);
+
+      // Refetch to update React Query cache
+      query.refetch();
+
+      // Play sound (both mobile and desktop)
+      playSound();
+
+      // Show in-app toast only on desktop — enrich with actor profile async
+      if (!isMobileRef.current) {
+        const showToast = (n: Notification) => {
+          toast.custom(
+            (t) =>
+              createElement(
+                "div",
+                {
+                  className:
+                    "flex items-start gap-3 w-full max-w-sm rounded-xl bg-popover border border-border/60 shadow-lg p-3 cursor-pointer transition-all hover:bg-accent/50",
+                  onClick: () => {
+                    if (n.link) go({ to: n.link });
+                    toast.dismiss(t);
+                  },
+                },
+                createElement(NotificationToast, { notification: n })
+              ),
+            { duration: 5000, position: "bottom-left" }
+          );
+        };
+
+        if (raw.actor_id) {
+          Promise.resolve(
+            supabaseClient
+              .from("profiles")
+              .select("full_name, avatar_url")
+              .eq("id", raw.actor_id)
+              .single()
+          )
+            .then(({ data: profile }) => {
+              showToast({
+                ...raw,
+                actor_name: profile?.full_name ?? undefined,
+                actor_avatar: profile?.avatar_url ?? undefined,
+              });
+            })
+            .catch(() => showToast(raw));
+        } else {
+          showToast(raw);
+        }
+      }
+
+      // Browser notification when tab is not focused
+      sendBrowserNotification(raw);
+    };
+
     const channel = supabaseClient
-      .channel(`notifications:${identity.id}`)
+      .channel(`notifications:${identity.id}`, {
+        config: { private: true },
+      })
+      // Primary: postgres_changes (works for trigger-based notification inserts)
       .on(
         "postgres_changes",
         {
@@ -137,58 +204,19 @@ export const useNotifications = () => {
           filter: `user_id=eq.${identity.id}`,
         },
         (payload) => {
-          const raw = payload.new as Notification;
-
-          // Refetch to update React Query cache
-          query.refetch();
-
-          // Play sound (both mobile and desktop)
-          playSound();
-
-          // Show in-app toast only on desktop — enrich with actor profile async
-          if (!isMobileRef.current) {
-            const showToast = (n: Notification) => {
-              toast.custom(
-                (t) =>
-                  createElement(
-                    "div",
-                    {
-                      className:
-                        "flex items-start gap-3 w-full max-w-sm rounded-xl bg-popover border border-border/60 shadow-lg p-3 cursor-pointer transition-all hover:bg-accent/50",
-                      onClick: () => {
-                        if (n.link) go({ to: n.link });
-                        toast.dismiss(t);
-                      },
-                    },
-                    createElement(NotificationToast, { notification: n })
-                  ),
-                { duration: 5000, position: "bottom-left" }
-              );
-            };
-
-            if (raw.actor_id) {
-              Promise.resolve(
-                supabaseClient
-                  .from("profiles")
-                  .select("full_name, avatar_url")
-                  .eq("id", raw.actor_id)
-                  .single()
-              )
-                .then(({ data: profile }) => {
-                  showToast({
-                    ...raw,
-                    actor_name: profile?.full_name ?? undefined,
-                    actor_avatar: profile?.avatar_url ?? undefined,
-                  });
-                })
-                .catch(() => showToast(raw));
-            } else {
-              showToast(raw);
-            }
+          handleNewNotification(payload.new as Notification);
+        }
+      )
+      // Fallback: broadcast from broadcast_notification_insert() trigger
+      // This catches RPC-based inserts that postgres_changes may miss
+      .on(
+        "broadcast",
+        { event: "INSERT" },
+        (payload) => {
+          const record = payload.payload?.record ?? payload.payload?.new_record;
+          if (record && record.user_id === identity.id) {
+            handleNewNotification(record as Notification);
           }
-
-          // Browser notification when tab is not focused
-          sendBrowserNotification(raw);
         }
       )
       .on(
