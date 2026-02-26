@@ -7,53 +7,8 @@ import { Notification } from "../types";
 import { NotificationToast } from "../components/notification-toast";
 import { useNotificationSound } from "./use-notification-sound";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { sendBrowserNotification, requestNotificationPermission } from "../utils/browser-notifications";
 import { formatDistanceToNow } from "date-fns";
-
-/**
- * Send a browser notification if the tab is not focused and permission is granted.
- */
-const sendBrowserNotification = (notification: Notification) => {
-  if (
-    typeof window === "undefined" ||
-    !("Notification" in window) ||
-    window.Notification.permission !== "granted" ||
-    document.hasFocus()
-  ) {
-    return;
-  }
-
-  try {
-    const n = new window.Notification(notification.title, {
-      body: notification.message,
-      icon: "/favicon.ico",
-      tag: notification.id, // Prevents duplicate native notifications
-    });
-
-    if (notification.link) {
-      n.onclick = () => {
-        window.focus();
-        window.location.href = notification.link!;
-        n.close();
-      };
-    }
-  } catch {
-    // Browser notification not supported in this context
-  }
-};
-
-/**
- * Request browser notification permission (once, on first use).
- */
-const requestNotificationPermission = () => {
-  if (
-    typeof window === "undefined" ||
-    !("Notification" in window) ||
-    window.Notification.permission !== "default"
-  ) {
-    return;
-  }
-  window.Notification.requestPermission().catch(() => {});
-};
 
 export const useNotifications = () => {
   const { data: identity } = useGetIdentity<Profile>();
@@ -64,6 +19,14 @@ export const useNotifications = () => {
   const isMobile = useIsMobile();
   const isMobileRef = useRef(isMobile);
   isMobileRef.current = isMobile;
+
+  // Keep stable refs for callbacks used inside the realtime effect closure.
+  // Without these, the effect captures stale versions of playSound/go/refetch
+  // from the initial render, causing intermittent failures on desktop.
+  const playSoundRef = useRef(playSound);
+  playSoundRef.current = playSound;
+  const goRef = useRef(go);
+  goRef.current = go;
 
   // Request browser notification permission once
   useEffect(() => {
@@ -100,6 +63,10 @@ export const useNotifications = () => {
   });
 
   const updateMutation = useUpdate();
+
+  // Stable ref for query.refetch — avoids stale closure in realtime effect
+  const refetchRef = useRef(query.refetch);
+  refetchRef.current = query.refetch;
 
   // Map joined profile data to flat actor fields
   const notifications: Notification[] = (query.data?.data || []).map((n) => {
@@ -138,11 +105,11 @@ export const useNotifications = () => {
       recentIds.add(raw.id);
       setTimeout(() => recentIds.delete(raw.id), DEDUP_TTL);
 
-      // Refetch to update React Query cache
-      query.refetch();
+      // Refetch via ref to always use the latest React Query refetch function
+      refetchRef.current();
 
-      // Play sound (both mobile and desktop)
-      playSound();
+      // Play sound via ref — ensures we use the latest Audio instance
+      playSoundRef.current();
 
       // Show in-app toast only on desktop — enrich with actor profile async
       if (!isMobileRef.current) {
@@ -155,7 +122,7 @@ export const useNotifications = () => {
                   className:
                     "flex items-start gap-3 w-full max-w-sm rounded-xl bg-popover border border-border/60 shadow-lg p-3 cursor-pointer transition-all hover:bg-accent/50",
                   onClick: () => {
-                    if (n.link) go({ to: n.link });
+                    if (n.link) goRef.current({ to: n.link });
                     toast.dismiss(t);
                   },
                 },
@@ -228,12 +195,19 @@ export const useNotifications = () => {
           filter: `user_id=eq.${identity.id}`,
         },
         () => {
-          query.refetch();
+          refetchRef.current();
         }
       )
       .subscribe();
 
+    // Polling fallback: refetch every 30s to catch any notifications
+    // that slip through both postgres_changes and broadcast channels.
+    const pollInterval = setInterval(() => {
+      refetchRef.current();
+    }, 30_000);
+
     return () => {
+      clearInterval(pollInterval);
       supabaseClient.removeChannel(channel);
     };
   }, [identity?.id]); // eslint-disable-line react-hooks/exhaustive-deps
