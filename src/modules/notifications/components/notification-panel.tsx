@@ -70,7 +70,7 @@ export const NotificationPanel = () => {
         align="end"
         side="bottom"
         sideOffset={12}
-        className="w-[420px] p-0 rounded-xl shadow-xl border border-border/60 bg-popover flex flex-col max-h-[560px]"
+        className="w-[420px] p-0 rounded-xl shadow-xl border border-border/60 bg-popover flex flex-col max-h-[min(560px,calc(100vh-120px))] overflow-hidden"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border/40 flex-shrink-0">
@@ -91,7 +91,7 @@ export const NotificationPanel = () => {
         </div>
 
         {/* Notifications List */}
-        <ScrollArea className="flex-1 min-h-0">
+        <ScrollArea className="flex-1 min-h-0 overflow-hidden">
           {isLoading ? (
             <div className="flex flex-col gap-3 p-4">
               {[1, 2, 3].map((i) => (
