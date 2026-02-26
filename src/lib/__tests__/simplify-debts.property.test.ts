@@ -206,5 +206,37 @@ describe('Feature: debt-simplification, Property 4: Upper Bound N-1', () => {
   });
 });
 
-// Export generators for reuse in subsequent property test files (1.3-1.8)
+// ============================================================================
+// Property 5: Simplification Idempotence
+// Feature: debt-simplification, Property 5: Simplification Idempotence
+// Validates: Requirements 8.2
+// ============================================================================
+
+describe('Feature: debt-simplification, Property 5: Simplification Idempotence', () => {
+  it('simplifying an already-simplified result must produce an equivalent plan', () => {
+    fc.assert(
+      fc.property(arbitraryDebtEdgeList(0, 20), (debts) => {
+        const first = simplifyDebts(debts);
+        const second = simplifyDebts(first.simplified);
+
+        expect(areDebtsEquivalent(first.simplified, second.simplified)).toBe(true);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  it('re-simplifying must not increase transaction count', () => {
+    fc.assert(
+      fc.property(arbitraryDebtEdgeList(0, 20), (debts) => {
+        const first = simplifyDebts(debts);
+        const second = simplifyDebts(first.simplified);
+
+        expect(second.simplified.length).toBeLessThanOrEqual(first.simplified.length);
+      }),
+      { numRuns: 100 },
+    );
+  });
+});
+
+// Export generators for reuse in subsequent property test files
 export { arbitraryUserId, arbitraryDebtEdge, arbitraryDebtEdgeList, computeNetBalances, roundTo2 };
