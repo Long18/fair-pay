@@ -70,10 +70,10 @@ export const NotificationPanel = () => {
         align="end"
         side="bottom"
         sideOffset={12}
-        className="w-[420px] p-0 rounded-xl shadow-xl border border-border/60 bg-popover"
+        className="w-[420px] p-0 rounded-xl shadow-xl border border-border/60 bg-popover flex flex-col max-h-[560px]"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border/40 flex-shrink-0">
           <h3 className="text-base font-semibold text-foreground">Notifications</h3>
           {unreadCount > 0 && (
             <Button
@@ -91,7 +91,7 @@ export const NotificationPanel = () => {
         </div>
 
         {/* Notifications List */}
-        <ScrollArea className="max-h-[480px]">
+        <ScrollArea className="flex-1 min-h-0">
           {isLoading ? (
             <div className="flex flex-col gap-3 p-4">
               {[1, 2, 3].map((i) => (
@@ -130,9 +130,9 @@ export const NotificationPanel = () => {
           )}
         </ScrollArea>
 
-        {/* Footer */}
-        {notifications.length > 8 && (
-          <div className="border-t border-border/40 p-2">
+        {/* Footer — always outside scroll, never overlapped */}
+        {displayNotifications.length > 0 && (
+          <div className="border-t border-border/40 p-2 flex-shrink-0">
             <Button
               variant="ghost"
               size="sm"
