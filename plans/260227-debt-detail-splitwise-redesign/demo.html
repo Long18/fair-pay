@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FairPay – Debt Detail Redesign (Splitwise-inspired)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --surface-2: #f8fafc;
+      --border: #e2e8f0;
+      --text-1: #0f172a;
+      --text-2: #475569;
+      --text-3: #94a3b8;
+      --primary: #6366f1;
+      --primary-soft: #eef2ff;
+      --primary-border: #c7d2fe;
+      --red: #ef4444;
+      --red-soft: #fef2f2;
+      --red-border: #fecaca;
+      --red-text: #b91c1c;
+      --green: #16a34a;
+      --green-bright: #22c55e;
+      --green-soft: #f0fdf4;
+      --green-border: #bbf7d0;
+      --green-text: #15803d;
+      --amber: #d97706;
+      --amber-soft: #fffbeb;
+      --amber-border: #fde68a;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.15), 0 4px 10px -5px rgba(0,0,0,0.1);
+      --r: 12px; --r-sm: 8px; --r-xs: 6px;
+      --ease: 0.18s ease;
+    }
+    [data-theme="dark"] {
+      --bg: #0f172a; --surface: #1e293b; --surface-2: #172031;
+      --border: #334155; --text-1: #f1f5f9; --text-2: #94a3b8; --text-3: #64748b;
+      --primary: #818cf8; --primary-soft: #1e1b4b; --primary-border: #3730a3;
+      --red: #f87171; --red-soft: #1c0a0a; --red-border: #7f1d1d; --red-text: #fca5a5;
+      --green: #4ade80; --green-bright: #4ade80; --green-soft: #052e16; --green-border: #14532d; --green-text: #86efac;
+      --amber: #fbbf24; --amber-soft: #1c1200; --amber-border: #78350f;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text-1);
+      min-height: 100vh;
+      transition: background var(--ease), color var(--ease);
+    }
+
+    /* ─── LAYOUT ─── */
+    .page { max-width: 480px; margin: 0 auto; min-height: 100vh; position: relative; }
+
+    /* ─── DEMO BADGE ─── */
+    .demo-badge {
+      position: fixed; top: 10px; right: 10px; z-index: 9999;
+      background: #f59e0b; color: white; font-size: 10px; font-weight: 700;
+      padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;
+      box-shadow: 0 2px 8px rgba(245,158,11,0.4); pointer-events: none;
+    }
+
+    /* ─── FIXED STICKY NAV (appears on scroll) ─── */
+    .sticky-nav {
+      position: fixed; top: 0; left: 50%; z-index: 200;
+      width: 100%; max-width: 480px;
+      transform: translateX(-50%) translateY(-100%);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      box-shadow: none;
+      padding: 8px 14px;
+      display: flex; align-items: center; gap: 10px;
+      transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), box-shadow 0.25s;
+    }
+    .sticky-nav.show {
+      transform: translateX(-50%) translateY(0);
+      box-shadow: var(--shadow);
+    }
+    .sticky-back {
+      width: 30px; height: 30px; border-radius: 50%;
+      border: 1px solid var(--border); background: var(--surface);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--text-2); flex-shrink: 0;
+      transition: background var(--ease);
+    }
+    .sticky-back:hover { background: var(--surface-2); }
+    .sticky-avatar {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 10px; font-weight: 700; flex-shrink: 0;
+    }
+    .sticky-name { font-size: 13px; font-weight: 600; flex: 1; }
+    .chip {
+      font-size: 12px; font-weight: 700;
+      padding: 3px 10px; border-radius: 20px;
+    }
+    .chip-red { background: var(--red-soft); color: var(--red-text); border: 1px solid var(--red-border); }
+    .chip-green { background: var(--green-soft); color: var(--green-text); border: 1px solid var(--green-border); }
+
+    /* ─── HERO HEADER ─── */
+    .hero { background: var(--surface); border-bottom: 1px solid var(--border); }
+
+    .hero-topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px;
+    }
+    .back-btn {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 13px; color: var(--text-2);
+      background: none; border: none; cursor: pointer;
+      padding: 5px 8px; border-radius: var(--r-xs);
+      font-family: inherit; transition: background var(--ease), color var(--ease);
+    }
+    .back-btn:hover { background: var(--surface-2); color: var(--text-1); }
+    .theme-btn {
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 1px solid var(--border); background: var(--surface);
+      cursor: pointer; font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background var(--ease);
+    }
+    .theme-btn:hover { background: var(--surface-2); }
+
+    .hero-person {
+      display: flex; align-items: center; gap: 14px;
+      padding: 2px 20px 18px;
+    }
+    .hero-avatar {
+      width: 60px; height: 60px; border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 20px; font-weight: 800;
+      border: 2.5px solid var(--border); flex-shrink: 0;
+    }
+    .hero-name { font-size: 20px; font-weight: 700; margin-bottom: 5px; }
+    .hero-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .badge {
+      font-size: 11px; font-weight: 600;
+      padding: 2px 8px; border-radius: 20px;
+      text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .badge-red { background: var(--red-soft); color: var(--red-text); border: 1px solid var(--red-border); }
+    .badge-green { background: var(--green-soft); color: var(--green-text); border: 1px solid var(--green-border); }
+    .dot { color: var(--text-3); font-size: 12px; }
+    .meta-txt { font-size: 12px; color: var(--text-3); }
+
+    /* Balance card */
+    .balance-card {
+      margin: 0 16px 14px;
+      padding: 15px 18px;
+      border-radius: var(--r);
+      border: 2px solid;
+    }
+    .balance-card.red { background: var(--red-soft); border-color: var(--red-border); }
+    .balance-card.green { background: var(--green-soft); border-color: var(--green-border); }
+    .balance-lbl {
+      font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 3px;
+    }
+    .balance-card.red .balance-lbl { color: var(--red); opacity: 0.7; }
+    .balance-card.green .balance-lbl { color: var(--green); opacity: 0.7; }
+    .balance-num {
+      font-size: 30px; font-weight: 800; line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+    .balance-card.red .balance-num { color: var(--red-text); }
+    .balance-card.green .balance-num { color: var(--green-text); }
+    .balance-sub { font-size: 12px; margin-top: 3px; opacity: 0.65; }
+    .balance-card.red .balance-sub { color: var(--red-text); }
+    .balance-card.green .balance-sub { color: var(--green-text); }
+
+    /* Progress bar */
+    .prog-wrap { margin: 0 16px 14px; }
+    .prog-labels {
+      display: flex; justify-content: space-between; margin-bottom: 6px;
+    }
+    .prog-item { display: flex; flex-direction: column; gap: 1px; }
+    .prog-item:last-child { align-items: flex-end; }
+    .prog-lbl { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-3); }
+    .prog-val { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .prog-item.r .prog-val { color: var(--red-text); }
+    .prog-item.g .prog-val { color: var(--green-text); }
+    .prog-track {
+      height: 5px; background: var(--border); border-radius: 3px; overflow: hidden;
+    }
+    .prog-fill {
+      height: 100%; border-radius: 3px;
+      background: linear-gradient(90deg, var(--red), #f97316);
+      transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1);
+    }
+
+    /* Breakdown grid */
+    .breakdown { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 16px 14px; }
+    .bk-item {
+      padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--border);
+    }
+    .bk-item.r { border-color: var(--red-border); background: var(--red-soft); }
+    .bk-item.g { border-color: var(--green-border); background: var(--green-soft); }
+    .bk-lbl {
+      font-size: 10px; font-weight: 500; text-transform: uppercase;
+      letter-spacing: 0.3px; margin-bottom: 3px;
+    }
+    .bk-item.r .bk-lbl { color: var(--red); opacity: 0.7; }
+    .bk-item.g .bk-lbl { color: var(--green); opacity: 0.7; }
+    .bk-amt { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .bk-item.r .bk-amt { color: var(--red-text); }
+    .bk-item.g .bk-amt { color: var(--green-text); }
+
+    /* Action buttons */
+    .hero-actions { display: flex; gap: 8px; padding: 0 16px 18px; }
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      border: none; border-radius: var(--r-sm); cursor: pointer;
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      padding: 9px 14px; transition: all var(--ease); white-space: nowrap;
+    }
+    .btn-settle {
+      flex: 2;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: white;
+      box-shadow: 0 2px 8px rgba(34,197,94,0.25);
+    }
+    .btn-settle:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(34,197,94,0.4); }
+    .btn-settle:active { transform: translateY(0); }
+    .btn-outline {
+      flex: 1; background: var(--surface); color: var(--text-2);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover { background: var(--surface-2); color: var(--text-1); border-color: var(--text-3); }
+
+    /* ─── FILTER TABS ─── */
+    .filter-tabs {
+      display: flex;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 150;
+      transition: top 0.25s cubic-bezier(0.4,0,0.2,1);
+    }
+    .filter-tabs.pushed { top: 47px; }
+    .tab-btn {
+      flex: 1; padding: 11px 8px;
+      background: none; border: none; border-bottom: 2px solid transparent;
+      cursor: pointer; font-size: 13px; font-weight: 500; font-family: inherit;
+      color: var(--text-3); display: flex; align-items: center;
+      justify-content: center; gap: 5px; transition: all var(--ease);
+    }
+    .tab-btn:hover { color: var(--text-2); }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab-cnt {
+      font-size: 10px; font-weight: 600;
+      padding: 1px 6px; border-radius: 10px;
+      background: var(--surface-2); border: 1px solid var(--border); color: var(--text-3);
+    }
+    .tab-btn.active .tab-cnt { background: var(--primary-soft); border-color: var(--primary-border); color: var(--primary); }
+
+    /* ─── TRANSACTIONS ─── */
+    .txns { padding-bottom: 110px; }
+
+    .month-lbl {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; color: var(--text-3);
+      padding: 14px 16px 6px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg);
+      position: sticky; top: 42px; z-index: 100;
+      transition: top 0.25s cubic-bezier(0.4,0,0.2,1);
+    }
+    .month-lbl.pushed { top: 89px; }
+    .month-net { font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .month-net.r { color: var(--red-text); }
+    .month-net.g { color: var(--green-text); }
+
+    /* Transaction item */
+    .tx {
+      display: flex; align-items: center; gap: 11px;
+      background: var(--surface); padding: 13px 16px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer; position: relative;
+      transition: background var(--ease), border-left var(--ease);
+      animation: fadeUp 0.2s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: none; }
+    }
+    .tx:hover { background: var(--surface-2); }
+    .tx.sel { background: var(--primary-soft); border-left: 3px solid var(--primary); padding-left: 13px; }
+    .tx.settled { opacity: 0.5; }
+    .tx.gone { display: none !important; }
+
+    /* Checkbox */
+    .tx-cb {
+      width: 18px; height: 18px; border-radius: 4px;
+      border: 2px solid var(--border); background: var(--surface);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; cursor: pointer; transition: all var(--ease);
+      opacity: 0; pointer-events: none;
+    }
+    .tx:hover .tx-cb, .tx.sel .tx-cb { opacity: 1; pointer-events: auto; }
+    .tx.sel .tx-cb { background: var(--primary); border-color: var(--primary); color: white; font-size: 11px; font-weight: 700; }
+    .tx.sel .tx-cb::after { content: '✓'; }
+
+    /* Icon */
+    .tx-icon {
+      width: 38px; height: 38px; border-radius: var(--r-sm);
+      background: var(--surface-2); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+      transition: transform var(--ease);
+    }
+    .tx:hover .tx-icon { transform: scale(1.06); }
+
+    /* Body */
+    .tx-body { flex: 1; min-width: 0; }
+    .tx-desc {
+      font-size: 14px; font-weight: 600; color: var(--text-1);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+    .tx.settled .tx-desc { text-decoration: line-through; color: var(--text-3); }
+    .tx-meta { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .paid-tag {
+      font-size: 11px; font-weight: 500;
+      padding: 1px 6px; border-radius: 4px;
+    }
+    .paid-tag.r { background: var(--red-soft); color: var(--red-text); border: 1px solid var(--red-border); }
+    .paid-tag.g { background: var(--green-soft); color: var(--green-text); border: 1px solid var(--green-border); }
+    .paid-tag.settled { background: var(--surface-2); color: var(--text-3); border: 1px solid var(--border); }
+    .tx-date { font-size: 11px; color: var(--text-3); }
+    .grp-tag {
+      font-size: 10px; font-weight: 500; padding: 1px 6px; border-radius: 4px;
+      background: var(--surface-2); border: 1px solid var(--border); color: var(--text-3);
+    }
+    .partial-tag {
+      font-size: 10px; font-weight: 500; padding: 1px 6px; border-radius: 4px;
+      background: var(--amber-soft); border: 1px solid var(--amber-border); color: var(--amber);
+    }
+
+    /* Right side */
+    .tx-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+    .dir-lbl {
+      font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .dir-lbl.r { color: var(--red-text); }
+    .dir-lbl.g { color: var(--green-text); }
+    .tx-amt { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .tx-amt.r { color: var(--red-text); }
+    .tx-amt.g { color: var(--green-text); }
+    .tx-amt.settled { color: var(--text-3); font-weight: 500; }
+    .settled-check { font-size: 14px; }
+
+    /* Inline settle btn (hover reveal) */
+    .inline-settle {
+      display: none;
+      font-size: 10px; font-weight: 600; font-family: inherit;
+      padding: 2px 8px; border-radius: 4px; cursor: pointer;
+      background: var(--green-soft); color: var(--green-text);
+      border: 1px solid var(--green-border);
+      transition: all 0.15s;
+    }
+    .tx:hover .inline-settle { display: block; }
+    .inline-settle:hover { background: var(--green-bright); color: white; border-color: var(--green-bright); }
+
+    /* Settled section toggle */
+    .settled-toggle {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      cursor: pointer; font-size: 12px; font-weight: 500;
+      color: var(--text-3); user-select: none;
+      transition: background var(--ease), color var(--ease);
+    }
+    .settled-toggle:hover { background: var(--surface-2); color: var(--text-2); }
+    .st-arrow { font-size: 10px; transition: transform 0.2s; display: inline-block; }
+    .settled-toggle.open .st-arrow { transform: rotate(90deg); }
+    .st-cnt {
+      font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 10px;
+      background: var(--surface-2); border: 1px solid var(--border); color: var(--text-3);
+    }
+    .st-action { margin-left: auto; font-size: 11px; }
+
+    /* Empty state */
+    .empty {
+      display: none; flex-direction: column; align-items: center;
+      padding: 52px 32px; text-align: center;
+    }
+    .empty-icon { font-size: 44px; margin-bottom: 14px; }
+    .empty-title { font-size: 15px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
+    .empty-desc { font-size: 13px; color: var(--text-3); line-height: 1.5; }
+
+    /* ─── FLOATING ACTION BAR ─── */
+    .fab {
+      position: fixed; bottom: 24px; left: 50%; z-index: 300;
+      max-width: calc(480px - 32px); width: calc(100% - 32px);
+      transform: translateX(-50%) translateY(100px);
+      opacity: 0; pointer-events: none;
+      background: var(--text-1); color: var(--bg);
+      padding: 11px 14px; border-radius: 16px;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: var(--shadow-lg);
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
+    }
+    .fab.show { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
+    .fab-info { display: flex; flex-direction: column; }
+    .fab-lbl { font-size: 10px; opacity: 0.55; font-weight: 500; }
+    .fab-amt { font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .fab-div { width: 1px; height: 28px; background: currentColor; opacity: 0.15; }
+    .fab-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 7px 12px; border-radius: 10px; border: none;
+      cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit;
+      transition: all 0.15s;
+    }
+    .fab-settle { background: rgba(255,255,255,0.15); color: white; }
+    .fab-settle:hover { background: rgba(255,255,255,0.25); }
+    .fab-clear {
+      width: 28px; height: 28px; border-radius: 50%; padding: 0;
+      background: rgba(255,255,255,0.1); color: white;
+      display: flex; align-items: center; justify-content: center; font-size: 13px;
+    }
+    .fab-clear:hover { background: rgba(255,255,255,0.22); }
+
+    /* ─── DESIGN NOTES SECTION ─── */
+    .notes {
+      background: var(--surface); border-top: 1px solid var(--border);
+      padding: 24px 16px 48px;
+    }
+    .notes-title { font-size: 12px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 16px; }
+    .compare-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .compare-table th {
+      text-align: left; padding: 6px 10px; font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-3);
+      border-bottom: 1px solid var(--border); background: var(--surface-2);
+    }
+    .compare-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .compare-table td:first-child { font-weight: 600; color: var(--text-2); width: 33%; }
+    .before { color: var(--red-text); font-size: 11px; }
+    .after { color: var(--green-text); font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="demo-badge">Demo · Redesign</div>
+
+  <!-- Fixed sticky nav -->
+  <div class="sticky-nav" id="stickyNav">
+    <button class="sticky-back" title="Back">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    </button>
+    <div class="sticky-avatar">TM</div>
+    <span class="sticky-name">Trần Thị Mai</span>
+    <span class="chip chip-red">−192,500₫</span>
+  </div>
+
+  <div class="page">
+    <!-- ═══ HERO HEADER ═══ -->
+    <div class="hero" id="heroEl">
+      <div class="hero-topbar">
+        <button class="back-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          Dashboard
+        </button>
+        <button class="theme-btn" id="themeBtn">🌙</button>
+      </div>
+
+      <div class="hero-person">
+        <div class="hero-avatar">TM</div>
+        <div>
+          <div class="hero-name">Trần Thị Mai</div>
+          <div class="hero-meta">
+            <span class="badge badge-red">You owe</span>
+            <span class="dot">•</span>
+            <span class="meta-txt">3 unpaid</span>
+            <span class="dot">•</span>
+            <span class="meta-txt">1 partial</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Big balance card -->
+      <div class="balance-card red">
+        <div class="balance-lbl">Net Balance</div>
+        <div class="balance-num">−192,500₫</div>
+        <div class="balance-sub">You owe Trần Thị Mai overall</div>
+      </div>
+
+      <!-- Settlement progress bar -->
+      <div class="prog-wrap">
+        <div class="prog-labels">
+          <div class="prog-item r">
+            <span class="prog-lbl">You owe</span>
+            <span class="prog-val">450,000₫</span>
+          </div>
+          <div class="prog-item g">
+            <span class="prog-lbl">Owes you</span>
+            <span class="prog-val">257,500₫</span>
+          </div>
+        </div>
+        <div class="prog-track">
+          <div class="prog-fill" style="width:36%"></div>
+        </div>
+      </div>
+
+      <!-- Breakdown grid -->
+      <div class="breakdown">
+        <div class="bk-item r">
+          <div class="bk-lbl">You owe Mai</div>
+          <div class="bk-amt">450,000₫</div>
+        </div>
+        <div class="bk-item g">
+          <div class="bk-lbl">Mai owes you</div>
+          <div class="bk-amt">257,500₫</div>
+        </div>
+      </div>
+
+      <!-- CTA buttons -->
+      <div class="hero-actions">
+        <button class="btn btn-settle">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          Settle Up
+        </button>
+        <button class="btn btn-outline">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Add
+        </button>
+        <button class="btn btn-outline">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Profile
+        </button>
+      </div>
+    </div><!-- .hero -->
+
+    <!-- ═══ FILTER TABS ═══ -->
+    <div class="filter-tabs" id="filterTabs">
+      <button class="tab-btn" data-tab="all" onclick="setTab('all')">
+        All <span class="tab-cnt" id="cnt-all">8</span>
+      </button>
+      <button class="tab-btn active" data-tab="unsettled" onclick="setTab('unsettled')">
+        Unsettled <span class="tab-cnt" id="cnt-unsettled">5</span>
+      </button>
+      <button class="tab-btn" data-tab="settled" onclick="setTab('settled')">
+        Settled <span class="tab-cnt" id="cnt-settled">3</span>
+      </button>
+    </div>
+
+    <!-- ═══ TRANSACTION LIST ═══ -->
+    <div class="txns">
+
+      <!-- ── February 2026 ── -->
+      <div class="month-grp" id="grp-feb">
+        <div class="month-lbl" id="lbl-feb">
+          February 2026
+          <span class="month-net r">−192,500₫</span>
+        </div>
+
+        <div class="tx" id="tx1" data-settled="false" data-dir="i_owe" data-amt="90000" onclick="toggleSel('tx1')">
+          <div class="tx-cb" id="cb1"></div>
+          <div class="tx-icon">🍜</div>
+          <div class="tx-body">
+            <div class="tx-desc">Bữa trưa tại Cơm Tấm Bà Năm</div>
+            <div class="tx-meta">
+              <span class="paid-tag r">Mai paid</span>
+              <span class="tx-date">Feb 24</span>
+            </div>
+          </div>
+          <div class="tx-right">
+            <span class="dir-lbl r">You owe</span>
+            <span class="tx-amt r">90,000₫</span>
+            <button class="inline-settle" onclick="settleOne(event,'tx1')">Settle</button>
+          </div>
+        </div>
+
+        <div class="tx" id="tx2" data-settled="false" data-dir="they_owe" data-amt="32500" onclick="toggleSel('tx2')">
+          <div class="tx-cb" id="cb2"></div>
+          <div class="tx-icon">🚗</div>
+          <div class="tx-body">
+            <div class="tx-desc">Grab đi làm</div>
+            <div class="tx-meta">
+              <span class="paid-tag g">You paid</span>
+              <span class="tx-date">Feb 22</span>
+            </div>
+          </div>
+          <div class="tx-right">
+            <span class="dir-lbl g">Owes you</span>
+            <span class="tx-amt g">32,500₫</span>
+            <button class="inline-settle" onclick="settleOne(event,'tx2')">Settle</button>
+          </div>
+        </div>
+
+        <div class="tx" id="tx3" data-settled="false" data-dir="i_owe" data-amt="60000" onclick="toggleSel('tx3')">
+          <div class="tx-cb" id="cb3"></div>
+          <div class="tx-icon">☕</div>
+          <div class="tx-body">
+            <div class="tx-desc">Cà phê Highlands</div>
+            <div class="tx-meta">
+              <span class="paid-tag r">Mai paid</span>
+              <span class="tx-date">Feb 20</span>
+              <span class="grp-tag">Hội bạn thân</span>
+            </div>
+          </div>
+          <div class="tx-right">
+            <span class="dir-lbl r">You owe</span>
+            <span class="tx-amt r">60,000₫</span>
+            <button class="inline-settle" onclick="settleOne(event,'tx3')">Settle</button>
+          </div>
+        </div>
+
+        <div class="tx" id="tx4" data-settled="false" data-dir="they_owe" data-amt="225000" onclick="toggleSel('tx4')">
+          <div class="tx-cb" id="cb4"></div>
+          <div class="tx-icon">🛒</div>
+          <div class="tx-body">
+            <div class="tx-desc">Siêu thị Big C</div>
+            <div class="tx-meta">
+              <span class="paid-tag g">You paid</span>
+              <span class="tx-date">Feb 15</span>
+              <span class="partial-tag">Partial</span>
+            </div>
+          </div>
+          <div class="tx-right">
+            <span class="dir-lbl g">Owes you</span>
+            <span class="tx-amt g">225,000₫</span>
+            <button class="inline-settle" onclick="settleOne(event,'tx4')">Settle</button>
+          </div>
+        </div>
+      </div><!-- grp-feb -->
+
+      <!-- ── January 2026 ── -->
+      <div class="month-grp" id="grp-jan">
+        <div class="month-lbl" id="lbl-jan">
+          January 2026
+          <span class="month-net r">−300,000₫</span>
+        </div>
+
+        <div class="tx" id="tx5" data-settled="false" data-dir="i_owe" data-amt="300000" onclick="toggleSel('tx5')">
+          <div class="tx-cb" id="cb5"></div>
+          <div class="tx-icon">⚡</div>
+          <div class="tx-body">
+            <div class="tx-desc">Tiền điện tháng 1</div>
+            <div class="tx-meta">
+              <span class="paid-tag r">Mai paid</span>
+              <span class="tx-date">Jan 28</span>
+              <span class="grp-tag">Phòng 302</span>
+            </div>
+          </div>
+          <div class="tx-right">
+            <span class="dir-lbl r">You owe</span>
+            <span class="tx-amt r">300,000₫</span>
+            <button class="inline-settle" onclick="settleOne(event,'tx5')">Settle</button>
+          </div>
+        </div>
+
+        <!-- Settled section toggle for Jan -->
+        <div class="settled-toggle" id="stg-jan" onclick="expandSettled('jan')">
+          <span class="st-arrow">▶</span>
+          Settled expenses
+          <span class="st-cnt">2</span>
+          <span class="st-action">Show</span>
+        </div>
+
+        <div class="tx settled gone" id="tx6" data-settled="true" data-group="jan">
+          <div class="tx-icon" style="opacity:0.4">🎂</div>
+          <div class="tx-body">
+            <div class="tx-desc">Bữa tối sinh nhật</div>
+            <div class="tx-meta">
+              <span class="paid-tag settled">You paid · Settled</span>
+              <span class="tx-date">Jan 20</span>
+              <span class="grp-tag">Hội bạn thân</span>
+            </div>
+          </div>
+          <div class="tx-right">
+            <span class="settled-check">✓</span>
+            <span class="tx-amt settled">170,000₫</span>
+          </div>
+        </div>
+
+        <div class="tx settled gone" id="tx7" data-settled="true" data-group="jan">
+          <div class="tx-icon" style="opacity:0.4">🎬</div>
+          <div class="tx-body">
+            <div class="tx-desc">Vé phim CGV</div>
+            <div class="tx-meta">
+              <span class="paid-tag settled">Mai paid · Settled</span>
+              <span class="tx-date">Jan 15</span>
+            </div>
+          </div>
+          <div class="tx-right">
+            <span class="settled-check">✓</span>
+            <span class="tx-amt settled">90,000₫</span>
+          </div>
+        </div>
+      </div><!-- grp-jan -->
+
+      <!-- ── December 2025 (settled only, hidden in unsettled tab) ── -->
+      <div class="month-grp" id="grp-dec" style="display:none">
+        <div class="month-lbl" id="lbl-dec">
+          December 2025
+          <span class="month-net r">−125,000₫</span>
+        </div>
+        <div class="tx settled" id="tx8" data-settled="true" data-group="dec">
+          <div class="tx-icon" style="opacity:0.4">📶</div>
+          <div class="tx-body">
+            <div class="tx-desc">Tiền internet tháng 12</div>
+            <div class="tx-meta">
+              <span class="paid-tag settled">Mai paid · Settled</span>
+              <span class="tx-date">Dec 30</span>
+              <span class="grp-tag">Phòng 302</span>
+            </div>
+          </div>
+          <div class="tx-right">
+            <span class="settled-check">✓</span>
+            <span class="tx-amt settled">125,000₫</span>
+          </div>
+        </div>
+      </div><!-- grp-dec -->
+
+      <!-- Empty state -->
+      <div class="empty" id="empty">
+        <div class="empty-icon">✅</div>
+        <div class="empty-title">All clear!</div>
+        <div class="empty-desc">No expenses to show in this filter.</div>
+      </div>
+
+      <!-- ══ DESIGN NOTES (at bottom) ══ -->
+      <div class="notes">
+        <div class="notes-title">What changed vs current FairPay</div>
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Before</th>
+              <th>After</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Header on scroll</td>
+              <td class="before">Static card, context lost</td>
+              <td class="after">Collapses → compact sticky bar</td>
+            </tr>
+            <tr>
+              <td>Transaction list</td>
+              <td class="before">Flat paginated list</td>
+              <td class="after">Grouped by month, sticky labels</td>
+            </tr>
+            <tr>
+              <td>Filtering</td>
+              <td class="before">None — scan visually</td>
+              <td class="after">Tabs: All / Unsettled / Settled</td>
+            </tr>
+            <tr>
+              <td>Settled items</td>
+              <td class="before">All visible, just dimmed</td>
+              <td class="after">Collapsible section per month</td>
+            </tr>
+            <tr>
+              <td>Per-item settle</td>
+              <td class="before">Bulk-only via checkbox</td>
+              <td class="after">Hover reveals inline Settle btn</td>
+            </tr>
+            <tr>
+              <td>Category context</td>
+              <td class="before">Left border color only</td>
+              <td class="after">Emoji icon + colored tag</td>
+            </tr>
+            <tr>
+              <td>Settlement progress</td>
+              <td class="before">Absent</td>
+              <td class="after">Visual progress bar (owe vs owed)</td>
+            </tr>
+            <tr>
+              <td>Primary CTA</td>
+              <td class="before">"Pay via SePay" (conditional)</td>
+              <td class="after">"Settle Up" always prominent</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div><!-- .txns -->
+  </div><!-- .page -->
+
+  <!-- Floating Action Bar -->
+  <div class="fab" id="fab">
+    <div class="fab-info">
+      <span class="fab-lbl" id="fabLbl">1 selected</span>
+      <span class="fab-amt" id="fabAmt">0₫</span>
+    </div>
+    <div class="fab-div"></div>
+    <button class="fab-btn fab-settle" onclick="settleSelected()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+      Settle
+    </button>
+    <button class="fab-btn fab-clear" onclick="clearSel()" title="Clear">✕</button>
+  </div>
+
+  <script>
+    /* ─── THEME TOGGLE ─── */
+    const themeBtn = document.getElementById('themeBtn');
+    themeBtn.onclick = () => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+      themeBtn.textContent = dark ? '🌙' : '☀️';
+    };
+
+    /* ─── STICKY NAV ON SCROLL ─── */
+    const stickyNav = document.getElementById('stickyNav');
+    const filterTabs = document.getElementById('filterTabs');
+    const heroEl = document.getElementById('heroEl');
+    const monthLbls = document.querySelectorAll('.month-lbl');
+
+    const heroObs = new IntersectionObserver(([e]) => {
+      const show = !e.isIntersecting;
+      stickyNav.classList.toggle('show', show);
+      filterTabs.classList.toggle('pushed', show);
+      monthLbls.forEach(l => l.classList.toggle('pushed', show));
+    }, { threshold: 0, rootMargin: '-50px 0px 0px 0px' });
+    heroObs.observe(heroEl);
+
+    /* ─── TAB FILTER ─── */
+    let currentTab = 'unsettled';
+
+    function setTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.tab === tab)
+      );
+      applyFilter();
+    }
+
+    function applyFilter() {
+      const allTx = document.querySelectorAll('.tx');
+      const stg = document.querySelectorAll('.settled-toggle');
+      const decGrp = document.getElementById('grp-dec');
+
+      // Reset
+      allTx.forEach(t => {
+        const settled = t.dataset.settled === 'true';
+        const group = t.dataset.group;
+
+        if (currentTab === 'all') {
+          // Show unsettled directly; settled only if group is open OR no group
+          if (!settled) { t.classList.remove('gone'); }
+          else if (!group) { t.classList.remove('gone'); }
+          else {
+            const tog = document.getElementById('stg-' + group);
+            t.classList.toggle('gone', !tog || !tog.classList.contains('open'));
+          }
+        } else if (currentTab === 'unsettled') {
+          t.classList.toggle('gone', settled);
+        } else { // settled
+          t.classList.remove('gone');
+          if (!settled) t.classList.add('gone');
+        }
+      });
+
+      // Show/hide settled section toggles
+      stg.forEach(s => {
+        s.style.display = (currentTab === 'settled') ? 'none' : 'flex';
+      });
+
+      // Dec group: only show in all/settled tabs
+      if (decGrp) decGrp.style.display = (currentTab === 'unsettled') ? 'none' : '';
+
+      updateCounts();
+      checkEmpty();
+    }
+
+    function checkEmpty() {
+      const visible = [...document.querySelectorAll('.tx')].filter(t => !t.classList.contains('gone'));
+      document.getElementById('empty').style.display = visible.length === 0 ? 'flex' : 'none';
+    }
+
+    function updateCounts() {
+      const all = document.querySelectorAll('.tx');
+      const total = all.length;
+      const settledN = [...all].filter(t => t.dataset.settled === 'true').length;
+      document.getElementById('cnt-all').textContent = total;
+      document.getElementById('cnt-unsettled').textContent = total - settledN;
+      document.getElementById('cnt-settled').textContent = settledN;
+    }
+
+    /* ─── SETTLED SECTION EXPAND ─── */
+    function expandSettled(grp) {
+      const tog = document.getElementById('stg-' + grp);
+      const open = tog.classList.toggle('open');
+      tog.querySelector('.st-action').textContent = open ? 'Hide' : 'Show';
+      document.querySelectorAll('.tx[data-group="' + grp + '"]').forEach(t =>
+        t.classList.toggle('gone', !open)
+      );
+    }
+
+    /* ─── SELECTION ─── */
+    const selected = new Set();
+
+    function toggleSel(id) {
+      const el = document.getElementById(id);
+      if (!el || el.dataset.settled === 'true') return;
+      selected.has(id) ? selected.delete(id) : selected.add(id);
+      el.classList.toggle('sel', selected.has(id));
+      updateFAB();
+    }
+
+    function clearSel() {
+      selected.forEach(id => document.getElementById(id)?.classList.remove('sel'));
+      selected.clear();
+      updateFAB();
+    }
+
+    function updateFAB() {
+      const fab = document.getElementById('fab');
+      if (selected.size === 0) { fab.classList.remove('show'); return; }
+      const total = [...selected].reduce((s, id) => {
+        return s + parseInt(document.getElementById(id)?.dataset.amt || '0', 10);
+      }, 0);
+      document.getElementById('fabLbl').textContent = selected.size + ' selected';
+      document.getElementById('fabAmt').textContent = fmtVND(total);
+      fab.classList.add('show');
+    }
+
+    /* ─── SETTLE ─── */
+    function settleOne(e, id) {
+      e.stopPropagation();
+      doSettle(id);
+    }
+
+    function settleSelected() {
+      [...selected].forEach(id => doSettle(id, false));
+      clearSel();
+    }
+
+    function doSettle(id, clearAfter = true) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.dataset.settled = 'true';
+      el.style.transition = 'opacity 0.35s, transform 0.35s';
+      el.style.opacity = '0.15';
+      el.style.transform = 'translateX(16px)';
+      setTimeout(() => {
+        el.style.transition = '';
+        el.style.opacity = '';
+        el.style.transform = '';
+        el.classList.add('settled');
+        el.onclick = null;
+        selected.delete(id);
+        if (clearAfter) updateFAB();
+        applyFilter();
+      }, 380);
+    }
+
+    /* ─── FORMAT ─── */
+    function fmtVND(n) {
+      return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+    }
+
+    /* Init */
+    updateCounts();
+    applyFilter();
+  </script>
+</body>
+</html>
