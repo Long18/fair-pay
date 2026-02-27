@@ -22,7 +22,7 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { CheckIcon, AlertCircleIcon, QrCodeIcon, TrashIcon } from '@/components/ui/icons';
-import { useBankSettings } from '@/hooks/use-bank-settings';
+import { useBankSettings } from '@/hooks/payment/use-bank-settings';
 import { getPopularBanks, generateVietQRUrl, getBankByCode, createVietQRConfig } from '@/lib/vietqr';
 import { BankInfo } from '@/types/user-settings';
 

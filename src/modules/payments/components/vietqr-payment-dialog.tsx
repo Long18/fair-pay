@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/icons';
 import { formatNumber } from '@/lib/locale-utils';
 import { triggerHaptic } from '@/lib/haptics';
-import { usePayeeBankSettings } from '@/hooks/use-bank-settings';
+import { usePayeeBankSettings } from '@/hooks/payment/use-bank-settings';
 import {
   generateVietQRUrl,
   generatePaymentReference,

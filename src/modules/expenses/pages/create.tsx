@@ -6,7 +6,7 @@ import { ExpenseForm } from "../components/expense-form";
 import { AttachmentUpload, type AttachmentFile } from "../components/attachment-upload";
 import { useAttachments } from "../hooks/use-attachments";
 import { useCreateRecurringExpense } from "../hooks/use-recurring-expenses";
-import { useTopTransactionPartners } from "@/hooks/use-top-transaction-partners";
+import { useTopTransactionPartners } from "@/hooks/analytics/use-top-transaction-partners";
 import { ExpenseFormValues } from "../types";
 import { Profile } from "@/modules/profile/types";
 import { GroupMember } from "@/modules/groups/types";

@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { SpendingSummary } from '@/hooks/use-spending-summary';
+import { SpendingSummary } from '@/hooks/analytics/use-spending-summary';
 import { formatNumber } from '@/lib/locale-utils';
 import { useTranslation } from 'react-i18next';
 

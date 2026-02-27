@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { TopCategory } from "@/hooks/use-top-categories";
+import { TopCategory } from "@/hooks/analytics/use-top-categories";
 import { formatNumber } from "@/lib/locale-utils";
 import { getCategoryMeta } from "@/modules/expenses";
 import { useState } from "react";

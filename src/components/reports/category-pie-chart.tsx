@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { PieChart, Pie, Cell, Label } from 'recharts';
-import { CategoryData } from '@/hooks/use-category-breakdown';
+import { CategoryData } from '@/hooks/analytics/use-category-breakdown';
 import { getCategoryMeta } from '@/modules/expenses';
 import { formatNumber } from '@/lib/locale-utils';
 import { useTranslation } from 'react-i18next';

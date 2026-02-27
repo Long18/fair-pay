@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SpendingComparison } from "@/hooks/use-spending-comparison";
+import { SpendingComparison } from "@/hooks/analytics/use-spending-comparison";
 import { formatNumber } from "@/lib/locale-utils";
 import { TrendingUpIcon, TrendingDownIcon, MinusIcon } from "@/components/ui/icons";
 

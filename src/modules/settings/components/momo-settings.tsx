@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { AlertCircleIcon, CheckIcon, SettingsIcon } from '@/components/ui/icons';
-import { useMomoSettings } from '@/hooks/use-momo-settings';
+import { useMomoSettings } from '@/hooks/payment/use-momo-settings';
 
 export function MomoSettings() {
   const { t } = useTranslation();
