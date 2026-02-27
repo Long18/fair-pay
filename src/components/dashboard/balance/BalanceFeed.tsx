@@ -1,4 +1,4 @@
-import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
+import { useAggregatedDebts } from "@/hooks/balance/use-aggregated-debts";
 import { BalanceRow } from "./BalanceRow";
 import { useGo } from "@refinedev/core";
 import { Skeleton } from "@/components/ui/skeleton";

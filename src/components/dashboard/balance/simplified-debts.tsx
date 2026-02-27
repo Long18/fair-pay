@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatNumber } from "@/lib/locale-utils";
 import { useGo } from "@refinedev/core";
-import { AggregatedDebt } from "@/hooks/use-aggregated-debts";
+import { AggregatedDebt } from "@/hooks/balance/use-aggregated-debts";
 import { PaginationControls, PaginationMetadata } from "@/components/ui/pagination-controls";
 import { ContributingExpensesList } from "@/components/dashboard/core/contributing-expenses-list";
 import { useContributingExpenses } from "@/hooks/use-contributing-expenses";

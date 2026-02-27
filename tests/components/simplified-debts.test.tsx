@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SimplifiedDebts } from '@/components/dashboard/balance/simplified-debts';
-import { AggregatedDebt } from '@/hooks/use-aggregated-debts';
+import { AggregatedDebt } from '@/hooks/balance/use-aggregated-debts';
 
 // Mock i18n
 vi.mock('react-i18next', () => ({

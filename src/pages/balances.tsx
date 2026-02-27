@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
 
 // Hooks – balance & debts
-import { useAggregatedDebts, type AggregatedDebt } from "@/hooks/use-aggregated-debts";
-import { useBalance } from "@/hooks/useBalance";
+import { useAggregatedDebts, type AggregatedDebt } from "@/hooks/balance/use-aggregated-debts";
+import { useBalance } from "@/hooks/balance/useBalance";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 
 // Hooks – spending / reports

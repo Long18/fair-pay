@@ -1,4 +1,4 @@
-import { useBalance } from '@/hooks/useBalance';
+import { useBalance } from '@/hooks/balance/useBalance';
 
 /**
  * Utility hook for formatted balance display

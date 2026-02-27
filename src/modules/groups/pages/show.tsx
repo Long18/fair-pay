@@ -12,7 +12,7 @@ import { RecurringExpenseList } from "@/modules/expenses";
 import { SimplifiedBalanceView, PaymentList, useBalanceCalculation } from "@/modules/payments";
 import { SimplifiedDebtsToggle } from "@/components/dashboard/stats/SimplifiedDebtsToggle";
 import { useSimplifyDebtsSetting } from "../hooks/use-simplify-debts-setting";
-import { useSimplifiedDebts } from "@/hooks/use-simplified-debts";
+import { useSimplifiedDebts } from "@/hooks/balance/use-simplified-debts";
 import { useSettleAllGroupDebts } from "@/hooks/use-bulk-operations";
 import { useCategoryBreakdown } from "@/hooks/use-category-breakdown";
 import { SettleAllDialog } from "@/components/bulk-operations/SettleAllDialog";
