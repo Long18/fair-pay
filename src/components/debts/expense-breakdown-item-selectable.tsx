@@ -2,13 +2,24 @@ import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { PaymentStateBadge } from "@/components/ui/payment-state-badge";
 import { CategoryIcon } from "@/modules/expenses/components/category-icon";
 import { formatCurrency } from "@/lib/locale-utils";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useGo } from "@refinedev/core";
-import { CheckCircle2Icon } from "@/components/ui/icons";
+import {
+  CheckCircle2Icon,
+  EyeIcon,
+  MoreVerticalIcon,
+} from "@/components/ui/icons";
 
 interface ExpenseBreakdownItemSelectableProps {
   id: string;
@@ -77,11 +88,10 @@ export function ExpenseBreakdownItemSelectable({
         "group flex items-center gap-3 py-3 px-4 transition-colors border-b border-border",
         "bg-card relative",
         isSelected && "bg-primary/5 border-l-[3px] border-l-primary pl-[13px]",
-        !isSelected && "hover:bg-muted/50",
-        isSettled && "opacity-50"
+        !isSelected && "hover:bg-muted/50"
       )}
     >
-      {/* Checkbox — visible on hover or when selected */}
+      {/* Checkbox — hover or selected */}
       {!isSettled && (
         <div
           className={cn(
@@ -164,7 +174,7 @@ export function ExpenseBreakdownItemSelectable({
           </span>
         )}
         {isSettled && (
-          <span className="text-sm">✓</span>
+          <CheckCircle2Icon className="h-3.5 w-3.5 text-muted-foreground" />
         )}
         <span
           className={cn(
@@ -178,28 +188,40 @@ export function ExpenseBreakdownItemSelectable({
           {formatCurrency(myShare, currency)}
         </span>
 
-        {/* Inline settle button — hover reveal */}
-        {!isSettled && canSettle && onInlineSettle && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              "h-6 px-2 text-[10px] font-semibold",
-              "opacity-0 group-hover:opacity-100 transition-opacity",
-              "bg-green-50 text-green-700 border border-green-200",
-              "hover:bg-green-500 hover:text-white hover:border-green-500",
-              "dark:bg-green-950/30 dark:text-green-400 dark:border-green-800",
-              "dark:hover:bg-green-600 dark:hover:text-white"
+        {/* Action dropdown — matches app-wide pattern */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-7 w-7 shrink-0",
+                "opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
+              )}
+              onClick={(e) => e.stopPropagation()}
+              aria-label={t("common.actions", "Actions")}
+            >
+              <MoreVerticalIcon className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={handleRowClick}>
+              <EyeIcon className="h-4 w-4 mr-2" />
+              {t("debts.viewDetails", "View Details")}
+            </DropdownMenuItem>
+            {!isSettled && canSettle && onInlineSettle && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => onInlineSettle(splitId)}
+                >
+                  <CheckCircle2Icon className="h-4 w-4 mr-2" />
+                  {t("debts.settle", "Settle")}
+                </DropdownMenuItem>
+              </>
             )}
-            onClick={(e) => {
-              e.stopPropagation();
-              onInlineSettle(splitId);
-            }}
-          >
-            <CheckCircle2Icon className="h-3 w-3 mr-1" />
-            {t("debts.settle", "Settle")}
-          </Button>
-        )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );
