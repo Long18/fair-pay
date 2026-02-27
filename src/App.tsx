@@ -153,11 +153,11 @@ const queryClientConfig = {
   },
 };
 
-// Memoized wrapper component for document title
-const DocumentTitle = memo(() => {
+// Wrapper component for document title (needs Refine context)
+const DocumentTitle = () => {
   useDocumentTitle();
   return null;
-});
+};
 
 // Main App component
 function App() {
