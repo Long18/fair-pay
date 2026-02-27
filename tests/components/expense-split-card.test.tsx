@@ -9,7 +9,7 @@ vi.mock('@/hooks/use-donation-settings', () => ({
   useDonationSettings: vi.fn(),
 }));
 
-vi.mock('@/hooks/use-momo-settings', () => ({
+vi.mock('@/hooks/payment/use-momo-settings', () => ({
   useMomoSettings: vi.fn(),
 }));
 
@@ -40,7 +40,7 @@ vi.mock('@/modules/payments/components/banking-payment-button', () => ({
 }));
 
 import { useDonationSettings } from '@/hooks/use-donation-settings';
-import { useMomoSettings } from '@/hooks/use-momo-settings';
+import { useMomoSettings } from '@/hooks/payment/use-momo-settings';
 
 // Helper to wrap components with QueryClientProvider
 const createWrapper = () => {

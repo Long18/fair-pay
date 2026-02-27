@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/icons';
 import { ExpenseSplit } from '@/modules/expenses/types';
 import { momoAPI } from '@/lib/momo/api';
-import { useMomoPayment } from '@/hooks/use-momo-payment';
+import { useMomoPayment } from '@/hooks/payment/use-momo-payment';
 import { formatNumber } from '@/lib/locale-utils';
 
 interface MomoPaymentDialogProps {

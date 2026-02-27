@@ -14,7 +14,7 @@ import { SimplifiedDebtsToggle } from "@/components/dashboard/stats/SimplifiedDe
 import { useSimplifyDebtsSetting } from "../hooks/use-simplify-debts-setting";
 import { useSimplifiedDebts } from "@/hooks/balance/use-simplified-debts";
 import { useSettleAllGroupDebts } from "@/hooks/use-bulk-operations";
-import { useCategoryBreakdown } from "@/hooks/use-category-breakdown";
+import { useCategoryBreakdown } from "@/hooks/analytics/use-category-breakdown";
 import { SettleAllDialog } from "@/components/bulk-operations/SettleAllDialog";
 import { QuickSettlementDialog } from "@/components/payments/quick-settlement-dialog";
 import { PaymentMethod } from "@/lib/payment-methods";

@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { TopSpender } from "@/hooks/use-top-spenders";
+import { TopSpender } from "@/hooks/analytics/use-top-spenders";
 import { formatNumber } from "@/lib/locale-utils";
 import { TrophyIcon } from "@/components/ui/icons";
 
