@@ -71,7 +71,6 @@ const FriendShow = lazy(() => import("./modules/friends").then(m => ({ default: 
 const ConnectionsPage = lazy(() => import("./pages/connections").then(m => ({ default: m.ConnectionsPage })));
 
 // Other modules
-const NotificationList = lazy(() => import("./modules/notifications").then(m => ({ default: m.NotificationList })));
 const SettingsPage = lazy(() => import("./modules/settings").then(m => ({ default: m.SettingsPage })));
 const DonationSettings = lazy(() => import("./modules/settings").then(m => ({ default: m.DonationSettings })));
 const BankSettings = lazy(() => import("./modules/settings/pages/bank-settings").then(m => ({ default: m.BankSettingsPage })));
@@ -487,11 +486,6 @@ function App() {
                         </Suspense>
                       } />
                     </Route>
-                    <Route path="/notifications" element={
-                      <Suspense fallback={<PageLoader />}>
-                        <NotificationList />
-                      </Suspense>
-                    } />
                     <Route path="/reports" element={<Navigate to="/balances" replace />} />
                     <Route path="/balances" element={
                       <Suspense fallback={<PageLoader />}>

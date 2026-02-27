@@ -1,5 +1,4 @@
-import { useState, useCallback } from "react";
-import { useGo } from "@refinedev/core";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -19,7 +18,6 @@ import { NotificationItem } from "./notification-item";
 import { BellIcon } from "@/components/ui/icons";
 
 export const NotificationPanel = () => {
-  const go = useGo();
   const {
     notifications,
     unreadCount,
@@ -30,12 +28,7 @@ export const NotificationPanel = () => {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
 
-  const displayNotifications = notifications.slice(0, 20);
-
-  const handleViewAll = useCallback(() => {
-    go({ to: "/notifications" });
-    setOpen(false);
-  }, [go]);
+  const displayNotifications = notifications.slice(0, 50);
 
   const bellButton = (
     <Button
@@ -109,19 +102,6 @@ export const NotificationPanel = () => {
     </div>
   );
 
-  const footer = displayNotifications.length > 0 ? (
-    <div className="border-t border-border/40 p-2 flex-shrink-0">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="w-full text-sm text-primary hover:text-primary/80 hover:bg-primary/5 rounded-lg"
-        onClick={handleViewAll}
-      >
-        View All Notifications
-      </Button>
-    </div>
-  ) : null;
-
   // Mobile: Bottom drawer (Instagram-style)
   if (isMobile) {
     return (
@@ -133,7 +113,6 @@ export const NotificationPanel = () => {
           <ScrollArea className="flex-1 min-h-0 overflow-hidden">
             {notificationList}
           </ScrollArea>
-          {footer}
         </DrawerContent>
       </Drawer>
     );
@@ -153,7 +132,6 @@ export const NotificationPanel = () => {
         <ScrollArea className="flex-1 min-h-0 overflow-hidden">
           {notificationList}
         </ScrollArea>
-        {footer}
       </PopoverContent>
     </Popover>
   );
