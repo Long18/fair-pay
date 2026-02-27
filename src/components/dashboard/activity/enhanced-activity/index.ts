@@ -31,4 +31,4 @@ export type { ActivityTimePeriodGroupProps } from "../activity-time-period-group
 
 // Note: Utility functions and hooks are available directly from their source files:
 // - Activity grouping utils: import from "@/lib/activity-grouping"
-// - Progressive disclosure hook: import from "@/hooks/use-progressive-disclosure"
+// - Progressive disclosure hook: import from "@/hooks/ui/use-progressive-disclosure"

@@ -3,8 +3,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
-import { useTableSort, SortConfig } from "@/hooks/use-table-sort";
-import { useTablePagination } from "@/hooks/use-table-pagination";
+import { useTableSort, SortConfig } from "@/hooks/table/use-table-sort";
+import { useTablePagination } from "@/hooks/table/use-table-pagination";
 
 import { MoreVerticalIcon, SearchIcon, XIcon, ArrowUpIcon, ArrowDownIcon } from "@/components/ui/icons";
 interface AccountingRecord {

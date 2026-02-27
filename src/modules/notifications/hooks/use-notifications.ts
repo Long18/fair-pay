@@ -6,7 +6,7 @@ import { Profile } from "@/modules/profile/types";
 import { Notification } from "../types";
 import { NotificationToast } from "../components/notification-toast";
 import { useNotificationSound } from "./use-notification-sound";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/ui/use-mobile";
 import { sendBrowserNotification, requestNotificationPermission } from "../utils/browser-notifications";
 import { formatDistanceToNow } from "date-fns";
 

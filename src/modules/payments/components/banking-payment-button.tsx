@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { BanknoteIcon } from '@/components/ui/icons';
 import { ExpenseSplit } from '@/modules/expenses/types';
 import { BankingPaymentDialog } from './banking-payment-dialog';
-import { useUserSettings } from '@/hooks/use-user-settings';
+import { useUserSettings } from '@/hooks/settings/use-user-settings';
 import { cn } from '@/lib/utils';
 
 interface BankingPaymentButtonProps {

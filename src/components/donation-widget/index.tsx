@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useGetIdentity } from '@refinedev/core';
 import { Profile } from '@/modules/profile/types';
 import { useTranslation } from 'react-i18next';
-import { useDonationSettings } from '@/hooks/use-donation-settings';
+import { useDonationSettings } from '@/hooks/settings/use-donation-settings';
 import { DonationDialog } from './DonationDialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';

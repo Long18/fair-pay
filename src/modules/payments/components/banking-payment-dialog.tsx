@@ -15,7 +15,7 @@ import { generateVietQRDeeplink, findBankById, VIETQR_BANKS } from '@/lib/vietqr
 import { toast } from 'sonner';
 import { BanknoteIcon, ArrowUpRightIcon } from '@/components/ui/icons';
 import { ExpenseSplit } from '@/modules/expenses/types';
-import { useUserSettings } from '@/hooks/use-user-settings';
+import { useUserSettings } from '@/hooks/settings/use-user-settings';
 
 interface BankingPaymentDialogProps {
   open: boolean;

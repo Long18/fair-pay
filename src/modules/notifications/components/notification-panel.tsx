@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/ui/use-mobile";
 import { useNotifications } from "../hooks/use-notifications";
 import { NotificationItem } from "./notification-item";
 import { BellIcon } from "@/components/ui/icons";

@@ -12,7 +12,7 @@ import { ActivitySummary } from "./activity-summary";
 import { ActivityTimePeriodGroup } from "./activity-time-period-group";
 import { EnhancedActivityRow, type EnhancedActivityItem } from "./enhanced-activity-row";
 import { PaginationControls, type PaginationMetadata } from "@/components/ui/pagination-controls";
-import { useProgressiveDisclosure } from "@/hooks/use-progressive-disclosure";
+import { useProgressiveDisclosure } from "@/hooks/ui/use-progressive-disclosure";
 import {
   groupActivitiesByTimePeriod,
   sortActivitiesByDate,
