@@ -1,11 +1,14 @@
 import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { PaymentStateBadge } from "@/components/ui/payment-state-badge";
+import { CategoryIcon } from "@/modules/expenses/components/category-icon";
 import { formatCurrency } from "@/lib/locale-utils";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useGo } from "@refinedev/core";
+import { CheckCircle2Icon } from "@/components/ui/icons";
 
 interface ExpenseBreakdownItemSelectableProps {
   id: string;
@@ -15,23 +18,26 @@ interface ExpenseBreakdownItemSelectableProps {
   currency: string;
   expenseDate: string;
   groupName?: string | null;
+  category?: string | null;
   myShare: number;
-  direction: 'i_owe' | 'they_owe';
+  direction: "i_owe" | "they_owe";
   paidByName: string;
-  status: 'paid' | 'unpaid' | 'partial';
+  status: "paid" | "unpaid" | "partial";
   isSettled: boolean;
   isSelected: boolean;
   onSelectChange: (splitId: string, checked: boolean) => void;
+  onInlineSettle?: (splitId: string) => void;
+  canSettle?: boolean;
 }
 
 export function ExpenseBreakdownItemSelectable({
   id,
   splitId,
   description,
-  amount,
   currency,
   expenseDate,
   groupName,
+  category,
   myShare,
   direction,
   paidByName,
@@ -39,22 +45,24 @@ export function ExpenseBreakdownItemSelectable({
   isSettled,
   isSelected,
   onSelectChange,
+  onInlineSettle,
+  canSettle = false,
 }: ExpenseBreakdownItemSelectableProps) {
   const { t } = useTranslation();
   const go = useGo();
 
-  const isIOwe = direction === 'i_owe';
+  const isIOwe = direction === "i_owe";
 
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), 'MMM d, yyyy');
+      return format(new Date(dateString), "MMM d");
     } catch {
       return dateString;
     }
   };
 
-  const handleCheckboxChange = (checked: boolean | 'indeterminate') => {
-    if (checked !== 'indeterminate') {
+  const handleCheckboxChange = (checked: boolean | "indeterminate") => {
+    if (checked !== "indeterminate") {
       onSelectChange(splitId, checked);
     }
   };
@@ -66,83 +74,132 @@ export function ExpenseBreakdownItemSelectable({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 py-3 pr-4 rounded-lg transition-colors border relative",
-        // Left color accent for direction
-        isIOwe
-          ? "pl-4 border-l-[3px] border-l-red-400 dark:border-l-red-500"
-          : "pl-4 border-l-[3px] border-l-green-400 dark:border-l-green-500",
-        isSelected && "border-primary bg-primary/5 !border-l-primary",
-        !isSelected && "border-transparent hover:bg-muted/50",
-        isSettled && "opacity-60"
+        "group flex items-center gap-3 py-3 px-4 transition-colors border-b border-border",
+        "bg-card relative",
+        isSelected && "bg-primary/5 border-l-[3px] border-l-primary pl-[13px]",
+        !isSelected && "hover:bg-muted/50",
+        isSettled && "opacity-50"
       )}
     >
-      {/* Checkbox */}
+      {/* Checkbox — visible on hover or when selected */}
       {!isSettled && (
-        <Checkbox
-          checked={isSelected}
-          onCheckedChange={handleCheckboxChange}
-          onClick={(e) => e.stopPropagation()}
-        />
+        <div
+          className={cn(
+            "shrink-0 transition-opacity",
+            isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          )}
+        >
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={handleCheckboxChange}
+            onClick={(e) => e.stopPropagation()}
+            aria-label={`Select ${description}`}
+          />
+        </div>
       )}
 
-      {/* Expense Info */}
-      <div
-        onClick={handleRowClick}
-        className="flex-1 min-w-0 cursor-pointer"
-      >
+      {/* Category Icon */}
+      <div className="shrink-0" onClick={handleRowClick}>
+        <CategoryIcon category={category} size="sm" />
+      </div>
+
+      {/* Body */}
+      <div onClick={handleRowClick} className="flex-1 min-w-0 cursor-pointer">
         <div className="flex items-center gap-2 mb-1">
-          <p className={cn("typography-row-title truncate", isSettled && "line-through")}>
+          <p
+            className={cn(
+              "text-sm font-semibold truncate",
+              isSettled && "line-through text-muted-foreground"
+            )}
+          >
             {description}
           </p>
-          <PaymentStateBadge state={status} size="sm" />
+          {status === "partial" && (
+            <PaymentStateBadge state={status} size="sm" />
+          )}
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Paid by indicator */}
-          <span className={cn(
-            "text-xs font-medium px-1.5 py-0.5 rounded",
-            isIOwe
-              ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300"
-              : "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300"
-          )}>
-            {paidByName} {t('debts.paid', 'paid')}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span
+            className={cn(
+              "text-[11px] font-medium px-1.5 py-0.5 rounded",
+              isSettled
+                ? "bg-muted text-muted-foreground border border-border"
+                : isIOwe
+                  ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300"
+                  : "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300"
+            )}
+          >
+            {isSettled
+              ? `${paidByName} · ${t("debts.settled", "Settled")}`
+              : `${paidByName} ${t("debts.paid", "paid")}`}
           </span>
-          <span className="typography-metadata">•</span>
-          <span className="typography-metadata">
+          <span className="text-[11px] text-muted-foreground">
             {formatDate(expenseDate)}
           </span>
           {groupName && (
-            <>
-              <span className="typography-metadata">•</span>
-              <Badge variant="outline" className="typography-metadata">
-                {groupName}
-              </Badge>
-            </>
+            <Badge
+              variant="outline"
+              className="text-[10px] px-1.5 py-0 h-4 font-normal"
+            >
+              {groupName}
+            </Badge>
           )}
-          <span className="typography-metadata">•</span>
-          <span className="typography-metadata text-muted-foreground/60">
-            {t('expense.total', 'Total')}: {formatCurrency(amount, currency)}
-          </span>
         </div>
       </div>
 
-      {/* Share amount with direction context */}
-      <div className="flex flex-col items-end ml-4 shrink-0">
-        <span className={cn(
-          "text-xs mb-1",
-          isIOwe ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
-        )}>
-          {isIOwe
-            ? t('debts.youOweLabel', 'You owe')
-            : t('debts.theyOweLabel', 'They owe')}
-        </span>
-        <span className={cn(
-          "typography-amount-prominent",
-          isSelected && "text-primary",
-          !isSelected && isIOwe && "text-red-600 dark:text-red-400",
-          !isSelected && !isIOwe && "text-green-600 dark:text-green-400"
-        )}>
+      {/* Right: direction + amount + inline settle */}
+      <div className="flex flex-col items-end ml-2 shrink-0 gap-1">
+        {!isSettled && (
+          <span
+            className={cn(
+              "text-[10px] font-semibold uppercase tracking-wide",
+              isIOwe
+                ? "text-red-600 dark:text-red-400"
+                : "text-green-600 dark:text-green-400"
+            )}
+          >
+            {isIOwe
+              ? t("debts.youOweLabel", "You owe")
+              : t("debts.theyOweLabel", "Owes you")}
+          </span>
+        )}
+        {isSettled && (
+          <span className="text-sm">✓</span>
+        )}
+        <span
+          className={cn(
+            "text-[15px] font-bold tabular-nums",
+            isSelected && "text-primary",
+            !isSelected && isSettled && "text-muted-foreground font-medium",
+            !isSelected && !isSettled && isIOwe && "text-red-600 dark:text-red-400",
+            !isSelected && !isSettled && !isIOwe && "text-green-600 dark:text-green-400"
+          )}
+        >
           {formatCurrency(myShare, currency)}
         </span>
+
+        {/* Inline settle button — hover reveal */}
+        {!isSettled && canSettle && onInlineSettle && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "h-6 px-2 text-[10px] font-semibold",
+              "opacity-0 group-hover:opacity-100 transition-opacity",
+              "bg-green-50 text-green-700 border border-green-200",
+              "hover:bg-green-500 hover:text-white hover:border-green-500",
+              "dark:bg-green-950/30 dark:text-green-400 dark:border-green-800",
+              "dark:hover:bg-green-600 dark:hover:text-white"
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              onInlineSettle(splitId);
+            }}
+          >
+            <CheckCircle2Icon className="h-3 w-3 mr-1" />
+            {t("debts.settle", "Settle")}
+          </Button>
+        )}
       </div>
     </div>
   );
