@@ -39,6 +39,7 @@ export interface UseEnhancedActivityOptions {
   groupId?: string;
   friendshipId?: string;
   userId?: string; // Filter to show only transactions where user is payer or participant
+  enabled?: boolean; // When false, skips all data fetching (defaults to true)
 }
 
 export interface UseEnhancedActivityResult {
@@ -55,7 +56,7 @@ export interface UseEnhancedActivityResult {
 export const useEnhancedActivity = (
   options: UseEnhancedActivityOptions = {}
 ): UseEnhancedActivityResult => {
-  const { limit = 50, groupId, friendshipId, userId } = options;
+  const { limit = 50, groupId, friendshipId, userId, enabled } = options;
   const { data: identity } = useGetIdentity<Profile>();
 
   // Build filters
@@ -95,7 +96,7 @@ export const useEnhancedActivity = (
       `,
     },
     queryOptions: {
-      enabled: !!identity?.id,
+      enabled: (enabled !== false) && !!identity?.id,
     },
   });
 

@@ -34,7 +34,7 @@ export const Dashboard = () => {
   const {
     activities,
     isLoading: activitiesLoading
-  } = useEnhancedActivity({ limit: 50 });
+  } = useEnhancedActivity({ limit: 50, enabled: activeTab === "activity" });
 
   const [loading, setLoading] = useState(true);
   const visibilityDebounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -83,7 +83,7 @@ export const Dashboard = () => {
   }, [identity?.id]);
 
   useEffect(() => {
-    if (!debtsLoading && !activitiesLoading) {
+    if (!debtsLoading) {
       const timer = setTimeout(() => {
         setLoading(false);
 
@@ -96,7 +96,7 @@ export const Dashboard = () => {
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [debtsLoading, activitiesLoading, identity?.id, debts.length]);
+  }, [debtsLoading, identity?.id, debts.length]);
 
   const isAuthenticated = !!identity;
 
