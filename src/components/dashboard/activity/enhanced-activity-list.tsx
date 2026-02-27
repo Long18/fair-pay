@@ -6,9 +6,9 @@ import { ActivityIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { debounce } from "@/lib/performance";
 
-import { ActivityFilterControls, type PaymentStateFilter, type FilterCounts } from "./activity/activity-filter-controls";
-import { ActivitySortControls, type SortOption } from "./activity/activity-sort-controls";
-import { ActivitySummary } from "./activity/activity-summary";
+import { ActivityFilterControls, type PaymentStateFilter, type FilterCounts } from "./activity-filter-controls";
+import { ActivitySortControls, type SortOption } from "./activity-sort-controls";
+import { ActivitySummary } from "./activity-summary";
 import { ActivityTimePeriodGroup } from "./activity-time-period-group";
 import { EnhancedActivityRow, type EnhancedActivityItem } from "./enhanced-activity-row";
 import { PaginationControls, type PaginationMetadata } from "@/components/ui/pagination-controls";
