@@ -9,7 +9,7 @@ import {
   addRecentSearch,
   addRecentlyViewed,
   getRecentlyViewedByType,
-} from '../lib/local-settings';
+} from '@/lib/local-settings';
 
 /**
  * React hook for managing local settings with reactive updates
