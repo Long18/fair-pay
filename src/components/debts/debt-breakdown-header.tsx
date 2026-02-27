@@ -1,9 +1,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeftIcon, UserIcon, PlusIcon, CreditCardIcon } from "@/components/ui/icons";
+import { ArrowLeftIcon, ArrowDownIcon, ArrowUpIcon, UserIcon, PlusIcon, CreditCardIcon } from "@/components/ui/icons";
 import { formatCurrency } from "@/lib/locale-utils";
-import { getOweStatusColors } from "@/lib/status-colors";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useGo } from "@refinedev/core";
@@ -47,108 +46,132 @@ export function DebtBreakdownHeader({
 
   const { isConfigured: isSepayConfigured } = usePayeeSepaySettings(counterpartyId);
 
-  const statusColors = iOweThem ? getOweStatusColors('owe') : getOweStatusColors('owed');
-  const statusText = iOweThem
-    ? t('debts.youOwe', 'You owe')
-    : t('debts.owesYou', 'Owes you');
+  const initials = counterpartyName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  const total = totalIOwe + totalTheyOwe;
+  const owePct = total > 0 ? (totalIOwe / total) * 100 : 0;
+
+  const metaParts = [
+    unpaidCount > 0 && `${unpaidCount} ${t("debts.unpaid", "unpaid")}`,
+    partialCount > 0 && `${partialCount} ${t("debts.partial", "partial")}`,
+  ].filter(Boolean) as string[];
 
   return (
     <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
       {/* Back Button */}
-      <div className="p-4 border-b">
+      <div className="px-4 pt-3">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => go({ to: "/" })}
-          className="rounded-lg"
+          className="rounded-lg -ml-2 text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeftIcon className="h-4 w-4 mr-2" />
-          {t('common.back', 'Back to Dashboard')}
+          <ArrowLeftIcon className="h-4 w-4 mr-1.5" />
+          {t("common.back", "Back to Dashboard")}
         </Button>
       </div>
 
-      {/* Main Header Content */}
-      <div className="p-6 space-y-4">
-        <div className="flex items-center gap-4">
-          <Avatar className="h-16 w-16 border-2 border-border">
-            <AvatarImage src={counterpartyAvatarUrl || undefined} />
-            <AvatarFallback className="text-lg font-semibold bg-primary/10 text-primary">
-              {counterpartyName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <h1 className="typography-page-title mb-1">{counterpartyName}</h1>
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant={iOweThem ? "default" : "secondary"}>
-                {statusText}
-              </Badge>
-              {unpaidCount > 0 && (
-                <>
-                  <span className="typography-metadata">•</span>
-                  <span className="typography-metadata">
-                    {unpaidCount} {t('debts.unpaid', 'unpaid')}
-                  </span>
-                </>
+      {/* Hero: Avatar + Name + Status */}
+      <div className="flex items-center gap-3.5 px-5 pt-3 pb-4">
+        <Avatar className="h-14 w-14 border-2 border-border shrink-0">
+          <AvatarImage src={counterpartyAvatarUrl || undefined} />
+          <AvatarFallback className="text-base font-bold bg-primary/10 text-primary">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+
+        <div>
+          <h1 className="text-xl font-bold leading-tight mb-1.5">{counterpartyName}</h1>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5",
+                iOweThem
+                  ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800"
+                  : "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800"
               )}
-              {partialCount > 0 && (
-                <>
-                  <span className="typography-metadata">•</span>
-                  <span className="typography-metadata">
-                    {partialCount} {t('debts.partial', 'partial')}
-                  </span>
-                </>
-              )}
-            </div>
+            >
+              {iOweThem ? t("debts.youOwe", "You owe") : t("debts.owesYou", "Owes you")}
+            </Badge>
+            {metaParts.map((part, i) => (
+              <span key={i} className="flex items-center gap-1.5">
+                <span className="text-muted-foreground/40 text-xs">•</span>
+                <span className="text-xs text-muted-foreground">{part}</span>
+              </span>
+            ))}
           </div>
         </div>
+      </div>
 
-        {/* Net Position Display */}
-        <div className={cn("p-4 rounded-lg border-2", statusColors.bg, statusColors.border)}>
-          <p className="typography-metadata mb-1">
-            {t('debts.netBalance', 'Net Balance')}
-          </p>
-          <p className={cn("text-3xl font-bold tabular-nums", statusColors.text)}>
-            {iOweThem ? '-' : '+'}
+      <div className="px-4 pb-4 space-y-3">
+        {/* Big Balance — color + sign encode direction, no label needed */}
+        <div
+          className={cn(
+            "px-4 py-3.5 rounded-xl border-2",
+            iOweThem
+              ? "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800"
+              : "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800"
+          )}
+        >
+          <p
+            className={cn(
+              "text-[32px] leading-none font-extrabold tabular-nums tracking-tight",
+              iOweThem
+                ? "text-red-700 dark:text-red-300"
+                : "text-green-700 dark:text-green-300"
+            )}
+          >
+            {iOweThem ? "−" : "+"}
             {formatCurrency(netAmount, currency)}
           </p>
         </div>
 
-        {/* Balance Breakdown */}
+        {/* Settlement Flow Bar — ↓ owe  ░░░░░░░░░  ↑ owed, no text labels */}
         {(totalIOwe > 0 || totalTheyOwe > 0) && (
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
-              <p className="text-xs text-red-600 dark:text-red-400 mb-0.5">
-                {t('debts.youOweTotal', 'You owe {{name}}', { name: counterpartyName })}
-              </p>
-              <p className="text-lg font-semibold tabular-nums text-red-700 dark:text-red-300">
-                {formatCurrency(totalIOwe, currency)}
-              </p>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
+                <ArrowDownIcon className="h-3 w-3" />
+                <span className="text-xs font-semibold tabular-nums">
+                  {formatCurrency(totalIOwe, currency)}
+                </span>
+              </div>
+              <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                <span className="text-xs font-semibold tabular-nums">
+                  {formatCurrency(totalTheyOwe, currency)}
+                </span>
+                <ArrowUpIcon className="h-3 w-3" />
+              </div>
             </div>
-            <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
-              <p className="text-xs text-green-600 dark:text-green-400 mb-0.5">
-                {t('debts.theyOweTotal', '{{name}} owes you', { name: counterpartyName })}
-              </p>
-              <p className="text-lg font-semibold tabular-nums text-green-700 dark:text-green-300">
-                {formatCurrency(totalTheyOwe, currency)}
-              </p>
+            <div className="h-1.5 bg-border rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-red-500 to-orange-400 transition-[width] duration-700 ease-out"
+                style={{ width: `${owePct}%` }}
+              />
             </div>
           </div>
         )}
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 pt-0.5">
           {iOweThem && isSepayConfigured && netAmount > 0 && (
             <Button
               variant="default"
               size="sm"
               className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white"
               onClick={() => {
-                triggerHaptic('medium');
+                triggerHaptic("medium");
                 setSepayDialogOpen(true);
               }}
             >
               <CreditCardIcon className="h-4 w-4 mr-2" />
-              {t('payments.payViaSePay', 'Pay via SePay')}
+              {t("payments.payViaSePay", "Pay via SePay")}
             </Button>
           )}
           <Button
@@ -158,7 +181,7 @@ export function DebtBreakdownHeader({
             onClick={() => go({ to: `/expenses/create?with=${counterpartyId}` })}
           >
             <PlusIcon className="h-4 w-4 mr-2" />
-            {t('debts.addExpense', 'Add Expense')}
+            {t("debts.addExpense", "Add Expense")}
           </Button>
           <Button
             variant="outline"
@@ -167,7 +190,7 @@ export function DebtBreakdownHeader({
             onClick={() => go({ to: `/profile/${counterpartyId}` })}
           >
             <UserIcon className="h-4 w-4 mr-2" />
-            {t('debts.viewProfile', 'View Profile')}
+            {t("debts.viewProfile", "View Profile")}
           </Button>
         </div>
       </div>
