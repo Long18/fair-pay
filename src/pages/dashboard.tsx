@@ -13,6 +13,7 @@ import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
 import { usePersistedState } from "@/hooks/settings/use-persisted-state";
 import { useTranslation } from "react-i18next";
 import { DashboardTracker } from "@/lib/analytics/index";
+import { CACHE_CONFIG } from "@/lib/cache-config";
 import { WalletIcon, ActivityIcon, HistoryIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
@@ -42,7 +43,7 @@ export const Dashboard = () => {
 
   // Refetch data when component mounts or becomes visible (with debounce and stale time check)
   useEffect(() => {
-    const STALE_TIME = 5 * 1000;
+    const STALE_TIME = CACHE_CONFIG.balance.staleTime;
 
     const refetchIfStale = ({ debounce = false } = {}) => {
       if (!identity?.id) return;
