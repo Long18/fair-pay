@@ -42,36 +42,32 @@ export const Dashboard = () => {
 
   // Refetch data when component mounts or becomes visible (with debounce and stale time check)
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && identity?.id) {
-        const now = Date.now();
-        const timeSinceLastRefetch = now - lastRefetchTimeRef.current;
-        const STALE_TIME = 5 * 1000;
+    const STALE_TIME = 5 * 1000;
 
-        if (timeSinceLastRefetch > STALE_TIME) {
-          if (visibilityDebounceRef.current) {
-            clearTimeout(visibilityDebounceRef.current);
-          }
-          visibilityDebounceRef.current = setTimeout(() => {
-            lastRefetchTimeRef.current = Date.now();
-            refetchDebts();
-          }, 300);
+    const refetchIfStale = ({ debounce = false } = {}) => {
+      if (!identity?.id) return;
+      const timeSinceLastRefetch = Date.now() - lastRefetchTimeRef.current;
+      if (timeSinceLastRefetch <= STALE_TIME) return;
+
+      if (debounce) {
+        if (visibilityDebounceRef.current) {
+          clearTimeout(visibilityDebounceRef.current);
         }
-      }
-    };
-
-    const handleFocus = () => {
-      if (identity?.id) {
-        const now = Date.now();
-        const timeSinceLastRefetch = now - lastRefetchTimeRef.current;
-        const STALE_TIME = 5 * 1000;
-
-        if (timeSinceLastRefetch > STALE_TIME) {
+        visibilityDebounceRef.current = setTimeout(() => {
           lastRefetchTimeRef.current = Date.now();
           refetchDebts();
-        }
+        }, 300);
+      } else {
+        lastRefetchTimeRef.current = Date.now();
+        refetchDebts();
       }
     };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) refetchIfStale({ debounce: true });
+    };
+
+    const handleFocus = () => refetchIfStale();
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleFocus);
