@@ -31,7 +31,7 @@ export function DebtFilterTabs({
   return (
     <div
       className={cn(
-        "flex bg-card border-b border-border sticky top-0 z-[150]",
+        "flex bg-card border-b border-border sticky top-0 z-[150] touch-manipulation",
         className
       )}
       role="tablist"

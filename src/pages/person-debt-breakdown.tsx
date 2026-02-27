@@ -18,7 +18,7 @@ import { useTranslation } from "react-i18next";
 import { isAdmin } from "@/lib/rbac";
 import { BulkDeleteDialog } from "@/components/bulk-operations/BulkDeleteDialog";
 import { formatCurrency } from "@/lib/locale-utils";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Empty,
   EmptyHeader,
@@ -248,11 +248,12 @@ export const PersonDebtBreakdown = () => {
 
   const hasSelection = selectedSplitIds.size > 0;
   const isLoading = isLoadingProfile || isLoadingExpenses || isLoadingSummary;
+  const prefersReducedMotion = useReducedMotion();
 
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <LoadingBeam text={t("debts.loading", "Đang tải chi tiết...")} />
+        <LoadingBeam text={t("debts.loading", "Đang tải chi tiết\u2026")} />
       </div>
     );
   }
@@ -416,10 +417,14 @@ export const PersonDebtBreakdown = () => {
       <AnimatePresence>
         {hasSelection && (
           <motion.div
-            initial={{ y: 80, opacity: 0 }}
+            initial={prefersReducedMotion ? false : { y: 80, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 80, opacity: 0 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            exit={prefersReducedMotion ? { opacity: 0 } : { y: 80, opacity: 0 }}
+            transition={
+              prefersReducedMotion
+                ? { duration: 0 }
+                : { type: "spring", damping: 25, stiffness: 300 }
+            }
             className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50"
           >
             <div className="bg-foreground text-background shadow-2xl rounded-2xl px-4 py-3 flex items-center gap-3">
@@ -445,7 +450,7 @@ export const PersonDebtBreakdown = () => {
               >
                 <CheckCircle2Icon className="h-4 w-4" />
                 {isSettling
-                  ? t("debts.settling", "Settling...")
+                  ? t("debts.settling", "Settling\u2026")
                   : t("debts.settle", "Settle")}
               </Button>
 

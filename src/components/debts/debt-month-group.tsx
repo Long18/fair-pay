@@ -1,6 +1,4 @@
 import { useState, useMemo } from "react";
-import { format } from "date-fns";
-import { vi, enUS } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
 import { formatCurrency } from "@/lib/locale-utils";
 import { cn } from "@/lib/utils";
@@ -27,13 +25,15 @@ export function DebtMonthGroup({
 }: DebtMonthGroupProps) {
   const { t, i18n } = useTranslation();
   const [settledExpanded, setSettledExpanded] = useState(false);
-  const dateLocale = i18n.language === "vi" ? vi : enUS;
 
   const monthLabel = useMemo(() => {
     const [year, month] = monthKey.split("-");
     const date = new Date(Number(year), Number(month) - 1, 1);
-    return format(date, "MMMM yyyy", { locale: dateLocale });
-  }, [monthKey, dateLocale]);
+    return new Intl.DateTimeFormat(i18n.language, {
+      month: "long",
+      year: "numeric",
+    }).format(date);
+  }, [monthKey, i18n.language]);
 
   const isNegative = netAmount < 0;
 

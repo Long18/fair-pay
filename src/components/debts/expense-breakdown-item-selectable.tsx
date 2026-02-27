@@ -1,4 +1,3 @@
-import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,7 @@ import { CategoryIcon } from "@/modules/expenses/components/category-icon";
 import { formatCurrency } from "@/lib/locale-utils";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-import { useGo } from "@refinedev/core";
+import { Link } from "react-router";
 import {
   CheckCircle2Icon,
   EyeIcon,
@@ -59,14 +58,16 @@ export function ExpenseBreakdownItemSelectable({
   onInlineSettle,
   canSettle = false,
 }: ExpenseBreakdownItemSelectableProps) {
-  const { t } = useTranslation();
-  const go = useGo();
+  const { t, i18n } = useTranslation();
 
   const isIOwe = direction === "i_owe";
 
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), "MMM d");
+      return new Intl.DateTimeFormat(i18n.language, {
+        month: "short",
+        day: "numeric",
+      }).format(new Date(dateString));
     } catch {
       return dateString;
     }
@@ -78,9 +79,7 @@ export function ExpenseBreakdownItemSelectable({
     }
   };
 
-  const handleRowClick = () => {
-    go({ to: `/expenses/show/${id}` });
-  };
+  const expenseUrl = `/expenses/show/${id}`;
 
   return (
     <div
@@ -108,54 +107,59 @@ export function ExpenseBreakdownItemSelectable({
         </div>
       )}
 
-      {/* Category Icon */}
-      <div className="shrink-0" onClick={handleRowClick}>
-        <CategoryIcon category={category} size="sm" />
-      </div>
+      {/* Category Icon + Body — wrapped in <Link> for proper navigation */}
+      <Link
+        to={expenseUrl}
+        className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="shrink-0">
+          <CategoryIcon category={category} size="sm" />
+        </div>
 
-      {/* Body */}
-      <div onClick={handleRowClick} className="flex-1 min-w-0 cursor-pointer">
-        <div className="flex items-center gap-2 mb-1">
-          <p
-            className={cn(
-              "text-sm font-semibold truncate",
-              isSettled && "line-through text-muted-foreground"
-            )}
-          >
-            {description}
-          </p>
-          {status === "partial" && (
-            <PaymentStateBadge state={status} size="sm" />
-          )}
-        </div>
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span
-            className={cn(
-              "text-[11px] font-medium px-1.5 py-0.5 rounded",
-              isSettled
-                ? "bg-muted text-muted-foreground border border-border"
-                : isIOwe
-                  ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300"
-                  : "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300"
-            )}
-          >
-            {isSettled
-              ? `${paidByName} · ${t("debts.settled", "Settled")}`
-              : `${paidByName} ${t("debts.paid", "paid")}`}
-          </span>
-          <span className="text-[11px] text-muted-foreground">
-            {formatDate(expenseDate)}
-          </span>
-          {groupName && (
-            <Badge
-              variant="outline"
-              className="text-[10px] px-1.5 py-0 h-4 font-normal"
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <p
+              className={cn(
+                "text-sm font-semibold truncate",
+                isSettled && "line-through text-muted-foreground"
+              )}
             >
-              {groupName}
-            </Badge>
-          )}
+              {description}
+            </p>
+            {status === "partial" && (
+              <PaymentStateBadge state={status} size="sm" />
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span
+              className={cn(
+                "text-[11px] font-medium px-1.5 py-0.5 rounded",
+                isSettled
+                  ? "bg-muted text-muted-foreground border border-border"
+                  : isIOwe
+                    ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300"
+                    : "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300"
+              )}
+            >
+              {isSettled
+                ? `${paidByName} · ${t("debts.settled", "Settled")}`
+                : `${paidByName} ${t("debts.paid", "paid")}`}
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              {formatDate(expenseDate)}
+            </span>
+            {groupName && (
+              <Badge
+                variant="outline"
+                className="text-[10px] px-1.5 py-0 h-4 font-normal"
+              >
+                {groupName}
+              </Badge>
+            )}
+          </div>
         </div>
-      </div>
+      </Link>
 
       {/* Right: direction + amount + inline settle */}
       <div className="flex flex-col items-end ml-2 shrink-0 gap-1">
@@ -205,9 +209,11 @@ export function ExpenseBreakdownItemSelectable({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleRowClick}>
-              <EyeIcon className="h-4 w-4 mr-2" />
-              {t("debts.viewDetails", "View Details")}
+            <DropdownMenuItem asChild>
+              <Link to={expenseUrl}>
+                <EyeIcon className="h-4 w-4 mr-2" />
+                {t("debts.viewDetails", "View Details")}
+              </Link>
             </DropdownMenuItem>
             {!isSettled && canSettle && onInlineSettle && (
               <>

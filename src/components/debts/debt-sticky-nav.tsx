@@ -35,8 +35,8 @@ export function DebtStickyNav({
     <div
       className={cn(
         "fixed top-0 left-1/2 z-[200] w-full max-w-4xl",
-        "-translate-x-1/2 transition-all duration-250 ease-out",
-        "bg-card border-b border-border",
+        "-translate-x-1/2 transition-[transform,opacity,box-shadow] duration-200 ease-out",
+        "bg-card border-b border-border touch-manipulation",
         "px-3 py-2 flex items-center gap-2.5",
         visible
           ? "translate-y-0 shadow-md opacity-100"
