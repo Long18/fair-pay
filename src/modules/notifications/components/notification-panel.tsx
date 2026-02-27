@@ -110,7 +110,7 @@ export const NotificationPanel = () => {
         <DrawerContent className="max-h-[85vh] flex flex-col">
           <DrawerTitle className="sr-only">Notifications</DrawerTitle>
           {header}
-          <ScrollArea className="flex-1 min-h-0 overflow-hidden">
+          <ScrollArea className="flex-1 h-0 min-h-0">
             {notificationList}
           </ScrollArea>
         </DrawerContent>
@@ -129,7 +129,7 @@ export const NotificationPanel = () => {
         className="w-[420px] p-0 rounded-xl shadow-xl border border-border/60 bg-popover flex flex-col max-h-[min(560px,calc(100vh-120px))] overflow-hidden"
       >
         {header}
-        <ScrollArea className="flex-1 min-h-0 overflow-hidden">
+        <ScrollArea className="flex-1 h-0 min-h-0">
           {notificationList}
         </ScrollArea>
       </PopoverContent>
