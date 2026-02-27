@@ -68,8 +68,8 @@ import { SimplifiedDebts } from "@/components/dashboard/balance/simplified-debts
 import { Profile } from "@/modules/profile/types";
 import { Group } from "@/modules/groups/types";
 import { formatNumber } from "@/lib/locale-utils";
-import { exportEnhancedReportToCSV } from "@/utils/export-csv-enhanced";
-import { exportToPDF } from "@/utils/export-pdf";
+import { exportEnhancedReportToCSV } from "@/lib/export/export-csv-enhanced";
+import { exportToPDF } from "@/lib/export/export-pdf";
 
 // Icons
 import {
