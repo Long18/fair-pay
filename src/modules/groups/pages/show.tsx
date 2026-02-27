@@ -10,7 +10,7 @@ import { MemberList } from "../components/member-list";
 import { AddMemberModal } from "../components/add-member-modal";
 import { RecurringExpenseList } from "@/modules/expenses";
 import { SimplifiedBalanceView, PaymentList, useBalanceCalculation } from "@/modules/payments";
-import { SimplifiedDebtsToggle } from "@/components/dashboard/SimplifiedDebtsToggle";
+import { SimplifiedDebtsToggle } from "@/components/dashboard/stats/SimplifiedDebtsToggle";
 import { useSimplifyDebtsSetting } from "../hooks/use-simplify-debts-setting";
 import { useSimplifiedDebts } from "@/hooks/use-simplified-debts";
 import { useSettleAllGroupDebts } from "@/hooks/use-bulk-operations";

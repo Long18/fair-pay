@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/empty";
 import { CheckIcon, ChevronDownIcon, ChevronRightIcon, ScaleIcon } from "@/components/ui/icons";
 import { PaymentStateBadge } from "@/components/ui/payment-state-badge";
-import { ContributingExpensesList } from "@/components/dashboard/contributing-expenses-list";
+import { ContributingExpensesList } from "@/components/dashboard/core/contributing-expenses-list";
 import { useContributingExpenses } from "@/hooks/use-contributing-expenses";
 import { getPaymentStateColors } from "@/lib/status-colors";
 import { cn } from "@/lib/utils";

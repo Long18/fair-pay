@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useGetIdentity } from "@refinedev/core";
 import { Profile } from "@/modules/profile/types";
-import { FloatingActionButton } from "@/components/dashboard/FloatingActionButton";
-import { DashboardLoadingBeam } from "@/components/dashboard/DashboardLoadingBeam";
+import { FloatingActionButton } from "@/components/dashboard/core/FloatingActionButton";
+import { DashboardLoadingBeam } from "@/components/dashboard/core/DashboardLoadingBeam";
 import { BalanceTable } from "@/components/dashboard/balance/BalanceTable";
 import { SettledHistoryList } from "@/components/dashboard/activity/SettledHistoryList";
 import { EnhancedActivityList } from "@/components/dashboard/activity/enhanced-activity";
