@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { ContactUs } from "@/components/dashboard/ContactUs";
+import { ContactUs } from "@/components/dashboard/legal/ContactUs";
 
 export const ContactPage = () => {
   useEffect(() => {
