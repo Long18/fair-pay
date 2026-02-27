@@ -48,7 +48,7 @@ import { cn } from "@/lib/utils";
 import { formatCurrency, formatDateShort } from "@/lib/locale-utils";
 import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
 import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
-import { EnhancedActivityList } from "@/components/dashboard/enhanced-activity-list";
+import { EnhancedActivityList } from "@/components/dashboard/activity/enhanced-activity-list";
 
 // Import new components
 import { ProfileHeader } from "../components/profile-header";

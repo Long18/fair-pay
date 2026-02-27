@@ -64,7 +64,7 @@ import { useTranslation } from "react-i18next";
 import { Breadcrumb, createBreadcrumbs } from "@/components/refine-ui/layout/breadcrumb";
 import { SwipeableTabs, PullToRefresh, EmptyBalances } from "@/modules/profile";
 import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
-import { EnhancedActivityList } from "@/components/dashboard/enhanced-activity-list";
+import { EnhancedActivityList } from "@/components/dashboard/activity/enhanced-activity-list";
 import { JoinRequestsList } from "../components/join-requests-list";
 
 export const GroupShow = () => {
