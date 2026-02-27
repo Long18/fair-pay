@@ -6,7 +6,7 @@ import { ExpenseSplit } from '@/modules/expenses/types';
 import { DonationSettings } from '@/types/donation';
 
 // Mock hooks
-vi.mock('@/hooks/use-donation-settings', () => ({
+vi.mock('@/hooks/settings/use-donation-settings', () => ({
   useDonationSettings: vi.fn(),
 }));
 
@@ -16,7 +16,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { useDonationSettings } from '@/hooks/use-donation-settings';
+import { useDonationSettings } from '@/hooks/settings/use-donation-settings';
 
 describe('BankingPaymentButton - Property Tests', () => {
   beforeEach(() => {

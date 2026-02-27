@@ -11,8 +11,8 @@ import {
   useLogout,
   type TreeMenuItem,
 } from "@refinedev/core";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useScrolled } from "@/hooks/use-scrolled";
+import { useIsMobile } from "@/hooks/ui/use-mobile";
+import { useScrolled } from "@/hooks/ui/use-scrolled";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";

@@ -21,7 +21,7 @@ import { AnimatedOutlet } from "./components/animated-outlet";
 import "./App.css";
 import authProvider from "./authProvider";
 import { supabaseClient } from "./utility";
-import { useDocumentTitle } from "./hooks/use-document-title";
+import { useDocumentTitle } from "./hooks/ui/use-document-title";
 import { analyticsManager } from "./lib/analytics/instance";
 
 // Core layout components (needed immediately)

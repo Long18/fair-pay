@@ -10,7 +10,7 @@ import { PageContainer } from "@/components/ui/page-container";
 import { PageContent } from "@/components/ui/page-content";
 import { useAggregatedDebts } from "@/hooks/balance/use-aggregated-debts";
 import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
-import { usePersistedState } from "@/hooks/use-persisted-state";
+import { usePersistedState } from "@/hooks/settings/use-persisted-state";
 import { useTranslation } from "react-i18next";
 import { DashboardTracker } from "@/lib/analytics/index";
 import { WalletIcon, ActivityIcon, HistoryIcon } from "@/components/ui/icons";
