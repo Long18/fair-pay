@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useGlobalBalance } from "@/hooks/use-global-balance";
+import { useGlobalBalance } from "@/hooks/balance/use-global-balance";
 import { ArrowUpRightIcon, WalletIcon, AlertCircleIcon } from "@/components/ui/icons";
 import {
   Tooltip,

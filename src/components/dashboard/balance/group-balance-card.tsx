@@ -3,7 +3,7 @@ import { useGo } from "@refinedev/core";
 import { DataCard } from "@/components/ui/data-card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { GroupBalance } from "@/hooks/use-global-balance";
+import { GroupBalance } from "@/hooks/balance/use-global-balance";
 import { formatCurrency as formatCurrencyUtil } from "@/lib/locale-utils";
 
 import { UsersIcon, TrendingDownIcon } from "@/components/ui/icons";
