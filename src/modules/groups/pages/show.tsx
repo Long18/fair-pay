@@ -134,14 +134,6 @@ export const GroupShow = () => {
     },
   });
 
-  const {
-    isLoading: isLoadingSimplified,
-    transactionCount: simplifiedCount,
-  } = useSimplifiedDebts({
-    groupId: id,
-    enabled: useServerSimplification && !!id,
-  });
-
   const settleAllMutation = useSettleAllGroupDebts();
 
   const { data: groupData, isLoading: isLoadingGroup } = groupQuery;
@@ -151,6 +143,31 @@ export const GroupShow = () => {
   const allMembers = membersData?.data || [];
   const expenses: any[] = expensesQuery.data?.data || [];
   const payments: any[] = paymentsQuery.data?.data || [];
+
+  const currentUserMember = allMembers.find((m: any) => m.user_id === identity?.id);
+  const isAdmin = currentUserMember?.role === "admin";
+  const isCreator = group?.created_by === identity?.id;
+  const isArchived = group?.is_archived ?? false;
+  const canManage = isAdmin || isCreator;
+
+  const {
+    isSimplified: useServerSimplification,
+    isUpdating: isUpdatingSimplification,
+    toggleSimplification,
+    canToggle,
+  } = useSimplifyDebtsSetting({
+    groupId: id!,
+    groupData: group,
+    isAdmin: canManage,
+  });
+
+  const {
+    isLoading: isLoadingSimplified,
+    transactionCount: simplifiedCount,
+  } = useSimplifiedDebts({
+    groupId: id,
+    enabled: useServerSimplification && !!id,
+  });
 
   const membersList = allMembers.map((m: any) => ({
     id: m.user_id,
@@ -185,23 +202,6 @@ export const GroupShow = () => {
     });
     return stats;
   }, [allMembers, expenses]);
-
-  const currentUserMember = allMembers.find((m: any) => m.user_id === identity?.id);
-  const isAdmin = currentUserMember?.role === "admin";
-  const isCreator = group?.created_by === identity?.id;
-  const isArchived = group?.is_archived ?? false;
-  const canManage = isAdmin || isCreator;
-
-  const {
-    isSimplified: useServerSimplification,
-    isUpdating: isUpdatingSimplification,
-    toggleSimplification,
-    canToggle,
-  } = useSimplifyDebtsSetting({
-    groupId: id!,
-    groupData: group,
-    isAdmin: canManage,
-  });
 
   const unsettledSplits = expenses.flatMap((e: any) =>
     (e.expense_splits || []).filter((s: any) => !s.is_settled)
