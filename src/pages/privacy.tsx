@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { PrivacyPolicy } from "@/components/dashboard/PrivacyPolicy";
+import { PrivacyPolicy } from "@/components/dashboard/legal/PrivacyPolicy";
 
 export const PrivacyPage = () => {
   useEffect(() => {
