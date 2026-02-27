@@ -27,7 +27,7 @@ import {
 import { SwipeableTabs, PullToRefresh, EmptyBalances } from "@/modules/profile";
 import { Breadcrumb, createBreadcrumbs } from "@/components/refine-ui/layout/breadcrumb";
 import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
-import { EnhancedActivityList } from "@/components/dashboard/enhanced-activity-list";
+import { EnhancedActivityList } from "@/components/dashboard/activity/enhanced-activity-list";
 
 export const FriendShow = () => {
   const { id } = useParams<{ id: string }>();
