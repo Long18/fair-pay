@@ -62,29 +62,8 @@ export class ErrorBoundary extends Component<Props, State> {
           errorBoundary: this.props.context || 'unknown',
         },
       });
-    } else {
-      // Fallback error reporting (legacy)
-      this.reportErrorToService(error, errorInfo);
     }
   }
-
-  private reportErrorToService = (error: Error, errorInfo: ErrorInfo) => {
-    // TODO: Integrate with Sentry or similar service
-    // For now, just log to console in production
-    fetch('/api/errors', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: error.toString(),
-        stack: error.stack,
-        componentStack: errorInfo.componentStack,
-        context: this.props.context,
-        timestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent,
-        url: window.location.href,
-      }),
-    }).catch(console.error);
-  };
 
   private handleReset = () => {
     const newRetryCount = this.state.retryCount + 1;
