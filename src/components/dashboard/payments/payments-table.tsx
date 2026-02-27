@@ -1,8 +1,8 @@
 import { DataCard } from "@/components/ui/data-card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { useTableSort, SortConfig } from "@/hooks/use-table-sort";
-import { useTablePagination } from "@/hooks/use-table-pagination";
+import { useTableSort, SortConfig } from "@/hooks/table/use-table-sort";
+import { useTablePagination } from "@/hooks/table/use-table-pagination";
 
 import { MoreVerticalIcon, ArrowUpIcon, ArrowDownIcon } from "@/components/ui/icons";
 interface Payment {

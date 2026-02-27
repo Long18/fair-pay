@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ExpenseSplitCard } from '@/modules/expenses/components/expense-split-card';
 
 // Mock hooks and components
-vi.mock('@/hooks/use-donation-settings', () => ({
+vi.mock('@/hooks/settings/use-donation-settings', () => ({
   useDonationSettings: vi.fn(),
 }));
 
@@ -39,7 +39,7 @@ vi.mock('@/modules/payments/components/banking-payment-button', () => ({
   ),
 }));
 
-import { useDonationSettings } from '@/hooks/use-donation-settings';
+import { useDonationSettings } from '@/hooks/settings/use-donation-settings';
 import { useMomoSettings } from '@/hooks/payment/use-momo-settings';
 
 // Helper to wrap components with QueryClientProvider

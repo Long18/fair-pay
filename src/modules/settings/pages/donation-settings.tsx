@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDonationSettings, useUpdateDonationSettings, uploadDonationImage } from '@/hooks/use-donation-settings';
+import { useDonationSettings, useUpdateDonationSettings, uploadDonationImage } from '@/hooks/settings/use-donation-settings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';

@@ -7,7 +7,7 @@ import { DonationSettings } from '@/types/donation';
 import { generateVietQRDeeplink } from '@/lib/vietqr-banks';
 
 // Mock hooks
-vi.mock('@/hooks/use-donation-settings', () => ({
+vi.mock('@/hooks/settings/use-donation-settings', () => ({
   useDonationSettings: vi.fn(),
 }));
 
@@ -35,7 +35,7 @@ vi.mock('sonner', () => ({
   },
 }));
 
-import { useDonationSettings } from '@/hooks/use-donation-settings';
+import { useDonationSettings } from '@/hooks/settings/use-donation-settings';
 
 describe('BankingPaymentDialog - Property Tests', () => {
   beforeEach(() => {

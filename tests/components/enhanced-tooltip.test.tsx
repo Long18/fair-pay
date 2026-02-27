@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Mock the useIsMobile hook
-vi.mock('@/hooks/use-mobile', () => ({
+vi.mock('@/hooks/ui/use-mobile', () => ({
   useIsMobile: vi.fn(() => false), // Default to desktop
 }));
 
@@ -125,7 +125,7 @@ describe('Enhanced Tooltip Component', () => {
   describe('Mobile Behavior', () => {
     it('should show tooltip on tap (mobile)', async () => {
       // Mock mobile environment for this test
-      const { useIsMobile } = await import('@/hooks/use-mobile');
+      const { useIsMobile } = await import('@/hooks/ui/use-mobile');
       vi.mocked(useIsMobile).mockReturnValue(true);
       
       const user = userEvent.setup({ delay: null });
@@ -152,7 +152,7 @@ describe('Enhanced Tooltip Component', () => {
 
     it('should auto-dismiss after 5 seconds on mobile', async () => {
       // Mock mobile environment for this test
-      const { useIsMobile } = await import('@/hooks/use-mobile');
+      const { useIsMobile } = await import('@/hooks/ui/use-mobile');
       vi.mocked(useIsMobile).mockReturnValue(true);
       
       const user = userEvent.setup({ delay: null });
@@ -186,7 +186,7 @@ describe('Enhanced Tooltip Component', () => {
 
     it('should dismiss on tap outside', async () => {
       // Mock mobile environment for this test
-      const { useIsMobile } = await import('@/hooks/use-mobile');
+      const { useIsMobile } = await import('@/hooks/ui/use-mobile');
       vi.mocked(useIsMobile).mockReturnValue(true);
       
       const user = userEvent.setup({ delay: null });
