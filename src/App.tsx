@@ -86,8 +86,8 @@ const AboutPage = lazy(() => import("./pages/about").then(m => ({ default: m.Abo
 const ContactPage = lazy(() => import("./pages/contact").then(m => ({ default: m.ContactPage })));
 
 // Admin module - lazy loaded
-import { AdminGuard } from "./modules/admin/components/AdminGuard";
-import { AdminLayout } from "./modules/admin/components/AdminLayout";
+const AdminGuard = lazy(() => import("./modules/admin/components/AdminGuard").then(m => ({ default: m.AdminGuard })));
+const AdminLayout = lazy(() => import("./modules/admin/components/AdminLayout").then(m => ({ default: m.AdminLayout })));
 const AdminOverview = lazy(() => import("./modules/admin/pages/AdminOverview").then(m => ({ default: m.AdminOverview })));
 const AdminPeople = lazy(() => import("./modules/admin/pages/AdminPeople").then(m => ({ default: m.AdminPeople })));
 const AdminTransactions = lazy(() => import("./modules/admin/pages/AdminTransactions").then(m => ({ default: m.AdminTransactions })));
