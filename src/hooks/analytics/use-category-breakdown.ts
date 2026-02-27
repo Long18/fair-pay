@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { Expense } from '@/modules/expenses/types';
 import { Profile } from '@/modules/profile/types';
 import { isWithinInterval } from 'date-fns';
-import { DateRange, DateRangePreset } from './analytics/use-spending-summary';
+import { DateRange, DateRangePreset } from './use-spending-summary';
 import { getCategoryMeta, EXPENSE_CATEGORIES } from '@/modules/expenses';
 
 export interface CategoryData {

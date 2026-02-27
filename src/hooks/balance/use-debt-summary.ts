@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useGetIdentity } from '@refinedev/core';
 import { Profile } from '@/modules/profile/types';
-import { useContributingExpenses } from './use-contributing-expenses';
+import { useContributingExpenses } from '@/hooks/use-contributing-expenses';
 
 interface DebtSummary {
   counterparty_id: string;
