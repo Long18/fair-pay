@@ -8,7 +8,7 @@ import { SettledHistoryList } from "@/components/dashboard/activity/SettledHisto
 import { EnhancedActivityList } from "@/components/dashboard/activity/enhanced-activity";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageContent } from "@/components/ui/page-content";
-import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
+import { useAggregatedDebts } from "@/hooks/balance/use-aggregated-debts";
 import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useTranslation } from "react-i18next";

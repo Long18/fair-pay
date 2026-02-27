@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { formatNumber } from "@/lib/locale-utils";
-import { useBalanceHistory } from "@/hooks/use-balance-history";
+import { useBalanceHistory } from "@/hooks/balance/use-balance-history";
 import { format, subDays } from "date-fns";
 import { useMemo, useState } from "react";
 import { Loader2Icon } from "@/components/ui/icons";

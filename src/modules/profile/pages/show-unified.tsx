@@ -46,7 +46,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatDateShort } from "@/lib/locale-utils";
-import { useAggregatedDebts } from "@/hooks/use-aggregated-debts";
+import { useAggregatedDebts } from "@/hooks/balance/use-aggregated-debts";
 import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
 import { EnhancedActivityList } from "@/components/dashboard/activity/enhanced-activity-list";
 
