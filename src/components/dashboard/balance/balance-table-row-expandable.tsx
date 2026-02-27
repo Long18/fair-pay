@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from "@/components/ui/icons";
 import { PaymentStateBadge } from "@/components/ui/payment-state-badge";
-import { ContributingExpensesList } from "@/components/dashboard/contributing-expenses-list";
+import { ContributingExpensesList } from "@/components/dashboard/core/contributing-expenses-list";
 import { useContributingExpenses } from "@/hooks/use-contributing-expenses";
 import { getOweStatusColors, getPaymentStateColors } from "@/lib/status-colors";
 import { formatCurrency } from "@/lib/locale-utils";

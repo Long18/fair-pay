@@ -9,7 +9,7 @@ import { formatNumber } from "@/lib/locale-utils";
 import { useGo } from "@refinedev/core";
 import { AggregatedDebt } from "@/hooks/use-aggregated-debts";
 import { PaginationControls, PaginationMetadata } from "@/components/ui/pagination-controls";
-import { ContributingExpensesList } from "@/components/dashboard/contributing-expenses-list";
+import { ContributingExpensesList } from "@/components/dashboard/core/contributing-expenses-list";
 import { useContributingExpenses } from "@/hooks/use-contributing-expenses";
 import { cn } from "@/lib/utils";
 
