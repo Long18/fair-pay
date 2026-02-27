@@ -26,7 +26,7 @@ import {
   LockIcon,
   CreditCardIcon,
 } from '@/components/ui/icons';
-import { useSepaySettings } from '@/hooks/use-sepay-settings';
+import { useSepaySettings } from '@/hooks/payment/use-sepay-settings';
 import { isAdmin } from '@/lib/rbac';
 import { Profile } from '@/modules/profile/types';
 import { SepayConfig } from '@/types/user-settings';

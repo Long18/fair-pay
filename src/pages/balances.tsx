@@ -15,13 +15,13 @@ import {
   DateRange as DateRangeType,
   DateRangePreset,
   useSpendingSummary,
-} from "@/hooks/use-spending-summary";
-import { useCategoryBreakdown } from "@/hooks/use-category-breakdown";
-import { useSpendingTrend } from "@/hooks/use-spending-trend";
-import { useSpendingComparison } from "@/hooks/use-spending-comparison";
-import { useTopCategories } from "@/hooks/use-top-categories";
-import { useTopSpenders } from "@/hooks/use-top-spenders";
-import { useSpendingInsights } from "@/hooks/use-spending-insights";
+} from "@/hooks/analytics/use-spending-summary";
+import { useCategoryBreakdown } from "@/hooks/analytics/use-category-breakdown";
+import { useSpendingTrend } from "@/hooks/analytics/use-spending-trend";
+import { useSpendingComparison } from "@/hooks/analytics/use-spending-comparison";
+import { useTopCategories } from "@/hooks/analytics/use-top-categories";
+import { useTopSpenders } from "@/hooks/analytics/use-top-spenders";
+import { useSpendingInsights } from "@/hooks/analytics/use-spending-insights";
 
 // Layout primitives
 import { PageContainer } from "@/components/ui/page-container";

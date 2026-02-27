@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SpendingInsight } from "@/hooks/use-spending-insights";
+import { SpendingInsight } from "@/hooks/analytics/use-spending-insights";
 import {
   TrendingUpIcon,
   TrendingDownIcon,

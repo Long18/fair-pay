@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useGo } from "@refinedev/core";
 import { useState } from "react";
-import { usePayeeSepaySettings } from "@/hooks/use-sepay-settings";
+import { usePayeeSepaySettings } from "@/hooks/payment/use-sepay-settings";
 import { SepayPaymentDialog } from "@/modules/payments/components/sepay-payment-dialog";
 import { triggerHaptic } from "@/lib/haptics";
 

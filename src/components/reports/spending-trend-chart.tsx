@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { TrendDataPoint } from '@/hooks/use-spending-trend';
+import { TrendDataPoint } from '@/hooks/analytics/use-spending-trend';
 import { formatNumber } from '@/lib/locale-utils';
 import { useTranslation } from 'react-i18next';
 import {

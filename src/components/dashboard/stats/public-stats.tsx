@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { PublicStats } from "@/hooks/use-sample-leaderboard";
+import { PublicStats } from "@/hooks/analytics/use-sample-leaderboard";
 
 interface PublicStatsProps {
   stats: PublicStats;

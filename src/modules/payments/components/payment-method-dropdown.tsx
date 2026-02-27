@@ -23,8 +23,8 @@ import { Badge } from '@/components/ui/badge';
 import { ExpenseSplit } from '@/modules/expenses/types';
 import { VietQRPaymentDialog } from './vietqr-payment-dialog';
 import { SepayPaymentDialog } from './sepay-payment-dialog';
-import { usePayeeBankSettings } from '@/hooks/use-bank-settings';
-import { usePayeeSepaySettings } from '@/hooks/use-sepay-settings';
+import { usePayeeBankSettings } from '@/hooks/payment/use-bank-settings';
+import { usePayeeSepaySettings } from '@/hooks/payment/use-sepay-settings';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/haptics';
 

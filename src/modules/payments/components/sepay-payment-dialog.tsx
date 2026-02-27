@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/icons';
 import { formatNumber } from '@/lib/locale-utils';
 import { triggerHaptic } from '@/lib/haptics';
-import { useSepayOrder } from '@/hooks/use-sepay-order';
+import { useSepayOrder } from '@/hooks/payment/use-sepay-order';
 
 interface SepayPaymentDialogProps {
   open: boolean;

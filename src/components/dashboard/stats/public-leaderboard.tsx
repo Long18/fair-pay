@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LeaderboardUser } from "@/hooks/use-sample-leaderboard";
+import { LeaderboardUser } from "@/hooks/analytics/use-sample-leaderboard";
 
 interface PublicLeaderboardProps {
   users: LeaderboardUser[];

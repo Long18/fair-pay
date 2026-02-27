@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { QrCodeIcon } from '@/components/ui/icons';
 import { ExpenseSplit } from '@/modules/expenses/types';
 import { VietQRPaymentDialog } from './vietqr-payment-dialog';
-import { usePayeeBankSettings } from '@/hooks/use-bank-settings';
+import { usePayeeBankSettings } from '@/hooks/payment/use-bank-settings';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/haptics';
 
