@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { TermsOfService } from "@/components/dashboard/TermsOfService";
+import { TermsOfService } from "@/components/dashboard/legal/TermsOfService";
 
 export const TermsPage = () => {
   useEffect(() => {
