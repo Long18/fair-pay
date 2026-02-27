@@ -181,7 +181,7 @@ export const DebtBreakdownHeader = forwardRef<HTMLDivElement, DebtBreakdownHeade
               </div>
               <div className="h-1.5 bg-border rounded-full overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-red-500 to-orange-400 transition-[width] duration-700 ease-out"
+                  className="h-full rounded-full bg-gradient-to-r from-red-500 to-orange-400 transition-[width] duration-700 ease-out motion-reduce:transition-none"
                   style={{ width: `${owePct}%` }}
                 />
               </div>
