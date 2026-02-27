@@ -3,7 +3,7 @@ import { useGetIdentity } from "@refinedev/core";
 import { Profile } from "@/modules/profile/types";
 import { FloatingActionButton } from "@/components/dashboard/FloatingActionButton";
 import { DashboardLoadingBeam } from "@/components/dashboard/DashboardLoadingBeam";
-import { BalanceTable } from "@/components/dashboard/BalanceTable";
+import { BalanceTable } from "@/components/dashboard/balance/BalanceTable";
 import { SettledHistoryList } from "@/components/dashboard/SettledHistoryList";
 import { EnhancedActivityList } from "@/components/dashboard/enhanced-activity";
 import { PageContainer } from "@/components/ui/page-container";

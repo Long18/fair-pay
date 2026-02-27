@@ -62,7 +62,7 @@ import { InsightsPanel } from "@/components/reports/insights-panel";
 import { TopSpenders } from "@/components/reports/top-spenders";
 
 // Dashboard components (DO NOT modify)
-import { SimplifiedDebts } from "@/components/dashboard/simplified-debts";
+import { SimplifiedDebts } from "@/components/dashboard/balance/simplified-debts";
 
 // Types & utilities
 import { Profile } from "@/modules/profile/types";
