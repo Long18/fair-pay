@@ -10,7 +10,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { isAdmin } from "@/lib/rbac";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BalanceTable } from "@/components/dashboard/BalanceTable";
+import { BalanceTable } from "@/components/dashboard/balance/BalanceTable";
 import { Switch } from "@/components/ui/switch";
 import {
   Dialog,

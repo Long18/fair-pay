@@ -1,5 +1,5 @@
 import { DataCard } from "@/components/ui/data-card";
-import { CircularProgress } from "./circular-progress";
+import { CircularProgress } from "./balance/circular-progress";
 
 interface StatisticsCardProps {
   percentage: number;
