@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   UserPlusIcon,
   XIcon,
@@ -252,13 +251,18 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
                 aria-pressed={selected}
                 aria-label={`${selected ? "Remove" : "Add"} ${member.full_name}`}
               >
-                {/* Checkbox */}
-                <Checkbox
-                  checked={selected}
-                  tabIndex={-1}
-                  className="pointer-events-none flex-shrink-0"
+                {/* Checkbox visual indicator */}
+                <div
+                  className={cn(
+                    "flex h-4 w-4 items-center justify-center rounded-sm border flex-shrink-0 transition-colors",
+                    selected
+                      ? "bg-primary border-primary text-primary-foreground"
+                      : "border-muted-foreground/30"
+                  )}
                   aria-hidden
-                />
+                >
+                  {selected && <CheckIcon className="h-3 w-3" />}
+                </div>
 
                 {/* Avatar */}
                 <Avatar className="h-8 w-8 flex-shrink-0">
