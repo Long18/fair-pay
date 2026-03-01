@@ -21,7 +21,9 @@
         "hoursAgo": "h ago",
         "daysAgo": "d ago",
         "vietnamese": "Vietnamese",
-        "english": "English"
+        "english": "English",
+        "selectAll": "Select All",
+        "deselectAll": "Deselect All"
     },
     "auth": {
         "login": "Login",
@@ -282,6 +284,7 @@
         "templateUtilitiesDesc": "Monthly utilities",
         "addByEmail": "Add by email",
         "pending": "Pending",
+        "pendingInvites": "Pending invites",
         "emailAlreadyAdded": "This email has already been added",
         "loan": "Loan",
         "loanToggle": "This is a loan",
