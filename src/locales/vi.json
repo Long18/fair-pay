@@ -21,7 +21,9 @@
         "hoursAgo": " giờ trước",
         "daysAgo": " ngày trước",
         "vietnamese": "Tiếng Việt",
-        "english": "English"
+        "english": "English",
+        "selectAll": "Chọn tất cả",
+        "deselectAll": "Bỏ chọn tất cả"
     },
     "auth": {
         "login": "Đăng nhập",
@@ -281,6 +283,7 @@
         "templateUtilitiesDesc": "Tiện ích hàng tháng",
         "addByEmail": "Thêm bằng email",
         "pending": "Chờ xác nhận",
+        "pendingInvites": "Lời mời đang chờ",
         "emailAlreadyAdded": "Email này đã được thêm",
         "loan": "Cho vay",
         "loanToggle": "Đây là khoản vay",
