@@ -1100,54 +1100,57 @@
 
 /* ─── Gooey Footer Animation ─────────────────────────────────────── */
 
-.gooey-footer-wrapper {
+/* Outer section: reserves space for bubbles above the footer */
+.gooey-footer-section {
   position: relative;
-  background: var(--primary);
   margin-top: auto;
+  padding-top: 6rem; /* space for bubbles to float into */
   overflow: visible;
 }
 
-.gooey-animation-container {
+/* Bubble layer: sits behind the footer bar, fills the whole section */
+.gooey-bubbles {
   position: absolute;
-  top: 0;
-  width: 120%;
+  bottom: 0;
   left: -10%;
-  height: 6rem;
+  width: 120%;
+  height: 100%;
   background: var(--primary);
-  transform: translateY(-99%);
-  z-index: 0;
   filter: url(#gooey-footer-liquid);
-  overflow: visible;
   pointer-events: none;
+  z-index: 0;
 }
 
+/* Individual bubble particle */
 .gooey-particle {
   position: absolute;
   background: var(--primary);
   border-radius: 50%;
-  top: 50%;
+  bottom: 0;
   left: var(--pos-x, 50%);
   width: var(--dim, 5rem);
   height: var(--dim, 5rem);
-  transform: translate(-50%, -50%);
-  animation: gooey-float-up var(--dur, 4s) ease-in infinite;
+  transform: translateX(-50%);
+  animation: gooey-float-up var(--dur, 4s) ease-in-out infinite;
   animation-delay: var(--delay, 0s);
 }
 
-.gooey-footer-content {
+/* Footer content bar */
+.gooey-footer-bar {
   position: relative;
   z-index: 2;
+  background: var(--primary);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  padding: 1.5rem 1.5rem;
+  padding: 1.5rem;
   max-width: 80rem;
   margin: 0 auto;
 }
 
 @media (min-width: 768px) {
-  .gooey-footer-content {
+  .gooey-footer-bar {
     flex-direction: row;
     justify-content: space-between;
   }
@@ -1155,12 +1158,14 @@
 
 @keyframes gooey-float-up {
   0% {
-    top: 50%;
-    transform: translate(-50%, -50%) scale(1);
+    bottom: 0;
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
   }
   100% {
-    top: calc(var(--uplift) * -1);
-    transform: translate(-50%, -50%) scale(0);
+    bottom: var(--uplift, 10rem);
+    transform: translateX(-50%) scale(0);
+    opacity: 0;
   }
 }
 
@@ -1168,8 +1173,12 @@
 @media (prefers-reduced-motion: reduce) {
   .gooey-particle {
     animation: none;
+    display: none;
   }
-  .gooey-animation-container {
+  .gooey-footer-section {
+    padding-top: 0;
+  }
+  .gooey-bubbles {
     display: none;
   }
 }
