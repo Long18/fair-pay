@@ -1100,16 +1100,23 @@
 
 /* ─── Gooey Footer Animation ─────────────────────────────────────── */
 
+.gooey-footer-wrapper {
+  position: relative;
+  background: var(--primary);
+  margin-top: auto;
+  overflow: visible;
+}
+
 .gooey-animation-container {
   position: absolute;
   top: 0;
   width: 120%;
   left: -10%;
-  height: 5rem;
+  height: 6rem;
   background: var(--primary);
   transform: translateY(-99%);
   z-index: 0;
-  filter: url('#gooey-footer-liquid');
+  filter: url(#gooey-footer-liquid);
   overflow: visible;
   pointer-events: none;
 }
@@ -1120,11 +1127,30 @@
   border-radius: 50%;
   top: 50%;
   left: var(--pos-x, 50%);
-  width: var(--dim, 3rem);
-  height: var(--dim, 3rem);
+  width: var(--dim, 5rem);
+  height: var(--dim, 5rem);
   transform: translate(-50%, -50%);
   animation: gooey-float-up var(--dur, 4s) ease-in infinite;
   animation-delay: var(--delay, 0s);
+}
+
+.gooey-footer-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 1.5rem;
+  max-width: 80rem;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .gooey-footer-content {
+    flex-direction: row;
+    justify-content: space-between;
+  }
 }
 
 @keyframes gooey-float-up {
