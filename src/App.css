@@ -1097,3 +1097,53 @@
   animation: comment-highlight-fade 3s ease-out forwards;
   border-radius: 0.5rem;
 }
+
+/* ─── Gooey Footer Animation ─────────────────────────────────────── */
+
+.gooey-animation-container {
+  position: absolute;
+  top: 0;
+  width: 120%;
+  left: -10%;
+  height: 5rem;
+  background: var(--primary);
+  transform: translateY(-99%);
+  z-index: 0;
+  filter: url('#gooey-footer-liquid');
+  overflow: visible;
+  pointer-events: none;
+}
+
+.gooey-particle {
+  position: absolute;
+  background: var(--primary);
+  border-radius: 50%;
+  top: 50%;
+  left: var(--pos-x, 50%);
+  width: var(--dim, 3rem);
+  height: var(--dim, 3rem);
+  transform: translate(-50%, -50%);
+  animation: gooey-float-up var(--dur, 4s) ease-in infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes gooey-float-up {
+  0% {
+    top: 50%;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    top: calc(var(--uplift) * -1);
+    transform: translate(-50%, -50%) scale(0);
+  }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .gooey-particle {
+    animation: none;
+  }
+  .gooey-animation-container {
+    display: none;
+  }
+}
