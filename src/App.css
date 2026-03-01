@@ -1100,28 +1100,27 @@
 
 /* ─── Gooey Footer Animation ─────────────────────────────────────── */
 
-/* Outer section: reserves space for bubbles above the footer */
-.gooey-footer-section {
+/* Wrapper: just positions the bubble layer relative to the footer */
+.gooey-footer-wrap {
   position: relative;
   margin-top: auto;
-  padding-top: 6rem; /* space for bubbles to float into */
-  overflow: visible;
 }
 
-/* Bubble layer: sits behind the footer bar, fills the whole section */
+/* Bubble layer: extends above the footer, same color as page bg so
+   only the bubbles (after SVG filter) are visible against the page */
 .gooey-bubbles {
   position: absolute;
   bottom: 0;
   left: -10%;
   width: 120%;
-  height: 100%;
-  background: var(--primary);
+  height: calc(100% + 8rem);
+  background: transparent;
   filter: url(#gooey-footer-liquid);
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;
 }
 
-/* Individual bubble particle */
+/* Each bubble: colored circle that floats upward */
 .gooey-particle {
   position: absolute;
   background: var(--primary);
@@ -1133,27 +1132,6 @@
   transform: translateX(-50%);
   animation: gooey-float-up var(--dur, 4s) ease-in-out infinite;
   animation-delay: var(--delay, 0s);
-}
-
-/* Footer content bar */
-.gooey-footer-bar {
-  position: relative;
-  z-index: 2;
-  background: var(--primary);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.5rem;
-  max-width: 80rem;
-  margin: 0 auto;
-}
-
-@media (min-width: 768px) {
-  .gooey-footer-bar {
-    flex-direction: row;
-    justify-content: space-between;
-  }
 }
 
 @keyframes gooey-float-up {
@@ -1169,16 +1147,7 @@
   }
 }
 
-/* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .gooey-particle {
-    animation: none;
-    display: none;
-  }
-  .gooey-footer-section {
-    padding-top: 0;
-  }
-  .gooey-bubbles {
-    display: none;
-  }
+  .gooey-particle { animation: none; display: none; }
+  .gooey-bubbles { display: none; }
 }
