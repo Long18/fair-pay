@@ -34,6 +34,7 @@ import {
   PanelLeftIcon,
   ArrowLeftIcon,
 } from "@/components/ui/icons";
+import { GooeyFooter } from "@/components/gooey-footer";
 
 // ─── Nav Items Config ───────────────────────────────────────────────
 
@@ -93,6 +94,7 @@ export function AdminLayout() {
       >
         <AnimatedOutlet />
       </main>
+      <GooeyFooter variant="admin" />
     </div>
   );
 }
