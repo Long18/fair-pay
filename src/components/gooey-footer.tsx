@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { HeartIcon } from "@/components/ui/icons";
@@ -9,50 +9,56 @@ interface GooeyFooterProps {
   className?: string;
 }
 
-// ─── Particle Generator (stable across renders) ─────────────────────
+// ─── Particle spawner (imperative DOM, like the reference) ──────────
 
-const PARTICLE_COUNT = 80;
+function useGooeyParticles(containerRef: React.RefObject<HTMLDivElement | null>) {
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
-function generateParticleStyles(): React.CSSProperties[] {
-  const styles: React.CSSProperties[] = [];
-  for (let i = 0; i < PARTICLE_COUNT; i++) {
-    const size = 3 + Math.random() * 6;
-    const distance = 10 + Math.random() * 15;
-    const position = Math.random() * 100;
-    const time = 3 + Math.random() * 3;
-    const delay = -1 * (Math.random() * 10);
-    styles.push({
-      "--dim": `${size}rem`,
-      "--uplift": `${distance}rem`,
-      "--pos-x": `${position}%`,
-      "--dur": `${time}s`,
-      "--delay": `${delay}s`,
-    } as React.CSSProperties);
-  }
-  return styles;
+    // Respect reduced motion
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (mq.matches) return;
+
+    const fragment = document.createDocumentFragment();
+    const PARTICLE_COUNT = 100;
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const span = document.createElement("span");
+      span.classList.add("gooey-particle");
+      span.style.setProperty("--dim", `${3 + Math.random() * 6}rem`);
+      span.style.setProperty("--uplift", `${10 + Math.random() * 15}rem`);
+      span.style.setProperty("--pos-x", `${Math.random() * 100}%`);
+      span.style.setProperty("--dur", `${3 + Math.random() * 3}s`);
+      span.style.setProperty("--delay", `${-1 * (Math.random() * 10)}s`);
+      fragment.appendChild(span);
+    }
+
+    container.appendChild(fragment);
+
+    return () => {
+      // Cleanup particles on unmount
+      while (container.firstChild) {
+        container.removeChild(container.firstChild);
+      }
+    };
+  }, [containerRef]);
 }
 
 // ─── Component ──────────────────────────────────────────────────────
 
 export function GooeyFooter({ className }: GooeyFooterProps) {
   const { t } = useTranslation();
-  const particleStyles = useMemo(() => generateParticleStyles(), []);
+  const particleContainerRef = useRef<HTMLDivElement>(null);
+
+  useGooeyParticles(particleContainerRef);
 
   return (
-    <footer
-      className={cn("gooey-footer-wrapper", className)}
-      role="contentinfo"
-    >
-      {/* SVG filter definition — must be inside the DOM tree */}
+    <div className={cn("gooey-footer-section", className)}>
+      {/* SVG filter — must be in DOM for url(#id) to work */}
       <svg
-        style={{
-          position: "absolute",
-          width: 0,
-          height: 0,
-          overflow: "hidden",
-        }}
+        style={{ position: "absolute", width: 0, height: 0 }}
         aria-hidden="true"
-        xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
           <filter id="gooey-footer-liquid">
@@ -71,15 +77,15 @@ export function GooeyFooter({ className }: GooeyFooterProps) {
         </defs>
       </svg>
 
-      {/* Gooey liquid bubble animation */}
-      <div className="gooey-animation-container" aria-hidden="true">
-        {particleStyles.map((style, i) => (
-          <span key={i} className="gooey-particle" style={style} />
-        ))}
-      </div>
+      {/* Gooey bubble animation container */}
+      <div
+        ref={particleContainerRef}
+        className="gooey-bubbles"
+        aria-hidden="true"
+      />
 
-      {/* Footer content */}
-      <div className="gooey-footer-content">
+      {/* Actual footer bar */}
+      <footer className="gooey-footer-bar" role="contentinfo">
         <div className="flex items-center gap-2 text-sm text-primary-foreground/80">
           <span>© {new Date().getFullYear()} FairPay</span>
           <span className="hidden md:inline">•</span>
@@ -116,8 +122,8 @@ export function GooeyFooter({ className }: GooeyFooterProps) {
           <span>{t("footer.madeWith", "Made with")}</span>
           <HeartIcon size={12} className="text-primary-foreground/70" />
         </div>
-      </div>
-    </footer>
+      </footer>
+    </div>
   );
 }
 
