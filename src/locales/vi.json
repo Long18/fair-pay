@@ -23,7 +23,9 @@
         "vietnamese": "Tiếng Việt",
         "english": "English",
         "selectAll": "Chọn tất cả",
-        "deselectAll": "Bỏ chọn tất cả"
+        "deselectAll": "Bỏ chọn tất cả",
+        "showMore": "Xem thêm {{count}} người",
+        "showLess": "Thu gọn"
     },
     "auth": {
         "login": "Đăng nhập",

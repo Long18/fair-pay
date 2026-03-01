@@ -13,6 +13,7 @@ import {
   UsersIcon,
   MailIcon,
   UserCheckIcon,
+  ChevronDownIcon,
 } from "@/components/ui/icons";
 
 interface Participant {
@@ -43,18 +44,18 @@ interface ParticipantChipsProps {
   totalSplit: number;
 }
 
-const isValidEmail = (email: string) => {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-};
+const VISIBLE_LIMIT = 5;
 
-const getInitials = (name: string) => {
-  return name
+const isValidEmail = (email: string) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+const getInitials = (name: string) =>
+  name
     .split(" ")
     .map((n) => n[0])
     .join("")
     .toUpperCase()
     .slice(0, 2) || "?";
-};
 
 export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
   members,
@@ -75,65 +76,45 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
   const [emailInput, setEmailInput] = useState("");
   const [emailError, setEmailError] = useState("");
   const [showEmailInput, setShowEmailInput] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const isManualSplit = splitMethod !== "equal";
+  const currencySymbol =
+    currency === "VND" ? "₫" : currency === "USD" ? "$" : "€";
+  const splitUnit = splitMethod === "percentage" ? "%" : currencySymbol;
 
   const getKey = (p: Participant): string => p.user_id || p.pending_email || "";
 
   const handleManualValueChange = (key: string, value: string) => {
     setManualValues((prev) => ({ ...prev, [key]: value }));
-    const numValue = parseFloat(value) || 0;
-    onSplitValueChange(key, numValue);
+    onSplitValueChange(key, parseFloat(value) || 0);
   };
 
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.currentTarget.blur();
-    }
-  };
+  const getMember = (userId: string): Member | undefined =>
+    members.find((m) => m.id === userId);
 
-  const getMember = (userId: string): Member | undefined => {
-    return members.find((m) => m.id === userId);
-  };
-
-  const getMemberName = (userId: string) => {
-    return getMember(userId)?.full_name || t("expenses.unknown");
-  };
-
-  const getDisplayName = (p: Participant): string => {
-    if (p.user_id) return getMemberName(p.user_id);
-    return p.pending_email || t("expenses.unknown");
-  };
-
-  const getAvatarUrl = (p: Participant): string | undefined => {
-    if (p.user_id) return getMember(p.user_id)?.avatar_url || undefined;
-    return undefined;
-  };
-
-  const isCurrentUser = (p: Participant) =>
-    !!p.user_id && p.user_id === currentUserId;
-  const isPending = (p: Participant) => !!p.pending_email && !p.user_id;
   const isSelected = useCallback(
     (memberId: string) => participants.some((p) => p.user_id === memberId),
     [participants]
   );
 
-  const currencySymbol =
-    currency === "VND" ? "₫" : currency === "USD" ? "$" : "€";
-
   // Derived state
   const memberCount = members.length;
   const selectedMemberCount = members.filter((m) => isSelected(m.id)).length;
   const allSelected = memberCount > 0 && selectedMemberCount === memberCount;
-  const someSelected = selectedMemberCount > 0 && selectedMemberCount < memberCount;
+  const needsPagination = memberCount > VISIBLE_LIMIT;
+  const visibleMembers =
+    expanded || !needsPagination ? members : members.slice(0, VISIBLE_LIMIT);
+  const hiddenCount = needsPagination ? memberCount - VISIBLE_LIMIT : 0;
 
   const pendingParticipants = useMemo(
-    () => participants.filter((p) => isPending(p)),
+    () => participants.filter((p) => !!p.pending_email && !p.user_id),
     [participants]
   );
 
   const handleToggleMember = useCallback(
     (memberId: string) => {
       if (isSelected(memberId)) {
-        // Don't allow removing the last participant
         if (participants.length <= 1) return;
         onRemoveParticipant(memberId);
       } else {
@@ -145,18 +126,13 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
 
   const handleSelectAll = useCallback(() => {
     if (allSelected) {
-      // Deselect all except current user
       members.forEach((m) => {
-        if (m.id !== currentUserId && isSelected(m.id)) {
+        if (m.id !== currentUserId && isSelected(m.id))
           onRemoveParticipant(m.id);
-        }
       });
     } else {
-      // Select all unselected members
       members.forEach((m) => {
-        if (!isSelected(m.id)) {
-          onAddParticipant(m.id);
-        }
+        if (!isSelected(m.id)) onAddParticipant(m.id);
       });
     }
   }, [allSelected, members, currentUserId, isSelected, onRemoveParticipant, onAddParticipant]);
@@ -178,20 +154,12 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
     setEmailError("");
   };
 
-  const handleEmailKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleAddByEmail();
-    }
-  };
-
-  // Find participant data for a member
   const getParticipantForMember = (memberId: string) =>
     participants.find((p) => p.user_id === memberId);
 
   return (
     <div className="space-y-3 overflow-x-hidden max-w-full">
-      {/* Header with count and Select All */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium flex items-center gap-1.5">
           <UsersIcon className="h-4 w-4 text-muted-foreground" />
@@ -214,93 +182,127 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
               aria-label={allSelected ? t("common.deselectAll") : t("common.selectAll")}
             >
               {allSelected ? (
-                <>
-                  <UserCheckIcon size={14} />
-                  {t("common.deselectAll")}
-                </>
+                <><UserCheckIcon size={14} />{t("common.deselectAll")}</>
               ) : (
-                <>
-                  <UsersIcon size={14} />
-                  {t("common.selectAll")}
-                </>
+                <><UsersIcon size={14} />{t("common.selectAll")}</>
               )}
             </Button>
           )}
         </div>
       </div>
 
-      {/* Member Selection Grid */}
+      {/* Member list with inline split inputs */}
       <div className="rounded-xl border bg-card overflow-hidden">
         <div className="divide-y divide-border/60">
-          {members.map((member) => {
+          {visibleMembers.map((member) => {
             const selected = isSelected(member.id);
             const isSelf = member.id === currentUserId;
             const participant = getParticipantForMember(member.id);
+            const key = member.id;
 
             return (
-              <button
-                key={member.id}
-                type="button"
-                onClick={() => handleToggleMember(member.id)}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors",
-                  "hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
-                  selected && "bg-primary/[0.04]",
-                  !selected && "opacity-60"
-                )}
-                aria-pressed={selected}
-                aria-label={`${selected ? "Remove" : "Add"} ${member.full_name}`}
-              >
-                {/* Checkbox visual indicator */}
-                <div
+              <div key={key} className={cn(
+                "transition-colors",
+                selected ? "bg-primary/[0.04]" : "opacity-60"
+              )}>
+                {/* Row: checkbox + avatar + name + amount/input */}
+                <button
+                  type="button"
+                  onClick={() => handleToggleMember(member.id)}
                   className={cn(
-                    "flex h-4 w-4 items-center justify-center rounded-sm border flex-shrink-0 transition-colors",
-                    selected
-                      ? "bg-primary border-primary text-primary-foreground"
-                      : "border-muted-foreground/30"
+                    "w-full flex items-center gap-3 px-3 text-left transition-colors",
+                    "hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+                    isManualSplit && selected ? "py-2" : "py-2.5"
                   )}
-                  aria-hidden
+                  aria-pressed={selected}
+                  aria-label={`${selected ? "Remove" : "Add"} ${member.full_name}`}
                 >
-                  {selected && <CheckIcon className="h-3 w-3" />}
-                </div>
+                  {/* Checkbox indicator */}
+                  <div
+                    className={cn(
+                      "flex h-4 w-4 items-center justify-center rounded-sm border flex-shrink-0 transition-colors",
+                      selected
+                        ? "bg-primary border-primary text-primary-foreground"
+                        : "border-muted-foreground/30"
+                    )}
+                    aria-hidden
+                  >
+                    {selected && <CheckIcon className="h-3 w-3" />}
+                  </div>
 
-                {/* Avatar */}
-                <Avatar className="h-8 w-8 flex-shrink-0">
-                  <AvatarImage
-                    src={member.avatar_url || undefined}
-                    alt={member.full_name}
-                  />
-                  <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                    {getInitials(member.full_name)}
-                  </AvatarFallback>
-                </Avatar>
+                  <Avatar className="h-8 w-8 flex-shrink-0">
+                    <AvatarImage src={member.avatar_url || undefined} alt={member.full_name} />
+                    <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                      {getInitials(member.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
 
-                {/* Name + You badge */}
-                <div className="flex-1 min-w-0 flex items-center gap-1.5">
-                  <span className="text-sm font-medium truncate">
-                    {member.full_name}
-                  </span>
-                  {isSelf && (
-                    <Badge
-                      variant="outline"
-                      className="h-5 px-1.5 text-[10px] flex-shrink-0"
-                    >
-                      {t("common.you")}
-                    </Badge>
+                  <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                    <span className="text-sm font-medium truncate">{member.full_name}</span>
+                    {isSelf && (
+                      <Badge variant="outline" className="h-5 px-1.5 text-[10px] flex-shrink-0">
+                        {t("common.you")}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Equal split: show computed amount */}
+                  {!isManualSplit && selected && participant && amount && amount > 0 && (
+                    <span className="text-xs font-semibold text-primary tabular-nums flex-shrink-0">
+                      {formatNumber(participant.computed_amount)} {currencySymbol}
+                    </span>
                   )}
-                </div>
+                </button>
 
-                {/* Split amount (shown when selected and amount exists) */}
-                {selected && participant && amount && amount > 0 && (
-                  <span className="text-xs font-semibold text-primary tabular-nums flex-shrink-0">
-                    {formatNumber(participant.computed_amount)}{" "}
-                    {currencySymbol}
-                  </span>
+                {/* Inline split input for exact/percentage — only for selected members */}
+                {isManualSplit && selected && participant && (
+                  <div
+                    className="flex items-center gap-2 px-3 pb-2.5 pl-[4.25rem]"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex-1 relative min-w-0">
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        step={splitMethod === "exact" ? "0.01" : "1"}
+                        min="0"
+                        max={splitMethod === "percentage" ? "100" : undefined}
+                        placeholder="0"
+                        value={manualValues[key] ?? participant.split_value ?? ""}
+                        onChange={(e) => handleManualValueChange(key, e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+                        className="pr-8 h-8 w-full text-sm"
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                        {splitUnit}
+                      </span>
+                    </div>
+                    <span className="text-xs font-medium text-muted-foreground tabular-nums w-20 text-right flex-shrink-0">
+                      = {formatNumber(participant.computed_amount)} {currencySymbol}
+                    </span>
+                  </div>
                 )}
-              </button>
+              </div>
             );
           })}
         </div>
+
+        {/* Show more / Show less */}
+        {needsPagination && (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className={cn(
+              "w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium",
+              "text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors border-t border-border/60"
+            )}
+          >
+            <ChevronDownIcon className={cn("h-3.5 w-3.5 transition-transform", expanded && "rotate-180")} />
+            {expanded
+              ? t("common.showLess")
+              : t("common.showMore", { count: hiddenCount })}
+          </button>
+        )}
       </div>
 
       {/* Pending email participants */}
@@ -311,16 +313,14 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
           </label>
           <div className="flex flex-wrap gap-1.5">
             {pendingParticipants.map((p) => {
-              const key = getKey(p);
+              const pKey = getKey(p);
               return (
                 <div
-                  key={key}
+                  key={pKey}
                   className="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-full border border-amber-300/60 bg-amber-50/50 dark:bg-amber-950/30 text-sm"
                 >
                   <MailIcon className="h-3 w-3 text-amber-500 flex-shrink-0" />
-                  <span className="truncate max-w-[160px] text-xs">
-                    {p.pending_email}
-                  </span>
+                  <span className="truncate max-w-[160px] text-xs">{p.pending_email}</span>
                   {amount && amount > 0 && (
                     <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 tabular-nums">
                       {formatNumber(p.computed_amount)} {currencySymbol}
@@ -328,7 +328,7 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
                   )}
                   <button
                     type="button"
-                    onClick={() => onRemoveParticipant(key)}
+                    onClick={() => onRemoveParticipant(pKey)}
                     className="p-0.5 rounded-full hover:bg-destructive/10 transition-colors flex-shrink-0"
                     aria-label={`Remove ${p.pending_email}`}
                   >
@@ -341,7 +341,48 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
         </div>
       )}
 
-      {/* Add by email — collapsible */}
+      {/* Inline split inputs for pending email participants (exact/percentage) */}
+      {isManualSplit && pendingParticipants.length > 0 && (
+        <div className="space-y-2">
+          {pendingParticipants.map((p) => {
+            const pKey = getKey(p);
+            return (
+              <div key={pKey} className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 min-w-0 w-28 flex-shrink-0">
+                  <div className="h-5 w-5 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center flex-shrink-0">
+                    <MailIcon className="h-3 w-3 text-amber-500" />
+                  </div>
+                  <span className="text-xs truncate text-amber-600 dark:text-amber-400">
+                    {p.pending_email}
+                  </span>
+                </div>
+                <div className="flex-1 relative min-w-0">
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    step={splitMethod === "exact" ? "0.01" : "1"}
+                    min="0"
+                    max={splitMethod === "percentage" ? "100" : undefined}
+                    placeholder="0"
+                    value={manualValues[pKey] ?? p.split_value ?? ""}
+                    onChange={(e) => handleManualValueChange(pKey, e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+                    className="pr-8 h-8 w-full text-sm"
+                  />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                    {splitUnit}
+                  </span>
+                </div>
+                <span className="text-xs font-medium text-muted-foreground tabular-nums w-20 text-right flex-shrink-0">
+                  = {formatNumber(p.computed_amount)} {currencySymbol}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Add by email */}
       <div>
         {!showEmailInput ? (
           <Button
@@ -365,17 +406,11 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
                   setEmailInput(e.target.value);
                   if (emailError) setEmailError("");
                 }}
-                onKeyDown={handleEmailKeyDown}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddByEmail(); } }}
                 className="h-9 flex-1 text-sm"
                 autoFocus
               />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-9 px-3 flex-shrink-0"
-                onClick={handleAddByEmail}
-              >
+              <Button type="button" variant="outline" size="sm" className="h-9 px-3 flex-shrink-0" onClick={handleAddByEmail}>
                 {t("expenses.add")}
               </Button>
               <Button
@@ -383,132 +418,42 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
                 variant="ghost"
                 size="sm"
                 className="h-9 px-2 flex-shrink-0"
-                onClick={() => {
-                  setShowEmailInput(false);
-                  setEmailInput("");
-                  setEmailError("");
-                }}
+                onClick={() => { setShowEmailInput(false); setEmailInput(""); setEmailError(""); }}
               >
                 <XIcon className="h-4 w-4" />
               </Button>
             </div>
-            {emailError && (
-              <p className="text-xs text-destructive">{emailError}</p>
-            )}
+            {emailError && <p className="text-xs text-destructive">{emailError}</p>}
           </div>
         )}
       </div>
 
-      {/* Manual split inputs for exact/percentage */}
-      {splitMethod !== "equal" && participants.length > 0 && (
-        <div className="space-y-2 pt-2 border-t">
-          <label className="text-sm font-medium">
-            {splitMethod === "exact"
-              ? t("expenses.enterAmounts")
-              : t("expenses.enterPercentages")}
-          </label>
-          <div className="space-y-2">
-            {participants.map((participant) => {
-              const key = getKey(participant);
-              const avatarUrl = getAvatarUrl(participant);
-              const displayName = getDisplayName(participant);
-              return (
-                <div
-                  key={key}
-                  className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2"
-                >
-                  <div
-                    className={cn(
-                      "flex items-center gap-2 sm:w-32 min-w-0",
-                      isPending(participant) &&
-                        "text-amber-600 dark:text-amber-400"
-                    )}
-                  >
-                    {isPending(participant) ? (
-                      <div className="h-5 w-5 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center flex-shrink-0">
-                        <MailIcon className="h-3 w-3" />
-                      </div>
-                    ) : (
-                      <Avatar className="h-5 w-5 flex-shrink-0">
-                        <AvatarImage src={avatarUrl} alt={displayName} />
-                        <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
-                          {getInitials(displayName)}
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                    <span className="text-sm truncate">{displayName}</span>
-                  </div>
-                  <div className="flex-1 relative min-w-0">
-                    <Input
-                      type="number"
-                      inputMode="decimal"
-                      step={splitMethod === "exact" ? "0.01" : "1"}
-                      min="0"
-                      max={splitMethod === "percentage" ? "100" : undefined}
-                      placeholder="0"
-                      value={
-                        manualValues[key] || participant.split_value || ""
-                      }
-                      onChange={(e) =>
-                        handleManualValueChange(key, e.target.value)
-                      }
-                      onKeyDown={handleInputKeyDown}
-                      className="pr-10 h-9 w-full"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                      {splitMethod === "percentage" ? "%" : currencySymbol}
-                    </span>
-                  </div>
-                  <span className="text-sm font-medium text-muted-foreground sm:w-20 text-left sm:text-right min-w-0">
-                    = {formatNumber(participant.computed_amount)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* Total split summary */}
       {participants.length > 0 && amount && (
-        <div
-          className={cn(
-            "flex justify-between items-center p-3 rounded-lg",
-            "bg-muted/50 border",
-            Math.abs(totalSplit - amount) > 1 &&
-              splitMethod !== "equal" &&
-              "border-destructive bg-destructive/10"
-          )}
-        >
-          <span className="font-semibold text-sm">
-            {t("expenses.totalSplit")}
-          </span>
-          <span
-            className={cn(
-              "font-bold tabular-nums",
-              Math.abs(totalSplit - amount) > 1 && splitMethod !== "equal"
-                ? "text-destructive"
-                : "text-primary"
-            )}
-          >
+        <div className={cn(
+          "flex justify-between items-center p-3 rounded-lg",
+          "bg-muted/50 border",
+          Math.abs(totalSplit - amount) > 1 && splitMethod !== "equal" && "border-destructive bg-destructive/10"
+        )}>
+          <span className="font-semibold text-sm">{t("expenses.totalSplit")}</span>
+          <span className={cn(
+            "font-bold tabular-nums",
+            Math.abs(totalSplit - amount) > 1 && splitMethod !== "equal" ? "text-destructive" : "text-primary"
+          )}>
             {formatNumber(totalSplit)} {currencySymbol}
           </span>
         </div>
       )}
 
-      {Math.abs(totalSplit - (amount || 0)) > 1 &&
-        splitMethod !== "equal" &&
-        amount && (
-          <p className="text-sm text-destructive flex items-start gap-2">
-            <span>⚠️</span>
-            <span>
-              {t("expenses.splitMismatch", {
-                splitAmount: `${formatNumber(totalSplit)} ${currencySymbol}`,
-                expenseAmount: `${formatNumber(amount)} ${currencySymbol}`,
-              })}
-            </span>
-          </p>
-        )}
+      {Math.abs(totalSplit - (amount || 0)) > 1 && splitMethod !== "equal" && amount && (
+        <p className="text-sm text-destructive flex items-start gap-2">
+          <span>⚠️</span>
+          <span>{t("expenses.splitMismatch", {
+            splitAmount: `${formatNumber(totalSplit)} ${currencySymbol}`,
+            expenseAmount: `${formatNumber(amount)} ${currencySymbol}`,
+          })}</span>
+        </p>
+      )}
 
       {participants.length === 0 && (
         <div className="text-center py-6 text-muted-foreground">
