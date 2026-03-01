@@ -94,7 +94,7 @@ export function AdminLayout() {
       >
         <AnimatedOutlet />
       </main>
-      <GooeyFooter variant="admin" />
+      <GooeyFooter />
     </div>
   );
 }
