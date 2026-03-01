@@ -23,7 +23,9 @@
         "vietnamese": "Vietnamese",
         "english": "English",
         "selectAll": "Select All",
-        "deselectAll": "Deselect All"
+        "deselectAll": "Deselect All",
+        "showMore": "Show {{count}} more",
+        "showLess": "Show less"
     },
     "auth": {
         "login": "Login",
