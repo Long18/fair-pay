@@ -147,9 +147,11 @@ export const ExpenseForm = ({
           if (m.id) addParticipant(m.id);
         });
       }
-      // Group context: auto-select expense creator
-      if (groupId !== undefined && currentUserId) {
-        addParticipant(currentUserId);
+      // Group context: auto-select all group members
+      if (groupId !== undefined) {
+        members.forEach(m => {
+          if (m.id) addParticipant(m.id);
+        });
       }
       didAutoSelectRef.current = true;
     }
