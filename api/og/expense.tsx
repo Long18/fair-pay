@@ -8,6 +8,11 @@ export const config = {
 const supabaseUrl = process.env.VITE_SUPABASE_URL!
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY!
 
+interface Participant {
+  name: string
+  avatar_url: string | null
+}
+
 interface ExpenseData {
   id: string
   description: string
@@ -17,6 +22,9 @@ interface ExpenseData {
   expense_date: string
   payer_name: string | null
   receipt_url: string | null
+  participants: Participant[]
+  split_count: number
+  per_person: number
 }
 
 const CATEGORY_META: Record<string, { label: string; color: string }> = {
@@ -88,7 +96,7 @@ async function fetchExpense(id: string): Promise<ExpenseData | null> {
     const sb = createClient(supabaseUrl, supabaseAnonKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
-    const [exp, att] = await Promise.all([
+    const [exp, att, splits] = await Promise.all([
       sb.from('expenses').select(`
         id, description, amount, currency, category, expense_date,
         profiles!expenses_paid_by_user_id_fkey ( full_name )
@@ -96,20 +104,31 @@ async function fetchExpense(id: string): Promise<ExpenseData | null> {
       sb.from('attachments').select('storage_path, mime_type')
         .eq('expense_id', id).like('mime_type', 'image/%')
         .order('created_at', { ascending: true }).limit(1),
+      sb.from('expense_splits').select(`
+        computed_amount,
+        profiles!expense_splits_user_id_fkey ( full_name, avatar_url )
+      `).eq('expense_id', id),
     ])
     if (exp.error || !exp.data) return null
     const e = exp.data
-    // profiles is returned as an array from Supabase join
     const profArr = e.profiles as unknown as { full_name: string }[] | null
     const payerName = profArr?.[0]?.full_name ?? null
     let receiptUrl: string | null = null
     if (att.data?.length) {
       receiptUrl = sb.storage.from('receipts').getPublicUrl(att.data[0].storage_path).data.publicUrl
     }
+    // Extract participants from splits
+    const participants: Participant[] = (splits.data ?? []).map((s) => {
+      const p = s.profiles as unknown as { full_name: string; avatar_url: string | null }[] | null
+      return { name: p?.[0]?.full_name ?? 'Unknown', avatar_url: p?.[0]?.avatar_url ?? null }
+    })
+    const splitCount = participants.length || 1
+    const perPerson = Math.round(e.amount / splitCount)
     return {
       id: e.id, description: e.description, amount: e.amount,
       currency: e.currency, category: e.category, expense_date: e.expense_date,
       payer_name: payerName, receipt_url: receiptUrl,
+      participants, split_count: splitCount, per_person: perPerson,
     }
   } catch { return null }
 }
@@ -149,6 +168,45 @@ function MetaLine({ date, payer }: { date: string; payer: string | null }) {
           {payer}
         </span>
       ) : null}
+    </div>
+  )
+}
+
+// Avatar colors for participants without profile pictures
+const AVATAR_COLORS = ['#0d9488', '#3b82f6', '#f97316', '#a855f7', '#ec4899', '#22c55e', '#eab308', '#ef4444']
+
+function ParticipantChips({ participants, perPerson, currency }: {
+  participants: Participant[]; perPerson: number; currency: string
+}) {
+  const MAX_SHOW = 4
+  const shown = participants.slice(0, MAX_SHOW)
+  const overflow = participants.length - MAX_SHOW
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {shown.map((p, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f1f5f9', borderRadius: 20, padding: '4px 12px 4px 4px' }}>
+            {p.avatar_url ? (
+              <img src={p.avatar_url} width={26} height={26} style={{ borderRadius: 13, objectFit: 'cover' }} />
+            ) : (
+              <div style={{ display: 'flex', width: 26, height: 26, borderRadius: 13, background: AVATAR_COLORS[i % AVATAR_COLORS.length], alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 12, fontWeight: 700 }}>
+                {p.name.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <span style={{ display: 'flex', fontSize: 13, fontWeight: 500, color: '#334155' }}>
+              {p.name.split(' ').pop()}
+            </span>
+          </div>
+        ))}
+        {overflow > 0 && (
+          <div style={{ display: 'flex', fontSize: 13, fontWeight: 600, color: '#64748b', background: '#f1f5f9', borderRadius: 20, padding: '4px 12px' }}>
+            +{overflow}
+          </div>
+        )}
+      </div>
+      <div style={{ display: 'flex', fontSize: 14, color: '#94a3b8' }}>
+        {participants.length} people · {fmt(perPerson, currency)}/person
+      </div>
     </div>
   )
 }
@@ -199,7 +257,8 @@ export default async function handler(req: Request) {
     const allText = [
       'FairPay', cat.label, desc, amount, date,
       expense.payer_name ? `paid by ${expense.payer_name}` : '',
-      'Expense not found',
+      ...expense.participants.map((p) => p.name),
+      `${expense.split_count} people`, `${fmt(expense.per_person, expense.currency)}/person`,
     ].join(' ')
     const fonts = await buildFonts(allText)
 
@@ -233,6 +292,11 @@ export default async function handler(req: Request) {
             <div style={{ display: 'flex', fontSize: 52, fontWeight: 800, color: BRAND_TEAL, marginBottom: 24, letterSpacing: -2 }}>
               {amount}
             </div>
+            {expense.participants.length > 0 && (
+              <div style={{ display: 'flex', marginBottom: 16 }}>
+                <ParticipantChips participants={expense.participants} perPerson={expense.per_person} currency={expense.currency} />
+              </div>
+            )}
             <MetaLine date={date} payer={expense.payer_name} />
           </div>
         </div>,
@@ -265,6 +329,11 @@ export default async function handler(req: Request) {
           <div style={{ display: 'flex', fontSize: 60, fontWeight: 800, color: BRAND_TEAL, marginBottom: 28, letterSpacing: -2 }}>
             {amount}
           </div>
+          {expense.participants.length > 0 && (
+            <div style={{ display: 'flex', marginBottom: 20 }}>
+              <ParticipantChips participants={expense.participants} perPerson={expense.per_person} currency={expense.currency} />
+            </div>
+          )}
           <div style={{ display: 'flex', width: '100%', height: 1, borderBottom: '2px dashed #e2e8f0', marginBottom: 24 }} />
           <MetaLine date={date} payer={expense.payer_name} />
         </div>
