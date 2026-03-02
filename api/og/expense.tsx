@@ -50,11 +50,10 @@ const BRAND_TEAL = '#0d9488'
 async function loadGoogleFont(font: string, text: string): Promise<ArrayBuffer | null> {
   try {
     const url = `https://fonts.googleapis.com/css2?family=${font}:wght@400;700;800&text=${encodeURIComponent(text)}`
-    const css = await (await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
-    })).text()
-    const resource = css.match(/src: url\((.+?)\) format\('woff2'\)/)
-      || css.match(/src: url\((.+?)\) format\('(opentype|truetype)'\)/)
+    // No User-Agent header → Google Fonts serves truetype/opentype (not woff2)
+    // Satori only supports .ttf/.otf, NOT woff2
+    const css = await (await fetch(url)).text()
+    const resource = css.match(/src: url\((.+?)\) format\('(opentype|truetype)'\)/)
     if (resource) {
       const response = await fetch(resource[1])
       if (response.status === 200) {
@@ -67,17 +66,16 @@ async function loadGoogleFont(font: string, text: string): Promise<ArrayBuffer |
   }
 }
 
+/** ASCII-safe number formatter — no ₫ or other Unicode currency symbols.
+ *  Uses dots for thousands separator (Vietnamese style): 500.000 VND */
 function fmt(amount: number, currency: string): string {
-  try {
-    const num = new Intl.NumberFormat('vi-VN', {
-      maximumFractionDigits: 0,
-    }).format(amount)
-    const c = (currency || 'VND').toUpperCase()
-    if (c === 'VND') return `${num} VND`
-    return `${num} ${c}`
-  } catch {
-    return `${amount.toLocaleString()} ${currency}`
-  }
+  const c = (currency || 'VND').toUpperCase()
+  const rounded = Math.round(amount)
+  const str = Math.abs(rounded).toString()
+  // Insert dots every 3 digits from the right
+  const withDots = str.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  const formatted = rounded < 0 ? `-${withDots}` : withDots
+  return `${formatted} ${c}`
 }
 
 function fmtDate(dateStr: string): string {
@@ -258,17 +256,23 @@ export default async function handler(req: Request) {
     const cat = CATEGORY_META[expense.category ?? 'other'] ?? CATEGORY_META.other
     const amount = fmt(expense.amount, expense.currency)
     const date = fmtDate(expense.expense_date)
-    const desc = expense.description.length > 70
-      ? expense.description.slice(0, 67) + '...'
-      : expense.description
+    // Sanitize description — strip currency symbols Satori can't render
+    const rawDesc = expense.description.replace(/[₫¥€£₹₩₪₱₴₸₺₼₽]/g, '').trim()
+    const desc = rawDesc.length > 70
+      ? rawDesc.slice(0, 67) + '...'
+      : rawDesc
+
+    // Strip non-ASCII currency symbols (₫, ¥, €, £, etc.) that Satori can't render
+    // without a font that covers those glyphs — we use text labels like "VND" instead
+    const sanitize = (s: string) => s.replace(/[₫¥€£₹₩₪₱₴₸₺₼₽]/g, '').trim()
 
     // Collect all text that will be rendered so the font includes every glyph
-    const allText = [
+    const allText = sanitize([
       'FairPay', cat.label, desc, amount, date,
       expense.payer_name ? `paid by ${expense.payer_name}` : '',
       ...expense.participants.map((p) => p.name),
       `${expense.split_count} people`, `${fmt(expense.per_person, expense.currency)}/person`,
-    ].join(' ')
+    ].join(' '))
     const fonts = await buildFonts(allText)
 
     // ── With receipt: receipt left + card right ──
