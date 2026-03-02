@@ -248,6 +248,15 @@ export const PersonDebtBreakdown = () => {
     [selectableExpenses]
   );
 
+  // Participant info for settled toggle avatars
+  const participants = useMemo(() => {
+    if (!counterparty?.data || !identity) return undefined;
+    return [
+      { name: counterparty.data.full_name, avatarUrl: counterparty.data.avatar_url },
+      { name: identity.full_name || t("debts.you", "You"), avatarUrl: identity.avatar_url },
+    ];
+  }, [counterparty?.data, identity, t]);
+
   const hasSelection = selectedSplitIds.size > 0;
   const isLoading = isLoadingProfile || isLoadingExpenses || isLoadingSummary;
   const prefersReducedMotion = useReducedMotion();
@@ -358,6 +367,7 @@ export const PersonDebtBreakdown = () => {
                 settledCount={group.settled.length}
                 settledTotal={group.settledTotal}
                 showSettledToggle={activeTab !== "settled"}
+                participants={participants}
                 settledChildren={group.settled.map((expense) => (
                   <ExpenseBreakdownItemSelectable
                     key={expense.id}

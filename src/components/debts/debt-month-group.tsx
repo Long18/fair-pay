@@ -1,8 +1,14 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatCurrency } from "@/lib/locale-utils";
 import { cn } from "@/lib/utils";
 import { ChevronRightIcon, CheckCircle2Icon } from "@/components/ui/icons";
+
+interface ParticipantInfo {
+  name: string;
+  avatarUrl?: string | null;
+}
 
 interface DebtMonthGroupProps {
   monthKey: string; // "2026-02"
@@ -11,8 +17,18 @@ interface DebtMonthGroupProps {
   settledCount: number;
   settledTotal?: number;
   showSettledToggle: boolean;
+  participants?: ParticipantInfo[];
   children: React.ReactNode;
   settledChildren?: React.ReactNode;
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 }
 
 export function DebtMonthGroup({
@@ -22,6 +38,7 @@ export function DebtMonthGroup({
   settledCount,
   settledTotal = 0,
   showSettledToggle,
+  participants,
   children,
   settledChildren,
 }: DebtMonthGroupProps) {
@@ -83,6 +100,18 @@ export function DebtMonthGroup({
                 )}
               />
               <CheckCircle2Icon className="h-3.5 w-3.5 text-status-success-foreground shrink-0" />
+              {participants && participants.length > 0 && (
+                <div className="flex -space-x-1.5 shrink-0" aria-label="Participants">
+                  {participants.map((p) => (
+                    <Avatar key={p.name} className="h-5 w-5 border border-status-success-border">
+                      <AvatarImage src={p.avatarUrl || undefined} alt={p.name} />
+                      <AvatarFallback className="text-[7px] font-bold bg-status-success-bg text-status-success-foreground">
+                        {getInitials(p.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                  ))}
+                </div>
+              )}
               <span className="text-xs font-medium text-muted-foreground">
                 {t("debts.settledExpenses", "Settled expenses")}
               </span>
