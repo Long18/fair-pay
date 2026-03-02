@@ -45,24 +45,26 @@ const BRAND_TEAL = '#0d9488'
 
 /**
  * Load Google Font dynamically — fetches only the glyphs needed for the given text.
- * This ensures Vietnamese diacritics (ễ, ó, đ, ư, etc.) render correctly in Satori.
- * Uses the official Vercel-recommended pattern.
+ * Returns null on failure instead of throwing, so the image can still render with default font.
  */
-async function loadGoogleFont(font: string, text: string): Promise<ArrayBuffer> {
-  const url = `https://fonts.googleapis.com/css2?family=${font}:wght@400;700;800&text=${encodeURIComponent(text)}`
-  const css = await (await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
-  })).text()
-  // Match woff2 first, then fall back to opentype/truetype
-  const resource = css.match(/src: url\((.+?)\) format\('woff2'\)/)
-    || css.match(/src: url\((.+?)\) format\('(opentype|truetype)'\)/)
-  if (resource) {
-    const response = await fetch(resource[1])
-    if (response.status === 200) {
-      return await response.arrayBuffer()
+async function loadGoogleFont(font: string, text: string): Promise<ArrayBuffer | null> {
+  try {
+    const url = `https://fonts.googleapis.com/css2?family=${font}:wght@400;700;800&text=${encodeURIComponent(text)}`
+    const css = await (await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
+    })).text()
+    const resource = css.match(/src: url\((.+?)\) format\('woff2'\)/)
+      || css.match(/src: url\((.+?)\) format\('(opentype|truetype)'\)/)
+    if (resource) {
+      const response = await fetch(resource[1])
+      if (response.status === 200) {
+        return await response.arrayBuffer()
+      }
     }
+    return null
+  } catch {
+    return null
   }
-  throw new Error('Failed to load font data')
 }
 
 function fmt(amount: number, currency: string): string {
@@ -105,9 +107,12 @@ async function fetchExpense(id: string): Promise<ExpenseData | null> {
         .eq('expense_id', id).like('mime_type', 'image/%')
         .order('created_at', { ascending: true }).limit(1),
       sb.from('expense_splits').select(`
-        computed_amount,
-        profiles!expense_splits_user_id_fkey ( full_name, avatar_url )
-      `).eq('expense_id', id),
+        computed_amount, user_id,
+        profiles ( full_name, avatar_url )
+      `).eq('expense_id', id).then(
+        (res) => res,
+        () => ({ data: null, error: null }),
+      ),
     ])
     if (exp.error || !exp.data) return null
     const e = exp.data
@@ -117,10 +122,13 @@ async function fetchExpense(id: string): Promise<ExpenseData | null> {
     if (att.data?.length) {
       receiptUrl = sb.storage.from('receipts').getPublicUrl(att.data[0].storage_path).data.publicUrl
     }
-    // Extract participants from splits
+    // Extract participants from splits (graceful — empty if splits query failed)
     const participants: Participant[] = (splits.data ?? []).map((s) => {
-      const p = s.profiles as unknown as { full_name: string; avatar_url: string | null }[] | null
-      return { name: p?.[0]?.full_name ?? 'Unknown', avatar_url: p?.[0]?.avatar_url ?? null }
+      const p = s.profiles as unknown as { full_name: string; avatar_url: string | null } | { full_name: string; avatar_url: string | null }[] | null
+      if (Array.isArray(p)) {
+        return { name: p[0]?.full_name ?? 'Unknown', avatar_url: p[0]?.avatar_url ?? null }
+      }
+      return { name: p?.full_name ?? 'Unknown', avatar_url: p?.avatar_url ?? null }
     })
     const splitCount = participants.length || 1
     const perPerson = Math.round(e.amount / splitCount)
@@ -205,15 +213,16 @@ function ParticipantChips({ participants, perPerson, currency }: {
         )}
       </div>
       <div style={{ display: 'flex', fontSize: 14, color: '#94a3b8' }}>
-        {participants.length} people · {fmt(perPerson, currency)}/person
+        {participants.length} people - {fmt(perPerson, currency)}/person
       </div>
     </div>
   )
 }
 
-/** Build font options for ImageResponse — fetches Inter with only the glyphs needed */
+/** Build font options for ImageResponse — returns undefined if font loading fails */
 async function buildFonts(text: string) {
   const fontData = await loadGoogleFont('Inter', text)
+  if (!fontData) return undefined
   return [
     { name: 'Inter', data: fontData, style: 'normal' as const, weight: 400 as const },
     { name: 'Inter', data: fontData, style: 'normal' as const, weight: 700 as const },
@@ -230,7 +239,7 @@ export default async function handler(req: Request) {
         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', fontFamily: 'Inter' }}>
           <BrandHeader />
         </div>,
-        { width: 1200, height: 630, fonts },
+        { width: 1200, height: 630, ...(fonts ? { fonts } : {}) },
       )
     }
 
@@ -242,7 +251,7 @@ export default async function handler(req: Request) {
           <BrandHeader />
           <span style={{ fontSize: 18, color: '#94a3b8' }}>Expense not found</span>
         </div>,
-        { width: 1200, height: 630, fonts },
+        { width: 1200, height: 630, ...(fonts ? { fonts } : {}) },
       )
     }
 
@@ -300,7 +309,7 @@ export default async function handler(req: Request) {
             <MetaLine date={date} payer={expense.payer_name} />
           </div>
         </div>,
-        { width: 1200, height: 630, fonts, headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=86400' } },
+        { width: 1200, height: 630, ...(fonts ? { fonts } : {}), headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=86400' } },
       )
     }
 
@@ -338,7 +347,7 @@ export default async function handler(req: Request) {
           <MetaLine date={date} payer={expense.payer_name} />
         </div>
       </div>,
-      { width: 1200, height: 630, fonts, headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=86400' } },
+      { width: 1200, height: 630, ...(fonts ? { fonts } : {}), headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=86400' } },
     )
   } catch (err) {
     console.error('OG error:', err)

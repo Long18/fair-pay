@@ -39,6 +39,8 @@ interface BalanceTableRowExpandableProps {
   currency: string;
   isExpanded: boolean;
   onToggleExpand: () => void;
+  currentUserName?: string;
+  currentUserAvatarUrl?: string | null;
 }
 
 export function BalanceTableRowExpandable({
@@ -48,10 +50,17 @@ export function BalanceTableRowExpandable({
   currency,
   isExpanded,
   onToggleExpand,
+  currentUserName,
+  currentUserAvatarUrl,
 }: BalanceTableRowExpandableProps) {
   const { t } = useTranslation();
   const go = useGo();
   const { expenses, isLoading } = useContributingExpenses(balance.counterparty_id || "");
+
+  const participants = currentUserName ? [
+    { name: balance.counterparty_name, avatarUrl: balance.counterparty_avatar_url },
+    { name: currentUserName, avatarUrl: currentUserAvatarUrl },
+  ] : undefined;
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
