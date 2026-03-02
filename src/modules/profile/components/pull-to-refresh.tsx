@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import { motion, useAnimation, PanInfo } from "framer-motion";
+import React, { useState, useRef, useCallback } from "react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { RefreshCwIcon } from "@/components/ui/icons";
 
@@ -20,98 +20,99 @@ export const PullToRefresh = ({
 }: PullToRefreshProps) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
-  const controls = useAnimation();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [canPull, setCanPull] = useState(false);
+  const touchStartY = useRef<number | null>(null);
+  const isPulling = useRef(false);
 
-  // Check if we're at the top of the scrollable area
-  const checkScrollPosition = useCallback(() => {
-    if (containerRef.current) {
-      const scrollTop = containerRef.current.scrollTop || window.scrollY;
-      setCanPull(scrollTop <= 0);
-    }
+  const isTouchDevice =
+    typeof window !== "undefined" &&
+    ("ontouchstart" in window || navigator.maxTouchPoints > 0);
+
+  const isAtTop = useCallback((): boolean => {
+    return window.scrollY <= 0;
   }, []);
 
-  useEffect(() => {
-    const handleScroll = () => checkScrollPosition();
-
-    // Listen to both container and window scroll
-    const container = containerRef.current;
-    if (container) {
-      container.addEventListener("scroll", handleScroll);
-    }
-    window.addEventListener("scroll", handleScroll);
-
-    // Initial check
-    checkScrollPosition();
-
-    return () => {
-      if (container) {
-        container.removeEventListener("scroll", handleScroll);
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (disabled || isRefreshing) return;
+      if (isAtTop()) {
+        touchStartY.current = e.touches[0].clientY;
+      } else {
+        touchStartY.current = null;
       }
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, [checkScrollPosition]);
+      isPulling.current = false;
+    },
+    [disabled, isRefreshing, isAtTop]
+  );
 
-  // Re-check scroll position when disabled state changes or after content changes
-  useEffect(() => {
-    if (disabled) {
-      setCanPull(false);
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (disabled || isRefreshing || touchStartY.current === null) return;
+
+      const currentY = e.touches[0].clientY;
+      const diff = currentY - touchStartY.current;
+
+      // Only activate pull if dragging down and still at top
+      if (diff > 0 && isAtTop()) {
+        isPulling.current = true;
+        const pull = Math.min(diff * 0.5, threshold * 1.5);
+        setPullDistance(pull);
+
+        // Prevent native scroll only when actively pulling
+        if (pull > 10) {
+          e.preventDefault();
+        }
+      } else {
+        // Not pulling down or scrolled away — let native scroll handle it
+        isPulling.current = false;
+        if (pullDistance > 0) {
+          setPullDistance(0);
+        }
+      }
+    },
+    [disabled, isRefreshing, isAtTop, threshold, pullDistance]
+  );
+
+  const handleTouchEnd = useCallback(async () => {
+    if (disabled || isRefreshing || !isPulling.current) {
+      touchStartY.current = null;
+      isPulling.current = false;
       setPullDistance(0);
-    } else {
-      // Use a small delay to ensure DOM has updated after content changes
-      const timeoutId = setTimeout(() => {
-        checkScrollPosition();
-      }, 100);
-      return () => clearTimeout(timeoutId);
+      return;
     }
-  }, [disabled, checkScrollPosition]);
 
-  const handleDragEnd = async (_event: MouseEvent | TouchEvent | PointerEvent, _info: PanInfo) => {
-    if (disabled || !canPull || isRefreshing) return;
+    touchStartY.current = null;
+    isPulling.current = false;
 
     if (pullDistance > threshold) {
       setIsRefreshing(true);
-      setPullDistance(threshold);
-
-      // Trigger haptic feedback if available
-      if ('vibrate' in navigator) {
+      if ("vibrate" in navigator) {
         navigator.vibrate(10);
       }
-
       try {
         await onRefresh();
       } finally {
         setIsRefreshing(false);
         setPullDistance(0);
-        await controls.start({ y: 0 });
       }
     } else {
       setPullDistance(0);
-      await controls.start({ y: 0 });
     }
-  };
-
-  const handleDrag = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    if (disabled || !canPull || isRefreshing) return;
-
-    const pull = Math.max(0, Math.min(info.offset.y, threshold * 1.5));
-    setPullDistance(pull);
-  };
-
-  // Only enable on touch devices
-  const isTouchDevice = typeof window !== 'undefined' &&
-    ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  }, [disabled, isRefreshing, pullDistance, threshold, onRefresh]);
 
   if (!isTouchDevice || disabled) {
-    return <div className={className} ref={containerRef}>{children}</div>;
+    return <div className={className}>{children}</div>;
   }
 
   const pullProgress = Math.min(pullDistance / threshold, 1);
   const showIndicator = pullDistance > 10 || isRefreshing;
 
   return (
-    <div className={cn("relative", className)} ref={containerRef}>
+    <div
+      className={cn("relative", className)}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Pull Indicator */}
       <div
         className={cn(
@@ -151,40 +152,21 @@ export const PullToRefresh = ({
         </div>
       </div>
 
-      {/* Content Container */}
-      <motion.div
-        drag={canPull && !isRefreshing && !disabled ? "y" : false}
-        dragConstraints={{ top: 0, bottom: threshold * 1.5 }}
-        dragElastic={0.3}
-        onDrag={handleDrag}
-        onDragEnd={handleDragEnd}
-        animate={controls}
+      {/* Content */}
+      <div
         style={{
-          y: isRefreshing ? threshold : 0,
+          transform:
+            pullDistance > 0 || isRefreshing
+              ? `translateY(${isRefreshing ? threshold : pullDistance}px)`
+              : undefined,
+          transition:
+            pullDistance === 0 && !isRefreshing
+              ? "transform 0.3s ease"
+              : undefined,
         }}
-        transition={{
-          type: "spring",
-          stiffness: 300,
-          damping: 30,
-        }}
-        className={cn(
-          "relative",
-          canPull && !isRefreshing && !disabled && "touch-pan-y"
-        )}
       >
-        {/* Visual Stretch Effect */}
-        {pullDistance > 0 && !isRefreshing && (
-          <div
-            className="absolute inset-x-0 top-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none"
-            style={{
-              height: `${pullDistance}px`,
-              transform: "translateY(-100%)",
-            }}
-          />
-        )}
-
         {children}
-      </motion.div>
+      </div>
     </div>
   );
 };
