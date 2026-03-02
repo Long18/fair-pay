@@ -177,7 +177,7 @@ export const Dashboard = () => {
                     </div>
                   )}
                   <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
-                    <BalanceTable balances={balances} disabled={!isAuthenticated} showHistory={false} showExpenseBreakdown={true} currentUserName={identity?.full_name} currentUserAvatarUrl={identity?.avatar_url} />
+                    <BalanceTable balances={balances} disabled={!isAuthenticated} showHistory={false} showExpenseBreakdown={true} />
                   </div>
                 </>
               )}

@@ -51,11 +51,9 @@ interface BalanceTableProps {
   disabled?: boolean;
   showHistory?: boolean;
   showExpenseBreakdown?: boolean;
-  currentUserName?: string;
-  currentUserAvatarUrl?: string | null;
 }
 
-export function BalanceTable({ balances, pageSize = 10, disabled = false, showHistory = false, showExpenseBreakdown = false, currentUserName, currentUserAvatarUrl }: BalanceTableProps) {
+export function BalanceTable({ balances, pageSize = 10, disabled = false, showHistory = false, showExpenseBreakdown = false }: BalanceTableProps) {
   const go = useGo();
   const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState(1);
@@ -149,8 +147,6 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                 currency={balance.currency || "VND"}
                 isExpanded={expandedRows.has(balance.counterparty_id || balance.counterparty_email || balance.counterparty_name)}
                 onToggleExpand={() => toggleRow(balance.counterparty_id || balance.counterparty_email || balance.counterparty_name)}
-                currentUserName={currentUserName}
-                currentUserAvatarUrl={currentUserAvatarUrl}
               />
             );
           }
@@ -267,8 +263,6 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                     currency={balance.currency || "VND"}
                     isExpanded={expandedRows.has(balance.counterparty_id || balance.counterparty_email || balance.counterparty_name)}
                     onToggleExpand={() => toggleRow(balance.counterparty_id || balance.counterparty_email || balance.counterparty_name)}
-                    currentUserName={currentUserName}
-                    currentUserAvatarUrl={currentUserAvatarUrl}
                   />
                 );
               }
