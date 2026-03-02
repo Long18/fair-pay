@@ -42,8 +42,12 @@ const BRAND_TEAL = '#0d9488'
  */
 async function loadGoogleFont(font: string, text: string): Promise<ArrayBuffer> {
   const url = `https://fonts.googleapis.com/css2?family=${font}:wght@400;700;800&text=${encodeURIComponent(text)}`
-  const css = await (await fetch(url)).text()
-  const resource = css.match(/src: url\((.+)\) format\('(opentype|truetype|woff2)'\)/)
+  const css = await (await fetch(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
+  })).text()
+  // Match woff2 first, then fall back to opentype/truetype
+  const resource = css.match(/src: url\((.+?)\) format\('woff2'\)/)
+    || css.match(/src: url\((.+?)\) format\('(opentype|truetype)'\)/)
   if (resource) {
     const response = await fetch(resource[1])
     if (response.status === 200) {
