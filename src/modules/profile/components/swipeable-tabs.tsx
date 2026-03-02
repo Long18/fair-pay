@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence, PanInfo } from "framer-motion";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface SwipeableTabsProps {
@@ -20,7 +20,9 @@ export const SwipeableTabs = ({
   threshold = 50,
 }: SwipeableTabsProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const directionLocked = useRef<"x" | "y" | null>(null);
+  const swipeHandled = useRef(false);
 
   useEffect(() => {
     const index = tabs.indexOf(activeTab);
@@ -29,64 +31,102 @@ export const SwipeableTabs = ({
     }
   }, [activeTab, tabs]);
 
-  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    setIsDragging(false);
+  const isTouchDevice =
+    typeof window !== "undefined" &&
+    ("ontouchstart" in window || navigator.maxTouchPoints > 0);
 
-    const swipeThreshold = threshold;
-    const swipeVelocity = 500;
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    };
+    directionLocked.current = null;
+    swipeHandled.current = false;
+  }, []);
 
-    if (info.offset.x > swipeThreshold || info.velocity.x > swipeVelocity) {
-      // Swiped right - go to previous tab
-      if (currentIndex > 0) {
-        const newIndex = currentIndex - 1;
-        onTabChange(tabs[newIndex]);
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (!touchStartRef.current || swipeHandled.current) return;
+
+      const dx = e.touches[0].clientX - touchStartRef.current.x;
+      const dy = e.touches[0].clientY - touchStartRef.current.y;
+
+      // Lock direction after 10px of movement
+      if (directionLocked.current === null && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+        directionLocked.current = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
       }
-    } else if (info.offset.x < -swipeThreshold || info.velocity.x < -swipeVelocity) {
-      // Swiped left - go to next tab
-      if (currentIndex < tabs.length - 1) {
-        const newIndex = currentIndex + 1;
-        onTabChange(tabs[newIndex]);
+
+      // If vertical scroll detected, bail out entirely — let browser handle it
+      if (directionLocked.current === "y") {
+        return;
       }
-    }
-  };
+
+      // Horizontal swipe — prevent vertical scroll interference
+      if (directionLocked.current === "x") {
+        e.preventDefault();
+      }
+    },
+    []
+  );
+
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (!touchStartRef.current || swipeHandled.current) {
+        touchStartRef.current = null;
+        return;
+      }
+
+      // Only process horizontal swipes
+      if (directionLocked.current !== "x") {
+        touchStartRef.current = null;
+        directionLocked.current = null;
+        return;
+      }
+
+      const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
+
+      if (dx > threshold && currentIndex > 0) {
+        onTabChange(tabs[currentIndex - 1]);
+        swipeHandled.current = true;
+      } else if (dx < -threshold && currentIndex < tabs.length - 1) {
+        onTabChange(tabs[currentIndex + 1]);
+        swipeHandled.current = true;
+      }
+
+      touchStartRef.current = null;
+      directionLocked.current = null;
+    },
+    [currentIndex, tabs, threshold, onTabChange]
+  );
+
+  if (!isTouchDevice) {
+    return <div className={className}>{children[currentIndex]}</div>;
+  }
 
   const variants = {
-    enter: (direction: number) => {
-      return {
-        x: direction > 0 ? 1000 : -1000,
-        opacity: 0,
-      };
-    },
+    enter: (direction: number) => ({
+      x: direction > 0 ? 300 : -300,
+      opacity: 0,
+    }),
     center: {
       zIndex: 1,
       x: 0,
       opacity: 1,
     },
-    exit: (direction: number) => {
-      return {
-        zIndex: 0,
-        x: direction < 0 ? 1000 : -1000,
-        opacity: 0,
-      };
-    },
+    exit: (direction: number) => ({
+      zIndex: 0,
+      x: direction < 0 ? 300 : -300,
+      opacity: 0,
+    }),
   };
-
-  const swipeConfidenceThreshold = 10000;
-  const swipePower = (offset: number, velocity: number) => {
-    return Math.abs(offset) * velocity;
-  };
-
-  // Only enable swipe on touch devices
-  const isTouchDevice = typeof window !== 'undefined' &&
-    ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-
-  if (!isTouchDevice) {
-    // On non-touch devices, just render children without swipe
-    return <div className={className}>{children[currentIndex]}</div>;
-  }
 
   return (
-    <div className={cn("relative overflow-hidden", className)}>
+    <div
+      className={cn("relative", className)}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <AnimatePresence initial={false} mode="wait">
         <motion.div
           key={currentIndex}
@@ -99,12 +139,7 @@ export const SwipeableTabs = ({
             x: { type: "spring", stiffness: 300, damping: 30 },
             opacity: { duration: 0.2 },
           }}
-          drag="x"
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.2}
-          onDragStart={() => setIsDragging(true)}
-          onDragEnd={handleDragEnd}
-          className={cn("w-full", isDragging && "cursor-grabbing")}
+          className="w-full"
         >
           {children[currentIndex]}
         </motion.div>
