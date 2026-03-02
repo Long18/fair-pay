@@ -104,10 +104,8 @@ async function fetchExpense(id: string): Promise<ExpenseData | null> {
       sb.from('attachments').select('storage_path, mime_type')
         .eq('expense_id', id).like('mime_type', 'image/%')
         .order('created_at', { ascending: true }).limit(1),
-      sb.from('expense_splits').select(`
-        computed_amount, user_id,
-        profiles ( full_name, avatar_url )
-      `).eq('expense_id', id).then(
+      // Use SECURITY DEFINER function to bypass RLS for anon access
+      sb.rpc('get_expense_splits_public', { p_expense_id: id }).then(
         (res) => res,
         () => ({ data: null, error: null }),
       ),
@@ -120,14 +118,11 @@ async function fetchExpense(id: string): Promise<ExpenseData | null> {
     if (att.data?.length) {
       receiptUrl = sb.storage.from('receipts').getPublicUrl(att.data[0].storage_path).data.publicUrl
     }
-    // Extract participants from splits (graceful — empty if splits query failed)
-    const participants: Participant[] = (splits.data ?? []).map((s) => {
-      const p = s.profiles as unknown as { full_name: string; avatar_url: string | null } | { full_name: string; avatar_url: string | null }[] | null
-      if (Array.isArray(p)) {
-        return { name: p[0]?.full_name ?? 'Unknown', avatar_url: p[0]?.avatar_url ?? null }
-      }
-      return { name: p?.full_name ?? 'Unknown', avatar_url: p?.avatar_url ?? null }
-    })
+    // Extract participants from splits — rpc returns full_name/avatar_url directly
+    const participants: Participant[] = (splits.data ?? []).map((s: Record<string, unknown>) => ({
+      name: (s.full_name as string) ?? 'Unknown',
+      avatar_url: (s.avatar_url as string) ?? null,
+    }))
     const splitCount = participants.length || 1
     const perPerson = Math.round(e.amount / splitCount)
     return {
