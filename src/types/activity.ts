@@ -6,7 +6,7 @@ import type { SupportedCurrency } from "@/lib/format-utils";
 
 export interface PaymentEvent {
   id: string;
-  event_type: "manual_settle" | "momo_payment" | "banking_payment" | "settle_all";
+  event_type: "manual_settle" | "momo_payment" | "banking_payment" | "settle_all" | "settle_all_with_person" | "settle_all_user_splits" | "settle_batch" | "settle_all_group";
   from_user_id: string;
   from_user_name: string;
   from_user_avatar?: string;
