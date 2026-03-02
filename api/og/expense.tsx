@@ -33,16 +33,34 @@ const CATEGORY_META: Record<string, { label: string; color: string }> = {
   other: { label: 'Expense', color: '#64748b' },
 }
 
-// FairPay brand teal (matches oklch primary)
 const BRAND_TEAL = '#0d9488'
+
+/**
+ * Load Google Font dynamically — fetches only the glyphs needed for the given text.
+ * This ensures Vietnamese diacritics (ễ, ó, đ, ư, etc.) render correctly in Satori.
+ * Uses the official Vercel-recommended pattern.
+ */
+async function loadGoogleFont(font: string, text: string): Promise<ArrayBuffer> {
+  const url = `https://fonts.googleapis.com/css2?family=${font}:wght@400;700;800&text=${encodeURIComponent(text)}`
+  const css = await (await fetch(url)).text()
+  const resource = css.match(/src: url\((.+)\) format\('(opentype|truetype|woff2)'\)/)
+  if (resource) {
+    const response = await fetch(resource[1])
+    if (response.status === 200) {
+      return await response.arrayBuffer()
+    }
+  }
+  throw new Error('Failed to load font data')
+}
 
 function fmt(amount: number, currency: string): string {
   try {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: currency || 'VND',
+    const num = new Intl.NumberFormat('vi-VN', {
       maximumFractionDigits: 0,
     }).format(amount)
+    const c = (currency || 'VND').toUpperCase()
+    if (c === 'VND') return `${num} VND`
+    return `${num} ${c}`
   } catch {
     return `${amount.toLocaleString()} ${currency}`
   }
@@ -77,7 +95,9 @@ async function fetchExpense(id: string): Promise<ExpenseData | null> {
     ])
     if (exp.error || !exp.data) return null
     const e = exp.data
-    const prof = e.profiles as { full_name: string } | null
+    // profiles is returned as an array from Supabase join
+    const profArr = e.profiles as unknown as { full_name: string }[] | null
+    const payerName = profArr?.[0]?.full_name ?? null
     let receiptUrl: string | null = null
     if (att.data?.length) {
       receiptUrl = sb.storage.from('receipts').getPublicUrl(att.data[0].storage_path).data.publicUrl
@@ -85,8 +105,7 @@ async function fetchExpense(id: string): Promise<ExpenseData | null> {
     return {
       id: e.id, description: e.description, amount: e.amount,
       currency: e.currency, category: e.category, expense_date: e.expense_date,
-      payer_name: prof?.full_name ?? null, receipt_url: receiptUrl,
-      paid_by_user_id: '',
+      payer_name: payerName, receipt_url: receiptUrl,
     }
   } catch { return null }
 }
@@ -96,7 +115,6 @@ async function fetchExpense(id: string): Promise<ExpenseData | null> {
 function BrandHeader() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      {/* Teal dot as mini logo */}
       <div style={{ display: 'flex', width: 28, height: 28, borderRadius: 8, background: BRAND_TEAL }} />
       <span style={{ fontSize: 22, fontWeight: 700, color: BRAND_TEAL, letterSpacing: -0.5 }}>
         FairPay
@@ -123,12 +141,21 @@ function MetaLine({ date, payer }: { date: string; payer: string | null }) {
       <span style={{ display: 'flex' }}>{date}</span>
       {payer ? (
         <span style={{ display: 'flex' }}>
-          <span style={{ color: '#475569', marginRight: 8 }}>·</span>
-          Paid by {payer}
+          <span style={{ color: '#475569', marginRight: 8 }}>paid by</span>
+          {payer}
         </span>
       ) : null}
     </div>
   )
+}
+
+/** Build font options for ImageResponse — fetches Inter with only the glyphs needed */
+async function buildFonts(text: string) {
+  const fontData = await loadGoogleFont('Inter', text)
+  return [
+    { name: 'Inter', data: fontData, style: 'normal' as const, weight: 400 as const },
+    { name: 'Inter', data: fontData, style: 'normal' as const, weight: 700 as const },
+  ]
 }
 
 export default async function handler(req: Request) {
@@ -136,22 +163,24 @@ export default async function handler(req: Request) {
     const id = new URL(req.url).searchParams.get('id')
 
     if (!id) {
+      const fonts = await buildFonts('FairPay')
       return new ImageResponse(
-        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', fontFamily: 'Inter' }}>
           <BrandHeader />
         </div>,
-        { width: 1200, height: 630 },
+        { width: 1200, height: 630, fonts },
       )
     }
 
     const expense = await fetchExpense(id)
     if (!expense) {
+      const fonts = await buildFonts('FairPay Expense not found')
       return new ImageResponse(
-        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', gap: 16 }}>
+        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', gap: 16, fontFamily: 'Inter' }}>
           <BrandHeader />
           <span style={{ fontSize: 18, color: '#94a3b8' }}>Expense not found</span>
         </div>,
-        { width: 1200, height: 630 },
+        { width: 1200, height: 630, fonts },
       )
     }
 
@@ -162,14 +191,21 @@ export default async function handler(req: Request) {
       ? expense.description.slice(0, 67) + '...'
       : expense.description
 
+    // Collect all text that will be rendered so the font includes every glyph
+    const allText = [
+      'FairPay', cat.label, desc, amount, date,
+      expense.payer_name ? `paid by ${expense.payer_name}` : '',
+      'Expense not found',
+    ].join(' ')
+    const fonts = await buildFonts(allText)
+
     // ── With receipt: receipt left + card right ──
     if (expense.receipt_url) {
       return new ImageResponse(
         <div style={{
           width: '100%', height: '100%', display: 'flex',
-          background: '#f8fafc', padding: 40, gap: 40,
+          background: '#f8fafc', padding: 40, gap: 40, fontFamily: 'Inter',
         }}>
-          {/* Receipt image */}
           <div style={{
             width: 440, height: 550, display: 'flex',
             borderRadius: 16, overflow: 'hidden',
@@ -179,33 +215,24 @@ export default async function handler(req: Request) {
             <img src={expense.receipt_url} width={440} height={550}
               style={{ objectFit: 'cover' }} />
           </div>
-          {/* Info card */}
           <div style={{
             flex: 1, display: 'flex', flexDirection: 'column',
             justifyContent: 'center', gap: 0,
           }}>
-            <div style={{ display: 'flex', marginBottom: 24 }}>
-              <BrandHeader />
-            </div>
+            <div style={{ display: 'flex', marginBottom: 24 }}><BrandHeader /></div>
             <div style={{ display: 'flex', marginBottom: 16 }}>
               <CategoryBadge label={cat.label} color={cat.color} />
             </div>
-            <div style={{
-              display: 'flex', fontSize: 30, fontWeight: 700,
-              color: '#0f172a', marginBottom: 20, lineHeight: 1.3,
-            }}>
+            <div style={{ display: 'flex', fontSize: 30, fontWeight: 700, color: '#0f172a', marginBottom: 20, lineHeight: 1.3 }}>
               {desc}
             </div>
-            <div style={{
-              display: 'flex', fontSize: 52, fontWeight: 800,
-              color: BRAND_TEAL, marginBottom: 24, letterSpacing: -2,
-            }}>
+            <div style={{ display: 'flex', fontSize: 52, fontWeight: 800, color: BRAND_TEAL, marginBottom: 24, letterSpacing: -2 }}>
               {amount}
             </div>
             <MetaLine date={date} payer={expense.payer_name} />
           </div>
         </div>,
-        { width: 1200, height: 630, headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=86400' } },
+        { width: 1200, height: 630, fonts, headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=86400' } },
       )
     }
 
@@ -214,9 +241,8 @@ export default async function handler(req: Request) {
       <div style={{
         width: '100%', height: '100%', display: 'flex',
         alignItems: 'center', justifyContent: 'center',
-        background: '#f8fafc', padding: 40,
+        background: '#f8fafc', padding: 40, fontFamily: 'Inter',
       }}>
-        {/* Receipt card */}
         <div style={{
           display: 'flex', flexDirection: 'column',
           width: 680, background: 'white',
@@ -224,48 +250,31 @@ export default async function handler(req: Request) {
           border: '1px solid #e2e8f0',
           boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
         }}>
-          {/* Top: brand + category */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
             <BrandHeader />
             <CategoryBadge label={cat.label} color={cat.color} />
           </div>
-          {/* Dashed separator */}
-          <div style={{
-            display: 'flex', width: '100%', height: 1,
-            borderBottom: '2px dashed #e2e8f0', marginBottom: 32,
-          }} />
-          {/* Description */}
-          <div style={{
-            display: 'flex', fontSize: 32, fontWeight: 700,
-            color: '#0f172a', marginBottom: 20, lineHeight: 1.3,
-          }}>
+          <div style={{ display: 'flex', width: '100%', height: 1, borderBottom: '2px dashed #e2e8f0', marginBottom: 32 }} />
+          <div style={{ display: 'flex', fontSize: 32, fontWeight: 700, color: '#0f172a', marginBottom: 20, lineHeight: 1.3 }}>
             {desc}
           </div>
-          {/* Amount */}
-          <div style={{
-            display: 'flex', fontSize: 60, fontWeight: 800,
-            color: BRAND_TEAL, marginBottom: 28, letterSpacing: -2,
-          }}>
+          <div style={{ display: 'flex', fontSize: 60, fontWeight: 800, color: BRAND_TEAL, marginBottom: 28, letterSpacing: -2 }}>
             {amount}
           </div>
-          {/* Dashed separator */}
-          <div style={{
-            display: 'flex', width: '100%', height: 1,
-            borderBottom: '2px dashed #e2e8f0', marginBottom: 24,
-          }} />
-          {/* Meta */}
+          <div style={{ display: 'flex', width: '100%', height: 1, borderBottom: '2px dashed #e2e8f0', marginBottom: 24 }} />
           <MetaLine date={date} payer={expense.payer_name} />
         </div>
       </div>,
-      { width: 1200, height: 630, headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=86400' } },
+      { width: 1200, height: 630, fonts, headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=86400' } },
     )
   } catch (err) {
     console.error('OG error:', err)
+    const fallbackFonts = await buildFonts('FairPay').catch(() => undefined)
     return new ImageResponse(
-      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', fontFamily: 'Inter' }}>
         <BrandHeader />
       </div>,
-      { width: 1200, height: 630 },
+      { width: 1200, height: 630, ...(fallbackFonts ? { fonts: fallbackFonts } : {}) },
     )
   }
 }

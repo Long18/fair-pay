@@ -168,8 +168,8 @@ export const PersonDebtBreakdown = () => {
   const filteredMonthGroups = useMemo(() => {
     if (activeTab === "all") return monthGroups;
     if (activeTab === "unsettled") {
-      // Keep months that have unsettled items, but preserve their settled
-      // items so the collapsible "Settled expenses" toggle can appear
+      // Show months that have unsettled items, but preserve their settled
+      // items so the collapsible "Settled expenses" dropdown can appear
       return monthGroups.filter((g) => g.unsettled.length > 0);
     }
     // settled tab
@@ -201,23 +201,21 @@ export const PersonDebtBreakdown = () => {
   );
 
   const handleSettle = useCallback(async () => {
-    const result = await settle(Array.from(selectedSplitIds));
+    const result = await settle(Array.from(selectedSplitIds), refetch);
     if (result.success) {
       setSelectedSplitIds(new Set());
-      refetch();
     }
   }, [selectedSplitIds, settle, refetch]);
 
   const handleInlineSettle = useCallback(
     async (splitId: string) => {
-      const result = await settle([splitId]);
+      const result = await settle([splitId], refetch);
       if (result.success) {
         setSelectedSplitIds((prev) => {
           const next = new Set(prev);
           next.delete(splitId);
           return next;
         });
-        refetch();
       }
     },
     [settle, refetch]
@@ -226,10 +224,9 @@ export const PersonDebtBreakdown = () => {
   const handleSettleAll = useCallback(async () => {
     const allSettleable = selectableExpenses.map((e) => e.id);
     if (allSettleable.length === 0) return;
-    const result = await settle(allSettleable);
+    const result = await settle(allSettleable, refetch);
     if (result.success) {
       setSelectedSplitIds(new Set());
-      refetch();
     }
   }, [selectableExpenses, settle, refetch]);
 
