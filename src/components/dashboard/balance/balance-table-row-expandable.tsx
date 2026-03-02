@@ -165,6 +165,7 @@ export function BalanceTableRowExpandable({
                     expenses={expenses}
                     counterpartyId={balance.counterparty_id || ""}
                     isLoading={isLoading}
+                    participants={participants}
                   />
 
                   {balance.counterparty_id && (
@@ -198,10 +199,17 @@ export function BalanceTableRowExpandableMobile({
   currency,
   isExpanded,
   onToggleExpand,
+  currentUserName,
+  currentUserAvatarUrl,
 }: Omit<BalanceTableRowExpandableProps, 'index'>) {
   const { t } = useTranslation();
   const go = useGo();
   const { expenses, isLoading } = useContributingExpenses(balance.counterparty_id || "");
+
+  const participants = currentUserName ? [
+    { name: balance.counterparty_name, avatarUrl: balance.counterparty_avatar_url },
+    { name: currentUserName, avatarUrl: currentUserAvatarUrl },
+  ] : undefined;
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
@@ -314,6 +322,7 @@ export function BalanceTableRowExpandableMobile({
                 expenses={expenses}
                 counterpartyId={balance.counterparty_id || ""}
                 isLoading={isLoading}
+                participants={participants}
               />
 
               {balance.counterparty_id && (
