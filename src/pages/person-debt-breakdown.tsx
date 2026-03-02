@@ -162,12 +162,15 @@ export const PersonDebtBreakdown = () => {
   }, [expenses]);
 
   // Filter month groups based on active tab
+  // NOTE: In "unsettled" tab, we preserve the settled array so that
+  // DebtMonthGroup can show the collapsible "Settled expenses" toggle
+  // within each month group (both for individual settle and settle-all).
   const filteredMonthGroups = useMemo(() => {
     if (activeTab === "all") return monthGroups;
     if (activeTab === "unsettled") {
-      return monthGroups
-        .map((g) => ({ ...g, settled: [] as typeof g.settled }))
-        .filter((g) => g.unsettled.length > 0);
+      // Keep months that have unsettled items, but preserve their settled
+      // items so the collapsible "Settled expenses" toggle can appear
+      return monthGroups.filter((g) => g.unsettled.length > 0);
     }
     // settled tab
     return monthGroups
