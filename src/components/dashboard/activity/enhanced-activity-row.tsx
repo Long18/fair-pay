@@ -122,7 +122,8 @@ export const EnhancedActivityRow = React.forwardRef<
           className={cn(
             "flex items-center gap-3 p-4 border rounded-lg",
             "hover:bg-muted/50 cursor-pointer transition-colors",
-            "group"
+            "group",
+            isSettled && "bg-status-success-bg/20 border-status-success-border/50"
           )}
         >
           {/* Left Section: Payment State Badge + Expand Control */}
@@ -155,7 +156,10 @@ export const EnhancedActivityRow = React.forwardRef<
 
           {/* Center Section: Expense Details */}
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-base truncate">
+            <p className={cn(
+              "font-semibold text-base truncate",
+              isSettled && "line-through text-muted-foreground"
+            )}>
               {activity.description}
             </p>
             
@@ -185,6 +189,29 @@ export const EnhancedActivityRow = React.forwardRef<
                 </>
               )}
             </div>
+
+            {/* Settled info: participant avatars + settled date */}
+            {isSettled && (settledParticipants.length > 0 || settledDate) && (
+              <div className="flex items-center gap-2 mt-1.5">
+                {settledParticipants.length > 0 && (
+                  <div className="flex -space-x-1.5" aria-label="Settled participants">
+                    {settledParticipants.map((p) => (
+                      <Avatar key={p.id} className="h-5 w-5 border border-status-success-border">
+                        <AvatarImage src={p.avatar || undefined} alt={p.name} />
+                        <AvatarFallback className="text-[7px] font-bold bg-status-success-bg text-status-success-foreground">
+                          {p.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                    ))}
+                  </div>
+                )}
+                {settledDate && (
+                  <span className="text-[11px] font-medium text-status-success-foreground">
+                    Settled {format(new Date(settledDate), "dd/MM/yyyy")}
+                  </span>
+                )}
+              </div>
+            )}
             
             {/* Owe/Owed Indicator */}
             {activity.oweStatus.direction !== "neutral" && (
