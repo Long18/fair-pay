@@ -305,7 +305,6 @@ export function BalanceTableRowExpandableMobile({
                 expenses={expenses}
                 counterpartyId={balance.counterparty_id || ""}
                 isLoading={isLoading}
-                participants={participants}
               />
 
               {balance.counterparty_id && (
