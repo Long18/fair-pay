@@ -331,6 +331,10 @@ const PaymentEventRow: React.FC<PaymentEventRowProps> = ({ event, currentUserId 
   const getEventTypeLabel = (eventType: string) => {
     switch (eventType) {
       case "settle_all":
+      case "settle_all_with_person":
+      case "settle_all_user_splits":
+      case "settle_all_group":
+      case "settle_batch":
         return "Bulk Settlement";
       case "momo_payment":
         return "MoMo Payment";
