@@ -130,18 +130,19 @@ export const PersonDebtBreakdown = () => {
   const monthGroups = useMemo(() => {
     const grouped = new Map<
       string,
-      { unsettled: typeof expenses; settled: typeof expenses; net: number }
+      { unsettled: typeof expenses; settled: typeof expenses; net: number; settledTotal: number }
     >();
 
     for (const exp of expenses) {
       const key = getMonthKey(exp.expense_date);
       if (!grouped.has(key)) {
-        grouped.set(key, { unsettled: [], settled: [], net: 0 });
+        grouped.set(key, { unsettled: [], settled: [], net: 0, settledTotal: 0 });
       }
       const group = grouped.get(key)!;
 
       if (exp.is_settled) {
         group.settled.push(exp);
+        group.settledTotal += exp.my_share;
       } else {
         group.unsettled.push(exp);
         // Net: positive = they owe me, negative = I owe them
@@ -158,6 +159,7 @@ export const PersonDebtBreakdown = () => {
         unsettled: data.unsettled,
         settled: data.settled,
         netAmount: data.net,
+        settledTotal: data.settledTotal,
       }));
   }, [expenses]);
 
@@ -354,6 +356,7 @@ export const PersonDebtBreakdown = () => {
                 netAmount={group.netAmount}
                 currency={summary.currency}
                 settledCount={group.settled.length}
+                settledTotal={group.settledTotal}
                 showSettledToggle={activeTab !== "settled"}
                 settledChildren={group.settled.map((expense) => (
                   <ExpenseBreakdownItemSelectable
@@ -375,6 +378,7 @@ export const PersonDebtBreakdown = () => {
                     }
                     status={expense.status}
                     isSettled={expense.is_settled}
+                    settledAt={expense.settled_at}
                     isSelected={false}
                     onSelectChange={handleSelectChange}
                   />

@@ -34,6 +34,7 @@ interface ExpenseBreakdownItemSelectableProps {
   paidByName: string;
   status: "paid" | "unpaid" | "partial";
   isSettled: boolean;
+  settledAt?: string | null;
   isSelected: boolean;
   onSelectChange: (splitId: string, checked: boolean) => void;
   onInlineSettle?: (splitId: string) => void;
@@ -53,6 +54,7 @@ export function ExpenseBreakdownItemSelectable({
   paidByName,
   status,
   isSettled,
+  settledAt,
   isSelected,
   onSelectChange,
   onInlineSettle,
@@ -149,6 +151,13 @@ export function ExpenseBreakdownItemSelectable({
             <span className="text-[11px] text-muted-foreground">
               {formatDate(expenseDate)}
             </span>
+            {isSettled && settledAt && (
+              <span className="text-[10px] text-muted-foreground/70">
+                {t("debts.settledOn", "settled {{date}}", {
+                  date: formatDate(settledAt),
+                })}
+              </span>
+            )}
             {groupName && (
               <Badge
                 variant="outline"
