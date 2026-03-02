@@ -15,6 +15,8 @@ interface ContributingExpense {
   group_name?: string | null;
   category?: string | null;
   my_share: number;
+  settled_amount: number;
+  settled_at?: string | null;
   direction: 'i_owe' | 'they_owe'; // whether I owe them or they owe me
   status: 'paid' | 'unpaid' | 'partial';
   is_settled: boolean;
@@ -44,6 +46,7 @@ export function useContributingExpenses(counterpartyId: string) {
             computed_amount,
             is_settled,
             settled_amount,
+            settled_at,
             expenses!inner (
               id,
               description,
@@ -69,6 +72,7 @@ export function useContributingExpenses(counterpartyId: string) {
             computed_amount,
             is_settled,
             settled_amount,
+            settled_at,
             expenses!inner (
               id,
               description,
@@ -107,6 +111,8 @@ export function useContributingExpenses(counterpartyId: string) {
               group_name: expense.groups?.name || null,
               category: expense.category || null,
               my_share: myShare,
+              settled_amount: settledAmount,
+              settled_at: split.settled_at || null,
               direction: 'i_owe' as const,
               status: isFullySettled ? 'paid' : isPartiallySettled ? 'partial' : 'unpaid',
               is_settled: isFullySettled,
@@ -134,6 +140,8 @@ export function useContributingExpenses(counterpartyId: string) {
               group_name: expense.groups?.name || null,
               category: expense.category || null,
               my_share: theirShare, // This is what they owe
+              settled_amount: settledAmount,
+              settled_at: split.settled_at || null,
               direction: 'they_owe' as const,
               status: isFullySettled ? 'paid' : isPartiallySettled ? 'partial' : 'unpaid',
               is_settled: isFullySettled,
