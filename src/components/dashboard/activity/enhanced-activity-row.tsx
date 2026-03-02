@@ -1,8 +1,9 @@
 import * as React from "react";
 import { useGo } from "@refinedev/core";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PaymentStateBadge } from "@/components/ui/payment-state-badge";
 import { OweStatusIndicator } from "@/components/ui/owe-status-indicator";
 import { ChevronDownIcon, ChevronRightIcon, MoreVerticalIcon, EyeIcon, CheckCircle2Icon } from "@/components/ui/icons";
@@ -84,6 +85,34 @@ export const EnhancedActivityRow = React.forwardRef<
 
     const hasPaymentEvents = activity.paymentEvents.length > 0;
     const showBulkSettlement = activity.paymentState !== "paid";
+    const isSettled = activity.paymentState === "paid";
+
+    // Extract unique participant avatars from payment events for settled items
+    const settledParticipants = React.useMemo(() => {
+      if (!isSettled || activity.paymentEvents.length === 0) return [];
+      const seen = new Set<string>();
+      const participants: Array<{ id: string; name: string; avatar?: string }> = [];
+      for (const event of activity.paymentEvents) {
+        if (!seen.has(event.from_user_id)) {
+          seen.add(event.from_user_id);
+          participants.push({ id: event.from_user_id, name: event.from_user_name, avatar: event.from_user_avatar });
+        }
+        if (!seen.has(event.to_user_id)) {
+          seen.add(event.to_user_id);
+          participants.push({ id: event.to_user_id, name: event.to_user_name, avatar: event.to_user_avatar });
+        }
+      }
+      return participants.slice(0, 3);
+    }, [isSettled, activity.paymentEvents]);
+
+    // Get latest settlement date
+    const settledDate = React.useMemo(() => {
+      if (!isSettled || activity.paymentEvents.length === 0) return null;
+      const sorted = [...activity.paymentEvents].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      return sorted[0]?.created_at || null;
+    }, [isSettled, activity.paymentEvents]);
 
     return (
       <div ref={ref} className={cn("space-y-0", className)}>
