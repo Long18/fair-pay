@@ -93,35 +93,78 @@ function fmtDate(dateStr: string): string {
 
 async function fetchExpense(id: string): Promise<ExpenseData | null> {
   try {
-    // Use service_role key to bypass RLS (OG image needs public access to expense data)
+    // Prefer SECURITY DEFINER RPC (works with anon key and bypasses RLS).
+    // Keep service_role fallback for environments where the RPC is not yet deployed.
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     const sb = createClient(supabaseUrl, serviceRoleKey || supabaseAnonKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
 
-    const [exp, att, splits] = await Promise.all([
-      sb.from('expenses').select(`
-        id, description, amount, currency, category, expense_date,
-        profiles!expenses_paid_by_user_id_fkey ( full_name )
-      `).eq('id', id).single(),
-      sb.from('attachments').select('storage_path, mime_type')
-        .eq('expense_id', id).like('mime_type', 'image/%')
-        .order('created_at', { ascending: true }).limit(1),
+    const [ogResult, splits] = await Promise.all([
+      sb.rpc('get_expense_og_data', { p_expense_id: id }).then(
+        (res) => res,
+        () => ({ data: null, error: null }),
+      ),
       sb.rpc('get_expense_splits_public', { p_expense_id: id }).then(
         (res) => res,
         () => ({ data: null, error: null }),
       ),
     ])
 
-    if (exp.error || !exp.data) return null
+    let e: {
+      id: string
+      description: string
+      amount: number
+      currency: string
+      category: string | null
+      expense_date: string
+      payer_name: string | null
+    } | null = null
+    let receiptStoragePath: string | null = null
 
-    const e = exp.data
-    const profArr = e.profiles as unknown as { full_name: string }[] | null
-    const payerName = profArr?.[0]?.full_name ?? null
+    if (!ogResult.error && ogResult.data && ogResult.data.length > 0) {
+      const og = ogResult.data[0] as Record<string, unknown>
+      e = {
+        id: String(og.id),
+        description: String(og.description ?? ''),
+        amount: Number(og.amount ?? 0),
+        currency: String(og.currency ?? 'VND'),
+        category: og.category ? String(og.category) : null,
+        expense_date: String(og.expense_date ?? ''),
+        payer_name: og.payer_name ? String(og.payer_name) : null,
+      }
+      receiptStoragePath = og.receipt_storage_path ? String(og.receipt_storage_path) : null
+    } else if (serviceRoleKey) {
+      const [exp, att] = await Promise.all([
+        sb.from('expenses').select(`
+          id, description, amount, currency, category, expense_date,
+          profiles!expenses_paid_by_user_id_fkey ( full_name )
+        `).eq('id', id).single(),
+        sb.from('attachments').select('storage_path, mime_type')
+          .eq('expense_id', id).like('mime_type', 'image/%')
+          .order('created_at', { ascending: true }).limit(1),
+      ])
+      if (exp.error || !exp.data) return null
+
+      const base = exp.data
+      const profArr = base.profiles as unknown as { full_name: string }[] | null
+      e = {
+        id: base.id,
+        description: base.description,
+        amount: Number(base.amount),
+        currency: base.currency,
+        category: base.category,
+        expense_date: base.expense_date,
+        payer_name: profArr?.[0]?.full_name ?? null,
+      }
+      receiptStoragePath = att.data?.[0]?.storage_path ?? null
+    } else {
+      return null
+    }
 
     let receiptUrl: string | null = null
-    if (att.data?.length) {
-      receiptUrl = sb.storage.from('receipts').getPublicUrl(att.data[0].storage_path).data.publicUrl
+    if (receiptStoragePath) {
+      receiptUrl = sb.storage.from('receipts').getPublicUrl(receiptStoragePath).data.publicUrl
     }
 
     // Extract participants from splits — rpc returns full_name/avatar_url directly
@@ -135,7 +178,7 @@ async function fetchExpense(id: string): Promise<ExpenseData | null> {
     return {
       id: e.id, description: e.description, amount: e.amount,
       currency: e.currency, category: e.category, expense_date: e.expense_date,
-      payer_name: payerName, receipt_url: receiptUrl,
+      payer_name: e.payer_name, receipt_url: receiptUrl,
       participants, split_count: splitCount, per_person: perPerson,
     }
   } catch { return null }
@@ -231,7 +274,8 @@ async function buildFonts(text: string) {
 
 export default async function handler(req: Request) {
   try {
-    const id = new URL(req.url).searchParams.get('id')
+    const url = new URL(req.url)
+    const id = url.searchParams.get('id') || url.searchParams.get('expense_id')
 
     if (!id) {
       const fonts = await buildFonts('FairPay')
