@@ -1,10 +1,16 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
+import { catalog } from '../../../src/modules/admin/api-docs/catalog'
+import type { ApiCatalogEntry } from '../../../src/modules/admin/api-docs/types'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TIMEOUT_MS = 30_000
 const MAX_RESPONSE_BYTES = 1_048_576 // 1 MB
+const OPERATION_BY_ID: ReadonlyMap<string, ApiCatalogEntry> = new Map(
+  catalog.map((entry) => [entry.id, entry])
+)
+const BLOCKED_OPERATION_IDS = new Set<string>(['http-api-admin-api-console-execute'])
 
 /** Allowed target host patterns (SSRF protection) */
 const ALLOWED_HOST_PATTERNS = [
@@ -35,6 +41,39 @@ function isAllowedHost(url: string): boolean {
   } catch {
     return false
   }
+}
+
+function isAbsoluteUrl(target: string): boolean {
+  return /^https?:\/\//i.test(target)
+}
+
+function getRequestOrigin(req: VercelRequest): string {
+  const forwardedHost = typeof req.headers['x-forwarded-host'] === 'string'
+    ? req.headers['x-forwarded-host'].split(',')[0]?.trim()
+    : undefined
+  const host = forwardedHost || req.headers.host
+  if (!host) return 'http://localhost'
+
+  const forwardedProto = typeof req.headers['x-forwarded-proto'] === 'string'
+    ? req.headers['x-forwarded-proto'].split(',')[0]?.trim()
+    : undefined
+  const proto = forwardedProto || (host.startsWith('localhost') ? 'http' : 'https')
+  return `${proto}://${host}`
+}
+
+function resolveHttpTargetUrl(req: VercelRequest, target: string, supabaseUrl: string): string {
+  if (isAbsoluteUrl(target)) return target
+  if (target.startsWith('/api/')) return new URL(target, getRequestOrigin(req)).toString()
+  return new URL(target, supabaseUrl).toString()
+}
+
+function sanitizeForwardHeaders(headers: Record<string, string> = {}): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const [k, v] of Object.entries(headers)) {
+    if (REDACTED_HEADER_KEYS.includes(k.toLowerCase())) continue
+    out[k] = v
+  }
+  return out
 }
 
 function truncate(data: unknown): unknown {
@@ -132,18 +171,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // ── Step 4: Allowlist operation_id ───────────────────────────────────────────
-  // Import catalog IDs at runtime to avoid bundling issues
-  // We do a simple pattern check: operation_id must match known catalog ID format
   const VALID_ID_PATTERN = /^[a-z][a-z0-9-]*$/
   if (!VALID_ID_PATTERN.test(operation_id) || operation_id.length > 100) {
     return res.status(400).json({ success: false, status: 400, duration_ms: Date.now() - start, error: 'Invalid operation_id' })
   }
 
+  const allowedEntry = OPERATION_BY_ID.get(operation_id)
+  if (!allowedEntry || BLOCKED_OPERATION_IDS.has(operation_id)) {
+    return res.status(403).json({ success: false, status: 403, duration_ms: Date.now() - start, error: 'operation_id is not allowlisted' })
+  }
+
+  if (allowedEntry.callability === 'disabled') {
+    return res.status(403).json({ success: false, status: 403, duration_ms: Date.now() - start, error: 'Operation is disabled in the API console' })
+  }
+
+  if (allowedEntry.kind !== transport) {
+    return res.status(400).json({ success: false, status: 400, duration_ms: Date.now() - start, error: 'transport does not match allowlisted operation' })
+  }
+
+  const expectedTarget = transport === 'http' ? allowedEntry.path : allowedEntry.function_name
+  if (!expectedTarget || expectedTarget !== target) {
+    return res.status(400).json({ success: false, status: 400, duration_ms: Date.now() - start, error: 'target does not match allowlisted operation' })
+  }
+
+  const requestMethod = (method ?? allowedEntry.method ?? 'GET').toUpperCase()
+  if (transport === 'http' && allowedEntry.method && requestMethod !== allowedEntry.method.toUpperCase()) {
+    return res.status(400).json({ success: false, status: 400, duration_ms: Date.now() - start, error: 'method does not match allowlisted operation' })
+  }
+
   // ── Step 5: Host restriction (SSRF protection) ───────────────────────────────
 
+  const resolvedTargetUrl = transport === 'http'
+    ? resolveHttpTargetUrl(req, target, supabaseUrl)
+    : null
+
   if (transport === 'http') {
-    const fullUrl = target.startsWith('http') ? target : `${supabaseUrl}${target}`
-    if (!isAllowedHost(fullUrl)) {
+    if (!resolvedTargetUrl || !isAllowedHost(resolvedTargetUrl)) {
       return res.status(403).json({ success: false, status: 403, duration_ms: Date.now() - start, error: `Target host not in allowlist` })
     }
   }
@@ -170,18 +233,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         responseData = data
       }
     } else {
-      const fullUrl = target.startsWith('http') ? target : `${supabaseUrl}${target}`
-      const urlObj = new URL(fullUrl)
+      const urlObj = new URL(resolvedTargetUrl!)
       if (query) {
         Object.entries(query).forEach(([k, v]) => urlObj.searchParams.set(k, v))
       }
 
+      const forwardedHeaders = sanitizeForwardHeaders(reqHeaders ?? {})
+      const isInternalApiCall = !isAbsoluteUrl(target) && target.startsWith('/api/')
+      const defaultAuthorization = isInternalApiCall ? `Bearer ${token}` : `Bearer ${serviceKey}`
+
       const resp = await fetch(urlObj.toString(), {
-        method: method ?? 'GET',
+        method: requestMethod,
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${serviceKey}`,
-          ...(reqHeaders ?? {}),
+          Authorization: defaultAuthorization,
+          ...forwardedHeaders,
         },
         body: body != null ? JSON.stringify(body) : undefined,
         signal: controller.signal,
@@ -218,7 +284,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     metadata: {
       transport,
       target,
-      method: method ?? null,
+      method: transport === 'http' ? requestMethod : method ?? null,
       run_mode,
       status: responseStatus,
       duration_ms: Date.now() - start,
@@ -237,7 +303,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       operation_id,
       transport,
       target,
-      method: method ?? null,
+      method: transport === 'http' ? requestMethod : method ?? null,
       query: query ?? null,
       headers: reqHeaders ? redactHeaders(reqHeaders) : null,
       run_mode,

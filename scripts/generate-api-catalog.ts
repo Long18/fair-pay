@@ -63,7 +63,7 @@ function detectUsedRpcNames(): Set<string> {
 
 // ─── Parse Vercel API routes ──────────────────────────────────────────────────
 
-function parseVercelRoutes(usedRpcNames: Set<string>): Entry[] {
+function parseVercelRoutes(): Entry[] {
   const files = globSync('api/**/*.{ts,tsx}', { cwd: ROOT })
   const entries: Entry[] = []
 
@@ -71,8 +71,15 @@ function parseVercelRoutes(usedRpcNames: Set<string>): Entry[] {
     const content = fs.readFileSync(path.join(ROOT, file), 'utf-8')
     // Detect HTTP method from handler body
     const methods: string[] = []
-    if (/req\.method\s*!==\s*['"]GET['"]/.test(content) || /req\.method\s*===\s*['"]GET['"]/.test(content)) methods.push('GET')
-    if (/req\.method\s*!==\s*['"]POST['"]/.test(content) || /req\.method\s*===\s*['"]POST['"]/.test(content)) methods.push('POST')
+    const supportedMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
+    for (const method of supportedMethods) {
+      if (
+        new RegExp(`req\\.method\\s*!==\\s*['"]${method}['"]`).test(content) ||
+        new RegExp(`req\\.method\\s*===\\s*['"]${method}['"]`).test(content)
+      ) {
+        methods.push(method)
+      }
+    }
     if (methods.length === 0) methods.push('GET') // default
 
     // Build path from file path: api/debt/all-users-summary.ts → /api/debt/all-users-summary
@@ -83,6 +90,8 @@ function parseVercelRoutes(usedRpcNames: Set<string>): Entry[] {
 
     const isWebhook = file.includes('webhook')
     const isOg = file.includes('og')
+    const isApiConsoleExecute = routePath === '/api/admin/api-console/execute'
+    const isAdminPath = routePath.startsWith('/api/admin')
 
     entries.push({
       id: `http-${slug}`,
@@ -91,13 +100,13 @@ function parseVercelRoutes(usedRpcNames: Set<string>): Entry[] {
       method: methods[0],
       path: routePath,
       source_files: [file],
-      auth_level: isWebhook || isOg ? 'public' : 'admin',
-      roles_allowed: isWebhook || isOg ? [] : ['admin'],
-      callability: isWebhook ? 'disabled' : isOg ? 'direct_http' : 'proxy_admin',
-      risk: isWebhook ? 'critical' : 'low',
-      used_in_code: false, // HTTP routes aren't called via .rpc()
+      auth_level: isWebhook || isOg ? 'public' : isAdminPath ? 'admin' : 'authenticated',
+      roles_allowed: isWebhook || isOg ? [] : isAdminPath ? ['admin'] : ['authenticated'],
+      callability: isWebhook || isApiConsoleExecute ? 'disabled' : isOg ? 'direct_http' : 'proxy_admin',
+      risk: isWebhook ? 'critical' : isAdminPath ? 'medium' : 'low',
+      used_in_code: !isWebhook,
       status: 'active',
-      tags: file.includes('debt') ? ['debt', 'admin'] : isWebhook ? ['webhook'] : isOg ? ['og'] : [],
+      tags: file.includes('debt') ? ['debt', 'admin'] : isWebhook ? ['webhook'] : isOg ? ['og'] : isAdminPath ? ['admin'] : [],
       summary: `${methods[0]} ${routePath}`,
       params: [],
       response_examples: [],
@@ -131,7 +140,7 @@ function parseEdgeFunctions(): Entry[] {
       source_files: [file],
       auth_level: isCron ? 'service_role' : isPublic ? 'public' : 'authenticated',
       roles_allowed: isCron ? ['service_role'] : isPublic ? [] : ['authenticated'],
-      callability: isWebhook || isCron ? 'proxy_admin' : 'direct_http',
+      callability: isWebhook ? 'disabled' : isCron ? 'proxy_admin' : 'direct_http',
       risk: isCron ? 'high' : isWebhook ? 'critical' : 'medium',
       used_in_code: false,
       status: 'active',
@@ -221,7 +230,7 @@ function generate() {
   console.log(`   Found ${usedRpcNames.size} used RPC names: ${[...usedRpcNames].join(', ')}`)
 
   console.log('📡 Parsing Vercel API routes...')
-  const vercelEntries = parseVercelRoutes(usedRpcNames)
+  const vercelEntries = parseVercelRoutes()
   console.log(`   Found ${vercelEntries.length} Vercel routes`)
 
   console.log('⚡ Parsing Supabase Edge Functions...')
