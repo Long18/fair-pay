@@ -33,6 +33,7 @@ import {
   SmilePlusIcon,
   PanelLeftIcon,
   ArrowLeftIcon,
+  CodeIcon,
 } from "@/components/ui/icons";
 
 // ─── Nav Items Config ───────────────────────────────────────────────
@@ -45,6 +46,7 @@ const NAV_ITEMS = [
   { key: "audit-logs", label: "Audit Logs", icon: ScrollTextIcon, path: "/admin/audit-logs" },
   { key: "donation", label: "Donation", icon: HeartIcon, path: "/admin/donation-settings" },
   { key: "reactions", label: "Reactions", icon: SmilePlusIcon, path: "/admin/reactions" },
+  { key: "api-docs", label: "API Docs", icon: CodeIcon, path: "/admin/api-docs" },
 ] as const;
 
 // ─── Helpers ────────────────────────────────────────────────────────

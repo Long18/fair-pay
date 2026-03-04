@@ -9,3 +9,4 @@ export { AdminNotifications } from "./pages/AdminNotifications";
 export { AdminAuditLogs } from "./pages/AdminAuditLogs";
 export { AdminDonationSettings } from "./pages/AdminDonationSettings";
 export { AdminReactions } from "./pages/AdminReactions";
+export { AdminApiDocs } from "./pages/AdminApiDocs";

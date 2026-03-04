@@ -94,6 +94,7 @@ const AdminNotifications = lazy(() => import("./modules/admin/pages/AdminNotific
 const AdminAuditLogs = lazy(() => import("./modules/admin/pages/AdminAuditLogs").then(m => ({ default: m.AdminAuditLogs })));
 const AdminDonationSettings = lazy(() => import("./modules/admin/pages/AdminDonationSettings").then(m => ({ default: m.AdminDonationSettings })));
 const AdminReactions = lazy(() => import("./modules/admin/pages/AdminReactions").then(m => ({ default: m.AdminReactions })));
+const AdminApiDocs = lazy(() => import("./modules/admin/pages/AdminApiDocs").then(m => ({ default: m.AdminApiDocs })));
 
 // Optimized loading fallback component
 // Profile Edit Redirect Component
@@ -117,6 +118,8 @@ const PageLoader = memo(() => (
 
 const isVercelAnalyticsEnabled =
   import.meta.env.PROD && import.meta.env.VITE_ENABLE_VERCEL_ANALYTICS === "true";
+
+const isAdminApiDocsEnabled = import.meta.env.VITE_ENABLE_ADMIN_API_DOCS === "true";
 
 // Analytics initializer component to set user identity
 const AnalyticsInitializer = memo(() => {
@@ -387,6 +390,7 @@ function App() {
                     <Route path="audit-logs" element={<Suspense fallback={<PageLoader />}><AdminAuditLogs /></Suspense>} />
                     <Route path="donation-settings" element={<Suspense fallback={<PageLoader />}><AdminDonationSettings /></Suspense>} />
                     <Route path="reactions" element={<Suspense fallback={<PageLoader />}><AdminReactions /></Suspense>} />
+                    {isAdminApiDocsEnabled && <Route path="api-docs" element={<Suspense fallback={<PageLoader />}><AdminApiDocs /></Suspense>} />}
                   </Route>
 
                   {/* Authenticated routes - require login */}
