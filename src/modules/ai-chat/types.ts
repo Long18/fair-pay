@@ -93,6 +93,7 @@ export interface AiTool {
 /** Available tools list (for reference) */
 export const AI_TOOLS: AiTool[] = [
   { name: 'get_debt_summary', description: 'Get debt overview for current user', requires_confirmation: false, admin_only: false },
+  { name: 'get_debt_details', description: 'Get detailed expense-level debt breakdown with a specific person', requires_confirmation: false, admin_only: false },
   { name: 'get_groups', description: 'List groups the user belongs to', requires_confirmation: false, admin_only: false },
   { name: 'get_group_details', description: 'Get details of a specific group', requires_confirmation: false, admin_only: false },
   { name: 'create_group', description: 'Create a new expense group', requires_confirmation: true, admin_only: false },
@@ -109,8 +110,22 @@ export const PUTER_TOOL_DEFINITIONS = [
     type: 'function' as const,
     function: {
       name: 'get_debt_summary',
-      description: 'Get debt overview showing who owes whom for the current user',
+      description: 'Get debt overview showing who owes whom for the current user. Returns aggregated totals per person. For detailed expense-level breakdown, use get_debt_details with a counterparty_id from this result.',
       parameters: { type: 'object', properties: {}, required: [] as string[] },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'get_debt_details',
+      description: 'Get detailed expense-level debt breakdown with a specific person. Returns each individual expense: what it was for (description), when (date), how much is owed, settlement status, and which group/friend context. Use this when the user asks for specifics about what they owe someone or what someone owes them. Requires a counterparty_id from get_debt_summary.',
+      parameters: {
+        type: 'object',
+        properties: {
+          counterparty_id: { type: 'string', description: 'The UUID of the counterparty (get from get_debt_summary results)' },
+        },
+        required: ['counterparty_id'],
+      },
     },
   },
   {
