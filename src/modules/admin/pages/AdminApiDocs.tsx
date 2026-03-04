@@ -58,8 +58,7 @@ import {
   Loader2Icon,
   XIcon,
   ZapIcon,
-  ChevronDownIcon,
-  RefreshCwIcon,
+
 } from "@/components/ui/icons";
 
 // Catalog
@@ -89,18 +88,19 @@ function generateCurlSnippet(entry: ApiCatalogEntry): string {
       : "";
   const body =
     method !== "GET" ? ' \\\n  -H "Content-Type: application/json" \\\n  -d \'{}\'': "";
-  return `curl -X ${method} "https://yourapp.vercel.app${url}"${auth}${body}`;
+  return `curl -X ${method} "${window.location.origin}${url}"${auth}${body}`;
 }
 
 function generateFetchSnippet(entry: ApiCatalogEntry): string {
   if (entry.kind === "rpc") return "";
   const method = entry.method ?? "GET";
+  const fullUrl = `\${window.location.origin}${entry.path ?? ""}`;
   const auth =
     entry.auth_level !== "public"
       ? "  headers: {\n    'Authorization': `Bearer ${session.access_token}`,\n    'Content-Type': 'application/json',\n  },"
       : "  headers: { 'Content-Type': 'application/json' },";
   const body = method !== "GET" ? "  body: JSON.stringify({}),\n" : "";
-  return `const resp = await fetch('${entry.path}', {\n  method: '${method}',\n${auth}\n${body}});\nconst data = await resp.json();`;
+  return `const resp = await fetch(\`${fullUrl}\`, {\n  method: '${method}',\n${auth}\n${body}});\nconst data = await resp.json();`;
 }
 
 function generateRpcSnippet(entry: ApiCatalogEntry): string {
@@ -108,7 +108,12 @@ function generateRpcSnippet(entry: ApiCatalogEntry): string {
   const args =
     entry.params.length > 0
       ? "{\n  " +
-        entry.params.map((p) => `${p.name}: <${p.type}>`).join(",\n  ") +
+        entry.params
+          .map((p) => {
+            const val = p.example !== undefined ? JSON.stringify(p.example) : `<${p.type}>`;
+            return `${p.name}: ${val}`;
+          })
+          .join(",\n  ") +
         "\n}"
       : "{}";
   return `const { data, error } = await supabase\n  .rpc('${entry.function_name}', ${args});\n\nif (error) console.error(error);\nconsole.log(data);`;
@@ -419,7 +424,7 @@ function CatalogPanel({ entries, filters, onFiltersChange, selectedId, onSelect,
           )}
         >
           <FilterIcon className="w-3 h-3" />
-          {filters.showAll ? "All discovered" : "Active only"}
+          {filters.showAll ? "All APIs" : "In use only"}
         </button>
       </div>
 

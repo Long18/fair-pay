@@ -126,7 +126,7 @@ async function executeHttp(
   request: ApiExecutionRequest,
   signal: AbortSignal
 ): Promise<ApiExecutionResult> {
-  const url = new URL(request.target, window.location.origin);
+  const url = resolveHttpTargetUrl(request.target);
 
   if (request.query) {
     Object.entries(request.query).forEach(([k, v]) => url.searchParams.set(k, v));
@@ -134,6 +134,10 @@ async function executeHttp(
 
   const { data: { session } } = await supabaseClient.auth.getSession();
   const fetchHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+  const isSupabaseFunction = url.pathname.startsWith('/functions/v1/');
+  if (isSupabaseFunction && import.meta.env.VITE_SUPABASE_ANON_KEY) {
+    fetchHeaders['apikey'] = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  }
   if (session?.access_token) fetchHeaders['Authorization'] = `Bearer ${session.access_token}`;
   Object.assign(fetchHeaders, request.headers);
 
@@ -153,6 +157,20 @@ async function executeHttp(
   }
 
   return { success: resp.ok, status: resp.status, duration_ms: 0, data };
+}
+
+function resolveHttpTargetUrl(target: string): URL {
+  if (/^https?:\/\//i.test(target)) {
+    return new URL(target);
+  }
+
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  const isSupabasePath = target.startsWith('/functions/v1/') || target.startsWith('/rest/v1/') || target.startsWith('/storage/v1/');
+  if (isSupabasePath && supabaseUrl) {
+    return new URL(target, supabaseUrl);
+  }
+
+  return new URL(target, window.location.origin);
 }
 
 async function executeProxy(

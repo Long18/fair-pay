@@ -25,7 +25,7 @@ export function filterCatalog(
   filters: ApiFilterState
 ): ApiCatalogEntry[] {
   return entries.filter((e) => {
-    // Active-first: if showAll is false, only show used_in_code entries
+    // Optional active-only mode
     if (!filters.showAll && !e.used_in_code) return false;
 
     // Search

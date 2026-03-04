@@ -22,6 +22,7 @@ export interface ApiParamSpec {
   type: string;
   required: boolean;
   default?: unknown;
+  example?: unknown;
   description?: string;
 }
 
@@ -112,6 +113,6 @@ export const DEFAULT_FILTER_STATE: ApiFilterState = {
   auth: 'all',
   risk: 'all',
   callable: 'all',
-  usedInCode: true, // Active-first default
-  showAll: false,
+  usedInCode: 'all', // Full catalog first
+  showAll: true,
 };
