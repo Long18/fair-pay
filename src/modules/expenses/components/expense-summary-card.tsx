@@ -55,6 +55,7 @@ import { vi, enUS } from "date-fns/locale";
 import { getFrequencyDescription } from "../types/recurring";
 import type { RecurringExpense } from "../types/recurring";
 import type { CommentUser } from "../types/comments";
+import { buildExpenseShareUrl } from "../utils/share-url";
 
 interface ExpenseSummaryCardProps {
   expense: {
@@ -63,6 +64,8 @@ interface ExpenseSummaryCardProps {
     amount: number;
     currency: string;
     expense_date: string;
+    created_at?: string;
+    updated_at?: string;
     category?: string;
     paid_by_user_id: string;
     is_payment?: boolean;
@@ -190,8 +193,12 @@ export const ExpenseSummaryCard = memo(({
   const expenseReactions = getReactionsForTarget("expense", expense.id);
   const hasCommentsOrReactions = comments.length > 0 || expenseReactions.length > 0;
 
+  const getShareUrl = useCallback(() => {
+    return buildExpenseShareUrl(expense, window.location.href);
+  }, [expense]);
+
   const handleShare = async () => {
-    const shareUrl = window.location.href;
+    const shareUrl = getShareUrl();
     if (navigator.share) {
       try {
         await navigator.share({
@@ -209,7 +216,7 @@ export const ExpenseSummaryCard = memo(({
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(getShareUrl());
       toast.success(t("common.linkCopied", "Link copied to clipboard"));
     } catch {
       toast.error(t("common.copyFailed", "Failed to copy link"));
