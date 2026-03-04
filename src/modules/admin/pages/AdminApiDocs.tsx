@@ -1,6 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslate } from "@refinedev/core";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/ui/use-mobile";
 
@@ -252,6 +251,7 @@ function EntryRow({
   return (
     <button
       onClick={onSelect}
+      style={{ contentVisibility: "auto", containIntrinsicSize: "120px" }}
       className={cn(
         "w-full text-left px-3 py-2.5 flex items-start gap-2 border-b border-border/30",
         "hover:bg-accent transition-colors duration-150",
@@ -318,7 +318,7 @@ function CatalogPanel({ entries, filters, onFiltersChange, selectedId, onSelect,
     filters.risk !== "all" || filters.callable !== "all";
 
   return (
-    <div className="w-72 shrink-0 flex flex-col h-full border rounded-xl bg-card overflow-hidden">
+    <div className="w-72 shrink-0 flex flex-col h-full min-h-0 border rounded-xl bg-card overflow-hidden">
       {/* Search */}
       <div className="p-3 border-b">
         <div className="relative">
@@ -429,7 +429,7 @@ function CatalogPanel({ entries, filters, onFiltersChange, selectedId, onSelect,
       </div>
 
       {/* Entry list */}
-      <ScrollArea className="flex-1">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
         {entries.length === 0 ? (
           <div className="p-8 text-center">
             <p className="text-sm text-muted-foreground">{t("adminApiDocs.empty.noResults")}</p>
@@ -445,7 +445,7 @@ function CatalogPanel({ entries, filters, onFiltersChange, selectedId, onSelect,
             />
           ))
         )}
-      </ScrollArea>
+      </div>
     </div>
   );
 }
@@ -600,55 +600,195 @@ function SnippetsTab({ entry }: { entry: ApiCatalogEntry }) {
 
 // ─── Execution tab ────────────────────────────────────────────────────────────
 
-interface KVEditorProps {
-  label: string;
-  value: Record<string, string>;
-  onChange: (v: Record<string, string>) => void;
+interface KVFieldRow {
+  id: string;
+  key: string;
+  value: string;
+  required?: boolean;
+  description?: string;
 }
 
-function KVEditor({ label, value, onChange }: KVEditorProps) {
-  const entries = Object.entries(value);
-  const add = () => onChange({ ...value, "": "" });
-  const remove = (k: string) => {
-    const next = { ...value };
-    delete next[k];
-    onChange(next);
+interface KVEditorProps {
+  label: string;
+  rows: KVFieldRow[];
+  onChange: (rows: KVFieldRow[]) => void;
+  keyPlaceholder: string;
+  valuePlaceholder: string;
+  emptyHint: string;
+}
+
+function createKVFieldRow(partial?: Partial<KVFieldRow>): KVFieldRow {
+  return {
+    id: crypto.randomUUID(),
+    key: "",
+    value: "",
+    ...partial,
   };
-  const update = (oldKey: string, newKey: string, newVal: string) => {
-    const next: Record<string, string> = {};
-    for (const [k, v] of Object.entries(value)) {
-      next[k === oldKey ? newKey : k] = k === oldKey ? newVal : v;
-    }
-    onChange(next);
+}
+
+function buildInitialRpcArgs(entry: ApiCatalogEntry): string {
+  if (entry.params.length === 0) return "{}";
+  return JSON.stringify(
+    Object.fromEntries(entry.params.map((p) => [p.name, p.default ?? ""])),
+    null,
+    2
+  );
+}
+
+function buildInitialQueryRows(entry: ApiCatalogEntry): KVFieldRow[] {
+  if (entry.kind !== "http" || entry.params.length === 0) return [];
+  return entry.params.map((p) =>
+    createKVFieldRow({
+      key: p.name,
+      value: p.default !== undefined ? String(p.default) : "",
+      required: p.required,
+      description: p.description,
+    })
+  );
+}
+
+function buildInitialBody(entry: ApiCatalogEntry): string {
+  if (entry.request_body_schema && Object.keys(entry.request_body_schema).length > 0) {
+    return JSON.stringify(entry.request_body_schema, null, 2);
+  }
+  return "{}";
+}
+
+function rowsToRecord(rows: KVFieldRow[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const row of rows) {
+    const key = row.key.trim();
+    if (!key) continue;
+    out[key] = row.value;
+  }
+  return out;
+}
+
+function KVEditor({ label, rows, onChange, keyPlaceholder, valuePlaceholder, emptyHint }: KVEditorProps) {
+  const update = (id: string, patch: Partial<KVFieldRow>) => {
+    onChange(rows.map((row) => (row.id === id ? { ...row, ...patch } : row)));
+  };
+
+  const remove = (id: string) => {
+    onChange(rows.filter((row) => row.id !== id));
   };
 
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-medium text-muted-foreground">{label}</span>
-        <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={add}>
-          + Add
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 px-2 text-xs"
+          onClick={() => onChange([...rows, createKVFieldRow()])}
+        >
+          + Add row
         </Button>
       </div>
-      {entries.map(([k, v], i) => (
-        <div key={i} className="flex gap-1.5 items-center">
-          <Input
-            placeholder="key"
-            value={k}
-            onChange={(e) => update(k, e.target.value, v)}
-            className="h-7 text-xs font-mono flex-1"
-          />
-          <Input
-            placeholder="value"
-            value={v}
-            onChange={(e) => update(k, k, e.target.value)}
-            className="h-7 text-xs font-mono flex-1"
-          />
-          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => remove(k)}>
-            <XIcon className="w-3 h-3" />
-          </Button>
+      {rows.length === 0 && (
+        <div className="rounded-md border border-dashed px-2.5 py-2 text-[11px] text-muted-foreground">
+          {emptyHint}
+        </div>
+      )}
+      {rows.map((row) => (
+        <div key={row.id} className="space-y-1">
+          <div className="flex gap-1.5 items-center">
+            <Input
+              name={`${label.replace(/\s+/g, "-").toLowerCase()}-key-${row.id}`}
+              aria-label={`${label} key`}
+              placeholder={keyPlaceholder}
+              value={row.key}
+              onChange={(e) => update(row.id, { key: e.target.value })}
+              className="h-8 text-xs font-mono flex-1"
+              autoComplete="off"
+            />
+            <Input
+              name={`${label.replace(/\s+/g, "-").toLowerCase()}-value-${row.id}`}
+              aria-label={`${label} value`}
+              placeholder={valuePlaceholder}
+              value={row.value}
+              onChange={(e) => update(row.id, { value: e.target.value })}
+              className="h-8 text-xs font-mono flex-1"
+              autoComplete="off"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={() => remove(row.id)}
+              aria-label={`Remove ${label} row`}
+              disabled={row.required}
+              title={row.required ? "Required parameter" : "Remove row"}
+            >
+              <XIcon className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+          {(row.required || row.description) && (
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              {row.required && <span className="text-destructive font-medium">Required</span>}
+              {row.description && <span className="truncate">{row.description}</span>}
+            </div>
+          )}
         </div>
       ))}
+    </div>
+  );
+}
+
+function RequestGuide({ entry }: { entry: ApiCatalogEntry }) {
+  const method = entry.kind === "http" ? entry.method ?? "GET" : "RPC";
+  const target = entry.kind === "http" ? entry.path ?? "—" : entry.function_name ?? "—";
+
+  return (
+    <div className="rounded-lg border bg-muted/20 p-3 space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Request Guide</h4>
+        <span className="text-[11px] text-muted-foreground">{entry.callability}</span>
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="rounded-md border bg-background/70 px-2.5 py-2">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Method / Transport</p>
+          <p className="text-xs font-mono mt-0.5">{method} · {entry.kind.toUpperCase()}</p>
+        </div>
+        <div className="rounded-md border bg-background/70 px-2.5 py-2">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Target</p>
+          <p className="text-xs font-mono mt-0.5 break-all">{target}</p>
+        </div>
+      </div>
+
+      <p className="text-[11px] text-muted-foreground leading-relaxed">
+        {entry.callability === "proxy_admin" && "Request is routed through the admin proxy and validated against catalog allowlist."}
+        {entry.callability === "direct_http" && "Request is sent directly by the browser with your current session token when available."}
+        {entry.callability === "direct_rpc" && "RPC call runs through supabase-js using your current authenticated session."}
+      </p>
+
+      {entry.auth_level !== "public" && (
+        <p className="text-[11px] text-muted-foreground">
+          Authorization header is attached automatically from your current session.
+        </p>
+      )}
+
+      {entry.params.length > 0 && (
+        <div className="space-y-1">
+          <p className="text-[11px] font-medium text-muted-foreground">Known Parameters</p>
+          <div className="space-y-1">
+            {entry.params.map((param) => (
+              <div key={param.name} className="rounded-md border bg-background/70 px-2 py-1.5 flex items-start gap-2">
+                <span className="text-xs font-mono font-medium">{param.name}</span>
+                <span className="text-[11px] text-muted-foreground">{param.type}</span>
+                {param.required && (
+                  <span className="text-[10px] text-destructive font-medium">required</span>
+                )}
+                {param.description && (
+                  <span className="text-[11px] text-muted-foreground truncate">{param.description}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -685,7 +825,13 @@ function ResponseViewer({ result }: { result: ApiExecutionResult }) {
             <span className="text-xs text-destructive font-medium">Error</span>
           )}
         </div>
-        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopy}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          onClick={handleCopy}
+          aria-label="Copy response JSON"
+        >
           {copied ? <CheckIcon className="w-3 h-3 text-emerald-500" /> : <CopyIcon className="w-3 h-3" />}
         </Button>
       </div>
@@ -740,35 +886,26 @@ function ExecutionTab({ entry }: { entry: ApiCatalogEntry }) {
   const [confirmPhrase, setConfirmPhrase] = useState("");
 
   // RPC args (JSON textarea)
-  const [rpcArgsText, setRpcArgsText] = useState(
-    entry.params.length > 0
-      ? JSON.stringify(Object.fromEntries(entry.params.map((p) => [p.name, p.default ?? ""])), null, 2)
-      : "{}"
-  );
+  const [rpcArgsText, setRpcArgsText] = useState(buildInitialRpcArgs(entry));
   const [rpcArgsError, setRpcArgsError] = useState<string | null>(null);
+  const [httpInputError, setHttpInputError] = useState<string | null>(null);
 
   // HTTP fields
-  const [queryParams, setQueryParams] = useState<Record<string, string>>(() =>
-    Object.fromEntries(entry.params.filter((p) => !p.required || p.default !== undefined).map((p) => [p.name, String(p.default ?? "")]))
-  );
-  const [reqHeaders, setReqHeaders] = useState<Record<string, string>>({});
-  const [bodyText, setBodyText] = useState("{}");
+  const [queryRows, setQueryRows] = useState<KVFieldRow[]>(() => buildInitialQueryRows(entry));
+  const [headerRows, setHeaderRows] = useState<KVFieldRow[]>([]);
+  const [bodyText, setBodyText] = useState(buildInitialBody(entry));
 
   // Reset when entry changes
   useEffect(() => {
     clearResult();
     setConfirmPhrase("");
     setMutationModeEnabled(false);
-    setRpcArgsText(
-      entry.params.length > 0
-        ? JSON.stringify(Object.fromEntries(entry.params.map((p) => [p.name, p.default ?? ""])), null, 2)
-        : "{}"
-    );
-    setQueryParams(
-      Object.fromEntries(entry.params.filter((p) => !p.required || p.default !== undefined).map((p) => [p.name, String(p.default ?? "")]))
-    );
-    setReqHeaders({});
-    setBodyText("{}");
+    setRpcArgsText(buildInitialRpcArgs(entry));
+    setRpcArgsError(null);
+    setHttpInputError(null);
+    setQueryRows(buildInitialQueryRows(entry));
+    setHeaderRows([]);
+    setBodyText(buildInitialBody(entry));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entry.id]);
 
@@ -783,7 +920,7 @@ function ExecutionTab({ entry }: { entry: ApiCatalogEntry }) {
     }
     doExecute();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMutating, mutationModeEnabled, rpcArgsText, queryParams, reqHeaders, bodyText]);
+  }, [isMutating, mutationModeEnabled, rpcArgsText, queryRows, headerRows, bodyText]);
 
   const doExecute = useCallback(() => {
     if (entry.kind === "rpc") {
@@ -795,26 +932,53 @@ function ExecutionTab({ entry }: { entry: ApiCatalogEntry }) {
         setRpcArgsError("Invalid JSON — check your arguments.");
         return;
       }
+
+      const missingRequired = entry.params
+        .filter((p) => p.required)
+        .filter((p) => {
+          const value = args[p.name];
+          return value == null || (typeof value === "string" && value.trim() === "");
+        })
+        .map((p) => p.name);
+      if (missingRequired.length > 0) {
+        setRpcArgsError(`Missing required RPC fields: ${missingRequired.join(", ")}`);
+        return;
+      }
+
       execute(entry, { rpc_args: args });
     } else {
+      const requiredQueryKeys = entry.params.filter((p) => p.required).map((p) => p.name);
+      const query = rowsToRecord(queryRows);
+      const missingRequired = requiredQueryKeys.filter((key) => {
+        const value = query[key];
+        return value == null || value.trim() === "";
+      });
+      if (missingRequired.length > 0) {
+        setHttpInputError(`Missing required query parameters: ${missingRequired.join(", ")}`);
+        return;
+      }
+
       let body: unknown = undefined;
       if (entry.method !== "GET" && bodyText.trim() !== "{}") {
         try {
           body = JSON.parse(bodyText);
         } catch {
-          toast.error("Invalid JSON in request body");
+          setHttpInputError("Invalid JSON in request body.");
           return;
         }
       }
+
+      setHttpInputError(null);
+      const headers = rowsToRecord(headerRows);
       execute(entry, {
         target: entry.path ?? "",
-        query: queryParams,
-        headers: reqHeaders,
+        query: Object.keys(query).length > 0 ? query : undefined,
+        headers: Object.keys(headers).length > 0 ? headers : undefined,
         body,
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entry, rpcArgsText, queryParams, reqHeaders, bodyText]);
+  }, [entry, rpcArgsText, queryRows, headerRows, bodyText]);
 
   if (entry.callability === "disabled") {
     return (
@@ -862,16 +1026,20 @@ function ExecutionTab({ entry }: { entry: ApiCatalogEntry }) {
         {callabilityIcon(entry.callability)}
         <span>
           {entry.callability === "direct_rpc" && "Direct RPC via supabaseClient"}
-          {entry.callability === "direct_http" && "Direct HTTP (same-origin fetch)"}
+          {entry.callability === "direct_http" && "Direct HTTP from browser"}
           {entry.callability === "proxy_admin" && "Proxied via /api/admin/api-console/execute (admin token required)"}
         </span>
       </div>
+
+      <RequestGuide entry={entry} />
 
       {/* Request editor */}
       {entry.kind === "rpc" ? (
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-muted-foreground">RPC Arguments (JSON)</label>
           <textarea
+            name="rpc-arguments"
+            aria-label="RPC arguments JSON"
             value={rpcArgsText}
             onChange={(e) => {
               setRpcArgsText(e.target.value);
@@ -882,25 +1050,50 @@ function ExecutionTab({ entry }: { entry: ApiCatalogEntry }) {
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
               rpcArgsError && "border-destructive"
             )}
-            placeholder='{ "p_user_id": "uuid" }'
+            placeholder='{ "p_user_id": "uuid", "p_limit": 50 }'
+            autoComplete="off"
           />
           {rpcArgsError && <p className="text-xs text-destructive">{rpcArgsError}</p>}
         </div>
       ) : (
         <div className="space-y-3">
-          <KVEditor label="Query Parameters" value={queryParams} onChange={setQueryParams} />
-          <KVEditor label="Request Headers" value={reqHeaders} onChange={setReqHeaders} />
+          <KVEditor
+            label="Query Parameters"
+            rows={queryRows}
+            onChange={(rows) => {
+              setQueryRows(rows);
+              setHttpInputError(null);
+            }}
+            keyPlaceholder="param_name"
+            valuePlaceholder="value…"
+            emptyHint="No query parameters configured. Add rows if this endpoint expects query values."
+          />
+          <KVEditor
+            label="Request Headers"
+            rows={headerRows}
+            onChange={setHeaderRows}
+            keyPlaceholder="Header-Name"
+            valuePlaceholder="header value…"
+            emptyHint="Optional custom headers. Authorization is usually attached automatically."
+          />
           {entry.method !== "GET" && (
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">Request Body (JSON)</label>
               <textarea
+                name="request-body"
+                aria-label="Request body JSON"
                 value={bodyText}
-                onChange={(e) => setBodyText(e.target.value)}
+                onChange={(e) => {
+                  setBodyText(e.target.value);
+                  setHttpInputError(null);
+                }}
                 className="w-full h-24 rounded-lg border bg-background font-mono text-xs p-3 resize-y focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 placeholder="{}"
+                autoComplete="off"
               />
             </div>
           )}
+          {httpInputError && <p className="text-xs text-destructive">{httpInputError}</p>}
         </div>
       )}
 
@@ -914,7 +1107,7 @@ function ExecutionTab({ entry }: { entry: ApiCatalogEntry }) {
           {isLoading ? (
             <>
               <Loader2Icon className="w-4 h-4 mr-2 animate-spin" />
-              Running...
+              Running…
             </>
           ) : (
             <>
@@ -975,11 +1168,13 @@ function ExecutionTab({ entry }: { entry: ApiCatalogEntry }) {
             </DialogDescription>
           </DialogHeader>
           <Input
+            name="confirm-execute"
             value={confirmPhrase}
             onChange={(e) => setConfirmPhrase(e.target.value)}
             placeholder="Type EXECUTE to confirm"
             className="font-mono"
             autoFocus
+            autoComplete="off"
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>
@@ -1052,7 +1247,7 @@ function EntryDetailPanel({ entry }: { entry: ApiCatalogEntry }) {
       </CardHeader>
 
       {/* Tabs */}
-      <Tabs value={tab} onValueChange={setTab} className="flex flex-col flex-1 overflow-hidden">
+      <Tabs value={tab} onValueChange={setTab} className="flex flex-col flex-1 min-h-0 overflow-hidden">
         <TabsList className="shrink-0 mx-4 mt-3 justify-start h-9 w-fit">
           <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
           <TabsTrigger value="snippets" className="text-xs">Snippets</TabsTrigger>
@@ -1062,7 +1257,7 @@ function EntryDetailPanel({ entry }: { entry: ApiCatalogEntry }) {
           </TabsTrigger>
         </TabsList>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           <TabsContent value="overview" className="p-4 mt-0">
             <OverviewTab entry={entry} />
           </TabsContent>
@@ -1157,8 +1352,8 @@ export function AdminApiDocs() {
 
       {/* Split layout */}
       <div
-        className="flex gap-4"
-        style={{ height: "calc(100vh - 11rem)" }}
+        className="flex gap-4 min-h-0"
+        style={{ height: "calc(100dvh - 11rem)" }}
       >
         {/* Left: catalog panel (desktop only) */}
         {!isMobile && (
@@ -1173,7 +1368,7 @@ export function AdminApiDocs() {
         )}
 
         {/* Right: detail panel */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden">
           {selectedEntry ? (
             <EntryDetailPanel entry={selectedEntry} />
           ) : (
