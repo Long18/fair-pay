@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreVerticalIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { buildExpenseShareUrl } from "../utils/share-url";
 
 interface ExpenseHeaderProps {
   expense: any;
@@ -32,8 +33,10 @@ export const ExpenseHeader = ({
 }: ExpenseHeaderProps) => {
   const { t } = useTranslation();
 
+  const getShareUrl = () => buildExpenseShareUrl(expense, window.location.href);
+
   const handleShare = async () => {
-    const shareUrl = window.location.href;
+    const shareUrl = getShareUrl();
 
     if (navigator.share) {
       try {
@@ -53,7 +56,7 @@ export const ExpenseHeader = ({
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(getShareUrl());
       toast.success(t('common.linkCopied', 'Link copied to clipboard'));
     } catch (err) {
       toast.error(t('common.copyFailed', 'Failed to copy link'));
