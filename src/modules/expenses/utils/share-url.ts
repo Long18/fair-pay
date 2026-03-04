@@ -5,6 +5,14 @@ type ShareVersionSource = {
   expense_date?: string | null
 }
 
+function extractExpenseIdFromUrl(url: URL): string | null {
+  const fromQuery = url.searchParams.get("id") || url.searchParams.get("expense_id")
+  if (fromQuery) return fromQuery
+
+  const match = url.pathname.match(/\/expenses\/show\/([^/?#]+)/)
+  return match?.[1] ?? null
+}
+
 function toVersionToken(raw: string): string {
   const value = raw.trim()
   const parsed = Date.parse(value)
@@ -21,14 +29,19 @@ export function buildExpenseShareUrl(
   currentUrl: string,
 ): string {
   try {
-    const url = new URL(currentUrl)
+    const current = new URL(currentUrl)
+    const expenseId = expense.id || extractExpenseIdFromUrl(current)
+    if (!expenseId) return currentUrl
+
+    const url = new URL("/api/share/expense", current.origin)
     const versionSource =
       expense.updated_at ||
       expense.created_at ||
       expense.expense_date ||
-      expense.id ||
+      expenseId ||
       "0"
 
+    url.searchParams.set("id", expenseId)
     url.searchParams.set("v", toVersionToken(versionSource))
     return url.toString()
   } catch {
