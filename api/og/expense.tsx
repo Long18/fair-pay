@@ -96,40 +96,45 @@ async function fetchExpense(id: string): Promise<ExpenseData | null> {
     const sb = createClient(supabaseUrl, supabaseAnonKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
-    const [exp, att, splits] = await Promise.all([
-      sb.from('expenses').select(`
-        id, description, amount, currency, category, expense_date,
-        profiles!expenses_paid_by_user_id_fkey ( full_name )
-      `).eq('id', id).single(),
-      sb.from('attachments').select('storage_path, mime_type')
-        .eq('expense_id', id).like('mime_type', 'image/%')
-        .order('created_at', { ascending: true }).limit(1),
-      // Use SECURITY DEFINER function to bypass RLS for anon access
+
+    // Use SECURITY DEFINER functions to bypass RLS for anon access (OG image generation)
+    const [ogResult, splits] = await Promise.all([
+      sb.rpc('get_expense_og_data', { p_expense_id: id }),
       sb.rpc('get_expense_splits_public', { p_expense_id: id }).then(
         (res) => res,
         () => ({ data: null, error: null }),
       ),
     ])
-    if (exp.error || !exp.data) return null
-    const e = exp.data
-    const profArr = e.profiles as unknown as { full_name: string }[] | null
-    const payerName = profArr?.[0]?.full_name ?? null
+
+    if (ogResult.error || !ogResult.data || ogResult.data.length === 0) return null
+
+    const e = ogResult.data[0]
+
     let receiptUrl: string | null = null
-    if (att.data?.length) {
-      receiptUrl = sb.storage.from('receipts').getPublicUrl(att.data[0].storage_path).data.publicUrl
+    if (e.receipt_storage_path) {
+      receiptUrl = sb.storage.from('receipts').getPublicUrl(e.receipt_storage_path).data.publicUrl
     }
+
     // Extract participants from splits — rpc returns full_name/avatar_url directly
     const participants: Participant[] = (splits.data ?? []).map((s: Record<string, unknown>) => ({
-      name: (s.full_name as string) ?? 'Unknown',
-      avatar_url: (s.avatar_url as string) ?? null,
+      name: (s.full_name as string) ?? (s.user_full_name as string) ?? 'Unknown',
+      avatar_url: (s.avatar_url as string) ?? (s.user_avatar_url as string) ?? null,
     }))
     const splitCount = participants.length || 1
     const perPerson = Math.round(e.amount / splitCount)
+
     return {
-      id: e.id, description: e.description, amount: e.amount,
-      currency: e.currency, category: e.category, expense_date: e.expense_date,
-      payer_name: payerName, receipt_url: receiptUrl,
-      participants, split_count: splitCount, per_person: perPerson,
+      id: e.id,
+      description: e.description,
+      amount: e.amount,
+      currency: e.currency,
+      category: e.category,
+      expense_date: e.expense_date,
+      payer_name: e.payer_name,
+      receipt_url: receiptUrl,
+      participants,
+      split_count: splitCount,
+      per_person: perPerson,
     }
   } catch { return null }
 }
