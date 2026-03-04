@@ -42,6 +42,20 @@ const CATEGORY_META: Record<string, { label: string; color: string }> = {
 }
 
 const BRAND_TEAL = '#0d9488'
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+  'CDN-Cache-Control': 'no-store',
+  'Vercel-CDN-Cache-Control': 'no-store',
+  Pragma: 'no-cache',
+  Expires: '0',
+}
+
+function withNoCacheHeaders(response: ImageResponse): ImageResponse {
+  Object.entries(NO_CACHE_HEADERS).forEach(([key, value]) => {
+    response.headers.set(key, value)
+  })
+  return response
+}
 
 /**
  * Load Google Font dynamically — fetches only the glyphs needed for the given text.
@@ -279,28 +293,27 @@ export default async function handler(req: Request) {
   try {
     const url = new URL(req.url)
     const id = url.searchParams.get('id') || url.searchParams.get('expense_id')
-    const noStoreHeaders = { 'Cache-Control': 'no-store, max-age=0' }
 
     if (!id) {
       const fonts = await buildFonts('FairPay')
-      return new ImageResponse(
+      return withNoCacheHeaders(new ImageResponse(
         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', fontFamily: 'Inter' }}>
           <BrandHeader />
         </div>,
-        { width: 1200, height: 630, ...(fonts ? { fonts } : {}), headers: noStoreHeaders },
-      )
+        { width: 1200, height: 630, ...(fonts ? { fonts } : {}) },
+      ))
     }
 
     const expense = await fetchExpense(id)
     if (!expense) {
       const fonts = await buildFonts('FairPay Expense not found')
-      return new ImageResponse(
+      return withNoCacheHeaders(new ImageResponse(
         <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', gap: 16, fontFamily: 'Inter' }}>
           <BrandHeader />
           <span style={{ fontSize: 18, color: '#94a3b8' }}>Expense not found</span>
         </div>,
-        { width: 1200, height: 630, ...(fonts ? { fonts } : {}), headers: noStoreHeaders },
-      )
+        { width: 1200, height: 630, ...(fonts ? { fonts } : {}) },
+      ))
     }
 
     const cat = CATEGORY_META[expense.category ?? 'other'] ?? CATEGORY_META.other
@@ -327,7 +340,7 @@ export default async function handler(req: Request) {
 
     // ── With receipt: receipt left + card right ──
     if (expense.receipt_url) {
-      return new ImageResponse(
+      return withNoCacheHeaders(new ImageResponse(
         <div style={{
           width: '100%', height: '100%', display: 'flex',
           background: '#f8fafc', padding: 40, gap: 40, fontFamily: 'Inter',
@@ -363,12 +376,12 @@ export default async function handler(req: Request) {
             <MetaLine date={date} payer={expense.payer_name} />
           </div>
         </div>,
-        { width: 1200, height: 630, ...(fonts ? { fonts } : {}), headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=86400' } },
-      )
+        { width: 1200, height: 630, ...(fonts ? { fonts } : {}) },
+      ))
     }
 
     // ── No receipt: receipt-style card centered ──
-    return new ImageResponse(
+    return withNoCacheHeaders(new ImageResponse(
       <div style={{
         width: '100%', height: '100%', display: 'flex',
         alignItems: 'center', justifyContent: 'center',
@@ -401,16 +414,16 @@ export default async function handler(req: Request) {
           <MetaLine date={date} payer={expense.payer_name} />
         </div>
       </div>,
-      { width: 1200, height: 630, ...(fonts ? { fonts } : {}), headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=86400' } },
-    )
+      { width: 1200, height: 630, ...(fonts ? { fonts } : {}) },
+    ))
   } catch (err) {
     console.error('OG error:', err)
     const fallbackFonts = await buildFonts('FairPay').catch(() => undefined)
-    return new ImageResponse(
+    return withNoCacheHeaders(new ImageResponse(
       <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', fontFamily: 'Inter' }}>
         <BrandHeader />
       </div>,
-      { width: 1200, height: 630, ...(fallbackFonts ? { fonts: fallbackFonts } : {}), headers: { 'Cache-Control': 'no-store, max-age=0' } },
-    )
+      { width: 1200, height: 630, ...(fallbackFonts ? { fonts: fallbackFonts } : {}) },
+    ))
   }
 }
