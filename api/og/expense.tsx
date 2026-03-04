@@ -93,19 +93,22 @@ function fmtDate(dateStr: string): string {
 
 async function fetchExpense(id: string): Promise<ExpenseData | null> {
   try {
-    // Prefer SECURITY DEFINER RPC (works with anon key and bypasses RLS).
-    // Keep service_role fallback for environments where the RPC is not yet deployed.
+    // Keep anon client as primary path for SECURITY DEFINER RPC.
+    // Use service_role only as fallback for environments where RPC isn't deployed.
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    const sb = createClient(supabaseUrl, serviceRoleKey || supabaseAnonKey, {
+    const sbAnon = createClient(supabaseUrl, supabaseAnonKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
+    const sbService = serviceRoleKey ? createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    }) : null
 
     const [ogResult, splits] = await Promise.all([
-      sb.rpc('get_expense_og_data', { p_expense_id: id }).then(
+      sbAnon.rpc('get_expense_og_data', { p_expense_id: id }).then(
         (res) => res,
         () => ({ data: null, error: null }),
       ),
-      sb.rpc('get_expense_splits_public', { p_expense_id: id }).then(
+      sbAnon.rpc('get_expense_splits_public', { p_expense_id: id }).then(
         (res) => res,
         () => ({ data: null, error: null }),
       ),
@@ -134,13 +137,13 @@ async function fetchExpense(id: string): Promise<ExpenseData | null> {
         payer_name: og.payer_name ? String(og.payer_name) : null,
       }
       receiptStoragePath = og.receipt_storage_path ? String(og.receipt_storage_path) : null
-    } else if (serviceRoleKey) {
+    } else if (sbService) {
       const [exp, att] = await Promise.all([
-        sb.from('expenses').select(`
+        sbService.from('expenses').select(`
           id, description, amount, currency, category, expense_date,
           profiles!expenses_paid_by_user_id_fkey ( full_name )
         `).eq('id', id).single(),
-        sb.from('attachments').select('storage_path, mime_type')
+        sbService.from('attachments').select('storage_path, mime_type')
           .eq('expense_id', id).like('mime_type', 'image/%')
           .order('created_at', { ascending: true }).limit(1),
       ])
@@ -164,7 +167,7 @@ async function fetchExpense(id: string): Promise<ExpenseData | null> {
 
     let receiptUrl: string | null = null
     if (receiptStoragePath) {
-      receiptUrl = sb.storage.from('receipts').getPublicUrl(receiptStoragePath).data.publicUrl
+      receiptUrl = sbAnon.storage.from('receipts').getPublicUrl(receiptStoragePath).data.publicUrl
     }
 
     // Extract participants from splits — rpc returns full_name/avatar_url directly
