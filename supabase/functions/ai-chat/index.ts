@@ -20,6 +20,15 @@ async function executeTool(
         const { data, error } = await supabase.rpc('get_user_debts_aggregated', { p_user_id: userId })
         return error ? { result: null, error: error.message } : { result: data }
       }
+      case 'get_debt_details': {
+        const counterpartyId = args.counterparty_id as string
+        if (!counterpartyId) return { result: null, error: 'counterparty_id is required' }
+        const { data, error } = await supabase.rpc('get_user_debt_details', {
+          p_user_id: userId,
+          p_counterparty_id: counterpartyId,
+        })
+        return error ? { result: null, error: error.message } : { result: data }
+      }
       case 'get_groups': {
         const { data, error } = await supabase.from('group_members')
           .select('group_id, role, groups(id, name, description, created_at)')
