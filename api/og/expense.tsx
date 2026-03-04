@@ -276,6 +276,7 @@ export default async function handler(req: Request) {
   try {
     const url = new URL(req.url)
     const id = url.searchParams.get('id') || url.searchParams.get('expense_id')
+    const noStoreHeaders = { 'Cache-Control': 'no-store, max-age=0' }
 
     if (!id) {
       const fonts = await buildFonts('FairPay')
@@ -283,7 +284,7 @@ export default async function handler(req: Request) {
         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', fontFamily: 'Inter' }}>
           <BrandHeader />
         </div>,
-        { width: 1200, height: 630, ...(fonts ? { fonts } : {}) },
+        { width: 1200, height: 630, ...(fonts ? { fonts } : {}), headers: noStoreHeaders },
       )
     }
 
@@ -295,7 +296,7 @@ export default async function handler(req: Request) {
           <BrandHeader />
           <span style={{ fontSize: 18, color: '#94a3b8' }}>Expense not found</span>
         </div>,
-        { width: 1200, height: 630, ...(fonts ? { fonts } : {}) },
+        { width: 1200, height: 630, ...(fonts ? { fonts } : {}), headers: noStoreHeaders },
       )
     }
 
@@ -406,7 +407,7 @@ export default async function handler(req: Request) {
       <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', fontFamily: 'Inter' }}>
         <BrandHeader />
       </div>,
-      { width: 1200, height: 630, ...(fallbackFonts ? { fonts: fallbackFonts } : {}) },
+      { width: 1200, height: 630, ...(fallbackFonts ? { fonts: fallbackFonts } : {}), headers: { 'Cache-Control': 'no-store, max-age=0' } },
     )
   }
 }
