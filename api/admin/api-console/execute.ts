@@ -95,13 +95,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     auth: { autoRefreshToken: false, persistSession: false },
   })
 
-  const { data: isAdmin, error: roleError } = await adminClient.rpc('is_admin', {}, {
-    // Use user's JWT context for the RPC (not service role) so is_admin() checks correctly
-  })
+  // Call is_admin() with the user's JWT so auth.uid() resolves correctly inside the function
+  const { data: isAdmin } = await authClient.rpc('is_admin')
 
-  // Fallback: check user_roles table directly with service role
+  // Fallback: always check user_roles table directly with service role as a safety net
   let adminVerified = isAdmin === true
-  if (!adminVerified && !roleError) {
+  if (!adminVerified) {
     const { data: roleRow } = await adminClient
       .from('user_roles')
       .select('role')
