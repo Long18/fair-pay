@@ -313,7 +313,7 @@ function CatalogPanel({ entries, filters, onFiltersChange, selectedId, onSelect,
     filters.risk !== "all" || filters.callable !== "all";
 
   return (
-    <div className="w-72 shrink-0 flex flex-col border rounded-xl bg-card overflow-hidden">
+    <div className="w-72 shrink-0 flex flex-col h-full border rounded-xl bg-card overflow-hidden">
       {/* Search */}
       <div className="p-3 border-b">
         <div className="relative">
