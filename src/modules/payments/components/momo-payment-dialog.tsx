@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useHaptics } from "@/hooks/use-haptics";
 import { useTranslation } from 'react-i18next';
 import { useGetIdentity } from '@refinedev/core';
 import { Profile } from '@/modules/profile/types';
@@ -59,6 +60,7 @@ export function MomoPaymentDialog({
     recheckPayment,
     subscribeToUpdates,
   } = useMomoPayment(split.id);
+  const { tap, success } = useHaptics();
 
   // Create payment request when dialog opens (only once)
   useEffect(() => {
@@ -78,6 +80,7 @@ export function MomoPaymentDialog({
     if (open && paymentRequest?.id) {
       const unsubscribe = subscribeToUpdates(() => {
         // Payment verified via webhook
+        success();
         toast.success(t('payments.momo.paymentVerified', 'Payment verified successfully!'));
         onPaymentComplete?.();
         onOpenChange(false);
@@ -96,6 +99,7 @@ export function MomoPaymentDialog({
     try {
       const verified = await recheckPayment();
       if (verified) {
+        success();
         toast.success(t('payments.momo.paymentVerified', 'Payment verified successfully!'));
         onPaymentComplete?.();
         onOpenChange(false);
@@ -112,6 +116,7 @@ export function MomoPaymentDialog({
 
   const handleCopyReference = () => {
     if (paymentRequest?.reference_code) {
+      tap();
       navigator.clipboard.writeText(paymentRequest.reference_code);
       toast.success(t('payments.momo.referenceCopied', 'Reference code copied!'));
     }

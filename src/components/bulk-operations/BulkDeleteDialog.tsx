@@ -1,4 +1,5 @@
 import React from "react";
+import { useHaptics } from "@/hooks/use-haptics";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +29,7 @@ export const BulkDeleteDialog: React.FC<BulkDeleteDialogProps> = ({
   isLoading = false,
 }) => {
   const { t } = useTranslation();
+  const { warning } = useHaptics();
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -69,7 +71,7 @@ export const BulkDeleteDialog: React.FC<BulkDeleteDialogProps> = ({
             {t("common.cancel", "Cancel")}
           </AlertDialogCancel>
           <AlertDialogAction
-            onClick={onConfirm}
+            onClick={() => { warning(); onConfirm(); }}
             disabled={isLoading}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >

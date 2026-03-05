@@ -1,4 +1,5 @@
 import React from "react";
+import { useHaptics } from "@/hooks/use-haptics";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +32,7 @@ export const SettleAllDialog: React.FC<SettleAllDialogProps> = ({
   isLoading = false,
 }) => {
   const { t } = useTranslation();
+  const { success } = useHaptics();
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -79,7 +81,7 @@ export const SettleAllDialog: React.FC<SettleAllDialogProps> = ({
           <AlertDialogCancel disabled={isLoading}>
             {t("common.cancel", "Cancel")}
           </AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} disabled={isLoading}>
+          <AlertDialogAction onClick={() => { success(); onConfirm(); }} disabled={isLoading}>
             {isLoading
               ? t("bulk.settling", "Settling...")
               : t("bulk.confirmSettle", "Settle All")}

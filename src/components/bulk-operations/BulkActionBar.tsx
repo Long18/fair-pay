@@ -1,4 +1,5 @@
 import React from "react";
+import { useHaptics } from "@/hooks/use-haptics";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "react-i18next";
@@ -18,6 +19,7 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
   isDeleting = false,
 }) => {
   const { t } = useTranslation();
+  const { tap, warning } = useHaptics();
 
   if (selectedCount === 0) {
     return null;
@@ -34,7 +36,7 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
           <Button
             variant="destructive"
             size="sm"
-            onClick={onDelete}
+            onClick={() => { warning(); onDelete(); }}
             disabled={isDeleting}
           >
             <Trash2Icon className="h-4 w-4 mr-2" />
@@ -44,7 +46,7 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={onCancel}
+            onClick={() => { tap(); onCancel(); }}
             disabled={isDeleting}
             className="text-primary-foreground hover:bg-primary-foreground/10"
           >

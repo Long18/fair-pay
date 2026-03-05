@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useGo } from "@refinedev/core";
+import { useHaptics } from "@/hooks/use-haptics";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +20,7 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
   const [isOpen, setIsOpen] = useState(false);
   const go = useGo();
   const { t } = useTranslation();
+  const { tap } = useHaptics();
 
   // Keyboard accessibility: Close on Escape key
   useEffect(() => {
@@ -66,11 +68,13 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
   ];
 
   const handleClick = (path: string) => {
+    tap();
     go({ to: path });
     setIsOpen(false);
   };
 
   const toggleMenu = () => {
+    tap();
     setIsOpen(!isOpen);
   };
 
