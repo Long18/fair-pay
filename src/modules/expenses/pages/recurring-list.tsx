@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { EmptyState } from '@/components/refine-ui/empty-state';
 import { RepeatIcon, InfoIcon, ArrowLeftIcon, PlusIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useGo } from '@refinedev/core';
@@ -21,6 +22,7 @@ interface RecurringExpenseListProps {
 export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpenseListProps) {
   const { t } = useTranslation();
   const go = useGo();
+  const { tap } = useHaptics();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const { recurring, active, paused, isLoading, error } = useRecurringExpenses({
     groupId,
@@ -115,7 +117,7 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
           variant="ghost"
           size="sm"
           className="mb-4"
-          onClick={() => go({ to: "/dashboard" })}
+          onClick={() => { tap(); go({ to: "/dashboard" }); }}
         >
           <ArrowLeftIcon className="h-4 w-4 mr-2" />
           {t('common.back', 'Back')}
@@ -133,7 +135,7 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
               </p>
             </div>
           </div>
-          <Button onClick={() => setShowCreateDialog(true)}>
+          <Button onClick={() => { tap(); setShowCreateDialog(true); }}>
             <PlusIcon className="h-4 w-4 mr-2" />
             {t('recurring.create.title', 'Create')}
           </Button>

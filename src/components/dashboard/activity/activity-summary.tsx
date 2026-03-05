@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { useHaptics } from "@/hooks/use-haptics";
 import { ArrowDownIcon, ArrowUpIcon, ScaleIcon, ChevronDownIcon, ChevronUpIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { formatCurrency, type SupportedCurrency } from "@/lib/format-utils";
@@ -31,6 +32,7 @@ export const ActivitySummary: React.FC<ActivitySummaryProps> = ({
   onToggleCollapse,
   className,
 }) => {
+  const { tap } = useHaptics();
   const metrics = [
     {
       label: "You Owe",
@@ -62,7 +64,7 @@ export const ActivitySummary: React.FC<ActivitySummaryProps> = ({
         {/* Mobile: Collapsible Header */}
         {onToggleCollapse && (
           <button
-            onClick={onToggleCollapse}
+            onClick={() => { tap(); onToggleCollapse?.(); }}
             className="flex items-center justify-between w-full mb-4 md:hidden focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md p-2 -m-2"
             aria-label={isCollapsed ? "Expand summary" : "Collapse summary"}
             aria-expanded={!isCollapsed}

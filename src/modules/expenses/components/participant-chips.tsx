@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo } from "react";
+import { useHaptics } from "@/hooks/use-haptics";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/locale-utils";
@@ -68,6 +69,7 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
   totalSplit,
 }) => {
   const { t } = useTranslation();
+  const { tap } = useHaptics();
   const [manualValues, setManualValues] = useState<Record<string, string>>({});
   const [emailInput, setEmailInput] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -112,6 +114,7 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
 
   const handleToggleMember = useCallback(
     (memberId: string) => {
+      tap();
       if (isSelected(memberId)) {
         if (participants.length <= 1) return;
         onRemoveParticipant(memberId);
@@ -119,10 +122,11 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
         onAddParticipant(memberId);
       }
     },
-    [isSelected, participants.length, onRemoveParticipant, onAddParticipant]
+    [isSelected, participants.length, onRemoveParticipant, onAddParticipant, tap]
   );
 
   const handleSelectAll = useCallback(() => {
+    tap();
     if (allSelected) {
       members.forEach((m) => {
         if (m.id !== currentUserId && isSelected(m.id)) onRemoveParticipant(m.id);
@@ -132,9 +136,10 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
         if (!isSelected(m.id)) onAddParticipant(m.id);
       });
     }
-  }, [allSelected, members, currentUserId, isSelected, onRemoveParticipant, onAddParticipant]);
+  }, [allSelected, members, currentUserId, isSelected, onRemoveParticipant, onAddParticipant, tap]);
 
   const handleAddByEmail = () => {
+    tap();
     const trimmed = emailInput.trim();
     if (!trimmed) return;
     if (!isValidEmail(trimmed)) { setEmailError(t("auth.invalidEmail")); return; }
@@ -264,7 +269,7 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
           <div className="flex items-center justify-center gap-1 px-3 py-2 border-t border-border/60">
             <button
               type="button"
-              onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+              onClick={() => { tap(); setCurrentPage((p) => Math.max(0, p - 1)); }}
               disabled={currentPage === 0}
               className={cn(
                 "h-7 w-7 flex items-center justify-center rounded-md transition-colors",
@@ -280,7 +285,7 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
               <button
                 key={i}
                 type="button"
-                onClick={() => setCurrentPage(i)}
+                onClick={() => { tap(); setCurrentPage(i); }}
                 className={cn(
                   "h-7 min-w-7 px-1.5 flex items-center justify-center rounded-md text-xs font-medium transition-colors cursor-pointer",
                   i === currentPage
@@ -295,7 +300,7 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
             ))}
             <button
               type="button"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
+              onClick={() => { tap(); setCurrentPage((p) => Math.min(totalPages - 1, p + 1)); }}
               disabled={currentPage === totalPages - 1}
               className={cn(
                 "h-7 w-7 flex items-center justify-center rounded-md transition-colors",
@@ -334,7 +339,7 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
                   )}
                   <button
                     type="button"
-                    onClick={() => onRemoveParticipant(pKey)}
+                    onClick={() => { tap(); onRemoveParticipant(pKey); }}
                     className="p-0.5 rounded-full hover:bg-destructive/10 transition-colors flex-shrink-0 cursor-pointer"
                     aria-label={`Remove ${p.pending_email}`}
                   >
@@ -388,7 +393,7 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
           <Button
             type="button" variant="ghost" size="sm"
             className="h-8 px-3 text-xs gap-1.5 text-muted-foreground hover:text-foreground cursor-pointer"
-            onClick={() => setShowEmailInput(true)}
+            onClick={() => { tap(); setShowEmailInput(true); }}
           >
             <UserPlusIcon className="h-3.5 w-3.5" />
             {t("expenses.addByEmail")}
@@ -408,7 +413,7 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
               </Button>
               <Button
                 type="button" variant="ghost" size="sm" className="h-9 px-2 flex-shrink-0 cursor-pointer"
-                onClick={() => { setShowEmailInput(false); setEmailInput(""); setEmailError(""); }}
+                onClick={() => { tap(); setShowEmailInput(false); setEmailInput(""); setEmailError(""); }}
               >
                 <XIcon className="h-4 w-4" />
               </Button>

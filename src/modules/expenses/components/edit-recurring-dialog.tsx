@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { RecurringExpense, RecurringFrequency } from "../types/recurring";
+import { useHaptics } from '@/hooks/use-haptics';
 
 interface EditRecurringDialogProps {
   open: boolean;
@@ -28,6 +29,7 @@ export function EditRecurringDialog({
   const { t } = useTranslation();
   const { open: notify } = useNotification();
   const { mutate: updateRecurring } = useUpdate();
+  const { tap, success } = useHaptics();
 
   const [frequency, setFrequency] = useState<RecurringFrequency>("monthly");
   const [interval, setInterval] = useState(1);
@@ -59,6 +61,7 @@ export function EditRecurringDialog({
       },
       {
         onSuccess: () => {
+          success();
           notify?.({
             type: "success",
             message: t("recurring.edit.success", "Recurring expense updated successfully"),
@@ -150,7 +153,7 @@ export function EditRecurringDialog({
       <ResponsiveDialog.Footer>
         <Button
           variant="outline"
-          onClick={() => onOpenChange(false)}
+          onClick={() => { tap(); onOpenChange(false); }}
           disabled={isSubmitting}
           className="max-sm:w-full"
         >

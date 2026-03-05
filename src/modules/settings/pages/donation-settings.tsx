@@ -14,8 +14,10 @@ import { toast } from 'sonner';
 import { VIETQR_BANKS } from '@/lib/vietqr-banks';
 
 import { Loader2Icon, UploadIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 export const DonationSettings = () => {
   const { t, i18n } = useTranslation();
+  const { success } = useHaptics();
   const { data: settings, isLoading } = useDonationSettings();
   const updateSettings = useUpdateDonationSettings();
 
@@ -109,6 +111,7 @@ export const DonationSettings = () => {
         },
       });
 
+      success();
       toast.success(t('settings.donation.saved', 'Donation settings saved successfully'));
       setAvatarFile(null);
       setQrCodeFile(null);

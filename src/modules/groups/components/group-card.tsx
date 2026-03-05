@@ -1,3 +1,4 @@
+import { useHaptics } from "@/hooks/use-haptics";
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -63,6 +64,7 @@ export function GroupCard({
   isRequestingJoin,
 }: GroupCardProps) {
   const go = useGo();
+  const { tap } = useHaptics();
 
   const you_owe = balanceSummary?.you_owe ?? 0;
   const owed_to_you = balanceSummary?.owed_to_you ?? 0;
@@ -74,6 +76,7 @@ export function GroupCard({
 
   const handleCardClick = () => {
     if (isMember) {
+      tap();
       go({ to: `/groups/show/${group.id}` });
     }
   };
@@ -222,7 +225,7 @@ export function GroupCard({
                 variant="default"
                 size="sm"
                 className="flex-1 text-xs sm:text-sm"
-                onClick={() => go({ to: `/groups/show/${group.id}` })}
+                onClick={() => { tap(); go({ to: `/groups/show/${group.id}` }); }}
               >
                 <EyeIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                 View
@@ -231,7 +234,7 @@ export function GroupCard({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
+                  onClick={() => { tap(); go({ to: `/groups/${group.id}/expenses/create` }); }}
                   title="Add Expense"
                 >
                   <PlusIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -255,7 +258,7 @@ export function GroupCard({
                   variant="outline"
                   size="sm"
                   className="flex-1 text-xs sm:text-sm"
-                  onClick={() => onRequestJoin?.(group.id)}
+                  onClick={() => { tap(); onRequestJoin?.(group.id); }}
                   disabled={isRequestingJoin}
                 >
                   {isRequestingJoin ? (
@@ -270,7 +273,7 @@ export function GroupCard({
                   variant="default"
                   size="sm"
                   className="flex-1 text-xs sm:text-sm"
-                  onClick={() => onRequestJoin?.(group.id)}
+                  onClick={() => { tap(); onRequestJoin?.(group.id); }}
                   disabled={isRequestingJoin}
                 >
                   {isRequestingJoin ? (

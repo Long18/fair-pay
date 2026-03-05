@@ -28,6 +28,7 @@ import { SwipeableTabs, PullToRefresh, EmptyBalances } from "@/modules/profile";
 import { Breadcrumb, createBreadcrumbs } from "@/components/refine-ui/layout/breadcrumb";
 import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
 import { EnhancedActivityList } from "@/components/dashboard/activity/enhanced-activity-list";
+import { useHaptics } from "@/hooks/use-haptics";
 
 export const FriendShow = () => {
   const { id } = useParams<{ id: string }>();
@@ -36,12 +37,14 @@ export const FriendShow = () => {
   const { data: identity } = useGetIdentity<Profile>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const { tap } = useHaptics();
 
   // Get tab from URL, default to 'activity'
   const activeTab = searchParams.get('tab') || 'activity';
 
   // Set tab in URL (only when user changes it, not on initial load)
   const handleTabChange = (tab: string) => {
+    tap();
     const newParams = new URLSearchParams(searchParams);
     newParams.set('tab', tab);
     setSearchParams(newParams, { replace: true });
@@ -188,11 +191,13 @@ export const FriendShow = () => {
 
   const handleAddExpense = () => {
     if (!friendship?.id) return;
+    tap();
     go({ to: `/friends/${friendship.id}/expenses/create` });
   };
 
   const handleSettleUp = (toUserId: string, amount: number) => {
     if (!friendship?.id) return;
+    tap();
     go({
       to: `/friends/${friendship.id}/payments/create`,
       query: {
@@ -203,6 +208,7 @@ export const FriendShow = () => {
   };
 
   const handleShare = async () => {
+    tap();
     const friendUrl = `${window.location.origin}/friends/${id}`;
 
     try {
@@ -274,7 +280,7 @@ export const FriendShow = () => {
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
-              onClick={() => go({ to: "/connections?tab=friends" })}
+              onClick={() => { tap(); go({ to: "/connections?tab=friends" }); }}
               className="rounded-lg md:hidden"
             >
               <ArrowLeftIcon size={16} className="mr-2" />

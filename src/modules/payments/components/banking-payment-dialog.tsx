@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { BanknoteIcon, ArrowUpRightIcon } from '@/components/ui/icons';
 import { ExpenseSplit } from '@/modules/expenses/types';
 import { useUserSettings } from '@/hooks/settings/use-user-settings';
+import { useHaptics } from '@/hooks/use-haptics';
 
 interface BankingPaymentDialogProps {
   open: boolean;
@@ -41,6 +42,7 @@ export function BankingPaymentDialog({
   onPaymentComplete: _onPaymentComplete,
 }: BankingPaymentDialogProps) {
   const { t } = useTranslation();
+  const { tap } = useHaptics();
   const [selectedBankId, setSelectedBankId] = useState<string>('');
   
   // Fetch payee's banking settings (NOT admin's donation settings)
@@ -55,6 +57,7 @@ export function BankingPaymentDialog({
 
   // Subtask 2.1: Implement VietQR deeplink generation using payee's account
   const handleOpenBankApp = (bankId?: string) => {
+    tap();
     const targetBankId = bankId || activeBankId;
 
     if (hasBankInfo && targetBankId && bankInfo.account && bankInfo.bank) {
@@ -87,6 +90,7 @@ export function BankingPaymentDialog({
 
   // Subtask 2.2: Implement QR code click handler
   const handleQRClick = () => {
+    tap();
     if (activeBankId) {
       handleOpenBankApp();
     } else {

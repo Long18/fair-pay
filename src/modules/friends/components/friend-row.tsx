@@ -10,6 +10,7 @@ import {
 import { cn } from "@/lib/utils";
 import { MoreVerticalIcon, UserIcon, Trash2Icon } from "@/components/ui/icons";
 import { motion } from "framer-motion";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface FriendRowProps {
   friend: {
@@ -35,6 +36,8 @@ export const FriendRow = ({
   showBalance = false,
   className,
 }: FriendRowProps) => {
+  const { tap, warning } = useHaptics();
+
   const formatBalance = (amount: number) => {
     const absAmount = Math.abs(amount);
     const formatted = new Intl.NumberFormat("vi-VN").format(absAmount);
@@ -60,7 +63,7 @@ export const FriendRow = ({
       {/* Primary click target - navigates to friend detail */}
       <div
         className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
-        onClick={onNavigate}
+        onClick={() => { tap(); onNavigate(); }}
       >
         {/* Avatar */}
         <Avatar className="h-12 w-12 shrink-0">
@@ -116,6 +119,7 @@ export const FriendRow = ({
               className="text-destructive focus:text-destructive cursor-pointer"
               onClick={(e) => {
                 e.stopPropagation();
+                warning();
                 onRemove();
               }}
             >

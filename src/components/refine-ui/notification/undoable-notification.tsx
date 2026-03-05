@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslate } from "@refinedev/core";
 import React from "react";
+import { useHaptics } from "@/hooks/use-haptics";
 
 type UndoableNotificationProps = {
   message: string;
@@ -19,6 +20,7 @@ export function UndoableNotification({
   onClose,
 }: UndoableNotificationProps) {
   const t = useTranslate();
+  const { tap } = useHaptics();
   const [remaining, setRemaining] = React.useState(undoableTimeout);
 
   React.useEffect(() => {
@@ -37,6 +39,7 @@ export function UndoableNotification({
   }, [onClose, undoableTimeout]);
 
   const handleUndo = () => {
+    tap();
     cancelMutation?.();
     onClose?.();
   };

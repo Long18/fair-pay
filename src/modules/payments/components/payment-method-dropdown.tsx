@@ -26,7 +26,7 @@ import { SepayPaymentDialog } from './sepay-payment-dialog';
 import { usePayeeBankSettings } from '@/hooks/payment/use-bank-settings';
 import { usePayeeSepaySettings } from '@/hooks/payment/use-sepay-settings';
 import { cn } from '@/lib/utils';
-import { triggerHaptic } from '@/lib/haptics';
+import { useHaptics } from '@/hooks/use-haptics';
 
 interface PaymentMethodDropdownProps {
   split: ExpenseSplit & {
@@ -50,6 +50,7 @@ export function PaymentMethodDropdown({
   onPaymentComplete,
 }: PaymentMethodDropdownProps) {
   const { t } = useTranslation();
+  const { tap } = useHaptics();
   const [vietqrDialogOpen, setVietqrDialogOpen] = useState(false);
   const [sepayDialogOpen, setSepayDialogOpen] = useState(false);
 
@@ -67,14 +68,14 @@ export function PaymentMethodDropdown({
 
   if (isVietQRConfigured) {
     methods.push({ id: 'vietqr', handler: () => {
-      triggerHaptic('medium');
+      tap();
       setVietqrDialogOpen(true);
     }});
   }
 
   if (isSepayConfigured) {
     methods.push({ id: 'sepay', handler: () => {
-      triggerHaptic('medium');
+      tap();
       setSepayDialogOpen(true);
     }});
   }

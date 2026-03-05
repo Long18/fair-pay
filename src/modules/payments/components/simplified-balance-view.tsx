@@ -15,6 +15,7 @@ import { formatCurrency as formatCurrencyUtil } from "@/lib/locale-utils";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRightIcon, CheckCircle2Icon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 import { ComparisonBanner } from "./comparison-banner";
 interface SimplifiedBalanceViewProps {
   balances: UserBalance[];
@@ -34,6 +35,7 @@ export const SimplifiedBalanceView = ({
   isLoading,
 }: SimplifiedBalanceViewProps) => {
   const { t } = useTranslation();
+  const { success } = useHaptics();
 
   if (isLoading) {
     return (
@@ -192,7 +194,7 @@ export const SimplifiedBalanceView = ({
                   </div>
                   {onSettleUp && (
                     <Button
-                      onClick={() => onSettleUp(debt.to_user_id, debt.amount)}
+                      onClick={() => { success(); onSettleUp(debt.to_user_id, debt.amount); }}
                       variant="default"
                       size="sm"
                       className="ml-4"

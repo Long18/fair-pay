@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react'
+import { useHaptics } from '@/hooks/use-haptics'
 import { Copy, Eye, EyeOff, Trash2, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,6 +14,7 @@ import { debtApiClient } from '@/utility/debt-api-client'
 import type { ApiSecret, CreateApiSecretResponse } from '@/types/api-debt'
 
 export function ApiSecretsManager() {
+  const { tap, success, warning } = useHaptics()
   const [secrets, setSecrets] = useState<ApiSecret[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
@@ -39,6 +41,7 @@ export function ApiSecretsManager() {
     const result = await debtApiClient.createSecret(newSecretLabel || undefined)
 
     if ('secret_token' in result) {
+      success()
       setCreatedSecret(result as CreateApiSecretResponse)
       toast.success('API secret created. Copy it now - you won\'t see it again!')
       setNewSecretLabel('')
@@ -50,6 +53,7 @@ export function ApiSecretsManager() {
   }
 
   const handleRevokeSecret = async (secretId: string) => {
+    warning()
     if (!confirm('Are you sure you want to revoke this API secret? Any applications using it will stop working.')) {
       return
     }
@@ -65,6 +69,7 @@ export function ApiSecretsManager() {
   }
 
   const copyToClipboard = async (text: string, label: string) => {
+    success()
     await navigator.clipboard.writeText(text)
     toast.success(`${label} copied to clipboard`)
   }
@@ -85,7 +90,7 @@ export function ApiSecretsManager() {
             Manage tokens for public access to your debt data
           </p>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
+        <Button onClick={() => { tap(); setShowCreateDialog(true); }} className="gap-2">
           <Plus size={18} />
           Create Secret
         </Button>
@@ -99,7 +104,7 @@ export function ApiSecretsManager() {
       ) : secrets.length === 0 ? (
         <div className="border rounded-lg p-8 text-center bg-gray-50">
           <p className="text-gray-500 mb-4">No API secrets yet</p>
-          <Button onClick={() => setShowCreateDialog(true)} variant="outline">
+          <Button onClick={() => { tap(); setShowCreateDialog(true); }} variant="outline">
             Create your first secret
           </Button>
         </div>
@@ -174,6 +179,7 @@ export function ApiSecretsManager() {
                 <Button
                   variant="outline"
                   onClick={() => {
+                    tap()
                     setShowCreateDialog(false)
                     setNewSecretLabel('')
                   }}
@@ -203,7 +209,7 @@ export function ApiSecretsManager() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => toggleSecretVisibility('token')}
+                    onClick={() => { tap(); toggleSecretVisibility('token'); }}
                   >
                     {showSecretValue['token'] ? <EyeOff size={16} /> : <Eye size={16} />}
                   </Button>
@@ -236,6 +242,7 @@ export function ApiSecretsManager() {
 
               <Button
                 onClick={() => {
+                  tap()
                   setShowCreateDialog(false)
                   setCreatedSecret(null)
                 }}

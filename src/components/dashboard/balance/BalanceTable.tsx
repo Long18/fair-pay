@@ -22,6 +22,7 @@ import {
   EmptyDescription,
 } from "@/components/ui/empty";
 import { CheckIcon, CheckCircle2Icon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 import { PaymentStateBadge } from "@/components/ui/payment-state-badge";
 import { getOweStatusColors, getPaymentStateColors } from "@/lib/status-colors";
 import { cn } from "@/lib/utils";
@@ -56,6 +57,7 @@ interface BalanceTableProps {
 export function BalanceTable({ balances, pageSize = 10, disabled = false, showHistory = false, showExpenseBreakdown = false }: BalanceTableProps) {
   const go = useGo();
   const { t } = useTranslation();
+  const { tap } = useHaptics();
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
@@ -161,7 +163,7 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                 disabled && "opacity-50 cursor-not-allowed",
                 fullySettled && `opacity-60 ${getPaymentStateColors('paid').bg}`
               )}
-              onClick={() => !disabled && balance.counterparty_id && go({ to: `/profile/${balance.counterparty_id}` })}
+              onClick={() => { if (!disabled && balance.counterparty_id) { tap(); go({ to: `/profile/${balance.counterparty_id}` }); } }}
             >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between gap-3">
@@ -278,7 +280,7 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                     disabled && "opacity-50 cursor-not-allowed",
                     fullySettled && `opacity-60 ${getPaymentStateColors('paid').bg}`
                   )}
-                  onClick={() => !disabled && balance.counterparty_id && go({ to: `/profile/${balance.counterparty_id}` })}
+                  onClick={() => { if (!disabled && balance.counterparty_id) { tap(); go({ to: `/profile/${balance.counterparty_id}` }); } }}
                 >
                   <TableCell>
                     <div className="relative">

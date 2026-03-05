@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { useHaptics } from "@/hooks/use-haptics";
 import {
   Form,
   FormControl,
@@ -36,6 +37,7 @@ export const ProfileForm = ({
   onChangePassword,
 }: ProfileFormProps) => {
   const { t } = useTranslation();
+  const { tap } = useHaptics();
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -111,7 +113,7 @@ export const ProfileForm = ({
             type="button"
             variant="outline"
             className="w-full"
-            onClick={onChangePassword}
+            onClick={() => { tap(); onChangePassword?.(); }}
           >
             {t('profile.changePassword', 'Change Password')}
           </Button>

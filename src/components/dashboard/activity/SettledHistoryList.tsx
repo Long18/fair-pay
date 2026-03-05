@@ -23,6 +23,7 @@ import {
   EmptyDescription,
 } from "@/components/ui/empty";
 import { CheckIcon, ChevronDownIcon, ChevronRightIcon, ScaleIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 import { PaymentStateBadge } from "@/components/ui/payment-state-badge";
 import { ContributingExpensesList } from "@/components/dashboard/core/contributing-expenses-list";
 import { useContributingExpenses } from "@/hooks/use-contributing-expenses";
@@ -68,6 +69,7 @@ function SettledRowExpandable({
 }) {
   const { t } = useTranslation();
   const go = useGo();
+  const { tap } = useHaptics();
   const { expenses, isLoading } = useContributingExpenses(debt.counterparty_id || "");
 
   const formatDate = (dateString?: string) => {
@@ -82,7 +84,7 @@ function SettledRowExpandable({
           "cursor-pointer transition-colors hover:bg-muted/80",
           index % 2 === 0 && "bg-muted/50 dark:bg-muted/30",
         )}
-        onClick={onToggleExpand}
+        onClick={() => { tap(); onToggleExpand(); }}
       >
         <TableCell>
           <div className="relative">
@@ -150,7 +152,7 @@ function SettledRowExpandable({
                   </h4>
                   <ContributingExpensesList expenses={expenses} counterpartyId={debt.counterparty_id || ""} isLoading={isLoading} />
                   {debt.counterparty_id && (
-                  <Button variant="default" size="sm" className="w-full mt-3 gap-2" onClick={(e) => { e.stopPropagation(); go({ to: `/profile/${debt.counterparty_id}` }); }}>
+                  <Button variant="default" size="sm" className="w-full mt-3 gap-2" onClick={(e) => { e.stopPropagation(); tap(); go({ to: `/profile/${debt.counterparty_id}` }); }}>
                     {t("dashboard.viewFullBreakdown", "View Details")}
                     <ChevronRightIcon className="h-4 w-4" />
                   </Button>
@@ -179,6 +181,7 @@ function SettledCardExpandable({
 }) {
   const { t } = useTranslation();
   const go = useGo();
+  const { tap } = useHaptics();
   const { expenses, isLoading } = useContributingExpenses(debt.counterparty_id || "");
 
   const formatDate = (dateString?: string) => {
@@ -189,7 +192,7 @@ function SettledCardExpandable({
   return (
     <div className="border rounded-md overflow-hidden bg-card transition-shadow hover:shadow-sm">
       <div
-        onClick={onToggleExpand}
+        onClick={() => { tap(); onToggleExpand(); }}
         className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/30 transition-colors"
       >
         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -249,7 +252,7 @@ function SettledCardExpandable({
               </h4>
               <ContributingExpensesList expenses={expenses} counterpartyId={debt.counterparty_id || ""} isLoading={isLoading} />
               {debt.counterparty_id && (
-              <Button variant="default" size="sm" className="w-full gap-2" onClick={(e) => { e.stopPropagation(); go({ to: `/profile/${debt.counterparty_id}` }); }}>
+              <Button variant="default" size="sm" className="w-full gap-2" onClick={(e) => { e.stopPropagation(); tap(); go({ to: `/profile/${debt.counterparty_id}` }); }}>
                 {t("dashboard.viewFullBreakdown", "View Details")}
                 <ChevronRightIcon className="h-4 w-4" />
               </Button>

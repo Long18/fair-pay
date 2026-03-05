@@ -1,4 +1,5 @@
 import { memo, useState, useCallback } from "react";
+import { useHaptics } from "@/hooks/use-haptics";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SmilePlusIcon } from "@/components/ui/icons";
@@ -22,6 +23,7 @@ export const ReactionBar = memo(({
   size = "sm",
 }: ReactionBarProps) => {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const { tap } = useHaptics();
 
   // Match emoji from picker back to a reaction_type by emoji_mart_id, code, or emoji char
   const handlePickerSelect = useCallback((emoji: { id: string; name?: string; native?: string; src?: string }) => {
@@ -62,7 +64,7 @@ export const ReactionBar = memo(({
           <TooltipTrigger asChild>
             <button
               type="button"
-              onClick={() => onToggle(r.reaction_type_id)}
+              onClick={() => { tap(); onToggle(r.reaction_type_id); }}
               className={cn(
                 "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors cursor-pointer",
                 r.user_reacted

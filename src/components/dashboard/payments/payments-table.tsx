@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { useTableSort, SortConfig } from "@/hooks/table/use-table-sort";
 import { useTablePagination } from "@/hooks/table/use-table-pagination";
-
+import { useHaptics } from "@/hooks/use-haptics";
 import { MoreVerticalIcon, ArrowUpIcon, ArrowDownIcon } from "@/components/ui/icons";
 interface Payment {
   id: string;
@@ -26,6 +26,7 @@ export const PaymentsTable = ({
   title = "Payments",
   subtitle,
 }: PaymentsTableProps) => {
+  const { tap } = useHaptics();
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'decimal',
@@ -47,6 +48,7 @@ export const PaymentsTable = ({
     payments,
     sortConfig
   );
+  const handleSort = (key: keyof Payment) => { tap(); setSortKey(key); };
 
   // Apply pagination
   const {
@@ -100,19 +102,19 @@ export const PaymentsTable = ({
             <TableRow className="border-b border-gray-200">
               <TableHead
                 className="text-xs font-medium text-gray-600 cursor-pointer hover:text-gray-900"
-                onClick={() => setSortKey("date")}
+                onClick={() => handleSort("date")}
               >
                 Date{getSortIcon("date")}
               </TableHead>
               <TableHead
                 className="text-xs font-medium text-gray-600 cursor-pointer hover:text-gray-900"
-                onClick={() => setSortKey("title")}
+                onClick={() => handleSort("title")}
               >
                 Title{getSortIcon("title")}
               </TableHead>
               <TableHead
                 className="text-xs font-medium text-gray-600 text-right cursor-pointer hover:text-gray-900"
-                onClick={() => setSortKey("sum")}
+                onClick={() => handleSort("sum")}
               >
                 Sum{getSortIcon("sum")}
               </TableHead>
@@ -170,7 +172,7 @@ export const PaymentsTable = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={prevPage}
+              onClick={() => { tap(); prevPage(); }}
               disabled={!canPrevPage}
             >
               Previous
@@ -181,7 +183,7 @@ export const PaymentsTable = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={nextPage}
+              onClick={() => { tap(); nextPage(); }}
               disabled={!canNextPage}
             >
               Next

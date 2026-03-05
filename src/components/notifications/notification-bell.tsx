@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useHaptics } from "@/hooks/use-haptics";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BellIcon } from "@/components/ui/icons";
@@ -8,6 +9,7 @@ import { useRecurringExpenses } from "@/modules/expenses/hooks/use-recurring-exp
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const { active } = useRecurringExpenses({});
+  const { tap } = useHaptics();
 
   // Calculate notification count (overdue + upcoming in next 7 days)
   const notificationCount = useMemo(() => {
@@ -28,7 +30,7 @@ export function NotificationBell() {
         variant="ghost"
         size="icon"
         className="relative"
-        onClick={() => setOpen(true)}
+        onClick={() => { tap(); setOpen(true); }}
       >
         <BellIcon className="h-5 w-5" />
         {notificationCount > 0 && (

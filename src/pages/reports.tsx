@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo } from "react";
 import { useList } from "@refinedev/core";
+import { useHaptics } from "@/hooks/use-haptics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -46,6 +47,7 @@ import { Label } from "@/components/ui/label";
 import { LoadingBeam } from "@/components/ui/loading-beam";
 
 export function ReportsPage() {
+  const { tap } = useHaptics();
   const [preset, setPreset] = useState<DateRangePreset>("this_month");
   const [customRange, setCustomRange] = useState<DateRange>();
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>();
@@ -119,6 +121,7 @@ export function ReportsPage() {
   });
 
   const handlePresetChange = (value: string) => {
+    tap();
     setPreset(value as DateRangePreset);
     if (value !== "custom") {
       setCustomRange(undefined);
@@ -126,6 +129,7 @@ export function ReportsPage() {
   };
 
   const handleExportCSV = () => {
+    tap();
     exportEnhancedReportToCSV(
       {
         summary: [
@@ -155,6 +159,7 @@ export function ReportsPage() {
   };
 
   const handleExportPDF = async () => {
+    tap();
     const chartElements: HTMLElement[] = [];
     if (chartsRef.current) {
       const charts = chartsRef.current.querySelectorAll("[data-chart]");
@@ -306,9 +311,10 @@ export function ReportsPage() {
               <Label htmlFor="group-select" className="text-xs sm:text-sm font-medium">Group</Label>
               <Select
                 value={selectedGroupId || "all"}
-                onValueChange={(value) =>
-                  setSelectedGroupId(value === "all" ? undefined : value)
-                }
+                onValueChange={(value) => {
+                  tap();
+                  setSelectedGroupId(value === "all" ? undefined : value);
+                }}
               >
                 <SelectTrigger id="group-select" className="h-9 text-xs sm:text-sm">
                   <SelectValue />
@@ -326,7 +332,7 @@ export function ReportsPage() {
 
             <div className="space-y-2">
               <Label htmlFor="chart-type" className="text-xs sm:text-sm font-medium">Chart Type</Label>
-              <Select value={chartType} onValueChange={(v) => setChartType(v as "pie" | "bar")}>
+              <Select value={chartType} onValueChange={(v) => { tap(); setChartType(v as "pie" | "bar"); }}>
                 <SelectTrigger id="chart-type" className="h-9 text-xs sm:text-sm">
                   <SelectValue />
                 </SelectTrigger>
@@ -346,7 +352,7 @@ export function ReportsPage() {
               <Switch
                 id="show-comparison"
                 checked={showComparison}
-                onCheckedChange={setShowComparison}
+                onCheckedChange={(v) => { tap(); setShowComparison(v); }}
               />
             </div>
           </div>

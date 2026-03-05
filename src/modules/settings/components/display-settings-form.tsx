@@ -22,6 +22,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { UserSettings, CURRENCIES, DATE_FORMATS, THEMES, Theme, DateFormat } from '../types';
 import { Loader2Icon } from "@/components/ui/icons";
 import { useTranslation } from 'react-i18next';
+import { useHaptics } from '@/hooks/use-haptics';
 
 const displaySettingsSchema = z.object({
   default_currency: z.string(),
@@ -37,6 +38,7 @@ interface DisplaySettingsFormProps {
 
 export function DisplaySettingsForm({ settings, onSave, isUpdating }: DisplaySettingsFormProps) {
   const { t } = useTranslation();
+  const { tap, success } = useHaptics();
   const form = useForm({
     resolver: zodResolver(displaySettingsSchema),
     defaultValues: {
@@ -48,6 +50,7 @@ export function DisplaySettingsForm({ settings, onSave, isUpdating }: DisplaySet
 
   const handleSubmit = async (values: z.infer<typeof displaySettingsSchema>) => {
     await onSave(values);
+    success();
   };
 
   return (
@@ -59,7 +62,7 @@ export function DisplaySettingsForm({ settings, onSave, isUpdating }: DisplaySet
           render={({ field }) => (
             <FormItem>
               <FormLabel>{t('settings.defaultCurrency')}</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select onValueChange={(v) => { tap(); field.onChange(v); }} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={t('settings.selectCurrency')} />
@@ -87,7 +90,7 @@ export function DisplaySettingsForm({ settings, onSave, isUpdating }: DisplaySet
           render={({ field }) => (
             <FormItem>
               <FormLabel>{t('settings.dateFormat')}</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select onValueChange={(v) => { tap(); field.onChange(v); }} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={t('settings.dateFormat')} />
@@ -117,7 +120,7 @@ export function DisplaySettingsForm({ settings, onSave, isUpdating }: DisplaySet
               <FormLabel>{t('settings.theme')}</FormLabel>
               <FormControl>
                 <RadioGroup
-                  onValueChange={field.onChange}
+                  onValueChange={(v) => { tap(); field.onChange(v); }}
                   defaultValue={field.value}
                   className="flex flex-col space-y-1"
                 >

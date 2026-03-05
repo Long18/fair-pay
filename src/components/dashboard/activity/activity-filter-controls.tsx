@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { XIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { useHaptics } from "@/hooks/use-haptics";
 
 // =============================================
 // Types
@@ -38,6 +39,7 @@ export const ActivityFilterControls: React.FC<ActivityFilterControlsProps> = ({
   counts,
   className,
 }) => {
+  const { tap } = useHaptics();
   const filters: Array<{
     value: PaymentStateFilter;
     label: string;
@@ -56,7 +58,7 @@ export const ActivityFilterControls: React.FC<ActivityFilterControlsProps> = ({
       {filters.map((filter) => (
         <button
           key={filter.value}
-          onClick={() => onFilterChange(filter.value)}
+          onClick={() => { tap(); onFilterChange(filter.value); }}
           className={cn(
             "inline-flex items-center gap-2 px-4 py-2 rounded-full",
             "text-sm font-medium transition-all",
@@ -88,7 +90,7 @@ export const ActivityFilterControls: React.FC<ActivityFilterControlsProps> = ({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => onFilterChange("all")}
+          onClick={() => { tap(); onFilterChange("all"); }}
           className="h-9 rounded-full px-3"
           aria-label="Reset filters"
         >

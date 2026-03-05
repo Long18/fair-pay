@@ -4,6 +4,7 @@ import { ArrowLeftIcon } from "@/components/ui/icons";
 import { formatCurrency } from "@/lib/locale-utils";
 import { cn } from "@/lib/utils";
 import { useGo } from "@refinedev/core";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface DebtStickyNavProps {
   visible: boolean;
@@ -23,6 +24,7 @@ export function DebtStickyNav({
   currency,
 }: DebtStickyNavProps) {
   const go = useGo();
+  const { tap } = useHaptics();
 
   const initials = counterpartyName
     .split(" ")
@@ -47,7 +49,7 @@ export function DebtStickyNav({
         variant="ghost"
         size="icon"
         className="h-8 w-8 shrink-0 rounded-full"
-        onClick={() => go({ to: "/" })}
+        onClick={() => { tap(); go({ to: "/" }); }}
         aria-label="Back to Dashboard"
       >
         <ArrowLeftIcon className="h-4 w-4" />

@@ -18,6 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface MarkdownEditorProps {
   value: string;
@@ -45,6 +46,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 }) => {
   const [isPreview, setIsPreview] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { tap } = useHaptics();
 
   // Insert markdown syntax
   const insertMarkdown = useCallback((syntax: {
@@ -145,7 +147,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={action.action}
+                    onClick={() => { tap(); action.action(); }}
                     className="h-8 px-2 hover:bg-accent"
                     disabled={isPreview}
                   >
@@ -165,7 +167,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => setIsPreview(!isPreview)}
+          onClick={() => { tap(); setIsPreview(!isPreview); }}
           className="h-8 px-3 gap-2 hover:bg-accent"
         >
           {isPreview ? (

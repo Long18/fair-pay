@@ -15,7 +15,7 @@ import {
 import { CheckCircle2Icon, Loader2Icon } from '@/components/ui/icons';
 import { formatNumber } from '@/lib/locale-utils';
 import { PAYMENT_METHODS, PaymentMethod } from '@/lib/payment-methods';
-import { triggerHaptic } from '@/lib/haptics';
+import { useHaptics } from '@/hooks/use-haptics';
 
 interface QuickSettlementDialogProps {
   open: boolean;
@@ -42,6 +42,7 @@ export function QuickSettlementDialog({
   onConfirm,
   isLoading = false,
 }: QuickSettlementDialogProps) {
+  const { tap, success } = useHaptics();
   const [isPartialPayment, setIsPartialPayment] = useState(false);
   const [partialAmount, setPartialAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
@@ -55,7 +56,6 @@ export function QuickSettlementDialog({
     : amount;
 
   const handleConfirm = async () => {
-    triggerHaptic('medium');
     await onConfirm({
       amount: effectiveAmount,
       paymentMethod,
@@ -69,11 +69,11 @@ export function QuickSettlementDialog({
     setPaymentMethod('cash');
     setPaymentDate(new Date().toISOString().split('T')[0]);
     setNotes('');
-    triggerHaptic('success');
+    success();
   };
 
   const handleQuickAmount = (amt: number) => {
-    triggerHaptic('light');
+    tap();
     setIsPartialPayment(true);
     setPartialAmount(amt.toString());
   };
@@ -153,7 +153,7 @@ export function QuickSettlementDialog({
               id="partial"
               checked={isPartialPayment}
               onCheckedChange={(checked) => {
-                triggerHaptic('light');
+                tap();
                 setIsPartialPayment(checked === true);
                 if (!checked) setPartialAmount('');
               }}
@@ -206,7 +206,7 @@ export function QuickSettlementDialog({
           <Select
             value={paymentMethod}
             onValueChange={(v) => {
-              triggerHaptic('light');
+              tap();
               setPaymentMethod(v as PaymentMethod);
             }}
           >

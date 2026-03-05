@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
+import { useHaptics } from "@/hooks/use-haptics";
 
 import { ChevronLeftIcon, ChevronRightIcon, ChevronsLeftIcon, ChevronsRightIcon } from "@/components/ui/icons";
 export interface PaginationMetadata {
@@ -25,6 +26,7 @@ export function PaginationControls({
   className = "",
 }: PaginationControlsProps) {
   const { t } = useTranslation();
+  const { tap } = useHaptics();
   const { currentPage, totalPages } = metadata;
 
   // Calculate visible page numbers
@@ -94,7 +96,7 @@ export function PaginationControls({
           <Button
             variant="outline"
             size="icon"
-            onClick={() => onPageChange(1)}
+            onClick={() => { tap(); onPageChange(1); }}
             disabled={isFirstPage}
             className="h-9 w-9"
             aria-label={t('pagination.firstPage', 'First page')}
@@ -107,7 +109,7 @@ export function PaginationControls({
         <Button
           variant="outline"
           size="icon"
-          onClick={() => onPageChange(currentPage - 1)}
+          onClick={() => { tap(); onPageChange(currentPage - 1); }}
           disabled={isFirstPage}
           className="h-9 w-9"
           aria-label={t('pagination.previousPage', 'Previous page')}
@@ -130,7 +132,7 @@ export function PaginationControls({
                 key={page}
                 variant={page === currentPage ? "default" : "outline"}
                 size="icon"
-                onClick={() => onPageChange(page)}
+                onClick={() => { tap(); onPageChange(page); }}
                 className="h-9 w-9"
                 aria-label={t('pagination.pageNumber', { page, defaultValue: `Page ${page}` })}
                 aria-current={page === currentPage ? "page" : undefined}
@@ -145,7 +147,7 @@ export function PaginationControls({
         <Button
           variant="outline"
           size="icon"
-          onClick={() => onPageChange(currentPage + 1)}
+          onClick={() => { tap(); onPageChange(currentPage + 1); }}
           disabled={isLastPage}
           className="h-9 w-9"
           aria-label={t('pagination.nextPage', 'Next page')}
@@ -158,7 +160,7 @@ export function PaginationControls({
           <Button
             variant="outline"
             size="icon"
-            onClick={() => onPageChange(totalPages)}
+            onClick={() => { tap(); onPageChange(totalPages); }}
             disabled={isLastPage}
             className="h-9 w-9"
             aria-label={t('pagination.lastPage', 'Last page')}

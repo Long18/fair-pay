@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { type BaseKey, useEditButton } from "@refinedev/core";
 import React from "react";
+import { useHaptics } from "@/hooks/use-haptics";
 
 import { PencilIcon } from "@/components/ui/icons";
 type EditButtonProps = {
@@ -44,6 +45,7 @@ export const EditButton = React.forwardRef<
       accessControl,
       meta,
     });
+    const { tap } = useHaptics();
 
     const isDisabled = disabled || rest.disabled;
     const isHidden = hidden || rest.hidden;
@@ -60,6 +62,7 @@ export const EditButton = React.forwardRef<
               e.preventDefault();
               return;
             }
+            tap();
             if (onClick) {
               e.preventDefault();
               onClick(e);

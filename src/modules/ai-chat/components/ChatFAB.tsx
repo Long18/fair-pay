@@ -1,4 +1,5 @@
 import { memo, useState, useCallback } from 'react';
+import { useHaptics } from "@/hooks/use-haptics";
 import { useLocation } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { MessageSquareIcon, XIcon } from '@/components/ui/icons';
@@ -9,8 +10,9 @@ export const ChatFAB = memo(function ChatFAB() {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
   const isDashboard = pathname === '/';
+  const { tap } = useHaptics();
 
-  const toggle = useCallback(() => setOpen((prev) => !prev), []);
+  const toggle = useCallback(() => { tap(); setOpen((prev) => !prev); }, [tap]);
 
   return (
     <>

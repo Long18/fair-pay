@@ -15,6 +15,7 @@ import {
   openInCalendarApp,
 } from "@/lib/calendar-export";
 import { useNotification } from "@refinedev/core";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface CalendarExportMenuProps {
   expense: RecurringExpense;
@@ -24,8 +25,10 @@ interface CalendarExportMenuProps {
 export function CalendarExportMenu({ expense, variant = "button" }: CalendarExportMenuProps) {
   const { t } = useTranslation();
   const { open: notify } = useNotification();
+  const { tap } = useHaptics();
 
   const handleExportICS = () => {
+    tap();
     try {
       exportRecurringExpenseToCalendar(expense);
       notify?.({
@@ -46,6 +49,7 @@ export function CalendarExportMenu({ expense, variant = "button" }: CalendarExpo
   };
 
   const handleGoogleCalendar = () => {
+    tap();
     try {
       addToGoogleCalendar(expense);
       notify?.({
@@ -63,6 +67,7 @@ export function CalendarExportMenu({ expense, variant = "button" }: CalendarExpo
   };
 
   const handleOpenInApp = () => {
+    tap();
     try {
       openInCalendarApp(expense);
       notify?.({

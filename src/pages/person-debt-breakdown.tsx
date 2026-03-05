@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router";
+import { useHaptics } from "@/hooks/use-haptics";
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingBeam } from "@/components/ui/loading-beam";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,7 @@ function getMonthKey(dateStr: string): string {
 export const PersonDebtBreakdown = () => {
   const { userId } = useParams<{ userId: string }>();
   const { t } = useTranslation();
+  const { tap, success, warning } = useHaptics();
 
   // Admin detection
   const [userIsAdmin, setUserIsAdmin] = useState(false);
@@ -205,9 +207,10 @@ export const PersonDebtBreakdown = () => {
   const handleSettle = useCallback(async () => {
     const result = await settle(Array.from(selectedSplitIds), refetch);
     if (result.success) {
+      success();
       setSelectedSplitIds(new Set());
     }
-  }, [selectedSplitIds, settle, refetch]);
+  }, [selectedSplitIds, settle, refetch, success]);
 
   const handleInlineSettle = useCallback(
     async (splitId: string) => {
@@ -331,7 +334,7 @@ export const PersonDebtBreakdown = () => {
         <div className="mt-4 rounded-xl border overflow-hidden bg-card shadow-sm">
           <DebtFilterTabs
             activeTab={activeTab}
-            onTabChange={setActiveTab}
+            onTabChange={(tab) => { tap(); setActiveTab(tab); }}
             counts={tabCounts}
           />
 
@@ -472,7 +475,7 @@ export const PersonDebtBreakdown = () => {
                 <Button
                   size="sm"
                   variant="destructive"
-                  onClick={() => setDeleteDialogOpen(true)}
+                  onClick={() => { warning(); setDeleteDialogOpen(true); }}
                   disabled={isDeleting}
                   className="gap-1.5"
                 >
@@ -485,7 +488,7 @@ export const PersonDebtBreakdown = () => {
                 size="icon"
                 variant="ghost"
                 className="h-7 w-7 text-background hover:bg-background/10"
-                onClick={() => setSelectedSplitIds(new Set())}
+                onClick={() => { tap(); setSelectedSplitIds(new Set()); }}
                 aria-label="Clear selection"
               >
                 <XIcon className="h-4 w-4" />

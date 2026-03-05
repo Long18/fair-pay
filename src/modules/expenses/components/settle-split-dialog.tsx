@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useHaptics } from "@/hooks/use-haptics";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +36,7 @@ export const SettleSplitDialog = ({
   isSettling,
 }: SettleSplitDialogProps) => {
   const { t } = useTranslation();
+  const { tap, success } = useHaptics();
   const [customAmount, setCustomAmount] = useState<string>(computedAmount.toString());
   const [error, setError] = useState<string>("");
 
@@ -56,6 +58,7 @@ export const SettleSplitDialog = ({
       setError(t('expenses.invalidAmount', 'Invalid amount'));
       return;
     }
+    success();
     onConfirm(amount);
   };
 
@@ -115,7 +118,7 @@ export const SettleSplitDialog = ({
         </div>
 
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isSettling}>
+          <AlertDialogCancel disabled={isSettling} onClick={() => tap()}>
             {t('common.cancel', 'Cancel')}
           </AlertDialogCancel>
           <AlertDialogAction

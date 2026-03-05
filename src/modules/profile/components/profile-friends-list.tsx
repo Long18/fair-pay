@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { UserIcon, ArrowRightIcon } from "@/components/ui/icons";
 import { useGo } from "@refinedev/core";
 import { EmptyFriends } from "./profile-empty-states";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface Friend {
   id: string;
@@ -29,6 +30,7 @@ export const ProfileFriendsList = ({
 }: ProfileFriendsListProps) => {
   const { t } = useTranslation();
   const go = useGo();
+  const { tap } = useHaptics();
 
   if (isLoading) {
     return (
@@ -137,7 +139,7 @@ export const ProfileFriendsList = ({
         <Button
           variant="outline"
           className="w-full rounded-lg"
-          onClick={() => go({ to: "/friends" })}
+          onClick={() => { tap(); go({ to: "/friends" }); }}
         >
           <span className="flex-1 text-center">
             {hasMore

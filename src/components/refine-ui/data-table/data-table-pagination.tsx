@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useHaptics } from "@/hooks/use-haptics";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,7 @@ export function DataTablePagination({
   setPageSize,
   total,
 }: DataTablePaginationProps) {
+  const { tap } = useHaptics();
   const pageSizeOptions = useMemo(() => {
     const baseOptions = [10, 20, 30, 40, 50];
     const optionsSet = new Set(baseOptions);
@@ -98,7 +100,7 @@ export function DataTablePagination({
             <Button
               variant="outline"
               className={cn("hidden", "h-8", "w-8", "p-0", "lg:flex")}
-              onClick={() => setCurrentPage(1)}
+              onClick={() => { tap(); setCurrentPage(1); }}
               disabled={currentPage === 1}
               aria-label="Go to first page"
             >
@@ -107,7 +109,7 @@ export function DataTablePagination({
             <Button
               variant="outline"
               className={cn("h-8", "w-8", "p-0")}
-              onClick={() => setCurrentPage(currentPage - 1)}
+              onClick={() => { tap(); setCurrentPage(currentPage - 1); }}
               disabled={currentPage === 1}
               aria-label="Go to previous page"
             >
@@ -116,7 +118,7 @@ export function DataTablePagination({
             <Button
               variant="outline"
               className={cn("h-8", "w-8", "p-0")}
-              onClick={() => setCurrentPage(currentPage + 1)}
+              onClick={() => { tap(); setCurrentPage(currentPage + 1); }}
               disabled={currentPage === pageCount}
               aria-label="Go to next page"
             >
@@ -125,7 +127,7 @@ export function DataTablePagination({
             <Button
               variant="outline"
               className={cn("hidden", "h-8", "w-8", "p-0", "lg:flex")}
-              onClick={() => setCurrentPage(pageCount)}
+              onClick={() => { tap(); setCurrentPage(pageCount); }}
               disabled={currentPage === pageCount}
               aria-label="Go to last page"
             >

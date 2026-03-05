@@ -10,6 +10,7 @@ import { getPaymentStateColors } from "@/lib/status-colors";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { useHaptics } from "@/hooks/use-haptics";
 import type { ExpenseSplit } from "@/modules/expenses/types";
 
 type SplitWithProfile = ExpenseSplit & {
@@ -49,6 +50,7 @@ export const ExpenseSplitCard = ({
   onPaymentComplete,
 }: ExpenseSplitCardProps) => {
   const { t } = useTranslation();
+  const { tap, success } = useHaptics();
   const [isExpanded, setIsExpanded] = useState(false);
 
   const isSplitSettled = split.is_settled || expense.is_payment;
@@ -104,6 +106,7 @@ export const ExpenseSplitCard = ({
         onClick={() => {
           // Only allow expand on mobile
           if (window.innerWidth < 768) {
+            tap();
             setIsExpanded(!isExpanded);
           }
         }}
@@ -210,7 +213,7 @@ export const ExpenseSplitCard = ({
                     size="sm"
                     variant="default"
                     className="bg-status-success-foreground hover:bg-status-success-foreground/90 min-h-[44px] min-w-[44px]"
-                    onClick={() => onSettle(split)}
+                    onClick={() => { success(); onSettle(split); }}
                     disabled={isSettling}
                   >
                     {isSettling ? (
@@ -316,7 +319,7 @@ export const ExpenseSplitCard = ({
                     size="sm"
                     variant="default"
                     className="flex-1 bg-status-success-foreground hover:bg-status-success-foreground/90 min-h-[44px]"
-                    onClick={() => onSettle(split)}
+                    onClick={() => { success(); onSettle(split); }}
                     disabled={isSettling}
                   >
                     {isSettling ? (

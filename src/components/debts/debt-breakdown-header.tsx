@@ -17,7 +17,7 @@ import { useTranslation } from "react-i18next";
 import { useGo } from "@refinedev/core";
 import { usePayeeSepaySettings } from "@/hooks/payment/use-sepay-settings";
 import { SepayPaymentDialog } from "@/modules/payments/components/sepay-payment-dialog";
-import { triggerHaptic } from "@/lib/haptics";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface DebtBreakdownHeaderProps {
   counterpartyName: string;
@@ -56,6 +56,7 @@ export const DebtBreakdownHeader = forwardRef<HTMLDivElement, DebtBreakdownHeade
   ) {
     const { t } = useTranslation();
     const go = useGo();
+    const { tap } = useHaptics();
     const [sepayDialogOpen, setSepayDialogOpen] = useState(false);
 
     const { isConfigured: isSepayConfigured } = usePayeeSepaySettings(counterpartyId);
@@ -82,7 +83,7 @@ export const DebtBreakdownHeader = forwardRef<HTMLDivElement, DebtBreakdownHeade
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => go({ to: "/" })}
+            onClick={() => { tap(); go({ to: "/" }); }}
             className="rounded-lg -ml-2 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeftIcon className="h-4 w-4 mr-1.5" />
@@ -217,7 +218,7 @@ export const DebtBreakdownHeader = forwardRef<HTMLDivElement, DebtBreakdownHeade
                 size="sm"
                 className="flex-[2] bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white"
                 onClick={() => {
-                  triggerHaptic("medium");
+                  tap();
                   setSepayDialogOpen(true);
                 }}
               >
@@ -231,7 +232,7 @@ export const DebtBreakdownHeader = forwardRef<HTMLDivElement, DebtBreakdownHeade
                   size="sm"
                   className="flex-[2] bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-sm"
                   onClick={() => {
-                    triggerHaptic("medium");
+                    tap();
                     onSettleAll();
                   }}
                 >
@@ -244,9 +245,7 @@ export const DebtBreakdownHeader = forwardRef<HTMLDivElement, DebtBreakdownHeade
               variant="outline"
               size="sm"
               className="flex-1"
-              onClick={() =>
-                go({ to: `/expenses/create?with=${counterpartyId}` })
-              }
+              onClick={() => { tap(); go({ to: `/expenses/create?with=${counterpartyId}` }); }}
             >
               <PlusIcon className="h-4 w-4 mr-2" />
               {t("debts.addExpense", "Add")}
@@ -255,7 +254,7 @@ export const DebtBreakdownHeader = forwardRef<HTMLDivElement, DebtBreakdownHeade
               variant="outline"
               size="sm"
               className="flex-1"
-              onClick={() => go({ to: `/profile/${counterpartyId}` })}
+              onClick={() => { tap(); go({ to: `/profile/${counterpartyId}` }); }}
             >
               <UserIcon className="h-4 w-4 mr-2" />
               {t("debts.viewProfile", "Profile")}

@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 import { PaymentStateBadge } from "@/components/ui/payment-state-badge";
 import { ContributingExpensesList } from "@/components/dashboard/core/contributing-expenses-list";
 import { useContributingExpenses } from "@/hooks/use-contributing-expenses";
@@ -51,6 +52,7 @@ export function BalanceTableRowExpandable({
 }: BalanceTableRowExpandableProps) {
   const { t } = useTranslation();
   const go = useGo();
+  const { tap } = useHaptics();
   const { expenses, isLoading } = useContributingExpenses(balance.counterparty_id || "");
 
   const formatDate = (dateString?: string) => {
@@ -75,7 +77,7 @@ export function BalanceTableRowExpandable({
           isFullySettled && `opacity-60 ${getPaymentStateColors('paid').bg}`,
           "hover:bg-muted/80"
         )}
-        onClick={() => !disabled && onToggleExpand()}
+        onClick={() => { if (!disabled) { tap(); onToggleExpand(); } }}
       >
         <TableCell>
           <div className="relative">
@@ -165,6 +167,7 @@ export function BalanceTableRowExpandable({
                     className="w-full mt-3 gap-2"
                     onClick={(e) => {
                       e.stopPropagation();
+                      tap();
                       go({ to: `/debts/${balance.counterparty_id}` });
                     }}
                   >
@@ -192,6 +195,7 @@ export function BalanceTableRowExpandableMobile({
 }: Omit<BalanceTableRowExpandableProps, 'index'>) {
   const { t } = useTranslation();
   const go = useGo();
+  const { tap } = useHaptics();
   const { expenses, isLoading } = useContributingExpenses(balance.counterparty_id || "");
 
   const formatDate = (dateString?: string) => {
@@ -214,7 +218,7 @@ export function BalanceTableRowExpandableMobile({
     <div className="border rounded-md overflow-hidden bg-card transition-shadow hover:shadow-sm">
       {/* Main Card - Clickable to expand */}
       <div
-        onClick={() => !disabled && onToggleExpand()}
+        onClick={() => { if (!disabled) { tap(); onToggleExpand(); } }}
         className={cn(
           "flex items-center justify-between p-3 cursor-pointer hover:bg-muted/30 transition-colors",
           disabled && "opacity-50 cursor-not-allowed"

@@ -5,6 +5,7 @@ import { type BaseKey, useCloneButton } from "@refinedev/core";
 import React from "react";
 
 import { CopyIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 type CloneButtonProps = {
   /**
    * Resource name for API data interactions. `identifier` of the resource can be used instead of the `name` of the resource.
@@ -38,6 +39,7 @@ export const CloneButton = React.forwardRef<
     { resource, recordItemId, accessControl, meta, children, onClick, ...rest },
     ref
   ) => {
+    const { tap } = useHaptics();
     const { hidden, disabled, LinkComponent, to, label } = useCloneButton({
       accessControl,
       resource,
@@ -60,6 +62,7 @@ export const CloneButton = React.forwardRef<
               e.preventDefault();
               return;
             }
+            tap();
             if (onClick) {
               e.preventDefault();
               onClick(e);

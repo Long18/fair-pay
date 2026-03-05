@@ -68,6 +68,7 @@ import {
 } from "@/components/ui/icons";
 import { formatDate } from "@/lib/locale-utils";
 import { supabaseClient } from "@/utility/supabaseClient";
+import { useHaptics } from "@/hooks/use-haptics";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -196,6 +197,7 @@ function CreateNotificationDialog({
   const [type, setType] = useState("settlement_reminder");
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
+  const { tap } = useHaptics();
 
   // Fetch profiles for user selection
   const [profiles, setProfiles] = useState<Array<{ id: string; full_name: string }>>([]);
@@ -241,7 +243,7 @@ function CreateNotificationDialog({
         <div className="space-y-4 mt-2">
           <div className="space-y-2">
             <Label htmlFor="notif-user">Người nhận</Label>
-            <Select value={userId} onValueChange={setUserId}>
+            <Select value={userId} onValueChange={(v) => { tap(); setUserId(v); }}>
               <SelectTrigger id="notif-user">
                 <SelectValue placeholder="Chọn người nhận" />
               </SelectTrigger>
@@ -257,7 +259,7 @@ function CreateNotificationDialog({
 
           <div className="space-y-2">
             <Label htmlFor="notif-type">Loại thông báo</Label>
-            <Select value={type} onValueChange={setType}>
+            <Select value={type} onValueChange={(v) => { tap(); setType(v); }}>
               <SelectTrigger id="notif-type">
                 <SelectValue />
               </SelectTrigger>
@@ -294,10 +296,10 @@ function CreateNotificationDialog({
         </div>
 
         <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isCreating}>
+          <Button variant="outline" onClick={() => { tap(); onOpenChange(false); }} disabled={isCreating}>
             Hủy
           </Button>
-          <Button onClick={handleSubmit} disabled={isCreating || !userId || !title || !message}>
+          <Button onClick={() => { tap(); handleSubmit(); }} disabled={isCreating || !userId || !title || !message}>
             {isCreating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
             Gửi thông báo
           </Button>
@@ -325,6 +327,7 @@ function EditNotificationDialog({
   const [type, setType] = useState("");
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
+  const { tap } = useHaptics();
 
   useEffect(() => {
     if (notification && open) {
@@ -349,7 +352,7 @@ function EditNotificationDialog({
         <div className="space-y-4 mt-2">
           <div className="space-y-2">
             <Label htmlFor="edit-notif-type">Loại thông báo</Label>
-            <Select value={type} onValueChange={setType}>
+            <Select value={type} onValueChange={(v) => { tap(); setType(v); }}>
               <SelectTrigger id="edit-notif-type">
                 <SelectValue />
               </SelectTrigger>
@@ -384,11 +387,11 @@ function EditNotificationDialog({
         </div>
 
         <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isUpdating}>
+          <Button variant="outline" onClick={() => { tap(); onOpenChange(false); }} disabled={isUpdating}>
             Hủy
           </Button>
           <Button
-            onClick={() => onSubmit({ type, title, message })}
+            onClick={() => { tap(); onSubmit({ type, title, message }); }}
             disabled={isUpdating || !title || !message}
           >
             {isUpdating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
@@ -437,6 +440,7 @@ export function AdminNotifications() {
   const deleteMutation = useDelete();
   const createMutation = useCreate();
   const updateMutation = useUpdate();
+  const { tap, success, warning } = useHaptics();
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
@@ -601,12 +605,13 @@ export function AdminNotifications() {
   // ─── Clear Filters ──────────────────────────────────────────────
 
   const clearFilters = useCallback(() => {
+    tap();
     setSearch("");
     setTypeFilter("all");
     setReadFilter("all");
     setDateFrom("");
     setDateTo("");
-  }, []);
+  }, [tap]);
 
   const hasActiveFilters =
     search !== "" ||
@@ -623,7 +628,7 @@ export function AdminNotifications() {
 
   const handleDelete = useCallback(() => {
     if (!deleteNotification) return;
-
+    warning();
     setIsDeleting(true);
     deleteMutation.mutate(
       {
@@ -644,7 +649,7 @@ export function AdminNotifications() {
         },
       },
     );
-  }, [deleteNotification, deleteMutation, table.refineCore.tableQuery]);
+  }, [deleteNotification, deleteMutation, table.refineCore.tableQuery, warning]);
 
   // ─── Create Handler ─────────────────────────────────────────────
 
@@ -664,6 +669,7 @@ export function AdminNotifications() {
         },
         {
           onSuccess: () => {
+            success();
             toast.success("Đã tạo thông báo mới");
             setCreateDialogOpen(false);
             setIsCreating(false);
@@ -676,7 +682,7 @@ export function AdminNotifications() {
         },
       );
     },
-    [createMutation, table.refineCore.tableQuery],
+    [createMutation, table.refineCore.tableQuery, success],
   );
 
   // ─── Edit Handler ───────────────────────────────────────────────
@@ -697,6 +703,7 @@ export function AdminNotifications() {
         },
         {
           onSuccess: () => {
+            success();
             toast.success("Đã cập nhật thông báo");
             setEditDialogOpen(false);
             setEditNotification(null);
@@ -710,7 +717,7 @@ export function AdminNotifications() {
         },
       );
     },
-    [editNotification, updateMutation, table.refineCore.tableQuery],
+    [editNotification, updateMutation, table.refineCore.tableQuery, success],
   );
 
   // ─── Render ─────────────────────────────────────────────────────
@@ -728,7 +735,7 @@ export function AdminNotifications() {
           <div className="flex items-center gap-2">
             <Button
               size="sm"
-              onClick={() => setCreateDialogOpen(true)}
+              onClick={() => { tap(); setCreateDialogOpen(true); }}
             >
               <PlusIcon className="mr-2 h-4 w-4" />
               Tạo thông báo
@@ -736,7 +743,7 @@ export function AdminNotifications() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowFilters((v) => !v)}
+              onClick={() => { tap(); setShowFilters((v) => !v); }}
             >
               <FilterIcon className="mr-2 h-4 w-4" />
               Bộ lọc
@@ -763,7 +770,7 @@ export function AdminNotifications() {
                 {/* Notification Type Filter */}
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">Loại thông báo</label>
-                  <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <Select value={typeFilter} onValueChange={(v) => { tap(); setTypeFilter(v); }}>
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Tất cả" />
                     </SelectTrigger>
@@ -781,7 +788,7 @@ export function AdminNotifications() {
                 {/* Read Status Filter */}
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">Trạng thái</label>
-                  <Select value={readFilter} onValueChange={setReadFilter}>
+                  <Select value={readFilter} onValueChange={(v) => { tap(); setReadFilter(v); }}>
                     <SelectTrigger className="w-[160px]">
                       <SelectValue placeholder="Tất cả" />
                     </SelectTrigger>

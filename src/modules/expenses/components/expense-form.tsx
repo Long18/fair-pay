@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "@refinedev/react-hook-form";
+import { useHaptics } from "@/hooks/use-haptics";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
@@ -96,6 +97,7 @@ export const ExpenseForm = ({
   onAttachmentsChange,
 }: ExpenseFormProps) => {
   const { t } = useTranslation();
+  const { tap } = useHaptics();
   const form = useForm({
     resolver: zodResolver(expenseSchema),
     defaultValues: {
@@ -386,7 +388,7 @@ export const ExpenseForm = ({
                     <FormControl>
                       <Switch
                         checked={field.value}
-                        onCheckedChange={field.onChange}
+                        onCheckedChange={(v) => { tap(); field.onChange(v); }}
                       />
                     </FormControl>
                   </FormItem>
@@ -476,7 +478,7 @@ export const ExpenseForm = ({
                   <FormLabel>How to split?</FormLabel>
                   <FormControl>
                     <RadioGroup
-                      onValueChange={field.onChange}
+                      onValueChange={(v) => { tap(); field.onChange(v); }}
                       value={field.value}
                       className="grid grid-cols-1 sm:grid-cols-3 gap-3"
                     >
@@ -542,7 +544,7 @@ export const ExpenseForm = ({
         )}
 
         {/* Advanced Options - Collapsible */}
-        <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+        <Collapsible open={showAdvanced} onOpenChange={(open) => { tap(); setShowAdvanced(open); }}>
           <CollapsibleTrigger asChild>
             <Button
               type="button"
@@ -579,7 +581,7 @@ export const ExpenseForm = ({
                       <FormControl>
                         <Switch
                           checked={field.value}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(v) => { tap(); field.onChange(v); }}
                         />
                       </FormControl>
                     </FormItem>
@@ -612,7 +614,7 @@ export const ExpenseForm = ({
             {/* Comment - Simple expandable */}
             <Card className="border border-border/50">
               <CardContent className="pt-6">
-                <Collapsible open={showComment} onOpenChange={setShowComment}>
+                <Collapsible open={showComment} onOpenChange={(open) => { tap(); setShowComment(open); }}>
                   <CollapsibleTrigger asChild>
                     <Button
                       type="button"

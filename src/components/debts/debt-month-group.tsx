@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useHaptics } from "@/hooks/use-haptics";
 import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatCurrency } from "@/lib/locale-utils";
@@ -43,6 +44,7 @@ export function DebtMonthGroup({
   settledChildren,
 }: DebtMonthGroupProps) {
   const { t, i18n } = useTranslation();
+  const { tap } = useHaptics();
   const [settledExpanded, setSettledExpanded] = useState(false);
 
   const monthLabel = useMemo(() => {
@@ -84,7 +86,7 @@ export function DebtMonthGroup({
         showSettledToggle ? (
           <>
             <button
-              onClick={() => setSettledExpanded((v) => !v)}
+              onClick={() => { tap(); setSettledExpanded((v) => !v); }}
               className={cn(
                 "w-full flex items-center gap-2 px-4 py-3",
                 "border-b border-border",

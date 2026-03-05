@@ -4,12 +4,14 @@ import { Group } from "../types";
 import { Button } from "@/components/ui/button";
 import { useGo } from "@refinedev/core";
 import { formatDate } from "@/lib/locale-utils";
+import { useHaptics } from "@/hooks/use-haptics";
 
 import { EyeIcon, PencilIcon } from "@/components/ui/icons";
 
 export const useGroupColumns = (): ColumnDef<Group>[] => {
   const { t } = useTranslation();
   const go = useGo();
+  const { tap } = useHaptics();
 
   return [
     {
@@ -57,14 +59,14 @@ export const useGroupColumns = (): ColumnDef<Group>[] => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => go({ to: `/groups/show/${group.id}` })}
+              onClick={() => { tap(); go({ to: `/groups/show/${group.id}` }); }}
             >
               <EyeIcon className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => go({ to: `/groups/edit/${group.id}` })}
+              onClick={() => { tap(); go({ to: `/groups/edit/${group.id}` }); }}
             >
               <PencilIcon className="h-4 w-4" />
             </Button>

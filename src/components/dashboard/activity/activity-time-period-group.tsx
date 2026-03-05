@@ -1,5 +1,6 @@
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useHaptics } from "@/hooks/use-haptics";
 
 import { ChevronDownIcon, ChevronRightIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,7 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
   showActions = false,
   className,
 }) => {
+  const { tap } = useHaptics();
   const hasActivities = group.activities.length > 0;
 
   if (!hasActivities) {
@@ -46,7 +48,7 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
       {/* Group Header */}
       <div className="flex items-center gap-2">
         <button
-          onClick={onToggleGroup}
+          onClick={() => { tap(); onToggleGroup(); }}
           className={cn(
             "flex items-center gap-2 text-sm font-semibold text-foreground",
             "hover:text-foreground/80 transition-colors",

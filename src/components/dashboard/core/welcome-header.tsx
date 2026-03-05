@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ChevronDownIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +23,7 @@ export const WelcomeHeader = ({
   selectedCreditor,
   onCreditorChange,
 }: WelcomeHeaderProps) => {
+  const { tap } = useHaptics();
   return (
     <div className="flex items-start justify-between">
       <div>
@@ -46,7 +48,7 @@ export const WelcomeHeader = ({
               {creditors.map((creditor) => (
                 <DropdownMenuItem
                   key={creditor}
-                  onClick={() => onCreditorChange?.(creditor)}
+                  onClick={() => { tap(); onCreditorChange?.(creditor); }}
                 >
                   {creditor}
                 </DropdownMenuItem>

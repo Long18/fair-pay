@@ -1,5 +1,6 @@
 import { useGo } from "@refinedev/core";
 import { cn } from "@/lib/utils";
+import { useHaptics } from "@/hooks/use-haptics";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Notification } from "../types";
 import { formatDistanceToNow } from "date-fns";
@@ -74,6 +75,7 @@ export const NotificationItem = ({
   onClose,
 }: NotificationItemProps) => {
   const go = useGo();
+  const { tap } = useHaptics();
   const meta = getNotificationMeta(notification.type);
   const Icon = meta.icon;
   const timeAgo = formatDistanceToNow(new Date(notification.created_at), {
@@ -81,6 +83,7 @@ export const NotificationItem = ({
   });
 
   const handleClick = () => {
+    tap();
     if (!notification.is_read) {
       onMarkAsRead(notification.id);
     }

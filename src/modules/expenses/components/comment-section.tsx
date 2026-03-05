@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { useExpenseComments } from "../hooks/use-expense-comments";
 import { useReactionTypes, useExpenseReactions } from "../hooks/use-reactions";
 import { useTranslation } from "react-i18next";
+import { useHaptics } from '@/hooks/use-haptics';
 import type { CommentUser } from "../types/comments";
 
 interface CommentSectionProps {
@@ -27,6 +28,7 @@ export const CommentSection = memo(({
   maxVisible = 3,
 }: CommentSectionProps) => {
   const { t } = useTranslation();
+  const { tap } = useHaptics();
   const [expanded, setExpanded] = useState(false);
   const {
     comments,
@@ -174,7 +176,7 @@ export const CommentSection = memo(({
                 variant="ghost"
                 size="sm"
                 className="w-full text-xs text-muted-foreground hover:text-foreground"
-                onClick={() => setExpanded(true)}
+                onClick={() => { tap(); setExpanded(true); }}
               >
                 <ChevronDownIcon className="h-3.5 w-3.5 mr-1" />
                 {t("expenses.comments.showAll", {
@@ -188,7 +190,7 @@ export const CommentSection = memo(({
                 variant="ghost"
                 size="sm"
                 className="w-full text-xs text-muted-foreground hover:text-foreground"
-                onClick={() => setExpanded(false)}
+                onClick={() => { tap(); setExpanded(false); }}
               >
                 <ChevronUpIcon className="h-3.5 w-3.5 mr-1" />
                 {t("expenses.comments.showLess", "Show less")}

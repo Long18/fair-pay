@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface SwipeAction {
   label: string;
@@ -24,6 +25,7 @@ export function SwipeableCard({
   className,
   disabled = false,
 }: SwipeableCardProps) {
+  const { tap, warning } = useHaptics();
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
   const touchStartX = useRef(0);
@@ -85,6 +87,11 @@ export function SwipeableCard({
   };
 
   const handleActionClick = (action: SwipeAction) => {
+    if (action.variant === "destructive") {
+      warning();
+    } else {
+      tap();
+    }
     action.onClick();
     setSwipeOffset(0);
   };

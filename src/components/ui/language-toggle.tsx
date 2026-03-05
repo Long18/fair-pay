@@ -13,6 +13,7 @@ import {
   TooltipTrigger,
 } from './tooltip';
 import { cn } from '@/lib/utils';
+import { useHaptics } from '@/hooks/use-haptics';
 
 import { GlobeIcon, CheckIcon } from "@/components/ui/icons";
 interface LanguageToggleProps {
@@ -21,10 +22,12 @@ interface LanguageToggleProps {
 
 export const LanguageToggle = ({ className }: LanguageToggleProps) => {
   const { i18n, t } = useTranslation();
+  const { tap } = useHaptics();
   const currentLanguage = i18n.language;
   const currentLangCode = currentLanguage.startsWith('vi') ? 'VI' : 'EN';
 
   const changeLanguage = (lng: 'en' | 'vi') => {
+    tap();
     i18n.changeLanguage(lng);
   };
 

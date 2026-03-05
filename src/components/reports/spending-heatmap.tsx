@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatNumber } from "@/lib/locale-utils";
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, getDay } from "date-fns";
 import { useMemo } from "react";
+import { useHaptics } from '@/hooks/use-haptics';
 
 interface HeatmapData {
   date: string;
@@ -22,6 +23,7 @@ export function SpendingHeatmap({
   title = "Daily Spending Heatmap",
   onDayClick,
 }: SpendingHeatmapProps) {
+  const { tap } = useHaptics();
   const daysInMonth = useMemo(() => {
     return eachDayOfInterval({
       start: startOfMonth(month),
@@ -128,7 +130,7 @@ export function SpendingHeatmap({
                   return (
                     <button
                       key={dayIndex}
-                      onClick={() => onDayClick?.(dateStr)}
+                      onClick={() => { tap(); onDayClick?.(dateStr); }}
                       className={`aspect-square rounded-md ${getColorClass(
                         intensity
                       )} hover:ring-2 hover:ring-primary transition-all relative group`}
