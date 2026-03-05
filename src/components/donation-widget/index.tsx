@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/ui/use-mobile';
 
 import { HeartIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 // Admin email that can always see the widget (even when disabled)
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'admin@fairpay.com';
 
@@ -17,6 +18,7 @@ export function DonationWidget() {
   const { i18n } = useTranslation();
   const { data: settings, isLoading } = useDonationSettings();
   const isMobile = useIsMobile();
+  const { tap } = useHaptics();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [showRandomTooltip, setShowRandomTooltip] = useState(false);
   const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -168,6 +170,21 @@ export function DonationWidget() {
           animation: float-mobile var(--animation-duration) ease-in-out infinite;
         }
 
+        @keyframes widget-aura {
+          0%, 100% {
+            transform: scale(0.96);
+            opacity: 0.45;
+          }
+          50% {
+            transform: scale(1.06);
+            opacity: 0.8;
+          }
+        }
+
+        .floating-aura {
+          animation: widget-aura 2.8s ease-in-out infinite;
+        }
+
         @media (min-width: 640px) {
           .floating-widget {
             --animation-duration: 60s;
@@ -189,29 +206,40 @@ export function DonationWidget() {
           <Tooltip open={showRandomTooltip} onOpenChange={setShowRandomTooltip}>
             <TooltipTrigger asChild>
               <button
-                onClick={() => setIsDialogOpen(true)}
+                onClick={() => { tap(); setIsDialogOpen(true); }}
                 className={cn(
-                  'h-14 w-14 sm:h-16 sm:w-16 rounded-full shadow-xl',
-                  'bg-transparent border-2 border-white/20',
-                  'transition-all duration-300 ease-out',
-                  'hover:scale-110 active:scale-95',
-                  'hover:shadow-2xl',
-                  'relative overflow-hidden group',
+                  'group relative isolate h-14 w-14 sm:h-16 sm:w-16 rounded-full',
+                  'transition-all duration-300 ease-out hover:scale-110 active:scale-95',
+                  'shadow-[0_12px_32px_rgba(0,0,0,0.35)] hover:shadow-[0_16px_38px_rgba(0,0,0,0.45)]',
                   'cursor-pointer'
                 )}
                 aria-label={ctaText}
               >
+                <span
+                  aria-hidden="true"
+                  className="floating-aura absolute -inset-1 -z-20 rounded-full bg-gradient-to-r from-fuchsia-500/50 via-rose-500/45 to-orange-400/45 blur-md"
+                />
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-0 -z-10 rounded-full border border-white/35 bg-black/15 backdrop-blur-[2px]"
+                />
                 {avatarUrl ? (
                   <img
                     src={avatarUrl}
                     alt="Donate"
-                    className="h-full w-full rounded-full object-cover"
+                    className="h-full w-full rounded-full object-cover ring-2 ring-white/60"
                   />
                 ) : (
-                  <div className="flex items-center justify-center h-full w-full bg-gradient-to-br from-pink-500 to-red-500">
+                  <div className="flex items-center justify-center h-full w-full rounded-full bg-gradient-to-br from-fuchsia-600 via-rose-500 to-orange-500 ring-2 ring-white/60">
                     <HeartIcon className="h-8 w-8 text-white fill-current" />
                   </div>
                 )}
+                <span
+                  aria-hidden="true"
+                  className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-white/70 bg-white text-[10px] font-bold text-rose-500 shadow-sm"
+                >
+                  +
+                </span>
               </button>
             </TooltipTrigger>
             <TooltipContent side={isMobile ? "top" : "right"} className="font-medium shadow-lg">
