@@ -13,7 +13,6 @@ import { useTheme } from "./theme-provider";
 import { parseThemeVariant, createThemeVariant } from "@/lib/theme-palettes";
 
 import { CheckIcon, ChevronDownIcon, MonitorIcon, MoonIcon, SunIcon } from "@/components/ui/icons";
-import { useHaptics } from "@/hooks/use-haptics";
 type ThemeOption = {
   value: "light" | "dark" | "system";
   label: string;
@@ -40,13 +39,11 @@ const themeOptions: ThemeOption[] = [
 
 export function ThemeSelect() {
   const { themeVariant, setThemeVariant } = useTheme();
-  const { tap } = useHaptics();
   const { themeName, mode } = parseThemeVariant(themeVariant);
 
   const currentTheme = themeOptions.find((option) => option.value === mode);
 
   const handleThemeChange = (newMode: "light" | "dark" | "system") => {
-    tap();
     const newVariant = createThemeVariant(themeName, newMode);
     setThemeVariant(newVariant);
   };

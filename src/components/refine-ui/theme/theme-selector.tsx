@@ -81,7 +81,6 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
     const isEven = index % 2 === 0;
 
     const handleClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
-      tap();
       // Capture click coordinates for circular reveal animation
       const { clientX, clientY } = event;
 
