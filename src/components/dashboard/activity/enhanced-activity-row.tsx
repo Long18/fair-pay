@@ -1,5 +1,6 @@
 import * as React from "react";
 import { useGo } from "@refinedev/core";
+import { useHaptics } from "@/hooks/use-haptics";
 import { formatDistanceToNow, format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -56,6 +57,7 @@ export const EnhancedActivityRow = React.forwardRef<
     ref
   ) => {
     const go = useGo();
+    const { tap } = useHaptics();
 
     const handleRowClick = (e: React.MouseEvent) => {
       // Don't navigate if clicking the expand button or dropdown
@@ -65,21 +67,25 @@ export const EnhancedActivityRow = React.forwardRef<
       ) {
         return;
       }
+      tap();
       go({ to: `/expenses/show/${activity.id}` });
     };
 
     const handleExpandClick = (e: React.MouseEvent) => {
       e.stopPropagation();
+      tap();
       onToggleExpand();
     };
 
     const handleQuickView = (e: React.MouseEvent) => {
       e.stopPropagation();
+      tap();
       go({ to: `/expenses/show/${activity.id}` });
     };
 
     const handleBulkSettlement = (e: React.MouseEvent) => {
       e.stopPropagation();
+      tap();
       go({ to: `/expenses/show/${activity.id}?action=settle` });
     };
 
