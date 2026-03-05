@@ -6,6 +6,7 @@ import { useDonationSettings } from '@/hooks/settings/use-donation-settings';
 import { DonationDialog } from './DonationDialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/ui/use-mobile';
 
 import { HeartIcon } from "@/components/ui/icons";
 // Admin email that can always see the widget (even when disabled)
@@ -15,10 +16,11 @@ export function DonationWidget() {
   const { data: identity } = useGetIdentity<Profile>();
   const { i18n } = useTranslation();
   const { data: settings, isLoading } = useDonationSettings();
+  const isMobile = useIsMobile();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [showRandomTooltip, setShowRandomTooltip] = useState(false);
-  const [animationDuration, setAnimationDuration] = useState(60); // Default 60 seconds
-  const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tooltipHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const animationRef = useRef<HTMLDivElement>(null);
 
   const currentLang = i18n.language as 'en' | 'vi';
@@ -40,15 +42,25 @@ export function DonationWidget() {
 
   // Set random animation duration on mount
   useEffect(() => {
+    const clearTooltipTimers = () => {
+      if (tooltipTimeoutRef.current) {
+        clearTimeout(tooltipTimeoutRef.current);
+        tooltipTimeoutRef.current = null;
+      }
+      if (tooltipHideTimeoutRef.current) {
+        clearTimeout(tooltipHideTimeoutRef.current);
+        tooltipHideTimeoutRef.current = null;
+      }
+    };
+
     const updateAnimationDuration = () => {
       const duration = getRandomDuration();
-      setAnimationDuration(duration);
 
       // Update CSS variable for animation duration
       if (animationRef.current) {
         const isDesktop = window.innerWidth >= 640;
-        // Desktop: use random duration (slower), Mobile: faster (20s)
-        const finalDuration = isDesktop ? duration : 20;
+        // Desktop: longer roaming animation, Mobile: subtle in-place bobbing.
+        const finalDuration = isDesktop ? duration : 3.2;
         animationRef.current.style.setProperty('--animation-duration', `${finalDuration}s`);
       }
     };
@@ -65,15 +77,13 @@ export function DonationWidget() {
     const scheduleRandomTooltip = () => {
       const delay = getRandomTooltipDelay();
 
-      if (tooltipTimeoutRef.current) {
-        clearTimeout(tooltipTimeoutRef.current);
-      }
+      clearTooltipTimers();
 
       tooltipTimeoutRef.current = setTimeout(() => {
         setShowRandomTooltip(true);
 
         // Hide tooltip after 3 seconds
-        setTimeout(() => {
+        tooltipHideTimeoutRef.current = setTimeout(() => {
           setShowRandomTooltip(false);
           // Schedule next random tooltip
           scheduleRandomTooltip();
@@ -81,15 +91,18 @@ export function DonationWidget() {
       }, delay);
     };
 
-    scheduleRandomTooltip();
+    if (isDialogOpen || isMobile) {
+      setShowRandomTooltip(false);
+      clearTooltipTimers();
+    } else {
+      scheduleRandomTooltip();
+    }
 
     return () => {
-      if (tooltipTimeoutRef.current) {
-        clearTimeout(tooltipTimeoutRef.current);
-      }
+      clearTooltipTimers();
       window.removeEventListener('resize', handleResize);
     };
-  }, []);
+  }, [isDialogOpen, isMobile]);
 
   // Show widget if enabled OR if user is admin
   // Widget is now visible to all users (authenticated and anonymous)
@@ -137,33 +150,15 @@ export function DonationWidget() {
 
         @keyframes float-mobile {
           0%, 100% {
-            transform: translate(0, 0) scaleX(1);
-          }
-          12.5% {
-            transform: translate(calc((100vw - 100px) * 0.5), -12px) scaleX(1);
-          }
-          25% {
-            transform: translate(calc(100vw - 100px), -25px) scaleX(-1);
-          }
-          37.5% {
-            transform: translate(calc((60vw - 80px) * 1.2), -32px) scaleX(-1);
+            transform: translate3d(0, 0, 0) scale(1);
           }
           50% {
-            transform: translate(calc(60vw - 80px), -40px) scaleX(-1);
-          }
-          62.5% {
-            transform: translate(calc((30vw - 60px) * 1.5), -30px) scaleX(-1);
-          }
-          75% {
-            transform: translate(calc(30vw - 60px), -20px) scaleX(1);
-          }
-          87.5% {
-            transform: translate(calc((30vw - 60px) * 0.5), -10px) scaleX(1);
+            transform: translate3d(0, -8px, 0) scale(1.03);
           }
         }
 
         .floating-widget {
-          --animation-duration: 20s;
+          --animation-duration: 3.2s;
           animation: float-mobile var(--animation-duration) ease-in-out infinite;
         }
 
@@ -176,13 +171,21 @@ export function DonationWidget() {
       `}</style>
 
       <TooltipProvider delayDuration={300}>
-        <div ref={animationRef} className="fixed bottom-6 left-6 z-50 floating-widget">
+        <div
+          ref={animationRef}
+          className={cn(
+            "fixed z-40 floating-widget transition-opacity duration-200",
+            "bottom-20 right-4 sm:bottom-6 sm:left-6 sm:right-auto",
+            isDialogOpen && "pointer-events-none opacity-0"
+          )}
+          aria-hidden={isDialogOpen}
+        >
           <Tooltip open={showRandomTooltip} onOpenChange={setShowRandomTooltip}>
             <TooltipTrigger asChild>
               <button
                 onClick={() => setIsDialogOpen(true)}
                 className={cn(
-                  'h-16 w-16 rounded-full shadow-xl',
+                  'h-14 w-14 sm:h-16 sm:w-16 rounded-full shadow-xl',
                   'bg-transparent border-2 border-white/20',
                   'transition-all duration-300 ease-out',
                   'hover:scale-110 active:scale-95',
@@ -205,7 +208,7 @@ export function DonationWidget() {
                 )}
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right" className="font-medium shadow-lg">
+            <TooltipContent side={isMobile ? "top" : "right"} className="font-medium shadow-lg">
               {ctaText}
             </TooltipContent>
           </Tooltip>
