@@ -35,6 +35,7 @@ import {
   ArrowLeftIcon,
   CodeIcon,
 } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 
 // ─── Nav Items Config ───────────────────────────────────────────────
 
@@ -302,6 +303,7 @@ function AdminActions() {
 function MobileAdminMenu() {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
+  const { tap } = useHaptics();
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -311,7 +313,7 @@ function MobileAdminMenu() {
     return () => document.removeEventListener("keydown", handleEscape);
   }, [open]);
 
-  const handleItemClick = useCallback(() => setOpen(false), []);
+  const handleItemClick = useCallback(() => { tap(); setOpen(false); }, [tap]);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -322,6 +324,7 @@ function MobileAdminMenu() {
           className="flex md:hidden h-10 w-10 rounded-lg hover:bg-accent"
           aria-label="Open admin menu"
           aria-expanded={open}
+          onClick={() => tap()}
         >
           <PanelLeftIcon className="h-5 w-5" />
         </Button>

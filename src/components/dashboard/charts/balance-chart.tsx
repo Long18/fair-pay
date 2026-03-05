@@ -12,6 +12,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface BalanceChartProps {
   currentBalance: number;
@@ -29,6 +30,7 @@ export const BalanceChart = ({
   currency = "USD",
 }: BalanceChartProps) => {
   const [dateRange, setDateRange] = useState<DateRangeOption>('30d');
+  const { tap } = useHaptics();
 
   const { startDate, endDate } = useMemo(() => {
     const end = initialEndDate || new Date();
@@ -106,7 +108,7 @@ export const BalanceChart = ({
           <CardTitle className="text-base sm:text-lg font-semibold text-foreground">
             Balance Trend
           </CardTitle>
-          <Select value={dateRange} onValueChange={(value) => setDateRange(value as DateRangeOption)}>
+          <Select value={dateRange} onValueChange={(value) => { tap(); setDateRange(value as DateRangeOption); }}>
             <SelectTrigger className="w-full sm:w-[140px] h-9 text-xs sm:text-sm" aria-label="Select date range for balance chart">
               <SelectValue />
             </SelectTrigger>

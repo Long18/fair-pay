@@ -64,6 +64,7 @@ import {
 } from "@/components/ui/icons";
 import { formatDate } from "@/lib/locale-utils";
 import type { AuditLogEntry, AuditLogsResponse, AuditStats, AuditFilterOptions } from "../types";
+import { useHaptics } from "@/hooks/use-haptics";
 
 // ─── Constants ──────────────────────────────────────────────────────
 
@@ -483,6 +484,7 @@ export function AdminAuditLogs() {
   const [revertDialogOpen, setRevertDialogOpen] = useState(false);
 
   const revertMutation = useRevertAuditEntry();
+  const { tap, warning } = useHaptics();
 
   // Reset page when filters change
   useEffect(() => {
@@ -511,6 +513,7 @@ export function AdminAuditLogs() {
   // ─── Clear Filters ──────────────────────────────────────────────
 
   const clearFilters = useCallback(() => {
+    tap();
     setSearch("");
     setActionFilter("all");
     setTableFilter("all");
@@ -648,7 +651,7 @@ export function AdminAuditLogs() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => refetch()}
+              onClick={() => { tap(); refetch(); }}
               disabled={isFetching}
             >
               <RefreshCwIcon className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
@@ -657,7 +660,7 @@ export function AdminAuditLogs() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => exportToCsv(entries)}
+              onClick={() => { tap(); exportToCsv(entries); }}
               disabled={entries.length === 0}
             >
               <DownloadIcon className="mr-2 h-4 w-4" />
@@ -666,7 +669,7 @@ export function AdminAuditLogs() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowFilters((v) => !v)}
+              onClick={() => { tap(); setShowFilters((v) => !v); }}}
             >
               <FilterIcon className="mr-2 h-4 w-4" />
               Bộ lọc
@@ -706,7 +709,7 @@ export function AdminAuditLogs() {
 
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">Loại thao tác</label>
-                  <Select value={actionFilter} onValueChange={setActionFilter}>
+                  <Select value={actionFilter} onValueChange={(v) => { tap(); setActionFilter(v); }}>
                     <SelectTrigger className="w-[160px]">
                       <SelectValue placeholder="Tất cả" />
                     </SelectTrigger>
@@ -721,7 +724,7 @@ export function AdminAuditLogs() {
 
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">Bảng dữ liệu</label>
-                  <Select value={tableFilter} onValueChange={setTableFilter}>
+                  <Select value={tableFilter} onValueChange={(v) => { tap(); setTableFilter(v); }}>
                     <SelectTrigger className="w-[160px]">
                       <SelectValue placeholder="Tất cả" />
                     </SelectTrigger>
@@ -736,7 +739,7 @@ export function AdminAuditLogs() {
 
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">Người thực hiện</label>
-                  <Select value={actorFilter} onValueChange={setActorFilter}>
+                  <Select value={actorFilter} onValueChange={(v) => { tap(); setActorFilter(v); }}>
                     <SelectTrigger className="w-[160px]">
                       <SelectValue placeholder="Tất cả" />
                     </SelectTrigger>
@@ -810,6 +813,7 @@ export function AdminAuditLogs() {
                         key={entry.id}
                         className="cursor-pointer hover:bg-accent/50 transition-colors group"
                         onClick={() => {
+                          tap();
                           setSelectedEntry(entry);
                           setDetailOpen(true);
                         }}
@@ -853,6 +857,7 @@ export function AdminAuditLogs() {
                               className="h-7 w-7 p-0 text-muted-foreground hover:text-orange-600"
                               aria-label="Hoàn tác thao tác này"
                               onClick={() => {
+                                warning();
                                 setRevertEntry(entry);
                                 setRevertDialogOpen(true);
                               }}
@@ -875,11 +880,11 @@ export function AdminAuditLogs() {
                   Hiển thị {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} / {total.toLocaleString()} kết quả
                 </span>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+                  <Button variant="outline" size="sm" disabled={page === 0} onClick={() => { tap(); setPage((p) => p - 1); }}>
                     Trước
                   </Button>
                   <span className="text-sm">{page + 1} / {totalPages}</span>
-                  <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage((p) => p + 1)}>
+                  <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => { tap(); setPage((p) => p + 1); }}>
                     Sau
                   </Button>
                 </div>

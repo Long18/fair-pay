@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { useOne, useList, useDelete, useGo, useGetIdentity, useUpdate, useCreate } from "@refinedev/core";
+import { useHaptics } from "@/hooks/use-haptics";
 import { useParams, useSearchParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -85,9 +86,12 @@ export const GroupShow = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
 
+  const { tap, success, warning } = useHaptics();
+
   // Tab from URL
   const activeTab = searchParams.get('tab') || 'activity';
   const handleTabChange = (tab: string) => {
+    tap();
     const newParams = new URLSearchParams(searchParams);
     newParams.set('tab', tab);
     setSearchParams(newParams, { replace: true });
@@ -231,6 +235,7 @@ export const GroupShow = () => {
   }, [groupQuery, membersQuery, expensesQuery, paymentsQuery, t]);
 
   const handleArchiveToggle = () => {
+    tap();
     if (!group?.id || !identity?.id) return;
     const newArchived = !isArchived;
     updateGroupMutation.mutate(
@@ -283,6 +288,7 @@ export const GroupShow = () => {
           created_by: identity.id,
         },
       });
+      success();
       toast.success(`Payment of ${formatNumber(data.amount)} ₫ to ${selectedSettlement.userName} recorded!`);
       setQuickSettleDialogOpen(false);
       setSelectedSettlement(null);
@@ -313,6 +319,7 @@ export const GroupShow = () => {
       { groupId: id },
       {
         onSuccess: () => {
+          success();
           setSettleAllDialogOpen(false);
           groupQuery.refetch();
           membersQuery.refetch();
@@ -324,6 +331,7 @@ export const GroupShow = () => {
   };
 
   const handleDeleteGroup = () => {
+    warning();
     if (!group?.id) return;
     deleteGroupMutation.mutate(
       { resource: "groups", id: group.id },
@@ -364,6 +372,7 @@ export const GroupShow = () => {
   };
 
   const handleShare = async () => {
+    tap();
     const groupUrl = `${window.location.origin}/groups/show/${id}`;
     try {
       if (navigator.share) {
@@ -420,7 +429,7 @@ export const GroupShow = () => {
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
-              onClick={() => go({ to: "/connections?tab=groups" })}
+              onClick={() => { tap(); go({ to: "/connections?tab=groups" }); }}
               className="rounded-lg md:hidden"
             >
               <ArrowLeftIcon size={16} className="mr-2" />
@@ -521,7 +530,7 @@ export const GroupShow = () => {
                   <div className="flex gap-2 justify-center sm:justify-start flex-wrap">
                     {(!isArchived || canManage) && (
                       <Button
-                        onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
+                        onClick={() => { tap(); go({ to: `/groups/${group.id}/expenses/create` }); }}
                         variant="default"
                         size="sm"
                         className="rounded-lg"
@@ -535,7 +544,7 @@ export const GroupShow = () => {
                         variant="outline"
                         size="sm"
                         className="rounded-lg"
-                        onClick={() => setSettleAllDialogOpen(true)}
+                        onClick={() => { tap(); setSettleAllDialogOpen(true); }}
                       >
                         <CheckCircle2Icon size={16} className="mr-2" />
                         {t('groups.settleAll', 'Settle All')} ({unsettledCount})
@@ -552,19 +561,19 @@ export const GroupShow = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           {isAdmin && (
-                            <DropdownMenuItem onClick={() => go({ to: `/groups/edit/${group.id}` })}>
+                            <DropdownMenuItem onClick={() => { tap(); go({ to: `/groups/edit/${group.id}` }); }}>
                               <PencilIcon className="mr-2 h-4 w-4" />
                               {t('groups.editGroup', 'Edit Group')}
                             </DropdownMenuItem>
                           )}
                           {isAdmin && (!isArchived || canManage) && (
-                            <DropdownMenuItem onClick={() => setAddMemberModalOpen(true)}>
+                            <DropdownMenuItem onClick={() => { tap(); setAddMemberModalOpen(true); }}>
                               <PlusIcon className="mr-2 h-4 w-4" />
                               {t('groups.addMember', 'Add Member')}
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => setShowArchiveDialog(true)}>
+                          <DropdownMenuItem onClick={() => { tap(); setShowArchiveDialog(true); }}>
                             {isArchived ? (
                               <>
                                 <ArchiveRestoreIcon className="mr-2 h-4 w-4" />
@@ -581,7 +590,7 @@ export const GroupShow = () => {
                             <>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
-                                onClick={() => setShowDeleteDialog(true)}
+                                onClick={() => { warning(); setShowDeleteDialog(true); }}
                                 className="text-destructive"
                               >
                                 <Trash2Icon className="mr-2 h-4 w-4" />
@@ -681,7 +690,7 @@ export const GroupShow = () => {
                           </p>
                           <Button
                             className="mt-4 rounded-lg"
-                            onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
+                            onClick={() => { tap(); go({ to: `/groups/${group.id}/expenses/create` }); }}
                           >
                             <PlusIcon size={16} className="mr-2" />
                             {t('expenses.addExpense', 'Add Expense')}
@@ -755,7 +764,7 @@ export const GroupShow = () => {
                           </p>
                         </div>
                       ) : balances.length === 0 ? (
-                        <EmptyBalances onAction={() => go({ to: `/groups/${group.id}/expenses/create` })} />
+                        <EmptyBalances onAction={() => { tap(); go({ to: `/groups/${group.id}/expenses/create` }); }} />
                       ) : (
                         <div className="space-y-6">
                           <SimplifiedBalanceView
@@ -791,7 +800,7 @@ export const GroupShow = () => {
                             variant="outline"
                             size="sm"
                             className="rounded-lg"
-                            onClick={() => setAddMemberModalOpen(true)}
+                            onClick={() => { tap(); setAddMemberModalOpen(true); }}
                           >
                             <PlusIcon size={16} className="mr-2" />
                             {t('groups.addMember', 'Add Member')}

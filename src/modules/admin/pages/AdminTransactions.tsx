@@ -83,6 +83,7 @@ import { AttachmentList } from "@/modules/expenses/components/attachment-list";
 import { Attachment } from "@/modules/expenses/types";
 import { AdminCreateExpenseDialog } from "../components/AdminCreateExpenseDialog";
 import { AdminEditExpenseDialog } from "../components/AdminEditExpenseDialog";
+import { useHaptics } from "@/hooks/use-haptics";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -420,6 +421,7 @@ function CreatePaymentDialog({
   const [note, setNote] = useState("");
   const [profilesList, setProfilesList] = useState<Array<{ id: string; full_name: string }>>([]);
   const [groupsList, setGroupsList] = useState<Array<{ id: string; name: string }>>([]);
+  const { tap } = useHaptics();
 
   useEffect(() => {
     if (!open) return;
@@ -446,14 +448,14 @@ function CreatePaymentDialog({
         <div className="space-y-4 mt-2">
           <div className="space-y-2">
             <Label>Người gửi</Label>
-            <Select value={fromUser} onValueChange={setFromUser}>
+            <Select value={fromUser} onValueChange={(v) => { tap(); setFromUser(v); }}>
               <SelectTrigger><SelectValue placeholder="Chọn người gửi" /></SelectTrigger>
               <SelectContent>{profilesList.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
             <Label>Người nhận</Label>
-            <Select value={toUser} onValueChange={setToUser}>
+            <Select value={toUser} onValueChange={(v) => { tap(); setToUser(v); }}>
               <SelectTrigger><SelectValue placeholder="Chọn người nhận" /></SelectTrigger>
               <SelectContent>{profilesList.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
             </Select>
@@ -462,7 +464,7 @@ function CreatePaymentDialog({
             <div className="space-y-2"><Label>Số tiền</Label><Input type="number" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
             <div className="space-y-2">
               <Label>Tiền tệ</Label>
-              <Select value={currency} onValueChange={setCurrency}>
+              <Select value={currency} onValueChange={(v) => { tap(); setCurrency(v); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent><SelectItem value="VND">VND</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent>
               </Select>
@@ -471,7 +473,7 @@ function CreatePaymentDialog({
           <div className="space-y-2"><Label>Ngày thanh toán</Label><Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} /></div>
           <div className="space-y-2">
             <Label>Nhóm (tùy chọn)</Label>
-            <Select value={groupId} onValueChange={setGroupId}>
+            <Select value={groupId} onValueChange={(v) => { tap(); setGroupId(v); }}>
               <SelectTrigger><SelectValue placeholder="Không có nhóm" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Không có nhóm (Bạn bè)</SelectItem>
@@ -482,10 +484,11 @@ function CreatePaymentDialog({
           <div className="space-y-2"><Label>Ghi chú (tùy chọn)</Label><Input placeholder="Ghi chú..." value={note} onChange={(e) => setNote(e.target.value)} /></div>
         </div>
         <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isCreating}>Hủy</Button>
+          <Button variant="outline" onClick={() => { tap(); onOpenChange(false); }} disabled={isCreating}>Hủy</Button>
           <Button onClick={() => {
             if (!fromUser || !toUser || !amount || !paymentDate) { toast.error("Vui lòng điền đầy đủ thông tin"); return; }
             if (fromUser === toUser) { toast.error("Người gửi và người nhận không thể giống nhau"); return; }
+            tap();
             onSubmit({ from_user: fromUser, to_user: toUser, amount: Number(amount), currency, payment_date: paymentDate, group_id: groupId === "none" ? null : groupId, note });
           }} disabled={isCreating || !fromUser || !toUser || !amount}>
             {isCreating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
@@ -509,6 +512,7 @@ function EditPaymentDialog({
   const [amount, setAmount] = useState("");
   const [paymentDate, setPaymentDate] = useState("");
   const [note, setNote] = useState("");
+  const { tap } = useHaptics();
 
   useEffect(() => {
     if (payment && open) { setAmount(String(payment.amount)); setPaymentDate(payment.payment_date?.split("T")[0] ?? ""); setNote(payment.note ?? ""); }
@@ -529,8 +533,8 @@ function EditPaymentDialog({
           <div className="space-y-2"><Label>Ghi chú</Label><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ghi chú..." /></div>
         </div>
         <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isUpdating}>Hủy</Button>
-          <Button onClick={() => onSubmit({ amount: Number(amount), payment_date: paymentDate, note })} disabled={isUpdating || !amount}>
+          <Button variant="outline" onClick={() => { tap(); onOpenChange(false); }} disabled={isUpdating}>Hủy</Button>
+          <Button onClick={() => { tap(); onSubmit({ amount: Number(amount), payment_date: paymentDate, note }); }} disabled={isUpdating || !amount}>
             {isUpdating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
             Lưu
           </Button>
@@ -563,6 +567,7 @@ function ExpensesTab() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editExpenseId, setEditExpenseId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const { tap, warning } = useHaptics();
 
   const { query: groupsQuery } = useList({ resource: "groups", pagination: { pageSize: 200 }, meta: { select: "id, name" } });
   const groups = groupsQuery.data?.data ?? [];
@@ -629,15 +634,15 @@ function ExpensesTab() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontalIcon className="h-4 w-4" /></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => { setSelectedExpense(row.original); setDetailOpen(true); }}>Xem chi tiết</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { setEditExpenseId(row.original.id); setEditDialogOpen(true); }}><PencilIcon className="mr-2 h-4 w-4" />Chỉnh sửa</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { tap(); setSelectedExpense(row.original); setDetailOpen(true); }}>Xem chi tiết</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { tap(); setEditExpenseId(row.original.id); setEditDialogOpen(true); }}><PencilIcon className="mr-2 h-4 w-4" />Chỉnh sửa</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => { setDeleteExpense(row.original); setDeleteDialogOpen(true); }} className="text-destructive">Xóa chi phí</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { warning(); setDeleteExpense(row.original); setDeleteDialogOpen(true); }} className="text-destructive">Xóa chi phí</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
     },
-  ], []);
+  ], [tap, warning]);
 
   const table = useTable<ExpenseRow>({
     columns,
@@ -672,6 +677,7 @@ function ExpensesTab() {
 
   const handleDelete = useCallback(async () => {
     if (!deleteExpense) return;
+    warning();
     setIsDeleting(true);
     try {
       const { error } = await supabaseClient.rpc("soft_delete_expense", { p_expense_id: deleteExpense.id });
@@ -680,13 +686,14 @@ function ExpensesTab() {
       setDeleteDialogOpen(false); setDeleteExpense(null); table.refineCore.tableQuery.refetch();
     } catch (err: any) { toast.error(`Lỗi: ${err.message ?? "Không thể xóa chi phí"}`); }
     finally { setIsDeleting(false); }
-  }, [deleteExpense, table.refineCore.tableQuery]);
+  }, [deleteExpense, table.refineCore.tableQuery, warning]);
 
   const handleRefetch = useCallback(() => {
+    tap();
     table.refineCore.tableQuery.refetch();
-  }, [table.refineCore.tableQuery]);
+  }, [table.refineCore.tableQuery, tap]);
 
-  const clearFilters = useCallback(() => { setSearch(""); setGroupFilter("all"); setStatusFilter("all"); setDateFrom(""); setDateTo(""); setAmountMin(""); setAmountMax(""); }, []);
+  const clearFilters = useCallback(() => { tap(); setSearch(""); setGroupFilter("all"); setStatusFilter("all"); setDateFrom(""); setDateTo(""); setAmountMin(""); setAmountMax(""); }, [tap]);
   const hasActiveFilters = search !== "" || groupFilter !== "all" || statusFilter !== "all" || dateFrom !== "" || dateTo !== "" || amountMin !== "" || amountMax !== "";
   const isEmptyResult = !table.refineCore.tableQuery.isLoading && table.reactTable.getRowModel().rows.length === 0;
 
@@ -696,8 +703,8 @@ function ExpensesTab() {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div><CardTitle>Quản lý chi phí</CardTitle><CardDescription>Xem và quản lý tất cả chi phí trong hệ thống</CardDescription></div>
           <div className="flex items-center gap-2">
-            <Button size="sm" onClick={() => setCreateDialogOpen(true)}><PlusIcon className="mr-2 h-4 w-4" />Tạo chi phí</Button>
-            <Button variant="outline" size="sm" onClick={() => setShowFilters((v) => !v)}><FilterIcon className="mr-2 h-4 w-4" />Bộ lọc</Button>
+            <Button size="sm" onClick={() => { tap(); setCreateDialogOpen(true); }}><PlusIcon className="mr-2 h-4 w-4" />Tạo chi phí</Button>
+            <Button variant="outline" size="sm" onClick={() => { tap(); setShowFilters((v) => !v); }}><FilterIcon className="mr-2 h-4 w-4" />Bộ lọc</Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -711,12 +718,12 @@ function ExpensesTab() {
                 <div className="space-y-1"><label className="text-xs text-muted-foreground">Từ ngày</label><Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" /></div>
                 <div className="space-y-1"><label className="text-xs text-muted-foreground">Đến ngày</label><Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" /></div>
                 <div className="space-y-1"><label className="text-xs text-muted-foreground">Nhóm</label>
-                  <Select value={groupFilter} onValueChange={setGroupFilter}><SelectTrigger className="w-[160px]"><SelectValue placeholder="Tất cả nhóm" /></SelectTrigger>
+                  <Select value={groupFilter} onValueChange={(v) => { tap(); setGroupFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder="Tất cả nhóm" /></SelectTrigger>
                     <SelectContent><SelectItem value="all">Tất cả nhóm</SelectItem>{groups.map((g: any) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1"><label className="text-xs text-muted-foreground">Trạng thái</label>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-[160px]"><SelectValue placeholder="Tất cả" /></SelectTrigger>
+                  <Select value={statusFilter} onValueChange={(v) => { tap(); setStatusFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder="Tất cả" /></SelectTrigger>
                     <SelectContent><SelectItem value="all">Tất cả</SelectItem><SelectItem value="settled">Đã thanh toán</SelectItem><SelectItem value="pending">Chờ xử lý</SelectItem></SelectContent>
                   </Select>
                 </div>
@@ -776,6 +783,7 @@ function PaymentsTab() {
   const [editPayment, setEditPayment] = useState<PaymentRow | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const { tap, success, warning } = useHaptics();
 
   const { query: groupsQuery } = useList({ resource: "groups", pagination: { pageSize: 200 }, meta: { select: "id, name" } });
   const groups = groupsQuery.data?.data ?? [];
@@ -847,15 +855,15 @@ function PaymentsTab() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontalIcon className="h-4 w-4" /></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => { setSelectedPayment(row.original); setDetailOpen(true); }}>Xem chi tiết</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { setEditPayment(row.original); setEditDialogOpen(true); }}><PencilIcon className="mr-2 h-4 w-4" />Chỉnh sửa</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { tap(); setSelectedPayment(row.original); setDetailOpen(true); }}>Xem chi tiết</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { tap(); setEditPayment(row.original); setEditDialogOpen(true); }}><PencilIcon className="mr-2 h-4 w-4" />Chỉnh sửa</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => { setDeletePayment(row.original); setDeleteDialogOpen(true); }} className="text-destructive">Xóa thanh toán</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { warning(); setDeletePayment(row.original); setDeleteDialogOpen(true); }} className="text-destructive">Xóa thanh toán</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
     },
-  ], []);
+  ], [tap, warning]);
 
   const table = useTable<PaymentRow>({
     columns,
@@ -893,6 +901,7 @@ function PaymentsTab() {
 
   const handleDelete = useCallback(() => {
     if (!deletePayment) return;
+    warning();
     setIsDeleting(true);
     deleteMutation.mutate(
       { resource: "payments", id: deletePayment.id },
@@ -901,18 +910,18 @@ function PaymentsTab() {
         onError: (error) => { toast.error(`Lỗi: ${error.message}`); setIsDeleting(false); },
       },
     );
-  }, [deletePayment, deleteMutation, table.refineCore.tableQuery]);
+  }, [deletePayment, deleteMutation, table.refineCore.tableQuery, warning]);
 
   const handleCreate = useCallback((data: { from_user: string; to_user: string; amount: number; currency: string; payment_date: string; group_id: string | null; note: string }) => {
     setIsCreating(true);
     createMutation.mutate(
       { resource: "payments", values: { from_user: data.from_user, to_user: data.to_user, amount: data.amount, currency: data.currency, payment_date: data.payment_date, group_id: data.group_id, context_type: data.group_id ? "group" : "friend", note: data.note || null } },
       {
-        onSuccess: () => { toast.success("Đã tạo thanh toán mới"); setCreateDialogOpen(false); setIsCreating(false); table.refineCore.tableQuery.refetch(); },
+        onSuccess: () => { success(); toast.success("Đã tạo thanh toán mới"); setCreateDialogOpen(false); setIsCreating(false); table.refineCore.tableQuery.refetch(); },
         onError: (error) => { toast.error(`Lỗi: ${error.message}`); setIsCreating(false); },
       },
     );
-  }, [createMutation, table.refineCore.tableQuery]);
+  }, [createMutation, table.refineCore.tableQuery, success]);
 
   const handleEdit = useCallback((data: { amount: number; payment_date: string; note: string }) => {
     if (!editPayment) return;
@@ -920,13 +929,13 @@ function PaymentsTab() {
     updateMutation.mutate(
       { resource: "payments", id: editPayment.id, values: { amount: data.amount, payment_date: data.payment_date, note: data.note || null } },
       {
-        onSuccess: () => { toast.success("Đã cập nhật thanh toán"); setEditDialogOpen(false); setEditPayment(null); setIsUpdating(false); table.refineCore.tableQuery.refetch(); },
+        onSuccess: () => { success(); toast.success("Đã cập nhật thanh toán"); setEditDialogOpen(false); setEditPayment(null); setIsUpdating(false); table.refineCore.tableQuery.refetch(); },
         onError: (error) => { toast.error(`Lỗi: ${error.message}`); setIsUpdating(false); },
       },
     );
-  }, [editPayment, updateMutation, table.refineCore.tableQuery]);
+  }, [editPayment, updateMutation, table.refineCore.tableQuery, success]);
 
-  const clearFilters = useCallback(() => { setSearch(""); setGroupFilter("all"); setSenderFilter("all"); setReceiverFilter("all"); setDateFrom(""); setDateTo(""); }, []);
+  const clearFilters = useCallback(() => { tap(); setSearch(""); setGroupFilter("all"); setSenderFilter("all"); setReceiverFilter("all"); setDateFrom(""); setDateTo(""); }, [tap]);
   const hasActiveFilters = search !== "" || groupFilter !== "all" || senderFilter !== "all" || receiverFilter !== "all" || dateFrom !== "" || dateTo !== "";
   const isEmptyResult = !table.refineCore.tableQuery.isLoading && table.reactTable.getRowModel().rows.length === 0;
 
@@ -936,8 +945,8 @@ function PaymentsTab() {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div><CardTitle>Quản lý thanh toán</CardTitle><CardDescription>Xem và quản lý tất cả thanh toán trong hệ thống</CardDescription></div>
           <div className="flex items-center gap-2">
-            <Button size="sm" onClick={() => setCreateDialogOpen(true)}><PlusIcon className="mr-2 h-4 w-4" />Tạo thanh toán</Button>
-            <Button variant="outline" size="sm" onClick={() => setShowFilters((v) => !v)}><FilterIcon className="mr-2 h-4 w-4" />Bộ lọc</Button>
+            <Button size="sm" onClick={() => { tap(); setCreateDialogOpen(true); }}><PlusIcon className="mr-2 h-4 w-4" />Tạo thanh toán</Button>
+            <Button variant="outline" size="sm" onClick={() => { tap(); setShowFilters((v) => !v); }}><FilterIcon className="mr-2 h-4 w-4" />Bộ lọc</Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -951,17 +960,17 @@ function PaymentsTab() {
                 <div className="space-y-1"><label className="text-xs text-muted-foreground">Từ ngày</label><Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" /></div>
                 <div className="space-y-1"><label className="text-xs text-muted-foreground">Đến ngày</label><Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" /></div>
                 <div className="space-y-1"><label className="text-xs text-muted-foreground">Nhóm</label>
-                  <Select value={groupFilter} onValueChange={setGroupFilter}><SelectTrigger className="w-[160px]"><SelectValue placeholder="Tất cả nhóm" /></SelectTrigger>
+                  <Select value={groupFilter} onValueChange={(v) => { tap(); setGroupFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder="Tất cả nhóm" /></SelectTrigger>
                     <SelectContent><SelectItem value="all">Tất cả nhóm</SelectItem>{groups.map((g: any) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1"><label className="text-xs text-muted-foreground">Người gửi</label>
-                  <Select value={senderFilter} onValueChange={setSenderFilter}><SelectTrigger className="w-[160px]"><SelectValue placeholder="Tất cả" /></SelectTrigger>
+                  <Select value={senderFilter} onValueChange={(v) => { tap(); setSenderFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder="Tất cả" /></SelectTrigger>
                     <SelectContent><SelectItem value="all">Tất cả</SelectItem>{profiles.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1"><label className="text-xs text-muted-foreground">Người nhận</label>
-                  <Select value={receiverFilter} onValueChange={setReceiverFilter}><SelectTrigger className="w-[160px]"><SelectValue placeholder="Tất cả" /></SelectTrigger>
+                  <Select value={receiverFilter} onValueChange={(v) => { tap(); setReceiverFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder="Tất cả" /></SelectTrigger>
                     <SelectContent><SelectItem value="all">Tất cả</SelectItem>{profiles.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>

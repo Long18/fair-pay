@@ -1,4 +1,5 @@
 import { useState, useCallback, memo, useMemo } from "react";
+import { useHaptics } from "@/hooks/use-haptics";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { CornerDownRightIcon, PencilIcon, Trash2Icon } from "@/components/ui/icons";
@@ -60,6 +61,7 @@ export const CommentItem = memo(({
   onCreateAndToggleReplyReaction,
 }: CommentItemProps) => {
   const { t, i18n } = useTranslation();
+  const { tap, warning } = useHaptics();
   const [replying, setReplying] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
@@ -205,7 +207,7 @@ export const CommentItem = memo(({
                   variant="ghost"
                   size="sm"
                   className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-                  onClick={() => setReplying(!replying)}
+                  onClick={() => { tap(); setReplying(!replying); }}
                 >
                   <CornerDownRightIcon className="h-3 w-3 mr-1" />
                   {t("expenses.comments.reply", "Reply")}
@@ -217,7 +219,7 @@ export const CommentItem = memo(({
                     variant="ghost"
                     size="sm"
                     className="h-6 px-1.5 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => { setEditing(true); setEditContent(comment.content); }}
+                    onClick={() => { tap(); setEditing(true); setEditContent(comment.content); }}
                     aria-label={t("common.edit", "Edit")}
                   >
                     <PencilIcon className="h-3 w-3" />
@@ -226,7 +228,7 @@ export const CommentItem = memo(({
                     variant="ghost"
                     size="sm"
                     className="h-6 px-1.5 text-xs text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => onDelete(comment.id)}
+                    onClick={() => { warning(); onDelete(comment.id); }}
                     aria-label={t("common.delete", "Delete")}
                   >
                     <Trash2Icon className="h-3 w-3" />

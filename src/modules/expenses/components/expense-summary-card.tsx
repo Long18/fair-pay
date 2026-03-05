@@ -56,6 +56,7 @@ import { getFrequencyDescription } from "../types/recurring";
 import type { RecurringExpense } from "../types/recurring";
 import type { CommentUser } from "../types/comments";
 import { buildExpenseShareUrl } from "../utils/share-url";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface ExpenseSummaryCardProps {
   expense: {
@@ -109,6 +110,7 @@ export const ExpenseSummaryCard = memo(({
   initialCommentsExpanded = false,
 }: ExpenseSummaryCardProps) => {
   const { t, i18n } = useTranslation();
+  const { tap, warning } = useHaptics();
   const dateLocale = i18n.language === "vi" ? vi : enUS;
   const [commentsExpanded, setCommentsExpanded] = useState(initialCommentsExpanded);
 
@@ -198,6 +200,7 @@ export const ExpenseSummaryCard = memo(({
   }, [expense]);
 
   const handleShare = async () => {
+    tap();
     const shareUrl = getShareUrl();
     if (navigator.share) {
       try {
@@ -215,6 +218,7 @@ export const ExpenseSummaryCard = memo(({
   };
 
   const handleCopyLink = async () => {
+    tap();
     try {
       await navigator.clipboard.writeText(getShareUrl());
       toast.success(t("common.linkCopied", "Link copied to clipboard"));
@@ -267,7 +271,7 @@ export const ExpenseSummaryCard = memo(({
             {canEdit && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                  <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => tap()}>
                     <MoreVerticalIcon className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -277,7 +281,7 @@ export const ExpenseSummaryCard = memo(({
                     {t("common.copyLink", "Copy Link")}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={onEdit}>
+                  <DropdownMenuItem onClick={() => { tap(); onEdit(); }}>
                     <PencilIcon className="h-4 w-4 mr-2" />
                     {t("common.edit", "Edit")}
                   </DropdownMenuItem>
@@ -305,7 +309,7 @@ export const ExpenseSummaryCard = memo(({
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>{t("common.cancel", "Cancel")}</AlertDialogCancel>
-                        <AlertDialogAction onClick={onDelete}>
+                        <AlertDialogAction onClick={() => { warning(); onDelete(); }}>
                           {t("common.delete", "Delete")}
                         </AlertDialogAction>
                       </AlertDialogFooter>
@@ -499,7 +503,7 @@ export const ExpenseSummaryCard = memo(({
                       variant="ghost"
                       size="sm"
                       className="w-full text-xs text-muted-foreground hover:text-foreground"
-                      onClick={() => setCommentsExpanded(true)}
+                      onClick={() => { tap(); setCommentsExpanded(true); }}
                     >
                       <ChevronDownIcon className="h-3.5 w-3.5 mr-1" />
                       {t("expenses.comments.showAll", {
@@ -513,7 +517,7 @@ export const ExpenseSummaryCard = memo(({
                       variant="ghost"
                       size="sm"
                       className="w-full text-xs text-muted-foreground hover:text-foreground"
-                      onClick={() => setCommentsExpanded(false)}
+                      onClick={() => { tap(); setCommentsExpanded(false); }}
                     >
                       <ChevronUpIcon className="h-3.5 w-3.5 mr-1" />
                       {t("expenses.comments.showLess", "Show less")}

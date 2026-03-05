@@ -11,6 +11,7 @@ import { UsersIcon, UserPlusIcon, InfoIcon } from "@/components/ui/icons";
 import { Group } from "@/modules/groups/types";
 import { Friendship } from "@/modules/friends/types";
 import { Profile } from "@/modules/profile/types";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface CreateRecurringDialogProps {
   open: boolean;
@@ -25,6 +26,7 @@ export function CreateRecurringDialog({
   const go = useGo();
   const { data: identity } = useGetIdentity<Profile>();
   const [selectedContext, setSelectedContext] = useState<string>("");
+  const { tap } = useHaptics();
 
   // Fetch user's groups
   const { query: groupsQuery } = useList<Group>({
@@ -63,6 +65,7 @@ export function CreateRecurringDialog({
 
   const handleContinue = () => {
     if (!selectedContext) return;
+    tap();
 
     const [type, id] = selectedContext.split(":");
 
@@ -114,7 +117,7 @@ export function CreateRecurringDialog({
               </AlertDescription>
             </Alert>
           ) : (
-            <RadioGroup value={selectedContext} onValueChange={setSelectedContext}>
+            <RadioGroup value={selectedContext} onValueChange={(v) => { tap(); setSelectedContext(v); }}>
               <div className="space-y-3">
                 {groups.length > 0 && (
                   <>
@@ -181,7 +184,7 @@ export function CreateRecurringDialog({
       </ResponsiveDialog.Content>
 
       <ResponsiveDialog.Footer>
-        <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <Button variant="outline" onClick={() => { tap(); onOpenChange(false); }}>
           {t('common.cancel', 'Cancel')}
         </Button>
         <Button

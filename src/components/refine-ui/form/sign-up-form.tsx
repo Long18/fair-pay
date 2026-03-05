@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useHaptics } from "@/hooks/use-haptics";
 import { useTranslation } from "react-i18next";
 
 import { InputPassword } from "@/components/refine-ui/form/input-password";
@@ -28,6 +29,7 @@ import { Loader2Icon, AlertCircleIcon, MailIcon, LockIcon, CheckCircle2Icon } fr
 
 export const SignUpForm = () => {
   const { t } = useTranslation();
+  const { tap } = useHaptics();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -145,6 +147,7 @@ export const SignUpForm = () => {
   };
 
   const handleSignUpWithGoogle = () => {
+    tap();
     setError(null);
     register({ providerName: "google" });
   };

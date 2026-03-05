@@ -26,6 +26,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
 import { CheckIcon, ChevronsUpDownIcon, ListFilterIcon, XIcon } from "@/components/ui/icons";
+import { useHaptics } from '@/hooks/use-haptics';
 export type DataTableFilterDropdownProps<TData> = {
   column: Column<TData>;
   contentClassName?: string;
@@ -42,6 +43,7 @@ export function DataTableFilterDropdown<TData>({
   contentClassName,
   children,
 }: DataTableFilterDropdownProps<TData>) {
+  const { tap } = useHaptics();
   const [isOpen, setIsOpen] = useState(false);
 
   const isFiltered = column.getIsFiltered();
@@ -50,7 +52,7 @@ export function DataTableFilterDropdown<TData>({
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <Button
-          onClick={() => setIsOpen(true)}
+          onClick={() => { tap(); setIsOpen(true); }}
           variant="ghost"
           size="icon"
           className={cn(
@@ -92,6 +94,7 @@ export function DataTableFilterDropdownActions({
   onApply,
 }: DataTableFilterDropdownActionsProps) {
   const t = useTranslate();
+  const { tap } = useHaptics();
 
   return (
     <div
@@ -115,7 +118,7 @@ export function DataTableFilterDropdownActions({
           "text-muted-foreground"
         )}
         onClick={() => {
-          onClear();
+          tap(); onClear();
         }}
       >
         <XIcon className={cn("w-3.5", "h-3.5", "text-muted-foreground")} />
@@ -127,7 +130,7 @@ export function DataTableFilterDropdownActions({
         disabled={isApplyDisabled}
         className={cn("rounded-sm", "text-xs", "font-semibold")}
         onClick={() => {
-          onApply();
+          tap(); onApply();
         }}
       >
         {t("buttons.apply", "Apply")}

@@ -1,5 +1,6 @@
 import * as React from "react"
 import { Button } from "@/components/ui/button"
+import { useHaptics } from "@/hooks/use-haptics"
 import {
   Empty,
   EmptyContent,
@@ -20,6 +21,7 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
+  const { tap } = useHaptics()
   return (
     <Empty className="py-12">
       <EmptyHeader>
@@ -39,7 +41,7 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
       </EmptyHeader>
       {action && (
         <EmptyContent className="mt-6">
-          <Button onClick={action.onClick} size="lg" className="shadow-sm">
+          <Button onClick={() => { tap(); action.onClick(); }} size="lg" className="shadow-sm">
             {action.label}
           </Button>
         </EmptyContent>

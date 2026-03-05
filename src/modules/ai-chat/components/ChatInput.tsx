@@ -1,4 +1,5 @@
 import { memo, useState, useCallback, useRef } from 'react';
+import { useHaptics } from '@/hooks/use-haptics';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { SendIcon, Loader2Icon } from '@/components/ui/icons';
@@ -12,14 +13,16 @@ interface ChatInputProps {
 export const ChatInput = memo(function ChatInput({ onSend, isLoading, disabled }: ChatInputProps) {
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { tap } = useHaptics();
 
   const handleSubmit = useCallback(() => {
     const trimmed = value.trim();
     if (!trimmed || isLoading) return;
+    tap();
     onSend(trimmed);
     setValue('');
     textareaRef.current?.focus();
-  }, [value, isLoading, onSend]);
+  }, [value, isLoading, onSend, tap]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

@@ -56,6 +56,7 @@ import {
   RefreshCwIcon,
 } from "@/components/ui/icons";
 import { toast } from "sonner";
+import { useHaptics } from "@/hooks/use-haptics";
 import type { ReactionType } from "@/modules/expenses/types/comments";
 
 
@@ -193,6 +194,7 @@ function ReactionFormDialog({
   isSaving: boolean;
 }) {
   const [form, setForm] = useState<ReactionFormData>(EMPTY_FORM);
+  const { tap } = useHaptics();
 
   const resetForm = useCallback(() => {
     if (editItem) {
@@ -266,7 +268,7 @@ function ReactionFormDialog({
             <Label>Loại media</Label>
             <Select
               value={form.media_type}
-              onValueChange={(v) => setForm((f) => ({ ...f, media_type: v as ReactionFormData["media_type"] }))}
+              onValueChange={(v) => { tap(); setForm((f) => ({ ...f, media_type: v as ReactionFormData["media_type"] })); }}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -321,15 +323,15 @@ function ReactionFormDialog({
             <Switch
               id="is_active"
               checked={form.is_active}
-              onCheckedChange={(v) => setForm((f) => ({ ...f, is_active: v }))}
+              onCheckedChange={(v) => { tap(); setForm((f) => ({ ...f, is_active: v })); }}
             />
             <Label htmlFor="is_active">Kích hoạt</Label>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Hủy</Button>
-          <Button onClick={handleSubmit} disabled={!isValid || isSaving}>
+          <Button variant="outline" onClick={() => { tap(); onOpenChange(false); }}>Hủy</Button>
+          <Button onClick={() => { tap(); handleSubmit(); }} disabled={!isValid || isSaving}>
             {isSaving && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
             {editItem ? "Cập nhật" : "Tạo mới"}
           </Button>
@@ -347,6 +349,7 @@ export function AdminReactions() {
   const upsertMutation = useUpsertReaction();
   const deleteMutation = useDeleteReaction();
   const toggleMutation = useToggleActive();
+  const { tap, success, warning } = useHaptics();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<ReactionType | null>(null);
@@ -358,31 +361,35 @@ export function AdminReactions() {
   );
 
   const handleAdd = useCallback(() => {
+    tap();
     setEditItem(null);
     setDialogOpen(true);
-  }, []);
+  }, [tap]);
 
   const handleEdit = useCallback((item: ReactionType) => {
+    tap();
     setEditItem(item);
     setDialogOpen(true);
-  }, []);
+  }, [tap]);
 
   const handleSave = useCallback((form: ReactionFormData, id?: string) => {
     upsertMutation.mutate({ id, form, maxSortOrder }, {
-      onSuccess: () => setDialogOpen(false),
+      onSuccess: () => { success(); setDialogOpen(false); },
     });
-  }, [upsertMutation, maxSortOrder]);
+  }, [upsertMutation, maxSortOrder, success]);
 
   const handleDelete = useCallback(() => {
     if (!deleteTarget) return;
+    warning();
     deleteMutation.mutate(deleteTarget.id, {
       onSuccess: () => setDeleteTarget(null),
     });
-  }, [deleteTarget, deleteMutation]);
+  }, [deleteTarget, deleteMutation, warning]);
 
   const handleToggle = useCallback((id: string, is_active: boolean) => {
+    tap();
     toggleMutation.mutate({ id, is_active });
-  }, [toggleMutation]);
+  }, [toggleMutation, tap]);
 
   const activeCount = useMemo(() => (items ?? []).filter((i) => i.is_active).length, [items]);
 
@@ -412,7 +419,7 @@ export function AdminReactions() {
             <CardDescription>Thêm, sửa, xóa emoji và icon cho hệ thống reaction</CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+            <Button variant="outline" size="sm" onClick={() => { tap(); refetch(); }} disabled={isFetching}>
               <RefreshCwIcon className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
               Làm mới
             </Button>
@@ -490,7 +497,7 @@ export function AdminReactions() {
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(item)} aria-label={`Edit ${item.label}`}>
                             <PencilIcon className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteTarget(item)} aria-label={`Delete ${item.label}`}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { tap(); setDeleteTarget(item); }} aria-label={`Delete ${item.label}`}>
                             <Trash2Icon className="h-4 w-4" />
                           </Button>
                         </div>

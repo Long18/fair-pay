@@ -4,6 +4,7 @@ import { format, subDays } from "date-fns";
 import { vi, enUS } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -26,6 +27,7 @@ export const QuickDatePicker: React.FC<QuickDatePickerProps> = ({
   disabled = false,
 }) => {
   const { t, i18n } = useTranslation();
+  const { tap } = useHaptics();
   const [isOpen, setIsOpen] = useState(false);
 
   const dateLocale = i18n.language === "vi" ? vi : enUS;
@@ -76,7 +78,7 @@ export const QuickDatePicker: React.FC<QuickDatePickerProps> = ({
             type="button"
             variant={value === option.value ? "default" : "outline"}
             size="sm"
-            onClick={() => onChange(option.value)}
+            onClick={() => { tap(); onChange(option.value); }}
             disabled={disabled}
             className="flex-1 h-11"
           >
@@ -92,6 +94,7 @@ export const QuickDatePicker: React.FC<QuickDatePickerProps> = ({
             variant={value && !isQuickOption(value) ? "default" : "outline"}
             className={cn("h-11 px-3", !value && "text-muted-foreground")}
             disabled={disabled}
+            onClick={() => tap()}
           >
             {value && !isQuickOption(value) ? (
               <span>{format(parseDate(value)!, "MMM d", { locale: dateLocale })}</span>

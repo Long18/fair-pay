@@ -6,6 +6,7 @@ import { DEBT_STATUS_COLORS } from '@/lib/status-colors';
 import { formatNumber } from '@/lib/locale-utils';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useHaptics } from '@/hooks/use-haptics';
 import { PriorityLevel, getPriorityLabel, getPriorityColors } from '@/lib/priority-calculator';
 
 interface BalanceCardProps {
@@ -47,10 +48,12 @@ export function BalanceCard({
   expenseCount,
 }: BalanceCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { tap } = useHaptics();
   const colors = DEBT_STATUS_COLORS[status];
   const priorityColors = priority ? getPriorityColors(priority) : null;
 
   const handleClick = () => {
+    tap();
     if (isExpandable) {
       setIsExpanded(!isExpanded);
     }

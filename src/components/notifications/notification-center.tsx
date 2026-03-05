@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useRecurringExpenses } from "@/modules/expenses/hooks/use-recurring-expenses";
 import { RepeatIcon, BellIcon, CheckCircle2Icon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 import { format } from "date-fns";
 import { vi, enUS } from "date-fns/locale";
 
@@ -24,6 +25,7 @@ interface NotificationCenterProps {
 export function NotificationCenter({ open, onOpenChange }: NotificationCenterProps) {
   const { t, i18n } = useTranslation();
   const go = useGo();
+  const { tap } = useHaptics();
   const { active } = useRecurringExpenses({});
   const dateLocale = i18n.language === "vi" ? vi : enUS;
 
@@ -49,6 +51,7 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
   }, [active]);
 
   const handleNotificationClick = () => {
+    tap();
     go({ to: "/recurring-expenses" });
     onOpenChange(false);
   };
@@ -181,6 +184,7 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
             <Button
               className="w-full"
               onClick={() => {
+                tap();
                 go({ to: "/recurring-expenses" });
                 onOpenChange(false);
               }}

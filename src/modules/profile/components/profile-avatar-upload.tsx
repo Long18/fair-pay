@@ -6,6 +6,7 @@ import { CameraIcon, Loader2Icon, XIcon } from "@/components/ui/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface ProfileAvatarUploadProps {
   currentAvatarUrl?: string | null;
@@ -25,6 +26,7 @@ export const ProfileAvatarUpload = ({
   disabled = false,
 }: ProfileAvatarUploadProps) => {
   const { t } = useTranslation();
+  const { tap, success } = useHaptics();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -80,6 +82,7 @@ export const ProfileAvatarUpload = ({
       if (result) {
         setPreviewUrl(result);
       }
+      success();
       toast.success(t("profile.avatarUploaded", "Avatar uploaded successfully"));
     } catch (error) {
       console.error("Avatar upload error:", error);
@@ -96,11 +99,13 @@ export const ProfileAvatarUpload = ({
 
   const handleClick = () => {
     if (!disabled && !isUploading) {
+      tap();
       fileInputRef.current?.click();
     }
   };
 
   const handleRemovePreview = (e: React.MouseEvent) => {
+    tap();
     e.stopPropagation();
     setPreviewUrl(null);
   };

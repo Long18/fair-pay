@@ -1,5 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { useHaptics } from "@/hooks/use-haptics";
 import { cn } from "@/lib/utils";
 import {
   UtensilsIcon,
@@ -80,6 +81,7 @@ export const QuickTemplates: React.FC<QuickTemplatesProps> = ({
   className,
 }) => {
   const { t } = useTranslation();
+  const { tap } = useHaptics();
 
   return (
     <div className={cn("space-y-2 overflow-x-hidden max-w-full", className)}>
@@ -91,11 +93,7 @@ export const QuickTemplates: React.FC<QuickTemplatesProps> = ({
             <button
               key={template.id}
               type="button"
-              onClick={() => onSelectTemplate({
-                description,
-                category: template.category,
-                amount: template.amount,
-              })}
+              onClick={() => { tap(); onSelectTemplate({ description, category: template.category, amount: template.amount }); }}
               className={cn(
                 "flex items-center gap-2 px-3 py-2 rounded-lg border whitespace-nowrap transition-all",
                 "hover:bg-accent hover:border-accent-foreground/20",

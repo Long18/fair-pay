@@ -1,6 +1,7 @@
 import { DataCard } from "@/components/ui/data-card";
 import { Button } from "@/components/ui/button";
 import { AlertCircleIcon, MoreVerticalIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 interface CreditorCardProps {
   name: string;
   logo?: string;
@@ -24,6 +25,7 @@ export const CreditorCard = ({
   currency: _currency = "VND",
   onMenuClick,
 }: CreditorCardProps) => {
+  const { tap } = useHaptics();
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('vi-VN').format(value);
   };
@@ -50,7 +52,7 @@ export const CreditorCard = ({
           <Button
             variant="ghost"
             size="icon"
-            onClick={onMenuClick}
+            onClick={() => { tap(); onMenuClick?.(); }}
             className="h-8 w-8 text-muted-foreground hover:text-foreground"
           >
             <MoreVerticalIcon className="h-4 w-4" />

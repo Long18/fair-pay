@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useGetIdentity, useGo, useList } from "@refinedev/core";
+import { useHaptics } from "@/hooks/use-haptics";
 import { useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ const DEFAULT_TAB = "groups";
 export const ConnectionsPage = () => {
   const { t } = useTranslation();
   const go = useGo();
+  const { tap } = useHaptics();
   const { data: identity } = useGetIdentity<Profile>();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab =
@@ -66,7 +68,7 @@ export const ConnectionsPage = () => {
           <div />
           <div className="flex gap-2">
             {activeTab === "groups" ? (
-              <Button size="sm" onClick={() => go({ to: "/groups/create" })}>
+              <Button size="sm" onClick={() => { tap(); go({ to: "/groups/create" }); }}>
                 <PlusIcon className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">
                   {t("groups.create", "New Group")}
@@ -95,7 +97,7 @@ export const ConnectionsPage = () => {
             return (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
+                onClick={() => { tap(); setActiveTab(tab.key); }}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
                   isActive

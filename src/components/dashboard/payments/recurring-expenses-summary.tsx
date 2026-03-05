@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useGo } from "@refinedev/core";
+import { useHaptics } from "@/hooks/use-haptics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,7 @@ import { vi, enUS } from "date-fns/locale";
 export function RecurringExpensesSummary() {
   const { t, i18n } = useTranslation();
   const go = useGo();
+  const { tap } = useHaptics();
   const { active, isLoading } = useRecurringExpenses({});
   const dateLocale = i18n.language === "vi" ? vi : enUS;
 
@@ -91,7 +93,7 @@ export function RecurringExpensesSummary() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => go({ to: "/recurring-expenses" })}
+            onClick={() => { tap(); go({ to: "/recurring-expenses" }); }}
           >
             {t("common.viewAll", "View All")}
             <ArrowRightIcon className="h-4 w-4 ml-1" />

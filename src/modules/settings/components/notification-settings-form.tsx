@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { UserSettings } from '../types';
 import { Loader2Icon } from "@/components/ui/icons";
 import { useTranslation } from 'react-i18next';
+import { useHaptics } from '@/hooks/use-haptics';
 
 const notificationSettingsSchema = z.object({
   notifications_enabled: z.boolean(),
@@ -32,6 +33,7 @@ interface NotificationSettingsFormProps {
 
 export function NotificationSettingsForm({ settings, onSave, isUpdating }: NotificationSettingsFormProps) {
   const { t } = useTranslation();
+  const { tap, success } = useHaptics();
   const form = useForm({
     resolver: zodResolver(notificationSettingsSchema),
     defaultValues: {
@@ -48,6 +50,7 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
 
   const handleSubmit = async (values: z.infer<typeof notificationSettingsSchema>) => {
     await onSave(values);
+    success();
   };
 
   return (
@@ -93,7 +96,7 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
                 <FormControl>
                   <Switch
                     checked={field.value}
-                    onCheckedChange={field.onChange}
+                    onCheckedChange={(v) => { tap(); field.onChange(v); }}
                     disabled={!notificationsEnabled}
                   />
                 </FormControl>
@@ -117,7 +120,7 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
                 <FormControl>
                   <Switch
                     checked={field.value}
-                    onCheckedChange={field.onChange}
+                    onCheckedChange={(v) => { tap(); field.onChange(v); }}
                     disabled={!notificationsEnabled}
                   />
                 </FormControl>
@@ -141,7 +144,7 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
                 <FormControl>
                   <Switch
                     checked={field.value}
-                    onCheckedChange={field.onChange}
+                    onCheckedChange={(v) => { tap(); field.onChange(v); }}
                     disabled={!notificationsEnabled}
                   />
                 </FormControl>
@@ -165,7 +168,7 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
                 <FormControl>
                   <Switch
                     checked={field.value}
-                    onCheckedChange={field.onChange}
+                    onCheckedChange={(v) => { tap(); field.onChange(v); }}
                     disabled={!notificationsEnabled}
                   />
                 </FormControl>
@@ -189,7 +192,7 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
                 <FormControl>
                   <Switch
                     checked={field.value}
-                    onCheckedChange={field.onChange}
+                    onCheckedChange={(v) => { tap(); field.onChange(v); }}
                     disabled={!notificationsEnabled}
                   />
                 </FormControl>

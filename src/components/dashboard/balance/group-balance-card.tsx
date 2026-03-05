@@ -7,6 +7,7 @@ import { GroupBalance } from "@/hooks/balance/use-global-balance";
 import { formatCurrency as formatCurrencyUtil } from "@/lib/locale-utils";
 
 import { UsersIcon, TrendingDownIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface GroupBalanceCardProps {
   group: GroupBalance;
@@ -16,6 +17,7 @@ interface GroupBalanceCardProps {
 export const GroupBalanceCard = ({ group, currency = "VND" }: GroupBalanceCardProps) => {
   const { t } = useTranslation();
   const go = useGo();
+  const { tap } = useHaptics();
 
   const formatCurrency = (amount: number) => {
     return formatCurrencyUtil(amount, currency);
@@ -36,7 +38,7 @@ export const GroupBalanceCard = ({ group, currency = "VND" }: GroupBalanceCardPr
   return (
     <DataCard
       className="cursor-pointer"
-      onClick={() => go({ to: `/groups/show/${group.group_id}` })}
+      onClick={() => { tap(); go({ to: `/groups/show/${group.group_id}` }); }}
     >
       <DataCard.Header
         className="pb-3"

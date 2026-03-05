@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/icons';
 import { dateUtils } from '@/lib/date-utils';
 import { useState } from 'react';
+import { useHaptics } from '@/hooks/use-haptics';
 
 interface JoinRequestsListProps {
   groupId: string;
@@ -21,6 +22,7 @@ export function JoinRequestsList({ groupId, onRequestProcessed }: JoinRequestsLi
   const { pendingRequests, approveRequest, rejectRequest, isLoading } =
     useGroupJoinRequests(groupId);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const { success, warning } = useHaptics();
 
   if (isLoading) return null;
   if (pendingRequests.length === 0) return null;
@@ -29,6 +31,7 @@ export function JoinRequestsList({ groupId, onRequestProcessed }: JoinRequestsLi
     name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) || '?';
 
   const handleApprove = async (requestId: string) => {
+    success();
     setProcessingId(requestId);
     await approveRequest(requestId);
     setProcessingId(null);
@@ -36,6 +39,7 @@ export function JoinRequestsList({ groupId, onRequestProcessed }: JoinRequestsLi
   };
 
   const handleReject = async (requestId: string) => {
+    warning();
     setProcessingId(requestId);
     await rejectRequest(requestId);
     setProcessingId(null);

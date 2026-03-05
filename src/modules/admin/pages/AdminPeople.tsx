@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { useGetIdentity, useUpdate, useDelete } from "@refinedev/core";
+import { useHaptics } from "@/hooks/use-haptics";
 import { useTable } from "@refinedev/react-table";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -1059,6 +1060,7 @@ function NewRegistrationCard({
 // ═══════════════════════════════════════════════════════════════════
 
 function UsersTab() {
+  const { tap, warning } = useHaptics();
   const { data: identity } = useGetIdentity<Profile>();
   const queryClient = useQueryClient();
 
@@ -1178,15 +1180,15 @@ function UsersTab() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => { setSelectedUser(row.original); setDetailOpen(true); }}>
+            <DropdownMenuItem onClick={() => { tap(); setSelectedUser(row.original); setDetailOpen(true); }}>
               Xem chi tiết
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { setEditUser(row.original); setEditDialogOpen(true); }}>
+            <DropdownMenuItem onClick={() => { tap(); setEditUser(row.original); setEditDialogOpen(true); }}>
               <PencilIcon className="mr-2 h-4 w-4" />
               Chỉnh sửa
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => { setDeleteUser(row.original); setDeleteDialogOpen(true); }} disabled={identity?.id === row.original.id} className="text-destructive">
+            <DropdownMenuItem onClick={() => { warning(); setDeleteUser(row.original); setDeleteDialogOpen(true); }} disabled={identity?.id === row.original.id} className="text-destructive">
               {identity?.id === row.original.id ? "Không thể xóa chính mình" : "Xóa người dùng"}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -1325,11 +1327,11 @@ function UsersTab() {
               <CardDescription>Xem và quản lý tất cả người dùng trong hệ thống</CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+              <Button size="sm" onClick={() => { tap(); setCreateDialogOpen(true); }}>
                 <PlusIcon className="mr-2 h-4 w-4" />
                 Tạo người dùng
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowFilters((v) => !v)}>
+              <Button variant="outline" size="sm" onClick={() => { tap(); setShowFilters((v) => !v); }}>
                 <FilterIcon className="mr-2 h-4 w-4" />
                 Bộ lọc
               </Button>
@@ -1342,7 +1344,7 @@ function UsersTab() {
             </div>
             {showFilters && (
               <div className="flex items-center gap-3 flex-wrap">
-                <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <Select value={roleFilter} onValueChange={(v) => { tap(); setRoleFilter(v); }}>
                   <SelectTrigger className="w-[150px]"><SelectValue placeholder="Vai trò" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tất cả vai trò</SelectItem>
@@ -1439,6 +1441,7 @@ function UsersTab() {
 // ═══════════════════════════════════════════════════════════════════
 
 function GroupsTab() {
+  const { tap, warning } = useHaptics();
   const deleteMutation = useDelete();
   const updateMutation = useUpdate();
 
@@ -1527,8 +1530,8 @@ function GroupsTab() {
             <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontalIcon className="h-4 w-4" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => { setSelectedGroup(row.original); setDetailOpen(true); }}>Xem chi tiết</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { setEditGroup(row.original); setEditDialogOpen(true); }}>
+            <DropdownMenuItem onClick={() => { tap(); setSelectedGroup(row.original); setDetailOpen(true); }}>Xem chi tiết</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { tap(); setEditGroup(row.original); setEditDialogOpen(true); }}>
               <PencilIcon className="mr-2 h-4 w-4" />Chỉnh sửa nhóm
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleArchiveToggle(row.original)}>
@@ -1539,7 +1542,7 @@ function GroupsTab() {
               )}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => { setDeleteGroup(row.original); setDeleteDialogOpen(true); }} className="text-destructive">Xóa nhóm</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { warning(); setDeleteGroup(row.original); setDeleteDialogOpen(true); }} className="text-destructive">Xóa nhóm</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
@@ -1686,6 +1689,7 @@ function GroupsTab() {
 // ═══════════════════════════════════════════════════════════════════
 
 function FriendshipsTab() {
+  const { tap, warning } = useHaptics();
   const deleteMutation = useDelete();
 
   const [search, setSearch] = useState("");
@@ -1744,10 +1748,10 @@ function FriendshipsTab() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             {row.original.status === "pending" && (
-              <DropdownMenuItem onClick={() => handleAccept(row.original)}>Chấp nhận kết bạn</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { tap(); handleAccept(row.original); }}>Chấp nhận kết bạn</DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => { setDeleteFriendship(row.original); setDeleteDialogOpen(true); }} className="text-destructive">Xóa tình bạn</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { warning(); setDeleteFriendship(row.original); setDeleteDialogOpen(true); }} className="text-destructive">Xóa tình bạn</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
@@ -1823,7 +1827,7 @@ function FriendshipsTab() {
               <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input placeholder="Tìm kiếm theo tên người dùng..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={(v) => { tap(); setStatusFilter(v); }}>
               <SelectTrigger className="w-[160px]"><SelectValue placeholder="Trạng thái" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả</SelectItem>
@@ -1866,9 +1870,10 @@ function FriendshipsTab() {
 // ═══════════════════════════════════════════════════════════════════
 
 export function AdminPeople() {
+  const { tap } = useHaptics();
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="users">
+      <Tabs defaultValue="users" onValueChange={() => tap()}>
         <TabsList>
           <TabsTrigger value="users" className="gap-2">
             <UsersIcon className="h-4 w-4" />

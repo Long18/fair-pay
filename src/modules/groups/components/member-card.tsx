@@ -11,6 +11,7 @@ import { GroupMember } from "../types";
 import { Profile } from "@/modules/profile/types";
 import { formatNumber } from "@/lib/locale-utils";
 import { cn } from "@/lib/utils";
+import { useHaptics } from "@/hooks/use-haptics";
 import {
   MoreVerticalIcon,
   Trash2Icon,
@@ -49,6 +50,7 @@ export function MemberCard({
   isLoading,
   showStats = false,
 }: MemberCardProps) {
+  const { tap, warning } = useHaptics();
   const isCurrentUser = member.user_id === currentUserId;
   const isCreator = member.user_id === creatorId;
   const isAdminRole = member.role === "admin";
@@ -170,7 +172,7 @@ export function MemberCard({
             {/* Toggle Admin Role */}
             {onToggleRole && !isCreator && (
               <DropdownMenuItem
-                onClick={() => onToggleRole(member.id, member.role)}
+                onClick={() => { tap(); onToggleRole(member.id, member.role); }}
               >
                 {isAdminRole ? (
                   <>
@@ -189,7 +191,7 @@ export function MemberCard({
             {/* Remove Member */}
             {onRemoveMember && !isCreator && (
               <DropdownMenuItem
-                onClick={() => onRemoveMember(member.id)}
+                onClick={() => { warning(); onRemoveMember(member.id); }}
                 className="text-destructive focus:text-destructive"
               >
                 <Trash2Icon className="h-4 w-4 mr-2" />

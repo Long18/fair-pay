@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Column } from "@tanstack/react-table";
 import { ArrowDownIcon, ArrowUpIcon, ChevronsUpDownIcon } from "@/components/ui/icons";
+import { useHaptics } from '@/hooks/use-haptics';
 export type DataTableSorterProps<TData> = {
   column: Column<TData>;
 } & React.ComponentProps<typeof Button>;
@@ -13,6 +14,7 @@ export function DataTableSorter<TData>({
   className,
   ...props
 }: DataTableSorterProps<TData>) {
+  const { tap } = useHaptics();
   const title =
     column.getIsSorted() === "desc"
       ? `Sort by ${column.id} as descending`
@@ -24,7 +26,7 @@ export function DataTableSorter<TData>({
     <Button
       variant="ghost"
       size="icon"
-      onClick={() => column.toggleSorting(undefined, true)}
+      onClick={() => { tap(); column.toggleSorting(undefined, true); }}
       title={title}
       aria-label={title}
       {...props}

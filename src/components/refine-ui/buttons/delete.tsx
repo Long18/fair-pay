@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/popover";
 import { type BaseKey, useDeleteButton } from "@refinedev/core";
 import React from "react";
+import { useHaptics } from "@/hooks/use-haptics";
 
 import { Loader2Icon, TrashIcon } from "@/components/ui/icons";
 type DeleteButtonProps = {
@@ -55,6 +56,7 @@ export const DeleteButton = React.forwardRef<
     meta,
   });
   const [open, setOpen] = React.useState(false);
+  const { tap, warning } = useHaptics();
 
   const isDisabled = disabled || rest.disabled || loading;
   const isHidden = hidden || rest.hidden;
@@ -89,7 +91,7 @@ export const DeleteButton = React.forwardRef<
         <div className="flex flex-col gap-2">
           <p className="text-sm">{confirmTitle}</p>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
+            <Button variant="outline" size="sm" onClick={() => { tap(); setOpen(false); }}>
               {confirmCancelText}
             </Button>
             <Button
@@ -97,6 +99,7 @@ export const DeleteButton = React.forwardRef<
               size="sm"
               disabled={loading}
               onClick={() => {
+                warning();
                 if (typeof onConfirm === "function") {
                   onConfirm();
                 }

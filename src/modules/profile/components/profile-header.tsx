@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { CameraIcon, PencilIcon, ShareIcon } from "@/components/ui/icons";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface ProfileHeaderProps {
   profile: Profile;
@@ -28,6 +29,7 @@ export const ProfileHeader = ({
   className,
 }: ProfileHeaderProps) => {
   const { t } = useTranslation();
+  const { tap } = useHaptics();
 
   return (
     <motion.div
@@ -52,7 +54,7 @@ export const ProfileHeader = ({
               isOwnProfile && "cursor-pointer",
               isUploadingAvatar && "opacity-50"
             )}
-            onClick={isOwnProfile ? onAvatarClick : undefined}
+            onClick={isOwnProfile ? () => { tap(); onAvatarClick?.(); } : undefined}
           >
             <AvatarImage src={profile.avatar_url || undefined} />
             <AvatarFallback className="text-2xl sm:text-3xl bg-gradient-to-br from-primary/20 to-primary/10">
@@ -101,7 +103,7 @@ export const ProfileHeader = ({
           <div className="flex gap-2 justify-center sm:justify-start">
             {isOwnProfile && (
               <Button
-                onClick={onEditClick}
+                onClick={() => { tap(); onEditClick?.(); }}
                 variant="default"
                 size="sm"
                 className="rounded-lg"
@@ -112,7 +114,7 @@ export const ProfileHeader = ({
             )}
 
             <Button
-              onClick={onShareClick}
+              onClick={() => { tap(); onShareClick?.(); }}
               variant="outline"
               size="sm"
               className="rounded-lg"

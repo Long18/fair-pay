@@ -15,6 +15,7 @@ import { MomoPaymentButton } from './momo-payment-button';
 import { momoAPI } from '@/lib/momo/api';
 import { formatNumber } from '@/lib/locale-utils';
 import { cn } from '@/lib/utils';
+import { useHaptics } from '@/hooks/use-haptics';
 
 interface MomoQuickPayButtonProps {
   counterpartyId: string;
@@ -30,6 +31,7 @@ export function MomoQuickPayButton({
   className,
 }: MomoQuickPayButtonProps) {
   const { t } = useTranslation();
+  const { tap } = useHaptics();
   const { data: identity } = useGetIdentity<Profile>();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [unpaidSplits, setUnpaidSplits] = useState<any[]>([]);
@@ -115,6 +117,7 @@ export function MomoQuickPayButton({
         size="sm"
         onClick={(e) => {
           e.stopPropagation();
+          tap();
           setDialogOpen(true);
         }}
         className={cn(
