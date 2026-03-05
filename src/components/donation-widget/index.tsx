@@ -170,21 +170,6 @@ export function DonationWidget() {
           animation: float-mobile var(--animation-duration) ease-in-out infinite;
         }
 
-        @keyframes widget-aura {
-          0%, 100% {
-            transform: scale(0.96);
-            opacity: 0.45;
-          }
-          50% {
-            transform: scale(1.06);
-            opacity: 0.8;
-          }
-        }
-
-        .floating-aura {
-          animation: widget-aura 2.8s ease-in-out infinite;
-        }
-
         @media (min-width: 640px) {
           .floating-widget {
             --animation-duration: 60s;
@@ -208,38 +193,25 @@ export function DonationWidget() {
               <button
                 onClick={() => { tap(); setIsDialogOpen(true); }}
                 className={cn(
-                  'group relative isolate h-14 w-14 sm:h-16 sm:w-16 rounded-full',
-                  'transition-all duration-300 ease-out hover:scale-110 active:scale-95',
-                  'shadow-[0_12px_32px_rgba(0,0,0,0.35)] hover:shadow-[0_16px_38px_rgba(0,0,0,0.45)]',
+                  'h-14 w-14 sm:h-16 sm:w-16 rounded-full overflow-hidden',
+                  'border border-border bg-background shadow-lg',
+                  'transition-all duration-300 ease-out hover:scale-105 active:scale-95 hover:shadow-xl',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   'cursor-pointer'
                 )}
                 aria-label={ctaText}
               >
-                <span
-                  aria-hidden="true"
-                  className="floating-aura absolute -inset-1 -z-20 rounded-full bg-gradient-to-r from-fuchsia-500/50 via-rose-500/45 to-orange-400/45 blur-md"
-                />
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-0 -z-10 rounded-full border border-white/35 bg-black/15 backdrop-blur-[2px]"
-                />
                 {avatarUrl ? (
                   <img
                     src={avatarUrl}
                     alt="Donate"
-                    className="h-full w-full rounded-full object-cover ring-2 ring-white/60"
+                    className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="flex items-center justify-center h-full w-full rounded-full bg-gradient-to-br from-fuchsia-600 via-rose-500 to-orange-500 ring-2 ring-white/60">
-                    <HeartIcon className="h-8 w-8 text-white fill-current" />
+                  <div className="flex items-center justify-center h-full w-full bg-primary text-primary-foreground">
+                    <HeartIcon className="h-7 w-7 fill-current" />
                   </div>
                 )}
-                <span
-                  aria-hidden="true"
-                  className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-white/70 bg-white text-[10px] font-bold text-rose-500 shadow-sm"
-                >
-                  +
-                </span>
               </button>
             </TooltipTrigger>
             <TooltipContent side={isMobile ? "top" : "right"} className="font-medium shadow-lg">
