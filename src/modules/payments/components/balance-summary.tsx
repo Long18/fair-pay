@@ -7,6 +7,7 @@ import { formatCurrency as formatCurrencyUtil } from "@/lib/locale-utils";
 import { useTranslation } from "react-i18next";
 
 import { ArrowDownIcon, ArrowUpIcon, CheckCircle2Icon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 interface BalanceSummaryProps {
   balances: UserBalance[];
   currentUserId: string;
@@ -21,6 +22,7 @@ export const BalanceSummary = ({
   currency = "VND",
 }: BalanceSummaryProps) => {
   const { t } = useTranslation();
+  const { success } = useHaptics();
   const currentUserBalance = balances.find(b => b.user_id === currentUserId);
   const myBalance = currentUserBalance?.balance || 0;
 
@@ -114,7 +116,7 @@ export const BalanceSummary = ({
                   </div>
                   {onSettleUp && (
                     <Button
-                      onClick={() => onSettleUp(person.user_id, Math.abs(myBalance))}
+                      onClick={() => { success(); onSettleUp(person.user_id, Math.abs(myBalance)); }}
                       variant="default"
                     >
                       Settle Up

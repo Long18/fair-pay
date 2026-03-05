@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useGo } from "@refinedev/core";
 
 import { EyeIcon, UsersIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 interface GroupBalance {
   group_id: string;
   group_name: string;
@@ -19,6 +20,7 @@ interface GroupsTableProps {
 
 export const GroupsTable = ({ groups, isLoading }: GroupsTableProps) => {
   const go = useGo();
+  const { tap } = useHaptics();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('vi-VN').format(Math.abs(value));
@@ -72,7 +74,7 @@ export const GroupsTable = ({ groups, isLoading }: GroupsTableProps) => {
             <p className="text-foreground font-medium">No groups yet</p>
             <p className="text-sm text-muted-foreground mt-2">Create a group to start tracking shared expenses</p>
             <Button
-              onClick={() => go({ to: "/groups/create" })}
+              onClick={() => { tap(); go({ to: "/groups/create" }); }}
               className="mt-4"
             >
               Create Group
@@ -127,7 +129,7 @@ export const GroupsTable = ({ groups, isLoading }: GroupsTableProps) => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => go({ to: `/groups/show/${group.group_id}` })}
+                    onClick={() => { tap(); go({ to: `/groups/show/${group.group_id}` }); }}
                   >
                     <EyeIcon className="h-4 w-4 mr-1" />
                     View

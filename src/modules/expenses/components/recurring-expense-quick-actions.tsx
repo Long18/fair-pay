@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/icons";
 import { RecurringExpense } from "../types/recurring";
 import { useRecurringActions } from "../hooks/use-recurring-actions";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface RecurringQuickActionsProps {
   expense: RecurringExpense;
@@ -44,8 +45,10 @@ export function RecurringQuickActions({
   const { t } = useTranslation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const { pause, resume, skip, remove } = useRecurringActions();
+  const { tap, warning } = useHaptics();
 
   const handlePauseResume = () => {
+    tap();
     if (expense.is_active) {
       pause(expense.id);
     } else {
@@ -54,10 +57,12 @@ export function RecurringQuickActions({
   };
 
   const handleSkip = () => {
+    tap();
     skip(expense);
   };
 
   const handleDelete = () => {
+    warning();
     remove(expense.id);
     setDeleteDialogOpen(false);
   };
@@ -96,7 +101,7 @@ export function RecurringQuickActions({
           )}
 
           {onPrepay && (
-            <DropdownMenuItem onClick={onPrepay}>
+            <DropdownMenuItem onClick={() => { tap(); onPrepay(); }}>
               <CreditCardIcon className="h-4 w-4 mr-2" />
               {t('recurring.actions.prepay', 'Record Prepayment')}
             </DropdownMenuItem>
@@ -105,14 +110,14 @@ export function RecurringQuickActions({
           <DropdownMenuSeparator />
 
           {onEdit && (
-            <DropdownMenuItem onClick={onEdit}>
+            <DropdownMenuItem onClick={() => { tap(); onEdit(); }}>
               <PencilIcon className="h-4 w-4 mr-2" />
               {t('recurring.actions.edit', 'Edit Template')}
             </DropdownMenuItem>
           )}
 
           <DropdownMenuItem
-            onClick={() => setDeleteDialogOpen(true)}
+            onClick={() => { warning(); setDeleteDialogOpen(true); }}
                         className="text-destructive focus:text-destructive"
           >
             <TrashIcon className="h-4 w-4 mr-2" />

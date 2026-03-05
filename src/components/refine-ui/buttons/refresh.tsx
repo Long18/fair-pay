@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { type BaseKey, useRefreshButton } from "@refinedev/core";
 import React from "react";
+import { useHaptics } from "@/hooks/use-haptics";
 
 import { RefreshCcwIcon } from "@/components/ui/icons";
 type RefreshButtonProps = {
@@ -47,6 +48,7 @@ export const RefreshButton = React.forwardRef<
       meta,
     });
 
+    const { tap } = useHaptics();
     const isDisabled = rest.disabled || loading;
 
     return (
@@ -56,6 +58,7 @@ export const RefreshButton = React.forwardRef<
             e.preventDefault();
             return;
           }
+          tap();
           refresh();
         }}
         {...rest}

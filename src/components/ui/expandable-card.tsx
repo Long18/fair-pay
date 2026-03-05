@@ -2,6 +2,7 @@ import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { ChevronDownIcon } from '@/components/ui/icons';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { useHaptics } from '@/hooks/use-haptics';
 
 interface ExpandableCardProps {
   title: string;
@@ -22,11 +23,13 @@ export function ExpandableCard({
   children,
   className,
 }: ExpandableCardProps) {
+  const { tap } = useHaptics();
   const [internalExpanded, setInternalExpanded] = useState(false);
   const isControlled = controlledExpanded !== undefined;
   const expanded = isControlled ? controlledExpanded : internalExpanded;
 
   const handleToggle = () => {
+    tap();
     if (isControlled) {
       onToggle?.();
     } else {

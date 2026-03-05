@@ -52,6 +52,7 @@ import { dispatchSettlementEvent } from "@/lib/settlement-events";
 import { useQuery } from "@tanstack/react-query";
 import { RecurringExpense } from "../types/recurring";
 import { cn } from "@/lib/utils";
+import { useHaptics } from "@/hooks/use-haptics";
 
 // Helper to transform split data from RPC response
 const transformSplitData = (data: any[]) =>
@@ -78,6 +79,7 @@ export const ExpenseShow = () => {
   const { id } = useParams<{ id: string }>();
   const go = useGo();
   const { t } = useTranslation();
+  const { tap, success } = useHaptics();
   const { data: identity } = useGetIdentity<Profile>();
   const [splits, setSplits] = useState<any[]>([]);
   const [isLoadingSplits, setIsLoadingSplits] = useState(true);
@@ -234,6 +236,7 @@ export const ExpenseShow = () => {
           defaultValue: `Settled ${splitsUpdated} of ${splitsUpdated + alreadyPaid} splits. ${alreadyPaid} already paid.`,
         })
       );
+      success();
       refetchExpense();
       await fetchSplits();
       setSettleAllDialogOpen(false);
@@ -271,6 +274,7 @@ export const ExpenseShow = () => {
               defaultValue: `Payment from ${selectedSplit.profiles?.full_name} marked as received`,
             })
       );
+      success();
       await fetchSplits();
       setSettleSplitDialogOpen(false);
       setSelectedSplit(null);
@@ -286,6 +290,7 @@ export const ExpenseShow = () => {
   };
 
   const openSettleDialog = (split: any) => {
+    tap();
     setSelectedSplit(split);
     setSettleSplitDialogOpen(true);
   };
@@ -431,6 +436,7 @@ export const ExpenseShow = () => {
               href="/dashboard"
               onClick={(e) => {
                 e.preventDefault();
+                tap();
                 go({ to: "/dashboard" });
               }}
             >
@@ -444,6 +450,7 @@ export const ExpenseShow = () => {
               href="#"
               onClick={(e) => {
                 e.preventDefault();
+                tap();
                 if (expense.group_id) {
                   go({ to: `/groups/show/${expense.group_id}` });
                 } else if (expense.friendship_id) {
@@ -618,7 +625,7 @@ export const ExpenseShow = () => {
             <button
               type="button"
               className="w-full flex items-center justify-between p-4 md:px-6 hover:bg-accent/30 transition-colors rounded-xl"
-              onClick={() => setNotesOpen(!notesOpen)}
+              onClick={() => { tap(); setNotesOpen(!notesOpen); }}
               aria-expanded={notesOpen}
             >
               <div className="flex items-center gap-2">
@@ -672,7 +679,7 @@ export const ExpenseShow = () => {
             <button
               type="button"
               className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed text-sm text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-accent/20 transition-colors"
-              onClick={() => go({ to: `/expenses/edit/${expense.id}` })}
+              onClick={() => { tap(); go({ to: `/expenses/edit/${expense.id}` }); }}
             >
               <FileTextIcon className="h-4 w-4" />
               {t("expenses.addDocuments", "Add Documents")}
@@ -706,6 +713,7 @@ export const ExpenseShow = () => {
             size="sm"
             className="flex flex-col gap-1 h-auto py-2"
             onClick={() => {
+              tap();
               if (expense.group_id) {
                 go({ to: `/groups/show/${expense.group_id}` });
               } else if (expense.friendship_id) {
@@ -723,7 +731,7 @@ export const ExpenseShow = () => {
               variant="ghost"
               size="sm"
               className="flex flex-col gap-1 h-auto py-2"
-              onClick={() => go({ to: `/expenses/edit/${expense.id}` })}
+              onClick={() => { tap(); go({ to: `/expenses/edit/${expense.id}` }); }}
             >
               <PencilIcon className="h-5 w-5" />
               <span className="text-xs">{t("common.edit", "Edit")}</span>
@@ -753,6 +761,7 @@ export const ExpenseShow = () => {
         size="lg"
         className="hidden md:flex fixed bottom-6 right-6 h-14 w-14 rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 z-50 items-center justify-center"
         onClick={() => {
+          tap();
           const url = expense.group_id
             ? `/expenses/create?groupId=${expense.group_id}`
             : expense.friendship_id

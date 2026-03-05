@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { useHaptics } from "@/hooks/use-haptics";
 
 export type DebtFilterTab = "all" | "unsettled" | "settled";
 
@@ -21,6 +22,7 @@ export function DebtFilterTabs({
   className,
 }: DebtFilterTabsProps) {
   const { t } = useTranslation();
+  const { tap } = useHaptics();
 
   const tabs: { key: DebtFilterTab; label: string; count: number }[] = [
     { key: "all", label: t("debts.filterAll", "All"), count: counts.all },
@@ -42,7 +44,7 @@ export function DebtFilterTabs({
           key={tab.key}
           role="tab"
           aria-selected={activeTab === tab.key}
-          onClick={() => onTabChange(tab.key)}
+          onClick={() => { tap(); onTabChange(tab.key); }}
           className={cn(
             "flex-1 py-2.5 px-2 flex items-center justify-center gap-1.5",
             "text-sm font-medium border-b-2 transition-colors cursor-pointer",

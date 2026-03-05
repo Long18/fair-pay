@@ -26,6 +26,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Loader2Icon, UsersIcon, UserIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface GroupOption {
   id: string;
@@ -58,6 +59,7 @@ export function AdminCreateExpenseDialog({
   onSuccess,
 }: AdminCreateExpenseDialogProps) {
   const { data: identity } = useGetIdentity<Profile>();
+  const { tap, success } = useHaptics();
 
   const [contextType, setContextType] = useState<"group" | "friend">("group");
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
@@ -243,6 +245,7 @@ export function AdminCreateExpenseDialog({
           toast.success("Đã tạo chi phí mới thành công");
         }
 
+        success();
         onOpenChange(false);
         onSuccess();
       } catch (err: any) {
@@ -278,6 +281,7 @@ export function AdminCreateExpenseDialog({
               <button
                 type="button"
                 onClick={() => {
+                  tap();
                   setContextType("group");
                   setSelectedFriendshipId("");
                   setMembers([]);
@@ -294,6 +298,7 @@ export function AdminCreateExpenseDialog({
               <button
                 type="button"
                 onClick={() => {
+                  tap();
                   setContextType("friend");
                   setSelectedGroupId("");
                   setMembers([]);
@@ -312,7 +317,7 @@ export function AdminCreateExpenseDialog({
             {contextType === "group" ? (
               <div className="space-y-2">
                 <Label>Chọn nhóm</Label>
-                <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+                <Select value={selectedGroupId} onValueChange={(v) => { tap(); setSelectedGroupId(v); }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn nhóm..." />
                   </SelectTrigger>
@@ -330,7 +335,7 @@ export function AdminCreateExpenseDialog({
                 <Label>Chọn cặp bạn bè</Label>
                 <Select
                   value={selectedFriendshipId}
-                  onValueChange={setSelectedFriendshipId}
+                  onValueChange={(v) => { tap(); setSelectedFriendshipId(v); }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn cặp bạn bè..." />

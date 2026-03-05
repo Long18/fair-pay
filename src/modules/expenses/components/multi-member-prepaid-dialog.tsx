@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2Icon, BanknoteIcon } from '@/components/ui/icons';
+import { useHaptics } from '@/hooks/use-haptics';
 import { formatNumber } from '@/lib/locale-utils';
 import { useMemberPrepaid } from '../hooks/use-member-prepaid';
 import { useMemberPrepaidInfo } from '../hooks/use-member-prepaid-info';
@@ -41,6 +42,7 @@ export function MultiMemberPrepaidDialog({
   onSuccess,
 }: MultiMemberPrepaidDialogProps) {
   const { t } = useTranslation();
+  const { tap, success } = useHaptics();
   const { recordMultiMember, isRecording } = useMemberPrepaid();
   const { data: prepaidInfo, isLoading: isLoadingPrepaidInfo } = useMemberPrepaidInfo(recurringExpenseId);
 
@@ -71,6 +73,7 @@ export function MultiMemberPrepaidDialog({
   }, [selectedMembers, memberShares]);
 
   const handleMemberToggle = (userId: string, checked: boolean) => {
+    tap();
     const newSelected = new Map(selectedMembers);
     if (checked) {
       newSelected.set(userId, 1);
@@ -114,6 +117,7 @@ export function MultiMemberPrepaidDialog({
     });
 
     if (result.success) {
+      success();
       setSelectedMembers(new Map());
       onOpenChange(false);
       onSuccess?.();
@@ -121,6 +125,7 @@ export function MultiMemberPrepaidDialog({
   };
 
   const handleCancel = () => {
+    tap();
     setSelectedMembers(new Map());
     onOpenChange(false);
   };

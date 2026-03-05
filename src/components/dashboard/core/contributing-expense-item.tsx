@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useGo } from "@refinedev/core";
 import { CategoryIcon } from "@/modules/expenses/components/category-icon";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface ContributingExpenseItemProps {
   id: string;
@@ -34,6 +35,7 @@ export function ContributingExpenseItem({
 }: ContributingExpenseItemProps) {
   const { t } = useTranslation();
   const go = useGo();
+  const { tap } = useHaptics();
 
   const formatDate = (dateString: string) => {
     try {
@@ -45,7 +47,7 @@ export function ContributingExpenseItem({
 
   return (
     <div
-      onClick={() => go({ to: `/expenses/show/${id}` })}
+      onClick={() => { tap(); go({ to: `/expenses/show/${id}` }); }}
       className={cn(
         "flex items-center gap-3 py-2.5 px-3 rounded-md transition-colors cursor-pointer",
         "hover:bg-muted/50 active:bg-muted/80",

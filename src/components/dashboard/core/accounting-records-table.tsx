@@ -7,6 +7,7 @@ import { useTableSort, SortConfig } from "@/hooks/table/use-table-sort";
 import { useTablePagination } from "@/hooks/table/use-table-pagination";
 
 import { MoreVerticalIcon, SearchIcon, XIcon, ArrowUpIcon, ArrowDownIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 interface AccountingRecord {
   id: string;
   operationDate: string;
@@ -26,6 +27,7 @@ interface AccountingRecordsTableProps {
 }
 
 export const AccountingRecordsTable = ({ records }: AccountingRecordsTableProps) => {
+  const { tap } = useHaptics();
   const [searchTerm, setSearchTerm] = useState("");
 
   // Filter records based on search term
@@ -56,6 +58,7 @@ export const AccountingRecordsTable = ({ records }: AccountingRecordsTableProps)
     filteredRecords,
     sortConfig
   );
+  const handleSort = (key: keyof AccountingRecord) => { tap(); setSortKey(key); };
 
   // Apply pagination
   const {
@@ -113,7 +116,7 @@ export const AccountingRecordsTable = ({ records }: AccountingRecordsTableProps)
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setSearchTerm("")}
+                  onClick={() => { tap(); setSearchTerm(""); }}
                   className="absolute right-0 top-1/2 transform -translate-y-1/2 h-8 w-8"
                 >
                   <XIcon className="h-3 w-3 text-gray-400" />
@@ -133,61 +136,61 @@ export const AccountingRecordsTable = ({ records }: AccountingRecordsTableProps)
               <TableRow className="border-b border-gray-200">
                 <TableHead
                   className="text-xs font-medium text-gray-600 whitespace-nowrap cursor-pointer hover:text-gray-900"
-                  onClick={() => setSortKey("operationDate")}
+                  onClick={() => handleSort("operationDate")}
                 >
                   Operation date{getSortIcon("operationDate")}
                 </TableHead>
                 <TableHead
                   className="text-xs font-medium text-gray-600 whitespace-nowrap cursor-pointer hover:text-gray-900"
-                  onClick={() => setSortKey("accountingDate")}
+                  onClick={() => handleSort("accountingDate")}
                 >
                   Accounting date{getSortIcon("accountingDate")}
                 </TableHead>
                 <TableHead
                   className="text-xs font-medium text-gray-600 whitespace-nowrap cursor-pointer hover:text-gray-900"
-                  onClick={() => setSortKey("interestDate")}
+                  onClick={() => handleSort("interestDate")}
                 >
                   Interest date{getSortIcon("interestDate")}
                 </TableHead>
                 <TableHead
                   className="text-xs font-medium text-gray-600 whitespace-nowrap cursor-pointer hover:text-gray-900"
-                  onClick={() => setSortKey("protocolDate")}
+                  onClick={() => handleSort("protocolDate")}
                 >
                   Protocol date{getSortIcon("protocolDate")}
                 </TableHead>
                 <TableHead
                   className="text-xs font-medium text-gray-600 whitespace-nowrap cursor-pointer hover:text-gray-900"
-                  onClick={() => setSortKey("documentNumber")}
+                  onClick={() => handleSort("documentNumber")}
                 >
                   Document no.{getSortIcon("documentNumber")}
                 </TableHead>
                 <TableHead
                   className="text-xs font-medium text-gray-600 cursor-pointer hover:text-gray-900"
-                  onClick={() => setSortKey("operation")}
+                  onClick={() => handleSort("operation")}
                 >
                   Operation{getSortIcon("operation")}
                 </TableHead>
                 <TableHead
                   className="text-xs font-medium text-gray-600 cursor-pointer hover:text-gray-900"
-                  onClick={() => setSortKey("register")}
+                  onClick={() => handleSort("register")}
                 >
                   Register{getSortIcon("register")}
                 </TableHead>
                 <TableHead
                   className="text-xs font-medium text-gray-600 text-right cursor-pointer hover:text-gray-900"
-                  onClick={() => setSortKey("dt")}
+                  onClick={() => handleSort("dt")}
                 >
                   Dt{getSortIcon("dt")}
                 </TableHead>
                 <TableHead
                   className="text-xs font-medium text-gray-600 text-right cursor-pointer hover:text-gray-900"
-                  onClick={() => setSortKey("ct")}
+                  onClick={() => handleSort("ct")}
                 >
                   Ct{getSortIcon("ct")}
                 </TableHead>
                 <TableHead
                   className="text-xs font-medium text-gray-600 cursor-pointer hover:text-gray-900"
-                  onClick={() => setSortKey("currency")}
+                  onClick={() => handleSort("currency")}
                 >
                   Currency{getSortIcon("currency")}
                 </TableHead>
@@ -236,7 +239,7 @@ export const AccountingRecordsTable = ({ records }: AccountingRecordsTableProps)
             <Button
               variant="outline"
               size="sm"
-              onClick={prevPage}
+              onClick={() => { tap(); prevPage(); }}
               disabled={!canPrevPage}
             >
               Previous
@@ -247,7 +250,7 @@ export const AccountingRecordsTable = ({ records }: AccountingRecordsTableProps)
             <Button
               variant="outline"
               size="sm"
-              onClick={nextPage}
+              onClick={() => { tap(); nextPage(); }}
               disabled={!canNextPage}
             >
               Next

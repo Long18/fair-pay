@@ -12,6 +12,7 @@ import {
   SparklesIcon,
 } from "@/components/ui/icons";
 import { useGo } from "@refinedev/core";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface EmptyStateProps {
   className?: string;
@@ -21,6 +22,7 @@ interface EmptyStateProps {
 export const EmptyActivities = ({ className, onAction }: EmptyStateProps) => {
   const { t } = useTranslation();
   const go = useGo();
+  const { tap } = useHaptics();
 
   return (
     <motion.div
@@ -62,7 +64,7 @@ export const EmptyActivities = ({ className, onAction }: EmptyStateProps) => {
         )}
       </p>
       <Button
-        onClick={onAction || (() => go({ to: "/expenses/create" }))}
+        onClick={() => { tap(); (onAction ?? (() => go({ to: "/expenses/create" })))(); }}
         className="rounded-lg"
       >
         <PlusIcon size={16} className="mr-2" />
@@ -75,6 +77,7 @@ export const EmptyActivities = ({ className, onAction }: EmptyStateProps) => {
 export const EmptyBalances = ({ className, onAction }: EmptyStateProps) => {
   const { t } = useTranslation();
   const go = useGo();
+  const { tap } = useHaptics();
 
   return (
     <motion.div
@@ -122,7 +125,7 @@ export const EmptyBalances = ({ className, onAction }: EmptyStateProps) => {
       </p>
       <Button
         variant="outline"
-        onClick={onAction || (() => go({ to: "/expenses/create" }))}
+        onClick={() => { tap(); (onAction ?? (() => go({ to: "/expenses/create" })))(); }}
         className="rounded-lg"
       >
         <ReceiptIcon size={16} className="mr-2" />
@@ -135,6 +138,7 @@ export const EmptyBalances = ({ className, onAction }: EmptyStateProps) => {
 export const EmptyFriends = ({ className, onAction }: EmptyStateProps) => {
   const { t } = useTranslation();
   const go = useGo();
+  const { tap } = useHaptics();
 
   return (
     <motion.div
@@ -183,7 +187,7 @@ export const EmptyFriends = ({ className, onAction }: EmptyStateProps) => {
         )}
       </p>
       <Button
-        onClick={onAction || (() => go({ to: "/friends" }))}
+        onClick={() => { tap(); (onAction ?? (() => go({ to: "/friends" })))(); }}
         className="rounded-lg"
       >
         <PlusIcon size={16} className="mr-2" />
@@ -196,6 +200,7 @@ export const EmptyFriends = ({ className, onAction }: EmptyStateProps) => {
 export const EmptyGroups = ({ className, onAction }: EmptyStateProps) => {
   const { t } = useTranslation();
   const go = useGo();
+  const { tap } = useHaptics();
 
   return (
     <motion.div
@@ -231,7 +236,7 @@ export const EmptyGroups = ({ className, onAction }: EmptyStateProps) => {
         )}
       </p>
       <Button
-        onClick={onAction || (() => go({ to: "/groups/create" }))}
+        onClick={() => { tap(); (onAction ?? (() => go({ to: "/groups/create" })))(); }}
         className="rounded-lg"
       >
         <PlusIcon size={16} className="mr-2" />

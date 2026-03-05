@@ -10,6 +10,7 @@ import {
   BanknoteIcon
 } from "@/components/ui/icons";
 import { useGo } from "@refinedev/core";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface ProfileMobileNavigationProps {
   isOwnProfile?: boolean;
@@ -30,6 +31,7 @@ export const ProfileMobileNavigation = ({
 }: ProfileMobileNavigationProps) => {
   const { t } = useTranslation();
   const go = useGo();
+  const { tap, success } = useHaptics();
 
   return (
     <AnimatePresence>
@@ -49,7 +51,7 @@ export const ProfileMobileNavigation = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => go({ to: "/dashboard" })}
+              onClick={() => { tap(); go({ to: "/dashboard" }); }}
               className="rounded-lg"
             >
               <ArrowLeftIcon size={20} className="mr-2" />
@@ -62,7 +64,7 @@ export const ProfileMobileNavigation = ({
                 <Button
                   variant="default"
                   size="sm"
-                  onClick={onSettleClick}
+                  onClick={() => { success(); onSettleClick?.(); }}
                   className="rounded-lg"
                 >
                   <BanknoteIcon size={20} className="mr-2" />
@@ -74,7 +76,7 @@ export const ProfileMobileNavigation = ({
                 <Button
                   variant="default"
                   size="sm"
-                  onClick={onEditClick}
+                  onClick={() => { tap(); onEditClick?.(); }}
                   className="rounded-lg"
                 >
                   <PencilIcon size={20} className="mr-2" />
@@ -85,7 +87,7 @@ export const ProfileMobileNavigation = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={onShareClick}
+                onClick={() => { tap(); onShareClick?.(); }}
                 className="rounded-lg"
               >
                 <ShareIcon size={20} />

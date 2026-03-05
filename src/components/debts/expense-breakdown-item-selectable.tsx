@@ -13,6 +13,7 @@ import { CategoryIcon } from "@/modules/expenses/components/category-icon";
 import { formatCurrency } from "@/lib/locale-utils";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { useHaptics } from "@/hooks/use-haptics";
 import { Link } from "react-router";
 import {
   CheckCircle2Icon,
@@ -61,6 +62,7 @@ export function ExpenseBreakdownItemSelectable({
   canSettle = false,
 }: ExpenseBreakdownItemSelectableProps) {
   const { t, i18n } = useTranslation();
+  const { tap, success } = useHaptics();
 
   const isIOwe = direction === "i_owe";
 
@@ -77,6 +79,7 @@ export function ExpenseBreakdownItemSelectable({
 
   const handleCheckboxChange = (checked: boolean | "indeterminate") => {
     if (checked !== "indeterminate") {
+      tap();
       onSelectChange(splitId, checked);
     }
   };
@@ -228,7 +231,7 @@ export function ExpenseBreakdownItemSelectable({
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={() => onInlineSettle(splitId)}
+                  onClick={() => { success(); onInlineSettle(splitId); }}
                 >
                   <CheckCircle2Icon className="h-4 w-4 mr-2" />
                   {t("debts.settle", "Settle")}

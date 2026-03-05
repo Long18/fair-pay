@@ -41,6 +41,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 import { CheckIcon, ChevronsUpDownIcon, UserPlusIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 const addFriendSchema = z.object({
   userId: z.string().min(1, "Please select a user"),
 });
@@ -56,6 +57,7 @@ export const AddFriendModal = ({ trigger }: AddFriendModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { data: identity } = useGetIdentity<Profile>();
   const createMutation = useCreate();
+  const { tap, success } = useHaptics();
 
   const form = useForm({
     resolver: zodResolver(addFriendSchema),
@@ -123,6 +125,7 @@ export const AddFriendModal = ({ trigger }: AddFriendModalProps) => {
   }, [userId, availableUsers, profilesQuery.data]);
 
   const handleSelectUser = (userId: string) => {
+    tap();
     form.setValue("userId", userId);
     setPopoverOpen(false);
     setSearchValue("");
@@ -157,6 +160,7 @@ export const AddFriendModal = ({ trigger }: AddFriendModalProps) => {
       },
       {
         onSuccess: () => {
+          success();
           toast.success(`Friend request sent to ${targetUser.full_name}`);
           setOpen(false);
           form.reset();
@@ -303,6 +307,7 @@ export const AddFriendModal = ({ trigger }: AddFriendModalProps) => {
                 type="button"
                 variant="outline"
                 onClick={() => {
+                  tap();
                   setOpen(false);
                   form.reset();
                   setSearchValue("");

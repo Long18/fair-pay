@@ -9,8 +9,10 @@ import { Friendship } from "@/modules/friends/types";
 import { toast } from "sonner";
 
 import { UsersIcon, UserPlusIcon, PlusCircleIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 export const ExpenseContextSelector = () => {
   const go = useGo();
+  const { tap } = useHaptics();
   const { data: identity } = useGetIdentity<Profile>();
   const [groupSearch, setGroupSearch] = useState("");
   const [friendSearch, setFriendSearch] = useState("");
@@ -153,10 +155,12 @@ export const ExpenseContextSelector = () => {
   };
 
   const handleCreateGroup = () => {
+    tap();
     go({ to: "/groups/create" });
   };
 
   const handleViewFriends = () => {
+    tap();
     go({ to: "/friends" });
   };
 
@@ -239,7 +243,7 @@ export const ExpenseContextSelector = () => {
               pagedGroups.map((group: any) => (
                 <Button
                   key={group.id}
-                  onClick={() => go({ to: `/groups/${group.id}/expenses/create` })}
+                  onClick={() => { tap(); go({ to: `/groups/${group.id}/expenses/create` }); }}
                   variant="outline"
                   className="w-full justify-start h-auto py-3"
                   size="lg"
@@ -277,7 +281,7 @@ export const ExpenseContextSelector = () => {
                 return (
                   <Button
                     key={friendship.id}
-                    onClick={() => go({ to: `/friends/${friendship.id}/expenses/create` })}
+                    onClick={() => { tap(); go({ to: `/friends/${friendship.id}/expenses/create` }); }}
                     variant="outline"
                     className="w-full justify-start h-auto py-3"
                     size="lg"

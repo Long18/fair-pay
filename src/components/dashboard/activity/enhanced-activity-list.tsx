@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router";
 import { Button } from "@/components/ui/button";
 import { LoadingBeam } from "@/components/ui/loading-beam";
 import { ActivityIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 import { cn } from "@/lib/utils";
 import { debounce } from "@/lib/performance";
 
@@ -74,6 +75,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
   const [collapsedGroupPeriods, setCollapsedGroupPeriods] = React.useState<Set<string>>(new Set());
   const [isSummaryCollapsed, setIsSummaryCollapsed] = React.useState(false);
   const [currentPage, setCurrentPage] = React.useState(1);
+  const { tap } = useHaptics();
 
   // Filter activities
   const filteredActivities = React.useMemo(() => {
@@ -395,7 +397,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
             <div className="text-center pt-4">
               <Button
                 variant="outline"
-                onClick={loadMore}
+                onClick={() => { tap(); loadMore(); }}
                 className="rounded-lg"
               >
                 Load More ({visibleCount} of {progressiveTotalCount})

@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { type BaseKey, useListButton } from "@refinedev/core";
 import React from "react";
+import { useHaptics } from "@/hooks/use-haptics";
 
 import { ListIcon } from "@/components/ui/icons";
 type ListButtonProps = {
@@ -34,6 +35,7 @@ export const ListButton = React.forwardRef<
     accessControl,
     meta,
   });
+  const { tap } = useHaptics();
 
   const isDisabled = disabled || rest.disabled;
   const isHidden = hidden || rest.hidden;
@@ -50,6 +52,7 @@ export const ListButton = React.forwardRef<
             e.preventDefault();
             return;
           }
+          tap();
           if (onClick) {
             e.preventDefault();
             onClick(e);

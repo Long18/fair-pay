@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useHaptics } from "@/hooks/use-haptics";
 import { useGo } from "@refinedev/core";
 import {
   Dialog,
@@ -22,6 +23,7 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const go = useGo();
+  const { tap } = useHaptics();
 
   const {
     results,
@@ -44,12 +46,13 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
 
   const handleSelectResult = useCallback(
     (result: SearchResult) => {
+      tap();
       addToRecentSearches(query);
       go({ to: result.link });
       onOpenChange(false);
       setQuery("");
     },
-    [query, go, onOpenChange, addToRecentSearches]
+    [tap, query, go, onOpenChange, addToRecentSearches]
   );
 
   const handleSelectRecentSearch = useCallback((search: string) => {
@@ -149,7 +152,7 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
                       variant="ghost"
                       size="sm"
                       className="h-auto p-0 text-xs text-foreground/70 hover:text-foreground"
-                      onClick={clearRecentSearches}
+                      onClick={() => { tap(); clearRecentSearches(); }}
                     >
                       Clear
                     </Button>

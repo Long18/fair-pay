@@ -1,5 +1,6 @@
 import React from "react";
 import { cn } from "@/lib/utils";
+import { useHaptics } from "@/hooks/use-haptics";
 import { EXPENSE_CATEGORIES, getCategoryMeta } from "../lib/categories";
 
 interface CategoryGridProps {
@@ -13,6 +14,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
   onChange,
   className,
 }) => {
+  const { tap } = useHaptics();
   return (
     <div className={cn("grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5", className)}>
       {EXPENSE_CATEGORIES.map((category) => {
@@ -24,7 +26,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
           <button
             key={category}
             type="button"
-            onClick={() => onChange(category)}
+            onClick={() => { tap(); onChange(category); }}
             className={cn(
               "flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all",
               "hover:bg-accent hover:border-accent-foreground/20",

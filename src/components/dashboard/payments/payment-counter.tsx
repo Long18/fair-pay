@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useHaptics } from '@/hooks/use-haptics';
 
 interface PaymentCounterProps {
   count: number;
@@ -7,6 +8,7 @@ interface PaymentCounterProps {
 }
 
 export const PaymentCounter = ({ count, onShowAll }: PaymentCounterProps) => {
+  const { tap } = useHaptics();
   return (
     <Card className="border-gray-200 shadow-sm">
       <CardHeader className="pb-3">
@@ -23,7 +25,7 @@ export const PaymentCounter = ({ count, onShowAll }: PaymentCounterProps) => {
         {onShowAll && (
           <Button
             variant="link"
-            onClick={onShowAll}
+            onClick={() => { tap(); onShowAll?.(); }}
             className="mt-4 text-sm text-gray-600 hover:text-gray-900"
           >
             Show all

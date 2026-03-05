@@ -20,7 +20,7 @@ import {
   CopyIcon,
 } from '@/components/ui/icons';
 import { formatNumber } from '@/lib/locale-utils';
-import { triggerHaptic } from '@/lib/haptics';
+import { useHaptics } from '@/hooks/use-haptics';
 import { useSepayOrder } from '@/hooks/payment/use-sepay-order';
 
 interface SepayPaymentDialogProps {
@@ -49,6 +49,7 @@ export function SepayPaymentDialog({
   onPaymentComplete,
 }: SepayPaymentDialogProps) {
   const { t } = useTranslation();
+  const { tap, success, warning } = useHaptics();
   const {
     order,
     qrUrl,
@@ -80,11 +81,11 @@ export function SepayPaymentDialog({
 
   useEffect(() => {
     if (status === 'PAID') {
-      triggerHaptic('success');
+      success();
       toast.success(t('payments.sepay.paymentSuccess', 'Payment confirmed!'));
       onPaymentComplete?.();
     } else if (status === 'PARTIAL_PAID') {
-      triggerHaptic('medium');
+      warning();
       const paidAmount = order?.paid_amount ?? 0;
       const remaining = amount - paidAmount;
       toast.info(
@@ -102,7 +103,7 @@ export function SepayPaymentDialog({
   const handleCopyCode = () => {
     if (paymentCode) {
       navigator.clipboard.writeText(paymentCode);
-      triggerHaptic('light');
+      tap();
       toast.success(t('payments.sepay.codeCopied', 'Payment code copied!'));
     }
   };

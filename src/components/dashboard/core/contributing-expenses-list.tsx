@@ -6,6 +6,7 @@ import { ContributingExpenseItem } from "./contributing-expense-item";
 import { useTranslation } from "react-i18next";
 import { useGo } from "@refinedev/core";
 import { ChevronRightIcon, CheckCircle2Icon, InboxIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 import { formatCurrency } from "@/lib/locale-utils";
 import { cn } from "@/lib/utils";
 
@@ -46,6 +47,7 @@ export function ContributingExpensesList({
 }: ContributingExpensesListProps) {
   const { t } = useTranslation();
   const go = useGo();
+  const { tap } = useHaptics();
   const [settledExpanded, setSettledExpanded] = useState(false);
 
   const { unsettled, settled, settledTotal, currency } = useMemo(() => {
@@ -113,7 +115,7 @@ export function ContributingExpensesList({
         {settled.length > 0 && (
           <>
             <button
-              onClick={() => setSettledExpanded((v) => !v)}
+              onClick={() => { tap(); setSettledExpanded((v) => !v); }}
               className={cn(
                 "w-full flex items-center gap-1.5 px-3 py-2 rounded-md",
                 "bg-status-success-bg/30",
@@ -179,7 +181,7 @@ export function ContributingExpensesList({
             variant="ghost"
             size="sm"
             className="w-full justify-between h-8 text-xs"
-            onClick={() => go({ to: `/debts/${counterpartyId}` })}
+            onClick={() => { tap(); go({ to: `/debts/${counterpartyId}` }); }}
           >
             <span>
               {t('dashboard.viewAllExpenses', 'View all {{count}} expenses', { count: expenses.length })}
@@ -194,7 +196,7 @@ export function ContributingExpensesList({
             variant="ghost"
             size="sm"
             className="w-full justify-between h-8 text-xs"
-            onClick={() => go({ to: `/debts/${counterpartyId}` })}
+            onClick={() => { tap(); go({ to: `/debts/${counterpartyId}` }); }}
           >
             <span>
               {t('dashboard.viewFullBreakdown', 'View full breakdown')}

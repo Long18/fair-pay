@@ -13,7 +13,7 @@ import { ExpenseSplit } from '@/modules/expenses/types';
 import { VietQRPaymentDialog } from './vietqr-payment-dialog';
 import { usePayeeBankSettings } from '@/hooks/payment/use-bank-settings';
 import { cn } from '@/lib/utils';
-import { triggerHaptic } from '@/lib/haptics';
+import { useHaptics } from '@/hooks/use-haptics';
 
 interface VietQRPaymentButtonProps {
   split: ExpenseSplit & {
@@ -40,6 +40,7 @@ export function VietQRPaymentButton({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
 
+  const { tap } = useHaptics();
   const { isConfigured, isLoading } = usePayeeBankSettings(payeeId);
 
   // Don't show button if loading
@@ -72,7 +73,7 @@ export function VietQRPaymentButton({
 
   const handleOpenDialog = () => {
     if (isOpening) return;
-    triggerHaptic('medium');
+    tap();
     setIsOpening(true);
     setDialogOpen(true);
   };

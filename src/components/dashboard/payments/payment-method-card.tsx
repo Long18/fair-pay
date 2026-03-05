@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import React from "react";
 import type { IconProps } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface PaymentMethodCardProps {
   icon: React.FC<IconProps>;
@@ -15,10 +16,11 @@ export const PaymentMethodCard = ({
   description,
   onClick,
 }: PaymentMethodCardProps) => {
+  const { tap } = useHaptics();
   return (
     <Card
       className="border-gray-200 hover:border-green-300 hover:shadow-md transition-all cursor-pointer"
-      onClick={onClick}
+      onClick={() => { tap(); onClick?.(); }}
     >
       <CardContent className="flex items-center gap-4 p-4">
         <div className="p-3 bg-gray-100 rounded-lg">

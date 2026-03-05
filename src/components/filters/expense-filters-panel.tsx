@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useHaptics } from "@/hooks/use-haptics";
 import {
   Sheet,
   SheetContent,
@@ -41,6 +42,7 @@ export const ExpenseFiltersPanel = ({
   open: controlledOpen,
   onOpenChange,
 }: ExpenseFiltersPanelProps) => {
+  const { tap } = useHaptics();
   const [internalOpen, setInternalOpen] = useState(false);
 
   const isControlled = controlledOpen !== undefined;
@@ -70,6 +72,7 @@ export const ExpenseFiltersPanel = ({
   );
 
   const handleApply = () => {
+    tap();
     const newFilters: Partial<ExpenseFilters> = {};
 
     if (dateOption !== 'custom') {
@@ -102,6 +105,7 @@ export const ExpenseFiltersPanel = ({
   };
 
   const handleClear = () => {
+    tap();
     setDateOption('last_30_days');
     setCustomStartDate(format(new Date(), 'yyyy-MM-dd'));
     setCustomEndDate(format(new Date(), 'yyyy-MM-dd'));

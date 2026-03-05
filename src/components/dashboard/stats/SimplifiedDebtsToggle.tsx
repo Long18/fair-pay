@@ -1,3 +1,4 @@
+import { useHaptics } from "@/hooks/use-haptics";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +40,7 @@ export function SimplifiedDebtsToggle({
   isUpdating = false,
 }: SimplifiedDebtsToggleProps) {
   const { t } = useTranslation();
+  const { tap } = useHaptics();
 
   // Calculate reduction percentage
   const reductionPercent = rawCount > 0
@@ -53,7 +55,7 @@ export function SimplifiedDebtsToggle({
         <Switch
           id="simplify-debts"
           checked={isSimplified}
-          onCheckedChange={onToggle}
+          onCheckedChange={(v) => { tap(); onToggle(v); }}
           disabled={disabled || isUpdating || rawCount === 0}
         />
         {isUpdating && (

@@ -4,6 +4,7 @@ import { CalendarIcon, DownloadIcon } from "@/components/ui/icons";
 import { RecurringExpense } from "@/modules/expenses/types/recurring";
 import { exportAllRecurringExpensesToCalendar } from "@/lib/calendar-export";
 import { useNotification } from "@refinedev/core";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface BulkCalendarExportProps {
   expenses: RecurringExpense[];
@@ -13,8 +14,10 @@ interface BulkCalendarExportProps {
 export function BulkCalendarExport({ expenses, disabled }: BulkCalendarExportProps) {
   const { t } = useTranslation();
   const { open: notify } = useNotification();
+  const { tap } = useHaptics();
 
   const handleExportAll = () => {
+    tap();
     if (expenses.length === 0) {
       notify?.({
         type: "error",

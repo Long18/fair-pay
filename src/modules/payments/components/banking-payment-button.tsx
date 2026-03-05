@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useHaptics } from "@/hooks/use-haptics";
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { BanknoteIcon } from '@/components/ui/icons';
@@ -29,6 +30,7 @@ export function BankingPaymentButton({
   onPaymentComplete,
 }: BankingPaymentButtonProps) {
   const { t } = useTranslation();
+  const { tap } = useHaptics();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
   
@@ -65,6 +67,7 @@ export function BankingPaymentButton({
 
   const handleOpenDialog = () => {
     if (isOpening) return;
+    tap();
     setIsOpening(true);
     setDialogOpen(true);
   };

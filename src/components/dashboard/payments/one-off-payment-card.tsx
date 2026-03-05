@@ -1,6 +1,7 @@
 import { DataCard } from "@/components/ui/data-card";
 import { Button } from "@/components/ui/button";
 import { WalletIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 interface OneOffPaymentCardProps {
   discountPercentage: number;
   discountedAmount: number;
@@ -14,6 +15,7 @@ export const OneOffPaymentCard = ({
   currency: _currency = "VND",
   onPayNow,
 }: OneOffPaymentCardProps) => {
+  const { success } = useHaptics();
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('vi-VN').format(value);
   };
@@ -44,7 +46,7 @@ export const OneOffPaymentCard = ({
       {onPayNow && (
         <DataCard.Footer>
           <Button
-            onClick={onPayNow}
+            onClick={() => { success(); onPayNow?.(); }}
             className="w-full bg-gray-900 hover:bg-gray-800 text-white font-bold py-6 text-base"
           >
             PAY NOW

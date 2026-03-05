@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/form";
 import { Loader2Icon } from "@/components/ui/icons";
 import { LoadingBeam } from "@/components/ui/loading-beam";
+import { useHaptics } from "@/hooks/use-haptics";
 
 // ─── Zod Schema ───────────────────────────────────────────────────
 
@@ -86,6 +87,7 @@ const SETTINGS_QUERY_KEY = ["admin", "donation-settings"];
 
 export function AdminDonationSettings() {
   const queryClient = useQueryClient();
+  const { tap, success } = useHaptics();
 
   const { data: settings, isLoading } = useQuery({
     queryKey: SETTINGS_QUERY_KEY,
@@ -183,6 +185,7 @@ export function AdminDonationSettings() {
         },
         {
           onSuccess: () => {
+            success();
             toast.success("Đã lưu cài đặt quyên góp thành công");
           },
           onError: (error) => {
@@ -232,7 +235,7 @@ export function AdminDonationSettings() {
                     <FormControl>
                       <Switch
                         checked={field.value}
-                        onCheckedChange={field.onChange}
+                        onCheckedChange={(v) => { tap(); field.onChange(v); }}
                       />
                     </FormControl>
                   </FormItem>

@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useTranslation } from "react-i18next";
 
 import { ArrowDownIcon, ArrowUpIcon, WalletIcon, CheckCircle2Icon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 interface BalanceFeedProps {
   disabled?: boolean;
 }
@@ -14,8 +15,10 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
   const { data: debts = [], isLoading } = useAggregatedDebts();
   const go = useGo();
   const { t } = useTranslation();
+  const { tap } = useHaptics();
 
   const handleRowClick = (debt: typeof debts[0]) => {
+    tap();
     if (!disabled && debt.counterparty_id) {
       go({ to: `/profile/${debt.counterparty_id}` });
     }

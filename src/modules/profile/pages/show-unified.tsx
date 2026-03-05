@@ -1,4 +1,5 @@
 import { useOne, useGo, useGetIdentity, useList, useUpdate } from "@refinedev/core";
+import { useHaptics } from "@/hooks/use-haptics";
 import { useParams, useSearchParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,7 @@ export const ProfileShowUnified = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const go = useGo();
+  const { tap, success, warning } = useHaptics();
   const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
 
@@ -111,6 +113,7 @@ export const ProfileShowUnified = () => {
   };
 
   const handleCancelEdit = () => {
+    tap();
     if (hasUnsavedChanges) {
       setShowUnsavedDialog(true);
     } else {
@@ -119,6 +122,7 @@ export const ProfileShowUnified = () => {
   };
 
   const confirmCancelEdit = () => {
+    warning();
     setHasUnsavedChanges(false);
     setShowUnsavedDialog(false);
     setEditMode(false);
@@ -385,6 +389,7 @@ export const ProfileShowUnified = () => {
 
       if (error) throw error;
 
+      success();
       toast.success(t('profile.profileUpdated', 'Profile updated successfully'));
       setHasUnsavedChanges(false);
       setEditMode(false);
@@ -416,6 +421,7 @@ export const ProfileShowUnified = () => {
 
       if (error) throw error;
 
+      success();
       toast.success(t('profile.passwordChanged', 'Password changed successfully'));
       setChangePasswordDialogOpen(false);
       setPasswordForm({ newPassword: "", confirmPassword: "" });
@@ -465,6 +471,7 @@ export const ProfileShowUnified = () => {
       if (data?.success) {
         const { splits_updated, total_amount } = data;
         if (splits_updated > 0) {
+          success();
           toast.success(
             t('profile.allDebtsSettled', 'All debts marked as settled') + 
             ` (${splits_updated} ${splits_updated === 1 ? 'split' : 'splits'})`
@@ -510,7 +517,7 @@ export const ProfileShowUnified = () => {
             <UserIcon size={48} className="mx-auto mb-4 text-muted-foreground/50" />
             <p className="text-muted-foreground">{t('profile.profileNotFound', 'Profile not found')}</p>
             <Button
-              onClick={() => go({ to: "/" })}
+              onClick={() => { tap(); go({ to: "/" }); }}
               className="mt-4 rounded-lg"
             >
               <ArrowLeftIcon size={16} className="mr-2" />
@@ -555,7 +562,7 @@ export const ProfileShowUnified = () => {
             <div className="hidden sm:flex items-center justify-between">
               <Button
                 variant="ghost"
-                onClick={() => go({ to: "/" })}
+                onClick={() => { tap(); go({ to: "/" }); }}
                 className="rounded-lg"
               >
                 <ArrowLeftIcon size={16} className="mr-2" />
@@ -564,7 +571,7 @@ export const ProfileShowUnified = () => {
 
               {isOwnProfile && !isEditMode && (
                 <Button
-                  onClick={() => setEditMode(true)}
+                  onClick={() => { tap(); setEditMode(true); }}
                   variant="outline"
                   size="sm"
                   className="rounded-lg"
@@ -650,7 +657,7 @@ export const ProfileShowUnified = () => {
                 >
                   <Tabs
                     value={activeTab}
-                    onValueChange={setActiveTab}
+                    onValueChange={(tab) => { tap(); setActiveTab(tab); }}
                     className="w-full"
                   >
                 <TabsList className="grid w-full rounded-lg" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
@@ -681,7 +688,7 @@ export const ProfileShowUnified = () => {
                 <SwipeableTabs
                   tabs={tabs}
                   activeTab={activeTab}
-                  onTabChange={setActiveTab}
+                  onTabChange={(tab) => { tap(); setActiveTab(tab); }}
                   className="mt-4"
                 >
                   {/* Activity Tab */}
@@ -719,7 +726,7 @@ export const ProfileShowUnified = () => {
                             <Switch
                               id="show-history"
                               checked={showHistory}
-                              onCheckedChange={setShowHistory}
+                              onCheckedChange={(v) => { tap(); setShowHistory(v); }}
                             />
                           </div>
                         </div>
@@ -751,7 +758,7 @@ export const ProfileShowUnified = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => go({ to: "/groups/create" })}
+                              onClick={() => { tap(); go({ to: "/groups/create" }); }}
                               className="rounded-lg"
                             >
                               <PlusIcon size={16} className="mr-2" />
@@ -779,7 +786,7 @@ export const ProfileShowUnified = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => go({ to: "/friends" })}
+                              onClick={() => { tap(); go({ to: "/friends" }); }}
                               className="rounded-lg"
                             >
                               <PlusIcon size={16} className="mr-2" />
@@ -809,9 +816,9 @@ export const ProfileShowUnified = () => {
       {!isEditMode && (
         <ProfileMobileNavigation
           isOwnProfile={isOwnProfile}
-          onEditClick={() => setEditMode(true)}
+          onEditClick={() => { tap(); setEditMode(true); }}
           onShareClick={handleShareProfile}
-          onSettleClick={() => setSettleDialogOpen(true)}
+          onSettleClick={() => { tap(); setSettleDialogOpen(true); }}
           showSettle={netBalance !== 0 && !isOwnProfile && (netBalance > 0 || isUserAdmin)}
         />
       )}
@@ -856,6 +863,7 @@ export const ProfileShowUnified = () => {
             <Button
               variant="outline"
               onClick={() => {
+                tap();
                 setChangePasswordDialogOpen(false);
                 setPasswordForm({ newPassword: "", confirmPassword: "" });
               }}
@@ -863,7 +871,7 @@ export const ProfileShowUnified = () => {
               {t('common.cancel', 'Cancel')}
             </Button>
             <Button
-              onClick={handleChangePassword}
+              onClick={() => { tap(); handleChangePassword(); }}
               disabled={!passwordForm.newPassword || !passwordForm.confirmPassword || passwordForm.newPassword !== passwordForm.confirmPassword}
             >
               {t('profile.updatePassword', 'Update Password')}

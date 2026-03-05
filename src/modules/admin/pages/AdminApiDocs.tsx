@@ -60,6 +60,8 @@ import {
 
 } from "@/components/ui/icons";
 
+import { useHaptics } from "@/hooks/use-haptics";
+
 // Catalog
 import { catalog, filterCatalog, getCatalogStats } from "../api-docs/catalog";
 import { useApiExecution } from "../api-docs/use-api-execution";
@@ -178,7 +180,9 @@ function httpStatusColor(status: number) {
 
 function CopyButton({ text, className }: { text: string; className?: string }) {
   const [copied, setCopied] = useState(false);
+  const { tap } = useHaptics();
   const handleCopy = async () => {
+    tap();
     await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -248,9 +252,10 @@ function EntryRow({
   isSelected: boolean;
   onSelect: () => void;
 }) {
+  const { tap } = useHaptics();
   return (
     <button
-      onClick={onSelect}
+      onClick={() => { tap(); onSelect(); }}
       style={{ contentVisibility: "auto", containIntrinsicSize: "120px" }}
       className={cn(
         "w-full text-left px-3 py-2.5 flex items-start gap-2 border-b border-border/30",
@@ -306,6 +311,7 @@ interface CatalogPanelProps {
 
 function CatalogPanel({ entries, filters, onFiltersChange, selectedId, onSelect, totalCount }: CatalogPanelProps) {
   const t = useTranslate();
+  const { tap } = useHaptics();
 
   const setFilter = useCallback(
     <K extends keyof ApiFilterState>(key: K, val: ApiFilterState[K]) =>
@@ -332,7 +338,7 @@ function CatalogPanel({ entries, filters, onFiltersChange, selectedId, onSelect,
           {filters.search && (
             <button
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              onClick={() => setFilter("search", "")}
+              onClick={() => { tap(); setFilter("search", ""); }}
               aria-label="Clear search"
             >
               <XIcon className="w-3.5 h-3.5" />
@@ -345,7 +351,7 @@ function CatalogPanel({ entries, filters, onFiltersChange, selectedId, onSelect,
       <div className="px-3 py-2 border-b flex items-center gap-2 flex-wrap">
         <Select
           value={filters.kind}
-          onValueChange={(v) => setFilter("kind", v as ApiFilterState["kind"])}
+          onValueChange={(v) => { tap(); setFilter("kind", v as ApiFilterState["kind"]); }}
         >
           <SelectTrigger className="h-7 text-xs w-[80px]">
             <SelectValue placeholder="Kind" />
@@ -359,7 +365,7 @@ function CatalogPanel({ entries, filters, onFiltersChange, selectedId, onSelect,
 
         <Select
           value={filters.risk}
-          onValueChange={(v) => setFilter("risk", v as ApiFilterState["risk"])}
+          onValueChange={(v) => { tap(); setFilter("risk", v as ApiFilterState["risk"]); }}
         >
           <SelectTrigger className="h-7 text-xs w-[80px]">
             <SelectValue placeholder="Risk" />
@@ -375,7 +381,7 @@ function CatalogPanel({ entries, filters, onFiltersChange, selectedId, onSelect,
 
         <Select
           value={filters.status}
-          onValueChange={(v) => setFilter("status", v as ApiFilterState["status"])}
+          onValueChange={(v) => { tap(); setFilter("status", v as ApiFilterState["status"]); }}
         >
           <SelectTrigger className="h-7 text-xs w-[90px]">
             <SelectValue placeholder="Status" />
@@ -393,9 +399,7 @@ function CatalogPanel({ entries, filters, onFiltersChange, selectedId, onSelect,
             variant="ghost"
             size="sm"
             className="h-7 px-2 text-xs text-muted-foreground"
-            onClick={() =>
-              onFiltersChange({ ...DEFAULT_FILTER_STATE, showAll: filters.showAll, search: filters.search })
-            }
+            onClick={() => { tap(); onFiltersChange({ ...DEFAULT_FILTER_STATE, showAll: filters.showAll, search: filters.search }); }}
           >
             <XIcon className="w-3 h-3 mr-1" />
             Clear
@@ -409,13 +413,14 @@ function CatalogPanel({ entries, filters, onFiltersChange, selectedId, onSelect,
           {entries.length} / {totalCount} endpoints
         </span>
         <button
-          onClick={() =>
+          onClick={() => {
+            tap();
             onFiltersChange({
               ...filters,
               showAll: !filters.showAll,
               usedInCode: !filters.showAll ? "all" : true,
-            })
-          }
+            });
+          }}
           className={cn(
             "flex items-center gap-1.5 text-[11px] rounded-full px-2.5 py-1 border transition-colors",
             filters.showAll
@@ -665,6 +670,7 @@ function rowsToRecord(rows: KVFieldRow[]): Record<string, string> {
 }
 
 function KVEditor({ label, rows, onChange, keyPlaceholder, valuePlaceholder, emptyHint }: KVEditorProps) {
+  const { tap } = useHaptics();
   const update = (id: string, patch: Partial<KVFieldRow>) => {
     onChange(rows.map((row) => (row.id === id ? { ...row, ...patch } : row)));
   };
@@ -681,7 +687,7 @@ function KVEditor({ label, rows, onChange, keyPlaceholder, valuePlaceholder, emp
           variant="ghost"
           size="sm"
           className="h-6 px-2 text-xs"
-          onClick={() => onChange([...rows, createKVFieldRow()])}
+          onClick={() => { tap(); onChange([...rows, createKVFieldRow()]); }}
         >
           + Add row
         </Button>
@@ -716,7 +722,7 @@ function KVEditor({ label, rows, onChange, keyPlaceholder, valuePlaceholder, emp
               variant="ghost"
               size="icon"
               className="h-8 w-8 shrink-0"
-              onClick={() => remove(row.id)}
+              onClick={() => { tap(); remove(row.id); }}
               aria-label={`Remove ${label} row`}
               disabled={row.required}
               title={row.required ? "Required parameter" : "Remove row"}
@@ -795,9 +801,11 @@ function RequestGuide({ entry }: { entry: ApiCatalogEntry }) {
 
 function ResponseViewer({ result }: { result: ApiExecutionResult }) {
   const [copied, setCopied] = useState(false);
+  const { tap } = useHaptics();
   const json = JSON.stringify(result.data, null, 2) ?? "";
 
   const handleCopy = async () => {
+    tap();
     await navigator.clipboard.writeText(json);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -884,6 +892,7 @@ function ExecutionTab({ entry }: { entry: ApiCatalogEntry }) {
   const [mutationModeEnabled, setMutationModeEnabled] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmPhrase, setConfirmPhrase] = useState("");
+  const { tap, warning } = useHaptics();
 
   // RPC args (JSON textarea)
   const [rpcArgsText, setRpcArgsText] = useState(buildInitialRpcArgs(entry));
@@ -912,6 +921,7 @@ function ExecutionTab({ entry }: { entry: ApiCatalogEntry }) {
   const isMutating = NEEDS_MUTATION_MODE.includes(entry.risk);
 
   const handleRun = useCallback(() => {
+    tap();
     if (isMutating && !mutationModeEnabled) return;
     if (isMutating) {
       setConfirmPhrase("");
@@ -920,7 +930,7 @@ function ExecutionTab({ entry }: { entry: ApiCatalogEntry }) {
     }
     doExecute();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMutating, mutationModeEnabled, rpcArgsText, queryRows, headerRows, bodyText]);
+  }, [isMutating, mutationModeEnabled, rpcArgsText, queryRows, headerRows, bodyText, tap]);
 
   const doExecute = useCallback(() => {
     if (entry.kind === "rpc") {
@@ -1014,7 +1024,7 @@ function ExecutionTab({ entry }: { entry: ApiCatalogEntry }) {
             variant={mutationModeEnabled ? "destructive" : "outline"}
             size="sm"
             className="h-7 text-xs"
-            onClick={() => setMutationModeEnabled((v) => !v)}
+            onClick={() => { tap(); setMutationModeEnabled((v) => !v); }}
           >
             {mutationModeEnabled ? "Disable" : "Enable mutation mode"}
           </Button>
@@ -1117,12 +1127,12 @@ function ExecutionTab({ entry }: { entry: ApiCatalogEntry }) {
           )}
         </Button>
         {isLoading && (
-          <Button variant="outline" size="sm" onClick={cancel}>
+          <Button variant="outline" size="sm" onClick={() => { tap(); cancel(); }}>
             Cancel
           </Button>
         )}
         {result && !isLoading && (
-          <Button variant="ghost" size="sm" onClick={clearResult}>
+          <Button variant="ghost" size="sm" onClick={() => { tap(); clearResult(); }}>
             <XIcon className="w-3.5 h-3.5 mr-1" />
             Clear
           </Button>
@@ -1177,13 +1187,14 @@ function ExecutionTab({ entry }: { entry: ApiCatalogEntry }) {
             autoComplete="off"
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+            <Button variant="outline" onClick={() => { tap(); setConfirmOpen(false); }}>
               Cancel
             </Button>
             <Button
               variant="destructive"
               disabled={confirmPhrase !== "EXECUTE"}
               onClick={() => {
+                warning();
                 setConfirmOpen(false);
                 doExecute();
               }}
@@ -1201,6 +1212,7 @@ function ExecutionTab({ entry }: { entry: ApiCatalogEntry }) {
 
 function EntryDetailPanel({ entry }: { entry: ApiCatalogEntry }) {
   const [tab, setTab] = useState("overview");
+  const { tap } = useHaptics();
 
   // Reset to overview when entry changes
   useEffect(() => {
@@ -1247,7 +1259,7 @@ function EntryDetailPanel({ entry }: { entry: ApiCatalogEntry }) {
       </CardHeader>
 
       {/* Tabs */}
-      <Tabs value={tab} onValueChange={setTab} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+      <Tabs value={tab} onValueChange={(v) => { tap(); setTab(v); }} className="flex flex-col flex-1 min-h-0 overflow-hidden">
         <TabsList className="shrink-0 mx-4 mt-3 justify-start h-9 w-fit">
           <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
           <TabsTrigger value="snippets" className="text-xs">Snippets</TabsTrigger>
@@ -1305,12 +1317,15 @@ export function AdminApiDocs() {
   );
   const stats = useMemo(() => getCatalogStats(catalog), []);
 
+  const { tap } = useHaptics();
+
   const handleSelect = useCallback(
     (entry: ApiCatalogEntry) => {
+      tap();
       setSelectedId(entry.id);
       if (isMobile) setSheetOpen(false);
     },
-    [isMobile]
+    [isMobile, tap]
   );
 
   return (
@@ -1326,7 +1341,7 @@ export function AdminApiDocs() {
         {isMobile && (
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => tap()}>
                 <FilterIcon className="w-4 h-4 mr-2" />
                 Browse
               </Button>

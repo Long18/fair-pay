@@ -10,6 +10,7 @@ import {
   useUserFriendlyName,
 } from "@refinedev/core";
 import { ArrowLeftIcon } from "@/components/ui/icons";
+import { useHaptics } from '@/hooks/use-haptics';
 import type { PropsWithChildren } from "react";
 
 type CreateViewProps = PropsWithChildren<{
@@ -36,6 +37,7 @@ export const CreateViewHeader = ({
   headerClassName,
 }: CreateHeaderProps) => {
   const back = useBack();
+  const { tap } = useHaptics();
 
   const getUserFriendlyName = useUserFriendlyName();
 
@@ -67,7 +69,7 @@ export const CreateViewHeader = ({
           headerClassName
         )}
       >
-        <Button variant="ghost" size="icon" onClick={back}>
+        <Button variant="ghost" size="icon" onClick={() => { tap(); back(); }}>
           <ArrowLeftIcon className="h-4 w-4" />
         </Button>
         <h2 className="text-2xl font-bold">{title}</h2>

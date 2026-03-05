@@ -61,6 +61,7 @@ import {
   CheckIcon,
 } from "@/components/ui/icons";
 import { CalendarExportMenu } from "@/components/calendar/calendar-export-menu";
+import { useHaptics } from '@/hooks/use-haptics';
 
 interface RecurringExpenseCardProps {
   recurring: RecurringExpense;
@@ -79,6 +80,7 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
   const { pauseRecurring, resumeRecurring } = useUpdateRecurringExpense();
   const { deleteRecurring } = useDeleteRecurringExpense();
   const { validateAndRun, isRunning } = useValidateRunCycle();
+  const { tap, success, warning } = useHaptics();
   const { open: notify } = useNotification();
   const { data: identity } = useGetIdentity<{ id: string }>();
   const currentUserId = identity?.id || '';
@@ -97,9 +99,11 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
   const cyclePeriodLabel = format(nextCycleDate, 'MMM yyyy', { locale: dateLocale });
 
   const handleValidateRunCycle = async () => {
+    tap();
     const result = await validateAndRun(recurring);
     setCycleResult(result);
     if (result.success) {
+      success();
       onUpdate?.();
     }
   };
@@ -165,6 +169,7 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
   }, [groupId, friendshipId, groupMembersQuery.data, friendshipQuery.data, template]);
 
   const handlePauseResume = async () => {
+    tap();
     try {
       setIsUpdating(true);
       if (recurring.is_active) {
@@ -193,6 +198,7 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
   };
 
   const handleDelete = async () => {
+    warning();
     try {
       setIsDeleting(true);
       await deleteRecurring(recurring.id);
@@ -299,7 +305,7 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
               <CalendarExportMenu expense={recurring} variant="icon" />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" onClick={() => tap()}>
                     <MoreVerticalIcon className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -307,7 +313,7 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
                 {/* Pay Upfront action - Requirements 5.1 */}
                 {recurring.is_active && (
                   <>
-                    <DropdownMenuItem onClick={() => setShowPrepaidDialog(true)}>
+                    <DropdownMenuItem onClick={() => { tap(); setShowPrepaidDialog(true); }}>
                       <BanknoteIcon className="mr-2 h-4 w-4" />
                       {t('recurring.prepaid.payUpfront', 'Pay upfront')}
                     </DropdownMenuItem>
@@ -315,7 +321,7 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
                   </>
                 )}
                 {onEdit && (
-                  <DropdownMenuItem onClick={() => onEdit(recurring)}>
+                  <DropdownMenuItem onClick={() => { tap(); onEdit(recurring); }}>
                     <PencilIcon className="mr-2 h-4 w-4" />
                     {t('recurring.edit', 'Edit')}
                   </DropdownMenuItem>
@@ -337,7 +343,7 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
                   )}
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => setShowDeleteDialog(true)}
+                  onClick={() => { tap(); setShowDeleteDialog(true); }}
                   className="text-destructive"
                   disabled={isDeleting}
                 >
@@ -484,7 +490,7 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
                 variant="outline"
                 size="sm"
                 className="w-full gap-2 border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800"
-                onClick={() => setShowPrepaidDialog(true)}
+                onClick={() => { tap(); setShowPrepaidDialog(true); }}
               >
                 <BanknoteIcon className="h-4 w-4" />
                 {t('recurring.prepaid.payUpfront', 'Pay upfront')}
@@ -500,6 +506,7 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
                   variant="ghost"
                   size="sm"
                   className="w-full justify-between mt-2 text-muted-foreground hover:text-foreground"
+                  onClick={() => tap()}
                 >
                   <span className="text-sm font-medium">
                     {t('prepaid.memberBalances', 'Member balances')}
@@ -517,7 +524,7 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
                   variant="outline"
                   size="sm"
                   className="w-full gap-2 border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800"
-                  onClick={() => setShowPrepaidDialog(true)}
+                  onClick={() => { tap(); setShowPrepaidDialog(true); }}
                 >
                   <BanknoteIcon className="mr-2 h-4 w-4" />
                   {t('prepaid.addPrepaid', 'Add prepaid for members')}

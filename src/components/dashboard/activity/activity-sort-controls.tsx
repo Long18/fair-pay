@@ -7,6 +7,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ArrowUpDownIcon } from "@/components/ui/icons";
+import { useHaptics } from '@/hooks/use-haptics';
 import { cn } from "@/lib/utils";
 
 // =============================================
@@ -39,6 +40,7 @@ export const ActivitySortControls: React.FC<ActivitySortControlsProps> = ({
   onSortChange,
   className,
 }) => {
+  const { tap } = useHaptics();
   const sortOptions: SortOptionConfig[] = [
     { value: "date-desc", label: "Date (Newest First)" },
     { value: "date-asc", label: "Date (Oldest First)" },
@@ -49,7 +51,7 @@ export const ActivitySortControls: React.FC<ActivitySortControlsProps> = ({
   return (
     <div className={cn("flex items-center gap-2", className)}>
       <ArrowUpDownIcon className="h-4 w-4 text-muted-foreground" />
-      <Select value={activeSort} onValueChange={onSortChange}>
+      <Select value={activeSort} onValueChange={(v) => { tap(); onSortChange(v as SortOption); }}>
         <SelectTrigger className="w-[200px] rounded-lg">
           <SelectValue placeholder="Sort by..." />
         </SelectTrigger>

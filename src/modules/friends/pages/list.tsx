@@ -14,6 +14,7 @@ import { RemoveFriendDialog } from "../components/remove-friend-dialog";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { CheckIcon, SearchIcon, XIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 
 export const FriendListContent = () => {
   const { t } = useTranslation();
@@ -24,6 +25,7 @@ export const FriendListContent = () => {
   const [removingFriend, setRemovingFriend] = useState<Friend | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { tap, warning } = useHaptics();
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
@@ -106,6 +108,7 @@ export const FriendListContent = () => {
   };
 
   const handleAccept = (friendshipId: string) => {
+    tap();
     toast.promise(
       fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/friendships?id=eq.${friendshipId}`, {
         method: 'PATCH',
@@ -125,6 +128,7 @@ export const FriendListContent = () => {
   };
 
   const handleReject = (friendshipId: string) => {
+    warning();
     deleteMutation.mutate(
       {
         resource: "friendships",
@@ -148,7 +152,7 @@ export const FriendListContent = () => {
 
   const confirmRemoveFriend = () => {
     if (!removingFriend) return;
-
+    warning();
     setIsRemoving(true);
     deleteMutation.mutate(
       {

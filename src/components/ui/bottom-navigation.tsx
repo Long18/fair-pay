@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Link, useLocation } from "react-router";
 import { cn } from "@/lib/utils";
+import { useHaptics } from "@/hooks/use-haptics";
 
 /**
  * Bottom Navigation Component
@@ -79,11 +80,12 @@ export function BottomNavigationItem({
 }: BottomNavigationItemProps) {
   const location = useLocation();
   const isActive = location.pathname === to || location.pathname.startsWith(`${to}/`);
+  const { tap } = useHaptics();
 
   return (
     <Link
       to={to}
-      onClick={onClick}
+      onClick={() => { tap(); onClick?.(); }}
       className={cn(
         // Layout
         "flex flex-col items-center justify-center gap-0.5",

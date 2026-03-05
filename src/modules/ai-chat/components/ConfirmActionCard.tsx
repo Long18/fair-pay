@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useHaptics } from "@/hooks/use-haptics";
 import { Button } from '@/components/ui/button';
 import { CheckIcon, XIcon, AlertCircleIcon } from '@/components/ui/icons';
 import type { PendingAction } from '../types';
@@ -16,6 +17,7 @@ export const ConfirmActionCard = memo(function ConfirmActionCard({
   onReject,
   isLoading,
 }: ConfirmActionCardProps) {
+  const { tap, success } = useHaptics();
   return (
     <div role="alert" aria-live="assertive" className="mx-3 my-2 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 p-3">
       <div className="flex items-start gap-2 mb-2">
@@ -49,7 +51,7 @@ export const ConfirmActionCard = memo(function ConfirmActionCard({
       <div className="flex gap-2 ml-6">
         <Button
           size="sm"
-          onClick={() => onConfirm(action.id)}
+          onClick={() => { success(); onConfirm(action.id); }}
           disabled={isLoading}
           className="gap-1"
           aria-label="Confirm action"
@@ -60,7 +62,7 @@ export const ConfirmActionCard = memo(function ConfirmActionCard({
         <Button
           size="sm"
           variant="outline"
-          onClick={() => onReject(action.id)}
+          onClick={() => { tap(); onReject(action.id); }}
           disabled={isLoading}
           aria-label="Cancel action"
         >

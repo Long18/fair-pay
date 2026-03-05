@@ -1,5 +1,6 @@
 import React from "react";
 import { useGo } from "@refinedev/core";
+import { useHaptics } from "@/hooks/use-haptics";
 import { Button } from "./button";
 import { cn } from "@/lib/utils";
 
@@ -24,8 +25,10 @@ export const FloatingActionButton: React.FC<FABProps> = ({
   className,
 }) => {
   const go = useGo();
+  const { tap } = useHaptics();
 
   const handleClick = () => {
+    tap();
     if (onClick) {
       onClick();
     } else if (href) {

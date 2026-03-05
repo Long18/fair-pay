@@ -2,6 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PlusIcon } from '@/components/ui/icons';
 import { useGo } from '@refinedev/core';
+import { useHaptics } from '@/hooks/use-haptics';
 
 interface EmptyGroupsStateProps {
   hasGroups: boolean; // true if search returned no results
@@ -9,6 +10,7 @@ interface EmptyGroupsStateProps {
 
 export function EmptyGroupsState({ hasGroups }: EmptyGroupsStateProps) {
   const go = useGo();
+  const { tap } = useHaptics();
 
   if (hasGroups) {
     // Search/filter returned no results
@@ -45,7 +47,7 @@ export function EmptyGroupsState({ hasGroups }: EmptyGroupsStateProps) {
           <div className="space-y-3">
             <Button
               size="lg"
-              onClick={() => go({ to: '/groups/create' })}
+              onClick={() => { tap(); go({ to: '/groups/create' }); }}
               className="w-full sm:w-auto"
             >
               <PlusIcon className="h-5 w-5 mr-2" />

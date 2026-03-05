@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useGo } from "@refinedev/core";
 
 import { EyeIcon, UserPlusIcon, Users2Icon, TrendingUpIcon, TrendingDownIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 /**
  * Friends Table Component
  *
@@ -40,6 +41,7 @@ interface FriendsTableProps {
 
 export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
   const go = useGo();
+  const { tap } = useHaptics();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('vi-VN').format(Math.abs(value));
@@ -95,7 +97,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
             </div>
             <div className="flex flex-col sm:flex-row gap-2 justify-center">
               <Button
-                onClick={() => go({ to: "/friends" })}
+                onClick={() => { tap(); go({ to: "/friends" }); }}
                 variant="default"
                 className="w-full sm:w-auto"
               >
@@ -103,7 +105,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
                 Add Friend
               </Button>
               <Button
-                onClick={() => go({ to: "/groups" })}
+                onClick={() => { tap(); go({ to: "/groups" }); }}
                 variant="outline"
                 className="w-full sm:w-auto"
               >
@@ -135,7 +137,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
             variant="outline"
             size="sm"
             className="w-full sm:w-auto"
-            onClick={() => go({ to: "/friends" })}
+            onClick={() => { tap(); go({ to: "/friends" }); }}
           >
             <UserPlusIcon className="h-4 w-4 mr-1" />
             Add
@@ -151,7 +153,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
               <Card
                 key={friend.counterparty_id}
                 className="hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => go({ to: `/friends/${friend.counterparty_id}` })}
+                onClick={() => { tap(); go({ to: `/friends/${friend.counterparty_id}` }); }}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between gap-3">
@@ -192,6 +194,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
                         className="h-7 text-xs"
                         onClick={(e) => {
                           e.stopPropagation();
+                          tap();
                           go({ to: `/friends/${friend.counterparty_id}` });
                         }}
                       >
@@ -224,7 +227,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
                   <TableRow
                     key={friend.counterparty_id}
                     className="hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={() => go({ to: `/friends/${friend.counterparty_id}` })}
+                    onClick={() => { tap(); go({ to: `/friends/${friend.counterparty_id}` }); }}
                   >
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -269,6 +272,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
+                          tap();
                           go({ to: `/friends/${friend.counterparty_id}` });
                         }}
                       >

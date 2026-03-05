@@ -6,6 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 import { formatNumber } from "@/lib/locale-utils";
 
 import { ReceiptIcon, HandCoinsIcon, ActivityIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 interface ActivityFeedProps {
   items: ActivityItem[];
   isLoading: boolean;
@@ -13,12 +14,14 @@ interface ActivityFeedProps {
 
 export const ActivityFeed = ({ items, isLoading }: ActivityFeedProps) => {
   const go = useGo();
+  const { tap } = useHaptics();
 
   const formatCurrency = (amount: number, currency: string) => {
     return `${formatNumber(amount)} ${currency}`;
   };
 
   const handleActivityClick = (item: ActivityItem) => {
+    tap();
     if (item.type === "expense") {
       go({ to: `/expenses/show/${item.id}` });
     } else if (item.group_id) {

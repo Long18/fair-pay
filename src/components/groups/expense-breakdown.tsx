@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { ReceiptIcon, HistoryIcon, BanknoteIcon } from '@/components/ui/icons';
 import { formatNumber, formatDate } from '@/lib/locale-utils';
 import { cn } from '@/lib/utils';
+import { useHaptics } from '@/hooks/use-haptics';
 
 interface ExpenseBreakdownItem {
   id: string;
@@ -37,6 +38,7 @@ export function ExpenseBreakdown({
   onSettleUp,
   userName,
 }: ExpenseBreakdownProps) {
+  const { success } = useHaptics();
   return (
     <div className="space-y-4">
       {/* Expense Breakdown */}
@@ -118,6 +120,7 @@ export function ExpenseBreakdown({
         <Button
           onClick={(e) => {
             e.stopPropagation();
+            success();
             onSettleUp();
           }}
           className="w-full"

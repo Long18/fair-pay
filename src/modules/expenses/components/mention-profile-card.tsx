@@ -8,6 +8,7 @@ import { supabaseClient } from "@/utility/supabaseClient";
 import { useTranslation } from "react-i18next";
 import { useGo } from "@refinedev/core";
 import { cn } from "@/lib/utils";
+import { useHaptics } from "@/hooks/use-haptics";
 import { formatDistanceToNow } from "date-fns";
 import { vi, enUS } from "date-fns/locale";
 
@@ -33,6 +34,7 @@ export const MentionProfileCard = memo(({
   children,
 }: MentionProfileCardProps) => {
   const { t, i18n } = useTranslation();
+  const { tap } = useHaptics();
   const go = useGo();
   const dateLocale = i18n.language === "vi" ? vi : enUS;
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -73,8 +75,9 @@ export const MentionProfileCard = memo(({
   }, [fetchProfile]);
 
   const handleViewProfile = useCallback(() => {
+    tap();
     go({ to: `/profile/${userId}` });
-  }, [go, userId]);
+  }, [go, userId, tap]);
 
   return (
     <HoverCard openDelay={200} closeDelay={100} onOpenChange={handleOpenChange}>

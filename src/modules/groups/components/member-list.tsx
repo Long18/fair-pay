@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { MemberCard } from "./member-card";
 import { PaginationControls, PaginationMetadata } from "@/components/ui/pagination-controls";
 import { SearchIcon, UserPlusIcon, UsersIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface MemberStats {
   expense_count: number;
@@ -48,6 +49,7 @@ export const MemberList = ({
   showHeader = true,
 }: MemberListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const { tap } = useHaptics();
 
   // Filter members based on search
   const filteredMembers = useMemo(() => {
@@ -121,7 +123,7 @@ export const MemberList = ({
             <Button
               variant="link"
               size="sm"
-              onClick={() => setSearchQuery("")}
+              onClick={() => { tap(); setSearchQuery(""); }}
               className="mt-2"
             >
               Clear search
@@ -169,7 +171,7 @@ export const MemberList = ({
             </Badge>
           </div>
           {isAdmin && onAddMember && (
-            <Button onClick={onAddMember} size="sm" className="w-full sm:w-auto">
+            <Button onClick={() => { tap(); onAddMember?.(); }} size="sm" className="w-full sm:w-auto">
               <UserPlusIcon className="h-4 w-4 mr-2" />
               Add Member
             </Button>

@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
+import { useHaptics } from "@/hooks/use-haptics";
 
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -47,6 +48,7 @@ function ActionButtonGroup({
   className,
   ...props
 }: ActionButtonGroupProps) {
+  const { tap, warning } = useHaptics();
   // Separate destructive and non-destructive actions
   const nonDestructiveActions = actions.filter((action) => !action.destructive);
   const destructiveActions = actions.filter((action) => action.destructive);
@@ -70,7 +72,7 @@ function ActionButtonGroup({
             {nonDestructiveActions.map((action, index) => (
               <DropdownMenuItem
                 key={index}
-                onClick={action.onClick}
+                onClick={() => { tap(); action.onClick(); }}
                 disabled={action.disabled}
               >
                 {action.icon && <action.icon className="size-4" />}
@@ -83,7 +85,7 @@ function ActionButtonGroup({
             {destructiveActions.map((action, index) => (
               <DropdownMenuItem
                 key={index}
-                onClick={action.onClick}
+                onClick={() => { warning(); action.onClick(); }}
                 disabled={action.disabled}
                 variant="destructive"
               >
@@ -115,7 +117,7 @@ function ActionButtonGroup({
         <Button
           key={index}
           variant={action.variant || "outline"}
-          onClick={action.onClick}
+          onClick={() => { tap(); action.onClick(); }}
           disabled={action.disabled}
           className="min-h-[44px] md:h-9"
         >
@@ -129,7 +131,7 @@ function ActionButtonGroup({
         <Button
           key={index}
           variant={action.variant || "destructive"}
-          onClick={action.onClick}
+          onClick={() => { warning(); action.onClick(); }}
           disabled={action.disabled}
           className={cn(
             "min-h-[44px] md:h-9",

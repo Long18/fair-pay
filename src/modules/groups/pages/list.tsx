@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useGo, useList, useGetIdentity } from '@refinedev/core';
+import { useHaptics } from '@/hooks/use-haptics';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -25,6 +26,7 @@ type SortType = 'recent' | 'oldest' | 'name' | 'balance';
 
 export const GroupListContent = () => {
   const { data: identity } = useGetIdentity<Profile>();
+  const { tap } = useHaptics();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [sortBy, setSortBy] = useState<SortType>('recent');
@@ -318,7 +320,7 @@ export const GroupListContent = () => {
 
           <Select
             value={filterType}
-            onValueChange={(v) => setFilterType(v as FilterType)}
+            onValueChange={(v) => { tap(); setFilterType(v as FilterType); }}
           >
             <SelectTrigger className="w-full sm:w-40">
               <SelectValue placeholder="Filter" />
@@ -335,7 +337,7 @@ export const GroupListContent = () => {
 
           <Select
             value={sortBy}
-            onValueChange={(v) => setSortBy(v as SortType)}
+            onValueChange={(v) => { tap(); setSortBy(v as SortType); }}
           >
             <SelectTrigger className="w-full sm:w-40">
               <SelectValue placeholder="Sort" />
@@ -404,6 +406,7 @@ export const GroupListContent = () => {
 
 export const GroupList = () => {
   const go = useGo();
+  const { tap } = useHaptics();
 
   return (
     <div className="container py-8 max-w-7xl">
@@ -416,7 +419,7 @@ export const GroupList = () => {
               Manage your expense groups
             </p>
           </div>
-          <Button onClick={() => go({ to: '/groups/create' })} size="lg">
+          <Button onClick={() => { tap(); go({ to: '/groups/create' }); }} size="lg">
             <PlusIcon className="h-4 w-4 mr-2" />
             New Group
           </Button>

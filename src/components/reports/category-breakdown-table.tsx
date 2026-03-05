@@ -12,6 +12,7 @@ import { formatNumber } from "@/lib/locale-utils";
 import { getCategoryMeta } from "@/modules/expenses";
 import { useState } from "react";
 import { ArrowUpIcon, ArrowDownIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface CategoryBreakdownTableProps {
   data: TopCategory[];
@@ -29,8 +30,10 @@ export function CategoryBreakdownTable({
 }: CategoryBreakdownTableProps) {
   const [sortField, setSortField] = useState<SortField>("total_amount");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const { tap } = useHaptics();
 
   const handleSort = (field: SortField) => {
+    tap();
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {

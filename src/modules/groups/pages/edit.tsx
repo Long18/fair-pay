@@ -9,11 +9,13 @@ import { Button } from "@/components/ui/button";
 import { LoadingBeam } from "@/components/ui/loading-beam";
 import { ArrowLeftIcon } from "@/components/ui/icons";
 import type { Profile } from "@/modules/profile/types";
+import { useHaptics } from "@/hooks/use-haptics";
 
 export const GroupEdit = () => {
   const { id } = useParams<{ id: string }>();
   const go = useGo();
   const { data: identity } = useGetIdentity<Profile>();
+  const { tap, success } = useHaptics();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { query: groupQuery } = useOne<Group>({
@@ -112,6 +114,7 @@ export const GroupEdit = () => {
       },
       {
         onSuccess: () => {
+          success();
           toast.success("Group updated successfully");
           go({ to: `/groups/show/${group.id}` });
         },
@@ -136,7 +139,7 @@ export const GroupEdit = () => {
       <div className="container mx-auto max-w-2xl px-4 py-6">
         <div className="text-center py-16 space-y-3">
           <p className="text-lg font-medium text-muted-foreground">Group not found</p>
-          <Button variant="outline" onClick={() => go({ to: "/groups" })}>
+          <Button variant="outline" onClick={() => { tap(); go({ to: "/groups" }); }}>
             Back to Groups
           </Button>
         </div>
@@ -151,7 +154,7 @@ export const GroupEdit = () => {
           variant="ghost"
           size="icon"
           className="h-9 w-9 shrink-0"
-          onClick={() => go({ to: `/groups/show/${group.id}` })}
+          onClick={() => { tap(); go({ to: `/groups/show/${group.id}` }); }}
           aria-label="Back to group"
         >
           <ArrowLeftIcon className="h-4 w-4" />

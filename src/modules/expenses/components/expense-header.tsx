@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreVerticalIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { useHaptics } from "@/hooks/use-haptics";
 import { buildExpenseShareUrl } from "../utils/share-url";
 
 interface ExpenseHeaderProps {
@@ -32,10 +33,12 @@ export const ExpenseHeader = ({
   className
 }: ExpenseHeaderProps) => {
   const { t } = useTranslation();
+  const { tap, success, warning } = useHaptics();
 
   const getShareUrl = () => buildExpenseShareUrl(expense, window.location.href);
 
   const handleShare = async () => {
+    tap();
     const shareUrl = getShareUrl();
 
     if (navigator.share) {
@@ -57,6 +60,7 @@ export const ExpenseHeader = ({
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(getShareUrl());
+      success();
       toast.success(t('common.linkCopied', 'Link copied to clipboard'));
     } catch (err) {
       toast.error(t('common.copyFailed', 'Failed to copy link'));
@@ -105,12 +109,12 @@ export const ExpenseHeader = ({
               {canEdit && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={onEdit}>
+                  <DropdownMenuItem onClick={() => { tap(); onEdit(); }}>
                     <PencilIcon className="h-4 w-4 mr-2" />
                     {t('common.edit', 'Edit')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={onDelete}
+                    onClick={() => { warning(); onDelete(); }}
                     className="text-destructive focus:text-destructive"
                   >
                     <Trash2Icon className="h-4 w-4 mr-2" />
@@ -168,7 +172,7 @@ export const ExpenseHeader = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={onEdit}
+                  onClick={() => { tap(); onEdit(); }}
                 >
                   <PencilIcon className="h-4 w-4 lg:mr-2" />
                   <span className="hidden lg:inline">{t('common.edit', 'Edit')}</span>
@@ -176,7 +180,7 @@ export const ExpenseHeader = ({
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={onDelete}
+                  onClick={() => { warning(); onDelete(); }}
                 >
                   <Trash2Icon className="h-4 w-4 lg:mr-2" />
                   <span className="hidden lg:inline">{t('common.delete', 'Delete')}</span>

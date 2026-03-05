@@ -17,6 +17,7 @@ import { TypingIndicator } from './TypingIndicator';
 import { useAiChat } from '../hooks/use-ai-chat';
 import type { Profile } from '@/modules/profile/types';
 import { getPuter, kickoffPuterSigninFromUserGesture, waitForPuter } from '@/lib/puter-auth';
+import { useHaptics } from '@/hooks/use-haptics';
 
 interface ChatPanelProps {
   open: boolean;
@@ -65,6 +66,7 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
   } = useAiChat();
   const [puterState, setPuterState] = useState<PuterConnectionState>('checking');
   const [puterConnectError, setPuterConnectError] = useState<string | null>(null);
+  const { tap } = useHaptics();
 
   const userInfo = useMemo(() => ({
     full_name: identity?.full_name,
@@ -95,6 +97,7 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
   }, []);
 
   const handleConnectPuter = useCallback(async () => {
+    tap();
     setPuterConnectError(null);
     setPuterState('connecting');
     try {
@@ -143,7 +146,7 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={clearChat}
+                onClick={() => { tap(); clearChat(); }}
                 className="h-11 w-11"
                 aria-label="Clear chat history"
               >
@@ -175,7 +178,7 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
                           <button
                             key={s}
                             type="button"
-                            onClick={() => handleSuggestion(s)}
+                            onClick={() => { tap(); handleSuggestion(s); }}
                             className="rounded-full border px-3 py-2.5 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer min-h-[44px]"
                           >
                             {s}
@@ -272,7 +275,7 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() => void refreshPuterConnection()}
+                    onClick={() => { tap(); void refreshPuterConnection(); }}
                     disabled={isPuterConnecting}
                     className="h-9"
                   >

@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AlertTriangleIcon } from "@/components/ui/icons";
 import { useTranslation } from "react-i18next";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface RemoveFriendDialogProps {
   open: boolean;
@@ -29,6 +30,7 @@ export const RemoveFriendDialog = ({
   isRemoving = false,
 }: RemoveFriendDialogProps) => {
   const { t } = useTranslation();
+  const { warning } = useHaptics();
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -76,7 +78,7 @@ export const RemoveFriendDialog = ({
             {t('common.cancel', 'Cancel')}
           </AlertDialogCancel>
           <AlertDialogAction
-            onClick={onConfirm}
+            onClick={() => { warning(); onConfirm(); }}
             disabled={isRemoving}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >

@@ -27,12 +27,14 @@ import {
   CreditCardIcon,
 } from '@/components/ui/icons';
 import { useSepaySettings } from '@/hooks/payment/use-sepay-settings';
+import { useHaptics } from '@/hooks/use-haptics';
 import { isAdmin } from '@/lib/rbac';
 import { Profile } from '@/modules/profile/types';
 import { SepayConfig } from '@/types/user-settings';
 
 export function SepaySettings() {
   const { t } = useTranslation();
+  const { success, warning } = useHaptics();
   const { data: identity } = useGetIdentity<Profile>();
   const { sepayConfig, isLoading, isSaving, saveSepayConfig, clearSepayConfig, isConfigured } = useSepaySettings();
   const [userIsAdmin, setUserIsAdmin] = useState(false);
@@ -71,6 +73,7 @@ export function SepaySettings() {
 
     try {
       await saveSepayConfig(formData);
+      success();
       toast.success(t('settings.sepay.saved', 'SePay settings saved successfully'));
     } catch {
       toast.error(t('settings.sepay.saveError', 'Failed to save SePay settings'));
@@ -78,6 +81,7 @@ export function SepaySettings() {
   };
 
   const handleClear = async () => {
+    warning();
     try {
       await clearSepayConfig();
       setFormData({ api_token: '', bank_account_number: '', bank_name: '', account_holder_name: '' });

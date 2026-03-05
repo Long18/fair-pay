@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { type BaseKey, useCreateButton } from "@refinedev/core";
 import React from "react";
+import { useHaptics } from "@/hooks/use-haptics";
 
 import { PlusIcon } from "@/components/ui/icons";
 type CreateButtonProps = {
@@ -34,6 +35,7 @@ export const CreateButton = React.forwardRef<
     accessControl,
     meta,
   });
+  const { tap } = useHaptics();
 
   const isDisabled = disabled || rest.disabled;
   const isHidden = hidden || rest.hidden;
@@ -50,6 +52,7 @@ export const CreateButton = React.forwardRef<
             e.preventDefault();
             return;
           }
+          tap();
           if (onClick) {
             e.preventDefault();
             onClick(e);

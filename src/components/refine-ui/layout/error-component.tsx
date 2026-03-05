@@ -10,6 +10,7 @@ import { useGo, useResourceParams, useTranslate } from "@refinedev/core";
 import { useEffect, useState } from "react";
 
 import { ChevronLeftIcon, InfoIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 /**
  * When the app is navigated to a non-existent route, refine shows a default error page.
  * A custom error component can be used for this error page.
@@ -21,6 +22,7 @@ export function ErrorComponent() {
 
   const translate = useTranslate();
   const go = useGo();
+  const { tap } = useHaptics();
 
   const { resource, action } = useResourceParams();
 
@@ -125,6 +127,7 @@ export function ErrorComponent() {
 
         <Button
           onClick={() => {
+            tap();
             go({ to: "/" });
           }}
           className={cn("flex", "items-center", "gap-2", "mx-auto")}

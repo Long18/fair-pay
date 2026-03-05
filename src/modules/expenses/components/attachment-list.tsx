@@ -18,6 +18,7 @@ import { useState } from "react";
 import { formatDate } from "@/lib/locale-utils";
 
 import { DownloadIcon, Trash2Icon, FileImageIcon, EyeIcon, FileIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 interface AttachmentListProps {
   attachments: Attachment[];
   canDelete?: boolean;
@@ -29,6 +30,7 @@ export const AttachmentList = ({
   canDelete = false,
   onDelete,
 }: AttachmentListProps) => {
+  const { tap, warning } = useHaptics();
   const { downloadAttachment, deleteAttachment, getAttachmentUrl } = useAttachments();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [viewingUrl, setViewingUrl] = useState<string | null>(null);
@@ -40,6 +42,7 @@ export const AttachmentList = ({
   }
 
   const handleDelete = async (attachment: Attachment) => {
+    warning();
     setDeletingId(attachment.id);
     const success = await deleteAttachment(attachment);
     if (success && onDelete) {
@@ -125,7 +128,7 @@ export const AttachmentList = ({
                         <Button
                           size="icon"
                           variant="secondary"
-                          onClick={() => setViewingUrl(imageUrl)}
+                          onClick={() => { tap(); setViewingUrl(imageUrl); }}
                           className="shadow-lg"
                         >
                           <EyeIcon className="h-4 w-4" />
@@ -133,7 +136,7 @@ export const AttachmentList = ({
                         <Button
                           size="icon"
                           variant="secondary"
-                          onClick={() => downloadAttachment(attachment)}
+                          onClick={() => { tap(); downloadAttachment(attachment); }}
                           className="shadow-lg"
                         >
                           <DownloadIcon className="h-4 w-4" />
@@ -197,7 +200,7 @@ export const AttachmentList = ({
                     size="sm"
                     variant="outline"
                     className="flex-1"
-                    onClick={() => downloadAttachment(attachment)}
+                    onClick={() => { tap(); downloadAttachment(attachment); }}
                   >
                     <DownloadIcon className="h-4 w-4 mr-1" />
                     Download

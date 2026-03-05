@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useHaptics } from '@/hooks/use-haptics';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SpendingInsight } from "@/hooks/analytics/use-spending-insights";
 import {
@@ -28,6 +29,7 @@ export function InsightsPanel({
   isLoading = false,
   title = "Spending Insights",
 }: InsightsPanelProps) {
+  const { tap } = useHaptics();
   // ── collapse state, persisted via localStorage ────────────────────────
   const [expanded, setExpanded] = useState<boolean>(() => {
     try {
@@ -58,6 +60,7 @@ export function InsightsPanel({
   }, [expanded]);
 
   const handleToggle = () => {
+    tap();
     hasToggled.current = true;
     setExpanded((prev) => !prev);
   };

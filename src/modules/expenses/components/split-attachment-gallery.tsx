@@ -12,6 +12,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EyeIcon, DownloadIcon, FileIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface SplitAttachmentGalleryProps {
   attachments: Attachment[];
@@ -22,6 +23,7 @@ export const SplitAttachmentGallery = ({
   attachments,
   userName,
 }: SplitAttachmentGalleryProps) => {
+  const { tap } = useHaptics();
   const { downloadAttachment, getAttachmentUrl } = useAttachments();
   const [viewingUrl, setViewingUrl] = useState<string | null>(null);
   const [viewingFileName, setViewingFileName] = useState<string>("");
@@ -33,6 +35,7 @@ export const SplitAttachmentGallery = ({
   const isImage = (mimeType: string) => mimeType.startsWith("image/");
 
   const handleView = (attachment: Attachment) => {
+    tap();
     setViewingUrl(getAttachmentUrl(attachment.storage_path));
     setViewingFileName(attachment.file_name);
   };
@@ -75,6 +78,7 @@ export const SplitAttachmentGallery = ({
                     className="h-8 w-8"
                     onClick={(e) => {
                       e.stopPropagation();
+                      tap();
                       handleView(attachment);
                     }}
                   >
@@ -87,6 +91,7 @@ export const SplitAttachmentGallery = ({
                   className="h-8 w-8"
                   onClick={(e) => {
                     e.stopPropagation();
+                    tap();
                     downloadAttachment(attachment);
                   }}
                 >

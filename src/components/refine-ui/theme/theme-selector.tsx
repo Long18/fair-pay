@@ -16,6 +16,7 @@ import { SunIcon, MoonIcon, MonitorIcon, PaletteIcon } from "@/components/ui/ico
 import { getThemeVariantsByGroup, parseThemeVariant, themePalettes, type ThemeColors } from "@/lib/theme-palettes";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
+import { useHaptics } from "@/hooks/use-haptics";
 
 type ThemeSelectorProps = {
   className?: string;
@@ -24,6 +25,7 @@ type ThemeSelectorProps = {
 export function ThemeSelector({ className }: ThemeSelectorProps) {
   const { themeVariant, setThemeVariant } = useTheme();
   const { t } = useTranslation();
+  const { tap } = useHaptics();
   const currentVariant = parseThemeVariant(themeVariant);
   const [activeTab, setActiveTab] = useState<string>(currentVariant.mode);
   const [open, setOpen] = useState(false);
@@ -79,6 +81,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
     const isEven = index % 2 === 0;
 
     const handleClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
+      tap();
       // Capture click coordinates for circular reveal animation
       const { clientX, clientY } = event;
 
@@ -170,7 +173,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
         <DropdownMenuLabel className="px-2 py-1.5">{t("theme.selectTheme")}</DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={(v) => { tap(); setActiveTab(v); }} className="w-full">
           <TabsList className="w-full grid grid-cols-3 mb-2">
             <TabsTrigger value="light" className="gap-1.5">
               <SunIcon className="h-3.5 w-3.5" />

@@ -19,6 +19,7 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
 } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface SimplifiedDebtsProps {
   debts: AggregatedDebt[];
@@ -165,6 +166,7 @@ const DebtRow: React.FC<DebtRowProps> = React.memo(
   ({ debt, isExpanded, onToggle }) => {
     const { t } = useTranslation();
     const go = useGo();
+    const { tap } = useHaptics();
     const { expenses, isLoading } = useContributingExpenses(
       isExpanded ? (debt.counterparty_id || "") : ""
     );
@@ -181,7 +183,7 @@ const DebtRow: React.FC<DebtRowProps> = React.memo(
         {/* Clickable header row */}
         <div
           className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 cursor-pointer"
-          onClick={onToggle}
+          onClick={() => { tap(); onToggle(); }}
           role="button"
           tabIndex={0}
           onKeyDown={(e) => {
@@ -275,6 +277,7 @@ const DebtRow: React.FC<DebtRowProps> = React.memo(
                   className="w-full gap-2 h-9"
                   onClick={(e) => {
                     e.stopPropagation();
+                    tap();
                     go({ to: `/debts/${debt.counterparty_id}` });
                   }}
                 >

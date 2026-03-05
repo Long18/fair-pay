@@ -44,6 +44,7 @@ import { NotificationPanel } from "@/modules/notifications";
 import { SearchModal, useSearchShortcut } from "@/components/global-search";
 import { Profile } from "@/modules/profile/types";
 import { useIsAdmin } from "@/modules/admin/hooks/use-is-admin";
+import { useHaptics } from "@/hooks/use-haptics";
 
 import {
   FairPayIcon,
@@ -145,10 +146,11 @@ export function NavBar() {
 
 function NavLogo() {
   const go = useGo();
+  const { tap } = useHaptics();
 
   return (
     <button
-      onClick={() => go({ to: "/" })}
+      onClick={() => { tap(); go({ to: "/" }); }}
       className={cn(
         "flex items-center gap-2",
         "hover:opacity-80",
@@ -207,6 +209,7 @@ type NavItemProps = {
 function NavItem({ item, isActive, onClick, showLabel = true }: NavItemProps) {
   const Link = useLink();
   const { t } = useTranslation();
+  const { tap } = useHaptics();
 
   const label = getDisplayName(item, t);
   const icon = item.meta?.icon ?? item.icon;
@@ -222,7 +225,7 @@ function NavItem({ item, isActive, onClick, showLabel = true }: NavItemProps) {
           ? "bg-primary/10 text-primary"
           : "text-muted-foreground hover:text-foreground hover:bg-accent"
       )}
-      onClick={onClick}
+      onClick={() => { tap(); onClick?.(); }}
     >
       <ItemIcon icon={icon} isActive={isActive} />
       {showLabel && <span className="hidden lg:inline">{label}</span>}
@@ -250,6 +253,7 @@ function NavActions() {
   const [searchOpen, setSearchOpen] = useState(false);
   const { t } = useTranslation();
   const isMobile = useIsMobile();
+  const { tap } = useHaptics();
 
   useSearchShortcut(() => setSearchOpen(true));
 
@@ -266,7 +270,7 @@ function NavActions() {
               "rounded-full",
               "hover:bg-accent"
             )}
-            onClick={() => setSearchOpen(true)}
+            onClick={() => { tap(); setSearchOpen(true); }}
             aria-label={t("header.search")}
           >
             <SearchIcon className="h-4 w-4 md:h-5 md:w-5" />
@@ -392,6 +396,7 @@ type MobileNavItemProps = {
 function MobileNavItem({ item, isActive, onClick }: MobileNavItemProps) {
   const Link = useLink();
   const { t } = useTranslation();
+  const { tap } = useHaptics();
 
   const label = getDisplayName(item, t);
   const icon = item.meta?.icon ?? item.icon;
@@ -407,7 +412,7 @@ function MobileNavItem({ item, isActive, onClick }: MobileNavItemProps) {
           ? "bg-primary/10 text-primary"
           : "text-foreground hover:bg-accent"
       )}
-      onClick={onClick}
+      onClick={() => { tap(); onClick(); }}
     >
       <ItemIcon icon={icon} isActive={isActive} />
       <span>{label}</span>
@@ -424,6 +429,7 @@ function UserDropdown() {
   const go = useGo();
   const authProvider = useActiveAuthProvider();
   const isMobile = useIsMobile();
+  const { tap, warning } = useHaptics();
 
   // Check if user is admin
   const { isAdmin } = useIsAdmin();
@@ -435,7 +441,7 @@ function UserDropdown() {
   // Show Login button for unauthenticated users
   if (!identity) {
     return (
-      <Button variant="default" size="sm" onClick={() => go({ to: "/login" })}>
+      <Button variant="default" size="sm" onClick={() => { tap(); go({ to: "/login" }); }}>
         {t("auth.login")}
       </Button>
     );
@@ -479,13 +485,13 @@ function UserDropdown() {
         </div>
 
         <DropdownMenuItem
-          onClick={() => go({ to: `/profile/${identity.id}?edit=true` })}
+          onClick={() => { tap(); go({ to: `/profile/${identity.id}?edit=true` }); }}
         >
           <UserIcon className="h-4 w-4" />
           <span>{t("auth.editProfile")}</span>
         </DropdownMenuItem>
 
-        <DropdownMenuItem onClick={() => go({ to: "/settings" })}>
+        <DropdownMenuItem onClick={() => { tap(); go({ to: "/settings" }); }}>
           <SettingsIcon className="h-4 w-4" />
           <span>{t("settings.title")}</span>
         </DropdownMenuItem>
@@ -493,21 +499,21 @@ function UserDropdown() {
         {isAdmin && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => go({ to: "/admin" })}>
+            <DropdownMenuItem onClick={() => { tap(); go({ to: "/admin" }); }}>
               <LayoutDashboardIcon className="h-4 w-4" />
               <span>Admin Dashboard</span>
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => go({ to: "/settings/donation" })}
+              onClick={() => { tap(); go({ to: "/settings/donation" }); }}
             >
               <HeartIcon className="h-4 w-4" />
               <span>{t("settings.donation.title", "Donation Settings")}</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => go({ to: "/settings/bank" })}>
+            <DropdownMenuItem onClick={() => { tap(); go({ to: "/settings/bank" }); }}>
               <BanknoteIcon className="h-4 w-4" />
               <span>{t("settings.bank.title", "Bank Settings")}</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => go({ to: "/settings/sepay" })}>
+            <DropdownMenuItem onClick={() => { tap(); go({ to: "/settings/sepay" }); }}>
               <CreditCardIcon className="h-4 w-4" />
               <span>{t("settings.sepay.title", "SePay Settings")}</span>
             </DropdownMenuItem>
@@ -516,7 +522,7 @@ function UserDropdown() {
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem onClick={() => logout()}>
+        <DropdownMenuItem onClick={() => { warning(); logout(); }}>
           <LogOutIcon
             className={cn("h-4 w-4", "text-destructive")}
           />

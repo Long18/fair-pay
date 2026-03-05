@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useHaptics } from "@/hooks/use-haptics";
 
 import { XIcon } from "@/components/ui/icons";
 interface FilterChipProps {
@@ -11,6 +12,7 @@ interface FilterChipProps {
 }
 
 export const FilterChip = ({ label, value, onRemove, className }: FilterChipProps) => {
+  const { tap } = useHaptics();
   return (
     <Badge
       variant="secondary"
@@ -27,6 +29,7 @@ export const FilterChip = ({ label, value, onRemove, className }: FilterChipProp
         className="h-3 w-3 p-0 hover:bg-transparent ml-0.5"
         onClick={(e) => {
           e.stopPropagation();
+          tap();
           onRemove();
         }}
       >

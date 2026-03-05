@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface Tab {
   id: string;
@@ -12,13 +13,14 @@ interface TabNavigationProps {
 }
 
 export const TabNavigation = ({ tabs, activeTab, onTabChange }: TabNavigationProps) => {
+  const { tap } = useHaptics();
   return (
     <div className="border-b border-gray-200">
       <nav className="flex gap-8">
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => onTabChange(tab.id)}
+            onClick={() => { tap(); onTabChange(tab.id); }}
             className={cn(
               "pb-4 px-1 text-base font-medium transition-colors relative",
               activeTab === tab.id

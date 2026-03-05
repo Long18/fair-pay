@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { BellIcon, MailIcon, CalendarIcon, CheckCircle2Icon, InfoIcon } from "@/components/ui/icons";
 import { useNotification } from "@refinedev/core";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface ReminderSettings {
   emailReminders: boolean;
@@ -40,6 +41,7 @@ const DEFAULT_SETTINGS: ReminderSettings = {
 export function ReminderSettingsComponent() {
   const { t } = useTranslation();
   const { open: notify } = useNotification();
+  const { tap, success } = useHaptics();
   const [settings, setSettings] = useState<ReminderSettings>(() => {
     const saved = localStorage.getItem("recurring-reminder-settings");
     return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
@@ -56,6 +58,7 @@ export function ReminderSettingsComponent() {
   };
 
   const handleSave = () => {
+    success();
     setIsSaving(true);
 
     // Save to localStorage (in production, this would be an API call)
@@ -73,6 +76,7 @@ export function ReminderSettingsComponent() {
   };
 
   const handleTestEmail = () => {
+    tap();
     notify?.({
       type: "success",
       message: t("settings.testEmailSent", "Test email sent"),
@@ -314,7 +318,7 @@ export function ReminderSettingsComponent() {
       {/* Save Button */}
       {hasChanges && (
         <div className="flex justify-end gap-2 sticky bottom-4">
-          <Button variant="outline" onClick={() => window.location.reload()}>
+          <Button variant="outline" onClick={() => { tap(); window.location.reload(); }}>
             {t("common.cancel", "Cancel")}
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>

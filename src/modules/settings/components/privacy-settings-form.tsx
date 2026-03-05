@@ -15,6 +15,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { UserSettings, PROFILE_VISIBILITY_OPTIONS, ProfileVisibility } from '../types';
 import { Loader2Icon } from "@/components/ui/icons";
 import { useTranslation } from 'react-i18next';
+import { useHaptics } from '@/hooks/use-haptics';
 
 const privacySettingsSchema = z.object({
   allow_friend_requests: z.boolean(),
@@ -30,6 +31,7 @@ interface PrivacySettingsFormProps {
 
 export function PrivacySettingsForm({ settings, onSave, isUpdating }: PrivacySettingsFormProps) {
   const { t } = useTranslation();
+  const { tap, success } = useHaptics();
   const form = useForm({
     resolver: zodResolver(privacySettingsSchema),
     defaultValues: {
@@ -41,6 +43,7 @@ export function PrivacySettingsForm({ settings, onSave, isUpdating }: PrivacySet
 
   const handleSubmit = async (values: z.infer<typeof privacySettingsSchema>) => {
     await onSave(values);
+    success();
   };
 
   return (
@@ -62,7 +65,7 @@ export function PrivacySettingsForm({ settings, onSave, isUpdating }: PrivacySet
               <FormControl>
                 <Switch
                   checked={field.value}
-                  onCheckedChange={field.onChange}
+                  onCheckedChange={(v) => { tap(); field.onChange(v); }}
                 />
               </FormControl>
             </FormItem>
@@ -85,7 +88,7 @@ export function PrivacySettingsForm({ settings, onSave, isUpdating }: PrivacySet
               <FormControl>
                 <Switch
                   checked={field.value}
-                  onCheckedChange={field.onChange}
+                  onCheckedChange={(v) => { tap(); field.onChange(v); }}
                 />
               </FormControl>
             </FormItem>
@@ -103,7 +106,7 @@ export function PrivacySettingsForm({ settings, onSave, isUpdating }: PrivacySet
               </FormDescription>
               <FormControl>
                 <RadioGroup
-                  onValueChange={field.onChange}
+                  onValueChange={(v) => { tap(); field.onChange(v); }}
                   defaultValue={field.value}
                   className="flex flex-col space-y-1"
                 >

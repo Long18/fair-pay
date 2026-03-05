@@ -1,5 +1,6 @@
 import * as React from "react";
 import { useNavigate } from "react-router";
+import { useHaptics } from "@/hooks/use-haptics";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ArrowLeftIcon } from "@/components/ui/icons";
@@ -49,8 +50,10 @@ export function MobileAppBar({
   ...props
 }: MobileAppBarProps) {
   const navigate = useNavigate();
+  const { tap } = useHaptics();
 
   const handleBack = () => {
+    tap();
     if (onBack) {
       onBack();
     } else {

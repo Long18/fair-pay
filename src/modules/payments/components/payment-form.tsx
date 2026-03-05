@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { CalendarIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { PaymentFormValues } from "../types";
@@ -61,6 +62,7 @@ export const PaymentForm = ({
   onSubmit,
   isLoading,
 }: PaymentFormProps) => {
+  const { tap, success } = useHaptics();
   const form = useForm({
     resolver: zodResolver(paymentSchema),
     defaultValues: {
@@ -80,6 +82,7 @@ export const PaymentForm = ({
       from_user: fromUserId,
       context_type: "group" as const,
     };
+    success();
     onSubmit(formValues);
   };
 
@@ -100,7 +103,7 @@ export const PaymentForm = ({
           render={({ field }) => (
             <FormItem>
               <FormLabel>To</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select onValueChange={(v) => { tap(); field.onChange(v); }} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select who you're paying" />
@@ -161,6 +164,7 @@ export const PaymentForm = ({
                     <FormControl>
                       <Button
                         variant="outline"
+                        onClick={() => tap()}
                         className={cn(
                           "w-full pl-3 text-left font-normal",
                           !field.value && "text-muted-foreground"

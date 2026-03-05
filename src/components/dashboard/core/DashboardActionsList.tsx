@@ -1,6 +1,7 @@
 import { useGo } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
 import { PlusCircleIcon, BanknoteIcon, UsersIcon, UserPlusIcon, ChevronRightIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 import {
   Tooltip,
   TooltipContent,
@@ -15,6 +16,7 @@ interface DashboardActionsListProps {
 export function DashboardActionsList({ disabled = false }: DashboardActionsListProps) {
   const go = useGo();
   const { t } = useTranslation();
+  const { tap } = useHaptics();
 
   const actions = [
     { icon: PlusCircleIcon, title: t('dashboard.addExpense'), desc: t('dashboard.recordNewExpense'), path: "/expenses/create" },
@@ -24,6 +26,7 @@ export function DashboardActionsList({ disabled = false }: DashboardActionsListP
   ];
 
   const handleClick = (path: string) => {
+    tap();
     if (disabled) {
       go({ to: "/login" });
     } else {

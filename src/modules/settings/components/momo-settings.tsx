@@ -12,9 +12,11 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { AlertCircleIcon, CheckIcon, SettingsIcon } from '@/components/ui/icons';
 import { useMomoSettings } from '@/hooks/payment/use-momo-settings';
+import { useHaptics } from '@/hooks/use-haptics';
 
 export function MomoSettings() {
   const { t } = useTranslation();
+  const { success } = useHaptics();
   const { data: identity } = useGetIdentity<Profile>();
   const { settings, isLoading, updateSettings, isAdmin } = useMomoSettings();
   const [formData, setFormData] = useState({
@@ -44,6 +46,7 @@ export function MomoSettings() {
     setIsSaving(true);
     try {
       await updateSettings(formData);
+      success();
       toast.success(t('settings.momo.saved', 'MoMo settings saved successfully'));
     } catch (error) {
       console.error('Error saving MoMo settings:', error);

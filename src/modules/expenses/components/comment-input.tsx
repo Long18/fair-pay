@@ -6,6 +6,7 @@ import { SendIcon, AtSignIcon, UsersIcon, MessageSquareIcon, SmileIcon } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "react-i18next";
+import { useHaptics } from '@/hooks/use-haptics';
 import { cn } from "@/lib/utils";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { init, SearchIndex } from "emoji-mart";
@@ -44,6 +45,7 @@ export const CommentInput = memo(({
   customReactions = [],
 }: CommentInputProps) => {
   const { t } = useTranslation();
+  const { tap } = useHaptics();
   const [content, setContent] = useState("");
   const [mentionedIds, setMentionedIds] = useState<Set<string>>(new Set());
   const [mentionOpen, setMentionOpen] = useState(false);
@@ -84,11 +86,12 @@ export const CommentInput = memo(({
   const handleSubmit = useCallback(async () => {
     const trimmed = content.trim();
     if (!trimmed || isSubmitting) return;
+    tap();
     await onSubmit(trimmed, Array.from(mentionedIds));
     setContent("");
     setMentionedIds(new Set());
     insertedMentions.current.clear();
-  }, [content, mentionedIds, isSubmitting, onSubmit]);
+  }, [content, mentionedIds, isSubmitting, onSubmit, tap]);
 
   // Insert emoji at cursor, replacing the :query text if present
   const insertEmoji = useCallback((native: string) => {
@@ -306,7 +309,7 @@ export const CommentInput = memo(({
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7"
-                  onClick={() => setMentionOpen(true)}
+                  onClick={() => { tap(); setMentionOpen(true); }}
                   aria-label={t("expenses.comments.mention", "Mention someone")}
                 >
                   <AtSignIcon className="h-3.5 w-3.5" />
@@ -415,7 +418,7 @@ export const CommentInput = memo(({
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
-                onClick={() => setEmojiOpen(true)}
+                onClick={() => { tap(); setEmojiOpen(true); }}
                 aria-label={t("expenses.comments.emoji", "Emoji")}
               >
                 <SmileIcon className="h-3.5 w-3.5" />

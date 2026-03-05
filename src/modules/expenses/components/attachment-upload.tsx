@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 import { UploadIcon, XIcon, FileImageIcon, FileIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 export interface AttachmentFile {
   file: File;
   preview?: string;
@@ -31,6 +32,7 @@ export const AttachmentUpload = ({
   maxFiles = 5,
   maxSizeMB = 5,
 }: AttachmentUploadProps) => {
+  const { tap } = useHaptics();
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -148,7 +150,7 @@ export const AttachmentUpload = ({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => { tap(); fileInputRef.current?.click(); }}
           >
             Browse Files
           </Button>
@@ -211,7 +213,7 @@ export const AttachmentUpload = ({
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 shrink-0"
-                      onClick={() => removeAttachment(index)}
+                      onClick={() => { tap(); removeAttachment(index); }}
                     >
                       <XIcon className="h-4 w-4" />
                     </Button>

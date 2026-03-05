@@ -21,6 +21,7 @@ import { BulkActionBar } from "@/components/bulk-operations/BulkActionBar";
 import { BulkDeleteDialog } from "@/components/bulk-operations/BulkDeleteDialog";
 
 import { EyeIcon, XIcon, CheckSquareIcon, RepeatIcon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { useQuery } from "@tanstack/react-query";
@@ -33,6 +34,7 @@ interface ExpenseListProps {
 export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseListProps) => {
   const go = useGo();
   const { t } = useTranslation();
+  const { tap } = useHaptics();
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
   const [selectionMode, setSelectionMode] = useState(false);
@@ -171,7 +173,7 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setSelectionMode(true)}
+              onClick={() => { tap(); setSelectionMode(true); }}
             >
               <CheckSquareIcon className="h-4 w-4 mr-2" />
               Select
@@ -181,7 +183,7 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
             <Button
               variant="outline"
               size="sm"
-              onClick={handleSelectAll}
+              onClick={() => { tap(); handleSelectAll(); }}
             >
               {selectedExpenseIds.length === expenses.length ? "Deselect All" : "Select All"}
             </Button>
@@ -212,7 +214,7 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
               variant="ghost"
               size="sm"
               className="h-7 px-2 text-xs"
-              onClick={clearAllFilters}
+              onClick={() => { tap(); clearAllFilters(); }}
             >
               <XIcon className="h-3 w-3 mr-1" />
               Clear All
@@ -302,7 +304,7 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => go({ to: `/expenses/show/${expense.id}` })}
+                  onClick={() => { tap(); go({ to: `/expenses/show/${expense.id}` }); }}
                 >
                   <EyeIcon className="h-4 w-4" />
                 </Button>

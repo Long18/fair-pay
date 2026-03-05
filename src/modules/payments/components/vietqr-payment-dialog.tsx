@@ -22,7 +22,7 @@ import {
   ExternalLinkIcon,
 } from '@/components/ui/icons';
 import { formatNumber } from '@/lib/locale-utils';
-import { triggerHaptic } from '@/lib/haptics';
+import { useHaptics } from '@/hooks/use-haptics';
 import { usePayeeBankSettings } from '@/hooks/payment/use-bank-settings';
 import {
   generateVietQRUrl,
@@ -54,6 +54,7 @@ export function VietQRPaymentDialog({
   onPaymentComplete,
 }: VietQRPaymentDialogProps) {
   const { t } = useTranslation();
+  const { tap, success } = useHaptics();
   const { bankInfo, isLoading, isConfigured } = usePayeeBankSettings(payeeId);
   const [hasCopied, setHasCopied] = useState(false);
 
@@ -96,7 +97,7 @@ export function VietQRPaymentDialog({
   const handleCopyReference = () => {
     navigator.clipboard.writeText(transferInfo);
     setHasCopied(true);
-    triggerHaptic('light');
+    success();
     toast.success(t('payments.vietqr.copied', 'Transfer content copied!'));
     setTimeout(() => setHasCopied(false), 2000);
   };
@@ -104,13 +105,13 @@ export function VietQRPaymentDialog({
   const handleCopyAccountNo = () => {
     if (bankInfo?.account) {
       navigator.clipboard.writeText(bankInfo.account);
-      triggerHaptic('light');
+      success();
       toast.success(t('payments.vietqr.accountCopied', 'Account number copied!'));
     }
   };
 
   const handleDone = () => {
-    triggerHaptic('success');
+    success();
     onPaymentComplete?.();
     onOpenChange(false);
   };

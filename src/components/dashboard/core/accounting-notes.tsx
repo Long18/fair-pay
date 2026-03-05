@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "@/components/ui/icons";
+import { useHaptics } from '@/hooks/use-haptics';
 interface Note {
   date: string;
   year: string;
@@ -14,6 +15,7 @@ interface AccountingNotesProps {
 }
 
 export const AccountingNotes = ({ notes, onAddNote }: AccountingNotesProps) => {
+  const { tap } = useHaptics();
   return (
     <Card className="border-gray-200 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
@@ -25,7 +27,7 @@ export const AccountingNotes = ({ notes, onAddNote }: AccountingNotesProps) => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={onAddNote}
+            onClick={() => { tap(); onAddNote?.(); }}
             className="text-sm text-red-400 hover:text-red-500 hover:bg-red-50"
           >
             <PlusIcon className="h-4 w-4 mr-1" />

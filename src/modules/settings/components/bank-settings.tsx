@@ -23,11 +23,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { CheckIcon, AlertCircleIcon, QrCodeIcon, TrashIcon } from '@/components/ui/icons';
 import { useBankSettings } from '@/hooks/payment/use-bank-settings';
+import { useHaptics } from '@/hooks/use-haptics';
 import { getPopularBanks, generateVietQRUrl, getBankByCode, createVietQRConfig } from '@/lib/vietqr';
 import { BankInfo } from '@/types/user-settings';
 
 export function BankSettings() {
   const { t } = useTranslation();
+  const { success, warning } = useHaptics();
   const { bankInfo, isLoading, isSaving, saveBankInfo, clearBankInfo, isConfigured } = useBankSettings();
 
   const [formData, setFormData] = useState<BankInfo>({
@@ -57,6 +59,7 @@ export function BankSettings() {
 
     try {
       await saveBankInfo(formData);
+      success();
       toast.success(t('settings.bank.saved', 'Bank settings saved successfully'));
     } catch {
       toast.error(t('settings.bank.saveError', 'Failed to save bank settings'));
@@ -64,6 +67,7 @@ export function BankSettings() {
   };
 
   const handleClear = async () => {
+    warning();
     try {
       await clearBankInfo();
       setFormData({ bank: '', account: '', accountName: '' });

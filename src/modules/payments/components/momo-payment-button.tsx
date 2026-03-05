@@ -6,6 +6,7 @@ import { ExpenseSplit } from '@/modules/expenses/types';
 import { MomoPaymentDialog } from './momo-payment-dialog';
 import { momoAPI } from '@/lib/momo/api';
 import { cn } from '@/lib/utils';
+import { useHaptics } from '@/hooks/use-haptics';
 
 interface MomoPaymentButtonProps {
   split: ExpenseSplit & {
@@ -27,6 +28,7 @@ export function MomoPaymentButton({
   onPaymentComplete,
 }: MomoPaymentButtonProps) {
   const { t } = useTranslation();
+  const { tap } = useHaptics();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
 
@@ -43,6 +45,7 @@ export function MomoPaymentButton({
 
   const handleOpenDialog = () => {
     if (isOpening) return;
+    tap();
     setIsOpening(true);
     setDialogOpen(true);
   };

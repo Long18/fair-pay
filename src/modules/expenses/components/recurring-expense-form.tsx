@@ -32,6 +32,7 @@ import {
   AlertDescription,
 } from '@/components/ui/alert';
 import { useTranslation } from 'react-i18next';
+import { useHaptics } from '@/hooks/use-haptics';
 
 interface RecurringExpenseFormProps {
   control: Control<any>;
@@ -40,6 +41,7 @@ interface RecurringExpenseFormProps {
 
 export function RecurringExpenseForm({ control, isRecurring }: RecurringExpenseFormProps) {
   const { t, i18n } = useTranslation();
+  const { tap } = useHaptics();
   const dateLocale = i18n.language === 'vi' ? vi : enUS;
 
   if (!isRecurring) {
@@ -62,7 +64,7 @@ export function RecurringExpenseForm({ control, isRecurring }: RecurringExpenseF
             name="recurring.frequency"
             control={control}
             render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select value={field.value} onValueChange={(v) => { tap(); field.onChange(v); }}>
                 <SelectTrigger>
                   <SelectValue placeholder={t('recurring.selectFrequency')} />
                 </SelectTrigger>
@@ -185,7 +187,7 @@ export function RecurringExpenseForm({ control, isRecurring }: RecurringExpenseF
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => field.onChange(null)}
+                      onClick={() => { tap(); field.onChange(null); }}
                       className="w-full"
                     >
                       {t('recurring.clearEndDate')}

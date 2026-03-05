@@ -4,6 +4,7 @@ import { useGo } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
 
 import { FilePlusIcon, CheckCircle2Icon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 export function DashboardSkeleton() {
   return (
     <div className="space-y-6">
@@ -30,9 +31,11 @@ interface DashboardEmptyStateProps {
 export function DashboardEmptyState({ disabled = false }: DashboardEmptyStateProps) {
   const go = useGo();
   const { t } = useTranslation();
+  const { tap } = useHaptics();
 
   if (disabled) {
     const handleClick = () => {
+      tap();
       go({ to: "/login" });
     };
 

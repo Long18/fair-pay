@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
 import { useTranslation } from "react-i18next";
 
+import { useHaptics } from '@/hooks/use-haptics';
 import { ArrowLeftIcon, HandCoinsIcon } from "@/components/ui/icons";
 interface PaymentExtended extends PaymentWithProfiles {
   groups?: { id: string; name: string };
@@ -20,6 +21,7 @@ export const PaymentShow = () => {
   const go = useGo();
   const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
+  const { tap } = useHaptics();
 
   const { query: paymentQuery } = useOne<PaymentExtended>({
     resource: "payments",
@@ -66,7 +68,7 @@ export const PaymentShow = () => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => go({ to: "/" })}
+          onClick={() => { tap(); go({ to: "/" }); }}
         >
           <ArrowLeftIcon className="h-5 w-5" />
         </Button>

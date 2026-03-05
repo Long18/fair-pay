@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useHaptics } from "@/hooks/use-haptics";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -27,6 +28,7 @@ export const NotificationPanel = () => {
   } = useNotifications();
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
+  const { tap } = useHaptics();
 
   const displayNotifications = notifications.slice(0, 50);
 
@@ -56,6 +58,7 @@ export const NotificationPanel = () => {
           className="h-auto px-2 py-1 text-xs text-primary hover:text-primary/80 hover:bg-primary/5 rounded-md"
           onClick={(e) => {
             e.stopPropagation();
+            tap();
             markAllAsRead();
           }}
         >

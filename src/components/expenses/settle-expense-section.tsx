@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/locale-utils";
 import { useTranslation } from "react-i18next";
 import { BanknoteIcon, CheckCircle2Icon } from "@/components/ui/icons";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface SettleExpenseSectionProps {
   payerName: string;
@@ -22,6 +23,7 @@ export function SettleExpenseSection({
   isSettling,
 }: SettleExpenseSectionProps) {
   const { t } = useTranslation();
+  const { success } = useHaptics();
 
   if (isSettled) {
     return (
@@ -54,7 +56,7 @@ export function SettleExpenseSection({
           })}
         </p>
         <Button
-          onClick={onSettle}
+          onClick={() => { success(); onSettle(); }}
           disabled={isSettling}
           className="w-full"
           size="lg"

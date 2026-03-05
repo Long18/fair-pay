@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useGetIdentity } from "@refinedev/core";
+import { useHaptics } from "@/hooks/use-haptics";
 import { Profile } from "@/modules/profile/types";
 import { FloatingActionButton } from "@/components/dashboard/core/FloatingActionButton";
 import { DashboardLoadingBeam } from "@/components/dashboard/core/DashboardLoadingBeam";
@@ -20,6 +21,7 @@ import { cn } from "@/lib/utils";
 export const Dashboard = () => {
   const { data: identity } = useGetIdentity<Profile>();
   const { t } = useTranslation();
+  const { tap } = useHaptics();
   const [activeTab, setActiveTab] = usePersistedState<"balances" | "activity" | "history">("dashboard-tab", "balances");
 
   // Active debts (no history)
@@ -139,7 +141,7 @@ export const Dashboard = () => {
                   return (
                     <button
                       key={tab.key}
-                      onClick={() => setActiveTab(tab.key)}
+                      onClick={() => { tap(); setActiveTab(tab.key); }}
                       className={cn(
                         "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all cursor-pointer",
                         isActive

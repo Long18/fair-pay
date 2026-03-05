@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CreditCardIcon, RefreshCwIcon } from "@/components/ui/icons";
+import { useHaptics } from '@/hooks/use-haptics';
 interface RepaymentPlanCardProps {
   nextDate: string;
   instalmentsLeft: number;
@@ -20,6 +21,7 @@ export const RepaymentPlanCard = ({
   onActivate,
   onChange,
 }: RepaymentPlanCardProps) => {
+  const { tap } = useHaptics();
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('vi-VN').format(value);
   };
@@ -57,7 +59,7 @@ export const RepaymentPlanCard = ({
         <div className="flex gap-2 pt-2">
           {onActivate && (
             <Button
-              onClick={onActivate}
+              onClick={() => { tap(); onActivate?.(); }}
               className="flex-1 bg-green-500 hover:bg-green-600 text-white font-medium"
             >
               ACTIVATE
@@ -65,7 +67,7 @@ export const RepaymentPlanCard = ({
           )}
           {onChange && (
             <Button
-              onClick={onChange}
+              onClick={() => { tap(); onChange?.(); }}
               variant="outline"
               className="flex-1 border-green-500 text-green-600 hover:bg-green-50 font-medium"
             >

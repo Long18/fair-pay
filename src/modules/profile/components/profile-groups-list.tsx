@@ -10,6 +10,7 @@ import { formatDateShort } from "@/lib/locale-utils";
 import { UsersIcon, ChevronRightIcon, PlusIcon } from "@/components/ui/icons";
 import { useGo } from "@refinedev/core";
 import { EmptyGroups } from "./profile-empty-states";
+import { useHaptics } from "@/hooks/use-haptics";
 
 interface Group {
   id: string;
@@ -31,6 +32,7 @@ export const ProfileGroupsList = ({
 }: ProfileGroupsListProps) => {
   const { t } = useTranslation();
   const go = useGo();
+  const { tap } = useHaptics();
 
   if (isLoading) {
     return (
@@ -96,7 +98,7 @@ export const ProfileGroupsList = ({
         >
           <Card
             className="rounded-lg cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => go({ to: `/groups/show/${group.id}` })}
+            onClick={() => { tap(); go({ to: `/groups/show/${group.id}` }); }}
           >
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -128,7 +130,7 @@ export const ProfileGroupsList = ({
         <Button
           variant="outline"
           className="w-full rounded-lg"
-          onClick={() => go({ to: "/groups/create" })}
+          onClick={() => { tap(); go({ to: "/groups/create" }); }}
         >
           <PlusIcon size={16} className="mr-2" />
           {t('profile.groups.createNew', 'Create New Group')}
