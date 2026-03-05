@@ -59,8 +59,8 @@ export function DonationWidget() {
       // Update CSS variable for animation duration
       if (animationRef.current) {
         const isDesktop = window.innerWidth >= 640;
-        // Desktop: longer roaming animation, Mobile: subtle in-place bobbing.
-        const finalDuration = isDesktop ? duration : 3.2;
+        // Desktop keeps random roaming speed, mobile keeps signature horizontal motion.
+        const finalDuration = isDesktop ? duration : 16;
         animationRef.current.style.setProperty('--animation-duration', `${finalDuration}s`);
       }
     };
@@ -150,15 +150,21 @@ export function DonationWidget() {
 
         @keyframes float-mobile {
           0%, 100% {
-            transform: translate3d(0, 0, 0) scale(1);
+            transform: translate3d(0, 0, 0) scaleX(1);
+          }
+          25% {
+            transform: translate3d(calc((100vw - 5.5rem) * 0.45), -10px, 0) scaleX(1);
           }
           50% {
-            transform: translate3d(0, -8px, 0) scale(1.03);
+            transform: translate3d(calc(100vw - 5.5rem), -18px, 0) scaleX(-1);
+          }
+          75% {
+            transform: translate3d(calc((100vw - 5.5rem) * 0.35), -8px, 0) scaleX(-1);
           }
         }
 
         .floating-widget {
-          --animation-duration: 3.2s;
+          --animation-duration: 16s;
           animation: float-mobile var(--animation-duration) ease-in-out infinite;
         }
 
@@ -175,7 +181,7 @@ export function DonationWidget() {
           ref={animationRef}
           className={cn(
             "fixed z-40 floating-widget transition-opacity duration-200",
-            "bottom-20 right-4 sm:bottom-6 sm:left-6 sm:right-auto",
+            "bottom-20 left-4 sm:bottom-6 sm:left-6",
             isDialogOpen && "pointer-events-none opacity-0"
           )}
           aria-hidden={isDialogOpen}
