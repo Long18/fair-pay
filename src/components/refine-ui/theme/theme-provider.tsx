@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { getThemeColors, parseThemeVariant, createThemeVariant } from "@/lib/theme-palettes";
 import { withCircularReveal } from "@/lib/circular-reveal";
+import { useHaptics } from "@/hooks/use-haptics";
 
 type ThemeProviderProps = {
   children: React.ReactNode;
@@ -20,6 +21,8 @@ const initialState: ThemeProviderState = {
   setThemeVariant: async () => {},
 };
 
+const THEME_REVEAL_DURATION_MS = 500;
+
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
 export function ThemeProvider({
@@ -28,6 +31,7 @@ export function ThemeProvider({
   storageKey = "refine-ui-theme-variant",
   ...props
 }: ThemeProviderProps) {
+  const { themeTransition } = useHaptics();
   const [themeVariant, setThemeVariantState] = useState<string>(() => {
     const stored = localStorage.getItem(storageKey);
     if (stored) return stored;
@@ -98,7 +102,11 @@ export function ThemeProvider({
 
       // If click position is provided, use circular reveal animation
       if (clickPosition) {
-        await withCircularReveal(applyTheme, clickPosition);
+        themeTransition(THEME_REVEAL_DURATION_MS);
+        await withCircularReveal(applyTheme, {
+          ...clickPosition,
+          duration: THEME_REVEAL_DURATION_MS,
+        });
       } else {
         // Fallback to instant change
         applyTheme();
