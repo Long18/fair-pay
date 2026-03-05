@@ -1,13 +1,36 @@
 import * as SelectPrimitive from "@radix-ui/react-select";
 import * as React from "react";
 
+import { useHaptics } from "@/hooks/use-haptics";
 import { cn } from "@/lib/utils";
 
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "@/components/ui/icons";
 function Select({
+  onOpenChange,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Root>) {
-  return <SelectPrimitive.Root data-slot="select" {...props} />;
+  const { dropdownOpen, dropdownClose } = useHaptics();
+
+  const handleOpenChange = React.useCallback(
+    (open: boolean) => {
+      if (open) {
+        dropdownOpen();
+      } else {
+        dropdownClose();
+      }
+
+      onOpenChange?.(open);
+    },
+    [dropdownClose, dropdownOpen, onOpenChange]
+  );
+
+  return (
+    <SelectPrimitive.Root
+      data-slot="select"
+      onOpenChange={handleOpenChange}
+      {...props}
+    />
+  );
 }
 
 function SelectGroup({
@@ -99,11 +122,24 @@ function SelectLabel({
 function SelectItem({
   className,
   children,
+  onSelect,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Item>) {
+  const { dropdownSelect } = useHaptics();
+  const handleSelect = React.useCallback<
+    NonNullable<React.ComponentProps<typeof SelectPrimitive.Item>["onSelect"]>
+  >(
+    (event) => {
+      dropdownSelect();
+      onSelect?.(event);
+    },
+    [dropdownSelect, onSelect]
+  );
+
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
+      onSelect={handleSelect}
       className={cn(
         "focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className
