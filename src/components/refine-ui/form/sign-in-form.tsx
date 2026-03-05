@@ -20,6 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { useLink, useLogin, useRefineOptions, useNotification } from "@refinedev/core";
+import { useHaptics } from "@/hooks/use-haptics";
 import { Loader2Icon, AlertCircleIcon, MailIcon, LockIcon } from "@/components/ui/icons";
 
 export const SignInForm = () => {
@@ -37,6 +38,7 @@ export const SignInForm = () => {
   const { title } = useRefineOptions();
 
   const { mutate: login } = useLogin();
+  const { tap, success, error: hapticError } = useHaptics();
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -88,9 +90,11 @@ export const SignInForm = () => {
       { email, password },
       {
         onSuccess: () => {
+          success();
           setIsLoading(false);
         },
         onError: (error: any) => {
+          hapticError();
           setIsLoading(false);
           const errorMessage = error?.message || t("auth.invalidCredentials");
           setError(errorMessage);
@@ -105,6 +109,7 @@ export const SignInForm = () => {
   };
 
   const handleSignInWithGoogle = () => {
+    tap();
     setError(null);
     login({ providerName: "google" });
   };

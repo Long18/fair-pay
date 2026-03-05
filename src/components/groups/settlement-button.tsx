@@ -1,3 +1,4 @@
+import { useHaptics } from "@/hooks/use-haptics";
 import { Button } from '@/components/ui/button';
 import { CheckCircle2Icon, ArrowRightIcon } from '@/components/ui/icons';
 import { formatNumber } from '@/lib/locale-utils';
@@ -19,9 +20,10 @@ export function SettlementButton({
   disabled = false,
   variant = 'default',
 }: SettlementButtonProps) {
+  const { success } = useHaptics();
   return (
     <Button
-      onClick={onClick}
+      onClick={() => { success(); onClick(); }}
       disabled={disabled}
       variant={variant}
       className="w-full h-12 text-base font-semibold"

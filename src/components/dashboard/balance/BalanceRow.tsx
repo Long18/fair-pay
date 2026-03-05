@@ -1,3 +1,4 @@
+import { useHaptics } from "@/hooks/use-haptics";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,7 @@ export function BalanceRow({
   disabled = false,
   isPendingEmail = false,
 }: BalanceRowProps) {
+  const { tap } = useHaptics();
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('vi-VN').format(Math.abs(value));
   };
@@ -30,7 +32,7 @@ export function BalanceRow({
 
   return (
     <div
-      onClick={!disabled && !isPendingEmail ? onClick : undefined}
+      onClick={!disabled && !isPendingEmail ? () => { tap(); onClick?.(); } : undefined}
       className={cn(
         "flex items-center justify-between p-4 rounded-lg border bg-card transition-colors",
         isPendingEmail && "border-amber-400/50 bg-amber-50/30 dark:bg-amber-950/20",
