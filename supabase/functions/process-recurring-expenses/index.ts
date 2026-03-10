@@ -35,6 +35,30 @@ interface ProcessingResults {
   }>
 }
 
+const VIETNAM_TIMEZONE = 'Asia/Ho_Chi_Minh'
+
+function getDateStringInTimeZone(
+  date: Date = new Date(),
+  timeZone: string = VIETNAM_TIMEZONE
+): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date)
+
+  const year = parts.find((part) => part.type === 'year')?.value
+  const month = parts.find((part) => part.type === 'month')?.value
+  const day = parts.find((part) => part.type === 'day')?.value
+
+  if (!year || !month || !day) {
+    throw new Error(`Failed to format date in timezone ${timeZone}`)
+  }
+
+  return `${year}-${month}-${day}`
+}
+
 /**
  * Process Recurring Expenses Edge Function
  *
@@ -66,11 +90,15 @@ serve(async (req) => {
       }
     })
 
-    console.log('Starting recurring expense processing...')
+    const today = getDateStringInTimeZone()
+
+    console.log(`Starting recurring expense processing for ${today} (${VIETNAM_TIMEZONE})...`)
 
     // Fetch all active recurring expenses that are due
     const { data: dueRecurring, error: fetchError } = await supabase
-      .rpc('get_due_recurring_expenses')
+      .rpc('get_due_recurring_expenses_for_date', {
+        p_reference_date: today
+      })
 
     if (fetchError) {
       throw new Error(`Failed to fetch due recurring expenses: ${fetchError.message}`)
@@ -101,8 +129,6 @@ serve(async (req) => {
       errors: [],
       details: []
     }
-
-    const today = new Date().toISOString().split('T')[0]
 
     for (const recurring of dueRecurring as RecurringExpense[]) {
       try {
