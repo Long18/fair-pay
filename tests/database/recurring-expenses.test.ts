@@ -335,6 +335,126 @@ describe('Recurring Expenses CRUD Operations', () => {
     expect(data?.end_date).toBe('2025-12-31');
   });
 
+  it('should return due recurring expenses for a supplied reference date', async () => {
+    const { data: dueRecurring, error: dueInsertError } = await supabase
+      .from('recurring_expenses')
+      .insert({
+        template_expense_id: expenseId,
+        frequency: 'monthly',
+        interval: 1,
+        start_date: '2026-03-01',
+        next_occurrence: '2026-03-10',
+        context_type: 'group',
+        group_id: groupId,
+        created_by: userId1,
+      })
+      .select()
+      .single();
+
+    expect(dueInsertError).toBeNull();
+
+    const { data: futureRecurring, error: futureInsertError } = await supabase
+      .from('recurring_expenses')
+      .insert({
+        template_expense_id: expenseId,
+        frequency: 'monthly',
+        interval: 1,
+        start_date: '2026-03-01',
+        next_occurrence: '2026-03-11',
+        context_type: 'group',
+        group_id: groupId,
+        created_by: userId1,
+      })
+      .select()
+      .single();
+
+    expect(futureInsertError).toBeNull();
+
+    const { data, error } = await supabase.rpc('get_due_recurring_expenses_for_date', {
+      p_reference_date: '2026-03-10',
+    });
+
+    expect(error).toBeNull();
+    expect(data).toBeDefined();
+    expect(data?.map((item: any) => item.id)).toContain(dueRecurring!.id);
+    expect(data?.map((item: any) => item.id)).not.toContain(futureRecurring!.id);
+  });
+
+  it('should exclude recurring expenses whose end_date is before the supplied reference date', async () => {
+    const { data: expiredRecurring, error: expiredInsertError } = await supabase
+      .from('recurring_expenses')
+      .insert({
+        template_expense_id: expenseId,
+        frequency: 'monthly',
+        interval: 1,
+        start_date: '2026-03-01',
+        end_date: '2026-03-09',
+        next_occurrence: '2026-03-09',
+        context_type: 'group',
+        group_id: groupId,
+        created_by: userId1,
+      })
+      .select()
+      .single();
+
+    expect(expiredInsertError).toBeNull();
+
+    const { data, error } = await supabase.rpc('get_due_recurring_expenses_for_date', {
+      p_reference_date: '2026-03-10',
+    });
+
+    expect(error).toBeNull();
+    expect(data).toBeDefined();
+    expect(data?.map((item: any) => item.id)).not.toContain(expiredRecurring!.id);
+  });
+
+  it('should process one recurring cycle idempotently', async () => {
+    const { data: recurring, error: recurringInsertError } = await supabase
+      .from('recurring_expenses')
+      .insert({
+        template_expense_id: expenseId,
+        frequency: 'monthly',
+        interval: 1,
+        start_date: '2026-03-01',
+        next_occurrence: '2026-03-10',
+        context_type: 'group',
+        group_id: groupId,
+        created_by: userId1,
+      })
+      .select()
+      .single();
+
+    expect(recurringInsertError).toBeNull();
+
+    const { data: firstRun, error: firstRunError } = await supabase.rpc('process_single_recurring_instance', {
+      p_recurring_expense_id: recurring!.id,
+      p_cycle_date: '2026-03-10',
+    });
+
+    expect(firstRunError).toBeNull();
+    expect(firstRun?.success).toBe(true);
+    expect(firstRun?.skipped).toBe(false);
+    expect(firstRun?.next_occurrence).toBe('2026-04-10');
+
+    const { data: secondRun, error: secondRunError } = await supabase.rpc('process_single_recurring_instance', {
+      p_recurring_expense_id: recurring!.id,
+      p_cycle_date: '2026-03-10',
+    });
+
+    expect(secondRunError).toBeNull();
+    expect(secondRun?.success).toBe(true);
+    expect(secondRun?.skipped).toBe(true);
+
+    const { data: generatedExpenses, error: expensesError } = await supabase
+      .from('expenses')
+      .select('id, cycle_date, recurring_expense_id')
+      .eq('recurring_expense_id', recurring!.id)
+      .eq('cycle_date', '2026-03-10');
+
+    expect(expensesError).toBeNull();
+    expect(generatedExpenses).toHaveLength(1);
+  });
+
   it('should cascade delete when template expense is deleted', async () => {
     const { data: recurring } = await supabase
       .from('recurring_expenses')

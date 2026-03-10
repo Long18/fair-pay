@@ -264,6 +264,11 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
                   <Badge variant={recurring.is_active ? 'default' : 'secondary'}>
                     {recurring.is_active ? t('recurring.active') : t('recurring.paused')}
                   </Badge>
+                  {recurring.is_active && (
+                    <Badge variant="outline" className="border-sky-200 text-sky-700">
+                      {t('recurring.autoRunBadge', 'Auto 00:05 GMT+7')}
+                    </Badge>
+                  )}
                   {/* Prepaid Status Badge - Legacy */}
                   {hasPrepaidCoverage && (
                     <PrepaidStatusBadge coverageInfo={prepaidCoverageInfo} />
@@ -290,7 +295,7 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
                       }
                     </Badge>
                   )}
-                  {/* Cycle due badge — shown when overdue and not yet run */}
+                  {/* Cycle due badge - shown when overdue and not yet run */}
                   {recurring.is_active && isCycleDue && !cycleResult?.success && (
                     <Badge variant="outline" className="gap-1 border-amber-300 text-amber-700">
                       <RefreshCwIcon className="h-3 w-3" />
@@ -418,11 +423,11 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
             </div>
           </div>
 
-          {/* Validate & Run Cycle Button */}
+          {/* Manual fallback for the auto-run cycle */}
           {recurring.is_active && (
             <div className="pt-2 border-t">
               {cycleResult?.success && !cycleResult?.alreadyExecuted ? (
-                // Successfully executed — show confirmation state
+                // Successfully executed - show confirmation state
                 <div className="flex items-center gap-2 text-sm text-green-700 py-1">
                   <CheckIcon className="h-4 w-4 shrink-0" />
                   <span>
@@ -430,7 +435,7 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
                   </span>
                 </div>
               ) : cycleResult?.alreadyExecuted ? (
-                // Already executed — show info state
+                // Already executed - show info state
                 <div className="flex items-center gap-2 text-sm text-muted-foreground py-1">
                   <CheckIcon className="h-4 w-4 shrink-0" />
                   <span>
@@ -438,38 +443,46 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
                   </span>
                 </div>
               ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={`w-full gap-2 ${
-                    isCycleDue
-                      ? 'border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800'
-                      : 'text-muted-foreground'
-                  }`}
-                  onClick={handleValidateRunCycle}
-                  disabled={isRunning || !isCycleDue}
-                  title={
-                    !isCycleDue
-                      ? t('recurring.cycle.notYetDue', 'Next cycle runs on {{date}}', {
-                          date: format(nextCycleDate, 'PPP', { locale: dateLocale }),
-                        })
-                      : undefined
-                  }
-                >
-                  {isRunning ? (
-                    <Loader2Icon className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCwIcon className="h-4 w-4" />
-                  )}
-                  {isRunning
-                    ? t('recurring.cycle.running', 'Running cycle...')
-                    : isCycleDue
-                      ? t('recurring.cycle.validateRun', 'Validate & Run Cycle')
-                      : t('recurring.cycle.pendingExecution', 'Pending — {{date}}', {
-                          date: format(nextCycleDate, 'MMM d', { locale: dateLocale }),
-                        })
-                  }
-                </Button>
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={`w-full gap-2 ${
+                      isCycleDue
+                        ? 'border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800'
+                        : 'text-muted-foreground'
+                    }`}
+                    onClick={handleValidateRunCycle}
+                    disabled={isRunning || !isCycleDue}
+                    title={
+                      !isCycleDue
+                        ? t('recurring.cycle.notYetDue', 'Next cycle runs on {{date}}', {
+                            date: format(nextCycleDate, 'PPP', { locale: dateLocale }),
+                          })
+                        : undefined
+                    }
+                  >
+                    {isRunning ? (
+                      <Loader2Icon className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCwIcon className="h-4 w-4" />
+                    )}
+                    {isRunning
+                      ? t('recurring.cycle.running', 'Running cycle...')
+                      : isCycleDue
+                        ? t('recurring.cycle.runNow', 'Run now')
+                        : t('recurring.cycle.pendingExecution', 'Scheduled - {{date}}', {
+                            date: format(nextCycleDate, 'MMM d', { locale: dateLocale }),
+                          })
+                    }
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    {t(
+                      'recurring.cycle.manualFallbackHint',
+                      'Auto-runs daily at 00:05 GMT+7. Use this only if you need to trigger the cycle manually.'
+                    )}
+                  </p>
+                </div>
               )}
             </div>
           )}
@@ -483,7 +496,7 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
             </div>
           )}
 
-          {/* Prominent Pay Upfront Button — visible for active recurring without member prepaid */}
+          {/* Prominent Pay Upfront Button - visible for active recurring without member prepaid */}
           {recurring.is_active && (!memberPrepaidInfo || memberPrepaidInfo.length === 0) && (
             <div className="pt-3 border-t">
               <Button
