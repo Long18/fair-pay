@@ -7,16 +7,15 @@ import {
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from "@/components/ui/icons";
+import { CheckIcon, ChevronDownIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { PaymentStateBadge } from "@/components/ui/payment-state-badge";
-import { ContributingExpensesList } from "@/components/dashboard/core/contributing-expenses-list";
 import { useContributingExpenses } from "@/hooks/use-contributing-expenses";
 import { getOweStatusColors, getPaymentStateColors } from "@/lib/status-colors";
 import { formatCurrency } from "@/lib/locale-utils";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { BalanceRecentTransactionsPreview } from "./balance-recent-transactions-preview";
 
 interface Balance {
   counterparty_id: string | null;
@@ -53,7 +52,7 @@ export function BalanceTableRowExpandable({
   const { t } = useTranslation();
   const go = useGo();
   const { tap } = useHaptics();
-  const { expenses, isLoading } = useContributingExpenses(balance.counterparty_id || "");
+  const { expenses, isLoading } = useContributingExpenses(isExpanded ? (balance.counterparty_id || "") : "");
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
@@ -149,32 +148,16 @@ export function BalanceTableRowExpandable({
                 transition={{ duration: 0.2, ease: "easeInOut" }}
                 className="overflow-hidden"
               >
-                <div className="p-4 border-t bg-muted/10">
-                  <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                    {t('dashboard.contributingExpenses', 'Contributing Expenses')}
-                  </h4>
-
-                  <ContributingExpensesList
+                <div className="border-t bg-muted/10 p-4">
+                  <BalanceRecentTransactionsPreview
                     expenses={expenses}
-                    counterpartyId={balance.counterparty_id || ""}
+                    counterpartyName={balance.counterparty_name}
                     isLoading={isLoading}
-                  />
-
-                  {balance.counterparty_id && (
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="w-full mt-3 gap-2"
-                    onClick={(e) => {
-                      e.stopPropagation();
+                    onViewDetails={balance.counterparty_id ? () => {
                       tap();
                       go({ to: `/debts/${balance.counterparty_id}` });
-                    }}
-                  >
-                    {t('dashboard.viewFullBreakdown', 'View Details')}
-                    <ChevronRightIcon className="h-4 w-4" />
-                  </Button>
-                  )}
+                    } : undefined}
+                  />
                 </div>
               </motion.div>
             </TableCell>
@@ -196,7 +179,7 @@ export function BalanceTableRowExpandableMobile({
   const { t } = useTranslation();
   const go = useGo();
   const { tap } = useHaptics();
-  const { expenses, isLoading } = useContributingExpenses(balance.counterparty_id || "");
+  const { expenses, isLoading } = useContributingExpenses(isExpanded ? (balance.counterparty_id || "") : "");
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
@@ -300,31 +283,16 @@ export function BalanceTableRowExpandableMobile({
             transition={{ duration: 0.2, ease: "easeInOut" }}
             className="border-t bg-muted/10 overflow-hidden"
           >
-            <div className="p-3 space-y-3">
-              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                {t('dashboard.contributingExpenses', 'Contributing Expenses')}
-              </h4>
-
-              <ContributingExpensesList
+            <div className="p-3">
+              <BalanceRecentTransactionsPreview
                 expenses={expenses}
-                counterpartyId={balance.counterparty_id || ""}
+                counterpartyName={balance.counterparty_name}
                 isLoading={isLoading}
-              />
-
-              {balance.counterparty_id && (
-              <Button
-                variant="default"
-                size="sm"
-                className="w-full gap-2"
-                onClick={(e) => {
-                  e.stopPropagation();
+                onViewDetails={balance.counterparty_id ? () => {
+                  tap();
                   go({ to: `/debts/${balance.counterparty_id}` });
-                }}
-              >
-                {t('dashboard.viewFullBreakdown', 'View Details')}
-                <ChevronRightIcon className="h-4 w-4" />
-              </Button>
-              )}
+                } : undefined}
+              />
             </div>
           </motion.div>
         )}
