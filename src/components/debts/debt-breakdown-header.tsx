@@ -103,40 +103,41 @@ export function DebtBreakdownHeader({
             </div>
           </div>
 
-          <div className="mt-8 flex w-full max-w-md flex-col gap-3 sm:flex-row">
+          <div className="mt-8 flex w-full max-w-md gap-3">
             {canPayViaSePay && (
               <Button
-                size="lg"
-                className="h-12 flex-1 rounded-xl"
+                className="h-12 min-w-0 flex-1 rounded-xl px-3 text-sm sm:px-4"
                 onClick={() => {
                   tap();
                   setSepayDialogOpen(true);
                 }}
               >
-                <CreditCardIcon className="h-4 w-4" />
-                {t("payments.payViaSePay", "Pay via SePay")}
+                <CreditCardIcon className="h-4 w-4 shrink-0" />
+                <span className="truncate">
+                  {t("payments.payViaSePay", "Pay via SePay")}
+                </span>
               </Button>
             )}
 
             {!canPayViaSePay && canSettle && (
               <Button
-                size="lg"
-                className="h-12 flex-1 rounded-xl"
+                className="h-12 min-w-0 flex-1 rounded-xl px-3 text-sm sm:px-4"
                 onClick={() => {
                   tap();
                   onSettleAll?.();
                 }}
               >
-                <CheckCircle2Icon className="h-4 w-4" />
-                {t("debts.settleUp", "Settle up")}
+                <CheckCircle2Icon className="h-4 w-4 shrink-0" />
+                <span className="truncate">
+                  {t("debts.settleUp", "Settle up")}
+                </span>
               </Button>
             )}
 
             <Button
-              size="lg"
               variant="outline"
               className={cn(
-                "h-12 rounded-xl",
+                "h-12 min-w-0 rounded-xl px-3 text-sm sm:px-4",
                 canPayViaSePay || canSettle ? "flex-1" : "w-full"
               )}
               onClick={() => {
@@ -144,8 +145,10 @@ export function DebtBreakdownHeader({
                 go({ to: `/expenses/create?with=${counterpartyId}` });
               }}
             >
-              <PlusIcon className="h-4 w-4" />
-              {t("debts.addExpense", "Add expense")}
+              <PlusIcon className="h-4 w-4 shrink-0" />
+              <span className="truncate">
+                {t("debts.addExpense", "Add expense")}
+              </span>
             </Button>
           </div>
         </div>
