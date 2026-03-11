@@ -377,6 +377,12 @@
 
 :root {
   --radius: 0.75rem;
+  --font-sans-latin: "Soehne", "Sohne", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-sans-vietnamese: system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-mono-default: "Soehne Mono", "Sohne Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-mono-vietnamese: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-sans: var(--font-sans-latin);
+  --font-mono: var(--font-mono-default);
   --font-size-chart-xs: clamp(0.625rem, 0.45vw + 0.45rem, 0.75rem);
   --font-size-chart-sm: clamp(0.6875rem, 0.5vw + 0.5rem, 0.8125rem);
   --font-size-chart-md: clamp(0.75rem, 0.55vw + 0.55rem, 0.875rem);
@@ -476,6 +482,11 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.914 0.127 214.3);
   --sidebar-ring: oklch(0.598 0.365 217.2);
+}
+
+html:lang(vi) {
+  --font-sans: var(--font-sans-vietnamese);
+  --font-mono: var(--font-mono-vietnamese);
 }
 
 .dark {
@@ -1097,4 +1108,3 @@
   animation: comment-highlight-fade 3s ease-out forwards;
   border-radius: 0.5rem;
 }
-

@@ -96,6 +96,26 @@
 
     <title>FairPay - Expense Splitting Made Easy | Bill Splitter</title>
 
+    <script>
+      (function() {
+        let storedLanguage = 'en';
+
+        try {
+          storedLanguage = localStorage.getItem('i18nextLng') || 'en';
+        } catch (_error) {
+          storedLanguage = 'en';
+        }
+
+        const normalizedLanguage = storedLanguage.startsWith('vi') ? 'vi' : 'en';
+        document.documentElement.lang = normalizedLanguage;
+
+        if (normalizedLanguage === 'vi') {
+          document.documentElement.style.setProperty('--font-sans', 'system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif');
+          document.documentElement.style.setProperty('--font-mono', 'ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace');
+        }
+      })();
+    </script>
+
     <!-- Font optimization -->
     <style>
       /* OpenAI/ChatGPT font stack for instant text rendering */

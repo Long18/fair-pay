@@ -3,6 +3,7 @@ import { useGo } from "@refinedev/core";
 import { formatDistanceToNow, format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,7 @@ export interface EnhancedActivityRowProps {
   className?: string;
 }
 
-function getMethodLabel(method: string, t: (key: string, defaultValue?: string) => string) {
+function getMethodLabel(method: string, t: TFunction) {
   switch (method) {
     case "momo":
       return "MoMo";
@@ -52,7 +53,7 @@ function getMethodLabel(method: string, t: (key: string, defaultValue?: string) 
   }
 }
 
-function getEventTypeLabel(eventType: string, t: (key: string, defaultValue?: string) => string) {
+function getEventTypeLabel(eventType: string, t: TFunction) {
   switch (eventType) {
     case "settle_all":
     case "settle_all_with_person":
@@ -73,7 +74,7 @@ function getEventTypeLabel(eventType: string, t: (key: string, defaultValue?: st
 function getDashboardNarrative(
   activity: EnhancedActivityItem,
   currentUserId: string,
-  t: (key: string, defaultValue?: string) => string
+  t: TFunction
 ) {
   const latestPaymentEvent = activity.paymentEvents[0];
 
