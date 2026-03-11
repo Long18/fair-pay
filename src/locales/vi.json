@@ -859,7 +859,16 @@
         "searchByName": "Tìm theo tên...",
         "settledCount": "{{count}} giao dịch đã thanh toán",
         "noResults": "Không tìm thấy kết quả cho \"{{query}}\"",
-        "totalTransacted": "Tổng"
+        "totalTransacted": "Tổng",
+        "fullySettled": "Đã chốt xong",
+        "totalSettled": "Tổng đã thanh toán",
+        "transactionCount": "{{count}} giao dịch",
+        "closedOn": "Đóng {{date}}",
+        "closedShort": "Đóng {{date}}",
+        "recentSettledItems": "Các khoản đã thanh toán gần đây",
+        "noSettledItems": "Chưa có khoản đã thanh toán nào trong kho lưu trữ này.",
+        "archivePreviewNote": "Mở chi tiết để xem toàn bộ lưu trữ với {{name}}.",
+        "archivePreviewShort": "Còn nhiều mục đã lưu trong phần chi tiết."
     },
     "adminApiDocs": {
         "title": "API Console",

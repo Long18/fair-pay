@@ -860,7 +860,16 @@
         "searchByName": "Search by name...",
         "settledCount": "{{count}} settled transaction(s)",
         "noResults": "No results found for \"{{query}}\"",
-        "totalTransacted": "Total"
+        "totalTransacted": "Total",
+        "fullySettled": "Fully settled",
+        "totalSettled": "Total settled",
+        "transactionCount": "{{count}} transactions",
+        "closedOn": "Closed {{date}}",
+        "closedShort": "Closed {{date}}",
+        "recentSettledItems": "Recent settled items",
+        "noSettledItems": "No settled items found for this archive yet.",
+        "archivePreviewNote": "Open details to browse the full archive with {{name}}.",
+        "archivePreviewShort": "More archived items live in full details."
     },
     "adminApiDocs": {
         "title": "API Console",
