@@ -22,6 +22,7 @@
         "daysAgo": " ngày trước",
         "vietnamese": "Tiếng Việt",
         "english": "English",
+        "someone": "Ai đó",
         "selectAll": "Chọn tất cả",
         "deselectAll": "Bỏ chọn tất cả",
         "showMore": "Xem thêm {{count}} người",
@@ -191,7 +192,72 @@
         "joinThousandsOfUsers": "Tham gia cùng hàng ngàn người dùng quản lý chi tiêu chung một cách dễ dàng",
         "createFreeAccount": "Tạo tài khoản miễn phí",
         "getStartedFree": "Bắt đầu miễn phí",
-        "signIn": "Đăng nhập"
+        "signIn": "Đăng nhập",
+        "last": "Lần cuối",
+        "lastTransaction": "Lần cuối:",
+        "expenses": "chi tiêu",
+        "recentWithUser": "Gần đây với {{name}}",
+        "noContributingExpenses": "Không tìm thấy chi tiêu nào",
+        "viewFullBreakdown": "Xem toàn bộ chi tiết",
+        "openExpenseDetail": "Mở chi tiết chi tiêu",
+        "settledTransactionsSummary": "{{count}} giao dịch đã thanh toán",
+        "loginToSeeBalances": "Đăng nhập để xem số dư của bạn",
+        "loginToSeeBalancesDesc": "Đăng nhập để xem số dư và theo dõi chi tiêu",
+        "activityFeed": {
+            "loading": "Đang tải hoạt động...",
+            "emptyTitle": "Chưa có hoạt động nào",
+            "emptyDescription": "Hãy tạo chi tiêu đầu tiên để bắt đầu",
+            "filteredEmptyTitle": "Không có hoạt động nào khớp bộ lọc",
+            "filteredEmptyDescription": "Hãy thử chọn bộ lọc khác",
+            "loadMore": "Xem thêm ({{visible}} / {{total}})",
+            "paidFor": "đã thanh toán",
+            "person": "người",
+            "people": "người",
+            "tapRow": "Nhấn để xem",
+            "hideTrail": "Ẩn chi tiết",
+            "openExpenseDetail": "Mở chi tiết chi tiêu",
+            "noPaymentsForExpense": "Chưa có thanh toán nào cho chi tiêu này.",
+            "expandPayments": "Mở danh sách thanh toán",
+            "collapsePayments": "Thu gọn danh sách thanh toán",
+            "actions": "Tác vụ giao dịch",
+            "quickView": "Xem nhanh",
+            "bulkSettlement": "Thanh toán hàng loạt",
+            "settledOn": "Đã thanh toán {{date}}",
+            "filters": {
+                "all": "Tất cả",
+                "paid": "Đã trả",
+                "unpaid": "Chưa trả",
+                "partial": "Một phần",
+                "reset": "Đặt lại bộ lọc",
+                "resetButton": "Đặt lại",
+                "ariaLabel": "Lọc theo {{label}}"
+            },
+            "sort": {
+                "placeholder": "Sắp xếp...",
+                "newest": "Ngày (mới nhất trước)",
+                "oldest": "Ngày (cũ nhất trước)",
+                "highestAmount": "Số tiền (cao nhất trước)",
+                "lowestAmount": "Số tiền (thấp nhất trước)"
+            },
+            "time": {
+                "today": "Hôm nay",
+                "thisWeek": "Tuần này",
+                "thisMonth": "Tháng này",
+                "earlier": "Trước đó",
+                "expandGroup": "Mở {{label}}",
+                "collapseGroup": "Thu gọn {{label}}"
+            },
+            "methods": {
+                "banking": "Ngân hàng",
+                "manual": "Thủ công"
+            },
+            "eventTypes": {
+                "bulkSettlement": "Thanh toán hàng loạt",
+                "momoPayment": "Thanh toán MoMo",
+                "bankingPayment": "Thanh toán ngân hàng",
+                "settlement": "Thanh toán"
+            }
+        }
     },
     "groups": {
         "title": "Nhóm",

@@ -22,6 +22,7 @@
         "daysAgo": "d ago",
         "vietnamese": "Vietnamese",
         "english": "English",
+        "someone": "Someone",
         "selectAll": "Select All",
         "deselectAll": "Deselect All",
         "showMore": "Show {{count}} more",
@@ -192,7 +193,72 @@
         "joinThousandsOfUsers": "Join thousands of users managing their shared expenses effortlessly",
         "createFreeAccount": "Create Free Account",
         "getStartedFree": "Get Started Free",
-        "signIn": "Sign In"
+        "signIn": "Sign In",
+        "last": "Last",
+        "lastTransaction": "Last:",
+        "expenses": "expenses",
+        "recentWithUser": "Recent with {{name}}",
+        "noContributingExpenses": "No expenses found",
+        "viewFullBreakdown": "View full breakdown",
+        "openExpenseDetail": "Open expense detail",
+        "settledTransactionsSummary": "{{count}} settled transactions",
+        "loginToSeeBalances": "Log in to view your balances",
+        "loginToSeeBalancesDesc": "Log in to view your balances and track expenses",
+        "activityFeed": {
+            "loading": "Loading activity...",
+            "emptyTitle": "No activity yet",
+            "emptyDescription": "Create your first expense to get started",
+            "filteredEmptyTitle": "No activities match your filter",
+            "filteredEmptyDescription": "Try selecting a different filter",
+            "loadMore": "Load More ({{visible}} of {{total}})",
+            "paidFor": "paid for",
+            "person": "person",
+            "people": "people",
+            "tapRow": "Tap row",
+            "hideTrail": "Hide trail",
+            "openExpenseDetail": "Open expense detail",
+            "noPaymentsForExpense": "No payments yet for this expense.",
+            "expandPayments": "Expand payment events",
+            "collapsePayments": "Collapse payment events",
+            "actions": "Transaction actions",
+            "quickView": "Quick View",
+            "bulkSettlement": "Bulk Settlement",
+            "settledOn": "Settled {{date}}",
+            "filters": {
+                "all": "All",
+                "paid": "Paid",
+                "unpaid": "Unpaid",
+                "partial": "Partial",
+                "reset": "Reset filters",
+                "resetButton": "Reset",
+                "ariaLabel": "Filter by {{label}}"
+            },
+            "sort": {
+                "placeholder": "Sort by...",
+                "newest": "Date (Newest First)",
+                "oldest": "Date (Oldest First)",
+                "highestAmount": "Amount (Highest First)",
+                "lowestAmount": "Amount (Lowest First)"
+            },
+            "time": {
+                "today": "Today",
+                "thisWeek": "This Week",
+                "thisMonth": "This Month",
+                "earlier": "Earlier",
+                "expandGroup": "Expand {{label}}",
+                "collapseGroup": "Collapse {{label}}"
+            },
+            "methods": {
+                "banking": "Banking",
+                "manual": "Manual"
+            },
+            "eventTypes": {
+                "bulkSettlement": "Bulk Settlement",
+                "momoPayment": "MoMo Payment",
+                "bankingPayment": "Banking Payment",
+                "settlement": "Settlement"
+            }
+        }
     },
     "groups": {
         "title": "Groups",
