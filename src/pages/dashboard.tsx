@@ -194,8 +194,10 @@ export const Dashboard = () => {
                     showSummary={false}
                     showFilters={true}
                     showSort={true}
-                    showTimeGrouping={false}
-                    showActions={true}
+                    showTimeGrouping={true}
+                    showActions={false}
+                    variant="dashboard"
+                    compactControls={true}
                     paginationMode="pagination"
                     pageSize={10}
                   />
