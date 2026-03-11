@@ -2,9 +2,6 @@ import {
   isToday,
   isThisWeek,
   isThisMonth,
-  startOfDay,
-  startOfWeek,
-  startOfMonth,
 } from "date-fns";
 import type { EnhancedActivityItem } from "@/types/activity";
 
@@ -73,7 +70,8 @@ export function getTimePeriodLabel(period: TimePeriod): string {
  * - Filtering applies to parent rows only; buckets render only if they contain ≥1 matched parent
  */
 export function groupActivitiesByTimePeriod(
-  activities: EnhancedActivityItem[]
+  activities: EnhancedActivityItem[],
+  dateField: "date" | "activityDate" = "date"
 ): TimePeriodGroup[] {
   // Group activities by time period
   const grouped = new Map<TimePeriod, EnhancedActivityItem[]>();
@@ -84,14 +82,14 @@ export function groupActivitiesByTimePeriod(
 
   // Assign each activity to its time period
   activities.forEach((activity) => {
-    const period = getTimePeriod(activity.date);
+    const period = getTimePeriod(activity[dateField]);
     grouped.get(period)?.push(activity);
   });
 
   // Sort activities within each period by date-desc
   grouped.forEach((activities) => {
     activities.sort((a, b) => {
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
+      return new Date(b[dateField]).getTime() - new Date(a[dateField]).getTime();
     });
   });
 
@@ -114,12 +112,13 @@ export function groupActivitiesByTimePeriod(
  */
 export function sortActivitiesByDate(
   activities: EnhancedActivityItem[],
-  order: "asc" | "desc" = "desc"
+  order: "asc" | "desc" = "desc",
+  dateField: "date" | "activityDate" = "date"
 ): EnhancedActivityItem[] {
   return [...activities].sort((a, b) => {
     // Handle null/undefined dates by defaulting to 0 (epoch)
-    const dateA = a.date ? new Date(a.date).getTime() : 0;
-    const dateB = b.date ? new Date(b.date).getTime() : 0;
+    const dateA = a[dateField] ? new Date(a[dateField]).getTime() : 0;
+    const dateB = b[dateField] ? new Date(b[dateField]).getTime() : 0;
 
     // Check for invalid dates (NaN)
     const validA = !isNaN(dateA) ? dateA : 0;
