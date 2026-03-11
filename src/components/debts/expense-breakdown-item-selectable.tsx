@@ -1,25 +1,8 @@
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { PaymentStateBadge } from "@/components/ui/payment-state-badge";
-import { CategoryIcon } from "@/modules/expenses/components/category-icon";
-import { formatCurrency } from "@/lib/locale-utils";
-import { useTranslation } from "react-i18next";
-import { cn } from "@/lib/utils";
-import { useHaptics } from "@/hooks/use-haptics";
 import { Link } from "react-router";
-import {
-  CheckCircle2Icon,
-  EyeIcon,
-  MoreVerticalIcon,
-} from "@/components/ui/icons";
+import { useTranslation } from "react-i18next";
+import { Checkbox } from "@/components/ui/checkbox";
+import { formatCurrency } from "@/lib/locale-utils";
+import { cn } from "@/lib/utils";
 
 interface ExpenseBreakdownItemSelectableProps {
   id: string;
@@ -42,6 +25,11 @@ interface ExpenseBreakdownItemSelectableProps {
   canSettle?: boolean;
 }
 
+function formatSignedCurrency(amount: number, currency: string) {
+  const sign = amount < 0 ? "−" : "+";
+  return `${sign}${formatCurrency(Math.abs(amount), currency)}`;
+}
+
 export function ExpenseBreakdownItemSelectable({
   id,
   splitId,
@@ -53,194 +41,105 @@ export function ExpenseBreakdownItemSelectable({
   myShare,
   direction,
   paidByName,
-  status,
   isSettled,
   settledAt,
   isSelected,
   onSelectChange,
-  onInlineSettle,
-  canSettle = false,
 }: ExpenseBreakdownItemSelectableProps) {
   const { t, i18n } = useTranslation();
-  const { tap, success } = useHaptics();
 
-  const isIOwe = direction === "i_owe";
+  const expenseUrl = `/expenses/show/${id}`;
+  const signedAmount = direction === "i_owe" ? -myShare : myShare;
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (value: string) => {
     try {
       return new Intl.DateTimeFormat(i18n.language, {
         month: "short",
         day: "numeric",
-      }).format(new Date(dateString));
+      }).format(new Date(value));
     } catch {
-      return dateString;
+      return value;
     }
   };
 
-  const handleCheckboxChange = (checked: boolean | "indeterminate") => {
-    if (checked !== "indeterminate") {
-      tap();
-      onSelectChange(splitId, checked);
-    }
-  };
+  const contextParts = [
+    formatDate(expenseDate),
+    t("debts.paidByContext", "{{name}} paid", { name: paidByName }),
+  ];
 
-  const expenseUrl = `/expenses/show/${id}`;
+  if (isSettled && settledAt) {
+    contextParts.push(
+      t("debts.settledOn", "Settled {{date}}", { date: formatDate(settledAt) })
+    );
+  } else if (groupName) {
+    contextParts.push(groupName);
+  } else if (category) {
+    contextParts.push(category);
+  }
 
   return (
     <div
       className={cn(
-        "group flex items-center gap-3 py-3 px-4 transition-colors border-b border-border",
-        "bg-card relative",
-        isSelected && "bg-primary/5 border-l-[3px] border-l-primary pl-[13px]",
-        !isSelected && "hover:bg-muted/50"
+        "flex items-start gap-3 rounded-xl px-2 py-4 transition-colors",
+        isSelected && "bg-primary/5",
+        !isSelected && !isSettled && "hover:bg-muted/35"
       )}
     >
-      {/* Checkbox — hover or selected */}
-      {!isSettled && (
-        <div
-          className={cn(
-            "shrink-0 transition-opacity",
-            isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-          )}
-        >
+      <div className="flex h-5 w-5 shrink-0 items-center justify-center pt-0.5">
+        {!isSettled ? (
           <Checkbox
             checked={isSelected}
-            onCheckedChange={handleCheckboxChange}
-            onClick={(e) => e.stopPropagation()}
-            aria-label={`Select ${description}`}
+            onCheckedChange={(checked) => {
+              if (checked !== "indeterminate") {
+                onSelectChange(splitId, checked);
+              }
+            }}
+            className="size-5 rounded-md"
+            aria-label={t("debts.selectExpense", "Select {{description}}", {
+              description,
+            })}
           />
-        </div>
-      )}
+        ) : null}
+      </div>
 
-      {/* Category Icon + Body — wrapped in <Link> for proper navigation */}
       <Link
         to={expenseUrl}
-        className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
-        onClick={(e) => e.stopPropagation()}
+        className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-start gap-3"
       >
-        <div className="shrink-0">
-          <CategoryIcon category={category} size="sm" />
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <p
-              className={cn(
-                "text-sm font-semibold truncate",
-                isSettled && "line-through text-muted-foreground"
-              )}
-            >
-              {description}
-            </p>
-            {status === "partial" && (
-              <PaymentStateBadge state={status} size="sm" />
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span
-              className={cn(
-                "text-[11px] font-medium px-1.5 py-0.5 rounded",
-                isSettled
-                  ? "bg-muted text-muted-foreground border border-border"
-                  : isIOwe
-                    ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300"
-                    : "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300"
-              )}
-            >
-              {isSettled
-                ? `${paidByName} · ${t("debts.settled", "Settled")}`
-                : `${paidByName} ${t("debts.paid", "paid")}`}
-            </span>
-            <span className="text-[11px] text-muted-foreground">
-              {formatDate(expenseDate)}
-            </span>
-            {isSettled && settledAt && (
-              <span className="text-[10px] text-muted-foreground/70">
-                {t("debts.settledOn", "settled {{date}}", {
-                  date: formatDate(settledAt),
-                })}
-              </span>
-            )}
-            {groupName && (
-              <Badge
-                variant="outline"
-                className="text-[10px] px-1.5 py-0 h-4 font-normal"
-              >
-                {groupName}
-              </Badge>
-            )}
-          </div>
-        </div>
-      </Link>
-
-      {/* Right: direction + amount + inline settle */}
-      <div className="flex flex-col items-end ml-2 shrink-0 gap-1">
-        {!isSettled && (
-          <span
+        <div className="min-w-0">
+          <p
             className={cn(
-              "text-[10px] font-semibold uppercase tracking-wide",
-              isIOwe
-                ? "text-red-600 dark:text-red-400"
-                : "text-green-600 dark:text-green-400"
+              "truncate text-sm font-semibold text-foreground",
+              isSettled && "text-muted-foreground"
             )}
           >
-            {isIOwe
+            {description}
+          </p>
+          <p className="mt-1 truncate text-xs text-muted-foreground">
+            {contextParts.join(" · ")}
+          </p>
+        </div>
+
+        <div className="flex flex-col items-end gap-1 text-right">
+          <span
+            className={cn(
+              "text-sm font-bold tabular-nums",
+              isSettled
+                ? "text-muted-foreground"
+                : direction === "i_owe"
+                  ? "text-semantic-negative"
+                  : "text-semantic-positive"
+            )}
+          >
+            {formatSignedCurrency(signedAmount, currency)}
+          </span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            {direction === "i_owe"
               ? t("debts.youOweLabel", "You owe")
               : t("debts.theyOweLabel", "Owes you")}
           </span>
-        )}
-        {isSettled && (
-          <CheckCircle2Icon className="h-3.5 w-3.5 text-muted-foreground" />
-        )}
-        <span
-          className={cn(
-            "text-[15px] font-bold tabular-nums",
-            isSelected && "text-primary",
-            !isSelected && isSettled && "text-muted-foreground font-medium",
-            !isSelected && !isSettled && isIOwe && "text-red-600 dark:text-red-400",
-            !isSelected && !isSettled && !isIOwe && "text-green-600 dark:text-green-400"
-          )}
-        >
-          {formatCurrency(myShare, currency)}
-        </span>
-
-        {/* Action dropdown — matches app-wide pattern */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "h-7 w-7 shrink-0",
-                "opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
-              )}
-              onClick={(e) => e.stopPropagation()}
-              aria-label={t("common.actions", "Actions")}
-            >
-              <MoreVerticalIcon className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link to={expenseUrl}>
-                <EyeIcon className="h-4 w-4 mr-2" />
-                {t("debts.viewDetails", "View Details")}
-              </Link>
-            </DropdownMenuItem>
-            {!isSettled && canSettle && onInlineSettle && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => { success(); onInlineSettle(splitId); }}
-                >
-                  <CheckCircle2Icon className="h-4 w-4 mr-2" />
-                  {t("debts.settle", "Settle")}
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+        </div>
+      </Link>
     </div>
   );
 }

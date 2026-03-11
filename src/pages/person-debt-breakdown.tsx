@@ -1,64 +1,61 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router";
-import { useHaptics } from "@/hooks/use-haptics";
-import { Card, CardContent } from "@/components/ui/card";
-import { LoadingBeam } from "@/components/ui/loading-beam";
-import { Button } from "@/components/ui/button";
+import { useGetIdentity, useOne } from "@refinedev/core";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { BulkDeleteDialog } from "@/components/bulk-operations/BulkDeleteDialog";
 import { DebtBreakdownHeader } from "@/components/debts/debt-breakdown-header";
-import { DebtStickyNav } from "@/components/debts/debt-sticky-nav";
 import { DebtFilterTabs } from "@/components/debts/debt-filter-tabs";
 import { DebtMonthGroup } from "@/components/debts/debt-month-group";
 import { ExpenseBreakdownItemSelectable } from "@/components/debts/expense-breakdown-item-selectable";
-import { useContributingExpenses } from "@/hooks/use-contributing-expenses";
-import { useDebtSummary } from "@/hooks/balance/use-debt-summary";
-import { useSettleSplits } from "@/hooks/balance/use-settle-splits";
-import { useDeleteSplits } from "@/hooks/use-delete-splits";
-import { useOne, useGetIdentity } from "@refinedev/core";
-import { Profile } from "@/modules/profile/types";
-import { useTranslation } from "react-i18next";
-import { isAdmin } from "@/lib/rbac";
-import { BulkDeleteDialog } from "@/components/bulk-operations/BulkDeleteDialog";
-import { formatCurrency } from "@/lib/locale-utils";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Empty,
+  EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-  EmptyDescription,
 } from "@/components/ui/empty";
 import {
-  ScaleIcon,
   CheckCircle2Icon,
+  ScaleIcon,
   Trash2Icon,
-  XIcon,
 } from "@/components/ui/icons";
+import { PageContainer } from "@/components/ui/page-container";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { LoadingBeam } from "@/components/ui/loading-beam";
+import { useDebtSummary } from "@/hooks/balance/use-debt-summary";
+import { useDeleteSplits } from "@/hooks/use-delete-splits";
+import { useContributingExpenses } from "@/hooks/use-contributing-expenses";
+import { useHaptics } from "@/hooks/use-haptics";
+import { useSettleSplits } from "@/hooks/balance/use-settle-splits";
+import { formatCurrency } from "@/lib/locale-utils";
+import { isAdmin } from "@/lib/rbac";
+import { Profile } from "@/modules/profile/types";
+import { useTranslation } from "react-i18next";
 import type { DebtFilterTab } from "@/components/debts/debt-filter-tabs";
 
-// Group expenses by month key "YYYY-MM"
 function getMonthKey(dateStr: string): string {
-  const d = new Date(dateStr);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const date = new Date(dateStr);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
-
-
 
 export const PersonDebtBreakdown = () => {
   const { userId } = useParams<{ userId: string }>();
   const { t } = useTranslation();
   const { tap, success, warning } = useHaptics();
 
-  // Admin detection
   const [userIsAdmin, setUserIsAdmin] = useState(false);
+  const [selectedSplitIds, setSelectedSplitIds] = useState<Set<string>>(new Set());
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<DebtFilterTab>("unsettled");
+
   useEffect(() => {
     isAdmin().then(setUserIsAdmin);
   }, []);
 
-  // Current user identity
   const { data: identity } = useGetIdentity<Profile>();
   const myName = identity?.full_name || t("debts.you", "You");
 
-  // Fetch counterparty profile
   const { query: counterpartyQuery } = useOne<Profile>({
     resource: "profiles",
     id: userId!,
@@ -66,170 +63,165 @@ export const PersonDebtBreakdown = () => {
   const counterparty = counterpartyQuery.data;
   const isLoadingProfile = counterpartyQuery.isLoading;
 
-  // Fetch contributing expenses
   const {
     expenses,
     isLoading: isLoadingExpenses,
     refetch,
   } = useContributingExpenses(userId!);
 
-  // Calculate debt summary
   const { summary, isLoading: isLoadingSummary } = useDebtSummary(
     userId!,
     counterparty?.data?.full_name || "",
     counterparty?.data?.avatar_url
   );
 
-  // Settlement & delete logic
   const { settle, isSettling } = useSettleSplits();
   const { deleteSplits, isDeleting } = useDeleteSplits();
-  const [selectedSplitIds, setSelectedSplitIds] = useState<Set<string>>(
-    new Set()
-  );
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
 
-  // Filter tab state
-  const [activeTab, setActiveTab] = useState<DebtFilterTab>("unsettled");
-
-  // Sticky nav via IntersectionObserver
-  const heroRef = useRef<HTMLDivElement>(null);
-  const [stickyNavVisible, setStickyNavVisible] = useState(false);
-
-  useEffect(() => {
-    const el = heroRef.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => setStickyNavVisible(!entry.isIntersecting),
-      { threshold: 0, rootMargin: "-50px 0px 0px 0px" }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [counterparty?.data, summary]);
-
-  // Only allow selecting expenses where current user is the PAYER (they_owe direction)
-  // or user is admin — debtors cannot settle their own splits
   const selectableExpenses = useMemo(() => {
     return expenses.filter(
-      (exp) =>
-        !exp.is_settled &&
-        exp.my_share > 0 &&
-        (userIsAdmin || exp.direction === "they_owe")
+      (expense) =>
+        !expense.is_settled &&
+        expense.my_share > 0 &&
+        (userIsAdmin || expense.direction === "they_owe")
     );
   }, [expenses, userIsAdmin]);
 
-  // Tab counts
   const tabCounts = useMemo(() => {
-    const settled = expenses.filter((e) => e.is_settled).length;
+    const settledCount = expenses.filter((expense) => expense.is_settled).length;
+
     return {
       all: expenses.length,
-      unsettled: expenses.length - settled,
-      settled,
+      unsettled: expenses.length - settledCount,
+      settled: settledCount,
     };
   }, [expenses]);
 
-  // Group expenses by month
   const monthGroups = useMemo(() => {
     const grouped = new Map<
       string,
-      { unsettled: typeof expenses; settled: typeof expenses; net: number; settledTotal: number }
+      {
+        unsettled: typeof expenses;
+        settled: typeof expenses;
+        openNetAmount: number;
+        settledNetAmount: number;
+        settledTotal: number;
+      }
     >();
 
-    for (const exp of expenses) {
-      const key = getMonthKey(exp.expense_date);
+    for (const expense of expenses) {
+      const key = getMonthKey(expense.expense_date);
+      const signedAmount =
+        expense.direction === "they_owe" ? expense.my_share : -expense.my_share;
+
       if (!grouped.has(key)) {
-        grouped.set(key, { unsettled: [], settled: [], net: 0, settledTotal: 0 });
+        grouped.set(key, {
+          unsettled: [],
+          settled: [],
+          openNetAmount: 0,
+          settledNetAmount: 0,
+          settledTotal: 0,
+        });
       }
+
       const group = grouped.get(key)!;
 
-      if (exp.is_settled) {
-        group.settled.push(exp);
-        group.settledTotal += exp.my_share;
+      if (expense.is_settled) {
+        group.settled.push(expense);
+        group.settledTotal += expense.my_share;
+        group.settledNetAmount += signedAmount;
       } else {
-        group.unsettled.push(exp);
-        // Net: positive = they owe me, negative = I owe them
-        group.net +=
-          exp.direction === "they_owe" ? exp.my_share : -exp.my_share;
+        group.unsettled.push(expense);
+        group.openNetAmount += signedAmount;
       }
     }
 
-    // Sort by month descending
     return [...grouped.entries()]
-      .sort(([a], [b]) => b.localeCompare(a))
-      .map(([key, data]) => ({
+      .sort(([leftKey], [rightKey]) => rightKey.localeCompare(leftKey))
+      .map(([key, value]) => ({
         key,
-        unsettled: data.unsettled,
-        settled: data.settled,
-        netAmount: data.net,
-        settledTotal: data.settledTotal,
+        unsettled: value.unsettled,
+        settled: value.settled,
+        openNetAmount: value.openNetAmount,
+        settledNetAmount: value.settledNetAmount,
+        allNetAmount: value.openNetAmount + value.settledNetAmount,
+        settledTotal: value.settledTotal,
       }));
   }, [expenses]);
 
-  // Filter month groups based on active tab
-  // NOTE: In "unsettled" tab, we preserve the settled array so that
-  // DebtMonthGroup can show the collapsible "Settled expenses" toggle
-  // within each month group (both for individual settle and settle-all).
   const filteredMonthGroups = useMemo(() => {
-    if (activeTab === "all") return monthGroups;
-    if (activeTab === "unsettled") {
-      // Show months that have unsettled items, but preserve their settled
-      // items so the collapsible "Settled expenses" dropdown can appear
-      return monthGroups.filter((g) => g.unsettled.length > 0);
+    if (activeTab === "all") {
+      return monthGroups.map((group) => ({
+        ...group,
+        displayNetAmount: group.allNetAmount,
+      }));
     }
-    // settled tab
+
+    if (activeTab === "unsettled") {
+      return monthGroups
+        .filter((group) => group.unsettled.length > 0)
+        .map((group) => ({
+          ...group,
+          displayNetAmount: group.openNetAmount,
+        }));
+    }
+
     return monthGroups
-      .map((g) => ({
-        ...g,
-        unsettled: [] as typeof g.unsettled,
-      }))
-      .filter((g) => g.settled.length > 0);
+      .filter((group) => group.settled.length > 0)
+      .map((group) => ({
+        ...group,
+        unsettled: [] as typeof group.unsettled,
+        displayNetAmount: group.settledNetAmount,
+      }));
   }, [monthGroups, activeTab]);
 
-  // Calculate selected amount
   const selectedAmount = useMemo(() => {
     return expenses
-      .filter((exp) => selectedSplitIds.has(exp.id))
-      .reduce((sum, exp) => sum + exp.my_share, 0);
+      .filter((expense) => selectedSplitIds.has(expense.id))
+      .reduce((sum, expense) => sum + expense.my_share, 0);
   }, [expenses, selectedSplitIds]);
 
-  const handleSelectChange = useCallback(
-    (splitId: string, checked: boolean) => {
-      setSelectedSplitIds((prev) => {
-        const next = new Set(prev);
-        if (checked) next.add(splitId);
-        else next.delete(splitId);
-        return next;
-      });
-    },
-    []
-  );
+  const selectedNetEffect = useMemo(() => {
+    return expenses
+      .filter((expense) => selectedSplitIds.has(expense.id))
+      .reduce((sum, expense) => {
+        return sum + (expense.direction === "they_owe" ? expense.my_share : -expense.my_share);
+      }, 0);
+  }, [expenses, selectedSplitIds]);
+
+  const handleSelectChange = useCallback((splitId: string, checked: boolean) => {
+    setSelectedSplitIds((previous) => {
+      const next = new Set(previous);
+
+      if (checked) {
+        next.add(splitId);
+      } else {
+        next.delete(splitId);
+      }
+
+      return next;
+    });
+  }, []);
 
   const handleSettle = useCallback(async () => {
     const result = await settle(Array.from(selectedSplitIds), refetch);
+
     if (result.success) {
       success();
       setSelectedSplitIds(new Set());
     }
   }, [selectedSplitIds, settle, refetch, success]);
 
-  const handleInlineSettle = useCallback(
-    async (splitId: string) => {
-      const result = await settle([splitId], refetch);
-      if (result.success) {
-        setSelectedSplitIds((prev) => {
-          const next = new Set(prev);
-          next.delete(splitId);
-          return next;
-        });
-      }
-    },
-    [settle, refetch]
-  );
-
   const handleSettleAll = useCallback(async () => {
-    const allSettleable = selectableExpenses.map((e) => e.id);
-    if (allSettleable.length === 0) return;
+    const allSettleable = selectableExpenses.map((expense) => expense.id);
+
+    if (allSettleable.length === 0) {
+      return;
+    }
+
     const result = await settle(allSettleable, refetch);
+
     if (result.success) {
       setSelectedSplitIds(new Set());
     }
@@ -237,6 +229,7 @@ export const PersonDebtBreakdown = () => {
 
   const handleDelete = useCallback(async () => {
     const result = await deleteSplits(Array.from(selectedSplitIds));
+
     if (result.success) {
       setSelectedSplitIds(new Set());
       setDeleteDialogOpen(false);
@@ -244,37 +237,37 @@ export const PersonDebtBreakdown = () => {
     }
   }, [selectedSplitIds, deleteSplits, refetch]);
 
-  const canSettleSplit = useCallback(
-    (splitId: string) => {
-      return selectableExpenses.some((e) => e.id === splitId);
-    },
-    [selectableExpenses]
-  );
-
-  // Participant info for settled toggle avatars
   const participants = useMemo(() => {
-    if (!counterparty?.data || !identity) return undefined;
+    if (!counterparty?.data || !identity) {
+      return undefined;
+    }
+
     return [
-      { name: counterparty.data.full_name, avatarUrl: counterparty.data.avatar_url },
-      { name: identity.full_name || t("debts.you", "You"), avatarUrl: identity.avatar_url },
+      {
+        name: counterparty.data.full_name,
+        avatarUrl: counterparty.data.avatar_url,
+      },
+      {
+        name: identity.full_name || t("debts.you", "You"),
+        avatarUrl: identity.avatar_url,
+      },
     ];
   }, [counterparty?.data, identity, t]);
 
   const hasSelection = selectedSplitIds.size > 0;
   const isLoading = isLoadingProfile || isLoadingExpenses || isLoadingSummary;
-  const prefersReducedMotion = useReducedMotion();
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <LoadingBeam text={t("debts.loading", "Đang tải chi tiết\u2026")} />
-      </div>
+      <PageContainer variant="narrow">
+        <LoadingBeam text={t("debts.loading", "Đang tải chi tiết…")} />
+      </PageContainer>
     );
   }
 
   if (!counterparty?.data || !summary) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <PageContainer variant="narrow">
         <Card className="rounded-xl">
           <CardContent className="p-8">
             <Empty>
@@ -295,26 +288,14 @@ export const PersonDebtBreakdown = () => {
             </Empty>
           </CardContent>
         </Card>
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl pb-28">
-      {/* Sticky compact nav on scroll */}
-      <DebtStickyNav
-        visible={stickyNavVisible}
-        counterpartyName={counterparty.data.full_name}
-        counterpartyAvatarUrl={counterparty.data.avatar_url}
-        netAmount={summary.net_amount}
-        iOweThem={summary.i_owe_them}
-        currency={summary.currency}
-      />
-
+    <PageContainer variant="narrow" spacing="compact" className="pb-28">
       <div className="space-y-0">
-        {/* Hero Header */}
         <DebtBreakdownHeader
-          ref={heroRef}
           counterpartyName={counterparty.data.full_name}
           counterpartyAvatarUrl={counterparty.data.avatar_url}
           netAmount={summary.net_amount}
@@ -322,55 +303,52 @@ export const PersonDebtBreakdown = () => {
           currency={summary.currency}
           totalIOwe={summary.total_i_owe}
           totalTheyOwe={summary.total_they_owe}
-          unpaidCount={summary.unpaid_count}
-          partialCount={summary.partial_count}
-          paidCount={summary.paid_count}
           counterpartyId={userId!}
           onPaymentComplete={refetch}
           onSettleAll={handleSettleAll}
         />
 
-        {/* Filter Tabs */}
-        <div className="mt-4 rounded-xl border overflow-hidden bg-card shadow-sm">
+        <div className="sticky top-16 z-30 bg-background/95 py-4 backdrop-blur-sm md:top-20">
           <DebtFilterTabs
             activeTab={activeTab}
-            onTabChange={(tab) => { tap(); setActiveTab(tab); }}
+            onTabChange={setActiveTab}
             counts={tabCounts}
           />
+        </div>
 
-          {/* Transaction List */}
-          {filteredMonthGroups.length === 0 ? (
-            <div className="py-12">
-              <Empty>
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <ScaleIcon className="h-8 w-8" />
-                  </EmptyMedia>
-                  <EmptyTitle>
-                    {activeTab === "settled"
-                      ? t("debts.noSettledExpenses", "No settled expenses")
-                      : t("debts.allClear", "All clear!")}
-                  </EmptyTitle>
-                  <EmptyDescription>
-                    {t(
-                      "debts.noExpensesInFilter",
-                      "No expenses to show in this filter."
-                    )}
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            </div>
-          ) : (
-            filteredMonthGroups.map((group) => (
+        {filteredMonthGroups.length === 0 ? (
+          <div className="py-16">
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <ScaleIcon className="h-8 w-8" />
+                </EmptyMedia>
+                <EmptyTitle>
+                  {activeTab === "settled"
+                    ? t("debts.noSettledExpenses", "No settled expenses")
+                    : t("debts.allClear", "All clear!")}
+                </EmptyTitle>
+                <EmptyDescription>
+                  {t(
+                    "debts.noExpensesInFilter",
+                    "No expenses to show in this filter."
+                  )}
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          </div>
+        ) : (
+          <div className="space-y-8 pt-2">
+            {filteredMonthGroups.map((group) => (
               <DebtMonthGroup
                 key={group.key}
                 monthKey={group.key}
-                netAmount={group.netAmount}
+                netAmount={group.displayNetAmount}
                 currency={summary.currency}
                 settledCount={group.settled.length}
                 settledTotal={group.settledTotal}
-                showSettledToggle={activeTab !== "settled"}
                 participants={participants}
+                defaultSettledExpanded={activeTab === "settled"}
                 settledChildren={group.settled.map((expense) => (
                   <ExpenseBreakdownItemSelectable
                     key={expense.id}
@@ -397,7 +375,6 @@ export const PersonDebtBreakdown = () => {
                   />
                 ))}
               >
-                {/* Unsettled items */}
                 {group.unsettled.map((expense) => (
                   <ExpenseBreakdownItemSelectable
                     key={expense.id}
@@ -420,17 +397,14 @@ export const PersonDebtBreakdown = () => {
                     isSettled={expense.is_settled}
                     isSelected={selectedSplitIds.has(expense.id)}
                     onSelectChange={handleSelectChange}
-                    onInlineSettle={handleInlineSettle}
-                    canSettle={canSettleSplit(expense.id)}
                   />
                 ))}
               </DebtMonthGroup>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Floating Action Bar */}
       <AnimatePresence>
         {hasSelection && (
           <motion.div
@@ -442,63 +416,72 @@ export const PersonDebtBreakdown = () => {
                 ? { duration: 0 }
                 : { type: "spring", damping: 25, stiffness: 300 }
             }
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50"
+            className="fixed bottom-6 left-1/2 z-50 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2"
           >
-            <div className="bg-foreground text-background shadow-2xl rounded-2xl px-4 py-3 flex items-center gap-3">
-              <div className="flex flex-col mr-1">
-                <span className="text-[10px] opacity-55 font-medium">
+            <div className="flex items-center justify-between gap-3 rounded-2xl bg-foreground px-4 py-3 text-background shadow-2xl">
+              <div className="min-w-0">
+                <span className="text-[10px] font-medium uppercase tracking-[0.18em] opacity-55">
                   {t("debts.selectedCount", "{{count}} selected", {
                     count: selectedSplitIds.size,
                   })}
                 </span>
-                <span className="text-sm font-extrabold tabular-nums">
-                  {formatCurrency(selectedAmount, summary.currency)}
-                </span>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="text-sm font-extrabold tabular-nums">
+                    {formatCurrency(selectedAmount, summary.currency)}
+                  </span>
+                  <span className="text-xs text-background/65">
+                    {selectedNetEffect >= 0 ? "+" : "−"}
+                    {formatCurrency(Math.abs(selectedNetEffect), summary.currency)}
+                  </span>
+                </div>
               </div>
 
-              <div className="w-px h-7 bg-current opacity-15" />
-
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={handleSettle}
-                disabled={isSettling}
-                className="gap-1.5"
-              >
-                <CheckCircle2Icon className="h-4 w-4" />
-                {isSettling
-                  ? t("debts.settling", "Settling\u2026")
-                  : t("debts.settle", "Settle")}
-              </Button>
-
-              {userIsAdmin && (
+              <div className="flex shrink-0 items-center gap-2">
                 <Button
                   size="sm"
-                  variant="destructive"
-                  onClick={() => { warning(); setDeleteDialogOpen(true); }}
-                  disabled={isDeleting}
-                  className="gap-1.5"
+                  variant="ghost"
+                  className="text-background hover:bg-background/10 hover:text-background"
+                  onClick={() => {
+                    tap();
+                    setSelectedSplitIds(new Set());
+                  }}
                 >
-                  <Trash2Icon className="h-4 w-4" />
-                  {t("common.delete", "Delete")}
+                  {t("common.cancel", "Cancel")}
                 </Button>
-              )}
 
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 text-background hover:bg-background/10"
-                onClick={() => { tap(); setSelectedSplitIds(new Set()); }}
-                aria-label="Clear selection"
-              >
-                <XIcon className="h-4 w-4" />
-              </Button>
+                {userIsAdmin && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-background hover:bg-background/10 hover:text-background"
+                    onClick={() => {
+                      warning();
+                      setDeleteDialogOpen(true);
+                    }}
+                    disabled={isDeleting}
+                  >
+                    <Trash2Icon className="h-4 w-4" />
+                    {t("common.delete", "Delete")}
+                  </Button>
+                )}
+
+                <Button
+                  size="sm"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  onClick={handleSettle}
+                  disabled={isSettling}
+                >
+                  <CheckCircle2Icon className="h-4 w-4" />
+                  {isSettling
+                    ? t("debts.settling", "Settling…")
+                    : t("debts.settle", "Settle")}
+                </Button>
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Delete Confirmation Dialog */}
       <BulkDeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
@@ -506,6 +489,6 @@ export const PersonDebtBreakdown = () => {
         selectedCount={selectedSplitIds.size}
         isLoading={isDeleting}
       />
-    </div>
+    </PageContainer>
   );
 };
