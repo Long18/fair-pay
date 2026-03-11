@@ -2,6 +2,7 @@ import * as React from "react";
 import { useGo } from "@refinedev/core";
 import { formatDistanceToNow, format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -39,64 +40,64 @@ export interface EnhancedActivityRowProps {
   className?: string;
 }
 
-function getMethodLabel(method: string) {
+function getMethodLabel(method: string, t: (key: string, defaultValue?: string) => string) {
   switch (method) {
     case "momo":
       return "MoMo";
     case "banking":
-      return "Banking";
+      return t("dashboard.activityFeed.methods.banking", "Banking");
     case "manual":
     default:
-      return "Manual";
+      return t("dashboard.activityFeed.methods.manual", "Manual");
   }
 }
 
-function getEventTypeLabel(eventType: string) {
+function getEventTypeLabel(eventType: string, t: (key: string, defaultValue?: string) => string) {
   switch (eventType) {
     case "settle_all":
     case "settle_all_with_person":
     case "settle_all_user_splits":
     case "settle_all_group":
     case "settle_batch":
-      return "Bulk Settlement";
+      return t("dashboard.activityFeed.eventTypes.bulkSettlement", "Bulk Settlement");
     case "momo_payment":
-      return "MoMo Payment";
+      return t("dashboard.activityFeed.eventTypes.momoPayment", "MoMo Payment");
     case "banking_payment":
-      return "Banking Payment";
+      return t("dashboard.activityFeed.eventTypes.bankingPayment", "Banking Payment");
     case "manual_settle":
     default:
-      return "Settlement";
+      return t("dashboard.activityFeed.eventTypes.settlement", "Settlement");
   }
 }
 
-function getDashboardNarrative(activity: EnhancedActivityItem, currentUserId: string) {
+function getDashboardNarrative(
+  activity: EnhancedActivityItem,
+  currentUserId: string,
+  t: (key: string, defaultValue?: string) => string
+) {
   const latestPaymentEvent = activity.paymentEvents[0];
 
   if (latestPaymentEvent) {
     const actor =
       latestPaymentEvent.from_user_id === currentUserId
-        ? "You"
+        ? t("common.you", "You")
         : latestPaymentEvent.from_user_name;
-    const receiver =
-      latestPaymentEvent.to_user_id === currentUserId
-        ? "you"
-        : latestPaymentEvent.to_user_name;
 
     return {
       actor,
-      action: `paid ${receiver} for`,
+      action: t("dashboard.activityFeed.paidFor", "paid for"),
       description: activity.description,
     };
   }
 
   const payerName =
     activity.originalExpense?.paid_by_user_id === currentUserId
-      ? "You"
-      : activity.originalExpense?.profiles?.full_name || "Someone";
+      ? t("common.you", "You")
+      : activity.originalExpense?.profiles?.full_name || t("common.someone", "Someone");
 
   return {
     actor: payerName,
-    action: "paid for",
+    action: t("dashboard.activityFeed.paidFor", "paid for"),
     description: activity.description,
   };
 }
@@ -183,6 +184,7 @@ function ActivityDetailLink({
 }) {
   const go = useGo();
   const { tap } = useHaptics();
+  const { t } = useTranslation();
 
   return (
     <Button
@@ -195,7 +197,7 @@ function ActivityDetailLink({
         go({ to: `/expenses/show/${activityId}` });
       }}
     >
-      <span>Open expense detail</span>
+      <span>{t("dashboard.openExpenseDetail", "Open expense detail")}</span>
       <ArrowRightIcon className="h-4 w-4" />
     </Button>
   );
@@ -248,6 +250,16 @@ const DefaultPaymentEventRow: React.FC<{
   event: PaymentEvent;
   currentUserId: string;
 }> = ({ event, currentUserId }) => (
+  <DefaultPaymentEventRowInner event={event} currentUserId={currentUserId} />
+);
+
+const DefaultPaymentEventRowInner: React.FC<{
+  event: PaymentEvent;
+  currentUserId: string;
+}> = ({ event, currentUserId }) => {
+  const { t } = useTranslation();
+
+  return (
   <div
     className={cn(
       "flex items-center gap-3 rounded-md border border-muted bg-muted/30 p-3 text-sm"
@@ -255,7 +267,7 @@ const DefaultPaymentEventRow: React.FC<{
   >
     <div className="flex-shrink-0">
       <span className="text-xs font-medium text-muted-foreground">
-        {getEventTypeLabel(event.event_type)}
+        {getEventTypeLabel(event.event_type, t)}
       </span>
     </div>
 
@@ -267,7 +279,7 @@ const DefaultPaymentEventRow: React.FC<{
             event.from_user_id === currentUserId && "text-semantic-negative"
           )}
         >
-          {event.from_user_id === currentUserId ? "You" : event.from_user_name}
+          {event.from_user_id === currentUserId ? t("common.you", "You") : event.from_user_name}
         </span>
         {" → "}
         <span
@@ -276,14 +288,14 @@ const DefaultPaymentEventRow: React.FC<{
             event.to_user_id === currentUserId && "text-semantic-positive"
           )}
         >
-          {event.to_user_id === currentUserId ? "You" : event.to_user_name}
+          {event.to_user_id === currentUserId ? t("common.you", "You") : event.to_user_name}
         </span>
       </p>
 
       <p className="mt-0.5 text-xs text-muted-foreground">
         {formatDistanceToNow(new Date(event.created_at), { addSuffix: true })}
         {" • "}
-        {getMethodLabel(event.method)}
+        {getMethodLabel(event.method, t)}
       </p>
     </div>
 
@@ -293,25 +305,29 @@ const DefaultPaymentEventRow: React.FC<{
       </p>
     </div>
   </div>
-);
+  );
+};
 
 const DashboardPaymentTrailRow: React.FC<{
   event: PaymentEvent;
   currentUserId: string;
-}> = ({ event, currentUserId }) => (
+}> = ({ event, currentUserId }) => {
+  const { t } = useTranslation();
+
+  return (
   <div className="grid gap-3 rounded-md border border-border bg-background/80 px-3 py-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
     <div className="min-w-0">
       <p className="text-sm font-medium text-foreground">
         <span className={cn(event.from_user_id === currentUserId && "text-semantic-negative")}>
-          {event.from_user_id === currentUserId ? "You" : event.from_user_name}
+          {event.from_user_id === currentUserId ? t("common.you", "You") : event.from_user_name}
         </span>
         {" → "}
         <span className={cn(event.to_user_id === currentUserId && "text-semantic-positive")}>
-          {event.to_user_id === currentUserId ? "You" : event.to_user_name}
+          {event.to_user_id === currentUserId ? t("common.you", "You") : event.to_user_name}
         </span>
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
-        {getMethodLabel(event.method)} • {formatDistanceToNow(new Date(event.created_at), { addSuffix: true })}
+        {getMethodLabel(event.method, t)} • {formatDistanceToNow(new Date(event.created_at), { addSuffix: true })}
       </p>
     </div>
 
@@ -321,7 +337,8 @@ const DashboardPaymentTrailRow: React.FC<{
       </p>
     </div>
   </div>
-);
+  );
+};
 
 const DefaultActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRowProps>(
   (
@@ -337,6 +354,7 @@ const DefaultActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRowP
     ref
   ) => {
     const go = useGo();
+    const { t } = useTranslation();
     const { tap } = useHaptics();
 
     const handleRowClick = (event: React.MouseEvent) => {
@@ -441,7 +459,11 @@ const DefaultActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRowP
                   "rounded p-1 transition-colors hover:bg-muted",
                   "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 )}
-                aria-label={isExpanded ? "Collapse payment events" : "Expand payment events"}
+                aria-label={
+                  isExpanded
+                    ? t("dashboard.activityFeed.collapsePayments", "Collapse payment events")
+                    : t("dashboard.activityFeed.expandPayments", "Expand payment events")
+                }
                 aria-expanded={isExpanded}
               >
                 {isExpanded ? (
@@ -475,7 +497,10 @@ const DefaultActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRowP
 
               <span>•</span>
               <span>
-                {activity.participantCount} {activity.participantCount === 1 ? "person" : "people"}
+                {activity.participantCount}{" "}
+                {activity.participantCount === 1
+                  ? t("dashboard.activityFeed.person", "person")
+                  : t("dashboard.activityFeed.people", "people")}
               </span>
 
               {showDuplicateContext && activity.contextLine && (
@@ -511,7 +536,10 @@ const DefaultActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRowP
 
                 {settledDate && (
                   <span className="text-[11px] font-medium text-status-success-foreground">
-                    Settled {format(new Date(settledDate), "dd/MM/yyyy")}
+                    {t("dashboard.activityFeed.settledOn", {
+                      defaultValue: "Settled {{date}}",
+                      date: format(new Date(settledDate), "dd/MM/yyyy"),
+                    })}
                   </span>
                 )}
               </div>
@@ -544,7 +572,7 @@ const DefaultActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRowP
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 opacity-0 transition-opacity focus:opacity-100 group-hover:opacity-100"
-                      aria-label="Transaction actions"
+                      aria-label={t("dashboard.activityFeed.actions", "Transaction actions")}
                       onClick={(event) => event.stopPropagation()}
                     >
                       <MoreVerticalIcon className="h-4 w-4" />
@@ -553,12 +581,12 @@ const DefaultActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRowP
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={handleQuickView}>
                       <EyeIcon className="mr-2 h-4 w-4" />
-                      Quick View
+                      {t("dashboard.activityFeed.quickView", "Quick View")}
                     </DropdownMenuItem>
                     {showBulkSettlement && (
                       <DropdownMenuItem onClick={handleBulkSettlement}>
                         <CheckCircle2Icon className="mr-2 h-4 w-4" />
-                        Bulk Settlement
+                        {t("dashboard.activityFeed.bulkSettlement", "Bulk Settlement")}
                       </DropdownMenuItem>
                     )}
                   </DropdownMenuContent>
@@ -608,8 +636,9 @@ const DashboardActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRo
     },
     ref
   ) => {
+    const { t } = useTranslation();
     const { tap } = useHaptics();
-    const narrative = getDashboardNarrative(activity, currentUserId);
+    const narrative = getDashboardNarrative(activity, currentUserId, t);
     const displayAmount = getDashboardDisplayAmount(activity, currentUserId);
     const latestPaymentEvent = activity.paymentEvents[0];
     const hasPaymentEvents = activity.paymentEvents.length > 0;
@@ -663,7 +692,7 @@ const DashboardActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRo
 
                 {latestPaymentEvent && (
                   <>
-                    <span>{getMethodLabel(latestPaymentEvent.method)}</span>
+                    <span>{getMethodLabel(latestPaymentEvent.method, t)}</span>
                     <span className="text-muted-foreground/40">•</span>
                   </>
                 )}
@@ -685,7 +714,11 @@ const DashboardActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRo
                 {displayAmount.label}
               </p>
               <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                <span>{isExpanded ? "Hide trail" : "Tap row"}</span>
+                <span>
+                  {isExpanded
+                    ? t("dashboard.activityFeed.hideTrail", "Hide trail")
+                    : t("dashboard.activityFeed.tapRow", "Tap row")}
+                </span>
                 {isExpanded ? (
                   <ChevronDownIcon className="h-4 w-4" />
                 ) : (
@@ -723,7 +756,7 @@ const DashboardActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRo
                   ))
                 ) : (
                   <div className="rounded-md border border-dashed border-border bg-background/70 px-4 py-4 text-sm text-muted-foreground">
-                    No payments yet for this expense.
+                    {t("dashboard.activityFeed.noPaymentsForExpense", "No payments yet for this expense.")}
                   </div>
                 )}
 

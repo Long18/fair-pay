@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { XIcon } from "@/components/ui/icons";
@@ -41,16 +42,17 @@ export const ActivityFilterControls: React.FC<ActivityFilterControlsProps> = ({
   compact = false,
   className,
 }) => {
+  const { t } = useTranslation();
   const { tap } = useHaptics();
   const filters: Array<{
     value: PaymentStateFilter;
     label: string;
     count: number;
   }> = [
-    { value: "all", label: "All", count: counts.all },
-    { value: "paid", label: "Paid", count: counts.paid },
-    { value: "unpaid", label: "Unpaid", count: counts.unpaid },
-    { value: "partial", label: "Partial", count: counts.partial },
+    { value: "all", label: t("dashboard.activityFeed.filters.all", "All"), count: counts.all },
+    { value: "paid", label: t("dashboard.activityFeed.filters.paid", "Paid"), count: counts.paid },
+    { value: "unpaid", label: t("dashboard.activityFeed.filters.unpaid", "Unpaid"), count: counts.unpaid },
+    { value: "partial", label: t("dashboard.activityFeed.filters.partial", "Partial"), count: counts.partial },
   ];
 
   const hasActiveFilters = activeFilter !== "all";
@@ -70,7 +72,10 @@ export const ActivityFilterControls: React.FC<ActivityFilterControlsProps> = ({
               ? "bg-primary text-primary-foreground shadow-sm"
               : "bg-muted text-muted-foreground hover:bg-muted/80"
           )}
-          aria-label={`Filter by ${filter.label}`}
+          aria-label={t("dashboard.activityFeed.filters.ariaLabel", {
+            defaultValue: "Filter by {{label}}",
+            label: filter.label,
+          })}
           aria-pressed={activeFilter === filter.value}
         >
           <span>{filter.label}</span>
@@ -96,10 +101,10 @@ export const ActivityFilterControls: React.FC<ActivityFilterControlsProps> = ({
           size="sm"
           onClick={() => { tap(); onFilterChange("all"); }}
           className="h-9 rounded-full px-3"
-          aria-label="Reset filters"
+          aria-label={t("dashboard.activityFeed.filters.reset", "Reset filters")}
         >
           <XIcon className="h-4 w-4 mr-1" />
-          <span className="text-sm">Reset</span>
+          <span className="text-sm">{t("dashboard.activityFeed.filters.resetButton", "Reset")}</span>
         </Button>
       )}
     </div>

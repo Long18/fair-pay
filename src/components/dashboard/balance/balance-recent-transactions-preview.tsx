@@ -33,12 +33,6 @@ interface BalanceRecentTransactionsPreviewProps {
   className?: string;
 }
 
-const statusLabels = {
-  paid: "Paid",
-  unpaid: "Unpaid",
-  partial: "Partial",
-} as const;
-
 function formatExpenseDate(dateString: string) {
   try {
     return format(new Date(dateString), "MMM d, yyyy");
@@ -122,6 +116,11 @@ export function BalanceRecentTransactionsPreview({
   const olderExpenses = recentExpenses.slice(1);
   const settledExpenses = expenses.filter((expense) => expense.is_settled);
   const settledTotal = settledExpenses.reduce((sum, expense) => sum + expense.my_share, 0);
+  const statusLabels = {
+    paid: t("expenses.paid", "Paid"),
+    unpaid: t("expenses.unpaid", "Unpaid"),
+    partial: t("dashboard.activityFeed.filters.partial", "Partial"),
+  } as const;
 
   return (
     <div className={cn("space-y-3", className)}>
