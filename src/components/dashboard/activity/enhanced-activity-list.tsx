@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 import { Button } from "@/components/ui/button";
 import { LoadingBeam } from "@/components/ui/loading-beam";
@@ -67,6 +68,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
   pageSize = 10,
   className,
 }) => {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const listRef = React.useRef<HTMLDivElement>(null);
 
@@ -267,7 +269,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
   if (isLoading) {
     return (
       <div className={cn("", className)}>
-        <LoadingBeam text="Đang tải hoạt động..." />
+        <LoadingBeam text={t("dashboard.activityFeed.loading", "Loading activity...")} />
       </div>
     );
   }
@@ -277,9 +279,9 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
     return (
       <div className={cn("text-center py-12", className)}>
         <ActivityIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <p className="text-foreground font-medium">No activity yet</p>
+        <p className="text-foreground font-medium">{t("dashboard.activityFeed.emptyTitle", "No activity yet")}</p>
         <p className="text-sm text-muted-foreground mt-2">
-          Create your first expense to get started
+          {t("dashboard.activityFeed.emptyDescription", "Create your first expense to get started")}
         </p>
       </div>
     );
@@ -311,9 +313,9 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
 
         <div className="text-center py-12">
           <ActivityIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-foreground font-medium">No activities match your filter</p>
+          <p className="text-foreground font-medium">{t("dashboard.activityFeed.filteredEmptyTitle", "No activities match your filter")}</p>
           <p className="text-sm text-muted-foreground mt-2">
-            Try selecting a different filter
+            {t("dashboard.activityFeed.filteredEmptyDescription", "Try selecting a different filter")}
           </p>
         </div>
       </div>
@@ -410,7 +412,11 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
                 onClick={() => { tap(); loadMore(); }}
                 className="rounded-lg"
               >
-                Load More ({visibleCount} of {progressiveTotalCount})
+                {t("dashboard.activityFeed.loadMore", {
+                  defaultValue: "Load More ({{visible}} of {{total}})",
+                  visible: visibleCount,
+                  total: progressiveTotalCount,
+                })}
               </Button>
             </div>
           )
