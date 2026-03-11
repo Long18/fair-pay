@@ -5,6 +5,7 @@ import { useHaptics } from "@/hooks/use-haptics";
 import { ChevronDownIcon, ChevronRightIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import type { TimePeriodGroup } from "@/lib/activity-grouping";
+import type { EnhancedActivityListVariant } from "./enhanced-activity-list";
 import { EnhancedActivityRow } from "./enhanced-activity-row";
 
 // =============================================
@@ -19,6 +20,7 @@ export interface ActivityTimePeriodGroupProps {
   onToggleGroup: () => void;
   duplicateIds: Set<string>;
   showActions?: boolean;
+  variant?: EnhancedActivityListVariant;
   className?: string;
 }
 
@@ -34,6 +36,7 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
   onToggleGroup,
   duplicateIds,
   showActions = false,
+  variant = "default",
   className,
 }) => {
   const { tap } = useHaptics();
@@ -88,6 +91,7 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
                 onToggleExpand={() => onToggleActivity(activity.id)}
                 showDuplicateContext={duplicateIds.has(activity.id)}
                 showActions={showActions}
+                variant={variant}
               />
             ))}
           </motion.div>

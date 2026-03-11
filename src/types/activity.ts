@@ -22,6 +22,12 @@ export interface PaymentEvent {
   created_at: string;
 }
 
+export interface PayingParticipant {
+  id: string;
+  name: string;
+  avatar?: string;
+}
+
 // =============================================
 // Enhanced Activity Item Types
 // =============================================
@@ -34,14 +40,17 @@ export interface EnhancedActivityItem {
   amount: number;
   currency: SupportedCurrency;
   date: string;
+  activityDate: string;
   paymentState: "paid" | "unpaid" | "partial";
   partialPercentage?: number;
+  settlementProgressPct: number;
   oweStatus: {
     direction: "owe" | "owed" | "neutral";
     amount: number;
   };
   participantCount: number;
   groupName?: string;
+  payingParticipants: PayingParticipant[];
   
   // Child rows (payment events grouped by expenseId)
   paymentEvents: PaymentEvent[];

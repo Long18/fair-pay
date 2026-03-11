@@ -20,7 +20,6 @@ import {
   sortActivitiesByAmount,
   detectDuplicateDescriptions,
   generateContextLine,
-  type TimePeriodGroup,
 } from "@/lib/activity-grouping";
 import type { SupportedCurrency } from "@/lib/format-utils";
 
@@ -29,6 +28,7 @@ import type { SupportedCurrency } from "@/lib/format-utils";
 // =============================================
 
 export type PaginationMode = "progressive" | "pagination";
+export type EnhancedActivityListVariant = "default" | "dashboard";
 
 export interface EnhancedActivityListProps {
   activities: EnhancedActivityItem[];
@@ -40,6 +40,8 @@ export interface EnhancedActivityListProps {
   showSort?: boolean;
   showTimeGrouping?: boolean;
   showActions?: boolean;
+  variant?: EnhancedActivityListVariant;
+  compactControls?: boolean;
   paginationMode?: PaginationMode;
   pageSize?: number;
   className?: string;
@@ -59,6 +61,8 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
   showSort = true,
   showTimeGrouping = true,
   showActions = false,
+  variant = "default",
+  compactControls = false,
   paginationMode = "progressive",
   pageSize = 10,
   className,
@@ -87,11 +91,12 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
 
   // Sort activities
   const sortedActivities = React.useMemo(() => {
+    const dateField = variant === "dashboard" ? "activityDate" : "date";
     switch (activeSort) {
       case "date-desc":
-        return sortActivitiesByDate(filteredActivities, "desc");
+        return sortActivitiesByDate(filteredActivities, "desc", dateField);
       case "date-asc":
-        return sortActivitiesByDate(filteredActivities, "asc");
+        return sortActivitiesByDate(filteredActivities, "asc", dateField);
       case "amount-desc":
         return sortActivitiesByAmount(filteredActivities, "desc");
       case "amount-asc":
@@ -99,7 +104,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
       default:
         return filteredActivities;
     }
-  }, [filteredActivities, activeSort]);
+  }, [filteredActivities, activeSort, variant]);
 
   // Detect duplicates and add context lines
   const duplicateIds = React.useMemo(() => {
@@ -165,8 +170,8 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
     if (!showTimeGrouping) {
       return null;
     }
-    return groupActivitiesByTimePeriod(visibleItems);
-  }, [visibleItems, showTimeGrouping]);
+    return groupActivitiesByTimePeriod(visibleItems, variant === "dashboard" ? "activityDate" : "date");
+  }, [visibleItems, showTimeGrouping, variant]);
 
   // Calculate filter counts
   const filterCounts: FilterCounts = React.useMemo(() => {
@@ -300,6 +305,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
             activeFilter={activeFilter}
             onFilterChange={handleFilterChange}
             counts={filterCounts}
+            compact={compactControls}
           />
         )}
 
@@ -329,12 +335,13 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
       )}
 
       {/* Filter and Sort Controls */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
         {showFilters && (
           <ActivityFilterControls
             activeFilter={activeFilter}
             onFilterChange={debouncedFilterChange}
             counts={filterCounts}
+            compact={compactControls}
           />
         )}
 
@@ -342,6 +349,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
           <ActivitySortControls
             activeSort={activeSort}
             onSortChange={debouncedSortChange}
+            compact={compactControls}
           />
         )}
       </div>
@@ -363,6 +371,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
               onToggleGroup={() => handleToggleGroup(group.period)}
               duplicateIds={duplicateIds}
               showActions={showActions}
+              variant={variant}
             />
           ))
         ) : (
@@ -377,6 +386,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
                 onToggleExpand={() => handleToggleActivity(activity.id)}
                 showDuplicateContext={duplicateIds.has(activity.id)}
                 showActions={showActions}
+                variant={variant}
               />
             ))}
           </div>

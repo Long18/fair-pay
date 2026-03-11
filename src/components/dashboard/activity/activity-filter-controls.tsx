@@ -26,6 +26,7 @@ export interface ActivityFilterControlsProps {
   activeFilter: PaymentStateFilter;
   onFilterChange: (filter: PaymentStateFilter) => void;
   counts: FilterCounts;
+  compact?: boolean;
   className?: string;
 }
 
@@ -37,6 +38,7 @@ export const ActivityFilterControls: React.FC<ActivityFilterControlsProps> = ({
   activeFilter,
   onFilterChange,
   counts,
+  compact = false,
   className,
 }) => {
   const { tap } = useHaptics();
@@ -54,14 +56,15 @@ export const ActivityFilterControls: React.FC<ActivityFilterControlsProps> = ({
   const hasActiveFilters = activeFilter !== "all";
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-2", className)}>
+    <div className={cn("flex flex-wrap items-center gap-2", compact && "gap-1.5", className)}>
       {filters.map((filter) => (
         <button
           key={filter.value}
           onClick={() => { tap(); onFilterChange(filter.value); }}
           className={cn(
-            "inline-flex items-center gap-2 px-4 py-2 rounded-full",
-            "text-sm font-medium transition-all",
+            "inline-flex items-center gap-2 rounded-full transition-all",
+            compact ? "px-3 py-1.5 text-xs sm:text-sm" : "px-4 py-2 text-sm",
+            "font-medium",
             "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
             activeFilter === filter.value
               ? "bg-primary text-primary-foreground shadow-sm"
@@ -75,6 +78,7 @@ export const ActivityFilterControls: React.FC<ActivityFilterControlsProps> = ({
             variant={activeFilter === filter.value ? "secondary" : "outline"}
             className={cn(
               "rounded-full px-2 py-0.5 text-xs font-semibold",
+              compact && "px-1.5 text-[10px]",
               activeFilter === filter.value
                 ? "bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30"
                 : "bg-background text-foreground"
@@ -86,7 +90,7 @@ export const ActivityFilterControls: React.FC<ActivityFilterControlsProps> = ({
       ))}
 
       {/* Reset Button - shows when filter is active */}
-      {hasActiveFilters && (
+      {hasActiveFilters && !compact && (
         <Button
           variant="ghost"
           size="sm"

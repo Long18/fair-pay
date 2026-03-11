@@ -21,6 +21,11 @@ interface Expense {
     id: string;
     name: string;
   };
+  profiles?: {
+    id: string;
+    full_name: string;
+    avatar_url?: string | null;
+  };
   expense_splits: Array<{
     id: string;
     user_id: string;
@@ -85,6 +90,7 @@ export const useEnhancedActivity = (
     meta: {
       select: `
         *,
+        profiles!paid_by_user_id(id, full_name, avatar_url),
         groups!group_id(id, name),
         expense_splits(
           id,
@@ -211,7 +217,34 @@ export const useEnhancedActivity = (
           }
 
           // Get payment events
-          const paymentEvents = paymentEventsMap.get(expense.id) || [];
+          const paymentEvents = [...(paymentEventsMap.get(expense.id) || [])].sort(
+            (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+          const activityDate = paymentEvents[0]?.created_at || expense.expense_date || expense.created_at;
+
+          const seenPayers = new Set<string>();
+          const payingParticipants = paymentEvents.reduce<Array<{ id: string; name: string; avatar?: string }>>(
+            (participants, event) => {
+              if (seenPayers.has(event.from_user_id)) {
+                return participants;
+              }
+              seenPayers.add(event.from_user_id);
+              participants.push({
+                id: event.from_user_id,
+                name: event.from_user_name,
+                avatar: event.from_user_avatar,
+              });
+              return participants;
+            },
+            []
+          );
+
+          const settlementProgressPct =
+            paymentState === "paid"
+              ? 100
+              : paymentState === "partial"
+                ? (partialPercentage ?? 0)
+                : 0;
 
           return {
             id: expense.id,
@@ -220,11 +253,14 @@ export const useEnhancedActivity = (
             amount: expense.amount,
             currency: expense.currency as any,
             date: expense.expense_date || expense.created_at,
+            activityDate,
             paymentState,
             partialPercentage,
+            settlementProgressPct,
             oweStatus,
             participantCount: splits.length,
             groupName: expense.groups?.name,
+            payingParticipants,
             paymentEvents,
             originalExpense: expense,
           };

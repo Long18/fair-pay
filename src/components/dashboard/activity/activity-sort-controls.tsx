@@ -28,6 +28,7 @@ export interface SortOptionConfig {
 export interface ActivitySortControlsProps {
   activeSort: SortOption;
   onSortChange: (sort: SortOption) => void;
+  compact?: boolean;
   className?: string;
 }
 
@@ -38,6 +39,7 @@ export interface ActivitySortControlsProps {
 export const ActivitySortControls: React.FC<ActivitySortControlsProps> = ({
   activeSort,
   onSortChange,
+  compact = false,
   className,
 }) => {
   const { tap } = useHaptics();
@@ -49,10 +51,10 @@ export const ActivitySortControls: React.FC<ActivitySortControlsProps> = ({
   ];
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <ArrowUpDownIcon className="h-4 w-4 text-muted-foreground" />
+    <div className={cn("flex items-center gap-2", compact && "gap-1.5", className)}>
+      <ArrowUpDownIcon className={cn("text-muted-foreground", compact ? "h-3.5 w-3.5" : "h-4 w-4")} />
       <Select value={activeSort} onValueChange={(v) => { tap(); onSortChange(v as SortOption); }}>
-        <SelectTrigger className="w-[200px] rounded-lg">
+        <SelectTrigger className={cn(compact ? "h-8 w-[164px] rounded-full text-xs sm:text-sm" : "w-[200px] rounded-lg")}>
           <SelectValue placeholder="Sort by..." />
         </SelectTrigger>
         <SelectContent>
