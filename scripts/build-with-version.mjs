@@ -143,8 +143,51 @@ async function captureCommand(command, args) {
   });
 }
 
-function getSupabaseUrl() {
-  return process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
+function getTrimmedEnv(name) {
+  const value = process.env[name];
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value.trim();
+}
+
+function getSupabaseProjectRef(url) {
+  const match = url.match(/^https:\/\/([^.]+)\.supabase\.co(?:\/|$)/i);
+  return match?.[1] ?? null;
+}
+
+function resolveSupabaseBuildCredentials() {
+  const supabaseUrl = getTrimmedEnv("SUPABASE_URL");
+  const publicSupabaseUrl = getTrimmedEnv("VITE_SUPABASE_URL");
+  const serviceRoleKey = getTrimmedEnv("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (!serviceRoleKey) {
+    throw new Error(
+      "SUPABASE_SERVICE_ROLE_KEY is required for preview/production builds"
+    );
+  }
+
+  const resolvedUrl = supabaseUrl || publicSupabaseUrl;
+  if (!resolvedUrl) {
+    throw new Error(
+      "SUPABASE_URL or VITE_SUPABASE_URL is required for preview/production builds"
+    );
+  }
+
+  if (supabaseUrl && publicSupabaseUrl && supabaseUrl !== publicSupabaseUrl) {
+    const serverRef = getSupabaseProjectRef(supabaseUrl) ?? "unknown";
+    const publicRef = getSupabaseProjectRef(publicSupabaseUrl) ?? "unknown";
+    console.warn(
+      `[build-version] SUPABASE_URL (${serverRef}) differs from VITE_SUPABASE_URL (${publicRef}); using SUPABASE_URL for build-time version allocation.`
+    );
+  }
+
+  return {
+    supabaseUrl: resolvedUrl,
+    supabaseUrlSource: supabaseUrl ? "SUPABASE_URL" : "VITE_SUPABASE_URL",
+    serviceRoleKey,
+  };
 }
 
 function getCommitSha() {
@@ -167,14 +210,8 @@ async function allocateRemoteBuildVersion({
   deploymentId,
   commitSha,
 }) {
-  const supabaseUrl = getSupabaseUrl();
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error(
-      "VITE_SUPABASE_URL/SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required for preview/production builds"
-    );
-  }
+  const { supabaseUrl, supabaseUrlSource, serviceRoleKey } =
+    resolveSupabaseBuildCredentials();
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: {
@@ -190,6 +227,13 @@ async function allocateRemoteBuildVersion({
   });
 
   if (error) {
+    if (error.message === "Invalid API key") {
+      const projectRef = getSupabaseProjectRef(supabaseUrl) ?? "unknown";
+      throw new Error(
+        `Invalid SUPABASE_SERVICE_ROLE_KEY for project ${projectRef}. Build-time version allocation is using ${supabaseUrlSource}. Ensure SUPABASE_URL/VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY belong to the same Supabase project on Vercel.`
+      );
+    }
+
     throw error;
   }
 
