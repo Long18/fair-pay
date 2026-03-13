@@ -1,3 +1,4 @@
+import { currentBuildInfo } from "../build-info";
 import type { AnalyticsProvider, AnalyticsConfig, AnalyticsEvent } from './types';
 
 export class AnalyticsManager {
@@ -139,6 +140,9 @@ export class AnalyticsManager {
             userId: this.userId,
             sessionId: this.sessionId,
             environment: this.config.environment,
+            app_version: currentBuildInfo.version,
+            app_channel: currentBuildInfo.channel,
+            commit_sha: currentBuildInfo.commitSha,
         };
     }
 

@@ -23,6 +23,8 @@
 -- Drop old restrictive policies
 DROP POLICY IF EXISTS "Participants can view comments" ON expense_comments;
 DROP POLICY IF EXISTS "Participants can create comments" ON expense_comments;
+DROP POLICY IF EXISTS "Authenticated users can view comments" ON expense_comments;
+DROP POLICY IF EXISTS "Authenticated users can create comments" ON expense_comments;
 
 -- Any authenticated user can view comments
 CREATE POLICY "Authenticated users can view comments"
@@ -43,6 +45,8 @@ CREATE POLICY "Authenticated users can create comments"
 -- Drop old restrictive policies
 DROP POLICY IF EXISTS "Participants can view reactions" ON expense_reactions;
 DROP POLICY IF EXISTS "Participants can add reactions" ON expense_reactions;
+DROP POLICY IF EXISTS "Authenticated users can view reactions" ON expense_reactions;
+DROP POLICY IF EXISTS "Authenticated users can add reactions" ON expense_reactions;
 
 -- Any authenticated user can view reactions
 CREATE POLICY "Authenticated users can view reactions"
@@ -61,6 +65,7 @@ CREATE POLICY "Authenticated users can add reactions"
 -- ============================================================
 
 DROP POLICY IF EXISTS "Participants can view mentions" ON comment_mentions;
+DROP POLICY IF EXISTS "Authenticated users can view mentions" ON comment_mentions;
 
 CREATE POLICY "Authenticated users can view mentions"
   ON comment_mentions FOR SELECT

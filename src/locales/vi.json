@@ -589,6 +589,7 @@
     },
     "footer": {
         "tagline": "Chia chi phí công bằng",
+        "version": "Phiên bản {{version}}",
         "privacy": "Chính sách bảo mật",
         "terms": "Điều khoản dịch vụ"
     },
