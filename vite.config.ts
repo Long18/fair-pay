@@ -5,90 +5,129 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import viteCompression from 'vite-plugin-compression';
 
+const NON_PRECACHE_URLS = new Set(['version.json', 'manifest.webmanifest']);
+
+type PwaManifestEntry = string | { url: string };
+type PwaApiPlugin = {
+    api?: {
+        extendManifestEntries?: (fn: (entries: PwaManifestEntry[]) => PwaManifestEntry[]) => void;
+    };
+};
+
+const pwaPlugins = VitePWA({
+    injectRegister: false,
+    registerType: 'prompt',
+    includeAssets: ['favicon.ico', 'google44489daa6fb5786d.html'],
+    manifest: {
+        name: 'FairPay - Expense Splitting Made Easy',
+        short_name: 'FairPay',
+        description: 'Split expenses fairly with friends and groups',
+        theme_color: '#0f172a',
+        background_color: '#ffffff',
+        display: 'standalone',
+        icons: [
+            {
+                src: 'favicon.ico',
+                sizes: '64x64 32x32 24x24 16x16',
+                type: 'image/x-icon',
+            },
+        ],
+    },
+    workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        globIgnores: ['**/version.json', '**/manifest.webmanifest'],
+        manifestTransforms: [
+            async (entries) => ({
+                manifest: entries.filter(({ url }) => !NON_PRECACHE_URLS.has(url)),
+                warnings: [],
+            }),
+        ],
+        navigateFallback: null,
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // 4 MB
+        runtimeCaching: [
+            {
+                urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
+                handler: 'NetworkFirst',
+                options: {
+                    cacheName: 'supabase-api-cache',
+                    expiration: {
+                        maxEntries: 100,
+                        maxAgeSeconds: 60 * 5, // 5 minutes
+                    },
+                    networkTimeoutSeconds: 10,
+                },
+            },
+            {
+                urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/i,
+                handler: 'StaleWhileRevalidate',
+                options: {
+                    cacheName: 'supabase-storage-cache',
+                    expiration: {
+                        maxEntries: 200,
+                        maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+                    },
+                    cacheableResponse: {
+                        statuses: [0, 200],
+                    },
+                },
+            },
+            {
+                urlPattern: /\.(png|jpg|jpeg|svg|gif|webp)$/i,
+                handler: 'CacheFirst',
+                options: {
+                    cacheName: 'image-cache',
+                    expiration: {
+                        maxEntries: 100,
+                        maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                    },
+                },
+            },
+        ],
+    },
+});
+
+const pwaApiPlugin = pwaPlugins[0] as PwaApiPlugin | undefined;
+let hasPatchedPrecacheEntries = false;
+
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'google44489daa6fb5786d.html'],
-      manifest: {
-        name: 'FairPay - Expense Splitting Made Easy',
-        short_name: 'FairPay',
-        description: 'Split expenses fairly with friends and groups',
-                theme_color: '#0f172a',
-                background_color: '#ffffff',
-                display: 'standalone',
-                icons: [
-                    {
-                        src: 'favicon.ico',
-                        sizes: '64x64 32x32 24x24 16x16',
-                        type: 'image/x-icon',
-                    },
-                ],
-            },
-            workbox: {
-                globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-                navigateFallback: null,
-                maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // 4 MB
-                runtimeCaching: [
-                    {
-                        urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
-                        handler: 'NetworkFirst',
-                        options: {
-                            cacheName: 'supabase-api-cache',
-                            expiration: {
-                                maxEntries: 100,
-                                maxAgeSeconds: 60 * 5, // 5 minutes
-                            },
-                            networkTimeoutSeconds: 10,
-                        },
-                    },
-                    {
-                        urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/i,
-                        handler: 'StaleWhileRevalidate',
-                        options: {
-                            cacheName: 'supabase-storage-cache',
-                            expiration: {
-                                maxEntries: 200,
-                                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
-                            },
-                            cacheableResponse: {
-                                statuses: [0, 200],
-                            },
-                        },
-                    },
-                    {
-                        urlPattern: /\.(png|jpg|jpeg|svg|gif|webp)$/i,
-                        handler: 'CacheFirst',
-                        options: {
-                            cacheName: 'image-cache',
-                            expiration: {
-                                maxEntries: 100,
-                                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
-                            },
-                        },
-                    },
-                ],
-            },
-        }),
-        viteCompression({
-            verbose: true,
-            disable: false,
-            threshold: 10240, // Only compress files > 10KB
-            algorithm: 'gzip',
-            ext: '.gz',
-            deleteOriginFile: false,
-        }),
-        viteCompression({
-            verbose: true,
-            disable: false,
-            threshold: 10240,
-            algorithm: 'brotliCompress',
-            ext: '.br',
-            deleteOriginFile: false,
-        }),
-    ],
+    ...pwaPlugins,
+    {
+        name: 'strip-pwa-metadata-from-precache',
+        apply: 'build',
+        buildStart() {
+            if (hasPatchedPrecacheEntries) {
+                return;
+            }
+
+            pwaApiPlugin?.api?.extendManifestEntries?.((entries) => (
+                entries.filter((entry) => {
+                    const url = typeof entry === 'string' ? entry : entry.url;
+                    return !NON_PRECACHE_URLS.has(url);
+                })
+            ));
+            hasPatchedPrecacheEntries = true;
+        },
+    },
+    viteCompression({
+        verbose: true,
+        disable: false,
+        threshold: 10240, // Only compress files > 10KB
+        algorithm: 'gzip',
+        ext: '.gz',
+        deleteOriginFile: false,
+    }),
+    viteCompression({
+        verbose: true,
+        disable: false,
+        threshold: 10240,
+        algorithm: 'brotliCompress',
+        ext: '.br',
+        deleteOriginFile: false,
+    }),
+  ],
     server: {
         port: parseInt(process.env.PORT || '3000', 10),
         host: true,

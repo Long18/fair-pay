@@ -44,7 +44,7 @@ RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, pg_temp
-AS $
+AS $$
 DECLARE
   v_current_user_id UUID;
   v_is_system_admin BOOLEAN;
@@ -126,7 +126,7 @@ BEGIN
     'splits_updated', v_updated
   );
 END;
-$;
+$$;
 
 COMMENT ON FUNCTION public.settle_splits_batch(UUID[]) IS
   'Batch settle splits by IDs with payment event creation. Only the payer or system admin can settle.';
@@ -141,7 +141,7 @@ RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path TO 'public', 'pg_temp'
-AS $
+AS $$
 DECLARE
   v_user_id UUID;
   v_is_group_admin BOOLEAN;
@@ -254,7 +254,7 @@ BEGIN
     'message', format('Settled %s debts totaling ₫%s', v_splits_count, v_total_amount)
   );
 END;
-$;
+$$;
 
 COMMENT ON FUNCTION settle_all_group_debts(UUID) IS
   'Settles all outstanding debts in a group with payment event creation. Group admins or system admins only.';

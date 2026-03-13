@@ -1,3 +1,5 @@
+import { currentBuildInfo } from './build-info';
+
 /**
  * Analytics tracking utility
  * Supports multiple analytics providers (Google Analytics, Mixpanel, Amplitude, etc.)
@@ -27,6 +29,15 @@ class Analytics {
     } else if (import.meta.env.VITE_AMPLITUDE_API_KEY) {
       this.provider = 'amplitude';
     }
+  }
+
+  private enrichProperties(properties?: Record<string, any>) {
+    return {
+      ...properties,
+      app_version: currentBuildInfo.version,
+      app_channel: currentBuildInfo.channel,
+      commit_sha: currentBuildInfo.commitSha ?? undefined,
+    };
   }
 
   /**
@@ -110,7 +121,7 @@ class Analytics {
       event_category: event.category,
       event_label: event.label,
       value: event.value,
-      ...event.properties,
+      ...this.enrichProperties(event.properties),
     });
   }
 
@@ -136,6 +147,7 @@ class Analytics {
           (window as any).gtag('event', 'page_view', {
             page_path: path,
             page_title: title,
+            ...this.enrichProperties(),
           });
         }
         break;

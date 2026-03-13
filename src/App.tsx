@@ -31,6 +31,7 @@ import { Toaster } from "./components/refine-ui/notification/toaster";
 import { useNotificationProvider } from "./components/refine-ui/notification/use-notification-provider";
 import { ThemeProvider } from "./components/refine-ui/theme/theme-provider";
 import { ErrorBoundary } from "./components/error-boundary";
+import { BuildVersionMonitor } from "./components/system/build-version-monitor";
 
 // Auth pages (critical for initial load)
 import { Login } from "./pages/login";
@@ -541,6 +542,7 @@ function App() {
                 </Routes>
 
                 <Toaster />
+                <BuildVersionMonitor />
                 <RefineKbar />
                 <UnsavedChangesNotifier />
                 <DocumentTitle />
