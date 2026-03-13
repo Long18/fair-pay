@@ -590,6 +590,7 @@
     },
     "footer": {
         "tagline": "Split expenses fairly",
+        "version": "Version {{version}}",
         "privacy": "Privacy Policy",
         "terms": "Terms of Service"
     },
