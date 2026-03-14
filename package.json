@@ -50,6 +50,7 @@
         "@tailwindcss/vite": "^4.1.18",
         "@tanstack/react-query": "^5.90.12",
         "@tanstack/react-table": "^8.2.6",
+        "@testing-library/dom": "^10.4.1",
         "@vercel/analytics": "^1.6.1",
         "@vercel/functions": "^3.4.3",
         "@vercel/og": "^0.9.0",

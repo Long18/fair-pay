@@ -44,8 +44,6 @@ import {
 
 describe("BuildVersionMonitor", () => {
   const fetchMock = vi.fn();
-  const updateServiceWorkerMock = vi.fn().mockResolvedValue(undefined);
-  const registrationUpdateMock = vi.fn().mockResolvedValue(undefined);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -61,27 +59,21 @@ describe("BuildVersionMonitor", () => {
     vi.useRealTimers();
   });
 
-  function mockServiceWorkerState(needRefresh = false) {
+  function mockServiceWorkerState() {
     hoisted.useRegisterSWMock.mockImplementation((options?: {
       onRegisteredSW?: (
         swScriptUrl: string,
         registration: ServiceWorkerRegistration | undefined
       ) => void;
     }) => {
-      options?.onRegisteredSW?.("/sw.js", {
-        update: registrationUpdateMock,
-      } as ServiceWorkerRegistration);
+      options?.onRegisteredSW?.("/sw.js", {} as ServiceWorkerRegistration);
 
-      return {
-        needRefresh: [needRefresh, vi.fn()],
-        offlineReady: [false, vi.fn()],
-        updateServiceWorker: updateServiceWorkerMock,
-      };
+      return {};
     });
   }
 
   it("does not prompt when the fetched version matches the current version", async () => {
-    mockServiceWorkerState(false);
+    mockServiceWorkerState();
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => hoisted.currentBuildInfoMock,
@@ -98,7 +90,7 @@ describe("BuildVersionMonitor", () => {
 
   it("prompts once when a newer version is detected", async () => {
     vi.useFakeTimers();
-    mockServiceWorkerState(false);
+    mockServiceWorkerState();
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -130,22 +122,8 @@ describe("BuildVersionMonitor", () => {
     expect(hoisted.messageMock).toHaveBeenCalledTimes(1);
   });
 
-  it("prompts once when the service worker reports a waiting update", async () => {
-    mockServiceWorkerState(true);
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => hoisted.currentBuildInfoMock,
-    });
-
-    render(<BuildVersionMonitor />);
-
-    await waitFor(() => {
-      expect(hoisted.messageMock).toHaveBeenCalledTimes(1);
-    });
-  });
-
   it("fails silently when version fetch errors", async () => {
-    mockServiceWorkerState(false);
+    mockServiceWorkerState();
     fetchMock.mockRejectedValue(new Error("network down"));
 
     render(<BuildVersionMonitor />);
@@ -157,49 +135,54 @@ describe("BuildVersionMonitor", () => {
     expect(hoisted.messageMock).not.toHaveBeenCalled();
   });
 
-  it("uses updateServiceWorker when a waiting service worker exists", async () => {
-    const reloadMock = vi.fn();
+  it("unregisters service workers and clears caches on refresh", async () => {
+    const unregisterMock = vi.fn().mockResolvedValue(true);
+    const getRegistrationsMock = vi.fn().mockResolvedValue([
+      { unregister: unregisterMock },
+    ]);
+    const deleteCacheMock = vi.fn().mockResolvedValue(true);
+    const cacheKeysMock = vi.fn().mockResolvedValue(["cache-v1"]);
 
-    await refreshToLatestBuild({
-      hasWaitingServiceWorker: true,
-      updateServiceWorker: updateServiceWorkerMock,
-      reload: reloadMock,
+    vi.stubGlobal("navigator", {
+      serviceWorker: { getRegistrations: getRegistrationsMock },
+    });
+    vi.stubGlobal("caches", {
+      keys: cacheKeysMock,
+      delete: deleteCacheMock,
     });
 
-    expect(updateServiceWorkerMock).toHaveBeenCalledWith(true);
-    expect(reloadMock).not.toHaveBeenCalled();
-  });
-
-  it("clears caches and reloads when no waiting service worker exists", async () => {
-    const reloadMock = vi.fn();
-    const clearCachesMock = vi.fn().mockResolvedValue(undefined);
-    const unregisterServiceWorkersMock = vi.fn().mockResolvedValue(undefined);
-
-    await refreshToLatestBuild({
-      hasWaitingServiceWorker: false,
-      updateServiceWorker: updateServiceWorkerMock,
-      clearCaches: clearCachesMock,
-      unregisterServiceWorkers: unregisterServiceWorkersMock,
-      reload: reloadMock,
+    const replaceMock = vi.fn();
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { href: "https://example.com/", replace: replaceMock },
     });
 
-    expect(updateServiceWorkerMock).not.toHaveBeenCalled();
-    expect(unregisterServiceWorkersMock).toHaveBeenCalledTimes(1);
-    expect(clearCachesMock).toHaveBeenCalledTimes(1);
-    expect(reloadMock).toHaveBeenCalledTimes(1);
+    await refreshToLatestBuild();
+
+    expect(unregisterMock).toHaveBeenCalledTimes(1);
+    expect(deleteCacheMock).toHaveBeenCalledWith("cache-v1");
+    expect(replaceMock).toHaveBeenCalledTimes(1);
   });
 
   it("still reloads when clearing caches fails", async () => {
-    const reloadMock = vi.fn();
-
-    await refreshToLatestBuild({
-      hasWaitingServiceWorker: false,
-      updateServiceWorker: updateServiceWorkerMock,
-      clearCaches: vi.fn().mockRejectedValue(new Error("cache error")),
-      unregisterServiceWorkers: vi.fn().mockResolvedValue(undefined),
-      reload: reloadMock,
+    vi.stubGlobal("navigator", {
+      serviceWorker: {
+        getRegistrations: vi.fn().mockResolvedValue([]),
+      },
+    });
+    vi.stubGlobal("caches", {
+      keys: vi.fn().mockRejectedValue(new Error("cache error")),
+      delete: vi.fn(),
     });
 
-    expect(reloadMock).toHaveBeenCalledTimes(1);
+    const replaceMock = vi.fn();
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { href: "https://example.com/", replace: replaceMock },
+    });
+
+    await refreshToLatestBuild();
+
+    expect(replaceMock).toHaveBeenCalledTimes(1);
   });
 });
