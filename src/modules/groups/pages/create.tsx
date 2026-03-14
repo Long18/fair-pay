@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCreate, useGo, useGetIdentity, useList } from "@refinedev/core";
 import { ResponsiveDialog } from "@/components/refine-ui/responsive-dialog";
 import { GroupForm } from "../components/group-form";
@@ -7,12 +7,17 @@ import { Profile } from "@/modules/profile/types";
 import { Friendship } from "@/modules/friends/types";
 import { toast } from "sonner";
 import { supabaseClient } from "@/utility/supabaseClient";
+import { journeyTracking } from "@/lib/journey-tracking";
 
 export const GroupCreate = () => {
   const go = useGo();
   const createMutation = useCreate();
   const { data: identity } = useGetIdentity<Profile>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    journeyTracking.trackFormView("group-create", "details");
+  }, []);
 
   // Fetch all user's friends
   const { query: allFriendsQuery } = useList<Friendship>({
@@ -60,6 +65,18 @@ export const GroupCreate = () => {
 
     setIsSubmitting(true);
     const { member_ids, ...groupData } = values;
+    journeyTracking.trackEvent({
+      event_name: "form_submit",
+      event_category: "group",
+      page_path: window.location.pathname,
+      target_type: "form",
+      target_key: "group:create:submit",
+      flow_name: "group-create",
+      step_name: "details",
+      properties: {
+        member_count: member_ids?.length ?? 0,
+      },
+    });
 
     createMutation.mutate(
       {
@@ -92,9 +109,36 @@ export const GroupCreate = () => {
           }
 
           toast.success("Group created successfully");
+          journeyTracking.trackEvent({
+            event_name: "form_success",
+            event_category: "group",
+            page_path: window.location.pathname,
+            target_type: "form",
+            target_key: "group:create:submit",
+            flow_name: "group-create",
+            step_name: "details",
+            properties: {
+              entity_id: groupId,
+              entity_type: "group",
+              entity_path: `/groups/show/${groupId}`,
+              member_count: member_ids?.length ?? 0,
+            },
+          });
           go({ to: `/groups/show/${groupId}` });
         },
         onError: (error) => {
+          journeyTracking.trackEvent({
+            event_name: "form_error",
+            event_category: "group",
+            page_path: window.location.pathname,
+            target_type: "form",
+            target_key: "group:create:submit",
+            flow_name: "group-create",
+            step_name: "details",
+            properties: {
+              reason: "server_error",
+            },
+          });
           toast.error(`Failed to create group: ${error.message}`);
           setIsSubmitting(false);
         },

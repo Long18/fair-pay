@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useCreate, useGo, useGetIdentity, useList, useOne } from "@refinedev/core";
 import { useParams, useSearchParams } from "react-router";
 import { ResponsiveDialog } from "@/components/refine-ui/responsive-dialog";
@@ -8,6 +8,7 @@ import { Profile } from "@/modules/profile/types";
 import { Friendship } from "@/modules/friends/types";
 import { toast } from "sonner";
 import { PaymentTracker, ErrorTracker } from "@/lib/analytics/index";
+import { journeyTracking } from "@/lib/journey-tracking";
 
 export const PaymentCreate = () => {
   const { groupId, friendshipId } = useParams<{ groupId?: string; friendshipId?: string }>();
@@ -19,6 +20,10 @@ export const PaymentCreate = () => {
 
   const isGroupContext = !!groupId;
   const isFriendContext = !!friendshipId;
+
+  useEffect(() => {
+    journeyTracking.trackFormView("payment-create", isGroupContext ? "group-context" : "friend-context");
+  }, [isGroupContext]);
 
   // Fetch group members if group context
   const { query: membersQuery } = useList({
@@ -83,6 +88,19 @@ export const PaymentCreate = () => {
   const handleSubmit = (values: PaymentFormValues) => {
     const contextId = groupId || friendshipId;
     if (!contextId) return;
+    journeyTracking.trackEvent({
+      event_name: "form_submit",
+      event_category: "payment",
+      page_path: window.location.pathname,
+      target_type: "form",
+      target_key: "payment:create:submit",
+      flow_name: "payment-create",
+      step_name: isGroupContext ? "group-context" : "friend-context",
+      properties: {
+        context: isGroupContext ? "group" : "friend",
+        amount: values.amount,
+      },
+    });
 
     const paymentData = {
       ...values,
@@ -108,6 +126,18 @@ export const PaymentCreate = () => {
             hasProof: false,
             context: isGroupContext ? 'group' : 'friend',
           });
+          journeyTracking.trackEvent({
+            event_name: "form_success",
+            event_category: "payment",
+            page_path: window.location.pathname,
+            target_type: "form",
+            target_key: "payment:create:submit",
+            flow_name: "payment-create",
+            step_name: isGroupContext ? "group-context" : "friend-context",
+            properties: {
+              context: isGroupContext ? "group" : "friend",
+            },
+          });
 
           if (isGroupContext) {
             go({ to: `/groups/show/${groupId}` });
@@ -119,6 +149,19 @@ export const PaymentCreate = () => {
           ErrorTracker.apiError({
             endpoint: 'payments',
             errorMessage: error.message,
+          });
+          journeyTracking.trackEvent({
+            event_name: "form_error",
+            event_category: "payment",
+            page_path: window.location.pathname,
+            target_type: "form",
+            target_key: "payment:create:submit",
+            flow_name: "payment-create",
+            step_name: isGroupContext ? "group-context" : "friend-context",
+            properties: {
+              context: isGroupContext ? "group" : "friend",
+              reason: "server_error",
+            },
           });
           toast.error(`Failed to record payment: ${error.message}`);
         },

@@ -106,6 +106,10 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
                     <Button
                       size="icon"
                       onClick={() => handleClick(action.path)}
+                      data-track-id={`cta:fab:${action.path.replace(/\//g, ":").replace(/^:+/, "")}`}
+                      data-track-event="cta_click"
+                      data-track-type="button"
+                      data-track-category="dashboard"
                       className={cn(
                         "h-12 w-12 md:h-14 md:w-14 rounded-xl text-white shadow-lg",
                         "transition-all duration-150 ease-out",
@@ -150,6 +154,10 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
               <Button
                 size="icon"
                 onClick={toggleMenu}
+                data-track-id="cta:fab:toggle"
+                data-track-event="cta_click"
+                data-track-type="button"
+                data-track-category="dashboard"
                 className={cn(
                   "h-14 w-14 md:h-16 md:w-16 rounded-2xl shadow-xl",
                   "bg-primary hover:bg-primary/90 text-primary-foreground",
