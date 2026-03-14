@@ -31,6 +31,7 @@ export const SignInForm = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [devSignInRole, setDevSignInRole] = useState<"admin" | "user" | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
@@ -178,6 +179,41 @@ export const SignInForm = () => {
             message: t("auth.signInFailed"),
             description: errorMessage,
           });
+        },
+      }
+    );
+  };
+
+  const handleDevSignIn = (role: "admin" | "user") => {
+    const email = role === "admin"
+      ? import.meta.env.VITE_DEV_ADMIN_EMAIL
+      : import.meta.env.VITE_DEV_USER_EMAIL;
+    const password = role === "admin"
+      ? import.meta.env.VITE_DEV_ADMIN_PASSWORD
+      : import.meta.env.VITE_DEV_USER_PASSWORD;
+
+    if (!email || !password) {
+      setError(`Missing VITE_DEV_${role.toUpperCase()}_EMAIL / VITE_DEV_${role.toUpperCase()}_PASSWORD in .env`);
+      return;
+    }
+
+    setDevSignInRole(role);
+    setIsLoading(true);
+    setError(null);
+
+    login(
+      { email, password },
+      {
+        onSuccess: () => {
+          success();
+          setIsLoading(false);
+          setDevSignInRole(null);
+        },
+        onError: (error: any) => {
+          hapticError();
+          setIsLoading(false);
+          setDevSignInRole(null);
+          setError(error?.message || `Dev sign-in as ${role} failed. Ensure local Supabase has test users seeded.`);
         },
       }
     );
@@ -382,6 +418,40 @@ export const SignInForm = () => {
               </svg>
               <span className="text-sm">{t("auth.continueWithGoogle")}</span>
             </Button>
+
+            {import.meta.env.DEV && (
+              <>
+                <div className={cn("flex", "items-center", "gap-4", "my-6")}>
+                  <Separator className={cn("flex-1")} />
+                  <span className={cn("text-xs", "text-muted-foreground", "uppercase", "tracking-wider", "font-medium")}>
+                    Local Development
+                  </span>
+                  <Separator className={cn("flex-1")} />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    className={cn("border-dashed border-amber-500/50 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20")}
+                    onClick={() => handleDevSignIn("admin")}
+                    disabled={isLoading}
+                    type="button"
+                  >
+                    {devSignInRole === "admin" && <Loader2Icon className="mr-1 h-3 w-3 animate-spin" />}
+                    Sign in as Admin
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className={cn("border-dashed border-blue-500/50 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20")}
+                    onClick={() => handleDevSignIn("user")}
+                    disabled={isLoading}
+                    type="button"
+                  >
+                    {devSignInRole === "user" && <Loader2Icon className="mr-1 h-3 w-3 animate-spin" />}
+                    Sign in as User
+                  </Button>
+                </div>
+              </>
+            )}
           </form>
         </CardContent>
 

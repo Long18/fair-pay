@@ -20,14 +20,7 @@ async function fetchLatestBuildInfo() {
   return coerceBuildInfo(await response.json());
 }
 
-async function unregisterBuildServiceWorkers(
-  registration?: ServiceWorkerRegistration
-) {
-  if (registration) {
-    await registration.unregister();
-    return;
-  }
-
+async function unregisterAllServiceWorkers() {
   if (!("serviceWorker" in navigator)) {
     return;
   }
@@ -38,7 +31,7 @@ async function unregisterBuildServiceWorkers(
   }));
 }
 
-async function clearBuildCaches() {
+async function clearAllCaches() {
   if (!("caches" in window)) {
     return;
   }
@@ -55,66 +48,37 @@ function forceReloadToLatestBuild() {
   window.location.replace(nextUrl.toString());
 }
 
-export async function refreshToLatestBuild(input: {
-  hasWaitingServiceWorker: boolean;
-  registration?: ServiceWorkerRegistration;
-  updateServiceWorker: (reloadPage?: boolean) => Promise<void>;
-  clearCaches?: () => Promise<void>;
-  unregisterServiceWorkers?: () => Promise<void>;
-  reload?: () => void;
-}) {
-  if (input.hasWaitingServiceWorker) {
-    await input.updateServiceWorker(true);
-    return;
+export async function refreshToLatestBuild() {
+  try {
+    await unregisterAllServiceWorkers();
+  } catch {
+    // Continue even if unregistering fails.
   }
 
   try {
-    await (input.unregisterServiceWorkers
-      ? input.unregisterServiceWorkers()
-      : unregisterBuildServiceWorkers(input.registration));
+    await clearAllCaches();
   } catch {
-    // Continue with the reload even if unregistering fails.
+    // Continue even if cache cleanup fails.
   }
 
-  try {
-    await (input.clearCaches ? input.clearCaches() : clearBuildCaches());
-  } catch {
-    // Continue with the reload even if cache cleanup fails.
-  }
-
-  (input.reload ?? forceReloadToLatestBuild)();
+  forceReloadToLatestBuild();
 }
 
 function BuildVersionMonitorInner() {
-  const registrationRef = useRef<ServiceWorkerRegistration | undefined>(undefined);
   const hasPromptedRef = useRef(false);
   const lastCheckedAtRef = useRef(0);
   const nextVersionRef = useRef<string | null>(null);
-  const {
-    needRefresh: [needRefresh],
-    updateServiceWorker,
-  } = useRegisterSW({
+
+  // Register SW with autoUpdate — it auto-activates, no user prompt needed for SW itself.
+  useRegisterSW({
     immediate: true,
-    onRegisteredSW(_swUrl: string, registration: ServiceWorkerRegistration | undefined) {
-      registrationRef.current = registration;
+    onRegisteredSW(_swUrl: string, _registration: ServiceWorkerRegistration | undefined) {
+      // SW registered successfully.
     },
     onRegisterError(error: unknown) {
       console.error("[BuildVersionMonitor] Service worker registration failed:", error);
     },
   });
-
-  const needRefreshRef = useRef(needRefresh);
-  const updateServiceWorkerRef = useRef(updateServiceWorker);
-  needRefreshRef.current = needRefresh;
-  updateServiceWorkerRef.current = updateServiceWorker;
-
-  const handleRefresh = async () => {
-    await refreshToLatestBuild({
-      hasWaitingServiceWorker: needRefreshRef.current,
-      registration: registrationRef.current,
-      updateServiceWorker: updateServiceWorkerRef.current,
-    });
-  };
 
   const promptForRefresh = () => {
     if (hasPromptedRef.current) {
@@ -137,7 +101,7 @@ function BuildVersionMonitorInner() {
       action: {
         label: "Làm mới",
         onClick: () => {
-          void handleRefresh();
+          void refreshToLatestBuild();
         },
       },
     });
@@ -150,12 +114,6 @@ function BuildVersionMonitorInner() {
     }
 
     lastCheckedAtRef.current = now;
-
-    try {
-      await registrationRef.current?.update();
-    } catch {
-      // Ignore SW update check errors and keep version polling fail-silent.
-    }
 
     try {
       const latestBuildInfo = await fetchLatestBuildInfo();
@@ -171,12 +129,6 @@ function BuildVersionMonitorInner() {
       // Ignore version fetch errors to keep the monitor fail-silent.
     }
   };
-
-  useEffect(() => {
-    if (needRefresh) {
-      promptForRefresh();
-    }
-  }, [needRefresh, promptForRefresh]);
 
   useEffect(() => {
     void checkForNewBuild();

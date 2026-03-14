@@ -10,6 +10,11 @@ interface ImportMetaEnv {
     readonly VITE_MOMO_API_URL?: string;
     readonly VITE_MOMO_ACCESS_TOKEN?: string;
     readonly VITE_MOMO_RECEIVER_PHONE?: string;
+    // Local dev sign-in
+    readonly VITE_DEV_ADMIN_EMAIL?: string;
+    readonly VITE_DEV_ADMIN_PASSWORD?: string;
+    readonly VITE_DEV_USER_EMAIL?: string;
+    readonly VITE_DEV_USER_PASSWORD?: string;
     // Feature flags
     readonly VITE_ENABLE_VERCEL_ANALYTICS?: string;
     readonly VITE_ENABLE_ADMIN_API_DOCS?: string;
