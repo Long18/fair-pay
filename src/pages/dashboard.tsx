@@ -142,6 +142,12 @@ export const Dashboard = () => {
                     <button
                       key={tab.key}
                       onClick={() => { tap(); setActiveTab(tab.key); }}
+                      data-track-id={`nav:dashboard-tab:${tab.key}`}
+                      data-track-event="nav_click"
+                      data-track-type="tab"
+                      data-track-category="navigation"
+                      data-track-flow="dashboard"
+                      data-track-step={tab.key}
                       className={cn(
                         "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all cursor-pointer",
                         isActive

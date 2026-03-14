@@ -151,6 +151,10 @@ function NavLogo() {
   return (
     <button
       onClick={() => { tap(); go({ to: "/" }); }}
+      data-track-id="nav:logo"
+      data-track-event="nav_click"
+      data-track-type="button"
+      data-track-category="navigation"
       className={cn(
         "flex items-center gap-2",
         "hover:opacity-80",
@@ -217,6 +221,10 @@ function NavItem({ item, isActive, onClick, showLabel = true }: NavItemProps) {
   const content = (
     <Link
       to={item.route || "/"}
+      data-track-id={`nav:${item.key || item.name}`}
+      data-track-event="nav_click"
+      data-track-type="link"
+      data-track-category="navigation"
       className={cn(
         "flex items-center gap-2 px-3 py-2 rounded-lg",
         "text-sm font-medium",
@@ -441,7 +449,15 @@ function UserDropdown() {
   // Show Login button for unauthenticated users
   if (!identity) {
     return (
-      <Button variant="default" size="sm" onClick={() => { tap(); go({ to: "/login" }); }}>
+      <Button
+        variant="default"
+        size="sm"
+        onClick={() => { tap(); go({ to: "/login" }); }}
+        data-track-id="nav:login"
+        data-track-event="cta_click"
+        data-track-type="button"
+        data-track-category="auth"
+      >
         {t("auth.login")}
       </Button>
     );
@@ -486,12 +502,22 @@ function UserDropdown() {
 
         <DropdownMenuItem
           onClick={() => { tap(); go({ to: `/profile/${identity.id}?edit=true` }); }}
+          data-track-id="menu:profile-edit"
+          data-track-event="nav_click"
+          data-track-type="menu-item"
+          data-track-category="navigation"
         >
           <UserIcon className="h-4 w-4" />
           <span>{t("auth.editProfile")}</span>
         </DropdownMenuItem>
 
-        <DropdownMenuItem onClick={() => { tap(); go({ to: "/settings" }); }}>
+        <DropdownMenuItem
+          onClick={() => { tap(); go({ to: "/settings" }); }}
+          data-track-id="menu:settings"
+          data-track-event="nav_click"
+          data-track-type="menu-item"
+          data-track-category="navigation"
+        >
           <SettingsIcon className="h-4 w-4" />
           <span>{t("settings.title")}</span>
         </DropdownMenuItem>
@@ -499,21 +525,43 @@ function UserDropdown() {
         {isAdmin && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => { tap(); go({ to: "/admin" }); }}>
+            <DropdownMenuItem
+              onClick={() => { tap(); go({ to: "/admin" }); }}
+              data-track-id="menu:admin-dashboard"
+              data-track-event="nav_click"
+              data-track-type="menu-item"
+              data-track-category="navigation"
+            >
               <LayoutDashboardIcon className="h-4 w-4" />
               <span>Admin Dashboard</span>
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => { tap(); go({ to: "/settings/donation" }); }}
+              data-track-id="menu:donation-settings"
+              data-track-event="nav_click"
+              data-track-type="menu-item"
+              data-track-category="navigation"
             >
               <HeartIcon className="h-4 w-4" />
               <span>{t("settings.donation.title", "Donation Settings")}</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { tap(); go({ to: "/settings/bank" }); }}>
+            <DropdownMenuItem
+              onClick={() => { tap(); go({ to: "/settings/bank" }); }}
+              data-track-id="menu:bank-settings"
+              data-track-event="nav_click"
+              data-track-type="menu-item"
+              data-track-category="navigation"
+            >
               <BanknoteIcon className="h-4 w-4" />
               <span>{t("settings.bank.title", "Bank Settings")}</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { tap(); go({ to: "/settings/sepay" }); }}>
+            <DropdownMenuItem
+              onClick={() => { tap(); go({ to: "/settings/sepay" }); }}
+              data-track-id="menu:sepay-settings"
+              data-track-event="nav_click"
+              data-track-type="menu-item"
+              data-track-category="navigation"
+            >
               <CreditCardIcon className="h-4 w-4" />
               <span>{t("settings.sepay.title", "SePay Settings")}</span>
             </DropdownMenuItem>

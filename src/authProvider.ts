@@ -1,6 +1,7 @@
 import { AuthProvider } from "@refinedev/core";
 import { supabaseClient } from "./utility";
 import { AuthTracker, analyticsManager, ErrorTracker } from "./lib/analytics/index";
+import { journeyTracking } from "./lib/journey-tracking";
 import { signOutPuterIfAvailable } from "./lib/puter-auth";
 
 const authProvider: AuthProvider = {
@@ -52,6 +53,19 @@ const authProvider: AuthProvider = {
 
             if (data?.user) {
                 AuthTracker.login('email');
+                journeyTracking.identify(data.user.id);
+                journeyTracking.trackEvent({
+                    event_name: 'auth_login',
+                    event_category: 'auth',
+                    page_path: window.location.pathname,
+                    target_type: 'auth',
+                    target_key: 'auth:login:email',
+                    flow_name: 'auth-login',
+                    step_name: 'success',
+                    properties: {
+                        method: 'email',
+                    },
+                });
                 
                 // Fetch profile to get full_name
                 const { data: profile } = await supabaseClient
@@ -140,6 +154,19 @@ const authProvider: AuthProvider = {
             if (data) {
                 AuthTracker.register('email');
                 if (data.user) {
+                    journeyTracking.identify(data.user.id);
+                    journeyTracking.trackEvent({
+                        event_name: 'auth_register',
+                        event_category: 'auth',
+                        page_path: window.location.pathname,
+                        target_type: 'auth',
+                        target_key: 'auth:register:email',
+                        flow_name: 'auth-register',
+                        step_name: 'success',
+                        properties: {
+                            method: 'email',
+                        },
+                    });
                     // Fetch profile to get full_name (profile should be created via trigger)
                     const { data: profile } = await supabaseClient
                         .from("profiles")
@@ -262,6 +289,7 @@ const authProvider: AuthProvider = {
 
         AuthTracker.logout();
         analyticsManager.clearUser();
+        journeyTracking.clearUser();
         signOutPuterIfAvailable();
 
         return {
@@ -337,6 +365,7 @@ const authProvider: AuthProvider = {
                 email: authData.user.email,
                 name: fallbackName,
             });
+            journeyTracking.identify(authData.user.id);
 
             return {
                 id: authData.user.id,
@@ -351,6 +380,7 @@ const authProvider: AuthProvider = {
             email: profile.email,
             name: profile.full_name,
         });
+        journeyTracking.identify(profile.id);
 
         // Return full profile data
         return {

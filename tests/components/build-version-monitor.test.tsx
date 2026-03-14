@@ -170,16 +170,36 @@ describe("BuildVersionMonitor", () => {
     expect(reloadMock).not.toHaveBeenCalled();
   });
 
-  it("falls back to reload when no waiting service worker exists", async () => {
+  it("clears caches and reloads when no waiting service worker exists", async () => {
+    const reloadMock = vi.fn();
+    const clearCachesMock = vi.fn().mockResolvedValue(undefined);
+    const unregisterServiceWorkersMock = vi.fn().mockResolvedValue(undefined);
+
+    await refreshToLatestBuild({
+      hasWaitingServiceWorker: false,
+      updateServiceWorker: updateServiceWorkerMock,
+      clearCaches: clearCachesMock,
+      unregisterServiceWorkers: unregisterServiceWorkersMock,
+      reload: reloadMock,
+    });
+
+    expect(updateServiceWorkerMock).not.toHaveBeenCalled();
+    expect(unregisterServiceWorkersMock).toHaveBeenCalledTimes(1);
+    expect(clearCachesMock).toHaveBeenCalledTimes(1);
+    expect(reloadMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("still reloads when clearing caches fails", async () => {
     const reloadMock = vi.fn();
 
     await refreshToLatestBuild({
       hasWaitingServiceWorker: false,
       updateServiceWorker: updateServiceWorkerMock,
+      clearCaches: vi.fn().mockRejectedValue(new Error("cache error")),
+      unregisterServiceWorkers: vi.fn().mockResolvedValue(undefined),
       reload: reloadMock,
     });
 
-    expect(updateServiceWorkerMock).not.toHaveBeenCalled();
     expect(reloadMock).toHaveBeenCalledTimes(1);
   });
 });

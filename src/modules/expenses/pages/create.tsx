@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCreate, useGo, useList, useGetIdentity, useOne } from "@refinedev/core";
 import { useParams } from "react-router";
 import { ResponsiveDialog } from "@/components/refine-ui/responsive-dialog";
@@ -14,6 +14,7 @@ import { Friendship } from "@/modules/friends/types";
 import { toast } from "sonner";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { ExpenseTracker, ErrorTracker } from "@/lib/analytics/index";
+import { journeyTracking } from "@/lib/journey-tracking";
 
 export const ExpenseCreate = () => {
   const { groupId, friendshipId } = useParams<{ groupId?: string; friendshipId?: string }>();
@@ -68,6 +69,10 @@ export const ExpenseCreate = () => {
   });
 
   const createMutation = useCreate();
+
+  useEffect(() => {
+    journeyTracking.trackFormView("expense-create", isGroupContext ? "group-context" : "friend-context");
+  }, [isGroupContext]);
 
   // Determine members based on context (group members or friendship participants)
   const members = useMemo(() => {
@@ -126,6 +131,21 @@ export const ExpenseCreate = () => {
 
   const handleSubmit = async (values: ExpenseFormValues) => {
     const { splits, is_recurring, recurring, split_method, is_loan, ...expenseData } = values;
+    journeyTracking.trackEvent({
+      event_name: "form_submit",
+      event_category: "expense",
+      page_path: window.location.pathname,
+      target_type: "form",
+      target_key: "expense:create:submit",
+      flow_name: "expense-create",
+      step_name: isGroupContext ? "group-context" : "friend-context",
+      properties: {
+        context: isGroupContext ? "group" : "friend",
+        split_method,
+        participant_count: splits.length,
+        recurring_enabled: is_recurring,
+      },
+    });
 
     // Add context type and IDs to expense data
     const expensePayload = {
@@ -225,6 +245,22 @@ export const ExpenseCreate = () => {
             hasReceipt: attachments.length > 0,
             context: isGroupContext ? 'group' : 'friend',
           });
+          journeyTracking.trackEvent({
+            event_name: "form_success",
+            event_category: "expense",
+            page_path: window.location.pathname,
+            target_type: "form",
+            target_key: "expense:create:submit",
+            flow_name: "expense-create",
+            step_name: isGroupContext ? "group-context" : "friend-context",
+            properties: {
+              context: isGroupContext ? "group" : "friend",
+              entity_id: expenseId,
+              entity_type: "expense",
+              entity_path: `/expenses/show/${expenseId}`,
+              participant_count: splits.length,
+            },
+          });
 
           // Create recurring expense if requested
           if (is_recurring && recurring) {
@@ -252,6 +288,19 @@ export const ExpenseCreate = () => {
           ErrorTracker.apiError({
             endpoint: 'expenses',
             errorMessage: error.message,
+          });
+          journeyTracking.trackEvent({
+            event_name: "form_error",
+            event_category: "expense",
+            page_path: window.location.pathname,
+            target_type: "form",
+            target_key: "expense:create:submit",
+            flow_name: "expense-create",
+            step_name: isGroupContext ? "group-context" : "friend-context",
+            properties: {
+              context: isGroupContext ? "group" : "friend",
+              reason: "server_error",
+            },
           });
           toast.error(`Failed to create expense: ${error.message}`);
         },

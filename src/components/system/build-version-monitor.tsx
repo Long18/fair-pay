@@ -20,9 +20,47 @@ async function fetchLatestBuildInfo() {
   return coerceBuildInfo(await response.json());
 }
 
+async function unregisterBuildServiceWorkers(
+  registration?: ServiceWorkerRegistration
+) {
+  if (registration) {
+    await registration.unregister();
+    return;
+  }
+
+  if (!("serviceWorker" in navigator)) {
+    return;
+  }
+
+  const registrations = await navigator.serviceWorker.getRegistrations();
+  await Promise.all(registrations.map(async (entry) => {
+    await entry.unregister();
+  }));
+}
+
+async function clearBuildCaches() {
+  if (!("caches" in window)) {
+    return;
+  }
+
+  const cacheKeys = await window.caches.keys();
+  await Promise.all(cacheKeys.map(async (cacheKey) => {
+    await window.caches.delete(cacheKey);
+  }));
+}
+
+function forceReloadToLatestBuild() {
+  const nextUrl = new URL(window.location.href);
+  nextUrl.searchParams.set("__refresh", Date.now().toString());
+  window.location.replace(nextUrl.toString());
+}
+
 export async function refreshToLatestBuild(input: {
   hasWaitingServiceWorker: boolean;
+  registration?: ServiceWorkerRegistration;
   updateServiceWorker: (reloadPage?: boolean) => Promise<void>;
+  clearCaches?: () => Promise<void>;
+  unregisterServiceWorkers?: () => Promise<void>;
   reload?: () => void;
 }) {
   if (input.hasWaitingServiceWorker) {
@@ -30,7 +68,21 @@ export async function refreshToLatestBuild(input: {
     return;
   }
 
-  (input.reload ?? (() => window.location.reload()))();
+  try {
+    await (input.unregisterServiceWorkers
+      ? input.unregisterServiceWorkers()
+      : unregisterBuildServiceWorkers(input.registration));
+  } catch {
+    // Continue with the reload even if unregistering fails.
+  }
+
+  try {
+    await (input.clearCaches ? input.clearCaches() : clearBuildCaches());
+  } catch {
+    // Continue with the reload even if cache cleanup fails.
+  }
+
+  (input.reload ?? forceReloadToLatestBuild)();
 }
 
 function BuildVersionMonitorInner() {
@@ -59,6 +111,7 @@ function BuildVersionMonitorInner() {
   const handleRefresh = async () => {
     await refreshToLatestBuild({
       hasWaitingServiceWorker: needRefreshRef.current,
+      registration: registrationRef.current,
       updateServiceWorker: updateServiceWorkerRef.current,
     });
   };
