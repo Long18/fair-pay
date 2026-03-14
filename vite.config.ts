@@ -16,7 +16,7 @@ type PwaApiPlugin = {
 
 const pwaPlugins = VitePWA({
     injectRegister: false,
-    registerType: 'prompt',
+    registerType: 'autoUpdate',
     includeAssets: ['favicon.ico', 'google44489daa6fb5786d.html'],
     manifest: {
         name: 'FairPay - Expense Splitting Made Easy',
@@ -34,7 +34,7 @@ const pwaPlugins = VitePWA({
         ],
     },
     workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        globPatterns: ['**/*.{js,css,ico,png,svg,woff2}'],
         globIgnores: ['**/version.json', '**/manifest.webmanifest'],
         manifestTransforms: [
             async (entries) => ({
@@ -43,8 +43,15 @@ const pwaPlugins = VitePWA({
             }),
         ],
         navigateFallback: null,
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // 4 MB
         runtimeCaching: [
+            {
+                urlPattern: ({ request }) => request.mode === 'navigate',
+                handler: 'NetworkOnly',
+            },
             {
                 urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
                 handler: 'NetworkFirst',
