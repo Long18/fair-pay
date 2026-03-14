@@ -23,6 +23,7 @@ import authProvider from "./authProvider";
 import { supabaseClient } from "./utility";
 import { useDocumentTitle } from "./hooks/ui/use-document-title";
 import { analyticsManager } from "./lib/analytics/instance";
+import { JourneyTrackingBridge } from "./lib/journey-tracking";
 
 // Core layout components (needed immediately)
 import { ErrorComponent } from "./components/refine-ui/layout/error-component";
@@ -90,6 +91,7 @@ const AdminGuard = lazy(() => import("./modules/admin/components/AdminGuard").th
 const AdminLayout = lazy(() => import("./modules/admin/components/AdminLayout").then(m => ({ default: m.AdminLayout })));
 const AdminOverview = lazy(() => import("./modules/admin/pages/AdminOverview").then(m => ({ default: m.AdminOverview })));
 const AdminPeople = lazy(() => import("./modules/admin/pages/AdminPeople").then(m => ({ default: m.AdminPeople })));
+const AdminUserJourney = lazy(() => import("./modules/admin/pages/AdminUserJourney").then(m => ({ default: m.AdminUserJourney })));
 const AdminTransactions = lazy(() => import("./modules/admin/pages/AdminTransactions").then(m => ({ default: m.AdminTransactions })));
 const AdminNotifications = lazy(() => import("./modules/admin/pages/AdminNotifications").then(m => ({ default: m.AdminNotifications })));
 const AdminAuditLogs = lazy(() => import("./modules/admin/pages/AdminAuditLogs").then(m => ({ default: m.AdminAuditLogs })));
@@ -386,6 +388,7 @@ function App() {
                   >
                     <Route index element={<Suspense fallback={<PageLoader />}><AdminOverview /></Suspense>} />
                     <Route path="people" element={<Suspense fallback={<PageLoader />}><AdminPeople /></Suspense>} />
+                    <Route path="people/:id/journey" element={<Suspense fallback={<PageLoader />}><AdminUserJourney /></Suspense>} />
                     <Route path="transactions" element={<Suspense fallback={<PageLoader />}><AdminTransactions /></Suspense>} />
                     <Route path="notifications" element={<Suspense fallback={<PageLoader />}><AdminNotifications /></Suspense>} />
                     <Route path="audit-logs" element={<Suspense fallback={<PageLoader />}><AdminAuditLogs /></Suspense>} />
@@ -546,6 +549,7 @@ function App() {
                 <RefineKbar />
                 <UnsavedChangesNotifier />
                 <DocumentTitle />
+                <JourneyTrackingBridge />
                 <AnalyticsInitializer />
                 {isVercelAnalyticsEnabled ? <Analytics /> : null}
                 <Suspense fallback={null}>

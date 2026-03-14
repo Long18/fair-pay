@@ -13,6 +13,11 @@ export const QuickActions = () => {
       <Button
         size="lg"
         onClick={() => { tap(); go({ to: "/groups/create" }); }}
+        data-track-id="cta:dashboard:new-group"
+        data-track-event="cta_click"
+        data-track-type="button"
+        data-track-category="dashboard"
+        data-track-flow="group-create"
         className="flex-1"
       >
         <UsersIcon className="mr-2 h-5 w-5" />
@@ -22,6 +27,11 @@ export const QuickActions = () => {
         size="lg"
         onClick={() => { tap(); go({ to: "/groups" }); }}
         variant="outline"
+        data-track-id="cta:dashboard:add-expense"
+        data-track-event="cta_click"
+        data-track-type="button"
+        data-track-category="dashboard"
+        data-track-flow="expense-create"
         className="flex-1"
       >
         <PlusIcon className="mr-2 h-5 w-5" />

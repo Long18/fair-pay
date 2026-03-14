@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
-import { useGetIdentity, useUpdate, useDelete } from "@refinedev/core";
+import { useGetIdentity, useGo, useUpdate, useDelete } from "@refinedev/core";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useTable } from "@refinedev/react-table";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -82,6 +82,7 @@ import {
   FilterIcon,
   AlertTriangleIcon,
   Loader2Icon,
+  ActivityIcon,
   UserPlusIcon,
   UserMinusIcon,
   PencilIcon,
@@ -142,7 +143,9 @@ function UserDetailDialog({
   onOpenChange,
   onEdit,
   onToggleRole,
+  onToggleJourneyTracking,
   onDelete,
+  onViewJourney,
   isSelf,
 }: {
   user: AdminUserRow | null;
@@ -150,7 +153,9 @@ function UserDetailDialog({
   onOpenChange: (open: boolean) => void;
   onEdit: () => void;
   onToggleRole: () => void;
+  onToggleJourneyTracking: () => void;
   onDelete: () => void;
+  onViewJourney: () => void;
   isSelf: boolean;
 }) {
   const [groups, setGroups] = useState<Array<{ id: string; name: string; role: string }>>([]);
@@ -290,12 +295,27 @@ function UserDetailDialog({
                     </Badge>
                   }
                 />
+                <DetailRow
+                  label="Journey tracking"
+                  value={
+                    <Badge variant={user.journey_tracking_ignored ? "outline" : "secondary"}>
+                      {user.journey_tracking_ignored ? "Ignored" : "Tracked"}
+                    </Badge>
+                  }
+                />
                 <DetailRow label="Ngày tạo" value={formatDate(user.created_at)} />
                 <DetailRow label="ID" value={<span className="text-xs font-mono">{user.id}</span>} />
               </div>
 
               {/* Actions inside modal */}
               <div className="flex flex-wrap gap-2 pt-2 border-t">
+                <Button size="sm" variant="outline" onClick={onViewJourney}>
+                  <ActivityIcon className="mr-2 h-4 w-4" />
+                  View journey
+                </Button>
+                <Button size="sm" variant="outline" onClick={onToggleJourneyTracking}>
+                  {user.journey_tracking_ignored ? "Resume tracking" : "Ignore tracking"}
+                </Button>
                 <Button size="sm" variant="outline" onClick={onEdit}>
                   <PencilIcon className="mr-2 h-4 w-4" />
                   Chỉnh sửa
@@ -1062,6 +1082,7 @@ function NewRegistrationCard({
 function UsersTab() {
   const { tap, warning } = useHaptics();
   const { data: identity } = useGetIdentity<Profile>();
+  const go = useGo();
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
@@ -1124,6 +1145,33 @@ function UsersTab() {
     return result;
   }, [usersData, debouncedSearch, roleFilter]);
 
+  const handleToggleJourneyTracking = useCallback(async (user: AdminUserRow) => {
+    try {
+      const nextIgnored = !user.journey_tracking_ignored;
+      const { error } = await supabaseClient.rpc("admin_set_user_tracking_ignore", {
+        p_user_id: user.id,
+        p_ignore: nextIgnored,
+        p_reason: nextIgnored ? "Ignored by admin from Admin People" : null,
+      });
+      if (error) throw error;
+
+      toast.success(
+        nextIgnored
+          ? `Đã ignore tracking cho ${user.full_name}`
+          : `Đã bật lại tracking cho ${user.full_name}`,
+      );
+
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "users", user.id] });
+
+      if (selectedUser?.id === user.id) {
+        setSelectedUser({ ...user, journey_tracking_ignored: nextIgnored });
+      }
+    } catch (error) {
+      toast.error(`Lỗi: ${error instanceof Error ? error.message : "Không thể cập nhật journey tracking"}`);
+    }
+  }, [queryClient, selectedUser]);
+
   // Columns
   const columns = useMemo<ColumnDef<AdminUserRow>[]>(() => [
     {
@@ -1142,6 +1190,14 @@ function UsersTab() {
       cell: ({ row }) => (
         <Badge variant={row.original.role === "admin" ? "default" : "secondary"}>
           {row.original.role === "admin" ? "Admin" : "User"}
+        </Badge>
+      ),
+    },
+    {
+      id: "journey_tracking_ignored", header: "Journey", accessorFn: (row) => row.journey_tracking_ignored, size: 120,
+      cell: ({ row }) => (
+        <Badge variant={row.original.journey_tracking_ignored ? "outline" : "secondary"}>
+          {row.original.journey_tracking_ignored ? "Ignored" : "Tracked"}
         </Badge>
       ),
     },
@@ -1183,6 +1239,13 @@ function UsersTab() {
             <DropdownMenuItem onClick={() => { tap(); setSelectedUser(row.original); setDetailOpen(true); }}>
               Xem chi tiết
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { tap(); go({ to: `/admin/people/${row.original.id}/journey` }); }}>
+              <ActivityIcon className="mr-2 h-4 w-4" />
+              View journey
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { tap(); void handleToggleJourneyTracking(row.original); }}>
+              {row.original.journey_tracking_ignored ? "Resume tracking" : "Ignore tracking"}
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => { tap(); setEditUser(row.original); setEditDialogOpen(true); }}>
               <PencilIcon className="mr-2 h-4 w-4" />
               Chỉnh sửa
@@ -1195,7 +1258,7 @@ function UsersTab() {
         </DropdownMenu>
       ),
     },
-  ], [identity?.id]);
+  ], [go, identity?.id, tap, warning, handleToggleJourneyTracking]);
 
   const [sorting, setSorting] = useState<SortingState>([{ id: "created_at", desc: true }]);
 
@@ -1417,6 +1480,16 @@ function UsersTab() {
         user={selectedUser}
         open={detailOpen}
         onOpenChange={setDetailOpen}
+        onViewJourney={() => {
+          if (!selectedUser) return;
+          tap();
+          setDetailOpen(false);
+          go({ to: `/admin/people/${selectedUser.id}/journey` });
+        }}
+        onToggleJourneyTracking={() => {
+          if (!selectedUser) return;
+          void handleToggleJourneyTracking(selectedUser);
+        }}
         onEdit={() => { setDetailOpen(false); setEditUser(selectedUser); setEditDialogOpen(true); }}
         onToggleRole={() => { if (selectedUser) handleToggleRole(selectedUser); }}
         onDelete={() => { setDetailOpen(false); setDeleteUser(selectedUser); setDeleteDialogOpen(true); }}
