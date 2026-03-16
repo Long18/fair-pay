@@ -14,6 +14,7 @@ type ShareExpense = {
   payer_name: string | null
   updated_at?: string | null
   created_at?: string | null
+  latest_settled_at?: string | null
 }
 
 const NO_CACHE = 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0'
@@ -88,6 +89,7 @@ async function fetchShareExpense(id: string): Promise<ShareExpense | null> {
     payer_name: row.payer_name ? String(row.payer_name) : null,
     updated_at: row.updated_at ? String(row.updated_at) : null,
     created_at: row.created_at ? String(row.created_at) : null,
+    latest_settled_at: row.latest_settled_at ? String(row.latest_settled_at) : null,
   }
 }
 
@@ -113,8 +115,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const expense = await fetchShareExpense(id)
   const queryVersion = Array.isArray(req.query.v) ? req.query.v[0] : req.query.v
+  // Pick the most recent timestamp to ensure settlement busts the cache
+  const latestTimestamp = [expense?.updated_at, expense?.created_at, expense?.latest_settled_at]
+    .filter(Boolean)
+    .sort()
+    .pop()
   const version = queryVersion || toVersionToken(
-    expense?.updated_at || expense?.created_at || expense?.expense_date || expense?.id || id,
+    latestTimestamp || expense?.expense_date || expense?.id || id,
   )
 
   const redirectUrl = `${base}/expenses/show/${encodeURIComponent(id)}?v=${encodeURIComponent(version)}`
