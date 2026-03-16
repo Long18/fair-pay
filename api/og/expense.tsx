@@ -11,6 +11,7 @@ const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY!
 interface Participant {
   name: string
   avatar_url: string | null
+  is_settled: boolean
 }
 
 interface ExpenseData {
@@ -25,6 +26,7 @@ interface ExpenseData {
   participants: Participant[]
   split_count: number
   per_person: number
+  all_settled: boolean
 }
 
 const CATEGORY_META: Record<string, { label: string; color: string }> = {
@@ -42,6 +44,7 @@ const CATEGORY_META: Record<string, { label: string; color: string }> = {
 }
 
 const BRAND_TEAL = '#0d9488'
+const SETTLED_GREEN = '#16a34a'
 const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
   'CDN-Cache-Control': 'no-store',
@@ -138,6 +141,7 @@ async function fetchExpense(id: string): Promise<ExpenseData | null> {
       payer_name: string | null
     } | null = null
     let receiptStoragePath: string | null = null
+    let allSettled = false
 
     if (!ogResult.error && ogResult.data && ogResult.data.length > 0) {
       const og = ogResult.data[0] as Record<string, unknown>
@@ -151,6 +155,7 @@ async function fetchExpense(id: string): Promise<ExpenseData | null> {
         payer_name: og.payer_name ? String(og.payer_name) : null,
       }
       receiptStoragePath = og.receipt_storage_path ? String(og.receipt_storage_path) : null
+      allSettled = Boolean(og.all_settled)
     } else if (sbService) {
       const [exp, att] = await Promise.all([
         sbService.from('expenses').select(`
@@ -188,6 +193,7 @@ async function fetchExpense(id: string): Promise<ExpenseData | null> {
     const participants: Participant[] = (splits.data ?? []).map((s: Record<string, unknown>) => ({
       name: (s.full_name as string) ?? (s.user_full_name as string) ?? 'Unknown',
       avatar_url: (s.avatar_url as string) ?? (s.user_avatar_url as string) ?? null,
+      is_settled: Boolean(s.is_settled),
     }))
     const splitCount = participants.length || 1
     const perPerson = Math.round(e.amount / splitCount)
@@ -197,6 +203,7 @@ async function fetchExpense(id: string): Promise<ExpenseData | null> {
       currency: e.currency, category: e.category, expense_date: e.expense_date,
       payer_name: e.payer_name, receipt_url: receiptUrl,
       participants, split_count: splitCount, per_person: perPerson,
+      all_settled: allSettled,
     }
   } catch { return null }
 }
@@ -222,6 +229,18 @@ function CategoryBadge({ label, color }: { label: string; color: string }) {
       padding: '5px 14px', borderRadius: 20,
     }}>
       {label}
+    </div>
+  )
+}
+
+function SettledBadge() {
+  return (
+    <div style={{
+      display: 'flex', fontSize: 14, fontWeight: 600,
+      color: SETTLED_GREEN, background: `${SETTLED_GREEN}15`, border: `1.5px solid ${SETTLED_GREEN}30`,
+      padding: '5px 14px', borderRadius: 20, alignItems: 'center', gap: 4,
+    }}>
+      Settled
     </div>
   )
 }
@@ -253,15 +272,35 @@ function ParticipantChips({ participants, perPerson, currency }: {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {shown.map((p, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f1f5f9', borderRadius: 20, padding: '4px 12px 4px 4px' }}>
-            {p.avatar_url ? (
-              <img src={p.avatar_url} width={26} height={26} style={{ borderRadius: 13, objectFit: 'cover' }} />
-            ) : (
-              <div style={{ display: 'flex', width: 26, height: 26, borderRadius: 13, background: AVATAR_COLORS[i % AVATAR_COLORS.length], alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 12, fontWeight: 700 }}>
-                {p.name.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <span style={{ display: 'flex', fontSize: 13, fontWeight: 500, color: '#334155' }}>
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: p.is_settled ? '#f0fdf4' : '#f1f5f9',
+            borderRadius: 20, padding: '4px 12px 4px 4px',
+          }}>
+            <div style={{ display: 'flex', position: 'relative', width: 26, height: 26 }}>
+              {p.avatar_url ? (
+                <img src={p.avatar_url} width={26} height={26} style={{ borderRadius: 13, objectFit: 'cover' }} />
+              ) : (
+                <div style={{ display: 'flex', width: 26, height: 26, borderRadius: 13, background: AVATAR_COLORS[i % AVATAR_COLORS.length], alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 12, fontWeight: 700 }}>
+                  {p.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              {p.is_settled && (
+                <div style={{
+                  display: 'flex', position: 'absolute', bottom: -1, right: -2,
+                  width: 13, height: 13, borderRadius: 7, background: SETTLED_GREEN,
+                  border: '1.5px solid white', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <svg width="7" height="7" viewBox="0 0 7 7" fill="none">
+                    <path d="M1 3.5L2.8 5.5L6 1.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+              )}
+            </div>
+            <span style={{
+              display: 'flex', fontSize: 13, fontWeight: 500,
+              color: p.is_settled ? SETTLED_GREEN : '#334155',
+            }}>
               {p.name.split(' ').pop()}
             </span>
           </div>
@@ -331,7 +370,7 @@ export default async function handler(req: Request) {
 
     // Collect all text that will be rendered so the font includes every glyph
     const allText = sanitize([
-      'FairPay', cat.label, desc, amount, date,
+      'FairPay', cat.label, desc, amount, date, 'Settled',
       expense.payer_name ? `paid by ${expense.payer_name}` : '',
       ...expense.participants.map((p) => p.name),
       `${expense.split_count} people`, `${fmt(expense.per_person, expense.currency)}/person`,
@@ -357,15 +396,22 @@ export default async function handler(req: Request) {
           <div style={{
             flex: 1, display: 'flex', flexDirection: 'column',
             justifyContent: 'center', gap: 0,
+            borderLeft: expense.all_settled ? '6px solid ' + SETTLED_GREEN : 'none',
+            paddingLeft: expense.all_settled ? 24 : 0,
           }}>
             <div style={{ display: 'flex', marginBottom: 24 }}><BrandHeader /></div>
             <div style={{ display: 'flex', marginBottom: 16 }}>
               <CategoryBadge label={cat.label} color={cat.color} />
             </div>
+            {expense.all_settled && (
+              <div style={{ display: 'flex', marginBottom: 16 }}>
+                <SettledBadge />
+              </div>
+            )}
             <div style={{ display: 'flex', fontSize: 30, fontWeight: 700, color: '#0f172a', marginBottom: 20, lineHeight: 1.3 }}>
               {desc}
             </div>
-            <div style={{ display: 'flex', fontSize: 52, fontWeight: 800, color: BRAND_TEAL, marginBottom: 24, letterSpacing: -2 }}>
+            <div style={{ display: 'flex', fontSize: 52, fontWeight: 800, color: expense.all_settled ? SETTLED_GREEN : BRAND_TEAL, marginBottom: 24, letterSpacing: -2 }}>
               {amount}
             </div>
             {expense.participants.length > 0 && (
@@ -393,16 +439,20 @@ export default async function handler(req: Request) {
           borderRadius: 20, padding: '48px 52px',
           border: '1px solid #e2e8f0',
           boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+          borderLeft: expense.all_settled ? '6px solid ' + SETTLED_GREEN : '1px solid #e2e8f0',
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
             <BrandHeader />
-            <CategoryBadge label={cat.label} color={cat.color} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <CategoryBadge label={cat.label} color={cat.color} />
+              {expense.all_settled && <SettledBadge />}
+            </div>
           </div>
           <div style={{ display: 'flex', width: '100%', height: 1, borderBottom: '2px dashed #e2e8f0', marginBottom: 32 }} />
           <div style={{ display: 'flex', fontSize: 32, fontWeight: 700, color: '#0f172a', marginBottom: 20, lineHeight: 1.3 }}>
             {desc}
           </div>
-          <div style={{ display: 'flex', fontSize: 60, fontWeight: 800, color: BRAND_TEAL, marginBottom: 28, letterSpacing: -2 }}>
+          <div style={{ display: 'flex', fontSize: 60, fontWeight: 800, color: expense.all_settled ? SETTLED_GREEN : BRAND_TEAL, marginBottom: 28, letterSpacing: -2 }}>
             {amount}
           </div>
           {expense.participants.length > 0 && (
