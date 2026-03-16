@@ -6,8 +6,8 @@ const hoisted = vi.hoisted(() => ({
   dismissMock: vi.fn(),
   useRegisterSWMock: vi.fn(),
   currentBuildInfoMock: {
-    version: "1.0.0-26031301",
-    baseVersion: "1.0.0",
+    version: "1.0.1-26031301",
+    baseVersion: "1.0.1",
     dateCode: "260313",
     sequence: 1,
     channel: "production" as const,
@@ -95,7 +95,7 @@ describe("BuildVersionMonitor", () => {
       ok: true,
       json: async () => ({
         ...hoisted.currentBuildInfoMock,
-        version: "1.0.0-26031302",
+        version: "1.0.1-26031302",
         sequence: 2,
         deploymentId: "dpl_next",
       }),

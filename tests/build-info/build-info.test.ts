@@ -31,7 +31,7 @@ describe("build-info utilities", () => {
         dateCode: "260313",
         sequence: 1,
       })
-    ).toBe("1.0.0-26031301");
+    ).toBe("1.0.1-26031301");
   });
 
   it("keeps expanding digits when the sequence exceeds 99", () => {
@@ -42,13 +42,13 @@ describe("build-info utilities", () => {
         dateCode: "260313",
         sequence: 100,
       })
-    ).toBe("1.0.0-260313100");
+    ).toBe("1.0.1-260313100");
   });
 
   it("parses deployed build versions", () => {
-    expect(parseBuildVersion("1.0.0-26031301")).toEqual({
+    expect(parseBuildVersion("1.0.1-26031301")).toEqual({
       kind: "deployed",
-      baseVersion: "1.0.0",
+      baseVersion: "1.0.1",
       dateCode: "260313",
       sequence: 1,
     });
@@ -60,10 +60,10 @@ describe("build-info utilities", () => {
       localStamp: "2603130915",
     });
 
-    expect(version).toBe("1.0.0-local-2603130915");
+    expect(version).toBe("1.0.1-local-2603130915");
     expect(parseBuildVersion(version)).toEqual({
       kind: "local",
-      baseVersion: "1.0.0",
+      baseVersion: "1.0.1",
       localStamp: "2603130915",
     });
   });
@@ -71,8 +71,8 @@ describe("build-info utilities", () => {
   it("coerces a build info payload", () => {
     expect(
       coerceBuildInfo({
-        version: "1.0.0-26031301",
-        baseVersion: "1.0.0",
+        version: "1.0.1-26031301",
+        baseVersion: "1.0.1",
         dateCode: "260313",
         sequence: 1,
         channel: "production",
@@ -81,8 +81,8 @@ describe("build-info utilities", () => {
         commitSha: "abcdef1",
       })
     ).toEqual({
-      version: "1.0.0-26031301",
-      baseVersion: "1.0.0",
+      version: "1.0.1-26031301",
+      baseVersion: "1.0.1",
       dateCode: "260313",
       sequence: 1,
       channel: "production",
