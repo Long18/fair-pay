@@ -18,6 +18,7 @@ import { useState } from "react";
 import { formatDate } from "@/lib/locale-utils";
 
 import { DownloadIcon, Trash2Icon, FileImageIcon, EyeIcon, FileIcon } from "@/components/ui/icons";
+import { ImageZoomViewer } from "@/components/ui/image-zoom-viewer";
 import { useHaptics } from "@/hooks/use-haptics";
 interface AttachmentListProps {
   attachments: Attachment[];
@@ -247,27 +248,33 @@ export const AttachmentList = ({
         })}
       </div>
 
-      {/* Image Viewer Modal */}
-      {viewingUrl && (
-        <AlertDialog open={!!viewingUrl} onOpenChange={() => setViewingUrl(null)}>
-          <AlertDialogContent className="max-w-4xl max-h-[90vh]">
-            <AlertDialogHeader>
-              <AlertDialogTitle>View Receipt</AlertDialogTitle>
-            </AlertDialogHeader>
-            <div className="max-h-[70vh] overflow-auto rounded-lg bg-muted p-2">
-              <img
-                src={viewingUrl}
-                alt="Receipt"
-                className="w-full h-auto"
-                loading="eager"
-              />
-            </div>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Close</AlertDialogCancel>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+      <ImageZoomViewer
+        src={viewingUrl ?? ""}
+        alt="Receipt"
+        open={!!viewingUrl}
+        onClose={() => setViewingUrl(null)}
+        title="View Receipt"
+        footer={
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              if (viewingUrl) {
+                const attachment = attachments.find(
+                  (a) => getAttachmentUrl(a.storage_path) === viewingUrl
+                );
+                if (attachment) {
+                  tap();
+                  downloadAttachment(attachment);
+                }
+              }
+            }}
+          >
+            <DownloadIcon className="h-4 w-4 mr-1" />
+            Download
+          </Button>
+        }
+      />
     </>
   );
 };
