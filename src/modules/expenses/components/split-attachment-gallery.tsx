@@ -3,14 +3,7 @@ import { Attachment } from "../types";
 import { useAttachments } from "../hooks/use-attachments";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ImageZoomViewer } from "@/components/ui/image-zoom-viewer";
 import { EyeIcon, DownloadIcon, FileIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 
@@ -108,27 +101,16 @@ export const SplitAttachmentGallery = ({
         </div>
       </div>
 
-      {viewingUrl && (
-        <AlertDialog open={!!viewingUrl} onOpenChange={() => setViewingUrl(null)}>
-          <AlertDialogContent className="max-w-4xl">
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                Payment Proof - {userName}
-              </AlertDialogTitle>
-            </AlertDialogHeader>
-            <div className="max-h-[70vh] overflow-auto">
-              <img
-                src={viewingUrl}
-                alt={viewingFileName}
-                className="w-full h-auto"
-              />
-            </div>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Close</AlertDialogCancel>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+      <ImageZoomViewer
+        src={viewingUrl ?? ""}
+        alt={viewingFileName}
+        open={!!viewingUrl}
+        onClose={() => {
+          setViewingUrl(null);
+          setViewingFileName("");
+        }}
+        title={`Payment Proof - ${userName}`}
+      />
     </>
   );
 };

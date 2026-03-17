@@ -121,6 +121,9 @@ import {
   CornerDownRight,
   AtSign,
   Undo2,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
 } from "lucide-react";
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -558,6 +561,18 @@ export const CopyIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
 
 export const ShareIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
   <Share2 size={size} fill="currentColor" {...props} />
+);
+
+export const ZoomInIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <ZoomIn size={size} {...props} />
+);
+
+export const ZoomOutIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <ZoomOut size={size} {...props} />
+);
+
+export const RotateCcwIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <RotateCcw size={size} {...props} />
 );
 
 // ============ Arrow Icons ============
