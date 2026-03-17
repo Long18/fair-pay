@@ -10,7 +10,9 @@ import { measureWebVitals } from "./lib/performance";
 import App from "./App";
 
 // Initialize Vercel Web Analytics (tracks page views and Web Vitals)
-inject();
+if (import.meta.env.PROD && import.meta.env.VITE_ENABLE_VERCEL_ANALYTICS === "true") {
+  inject();
+}
 
 // Initialize Sentry (only in production with DSN configured)
 initSentry();
