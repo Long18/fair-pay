@@ -1,8 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router";
 import {
-  LineChart,
-  Line,
   BarChart as RechartsBarChart,
   Bar,
   PieChart,
@@ -14,10 +11,10 @@ import {
   Area,
   AreaChart,
 } from "recharts";
+import { Link } from "react-router";
 import { supabaseClient } from "@/utility/supabaseClient";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { LoadingBeam } from "@/components/ui/loading-beam";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   ChartContainer,
   ChartTooltip,
@@ -35,19 +32,49 @@ import {
   ArrowUpIcon,
   ArrowDownIcon,
 } from "@/components/ui/icons";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import type { AdminStats } from "../types";
 
-interface RecentActivityItem {
-  id: string;
-  action: string;
-  entity_type: string;
-  entity_id: string;
-  actor_id: string;
-  actor_email: string | null;
-  metadata?: Record<string, unknown>;
-  created_at: string;
-}
 import { formatNumber } from "@/lib/locale-utils";
+
+// ─── Latest Tracked Users ────────────────────────────────────────────
+
+interface LatestTrackedUser {
+  user_id: string;
+  full_name: string | null;
+  email: string;
+  avatar_url: string | null;
+  last_seen_at: string;
+  last_page: string | null;
+  entry_link: string | null;
+  landing_source: string | null;
+  device_type: string | null;
+  session_count: number;
+}
+
+function formatRelativeTime(value: string): string {
+  const diff = Date.now() - new Date(value).getTime();
+  const minutes = Math.floor(diff / 60_000);
+  if (minutes < 1) return "vừa xong";
+  if (minutes < 60) return `${minutes} phút trước`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} giờ trước`;
+  const days = Math.floor(hours / 24);
+  return `${days} ngày trước`;
+}
+
+function useLatestTrackedUsers() {
+  return useQuery({
+    queryKey: ["admin", "latest-tracked-users"],
+    queryFn: async () => {
+      const { data, error } = await supabaseClient.rpc("admin_get_latest_tracked_users", { p_limit: 10 });
+      if (error) throw error;
+      return (data ?? []) as LatestTrackedUser[];
+    },
+    staleTime: 30_000,
+  });
+}
 
 // ─── Trend Indicator ────────────────────────────────────────────────
 
@@ -90,20 +117,6 @@ function StatCardSkeleton() {
         </div>
       </div>
     </Card>
-  );
-}
-
-// ─── Activity Skeleton ──────────────────────────────────────────────
-
-function ActivitySkeleton() {
-  return (
-    <div className="flex items-start gap-3 py-3">
-      <div className="h-8 w-8 rounded-full bg-muted animate-pulse shrink-0" />
-      <div className="flex flex-col gap-1.5 flex-1">
-        <div className="h-3.5 w-3/4 bg-muted rounded animate-pulse" />
-        <div className="h-3 w-20 bg-muted rounded animate-pulse" />
-      </div>
-    </div>
   );
 }
 
@@ -256,29 +269,6 @@ function useCategoryBreakdown() {
   });
 }
 
-function useRecentActivity() {
-  return useQuery<RecentActivityItem[]>({
-    queryKey: ["admin", "recent-activity"],
-    queryFn: async () => {
-      const { data, error } = await supabaseClient.rpc("read_audit_trail", {
-        p_limit: 5,
-      });
-      if (error) throw error;
-      return (data ?? []).map((row: any) => ({
-        id: row.id as string,
-        action: row.action_type as string,
-        entity_type: row.entity_type as string,
-        entity_id: row.entity_id as string,
-        actor_id: row.actor as string,
-        actor_email: (row.actor_email ?? row.actor_name ?? null) as string | null,
-        metadata: row.metadata as Record<string, unknown> | undefined,
-        created_at: (row.action_timestamp ?? row.created_at) as string,
-      }));
-    },
-    staleTime: 30_000,
-  });
-}
-
 // ─── Chart Configs ──────────────────────────────────────────────────
 
 const expenseChartConfig = {
@@ -302,7 +292,7 @@ export function AdminOverview() {
   const { data: expenseTrend, isLoading: trendLoading } = useExpenseTrend();
   const { data: registrations, isLoading: regLoading } = useRegistrationTrend();
   const { data: categories, isLoading: catLoading } = useCategoryBreakdown();
-  const { data: activities, isLoading: actLoading } = useRecentActivity();
+  const { data: latestUsers, isLoading: latestLoading } = useLatestTrackedUsers();
 
   // Build pie chart config dynamically
   const categoryChartConfig: ChartConfig = (categories ?? []).reduce(
@@ -526,74 +516,81 @@ export function AdminOverview() {
         </Card>
       </div>
 
-      {/* ── Recent Activity ────────────────────────────────────── */}
+      {/* ── Latest Tracked Users ───────────────────────────────── */}
       <Card>
         <CardHeader>
-          <CardTitle>Hoạt động gần đây</CardTitle>
-          <CardDescription>5 hoạt động mới nhất trong hệ thống</CardDescription>
+          <CardTitle>Người dùng truy cập gần đây</CardTitle>
+          <CardDescription>Người dùng được theo dõi gần nhất</CardDescription>
         </CardHeader>
-        <CardContent>
-          {actLoading ? (
+        <CardContent className="p-0">
+          {latestLoading ? (
             <div className="divide-y">
               {Array.from({ length: 5 }).map((_, i) => (
-                <ActivitySkeleton key={i} />
-              ))}
-            </div>
-          ) : (activities ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">
-              Chưa có hoạt động nào
-            </p>
-          ) : (
-            <div className="divide-y">
-              {(activities ?? []).map((item) => (
-                <div key={item.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-                  <Avatar className="h-8 w-8 shrink-0">
-                    <AvatarFallback className="text-xs">
-                      {(item.actor_email ?? "?")[0].toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <p className="text-sm leading-snug">
-                      <span className="font-medium">{item.actor_email ?? "System"}</span>{" "}
-                      <span className="text-muted-foreground">
-                        {item.action} {item.entity_type}
-                      </span>
-                    </p>
-                    <span className="text-xs text-muted-foreground">
-                      {formatRelativeTime(item.created_at)}
-                    </span>
+                <div key={i} className="flex items-center gap-3 px-6 py-3">
+                  <div className="h-8 w-8 rounded-full bg-muted animate-pulse shrink-0" />
+                  <div className="flex-1 flex flex-col gap-1.5">
+                    <div className="h-3 w-32 bg-muted rounded animate-pulse" />
+                    <div className="h-3 w-48 bg-muted rounded animate-pulse" />
                   </div>
+                  <div className="h-3 w-16 bg-muted rounded animate-pulse" />
                 </div>
               ))}
             </div>
+          ) : !latestUsers?.length ? (
+            <p className="px-6 py-8 text-center text-sm text-muted-foreground">
+              Chưa có dữ liệu theo dõi
+            </p>
+          ) : (
+            <div className="divide-y">
+              {latestUsers.map((user) => {
+                const initials = (user.full_name ?? user.email).charAt(0).toUpperCase();
+                return (
+                  <Link
+                    key={user.user_id}
+                    to={`/admin/people/${user.user_id}/journey`}
+                    className="flex items-center gap-3 px-6 py-3 hover:bg-muted/50 transition-colors"
+                  >
+                    <Avatar className="h-8 w-8 shrink-0">
+                      {user.avatar_url && <AvatarImage src={user.avatar_url} alt={user.full_name ?? user.email} />}
+                      <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium leading-none truncate">
+                        {user.full_name ?? user.email}
+                      </p>
+                      {user.full_name && (
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
+                      )}
+                      {user.last_page && (
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">{user.last_page}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {user.device_type && (
+                        <Badge variant="secondary" className="text-xs hidden sm:inline-flex">
+                          {user.device_type}
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className="text-xs">
+                        {user.session_count} phiên
+                      </Badge>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {formatRelativeTime(user.last_seen_at)}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
           )}
-          <div className="pt-4 border-t mt-4">
-            <Link
-              to="/admin/audit-logs"
-              className="text-sm font-medium text-primary hover:underline"
-            >
-              Xem tất cả →
-            </Link>
-          </div>
         </CardContent>
+        <CardFooter className="border-t pt-3 pb-3">
+          <Link to="/admin/people" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            Xem tất cả →
+          </Link>
+        </CardFooter>
       </Card>
+
     </div>
   );
-}
-
-// ─── Helpers ────────────────────────────────────────────────────────
-
-function formatRelativeTime(dateStr: string): string {
-  const now = Date.now();
-  const then = new Date(dateStr).getTime();
-  const diffMs = now - then;
-  const diffMin = Math.floor(diffMs / 60_000);
-
-  if (diffMin < 1) return "Vừa xong";
-  if (diffMin < 60) return `${diffMin} phút trước`;
-  const diffHour = Math.floor(diffMin / 60);
-  if (diffHour < 24) return `${diffHour} giờ trước`;
-  const diffDay = Math.floor(diffHour / 24);
-  if (diffDay < 7) return `${diffDay} ngày trước`;
-  return new Date(dateStr).toLocaleDateString("vi-VN");
 }
