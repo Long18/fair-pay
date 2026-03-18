@@ -186,7 +186,13 @@ async function fetchExpense(id: string): Promise<ExpenseData | null> {
 
     let receiptUrl: string | null = null
     if (receiptStoragePath) {
-      receiptUrl = sbAnon.storage.from('receipts').getPublicUrl(receiptStoragePath).data.publicUrl
+      const sbForSigned = sbService ?? sbAnon
+      const { data: signedData, error: signedError } = await sbForSigned.storage
+        .from('receipts')
+        .createSignedUrl(receiptStoragePath, 3600) // 1 hour expiry
+      if (!signedError && signedData?.signedUrl) {
+        receiptUrl = signedData.signedUrl
+      }
     }
 
     // Extract participants from splits — rpc returns full_name/avatar_url directly

@@ -137,15 +137,20 @@ export const useAttachments = () => {
   };
 
   /**
-   * Get public URL for viewing an attachment
+   * Get a signed URL for viewing an attachment (1 hour expiry)
    */
-  const getAttachmentUrl = (storagePath: string): string => {
-    const { data } = supabaseClient
+  const getAttachmentUrl = async (storagePath: string): Promise<string> => {
+    const { data, error } = await supabaseClient
       .storage
       .from("receipts")
-      .getPublicUrl(storagePath);
+      .createSignedUrl(storagePath, 3600); // 1 hour expiry
 
-    return data.publicUrl;
+    if (error || !data?.signedUrl) {
+      console.error("Failed to create signed URL:", error);
+      return "";
+    }
+
+    return data.signedUrl;
   };
 
   /**

@@ -7,8 +7,6 @@ interface ImportMetaEnv {
     readonly VITE_APP_VERSION?: string;
     readonly VITE_APP_BUILD_INFO?: string;
     // MoMo Integration
-    readonly VITE_MOMO_API_URL?: string;
-    readonly VITE_MOMO_ACCESS_TOKEN?: string;
     readonly VITE_MOMO_RECEIVER_PHONE?: string;
     // Local dev sign-in
     readonly VITE_DEV_ADMIN_EMAIL?: string;

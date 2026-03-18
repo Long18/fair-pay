@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Attachment } from "../types";
 import { useAttachments } from "../hooks/use-attachments";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formatDate } from "@/lib/locale-utils";
 
 import { DownloadIcon, Trash2Icon, FileImageIcon, EyeIcon, FileIcon } from "@/components/ui/icons";
@@ -37,6 +37,24 @@ export const AttachmentList = ({
   const [viewingUrl, setViewingUrl] = useState<string | null>(null);
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
   const [errorImages, setErrorImages] = useState<Set<string>>(new Set());
+  const [signedUrls, setSignedUrls] = useState<Map<string, string>>(new Map());
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchUrls = async () => {
+      const entries = await Promise.all(
+        attachments.map(async (a) => {
+          const url = await getAttachmentUrl(a.storage_path);
+          return [a.storage_path, url] as [string, string];
+        })
+      );
+      if (!cancelled) {
+        setSignedUrls(new Map(entries));
+      }
+    };
+    fetchUrls();
+    return () => { cancelled = true; };
+  }, [attachments]);
 
   if (attachments.length === 0) {
     return null;
@@ -95,7 +113,7 @@ export const AttachmentList = ({
         {attachments.map((attachment) => {
           const isLoadingImage = loadingImages.has(attachment.id);
           const hasErrorImage = errorImages.has(attachment.id);
-          const imageUrl = getAttachmentUrl(attachment.storage_path);
+          const imageUrl = signedUrls.get(attachment.storage_path) ?? "";
 
           return (
             <div
@@ -261,7 +279,7 @@ export const AttachmentList = ({
             onClick={() => {
               if (viewingUrl) {
                 const attachment = attachments.find(
-                  (a) => getAttachmentUrl(a.storage_path) === viewingUrl
+                  (a) => signedUrls.get(a.storage_path) === viewingUrl
                 );
                 if (attachment) {
                   tap();
