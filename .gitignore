@@ -27,14 +27,24 @@ scripts/production/*-report.txt
 scripts/verification/*-output.txt
 
 # Editor directories and files
-
-.vscode/_
+.vscode/
 !.vscode/extensions.json
 .idea
 .DS_Store
-_.suo
-_.ntvs_
-_.njsproj
-_.sln
-\*.sw?
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 .specstory/
+
+# AI/Agent tool directories
+.agents/skills/find-skills/
+.claude/
+.cursor/
+.kiro/
+.omc/
+.omx/
+.opencode/
+.serena/
+.shared/ui-ux-pro-max/
