@@ -64,10 +64,8 @@ export const ExpenseContextSelector = () => {
     }))
     .filter((g: any) => {
       if (!g) return false;
-      // Filter out archived groups unless user is admin/creator
-      if (g.is_archived) {
-        return g._role === 'admin' || g.created_by === identity?.id;
-      }
+      // Never show archived groups in expense creation
+      if (g.is_archived) return false;
       return true;
     });
   const friendships = friendshipsQuery.data?.data || [];
