@@ -1,10 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { getCorsHeaders, handleCorsPreflightIfNeeded } from '../_shared/cors.ts'
 
 interface DebtSummaryRow {
   user_id: string
@@ -29,12 +25,55 @@ interface ApiResponse {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  const preflightResponse = handleCorsPreflightIfNeeded(req)
+  if (preflightResponse) return preflightResponse
 
   try {
+    // Extract and validate auth token
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Missing authorization header'
+        } as ApiResponse),
+        {
+          status: 401,
+          headers: getCorsHeaders()
+        }
+      )
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
+
+    // Initialize Supabase client with auth token — getUser() verifies the JWT server-side
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      },
+      global: {
+        headers: {
+          authorization: authHeader
+        }
+      }
+    })
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Invalid or expired token'
+        } as ApiResponse),
+        {
+          status: 401,
+          headers: getCorsHeaders()
+        }
+      )
+    }
+
     const url = new URL(req.url)
     const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100)
     const offset = parseInt(url.searchParams.get('offset') || '0')
@@ -48,21 +87,10 @@ serve(async (req) => {
         } as ApiResponse),
         {
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: getCorsHeaders()
         }
       )
     }
-
-    // Initialize Supabase client (anon key for public access)
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
-
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    })
 
     console.log(`Fetching all users debt summary: limit=${limit}, offset=${offset}`)
 
@@ -81,7 +109,7 @@ serve(async (req) => {
         } as ApiResponse),
         {
           status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: getCorsHeaders()
         }
       )
     }
@@ -99,7 +127,7 @@ serve(async (req) => {
         } as ApiResponse),
         {
           status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: getCorsHeaders()
         }
       )
     }
@@ -127,7 +155,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify(response), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: getCorsHeaders()
     })
   } catch (error) {
     console.error('Unexpected error:', error)
@@ -138,7 +166,7 @@ serve(async (req) => {
       } as ApiResponse),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: getCorsHeaders()
       }
     )
   }

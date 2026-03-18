@@ -1,10 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { getCorsHeaders } from '../_shared/cors.ts'
 
 interface DebtResponse {
   success: boolean
@@ -57,7 +53,7 @@ interface DebtResponse {
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: getCorsHeaders() })
   }
 
   try {
@@ -74,7 +70,7 @@ serve(async (req) => {
         } as DebtResponse),
         {
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: getCorsHeaders()
         }
       )
     }
@@ -87,7 +83,7 @@ serve(async (req) => {
         } as DebtResponse),
         {
           status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: getCorsHeaders()
         }
       )
     }
@@ -102,7 +98,7 @@ serve(async (req) => {
         } as DebtResponse),
         {
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: getCorsHeaders()
         }
       )
     }
@@ -138,7 +134,7 @@ serve(async (req) => {
         } as DebtResponse),
         {
           status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: getCorsHeaders()
         }
       )
     }
@@ -152,7 +148,7 @@ serve(async (req) => {
         } as DebtResponse),
         {
           status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: getCorsHeaders()
         }
       )
     }
@@ -168,7 +164,7 @@ serve(async (req) => {
         } as DebtResponse),
         {
           status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: getCorsHeaders()
         }
       )
     }
@@ -202,7 +198,7 @@ serve(async (req) => {
       JSON.stringify(response),
       {
         status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: getCorsHeaders()
       }
     )
 
@@ -215,7 +211,7 @@ serve(async (req) => {
       } as DebtResponse),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: getCorsHeaders()
       }
     )
   }

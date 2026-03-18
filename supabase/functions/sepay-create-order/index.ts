@@ -12,11 +12,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { getCorsHeaders } from '../_shared/cors.ts'
 
 const QR_BASE_URL = 'https://qr.sepay.vn/img'
 
@@ -31,7 +27,7 @@ interface CreateOrderRequest {
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: getCorsHeaders() })
   }
 
   try {
@@ -39,7 +35,7 @@ Deno.serve(async (req: Request) => {
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Missing authorization' }), {
         status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: getCorsHeaders(),
       })
     }
 
@@ -56,7 +52,7 @@ Deno.serve(async (req: Request) => {
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: getCorsHeaders(),
       })
     }
 
@@ -66,14 +62,14 @@ Deno.serve(async (req: Request) => {
     if (!source_type || !source_id || !payee_user_id || !amount || !currency) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: getCorsHeaders(),
       })
     }
 
     if (amount <= 0) {
       return new Response(JSON.stringify({ error: 'Amount must be positive' }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: getCorsHeaders(),
       })
     }
 
@@ -87,7 +83,7 @@ Deno.serve(async (req: Request) => {
     if (settingsError || !payeeSettings?.sepay_config) {
       return new Response(JSON.stringify({ error: 'Payee has not configured SePay' }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: getCorsHeaders(),
       })
     }
 
@@ -101,7 +97,7 @@ Deno.serve(async (req: Request) => {
     if (!sepayConfig.bank_account_number || !sepayConfig.bank_name) {
       return new Response(JSON.stringify({ error: 'Payee SePay bank config incomplete' }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: getCorsHeaders(),
       })
     }
 
@@ -140,7 +136,7 @@ Deno.serve(async (req: Request) => {
       console.error('Error inserting order:', insertError)
       return new Response(JSON.stringify({ error: 'Failed to create order record' }), {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: getCorsHeaders(),
       })
     }
 
@@ -159,14 +155,14 @@ Deno.serve(async (req: Request) => {
       payment_code: paymentCode,
     }), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: getCorsHeaders(),
     })
 
   } catch (error) {
     console.error('Unexpected error:', error)
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: getCorsHeaders(),
     })
   }
 })

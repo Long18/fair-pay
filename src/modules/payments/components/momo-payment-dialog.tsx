@@ -48,6 +48,7 @@ export function MomoPaymentDialog({
   const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
   const [isRechecking, setIsRechecking] = useState(false);
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
   const creationAttemptedRef = React.useRef(false);
 
   const {
@@ -74,6 +75,15 @@ export function MomoPaymentDialog({
       creationAttemptedRef.current = false;
     }
   }, [open, paymentRequest, isLoading, isCreating, identity?.id, amount]);
+
+  // Fetch QR URL from proxy when payment request is ready
+  useEffect(() => {
+    if (paymentRequest?.reference_code && amount) {
+      momoAPI.generatePaymentQR(amount, paymentRequest.reference_code)
+        .then(url => setQrUrl(url))
+        .catch(err => console.error('Failed to generate QR URL:', err));
+    }
+  }, [paymentRequest?.reference_code, amount]);
 
   // Subscribe to real-time updates
   useEffect(() => {
@@ -192,7 +202,7 @@ export function MomoPaymentDialog({
               {/* QR Code */}
               <div className="relative w-64 h-64 rounded-lg border bg-white p-2">
                 <img
-                  src={momoAPI.generatePaymentQR(amount, paymentRequest.reference_code)}
+                  src={qrUrl ?? undefined}
                   alt="MoMo QR Code"
                   className="h-full w-full object-contain"
                 />

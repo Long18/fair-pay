@@ -345,14 +345,29 @@ function App() {
                       </Suspense>
                     } />
 
-                    {/* Person debt breakdown view - NEW */}
+                  </Route>
+
+                  {/* Authenticated financial routes */}
+                  <Route
+                    element={
+                      <Authenticated
+                        key="authenticated-financial"
+                        fallback={<CatchAllNavigate to="/login" />}
+                      >
+                        <Layout>
+                          <AnimatedOutlet />
+                        </Layout>
+                      </Authenticated>
+                    }
+                  >
+                    {/* Person debt breakdown view */}
                     <Route path="/debts/:userId" element={
                       <ErrorBoundary context="Person Debt Breakdown">
                         <PersonDebtBreakdown />
                       </ErrorBoundary>
                     } />
 
-                    {/* Public expense view */}
+                    {/* Expense detail view */}
                     <Route path="/expenses/show/:id" element={
                       <Suspense fallback={<PageLoader />}>
                         <ErrorBoundary context="Expense Details">
@@ -361,7 +376,7 @@ function App() {
                       </Suspense>
                     } />
 
-                    {/* Public payment view */}
+                    {/* Payment detail view */}
                     <Route path="/payments/show/:id" element={
                       <Suspense fallback={<PageLoader />}>
                         <ErrorBoundary context="Payment Details">

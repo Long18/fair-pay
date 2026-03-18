@@ -1,6 +1,6 @@
 {
     "name": "fair-pay",
-    "version": "1.1.1",
+    "version": "1.2.0",
     "private": true,
     "type": "module",
     "dependencies": {
@@ -101,6 +101,7 @@
         "@types/react-dom": "^19.1.0",
         "@typescript-eslint/eslint-plugin": "^5.57.1",
         "@typescript-eslint/parser": "^5.57.1",
+        "@vercel/node": "^5.6.16",
         "@vitejs/plugin-react": "^4.4.1",
         "@vitest/coverage-v8": "^4.0.16",
         "@vitest/ui": "^4.0.16",
