@@ -976,5 +976,9 @@
             "usedInCode": "Đang dùng",
             "notUsed": "Đã khám phá"
         }
+    },
+    "tracking": {
+        "notice": "Chúng tôi sử dụng cookie và công nghệ theo dõi để cải thiện trải nghiệm của bạn trên ứng dụng này.",
+        "ok": "Đã hiểu"
     }
 }
