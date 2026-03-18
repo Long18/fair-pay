@@ -977,5 +977,9 @@
             "usedInCode": "In use",
             "notUsed": "Discovered"
         }
+    },
+    "tracking": {
+        "notice": "We use cookies and tracking technology to improve your experience on this app.",
+        "ok": "Got it"
     }
 }

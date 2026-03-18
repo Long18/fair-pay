@@ -24,6 +24,7 @@ import { supabaseClient } from "./utility";
 import { useDocumentTitle } from "./hooks/ui/use-document-title";
 import { analyticsManager } from "./lib/analytics/instance";
 import { JourneyTrackingBridge } from "./lib/journey-tracking";
+import { TrackingNoticeBanner } from "./components/tracking-consent-banner";
 
 // Core layout components (needed immediately)
 import { ErrorComponent } from "./components/refine-ui/layout/error-component";
@@ -552,6 +553,7 @@ function App() {
                 <JourneyTrackingBridge />
                 <AnalyticsInitializer />
                 {isVercelAnalyticsEnabled ? <Analytics /> : null}
+                <TrackingNoticeBanner />
                 <Suspense fallback={null}>
                   <DonationWidget />
                 </Suspense>
