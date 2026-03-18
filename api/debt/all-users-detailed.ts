@@ -1,54 +1,21 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
-import { createClient } from '@supabase/supabase-js'
-import { jwtDecode } from 'jwt-decode'
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY
+import { getAuthenticatedUser } from '../_lib/auth'
+import { handleCorsPreflightIfNeeded, setCorsHeaders } from '../_lib/cors'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end()
-  }
+  setCorsHeaders(res)
+  if (handleCorsPreflightIfNeeded(req, res)) return
 
   if (req.method !== 'GET') {
     return res.status(405).json({ success: false, error: 'Method not allowed' })
   }
 
+  const { user, error: authError, supabase } = await getAuthenticatedUser(req.headers.authorization)
+  if (!user || !supabase) {
+    return res.status(401).json({ success: false, error: authError || 'Unauthorized' })
+  }
+
   try {
-    // Extract and validate auth token
-    const authHeader = req.headers.authorization
-    if (!authHeader) {
-      return res.status(401).json({
-        success: false,
-        error: 'Missing authorization header'
-      })
-    }
-
-    const token = authHeader.replace('Bearer ', '')
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid authorization header'
-      })
-    }
-
-    // Decode token to validate (basic check)
-    let decoded: any
-    try {
-      decoded = jwtDecode(token)
-    } catch {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid token'
-      })
-    }
-
     const { limit = '50', offset = '0' } = req.query
 
     // Validate pagination params
@@ -61,19 +28,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         error: 'Invalid pagination parameters'
       })
     }
-
-    // Initialize Supabase client with auth token
-    const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      },
-      global: {
-        headers: {
-          authorization: authHeader
-        }
-      }
-    })
 
     console.log(`Fetching all users debt detailed: limit=${limitNum}, offset=${offsetNum}`)
 

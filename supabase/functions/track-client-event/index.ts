@@ -1,10 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
+import { getCorsHeaders } from '../_shared/cors.ts'
 
 const ALLOWED_EVENT_NAMES = new Set([
   'page_view',
@@ -202,13 +197,13 @@ function normalizeAnonymousId(value: NullableString): string | null {
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders })
+    return new Response(null, { status: 204, headers: getCorsHeaders() })
   }
 
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: getCorsHeaders(),
     })
   }
 
@@ -220,7 +215,7 @@ Deno.serve(async (req: Request) => {
     if (!session || events.length === 0) {
       return new Response(JSON.stringify({ error: 'Missing session or events' }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: getCorsHeaders(),
       })
     }
 
@@ -229,7 +224,7 @@ Deno.serve(async (req: Request) => {
     if (!sessionId || !anonymousId) {
       return new Response(JSON.stringify({ error: 'Invalid session payload' }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: getCorsHeaders(),
       })
     }
 
@@ -248,7 +243,7 @@ Deno.serve(async (req: Request) => {
       if (authError || !authData.user) {
         return new Response(JSON.stringify({ error: 'Invalid access token' }), {
           status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: getCorsHeaders(),
         })
       }
       userId = authData.user.id
@@ -265,7 +260,7 @@ Deno.serve(async (req: Request) => {
         console.error('Failed to check ignored tracking user', ignoredUserError)
         return new Response(JSON.stringify({ error: 'Failed to evaluate tracking preference' }), {
           status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: getCorsHeaders(),
         })
       }
 
@@ -278,7 +273,7 @@ Deno.serve(async (req: Request) => {
           user_id: userId,
         }), {
           status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: getCorsHeaders(),
         })
       }
     }
@@ -319,7 +314,7 @@ Deno.serve(async (req: Request) => {
       console.error('Failed to upsert journey session', sessionError)
       return new Response(JSON.stringify({ error: 'Failed to store session' }), {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: getCorsHeaders(),
       })
     }
 
@@ -343,7 +338,7 @@ Deno.serve(async (req: Request) => {
 
     if (sanitizedEvents.length === 0) {
       return new Response(JSON.stringify({ success: true, accepted: 0 }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: getCorsHeaders(),
         status: 200,
       })
     }
@@ -356,7 +351,7 @@ Deno.serve(async (req: Request) => {
       console.error('Failed to insert journey events', insertError)
       return new Response(JSON.stringify({ error: 'Failed to store events' }), {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: getCorsHeaders(),
       })
     }
 
@@ -380,13 +375,13 @@ Deno.serve(async (req: Request) => {
       user_id: userId,
     }), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: getCorsHeaders(),
     })
   } catch (error) {
     console.error('track-client-event error', error)
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: getCorsHeaders(),
     })
   }
 })

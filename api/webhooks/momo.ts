@@ -36,10 +36,18 @@ export default async function handler(
     try {
         const payload = req.body as MomoWebhookPayload;
 
-        // Verify webhook signature
+        // Verify webhook signature (MANDATORY - fail closed)
         const expectedSignature = process.env.MOMO_WEBHOOK_SIGNATURE;
-        if (expectedSignature && payload.signature !== expectedSignature) {
-            console.error('Invalid webhook signature');
+        if (!expectedSignature) {
+            console.error('MOMO_WEBHOOK_SIGNATURE not configured - rejecting webhook');
+            return res.status(500).json({ error: 'Webhook not configured' });
+        }
+        if (payload.signature !== expectedSignature) {
+            console.error('Invalid webhook signature', {
+                timestamp: new Date().toISOString(),
+                ip: req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown',
+                payloadHash: typeof payload === 'object' ? Object.keys(payload).join(',') : 'invalid',
+            });
             return res.status(401).json({ error: 'Unauthorized' });
         }
 

@@ -1,22 +1,18 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY
+import { getAuthenticatedUser } from '../_lib/auth'
+import { handleCorsPreflightIfNeeded, setCorsHeaders } from '../_lib/cors'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end()
-  }
+  setCorsHeaders(res)
+  if (handleCorsPreflightIfNeeded(req, res)) return
 
   if (req.method !== 'GET') {
     return res.status(405).json({ success: false, error: 'Method not allowed' })
+  }
+
+  const { user, error: authError, supabase } = await getAuthenticatedUser(req.headers.authorization)
+  if (!user || !supabase) {
+    return res.status(401).json({ success: false, error: authError || 'Unauthorized' })
   }
 
   try {
@@ -32,14 +28,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         error: 'Invalid pagination parameters'
       })
     }
-
-    // Initialize Supabase client
-    const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    })
 
     console.log(`Fetching all users debt summary: limit=${limitNum}, offset=${offsetNum}`)
 

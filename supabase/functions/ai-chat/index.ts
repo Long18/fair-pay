@@ -1,10 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { getCorsHeaders } from '../_shared/cors.ts'
 
 /** AI Chat Tool Executor — data tools only, AI via Puter.js client-side */
 
@@ -103,18 +99,18 @@ async function executeTool(
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: getCorsHeaders() })
   try {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return new Response(JSON.stringify({ error: 'Missing authorization' }), {
-      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 401, headers: getCorsHeaders(),
     })
     const token = authHeader.replace('Bearer ', '')
     const url = Deno.env.get('SUPABASE_URL')!
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
     const { data: { user }, error: authErr } = await admin.auth.getUser(token)
     if (authErr || !user) return new Response(JSON.stringify({ error: 'Invalid token' }), {
-      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 401, headers: getCorsHeaders(),
     })
     const uid = user.id
     const sb = createClient(url, Deno.env.get('SUPABASE_ANON_KEY')!, {
@@ -133,12 +129,12 @@ serve(async (req) => {
           tool_name, tool_args: tool_args || {}, preview,
         }).select().single()
         return new Response(JSON.stringify({ status: 'needs_confirmation', pending_action: pa }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: getCorsHeaders(),
         })
       }
       const result = await executeTool(tool_name, tool_args || {}, uid, sb)
       return new Response(JSON.stringify({ status: 'success', ...result }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: getCorsHeaders(),
       })
     }
 
@@ -146,18 +142,18 @@ serve(async (req) => {
       const { data: pa } = await sb.from('ai_chat_pending_actions').select('*')
         .eq('id', confirm_action_id).eq('user_id', uid).eq('status', 'pending').single()
       if (!pa) return new Response(JSON.stringify({ error: 'Action not found or expired' }), {
-        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 404, headers: getCorsHeaders(),
       })
       if (new Date(pa.expires_at) < new Date()) {
         await sb.from('ai_chat_pending_actions').update({ status: 'expired', resolved_at: new Date().toISOString() }).eq('id', pa.id)
         return new Response(JSON.stringify({ error: 'Action expired' }), {
-          status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 410, headers: getCorsHeaders(),
         })
       }
       const result = await executeTool(pa.tool_name, pa.tool_args, uid, sb)
       await sb.from('ai_chat_pending_actions').update({ status: 'confirmed', resolved_at: new Date().toISOString() }).eq('id', pa.id)
       return new Response(JSON.stringify({ status: result.error ? 'failure' : 'success', ...result }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: getCorsHeaders(),
       })
     }
 
@@ -165,17 +161,17 @@ serve(async (req) => {
       await sb.from('ai_chat_pending_actions').update({ status: 'rejected', resolved_at: new Date().toISOString() })
         .eq('id', reject_action_id).eq('user_id', uid)
       return new Response(JSON.stringify({ status: 'rejected' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: getCorsHeaders(),
       })
     }
 
     return new Response(JSON.stringify({ error: 'Invalid action' }), {
-      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 400, headers: getCorsHeaders(),
     })
   } catch (error) {
     console.error('AI Chat error:', error)
     return new Response(JSON.stringify({ error: 'An error occurred' }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500, headers: getCorsHeaders(),
     })
   }
 })

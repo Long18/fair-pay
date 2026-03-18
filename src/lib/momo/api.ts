@@ -1,43 +1,52 @@
 import {
     MomoTransactionHistory,
     MomoCheckTransactionResponse,
-    MomoPaymentRequest,
-    CreatePaymentRequestResponse
 } from './types';
+import { supabaseClient } from '@/utility/supabaseClient';
 
 class MomoAPIService {
-    private apiUrl: string;
-    private accessToken: string;
     private receiverPhone: string;
 
     constructor() {
-        this.apiUrl = import.meta.env.VITE_MOMO_API_URL || 'https://momosv3.apimienphi.com';
-        this.accessToken = import.meta.env.VITE_MOMO_ACCESS_TOKEN || '';
         this.receiverPhone = import.meta.env.VITE_MOMO_RECEIVER_PHONE || '';
     }
 
     /**
-     * Check if MoMo API is configured
+     * Check if MoMo API is configured (server-side token is opaque to client)
      */
     isConfigured(): boolean {
-        return !!(this.accessToken && this.receiverPhone);
+        return !!this.receiverPhone;
+    }
+
+    private async getAuthToken(): Promise<string> {
+        const { data: { session } } = await supabaseClient.auth.getSession()
+        return session?.access_token || ''
     }
 
     /**
-     * Generate QR code URL for payment
+     * Generate QR code URL for payment via proxy endpoint
      */
-    generatePaymentQR(amount: number, referenceCode: string): string {
+    async generatePaymentQR(amount: number, referenceCode: string): Promise<string> {
         if (!this.isConfigured()) {
             throw new Error('MoMo API is not configured');
         }
 
+        const token = await this.getAuthToken()
         const params = new URLSearchParams({
-            phone: this.receiverPhone,
             amount: amount.toString(),
-            note: referenceCode,
-        });
+            referenceCode,
+        })
 
-        return `${this.apiUrl}/api/QRCode?${params.toString()}`;
+        const response = await fetch(`/api/momo/qr?${params.toString()}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        })
+
+        if (!response.ok) {
+            throw new Error(`Failed to generate QR: ${response.status}`)
+        }
+
+        const data = await response.json()
+        return data.qrUrl as string
     }
 
     /**
@@ -55,26 +64,23 @@ class MomoAPIService {
         }
 
         try {
-            const response = await fetch(`${this.apiUrl}/api/checkTranContent`, {
+            const token = await this.getAuthToken()
+            const response = await fetch('/api/momo/check-transaction', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
+                    Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({
-                    access_token: this.accessToken,
-                    phone: phone || this.receiverPhone,
-                    content: referenceCode,
-                }),
-            });
+                body: JSON.stringify({ referenceCode, phone }),
+            })
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`HTTP error! status: ${response.status}`)
             }
 
-            const data = await response.json();
+            const data = await response.json()
 
-            // The API returns different formats based on whether transaction exists
             if (data.error === false && data.data) {
                 return {
                     success: true,
@@ -117,25 +123,25 @@ class MomoAPIService {
         }
 
         try {
-            const response = await fetch(`${this.apiUrl}/api/getTransHistory`, {
-                method: 'POST',
+            const token = await this.getAuthToken()
+            const params = new URLSearchParams({
+                limit: String(limit),
+                offset: String(offset),
+            })
+            if (phone) params.set('phone', phone)
+
+            const response = await fetch(`/api/momo/history?${params.toString()}`, {
                 headers: {
-                    'Content-Type': 'application/json',
                     'Accept': 'application/json',
+                    Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({
-                    access_token: this.accessToken,
-                    phone: phone || this.receiverPhone,
-                    limit: Math.min(limit, 100), // Max 100 per API docs
-                    offset,
-                }),
-            });
+            })
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`HTTP error! status: ${response.status}`)
             }
 
-            const data = await response.json();
+            const data = await response.json()
 
             if (data.error === false && Array.isArray(data.data)) {
                 return {
@@ -169,23 +175,22 @@ class MomoAPIService {
         }
 
         try {
-            const response = await fetch(`${this.apiUrl}/api/checkTranId`, {
+            const token = await this.getAuthToken()
+            const response = await fetch('/api/momo/check-transaction', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
+                    Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({
-                    access_token: this.accessToken,
-                    tranId,
-                }),
-            });
+                body: JSON.stringify({ tranId }),
+            })
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`HTTP error! status: ${response.status}`)
             }
 
-            const data = await response.json();
+            const data = await response.json()
 
             if (data.error === false && data.data) {
                 return {

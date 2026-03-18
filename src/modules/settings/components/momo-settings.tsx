@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { AlertCircleIcon, CheckIcon, SettingsIcon } from '@/components/ui/icons';
 import { useMomoSettings } from '@/hooks/payment/use-momo-settings';
+import { momoAPI } from '@/lib/momo/api';
 import { useHaptics } from '@/hooks/use-haptics';
 
 export function MomoSettings() {
@@ -151,14 +152,14 @@ export function MomoSettings() {
         <Alert>
           <AlertCircleIcon className="h-4 w-4" />
           <AlertDescription>
-            {import.meta.env.VITE_MOMO_ACCESS_TOKEN ? (
+            {momoAPI.isConfigured() ? (
               <span className="text-green-600">
                 {t('settings.momo.apiConfigured', '✓ MoMo API is configured')}
               </span>
             ) : (
               <span className="text-amber-600">
                 {t('settings.momo.apiNotConfigured',
-                  '⚠ MoMo API token not configured. Set VITE_MOMO_ACCESS_TOKEN in environment variables.'
+                  '⚠ MoMo receiver phone not configured. Set VITE_MOMO_RECEIVER_PHONE in environment variables.'
                 )}
               </span>
             )}

@@ -90,7 +90,11 @@ function truncate(data: unknown): unknown {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS — admin-only, restrict to same origin in production
-  res.setHeader('Access-Control-Allow-Origin', process.env.VITE_APP_URL ?? '*')
+  const appUrl = process.env.VITE_APP_URL
+  if (!appUrl) {
+    return res.status(500).json({ success: false, status: 500, duration_ms: 0, error: 'Server misconfiguration: VITE_APP_URL not set' })
+  }
+  res.setHeader('Access-Control-Allow-Origin', appUrl)
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
 

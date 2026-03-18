@@ -17,11 +17,6 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
 interface SepayWebhookPayload {
   id: number
   gateway: string
@@ -38,14 +33,32 @@ interface SepayWebhookPayload {
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
-
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  // Verify webhook secret (MANDATORY - fail closed)
+  const webhookSecret = Deno.env.get('SEPAY_WEBHOOK_SECRET')
+  if (!webhookSecret) {
+    console.error('SEPAY_WEBHOOK_SECRET not configured - rejecting webhook')
+    return new Response(JSON.stringify({ error: 'Webhook not configured' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  const requestSecret = req.headers.get('x-webhook-secret')
+  if (requestSecret !== webhookSecret) {
+    console.error('Invalid webhook secret', {
+      timestamp: new Date().toISOString(),
+      hasSecret: !!requestSecret,
+    })
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
     })
   }
 
@@ -62,7 +75,7 @@ Deno.serve(async (req: Request) => {
       console.log('Ignoring outgoing transfer')
       return new Response(JSON.stringify({ success: true }), {
         status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
       })
     }
 
@@ -70,7 +83,24 @@ Deno.serve(async (req: Request) => {
       console.log('No content or code in webhook, skipping')
       return new Response(JSON.stringify({ success: true }), {
         status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    // INSERT-based idempotency check on SePay transaction ID
+    const { error: idempotencyError } = await serviceClient
+      .from('processed_webhook_events')
+      .insert({
+        provider: 'sepay',
+        external_id: String(payload.id),
+      })
+
+    if (idempotencyError) {
+      // Unique constraint violation = already processed
+      console.log('Webhook already processed, skipping:', payload.id)
+      return new Response(JSON.stringify({ success: true, message: 'Already processed' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
       })
     }
 
@@ -84,7 +114,7 @@ Deno.serve(async (req: Request) => {
       console.log('No FP payment code found in content:', payload.content)
       return new Response(JSON.stringify({ success: true }), {
         status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
       })
     }
 
@@ -102,16 +132,7 @@ Deno.serve(async (req: Request) => {
       console.log('No pending/partial order found for code:', detectedCode)
       return new Response(JSON.stringify({ success: true }), {
         status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    // Idempotency check
-    if (order.status === 'PAID') {
-      console.log('Order already paid:', detectedCode)
-      return new Response(JSON.stringify({ success: true }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
       })
     }
 
@@ -144,14 +165,14 @@ Deno.serve(async (req: Request) => {
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
     })
 
   } catch (error) {
     console.error('Webhook error:', error)
     return new Response(JSON.stringify({ success: false, error: 'Internal error' }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
     })
   }
 })

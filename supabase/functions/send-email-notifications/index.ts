@@ -1,11 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { getCorsHeaders } from '../_shared/cors.ts'
 
 // Bilingual labels for each notification type
 const NOTIF_LABELS: Record<string, { vi: string; en: string }> = {
@@ -186,7 +182,7 @@ function buildEmailHtml(
  */
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: getCorsHeaders() })
   }
 
   try {
@@ -224,7 +220,7 @@ serve(async (req) => {
       console.log('No notifications pending email delivery')
       return new Response(
         JSON.stringify({ success: true, sent: 0, message: 'Nothing to send' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: getCorsHeaders() }
       )
     }
 
@@ -293,14 +289,14 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ success: true, ...result }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: getCorsHeaders() }
     )
 
   } catch (error) {
     console.error('Fatal error:', error)
     return new Response(
       JSON.stringify({ success: false, error: (error as Error).message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: getCorsHeaders() }
     )
   }
 })

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Attachment } from "../types";
 import { useAttachments } from "../hooks/use-attachments";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,24 @@ export const SplitAttachmentGallery = ({
   const { downloadAttachment, getAttachmentUrl } = useAttachments();
   const [viewingUrl, setViewingUrl] = useState<string | null>(null);
   const [viewingFileName, setViewingFileName] = useState<string>("");
+  const [signedUrls, setSignedUrls] = useState<Map<string, string>>(new Map());
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchUrls = async () => {
+      const entries = await Promise.all(
+        attachments.map(async (a) => {
+          const url = await getAttachmentUrl(a.storage_path);
+          return [a.storage_path, url] as [string, string];
+        })
+      );
+      if (!cancelled) {
+        setSignedUrls(new Map(entries));
+      }
+    };
+    fetchUrls();
+    return () => { cancelled = true; };
+  }, [attachments]);
 
   if (attachments.length === 0) {
     return null;
@@ -29,7 +47,7 @@ export const SplitAttachmentGallery = ({
 
   const handleView = (attachment: Attachment) => {
     tap();
-    setViewingUrl(getAttachmentUrl(attachment.storage_path));
+    setViewingUrl(signedUrls.get(attachment.storage_path) ?? null);
     setViewingFileName(attachment.file_name);
   };
 
@@ -54,7 +72,7 @@ export const SplitAttachmentGallery = ({
             >
               {isImage(attachment.mime_type) ? (
                 <img
-                  src={getAttachmentUrl(attachment.storage_path)}
+                  src={signedUrls.get(attachment.storage_path) ?? ""}
                   alt={attachment.file_name}
                   className="w-full h-full object-cover"
                 />
