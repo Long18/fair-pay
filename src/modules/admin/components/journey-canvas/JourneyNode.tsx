@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
-import { Eye, MousePointerClick, FileText } from "lucide-react";
+import { Eye, MousePointerClick, FileText, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export type JourneyNodeData = {
@@ -20,11 +20,6 @@ function formatDuration(seconds: number | null): string {
   const s = Math.floor(seconds % 60);
   if (m === 0) return `${s}s`;
   return `${m}m ${s}s`;
-}
-
-function truncatePath(path: string, maxLen = 28): string {
-  if (path.length <= maxLen) return path;
-  return "…" + path.slice(-(maxLen - 1));
 }
 
 const EVENT_ICON_MAP: Record<string, React.ReactNode> = {
@@ -89,68 +84,95 @@ export const JourneyNode = memo(function JourneyNode({
 
       <div
         className={[
-          "backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 shadow-2xl",
-          "min-w-[200px] max-w-[240px] select-none",
+          "backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl shadow-2xl overflow-hidden",
+          "min-w-[240px] max-w-[300px] select-none",
           isLastSeen ? "journey-node-glow border-violet-400/40" : "",
         ]
           .filter(Boolean)
           .join(" ")}
         style={isLastSeen ? PULSE_GLOW_STYLE : undefined}
       >
-        {/* Header row */}
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <span
-            className="text-white/90 text-xs font-mono font-medium leading-tight truncate flex-1"
-            title={pagePath}
-          >
-            {truncatePath(pagePath)}
-          </span>
-          <Badge
-            variant="secondary"
-            className="bg-white/10 text-white/70 border-white/10 text-[10px] px-1.5 py-0 shrink-0"
-          >
-            {visitCount}
-          </Badge>
-        </div>
+        {/* Top gradient bar */}
+        <div
+          className="h-0.5 w-full"
+          style={{
+            background: isLastSeen
+              ? "linear-gradient(90deg, #b6a0ff 0%, #77a1ff 100%)"
+              : "linear-gradient(90deg, rgba(182,160,255,0.4) 0%, rgba(119,161,255,0.2) 100%)",
+          }}
+        />
 
-        {/* Duration + time */}
-        <div className="flex items-center justify-between text-[11px] text-white/50 mb-3">
-          <span>{formatDuration(avgDurationSeconds)}</span>
-          <span>{relativeTime}</span>
-        </div>
-
-        {/* Event type icons */}
-        {eventTypes.length > 0 && (
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {eventTypes.slice(0, 6).map((et, i) => (
-              <span
-                key={i}
-                title={et}
-                className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-md px-1.5 py-0.5"
+        <div className="p-4">
+          {/* Header row */}
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div className="flex-1 min-w-0">
+              <p
+                className="text-white/90 text-xs font-mono font-medium leading-snug break-all"
+                title={pagePath}
               >
-                {getEventIcon(et)}
-                <span className="text-[10px] text-white/40 leading-none">
-                  {et.length > 10 ? et.slice(0, 10) + "…" : et}
-                </span>
-              </span>
-            ))}
-            {eventTypes.length > 6 && (
-              <span className="text-[10px] text-white/30">
-                +{eventTypes.length - 6}
-              </span>
-            )}
+                {pagePath}
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                title={`Open ${pagePath}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(pagePath, "_blank", "noopener,noreferrer");
+                }}
+                className="text-white/30 hover:text-white/70 transition-colors"
+              >
+                <ExternalLink size={12} />
+              </button>
+              <Badge
+                variant="secondary"
+                className="bg-white/10 text-white/70 border-white/10 text-[10px] px-1.5 py-0"
+              >
+                {visitCount}
+              </Badge>
+            </div>
           </div>
-        )}
 
-        {/* Last-seen indicator */}
-        {isLastSeen && (
-          <div className="mt-3 flex items-center gap-1.5">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
-            <span className="text-[10px] text-violet-300/80 font-medium">
-              Last seen here
-            </span>
+          {/* Duration + time */}
+          <div className="flex items-center justify-between text-[11px] text-white/50 mb-3">
+            <span>{formatDuration(avgDurationSeconds)}</span>
+            <span>{relativeTime}</span>
           </div>
-        )}
+
+          {/* Event type icons */}
+          {eventTypes.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {eventTypes.slice(0, 6).map((et, i) => (
+                <span
+                  key={i}
+                  title={et}
+                  className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-md px-1.5 py-0.5"
+                >
+                  {getEventIcon(et)}
+                  <span className="text-[10px] text-white/40 leading-none">
+                    {et.length > 12 ? et.slice(0, 12) + "…" : et}
+                  </span>
+                </span>
+              ))}
+              {eventTypes.length > 6 && (
+                <span className="text-[10px] text-white/30">
+                  +{eventTypes.length - 6}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Last-seen indicator */}
+          {isLastSeen && (
+            <div className="mt-3 flex items-center gap-1.5">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+              <span className="text-[10px] text-violet-300/80 font-medium">
+                Last seen here
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       <Handle

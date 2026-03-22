@@ -15,8 +15,10 @@ export function useJourneyGraph(params: {
   fromIso: string | null;
   toIso: string | null;
   eventNames: string[] | null;
+  sourceName?: string | null;
+  entryLink?: string | null;
 }) {
-  const { userId, sessionId, fromIso, toIso, eventNames } = params;
+  const { userId, sessionId, fromIso, toIso, eventNames, sourceName, entryLink } = params;
 
   const { data, isLoading } = useQuery({
     queryKey: [
@@ -61,7 +63,7 @@ export function useJourneyGraph(params: {
     });
 
     for (const node of graphData.nodes) {
-      g.setNode(node.page_path, { width: 240, height: 120 });
+      g.setNode(node.page_path, { width: 300, height: 130 });
     }
 
     for (const edge of graphData.edges) {
@@ -75,7 +77,7 @@ export function useJourneyGraph(params: {
       return {
         id: n.page_path,
         type: "journey",
-        position: { x: pos.x - 120, y: pos.y - 60 },
+        position: { x: pos.x - 150, y: pos.y - 65 },
         data: {
           pagePath: n.page_path,
           visitCount: n.visit_count,
@@ -113,8 +115,44 @@ export function useJourneyGraph(params: {
       })
     );
 
+    // Find root nodes (nodes with no incoming edges)
+    const targetSet = new Set(graphData.edges.map((e) => e.target));
+    const rootNodeIds = graphData.nodes
+      .map((n) => n.page_path)
+      .filter((id) => !targetSet.has(id));
+
+    // Add synthetic source nodes above each root node
+    const sourceLabel = sourceName ?? "direct";
+    for (const rootId of rootNodeIds) {
+      const rootNode = rfNodes.find((n) => n.id === rootId);
+      if (!rootNode) continue;
+
+      const sourceNodeId = `__source__${rootId}`;
+      const sourceNode: Node = {
+        id: sourceNodeId,
+        type: "source",
+        position: {
+          x: rootNode.position.x + 75, // center above root (source node is ~150px wide)
+          y: rootNode.position.y - 100,
+        },
+        data: {
+          sourceName: sourceLabel,
+          entryLink: entryLink ?? null,
+        },
+      };
+
+      rfNodes.push(sourceNode);
+      rfEdges.push({
+        id: `e-source-${rootId}`,
+        source: sourceNodeId,
+        target: rootId,
+        type: "journey",
+        data: { frequency: 1 },
+      });
+    }
+
     return { nodes: rfNodes, edges: rfEdges, lastSeenNodeId: lastSeenId };
-  }, [data]);
+  }, [data, sourceName, entryLink]);
 
   return { nodes, edges, isLoading, lastSeenNodeId, rawData: data };
 }
