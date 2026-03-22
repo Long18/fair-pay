@@ -4,6 +4,7 @@
     "private": true,
     "type": "module",
     "dependencies": {
+        "@dagrejs/dagre": "^2.0.4",
         "@doananh234/claudekit-engineer": "^1.0.2",
         "@emoji-mart/data": "^1.2.1",
         "@emoji-mart/react": "^1.1.1",
@@ -54,6 +55,7 @@
         "@vercel/analytics": "^1.6.1",
         "@vercel/functions": "^3.4.3",
         "@vercel/og": "^0.9.0",
+        "@xyflow/react": "^12.10.1",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
