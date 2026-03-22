@@ -126,3 +126,28 @@ export interface PaginatedAdminResponse<T> {
   limit: number;
   offset: number;
 }
+
+export interface JourneyGraphNode {
+  page_path: string;
+  visit_count: number;
+  last_visited_at: string;
+  event_types: string[];
+  avg_duration_seconds: number | null;
+}
+
+export interface JourneyGraphEdge {
+  source: string;
+  target: string;
+  frequency: number;
+}
+
+export interface JourneyGraphResponse {
+  nodes: JourneyGraphNode[];
+  edges: JourneyGraphEdge[];
+}
+
+export interface DeleteTrackingResponse {
+  success: boolean;
+  deleted_events: number;
+  deleted_sessions: number;
+}

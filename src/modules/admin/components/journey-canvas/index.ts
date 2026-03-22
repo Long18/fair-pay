@@ -1,0 +1,1 @@
+export { JourneyCanvasView } from "./JourneyCanvasView";

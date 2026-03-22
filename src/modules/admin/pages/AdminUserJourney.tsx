@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
+import { toast } from "sonner";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +21,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -37,10 +49,13 @@ import {
   ExternalLinkIcon,
   FileTextIcon,
   Loader2Icon,
+  Trash2Icon,
   UserIcon,
 } from "@/components/ui/icons";
+import { JourneyCanvasView } from "../components/journey-canvas";
 import type {
   AdminUserRow,
+  DeleteTrackingResponse,
   PaginatedAdminResponse,
   UserTrackingEventRow,
   UserTrackingOverview,
@@ -58,6 +73,15 @@ const EVENT_FILTER_OPTIONS = [
   { value: "form_error", label: "Form error" },
   { value: "auth_login", label: "Auth login" },
   { value: "auth_register", label: "Auth register" },
+] as const;
+
+const DELETE_TIME_RANGE_OPTIONS = [
+  { value: "1h", label: "1 giờ gần nhất" },
+  { value: "24h", label: "24 giờ gần nhất" },
+  { value: "7d", label: "7 ngày gần nhất" },
+  { value: "30d", label: "30 ngày gần nhất" },
+  { value: "1y", label: "1 năm gần nhất" },
+  { value: "all", label: "Tất cả" },
 ] as const;
 
 function toDateInput(value: Date) {
@@ -106,6 +130,7 @@ function EventBadge({ eventName }: { eventName: string }) {
 
 export function AdminUserJourney() {
   const { id: userId } = useParams<{ id: string }>();
+  const queryClient = useQueryClient();
   const [dateFrom, setDateFrom] = useState(() => {
     const value = new Date();
     value.setDate(value.getDate() - 14);
@@ -115,6 +140,8 @@ export function AdminUserJourney() {
   const [selectedSessionId, setSelectedSessionId] = useState<string>("all");
   const [eventFilter, setEventFilter] = useState<string>("all");
   const [rawEvent, setRawEvent] = useState<UserTrackingEventRow | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteTimeRange, setDeleteTimeRange] = useState("all");
 
   const fromIso = toIsoRangeStart(dateFrom);
   const toIso = toIsoRangeEnd(dateTo);
@@ -185,6 +212,30 @@ export function AdminUserJourney() {
     staleTime: 15_000,
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (timeRange: string) => {
+      const { data, error } = await supabaseClient.rpc("admin_delete_user_tracking", {
+        p_user_id: userId,
+        p_time_range: timeRange,
+      });
+      if (error) throw error;
+      return data as unknown as DeleteTrackingResponse;
+    },
+    onSuccess: (result) => {
+      toast.success(
+        `Đã xoá ${result.deleted_events} event và ${result.deleted_sessions} session`,
+      );
+      queryClient.invalidateQueries({ queryKey: ["admin", "tracking-overview", userId] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "tracking-sessions", userId] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "tracking-events", userId] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "journey-graph", userId] });
+      setDeleteDialogOpen(false);
+    },
+    onError: (error) => {
+      toast.error(`Lỗi khi xoá dữ liệu: ${error.message}`);
+    },
+  });
+
   useEffect(() => {
     if (!sessions?.data?.length) {
       setSelectedSessionId("all");
@@ -206,6 +257,7 @@ export function AdminUserJourney() {
   return (
     <>
       <div className="space-y-6">
+        {/* Header */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1">
             <Button asChild variant="ghost" className="w-fit px-0 text-muted-foreground hover:text-foreground">
@@ -249,9 +301,19 @@ export function AdminUserJourney() {
                 ))}
               </SelectContent>
             </Select>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setDeleteDialogOpen(true)}
+              className="shrink-0"
+            >
+              <Trash2Icon className="mr-2 h-4 w-4" />
+              Xoá dữ liệu
+            </Button>
           </div>
         </div>
 
+        {/* Overview cards */}
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
@@ -291,203 +353,226 @@ export function AdminUserJourney() {
           </Card>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[360px,1fr]">
-          <Card className="min-h-[480px]">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <ActivityIcon className="h-4 w-4" />
-                Sessions
-              </CardTitle>
-              <CardDescription>
-                Chọn session để xem timeline chi tiết.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading && !sessions ? (
-                <div className="flex items-center justify-center py-12 text-muted-foreground">
-                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                  Đang tải session...
-                </div>
-              ) : sessions?.data?.length ? (
-                <ScrollArea className="h-[520px] pr-3">
-                  <div className="space-y-3">
-                    <Button
-                      type="button"
-                      variant={selectedSessionId === "all" ? "default" : "outline"}
-                      className="w-full justify-start"
-                      onClick={() => setSelectedSessionId("all")}
-                    >
-                      Tất cả sessions ({sessions.total})
-                    </Button>
-                    {sessions.data.map((session) => (
-                      <button
-                        key={session.id}
-                        type="button"
-                        onClick={() => setSelectedSessionId(session.id)}
-                        className={`w-full rounded-lg border p-3 text-left transition-colors ${
-                          selectedSessionId === session.id
-                            ? "border-primary bg-primary/5"
-                            : "border-border hover:bg-accent/50"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate font-medium">{session.landing_path}</p>
-                            <p className="text-xs text-muted-foreground">{session.landing_source}</p>
-                          </div>
-                          <Badge variant="secondary">{session.event_count}</Badge>
-                        </div>
-                        <Separator className="my-3" />
-                        <div className="space-y-1 text-xs text-muted-foreground">
-                          <p>Start: {formatDateTime(session.started_at)}</p>
-                          <p>Last seen: {formatDateTime(session.last_seen_at)}</p>
-                          <p className="truncate">Entry: {session.entry_link}</p>
-                          {session.landing_referrer ? <p className="truncate">Referrer: {session.landing_referrer}</p> : null}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </ScrollArea>
-              ) : (
-                <Empty className="min-h-[320px]">
-                  <EmptyMedia variant="icon">
-                    <ActivityIcon className="h-6 w-6" />
-                  </EmptyMedia>
-                  <EmptyHeader>
-                    <EmptyTitle>Chưa có session</EmptyTitle>
-                    <EmptyDescription>Không tìm thấy dữ liệu journey trong khoảng thời gian đã chọn.</EmptyDescription>
-                  </EmptyHeader>
-                  <EmptyContent />
-                </Empty>
-              )}
-            </CardContent>
-          </Card>
+        {/* Tab toggle: Canvas / Timeline */}
+        <Tabs defaultValue="canvas" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="canvas">Canvas</TabsTrigger>
+            <TabsTrigger value="timeline">Timeline</TabsTrigger>
+          </TabsList>
 
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <ActivityIcon className="h-4 w-4" />
-                  Summary
-                </CardTitle>
-                <CardDescription>
-                  {selectedSession ? `Đang xem session ${selectedSession.id.slice(0, 8)}` : "Đang xem toàn bộ sessions"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Top pages</p>
-                  <div className="flex flex-wrap gap-2">
-                    {(overview?.top_pages ?? []).slice(0, 6).map((row) => (
-                      <Badge key={row.name} variant="secondary">{row.name} ({row.count})</Badge>
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Top CTAs</p>
-                  <div className="flex flex-wrap gap-2">
-                    {(overview?.top_ctas ?? []).slice(0, 6).map((row) => (
-                      <Badge key={row.name} variant="secondary">{row.name} ({row.count})</Badge>
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Flows</p>
-                  <div className="flex flex-wrap gap-2">
-                    {(overview?.recent_flows ?? []).slice(0, 6).map((row) => (
-                      <Badge key={row.name} variant="secondary">{row.name} ({row.count})</Badge>
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p>Selected session source: {selectedSession?.landing_source ?? "all"}</p>
-                  <p>Selected session device: {selectedSession?.device_type ?? "—"}</p>
-                  <p>Selected session locale: {selectedSession?.locale ?? "—"}</p>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Canvas tab */}
+          <TabsContent value="canvas">
+            <JourneyCanvasView
+              userId={userId}
+              sessionId={selectedSessionId}
+              fromIso={fromIso}
+              toIso={toIso}
+              eventNames={selectedEventNames}
+            />
+          </TabsContent>
 
-            <Card className="min-h-[520px]">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <ClockIcon className="h-4 w-4" />
-                  Event Timeline
-                </CardTitle>
-                <CardDescription>
-                  {events?.total ?? 0} event trong phạm vi đang lọc.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoading && !events ? (
-                  <div className="flex items-center justify-center py-12 text-muted-foreground">
-                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                    Đang tải event...
-                  </div>
-                ) : events?.data?.length ? (
-                  <ScrollArea className="h-[560px] pr-3">
-                    <div className="space-y-3">
-                      {events.data.map((event) => {
-                        const entityPath = typeof event.properties?.entity_path === "string"
-                          ? event.properties.entity_path
-                          : null;
-
-                        return (
-                          <div key={event.id} className="rounded-lg border p-4">
-                            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                              <div className="space-y-2 min-w-0">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <EventBadge eventName={event.event_name} />
-                                  {event.target_key ? <Badge variant="outline">{event.target_key}</Badge> : null}
-                                  {event.flow_name ? <Badge variant="secondary">{event.flow_name}</Badge> : null}
-                                  {event.step_name ? <Badge variant="secondary">{event.step_name}</Badge> : null}
-                                </div>
-                                <p className="truncate text-sm font-medium">{event.page_path}</p>
-                                <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-                                  <span>Session: {event.session_id.slice(0, 8)}</span>
-                                  <span>Occurred: {formatDateTime(event.occurred_at)}</span>
-                                  {event.referrer_path ? <span>Referrer: {event.referrer_path}</span> : null}
-                                  {event.target_type ? <span>Type: {event.target_type}</span> : null}
-                                </div>
-                              </div>
-
-                              <div className="flex flex-wrap gap-2">
-                                {entityPath ? (
-                                  <Button asChild size="sm" variant="outline">
-                                    <Link to={entityPath}>
-                                      <ExternalLinkIcon className="mr-2 h-4 w-4" />
-                                      Open entity
-                                    </Link>
-                                  </Button>
-                                ) : null}
-                                <Button size="sm" variant="outline" onClick={() => setRawEvent(event)}>
-                                  <FileTextIcon className="mr-2 h-4 w-4" />
-                                  Raw metadata
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+          {/* Timeline tab (existing view) */}
+          <TabsContent value="timeline">
+            <div className="grid gap-4 xl:grid-cols-[360px,1fr]">
+              <Card className="min-h-[480px]">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <ActivityIcon className="h-4 w-4" />
+                    Sessions
+                  </CardTitle>
+                  <CardDescription>
+                    Chọn session để xem timeline chi tiết.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoading && !sessions ? (
+                    <div className="flex items-center justify-center py-12 text-muted-foreground">
+                      <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                      Đang tải session...
                     </div>
-                  </ScrollArea>
-                ) : (
-                  <Empty className="min-h-[320px]">
-                    <EmptyMedia variant="icon">
-                      <ActivityIcon className="h-6 w-6" />
-                    </EmptyMedia>
-                    <EmptyHeader>
-                      <EmptyTitle>Không có event nào</EmptyTitle>
-                      <EmptyDescription>Thử đổi date range, event filter hoặc chọn session khác.</EmptyDescription>
-                    </EmptyHeader>
-                    <EmptyContent />
-                  </Empty>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+                  ) : sessions?.data?.length ? (
+                    <ScrollArea className="h-[520px] pr-3">
+                      <div className="space-y-3">
+                        <Button
+                          type="button"
+                          variant={selectedSessionId === "all" ? "default" : "outline"}
+                          className="w-full justify-start"
+                          onClick={() => setSelectedSessionId("all")}
+                        >
+                          Tất cả sessions ({sessions.total})
+                        </Button>
+                        {sessions.data.map((session) => (
+                          <button
+                            key={session.id}
+                            type="button"
+                            onClick={() => setSelectedSessionId(session.id)}
+                            className={`w-full rounded-lg border p-3 text-left transition-colors ${
+                              selectedSessionId === session.id
+                                ? "border-primary bg-primary/5"
+                                : "border-border hover:bg-accent/50"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate font-medium">{session.landing_path}</p>
+                                <p className="text-xs text-muted-foreground">{session.landing_source}</p>
+                              </div>
+                              <Badge variant="secondary">{session.event_count}</Badge>
+                            </div>
+                            <Separator className="my-3" />
+                            <div className="space-y-1 text-xs text-muted-foreground">
+                              <p>Start: {formatDateTime(session.started_at)}</p>
+                              <p>Last seen: {formatDateTime(session.last_seen_at)}</p>
+                              <p className="truncate">Entry: {session.entry_link}</p>
+                              {session.landing_referrer ? <p className="truncate">Referrer: {session.landing_referrer}</p> : null}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  ) : (
+                    <Empty className="min-h-[320px]">
+                      <EmptyMedia variant="icon">
+                        <ActivityIcon className="h-6 w-6" />
+                      </EmptyMedia>
+                      <EmptyHeader>
+                        <EmptyTitle>Chưa có session</EmptyTitle>
+                        <EmptyDescription>Không tìm thấy dữ liệu journey trong khoảng thời gian đã chọn.</EmptyDescription>
+                      </EmptyHeader>
+                      <EmptyContent />
+                    </Empty>
+                  )}
+                </CardContent>
+              </Card>
+
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <ActivityIcon className="h-4 w-4" />
+                      Summary
+                    </CardTitle>
+                    <CardDescription>
+                      {selectedSession ? `Đang xem session ${selectedSession.id.slice(0, 8)}` : "Đang xem toàn bộ sessions"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Top pages</p>
+                      <div className="flex flex-wrap gap-2">
+                        {(overview?.top_pages ?? []).slice(0, 6).map((row) => (
+                          <Badge key={row.name} variant="secondary">{row.name} ({row.count})</Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Top CTAs</p>
+                      <div className="flex flex-wrap gap-2">
+                        {(overview?.top_ctas ?? []).slice(0, 6).map((row) => (
+                          <Badge key={row.name} variant="secondary">{row.name} ({row.count})</Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Flows</p>
+                      <div className="flex flex-wrap gap-2">
+                        {(overview?.recent_flows ?? []).slice(0, 6).map((row) => (
+                          <Badge key={row.name} variant="secondary">{row.name} ({row.count})</Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <p>Selected session source: {selectedSession?.landing_source ?? "all"}</p>
+                      <p>Selected session device: {selectedSession?.device_type ?? "—"}</p>
+                      <p>Selected session locale: {selectedSession?.locale ?? "—"}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="min-h-[520px]">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <ClockIcon className="h-4 w-4" />
+                      Event Timeline
+                    </CardTitle>
+                    <CardDescription>
+                      {events?.total ?? 0} event trong phạm vi đang lọc.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoading && !events ? (
+                      <div className="flex items-center justify-center py-12 text-muted-foreground">
+                        <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                        Đang tải event...
+                      </div>
+                    ) : events?.data?.length ? (
+                      <ScrollArea className="h-[560px] pr-3">
+                        <div className="space-y-3">
+                          {events.data.map((event) => {
+                            const entityPath = typeof event.properties?.entity_path === "string"
+                              ? event.properties.entity_path
+                              : null;
+
+                            return (
+                              <div key={event.id} className="rounded-lg border p-4">
+                                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                  <div className="space-y-2 min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <EventBadge eventName={event.event_name} />
+                                      {event.target_key ? <Badge variant="outline">{event.target_key}</Badge> : null}
+                                      {event.flow_name ? <Badge variant="secondary">{event.flow_name}</Badge> : null}
+                                      {event.step_name ? <Badge variant="secondary">{event.step_name}</Badge> : null}
+                                    </div>
+                                    <p className="truncate text-sm font-medium">{event.page_path}</p>
+                                    <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+                                      <span>Session: {event.session_id.slice(0, 8)}</span>
+                                      <span>Occurred: {formatDateTime(event.occurred_at)}</span>
+                                      {event.referrer_path ? <span>Referrer: {event.referrer_path}</span> : null}
+                                      {event.target_type ? <span>Type: {event.target_type}</span> : null}
+                                    </div>
+                                  </div>
+
+                                  <div className="flex flex-wrap gap-2">
+                                    {entityPath ? (
+                                      <Button asChild size="sm" variant="outline">
+                                        <Link to={entityPath}>
+                                          <ExternalLinkIcon className="mr-2 h-4 w-4" />
+                                          Open entity
+                                        </Link>
+                                      </Button>
+                                    ) : null}
+                                    <Button size="sm" variant="outline" onClick={() => setRawEvent(event)}>
+                                      <FileTextIcon className="mr-2 h-4 w-4" />
+                                      Raw metadata
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </ScrollArea>
+                    ) : (
+                      <Empty className="min-h-[320px]">
+                        <EmptyMedia variant="icon">
+                          <ActivityIcon className="h-6 w-6" />
+                        </EmptyMedia>
+                        <EmptyHeader>
+                          <EmptyTitle>Không có event nào</EmptyTitle>
+                          <EmptyDescription>Thử đổi date range, event filter hoặc chọn session khác.</EmptyDescription>
+                        </EmptyHeader>
+                        <EmptyContent />
+                      </Empty>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
+      {/* Raw metadata dialog */}
       <Dialog open={!!rawEvent} onOpenChange={(open) => !open && setRawEvent(null)}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -501,6 +586,49 @@ export function AdminUserJourney() {
           </pre>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xoá dữ liệu tracking</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hành động này sẽ xoá vĩnh viễn dữ liệu tracking của người dùng trong khoảng thời gian đã chọn. Không thể hoàn tác.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Select value={deleteTimeRange} onValueChange={setDeleteTimeRange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Chọn khoảng thời gian" />
+              </SelectTrigger>
+              <SelectContent>
+                {DELETE_TIME_RANGE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Huỷ</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteMutation.mutate(deleteTimeRange)}
+              disabled={deleteMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? (
+                <>
+                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                  Đang xoá...
+                </>
+              ) : (
+                "Xác nhận xoá"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

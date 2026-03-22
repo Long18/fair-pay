@@ -1,0 +1,114 @@
+import { XIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+interface JourneyNode {
+  pagePath: string;
+  visitCount: number;
+  lastVisitedAt: string;
+  eventTypes: string[];
+  avgDurationSeconds: number | null;
+}
+
+interface JourneyNodeDetailProps {
+  node: JourneyNode | null;
+  onClose: () => void;
+}
+
+const EVENT_TYPE_COLORS: Record<string, string> = {
+  page_view: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  nav_click: "bg-violet-500/20 text-violet-300 border-violet-500/30",
+  cta_click: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+  form_submit: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+  form_success: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+  form_error: "bg-red-500/20 text-red-300 border-red-500/30",
+  auth_login: "bg-green-500/20 text-green-300 border-green-500/30",
+  auth_register: "bg-pink-500/20 text-pink-300 border-pink-500/30",
+};
+
+function formatDuration(seconds: number | null): string {
+  if (seconds === null) return "N/A";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  if (m === 0) return `${s}s`;
+  return `${m}m ${s}s`;
+}
+
+function formatLastVisited(dateStr: string): string {
+  try {
+    return new Intl.DateTimeFormat("vi-VN", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(new Date(dateStr));
+  } catch {
+    return dateStr;
+  }
+}
+
+export function JourneyNodeDetail({ node, onClose }: JourneyNodeDetailProps) {
+  if (!node) return null;
+
+  return (
+    <div className="absolute top-4 right-4 z-10 w-72 bg-[#1a1a1a]/90 backdrop-blur-xl border border-white/10 rounded-xl p-5 shadow-2xl animate-in fade-in slide-in-from-right-2">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2 mb-4">
+        <p className="text-white text-sm font-medium leading-snug break-all flex-1">
+          {node.pagePath}
+        </p>
+        <button
+          onClick={onClose}
+          className="shrink-0 text-white/50 hover:text-white/90 transition-colors mt-0.5"
+          aria-label="Đóng"
+        >
+          <XIcon size={16} />
+        </button>
+      </div>
+
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="bg-white/5 rounded-lg p-3">
+          <p className="text-white/40 text-xs mb-1">Lượt xem</p>
+          <p className="text-white text-lg font-semibold">
+            {node.visitCount.toLocaleString("vi-VN")}
+          </p>
+        </div>
+        <div className="bg-white/5 rounded-lg p-3">
+          <p className="text-white/40 text-xs mb-1">Thời gian TB</p>
+          <p className="text-white text-lg font-semibold">
+            {formatDuration(node.avgDurationSeconds)}
+          </p>
+        </div>
+      </div>
+
+      {/* Event types */}
+      {node.eventTypes.length > 0 && (
+        <div className="mb-4">
+          <p className="text-white/40 text-xs mb-2">Loại event</p>
+          <div className="flex flex-wrap gap-1.5">
+            {node.eventTypes.map((type) => {
+              const colorClass =
+                EVENT_TYPE_COLORS[type] ??
+                "bg-white/10 text-white/60 border-white/20";
+              return (
+                <Badge
+                  key={type}
+                  variant="outline"
+                  className={`text-xs border px-2 py-0.5 rounded-md font-normal ${colorClass}`}
+                >
+                  {type}
+                </Badge>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Last visited */}
+      <div>
+        <p className="text-white/40 text-xs mb-1">Lần cuối</p>
+        <p className="text-white/80 text-sm">
+          {formatLastVisited(node.lastVisitedAt)}
+        </p>
+      </div>
+    </div>
+  );
+}
