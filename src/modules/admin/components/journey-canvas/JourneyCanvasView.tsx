@@ -1,11 +1,16 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ReactFlow,
   Background,
+  BackgroundVariant,
   MiniMap,
   useReactFlow,
   ReactFlowProvider,
+  useNodesState,
+  useEdgesState,
   type NodeMouseHandler,
+  type Node,
+  type Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import {
@@ -25,11 +30,12 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { JourneyNode } from "./JourneyNode";
+import { JourneySourceNode } from "./JourneySourceNode";
 import { JourneyEdge } from "./JourneyEdge";
 import { JourneyNodeDetail } from "./JourneyNodeDetail";
 import { useJourneyGraph } from "./use-journey-graph";
 
-const nodeTypes = { journey: JourneyNode } as const;
+const nodeTypes = { journey: JourneyNode, source: JourneySourceNode } as const;
 const edgeTypes = { journey: JourneyEdge } as const;
 
 const CANVAS_STYLES = `
@@ -48,6 +54,8 @@ interface JourneyCanvasViewProps {
   fromIso: string | null;
   toIso: string | null;
   eventNames: string[] | null;
+  sourceName?: string | null;
+  entryLink?: string | null;
 }
 
 function CanvasToolbar({ showMinimap, onToggleMinimap }: { showMinimap: boolean; onToggleMinimap: () => void }) {
@@ -94,14 +102,26 @@ function CanvasToolbar({ showMinimap, onToggleMinimap }: { showMinimap: boolean;
   );
 }
 
-function CanvasInner({ userId, sessionId, fromIso, toIso, eventNames }: JourneyCanvasViewProps) {
+function CanvasInner({ userId, sessionId, fromIso, toIso, eventNames, sourceName, entryLink }: JourneyCanvasViewProps) {
   const { nodes, edges, isLoading } = useJourneyGraph({
     userId,
     sessionId,
     fromIso,
     toIso,
     eventNames,
+    sourceName,
+    entryLink,
   });
+
+  const [rfNodes, setRfNodes, onNodesChange] = useNodesState<Node>([]);
+  const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState<Edge>([]);
+
+  useEffect(() => {
+    if (nodes.length > 0) {
+      setRfNodes(nodes);
+      setRfEdges(edges);
+    }
+  }, [nodes, edges, setRfNodes, setRfEdges]);
 
   const [showMinimap, setShowMinimap] = useState(true);
   const [selectedNode, setSelectedNode] = useState<{
@@ -113,6 +133,8 @@ function CanvasInner({ userId, sessionId, fromIso, toIso, eventNames }: JourneyC
   } | null>(null);
 
   const onNodeClick: NodeMouseHandler = useCallback((_event, node) => {
+    // Skip source nodes — they have no page stats
+    if (node.type === "source") return;
     const d = node.data as Record<string, unknown>;
     setSelectedNode({
       pagePath: d.pagePath as string,
@@ -159,12 +181,17 @@ function CanvasInner({ userId, sessionId, fromIso, toIso, eventNames }: JourneyC
     <div className="relative h-[680px] bg-[#0e0e0e] rounded-lg overflow-hidden border border-white/5">
       <style>{CANVAS_STYLES}</style>
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
+        nodes={rfNodes}
+        edges={rfEdges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onNodeClick={onNodeClick}
         defaultEdgeOptions={defaultEdgeOptions}
+        nodesDraggable={true}
+        snapToGrid={true}
+        snapGrid={[16, 16]}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.2}
@@ -173,15 +200,23 @@ function CanvasInner({ userId, sessionId, fromIso, toIso, eventNames }: JourneyC
         className="journey-canvas"
       >
         <Background
-          gap={24}
+          variant={BackgroundVariant.Dots}
+          gap={16}
           size={1}
-          color="#262626"
+          color="rgba(255,255,255,0.07)"
           style={{ backgroundColor: "#0e0e0e" }}
         />
         {showMinimap && (
           <MiniMap
-            nodeColor="#b6a0ff"
+            nodeColor={(node) => {
+              const d = node.data as Record<string, unknown>;
+              if (node.type === "source") return "#f59e0b";
+              return d?.isLastSeen ? "#b6a0ff" : "#4a4a5a";
+            }}
+            nodeStrokeWidth={3}
+            nodeBorderRadius={8}
             maskColor="rgba(0,0,0,0.7)"
+            style={{ width: 160, height: 120 }}
             className="!bg-[#131313] !border-white/10"
             pannable
             zoomable

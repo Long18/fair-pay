@@ -368,6 +368,8 @@ export function AdminUserJourney() {
               fromIso={fromIso}
               toIso={toIso}
               eventNames={selectedEventNames}
+              sourceName={selectedSession?.landing_source ?? overview?.top_sources?.[0]?.name ?? null}
+              entryLink={selectedSession?.entry_link ?? overview?.latest_entry_link ?? null}
             />
           </TabsContent>
 
