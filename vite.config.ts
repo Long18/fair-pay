@@ -1,5 +1,6 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import legacy from '@vitejs/plugin-legacy';
 import path from 'path';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -100,6 +101,12 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    legacy({
+      targets: ['defaults', 'not IE 11', 'safari >= 12', 'ios >= 12'],
+      additionalLegacyPolyfills: ['regenerator-runtime/runtime'],
+      renderLegacyChunks: true,
+      modernPolyfills: true,
+    }),
     ...pwaPlugins,
     {
         name: 'strip-pwa-metadata-from-precache',
@@ -157,7 +164,7 @@ export default defineConfig({
         exclude: ['@refinedev/devtools'],
     },
     build: {
-        target: 'esnext',
+        target: 'es2015',
 
         cssMinify: 'lightningcss',
         cssCodeSplit: true,
