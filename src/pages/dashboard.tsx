@@ -17,12 +17,26 @@ import { DashboardTracker } from "@/lib/analytics/index";
 import { CACHE_CONFIG } from "@/lib/cache-config";
 import { WalletIcon, ActivityIcon, HistoryIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { AnimatePresence, motion } from "framer-motion";
+import { ScrollReveal } from "@/components/ui/scroll-reveal";
+import { FloatingDecoration } from "@/components/ui/floating-decoration";
+import { CoinShape, ChartLineShape, CircleShape, HexagonShape, WalletShape } from "@/components/ui/decorative-shapes";
 
 export const Dashboard = () => {
   const { data: identity } = useGetIdentity<Profile>();
   const { t } = useTranslation();
   const { tap } = useHaptics();
   const [activeTab, setActiveTab] = usePersistedState<"balances" | "activity" | "history">("dashboard-tab", "balances");
+
+  const tabOrder = ["balances", "activity", "history"] as const;
+  const currentIndex = tabOrder.indexOf(activeTab);
+  const prevIndexRef = useRef(currentIndex);
+  const directionRef = useRef(0);
+
+  useEffect(() => {
+    directionRef.current = currentIndex > prevIndexRef.current ? 1 : -1;
+    prevIndexRef.current = currentIndex;
+  }, [currentIndex]);
 
   // Active debts (no history)
   const { data: debts = [], isLoading: debtsLoading, refetch: refetchDebts, error: debtsError } = useAggregatedDebts({
@@ -127,8 +141,28 @@ export const Dashboard = () => {
       ) : (
         <PageContainer variant="default">
 
-          <PageContent>
+          <PageContent className="relative">
+            {/* Floating Decorations */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+              <FloatingDecoration speed="slow" top="10%" right="5%" opacity={0.06} delay={0}>
+                <CoinShape size={40} className="text-primary" />
+              </FloatingDecoration>
+              <FloatingDecoration speed="medium" top="30%" left="3%" opacity={0.05} delay={1.5}>
+                <ChartLineShape size={48} className="text-primary" />
+              </FloatingDecoration>
+              <FloatingDecoration speed="fast" top="55%" right="8%" opacity={0.04} delay={0.8}>
+                <CircleShape size={32} className="text-primary" />
+              </FloatingDecoration>
+              <FloatingDecoration speed="slow" top="75%" left="6%" opacity={0.07} delay={2}>
+                <HexagonShape size={36} className="text-primary" />
+              </FloatingDecoration>
+              <FloatingDecoration speed="medium" top="85%" right="12%" opacity={0.05} delay={1}>
+                <WalletShape size={44} className="text-primary" />
+              </FloatingDecoration>
+            </div>
+
             {/* Tab Switcher */}
+            <ScrollReveal direction="up">
             <div className="flex items-center justify-center w-full">
               <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
                 {([
@@ -149,7 +183,7 @@ export const Dashboard = () => {
                       data-track-flow="dashboard"
                       data-track-step={tab.key}
                       className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all cursor-pointer",
+                        "relative flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all cursor-pointer",
                         isActive
                           ? "bg-background text-foreground shadow-sm"
                           : "text-muted-foreground hover:text-foreground"
@@ -169,55 +203,74 @@ export const Dashboard = () => {
                           {tab.count}
                         </span>
                       )}
+                      {isActive && (
+                        <motion.div
+                          layoutId="dashboard-tab-underline"
+                          className="absolute bottom-0 left-0 right-0 h-1 bg-green-500 rounded-t-full"
+                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        />
+                      )}
                     </button>
                   );
                 })}
               </div>
             </div>
+            </ScrollReveal>
 
             {/* Tab Content */}
-            <div className="space-y-4 mt-6">
-              {activeTab === "balances" && (
-                <>
-                  {debtsError && (
-                    <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
-                      {t('dashboard.errorLoadingDebts', 'Failed to load debts. Please try again.')}
+            <div className="mt-6">
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, x: directionRef.current > 0 ? 20 : -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: directionRef.current > 0 ? -20 : 20 }}
+                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                  className="space-y-4"
+                >
+                  {activeTab === "balances" && (
+                    <>
+                      {debtsError && (
+                        <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
+                          {t('dashboard.errorLoadingDebts', 'Failed to load debts. Please try again.')}
+                        </div>
+                      )}
+                      <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
+                        <BalanceTable balances={balances} disabled={!isAuthenticated} showHistory={false} showExpenseBreakdown={true} />
+                      </div>
+                    </>
+                  )}
+
+                  {activeTab === "activity" && (
+                    <div className="bg-card border rounded-lg shadow-sm overflow-hidden p-4">
+                      <EnhancedActivityList
+                        activities={activities}
+                        currentUserId={identity?.id || ""}
+                        currency="VND"
+                        isLoading={activitiesLoading}
+                        showSummary={false}
+                        showFilters={true}
+                        showSort={true}
+                        showTimeGrouping={true}
+                        showActions={false}
+                        variant="dashboard"
+                        compactControls={true}
+                        paginationMode="pagination"
+                        pageSize={10}
+                      />
                     </div>
                   )}
-                  <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
-                    <BalanceTable balances={balances} disabled={!isAuthenticated} showHistory={false} showExpenseBreakdown={true} />
-                  </div>
-                </>
-              )}
 
-              {activeTab === "activity" && (
-                <div className="bg-card border rounded-lg shadow-sm overflow-hidden p-4">
-                  <EnhancedActivityList
-                    activities={activities}
-                    currentUserId={identity?.id || ""}
-                    currency="VND"
-                    isLoading={activitiesLoading}
-                    showSummary={false}
-                    showFilters={true}
-                    showSort={true}
-                    showTimeGrouping={true}
-                    showActions={false}
-                    variant="dashboard"
-                    compactControls={true}
-                    paginationMode="pagination"
-                    pageSize={10}
-                  />
-                </div>
-              )}
-
-              {activeTab === "history" && (
-                <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
-                  <SettledHistoryList
-                    debts={historyDebts}
-                    isLoading={historyLoading}
-                  />
-                </div>
-              )}
+                  {activeTab === "history" && (
+                    <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
+                      <SettledHistoryList
+                        debts={historyDebts}
+                        isLoading={historyLoading}
+                      />
+                    </div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
             </div>
           </PageContent>
         </PageContainer>

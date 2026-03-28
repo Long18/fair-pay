@@ -22,9 +22,13 @@ import "./App.css";
 import authProvider from "./authProvider";
 import { supabaseClient } from "./utility";
 import { useDocumentTitle } from "./hooks/ui/use-document-title";
+import { GSAPProvider } from "./providers/gsap-provider";
+import { useSmoothScroll } from "./hooks/use-smooth-scroll";
 import { analyticsManager } from "./lib/analytics/instance";
 import { JourneyTrackingBridge } from "./lib/journey-tracking";
 import { TrackingNoticeBanner } from "./components/tracking-consent-banner";
+import { ScrollToTop } from "./components/ui/scroll-to-top";
+import { SpeculationRules } from "./components/speculation-rules";
 
 // Core layout components (needed immediately)
 import { ErrorComponent } from "./components/refine-ui/layout/error-component";
@@ -165,12 +169,19 @@ const DocumentTitle = () => {
   return null;
 };
 
+// Smooth scroll initializer — must render inside GSAPProvider
+const SmoothScrollInit = () => {
+  useSmoothScroll();
+  return null;
+};
+
 // Main App component
 function App() {
   return (
     <BrowserRouter>
       <RefineKbarProvider>
         <ThemeProvider>
+          <GSAPProvider>
           <Refine
                 dataProvider={dataProvider(supabaseClient)}
                 liveProvider={liveProvider(supabaseClient)}
@@ -565,10 +576,12 @@ function App() {
                 <RefineKbar />
                 <UnsavedChangesNotifier />
                 <DocumentTitle />
+                <SpeculationRules />
                 <JourneyTrackingBridge />
                 <AnalyticsInitializer />
                 {isVercelAnalyticsEnabled ? <Analytics /> : null}
                 <TrackingNoticeBanner />
+                <ScrollToTop />
                 <Suspense fallback={null}>
                   <DonationWidget />
                 </Suspense>
@@ -577,7 +590,9 @@ function App() {
                     <ChatFAB />
                   </Suspense>
                 </Authenticated>
+                <SmoothScrollInit />
               </Refine>
+          </GSAPProvider>
         </ThemeProvider>
       </RefineKbarProvider>
     </BrowserRouter>

@@ -437,7 +437,7 @@ const DefaultActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRowP
     }, [activity.paymentEvents, isSettled]);
 
     return (
-      <div ref={ref} className={cn("space-y-0", className)}>
+      <div ref={ref} className={cn("space-y-0 card-hover-subtle", className)}>
         <div
           onClick={handleRowClick}
           className={cn(
@@ -648,7 +648,7 @@ const DashboardActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRo
     return (
       <div
         ref={ref}
-        className={cn("overflow-hidden rounded-lg border bg-card shadow-sm", className)}
+        className={cn("overflow-hidden rounded-lg border bg-card shadow-sm card-hover-subtle", className)}
       >
         <button
           type="button"

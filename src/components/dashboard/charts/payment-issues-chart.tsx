@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { BarChart, Bar, XAxis, ResponsiveContainer, Cell } from "recharts";
 
 interface PaymentIssuesChartProps {
@@ -31,6 +32,7 @@ export const PaymentIssuesChart = ({
   ];
 
   return (
+    <ScrollReveal direction="up" delay={0.2}>
     <Card className="border-border">
       <CardHeader>
         <CardTitle className="text-base font-bold text-foreground">
@@ -51,7 +53,7 @@ export const PaymentIssuesChart = ({
               }}
               dy={10}
             />
-            <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={61}>
+            <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={61} isAnimationActive={true} animationDuration={1500} animationEasing="ease-out" animationBegin={200}>
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
@@ -85,5 +87,6 @@ export const PaymentIssuesChart = ({
         </div>
       </CardContent>
     </Card>
+    </ScrollReveal>
   );
 };

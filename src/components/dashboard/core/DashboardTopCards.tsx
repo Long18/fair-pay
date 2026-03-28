@@ -9,6 +9,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useTranslation } from "react-i18next";
+import { StaggerChildren } from "@/components/ui/stagger-children";
 
 interface DashboardTopCardsProps {
   disabled?: boolean;
@@ -30,15 +31,15 @@ export function DashboardTopCards({ disabled = false }: DashboardTopCardsProps) 
   };
 
   return (
-    <div className="bento-grid mb-8">
+    <StaggerChildren staggerDelay={0.1} className="bento-grid mb-8">
 
       {/* 1. Statistics Card */}
-      <Card className="bento-item shadow-sm">
+      <Card className="bento-item shadow-sm card-hover-scale">
         <CardContent className="p-6 flex items-center justify-between">
           <div className="relative h-20 w-20 flex items-center justify-center">
             <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
               <path className="text-muted/20 stroke-current" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" strokeWidth="3" />
-              <path className="text-primary stroke-current" strokeDasharray={`${percentage}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" strokeWidth="3" strokeLinecap="round" />
+              <path className="text-primary stroke-current" strokeDasharray={`${percentage}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" strokeWidth="3" strokeLinecap="round" style={{ transition: "stroke-dasharray 1.5s ease-out" }} />
             </svg>
             <span className="absolute text-sm font-bold">{percentage}%</span>
           </div>
@@ -51,7 +52,7 @@ export function DashboardTopCards({ disabled = false }: DashboardTopCardsProps) 
       </Card>
 
       {/* 2. Plan/Action Card */}
-      <Card className="bento-item shadow-sm">
+      <Card className="bento-item shadow-sm card-hover-scale">
         <CardContent className="p-6 flex flex-col justify-between h-full">
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-3">
@@ -97,7 +98,7 @@ export function DashboardTopCards({ disabled = false }: DashboardTopCardsProps) 
       </Card>
 
       {/* 3. Highlight Card (Net Balance) */}
-      <Card className="bento-item bg-primary/5 border-primary/20 shadow-sm relative overflow-hidden">
+      <Card className="bento-item bg-primary/5 border-primary/20 shadow-sm relative overflow-hidden card-hover-scale">
         <div className="absolute top-0 right-0 p-4 opacity-10">
           <ArrowUpRightIcon className="h-24 w-24 text-primary" />
         </div>
@@ -137,6 +138,6 @@ export function DashboardTopCards({ disabled = false }: DashboardTopCardsProps) 
         </CardContent>
       </Card>
 
-    </div>
+    </StaggerChildren>
   );
 }
