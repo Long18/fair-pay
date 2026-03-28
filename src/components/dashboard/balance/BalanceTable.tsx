@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { motion } from "framer-motion";
 import { useGo } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
 import {
@@ -9,6 +10,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { AnimatedList } from "@/components/ui/animated-list";
+import { AnimatedRow } from "@/components/ui/animated-row";
+import { useStaggerAnimation } from "@/hooks/ui/use-stagger-animation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -85,6 +89,8 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
     return balances.slice(startIndex, endIndex);
   }, [balances, startIndex, endIndex]);
 
+  const { containerVariants, rowVariants, animationKey } = useStaggerAnimation(paginatedBalances);
+
   const metadata: PaginationMetadata = {
     totalItems,
     totalPages: totalPages || 1,
@@ -137,103 +143,113 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
   return (
     <div className="p-6 space-y-4">
       {/* Mobile: Card Layout */}
-      <div className="block md:hidden space-y-3">
-        {paginatedBalances.map((balance) => {
-          // Use expandable component when showExpenseBreakdown is true and not in history mode
-          if (showExpenseBreakdown && !showHistory) {
-            return (
-              <BalanceTableRowExpandableMobile
-                key={balance.counterparty_id || balance.counterparty_email || balance.counterparty_name}
-                balance={balance}
-                disabled={disabled}
-                currency={balance.currency || "VND"}
-                isExpanded={expandedRows.has(balance.counterparty_id || balance.counterparty_email || balance.counterparty_name)}
-                onToggleExpand={() => toggleRow(balance.counterparty_id || balance.counterparty_email || balance.counterparty_name)}
-              />
-            );
-          }
+      <div className="block md:hidden">
+        <AnimatedList items={paginatedBalances} className="space-y-3">
+          {paginatedBalances.map((balance, index) => {
+            // Use expandable component when showExpenseBreakdown is true and not in history mode
+            if (showExpenseBreakdown && !showHistory) {
+              return (
+                <AnimatedRow key={balance.counterparty_id || balance.counterparty_email || balance.counterparty_name} index={index}>
+                  <BalanceTableRowExpandableMobile
+                    balance={balance}
+                    disabled={disabled}
+                    currency={balance.currency || "VND"}
+                    isExpanded={expandedRows.has(balance.counterparty_id || balance.counterparty_email || balance.counterparty_name)}
+                    onToggleExpand={() => toggleRow(balance.counterparty_id || balance.counterparty_email || balance.counterparty_name)}
+                  />
+                </AnimatedRow>
+              );
+            }
 
-          // Default static card
-          const fullySettled = isFullySettled(balance);
-          return (
-            <Card
-              key={balance.counterparty_id || balance.counterparty_email || balance.counterparty_name}
-              className={cn(
-                "hover:shadow-md transition-shadow cursor-pointer",
-                disabled && "opacity-50 cursor-not-allowed",
-                fullySettled && `opacity-60 ${getPaymentStateColors('paid').bg}`
-              )}
-              onClick={() => { if (!disabled && balance.counterparty_id) { tap(); go({ to: `/profile/${balance.counterparty_id}` }); } }}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="relative shrink-0">
-                      <Avatar className="h-10 w-10 border-2 border-border">
-                        <AvatarImage src={balance.counterparty_avatar_url || undefined} />
-                        <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
-                          {balance.counterparty_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
-                      {fullySettled && (
-                        <div className={cn("absolute -bottom-1 -right-1 rounded-full p-0.5", getPaymentStateColors('paid').bg)}>
-                          <CheckIcon className={cn("h-3 w-3", getPaymentStateColors('paid').icon)} />
+            // Default static card
+            const fullySettled = isFullySettled(balance);
+            return (
+              <AnimatedRow key={balance.counterparty_id || balance.counterparty_email || balance.counterparty_name} index={index}>
+                <Card
+                  className={cn(
+                    "hover:shadow-md transition-shadow cursor-pointer",
+                    disabled && "opacity-50 cursor-not-allowed",
+                    fullySettled && `opacity-60 ${getPaymentStateColors('paid').bg}`
+                  )}
+                  onClick={() => { if (!disabled && balance.counterparty_id) { tap(); go({ to: `/profile/${balance.counterparty_id}` }); } }}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="relative shrink-0">
+                          <Avatar className="h-10 w-10 border-2 border-border">
+                            <AvatarImage src={balance.counterparty_avatar_url || undefined} />
+                            <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
+                              {balance.counterparty_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                            </AvatarFallback>
+                          </Avatar>
+                          {fullySettled && (
+                            <div className={cn("absolute -bottom-1 -right-1 rounded-full p-0.5", getPaymentStateColors('paid').bg)}>
+                              <CheckIcon className={cn("h-3 w-3", getPaymentStateColors('paid').icon)} />
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className={cn("typography-row-title truncate", fullySettled && "line-through text-muted-foreground")}>
-                        {balance.counterparty_name}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
+                        <div className="min-w-0 flex-1">
+                          <p className={cn("typography-row-title truncate", fullySettled && "line-through text-muted-foreground")}>
+                            {balance.counterparty_name}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            {fullySettled ? (
+                              <PaymentStateBadge state="paid" size="sm" />
+                            ) : (
+                              <Badge variant={balance.i_owe_them ? "default" : "secondary"} className="text-xs">
+                                {balance.i_owe_them ? t('dashboard.youOwe') : t('dashboard.userOwesYou')}
+                              </Badge>
+                            )}
+                            {showHistory && balance.last_transaction_date && (
+                              <span className="typography-metadata">
+                                {t('dashboard.lastTransaction', 'Last: ')}
+                                {formatDate(balance.last_transaction_date)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
                         {fullySettled ? (
-                          <PaymentStateBadge state="paid" size="sm" />
+                          <span className={cn("flex items-center gap-1 typography-amount", getPaymentStateColors('paid').text)}>
+                            <CheckIcon className="h-4 w-4" />
+                            {formatCurrency(0, balance.currency || "VND")}
+                          </span>
                         ) : (
-                          <Badge variant={balance.i_owe_them ? "default" : "secondary"} className="text-xs">
-                            {balance.i_owe_them ? t('dashboard.youOwe') : t('dashboard.userOwesYou')}
-                          </Badge>
-                        )}
-                        {showHistory && balance.last_transaction_date && (
-                          <span className="typography-metadata">
-                            {t('dashboard.lastTransaction', 'Last: ')}
-                            {formatDate(balance.last_transaction_date)}
+                          <span className={cn(
+                            "typography-amount-prominent",
+                            balance.i_owe_them ? getOweStatusColors('owe').text : getOweStatusColors('owed').text
+                          )}>
+                            {balance.i_owe_them ? '-' : '+'}
+                            {formatCurrency(Number(balance.remaining_amount !== undefined ? balance.remaining_amount : balance.amount), balance.currency || "VND")}
                           </span>
                         )}
+                        {showHistory && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="text-xs">
+                              {balance.transaction_count || 0} {t('dashboard.transactions', 'Txns')}
+                            </Badge>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    {fullySettled ? (
-                      <span className={cn("flex items-center gap-1 typography-amount", getPaymentStateColors('paid').text)}>
-                        <CheckIcon className="h-4 w-4" />
-                        {formatCurrency(0, balance.currency || "VND")}
-                      </span>
-                    ) : (
-                      <span className={cn(
-                        "typography-amount-prominent",
-                        balance.i_owe_them ? getOweStatusColors('owe').text : getOweStatusColors('owed').text
-                      )}>
-                        {balance.i_owe_them ? '-' : '+'}
-                        {formatCurrency(Number(balance.remaining_amount !== undefined ? balance.remaining_amount : balance.amount), balance.currency || "VND")}
-                      </span>
-                    )}
-                    {showHistory && (
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" className="text-xs">
-                          {balance.transaction_count || 0} {t('dashboard.transactions', 'Txns')}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                  </CardContent>
+                </Card>
+              </AnimatedRow>
+            );
+          })}
+        </AnimatedList>
       </div>
 
       {/* Desktop: Table Layout */}
-      <div className="hidden md:block">
+      <motion.div
+        className="hidden md:block"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        key={`desktop-${animationKey}`}
+      >
         <Table>
           <TableHeader>
             <TableRow>
@@ -272,10 +288,13 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
               // Default static row
               const fullySettled = isFullySettled(balance);
               return (
-                <TableRow
+                <motion.tr
                   key={balance.counterparty_id || balance.counterparty_email || balance.counterparty_name}
+                  variants={rowVariants}
+                  custom={index}
+                  data-slot="table-row"
                   className={cn(
-                    "cursor-pointer transition-colors",
+                    "hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors cursor-pointer",
                     index % 2 === 0 && "bg-muted/50 dark:bg-muted/30",
                     disabled && "opacity-50 cursor-not-allowed",
                     fullySettled && `opacity-60 ${getPaymentStateColors('paid').bg}`
@@ -350,12 +369,12 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                       </span>
                     )}
                   </TableCell>
-                </TableRow>
+                </motion.tr>
               );
             })}
           </TableBody>
         </Table>
-      </div>
+      </motion.div>
 
       {totalPages > 1 && (
         <PaginationControls

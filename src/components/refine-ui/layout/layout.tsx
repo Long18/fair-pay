@@ -29,7 +29,8 @@ export function Layout({ children }: PropsWithChildren) {
             "md:pt-20",
             "md:px-4",
             "lg:px-6",
-            "lg:pt-24"
+            "lg:pt-24",
+            "viewport-transition"
           )}
         >
           {children}

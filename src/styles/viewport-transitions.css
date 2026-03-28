@@ -1,0 +1,41 @@
+/* Viewport Resize Transition Utilities
+ * Apply to layout containers that change grid/flex/padding across breakpoints.
+ * Only transitions layout properties — NOT individual row content (perf risk).
+ * Uses existing animation duration variables from App.css.
+ */
+
+/* Base viewport transition — smooth morph on layout property changes */
+.viewport-transition {
+  transition:
+    grid-template-columns var(--animation-duration-slow, 300ms) cubic-bezier(0.25, 0.1, 0.25, 1),
+    gap var(--animation-duration-slow, 300ms) cubic-bezier(0.25, 0.1, 0.25, 1),
+    padding var(--animation-duration-slow, 300ms) cubic-bezier(0.25, 0.1, 0.25, 1),
+    max-width var(--animation-duration-slow, 300ms) cubic-bezier(0.25, 0.1, 0.25, 1),
+    margin var(--animation-duration-slow, 300ms) cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* Grid-specific variant — includes column and row transitions */
+.viewport-transition-grid {
+  transition:
+    grid-template-columns var(--animation-duration-slow, 300ms) cubic-bezier(0.25, 0.1, 0.25, 1),
+    grid-template-rows var(--animation-duration-slow, 300ms) cubic-bezier(0.25, 0.1, 0.25, 1),
+    gap var(--animation-duration-slow, 300ms) cubic-bezier(0.25, 0.1, 0.25, 1),
+    padding var(--animation-duration-slow, 300ms) cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* Flex-specific variant — includes flex-direction won't transition but gap/padding will */
+.viewport-transition-flex {
+  transition:
+    gap var(--animation-duration-slow, 300ms) cubic-bezier(0.25, 0.1, 0.25, 1),
+    padding var(--animation-duration-slow, 300ms) cubic-bezier(0.25, 0.1, 0.25, 1),
+    max-width var(--animation-duration-slow, 300ms) cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .viewport-transition,
+  .viewport-transition-grid,
+  .viewport-transition-flex {
+    transition: none !important;
+  }
+}

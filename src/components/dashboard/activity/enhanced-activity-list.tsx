@@ -8,6 +8,8 @@ import { useHaptics } from "@/hooks/use-haptics";
 import { cn } from "@/lib/utils";
 import { debounce } from "@/lib/performance";
 
+import { AnimatedList } from "@/components/ui/animated-list";
+import { AnimatedRow } from "@/components/ui/animated-row";
 import { ActivityFilterControls, type PaymentStateFilter, type FilterCounts } from "./activity-filter-controls";
 import { ActivitySortControls, type SortOption } from "./activity-sort-controls";
 import { ActivitySummary } from "./activity-summary";
@@ -337,7 +339,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
       )}
 
       {/* Filter and Sort Controls */}
-      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center viewport-transition-flex">
         {showFilters && (
           <ActivityFilterControls
             activeFilter={activeFilter}
@@ -360,38 +362,42 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
       <div className="space-y-4">
         {showTimeGrouping && timeGroups ? (
           // Time-grouped view
-          timeGroups.map((group) => (
-            <ActivityTimePeriodGroup
-              key={group.period}
-              group={{
-                ...group,
-                isCollapsed: collapsedGroupPeriods.has(group.period),
-              }}
-              currentUserId={currentUserId}
-              expandedActivityIds={expandedActivityIds}
-              onToggleActivity={handleToggleActivity}
-              onToggleGroup={() => handleToggleGroup(group.period)}
-              duplicateIds={duplicateIds}
-              showActions={showActions}
-              variant={variant}
-            />
-          ))
+          <AnimatedList items={timeGroups} className="space-y-4">
+            {timeGroups.map((group, index) => (
+              <AnimatedRow key={group.period} index={index}>
+                <ActivityTimePeriodGroup
+                  group={{
+                    ...group,
+                    isCollapsed: collapsedGroupPeriods.has(group.period),
+                  }}
+                  currentUserId={currentUserId}
+                  expandedActivityIds={expandedActivityIds}
+                  onToggleActivity={handleToggleActivity}
+                  onToggleGroup={() => handleToggleGroup(group.period)}
+                  duplicateIds={duplicateIds}
+                  showActions={showActions}
+                  variant={variant}
+                />
+              </AnimatedRow>
+            ))}
+          </AnimatedList>
         ) : (
           // Flat list view
-          <div className="space-y-2">
-            {visibleItems.map((activity) => (
-              <EnhancedActivityRow
-                key={activity.id}
-                activity={activity}
-                currentUserId={currentUserId}
-                isExpanded={expandedActivityIds.has(activity.id)}
-                onToggleExpand={() => handleToggleActivity(activity.id)}
-                showDuplicateContext={duplicateIds.has(activity.id)}
-                showActions={showActions}
-                variant={variant}
-              />
+          <AnimatedList items={visibleItems} className="space-y-2">
+            {visibleItems.map((activity, index) => (
+              <AnimatedRow key={activity.id} index={index}>
+                <EnhancedActivityRow
+                  activity={activity}
+                  currentUserId={currentUserId}
+                  isExpanded={expandedActivityIds.has(activity.id)}
+                  onToggleExpand={() => handleToggleActivity(activity.id)}
+                  showDuplicateContext={duplicateIds.has(activity.id)}
+                  showActions={showActions}
+                  variant={variant}
+                />
+              </AnimatedRow>
             ))}
-          </div>
+          </AnimatedList>
         )}
 
         {/* Pagination or Load More */}
