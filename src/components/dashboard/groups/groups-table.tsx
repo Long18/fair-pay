@@ -2,9 +2,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { useGo } from "@refinedev/core";
+import { motion } from "framer-motion";
 
 import { EyeIcon, UsersIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
+import { useStaggerAnimation } from "@/hooks/ui/use-stagger-animation";
 interface GroupBalance {
   group_id: string;
   group_name: string;
@@ -21,6 +23,7 @@ interface GroupsTableProps {
 export const GroupsTable = ({ groups, isLoading }: GroupsTableProps) => {
   const go = useGo();
   const { tap } = useHaptics();
+  const { containerVariants, rowVariants, animationKey } = useStaggerAnimation(groups);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('vi-VN').format(Math.abs(value));
@@ -95,50 +98,59 @@ export const GroupsTable = ({ groups, isLoading }: GroupsTableProps) => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="font-semibold">Group Name</TableHead>
-              <TableHead className="font-semibold">Members</TableHead>
-              <TableHead className="font-semibold text-right">Your Balance</TableHead>
-              <TableHead className="font-semibold">Last Activity</TableHead>
-              <TableHead className="font-semibold text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {groups.map((group) => (
-              <TableRow
-                key={group.group_id}
-                className="hover:bg-muted/50 transition-colors"
-              >
-                <TableCell className="font-medium">
-                  {group.group_name}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {group.member_count} members
-                </TableCell>
-                <TableCell className={`text-right font-semibold ${
-                  group.my_balance > 0 ? 'text-green-600' : group.my_balance < 0 ? 'text-destructive' : 'text-muted-foreground'
-                }`}>
-                  {group.my_balance > 0 ? '+' : ''}₫{formatCurrency(group.my_balance)}
-                </TableCell>
-                <TableCell className="text-muted-foreground text-sm">
-                  {formatTimeAgo(group.last_activity)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => { tap(); go({ to: `/groups/show/${group.group_id}` }); }}
-                  >
-                    <EyeIcon className="h-4 w-4 mr-1" />
-                    View
-                  </Button>
-                </TableCell>
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          key={`groups-${animationKey}`}
+        >
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="font-semibold">Group Name</TableHead>
+                <TableHead className="font-semibold">Members</TableHead>
+                <TableHead className="font-semibold text-right">Your Balance</TableHead>
+                <TableHead className="font-semibold">Last Activity</TableHead>
+                <TableHead className="font-semibold text-right">Action</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {groups.map((group, index) => (
+                <motion.tr
+                  key={group.group_id}
+                  variants={rowVariants}
+                  custom={index}
+                  className="hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors"
+                >
+                  <TableCell className="font-medium">
+                    {group.group_name}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {group.member_count} members
+                  </TableCell>
+                  <TableCell className={`text-right font-semibold ${
+                    group.my_balance > 0 ? 'text-green-600' : group.my_balance < 0 ? 'text-destructive' : 'text-muted-foreground'
+                  }`}>
+                    {group.my_balance > 0 ? '+' : ''}₫{formatCurrency(group.my_balance)}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {formatTimeAgo(group.last_activity)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { tap(); go({ to: `/groups/show/${group.group_id}` }); }}
+                    >
+                      <EyeIcon className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
+                  </TableCell>
+                </motion.tr>
+              ))}
+            </TableBody>
+          </Table>
+        </motion.div>
       </CardContent>
     </Card>
   );

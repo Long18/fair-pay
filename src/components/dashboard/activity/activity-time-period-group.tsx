@@ -1,6 +1,8 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
+import { AnimatedList } from "@/components/ui/animated-list";
+import { AnimatedRow } from "@/components/ui/animated-row";
 import { useHaptics } from "@/hooks/use-haptics";
 
 import { ChevronDownIcon, ChevronRightIcon } from "@/components/ui/icons";
@@ -98,20 +100,23 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="overflow-hidden space-y-2"
+            className="overflow-hidden"
           >
-            {group.activities.map((activity) => (
-              <EnhancedActivityRow
-                key={activity.id}
-                activity={activity}
-                currentUserId={currentUserId}
-                isExpanded={expandedActivityIds.has(activity.id)}
-                onToggleExpand={() => onToggleActivity(activity.id)}
-                showDuplicateContext={duplicateIds.has(activity.id)}
-                showActions={showActions}
-                variant={variant}
-              />
-            ))}
+            <AnimatedList items={group.activities} className="space-y-2">
+              {group.activities.map((activity, index) => (
+                <AnimatedRow key={activity.id} index={index}>
+                  <EnhancedActivityRow
+                    activity={activity}
+                    currentUserId={currentUserId}
+                    isExpanded={expandedActivityIds.has(activity.id)}
+                    onToggleExpand={() => onToggleActivity(activity.id)}
+                    showDuplicateContext={duplicateIds.has(activity.id)}
+                    showActions={showActions}
+                    variant={variant}
+                  />
+                </AnimatedRow>
+              ))}
+            </AnimatedList>
           </motion.div>
         )}
       </AnimatePresence>

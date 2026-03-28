@@ -2,6 +2,9 @@ import { useMemo, useState } from "react";
 import { useGo } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
+import { AnimatedList } from "@/components/ui/animated-list";
+import { AnimatedRow } from "@/components/ui/animated-row";
+import { useStaggerAnimation } from "@/hooks/ui/use-stagger-animation";
 import { LoadingBeam } from "@/components/ui/loading-beam";
 import {
   Table,
@@ -213,12 +216,14 @@ function SettledRowExpandable({
   currency,
   isExpanded,
   onToggleExpand,
+  rowVariants,
 }: {
   debt: SettledDebt;
   index: number;
   currency: string;
   isExpanded: boolean;
   onToggleExpand: () => void;
+  rowVariants?: import("framer-motion").Variants;
 }) {
   const { t } = useTranslation();
   const go = useGo();
@@ -231,9 +236,13 @@ function SettledRowExpandable({
 
   return (
     <>
-      <TableRow
+      <motion.tr
+        data-slot="table-row"
+        variants={rowVariants}
+        custom={index}
         className={cn(
-          "cursor-pointer transition-colors hover:bg-muted/40",
+          "hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors",
+          "cursor-pointer hover:bg-muted/40",
           index % 2 === 0 && "bg-muted/10"
         )}
         onClick={() => {
@@ -312,7 +321,7 @@ function SettledRowExpandable({
             </motion.div>
           </div>
         </TableCell>
-      </TableRow>
+      </motion.tr>
 
       <AnimatePresence initial={false}>
         {isExpanded && (
@@ -508,6 +517,8 @@ export function SettledHistoryList({
     pageSize,
   };
 
+  const { containerVariants, rowVariants, animationKey } = useStaggerAnimation(paginatedDebts);
+
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
@@ -560,23 +571,30 @@ export function SettledHistoryList({
 
   return (
     <div className="space-y-4 p-6">
-      <div className="block space-y-3 md:hidden">
-        {paginatedDebts.map((debt) => {
+      <AnimatedList items={paginatedDebts} className="block space-y-3 md:hidden">
+        {paginatedDebts.map((debt, index) => {
           const rowId = debt.counterparty_id || debt.counterparty_email || debt.counterparty_name;
 
           return (
-            <SettledCardExpandable
-              key={rowId}
-              debt={debt}
-              currency={debt.currency || "VND"}
-              isExpanded={expandedRows.has(rowId)}
-              onToggleExpand={() => toggleRow(rowId)}
-            />
+            <AnimatedRow key={rowId} index={index}>
+              <SettledCardExpandable
+                debt={debt}
+                currency={debt.currency || "VND"}
+                isExpanded={expandedRows.has(rowId)}
+                onToggleExpand={() => toggleRow(rowId)}
+              />
+            </AnimatedRow>
           );
         })}
-      </div>
+      </AnimatedList>
 
-      <div className="hidden md:block overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <motion.div
+        className="hidden md:block overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        key={`settled-desktop-${animationKey}`}
+      >
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
@@ -600,12 +618,13 @@ export function SettledHistoryList({
                   currency={debt.currency || "VND"}
                   isExpanded={expandedRows.has(rowId)}
                   onToggleExpand={() => toggleRow(rowId)}
+                  rowVariants={rowVariants}
                 />
               );
             })}
           </TableBody>
         </Table>
-      </div>
+      </motion.div>
 
       {totalPages > 1 && (
         <PaginationControls
