@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SpendingComparison } from "@/hooks/analytics/use-spending-comparison";
 import { formatNumber } from "@/lib/locale-utils";
+import { themeIntentTones } from "@/lib/theme-intents";
 import { TrendingUpIcon, TrendingDownIcon, MinusIcon } from "@/components/ui/icons";
 
 interface ComparisonChartProps {
@@ -47,9 +48,9 @@ export function ComparisonChart({
   const getTrendIcon = () => {
     switch (data.trend) {
       case "increasing":
-        return <TrendingUpIcon className="h-8 w-8 text-orange-500" />;
+        return <TrendingUpIcon className={`h-8 w-8 ${themeIntentTones.warning.icon}`} />;
       case "decreasing":
-        return <TrendingDownIcon className="h-8 w-8 text-green-500" />;
+        return <TrendingDownIcon className={`h-8 w-8 ${themeIntentTones.success.icon}`} />;
       default:
         return <MinusIcon className="h-8 w-8 text-muted-foreground" />;
     }
@@ -58,9 +59,9 @@ export function ComparisonChart({
   const getTrendColor = () => {
     switch (data.trend) {
       case "increasing":
-        return "text-orange-500";
+        return themeIntentTones.warning.icon;
       case "decreasing":
-        return "text-green-500";
+        return themeIntentTones.success.icon;
       default:
         return "text-muted-foreground";
     }
@@ -103,18 +104,18 @@ export function ComparisonChart({
             </div>
           </div>
 
-          <div className="bg-muted rounded-lg p-3 sm:p-4">
+          <div className="rounded-lg bg-muted p-3 sm:p-4">
             <p className="text-xs sm:text-sm text-center">
               {data.trend === "increasing" && (
                 <>
-                  Your spending has <span className="font-semibold text-orange-500">increased</span>{" "}
+                  Your spending has <span className={`font-semibold ${themeIntentTones.warning.icon}`}>increased</span>{" "}
                   by {Math.abs(data.percentage_change).toFixed(1)}% compared to the previous period.
                 </>
               )}
               {data.trend === "decreasing" && (
                 <>
                   Great job! Your spending has{" "}
-                  <span className="font-semibold text-green-500">decreased</span> by{" "}
+                  <span className={`font-semibold ${themeIntentTones.success.icon}`}>decreased</span> by{" "}
                   {Math.abs(data.percentage_change).toFixed(1)}% compared to the previous period.
                 </>
               )}
