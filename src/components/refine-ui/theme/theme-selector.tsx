@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
 import { SunIcon, MoonIcon, MonitorIcon, PaletteIcon } from "@/components/ui/icons";
-import { getThemeVariantsByGroup, parseThemeVariant, themePalettes, type ThemeColors } from "@/lib/theme-palettes";
+import { getThemeVariantsByGroup, parseThemeVariant, themePalettes, type ThemeColors, type ThemeVariant } from "@/lib/theme-palettes";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -71,7 +71,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
     }
   };
 
-  const renderThemeButton = (variant: any, index: number) => {
+  const renderThemeButton = (variant: ThemeVariant, index: number) => {
     const variantKey = `${variant.themeName}-${variant.mode}`;
     const isSelected = themeVariant === variantKey;
     const palette = themePalettes[variant.themeName];
@@ -168,11 +168,11 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
           <span className="sr-only">Select color theme</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 max-h-[600px] overflow-hidden p-2">
+      <DropdownMenuContent align="end" className="w-80 max-h-[600px] overflow-x-hidden p-2">
         <DropdownMenuLabel className="px-2 py-1.5">{t("theme.selectTheme")}</DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        <Tabs value={activeTab} onValueChange={(v) => { tap(); setActiveTab(v); }} className="w-full">
+        <Tabs value={activeTab} onValueChange={(v) => { tap(); setActiveTab(v); }} className="min-h-0 w-full">
           <TabsList className="w-full grid grid-cols-3 mb-2">
             <TabsTrigger value="light" className="gap-1.5">
               <SunIcon className="h-3.5 w-3.5" />
@@ -188,15 +188,15 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="light" className="mt-0 max-h-[450px] overflow-y-auto space-y-1 pr-1">
+          <TabsContent value="light" className="mt-0 min-h-0 max-h-[450px] overflow-y-auto space-y-1 pr-1">
             {variantsByMode.light.map((variant, index) => renderThemeButton(variant, index))}
           </TabsContent>
 
-          <TabsContent value="dark" className="mt-0 max-h-[450px] overflow-y-auto space-y-1 pr-1">
+          <TabsContent value="dark" className="mt-0 min-h-0 max-h-[450px] overflow-y-auto space-y-1 pr-1">
             {variantsByMode.dark.map((variant, index) => renderThemeButton(variant, index))}
           </TabsContent>
 
-          <TabsContent value="system" className="mt-0 max-h-[450px] overflow-y-auto space-y-1 pr-1">
+          <TabsContent value="system" className="mt-0 min-h-0 max-h-[450px] overflow-y-auto space-y-1 pr-1">
             {variantsByMode.system.map((variant, index) => renderThemeButton(variant, index))}
           </TabsContent>
         </Tabs>
