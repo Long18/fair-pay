@@ -9,6 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
@@ -168,11 +169,11 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
           <span className="sr-only">Select color theme</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 max-h-[600px] overflow-x-hidden p-2">
+      <DropdownMenuContent align="end" className="flex w-80 max-h-[min(600px,calc(100vh-96px))] flex-col overflow-hidden p-2">
         <DropdownMenuLabel className="px-2 py-1.5">{t("theme.selectTheme")}</DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        <Tabs value={activeTab} onValueChange={(v) => { tap(); setActiveTab(v); }} className="min-h-0 w-full">
+        <Tabs value={activeTab} onValueChange={(v) => { tap(); setActiveTab(v); }} className="min-h-0 w-full flex-1">
           <TabsList className="w-full grid grid-cols-3 mb-2">
             <TabsTrigger value="light" className="gap-1.5">
               <SunIcon className="h-3.5 w-3.5" />
@@ -188,16 +189,28 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="light" className="mt-0 min-h-0 max-h-[450px] overflow-y-auto space-y-1 pr-1">
-            {variantsByMode.light.map((variant, index) => renderThemeButton(variant, index))}
+          <TabsContent value="light" className="mt-0 min-h-0 flex-1">
+            <ScrollArea className="h-[min(450px,calc(100vh-220px))] pr-1">
+              <div className="space-y-1 pr-3">
+                {variantsByMode.light.map((variant, index) => renderThemeButton(variant, index))}
+              </div>
+            </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="dark" className="mt-0 min-h-0 max-h-[450px] overflow-y-auto space-y-1 pr-1">
-            {variantsByMode.dark.map((variant, index) => renderThemeButton(variant, index))}
+          <TabsContent value="dark" className="mt-0 min-h-0 flex-1">
+            <ScrollArea className="h-[min(450px,calc(100vh-220px))] pr-1">
+              <div className="space-y-1 pr-3">
+                {variantsByMode.dark.map((variant, index) => renderThemeButton(variant, index))}
+              </div>
+            </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="system" className="mt-0 min-h-0 max-h-[450px] overflow-y-auto space-y-1 pr-1">
-            {variantsByMode.system.map((variant, index) => renderThemeButton(variant, index))}
+          <TabsContent value="system" className="mt-0 min-h-0 flex-1">
+            <ScrollArea className="h-[min(450px,calc(100vh-220px))] pr-1">
+              <div className="space-y-1 pr-3">
+                {variantsByMode.system.map((variant, index) => renderThemeButton(variant, index))}
+              </div>
+            </ScrollArea>
           </TabsContent>
         </Tabs>
       </DropdownMenuContent>
