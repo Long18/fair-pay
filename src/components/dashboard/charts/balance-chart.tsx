@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { formatNumber } from "@/lib/locale-utils";
 import { useBalanceHistory } from "@/hooks/balance/use-balance-history";
@@ -86,6 +87,7 @@ export const BalanceChart = ({
 
   if (isLoading) {
     return (
+      <ScrollReveal direction="up" delay={0.2}>
       <Card className="border-border shadow-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold text-foreground">
@@ -98,10 +100,12 @@ export const BalanceChart = ({
           </div>
         </CardContent>
       </Card>
+      </ScrollReveal>
     );
   }
 
   return (
+    <ScrollReveal direction="up" delay={0.2}>
     <Card className="border-border shadow-sm">
       <CardHeader className="pb-3 px-4 sm:px-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -191,6 +195,10 @@ export const BalanceChart = ({
                     dataKey="balance"
                     fill="var(--color-balance)"
                     radius={4}
+                    isAnimationActive={true}
+                    animationDuration={1500}
+                    animationEasing="ease-out"
+                    animationBegin={200}
                   />
                 </RechartsBarChart>
               </ChartContainer>
@@ -203,5 +211,6 @@ export const BalanceChart = ({
         </div>
       </CardContent>
     </Card>
+    </ScrollReveal>
   );
 };

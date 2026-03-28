@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 interface SuccessRateChartProps {
@@ -21,6 +22,7 @@ export const SuccessRateChart = ({
   const COLORS = ["var(--chart-positive, oklch(0.65 0.17 155))", "var(--chart-grid, oklch(0.95 0 0))"];
 
   return (
+    <ScrollReveal direction="up" delay={0.2}>
     <Card className="border-border">
       <CardHeader>
         <CardTitle className="text-base font-bold text-foreground">
@@ -41,6 +43,9 @@ export const SuccessRateChart = ({
                 endAngle={-270}
                 paddingAngle={0}
                 dataKey="value"
+                isAnimationActive={true}
+                animationDuration={1500}
+                animationEasing="ease-out"
               >
                 {data.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index]} />
@@ -82,5 +87,6 @@ export const SuccessRateChart = ({
         </div>
       </CardContent>
     </Card>
+    </ScrollReveal>
   );
 };

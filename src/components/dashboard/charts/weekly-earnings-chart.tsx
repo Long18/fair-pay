@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 
 interface WeeklyEarningsChartProps {
@@ -20,6 +21,7 @@ export const WeeklyEarningsChart = ({ data }: WeeklyEarningsChartProps) => {
   const chartData = data || defaultData;
 
   return (
+    <ScrollReveal direction="up" delay={0.2}>
     <Card className="border-border">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-base font-semibold text-muted-foreground">
@@ -75,10 +77,15 @@ export const WeeklyEarningsChart = ({ data }: WeeklyEarningsChartProps) => {
               fill="var(--chart-2, oklch(0.678 0.376 213.1))"
               radius={[15, 15, 0, 0]}
               barSize={79}
+              isAnimationActive={true}
+              animationDuration={1500}
+              animationEasing="ease-out"
+              animationBegin={200}
             />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
     </Card>
+    </ScrollReveal>
   );
 };
