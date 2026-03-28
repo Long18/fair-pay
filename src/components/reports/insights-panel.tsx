@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useHaptics } from '@/hooks/use-haptics';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SpendingInsight } from "@/hooks/analytics/use-spending-insights";
+import { themeIntentTones } from "@/lib/theme-intents";
 import {
   TrendingUpIcon,
   TrendingDownIcon,
@@ -12,7 +13,6 @@ import {
   InboxIcon,
   PieChartIcon,
   MinusIcon,
-  ChevronDownIcon,
   ChevronRightIcon,
 } from "@/components/ui/icons";
 
@@ -120,33 +120,13 @@ export function InsightsPanel({
   const getColorClasses = (type: string) => {
     switch (type) {
       case "warning":
-        return {
-          bg: "bg-orange-50 dark:bg-orange-950/20",
-          border: "border-orange-200 dark:border-orange-800",
-          icon: "text-orange-600 dark:text-orange-400",
-          text: "text-orange-900 dark:text-orange-100",
-        };
+        return themeIntentTones.warning;
       case "success":
-        return {
-          bg: "bg-green-50 dark:bg-green-950/20",
-          border: "border-green-200 dark:border-green-800",
-          icon: "text-green-600 dark:text-green-400",
-          text: "text-green-900 dark:text-green-100",
-        };
+        return themeIntentTones.success;
       case "trend":
-        return {
-          bg: "bg-blue-50 dark:bg-blue-950/20",
-          border: "border-blue-200 dark:border-blue-800",
-          icon: "text-blue-600 dark:text-blue-400",
-          text: "text-blue-900 dark:text-blue-100",
-        };
+        return themeIntentTones.info;
       default:
-        return {
-          bg: "bg-muted",
-          border: "border-border",
-          icon: "text-muted-foreground",
-          text: "text-foreground",
-        };
+        return themeIntentTones.neutral;
     }
   };
 
@@ -189,7 +169,7 @@ export function InsightsPanel({
               return (
                 <div
                   key={insight.id}
-                  className={`flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border ${colors.bg} ${colors.border}`}
+                  className={`flex items-start gap-2 sm:gap-3 rounded-lg border p-2 sm:p-3 ${colors.surface} ${colors.border}`}
                 >
                   <div className={`mt-0.5 flex-shrink-0 ${colors.icon}`}>
                     {getIcon(insight.icon, insight.type)}

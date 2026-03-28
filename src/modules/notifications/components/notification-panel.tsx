@@ -41,7 +41,7 @@ export const NotificationPanel = () => {
     >
       <BellIcon className="h-4 w-4 md:h-5 md:w-5" />
       {unreadCount > 0 && (
-        <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 dark:bg-red-600 text-[10px] font-bold text-white animate-in zoom-in-50 duration-200">
+        <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-status-error-border bg-status-error text-[10px] font-bold text-destructive-foreground animate-in zoom-in-50 duration-200">
           {unreadCount > 99 ? "99+" : unreadCount}
         </span>
       )}

@@ -34,14 +34,15 @@ import { JourneySourceNode } from "./JourneySourceNode";
 import { JourneyEdge } from "./JourneyEdge";
 import { JourneyNodeDetail } from "./JourneyNodeDetail";
 import { useJourneyGraph } from "./use-journey-graph";
+import { journeyPalette } from "./journey-theme";
 
 const nodeTypes = { journey: JourneyNode, source: JourneySourceNode } as const;
 const edgeTypes = { journey: JourneyEdge } as const;
 
 const CANVAS_STYLES = `
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(182,160,255,0.4), 0 0 40px rgba(119,161,255,0.2); }
-  50% { box-shadow: 0 0 30px rgba(182,160,255,0.65), 0 0 60px rgba(119,161,255,0.35); }
+  0%, 100% { box-shadow: 0 0 18px color-mix(in oklch, var(--primary) 22%, transparent); }
+  50% { box-shadow: 0 0 28px color-mix(in oklch, var(--primary) 34%, transparent); }
 }
 .journey-node-glow {
   animation: pulse-glow 2s ease-in-out infinite;
@@ -62,11 +63,17 @@ function CanvasToolbar({ showMinimap, onToggleMinimap }: { showMinimap: boolean;
   const { zoomIn, zoomOut, fitView } = useReactFlow();
 
   return (
-    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 p-1.5 bg-[#131313]/60 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl">
+    <div
+      className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border p-1.5 shadow-2xl backdrop-blur-xl"
+      style={{
+        backgroundColor: "color-mix(in oklch, var(--card) 72%, transparent)",
+        borderColor: "color-mix(in oklch, var(--border) 70%, transparent)",
+      }}
+    >
       <button
         type="button"
         onClick={() => zoomIn({ duration: 200 })}
-        className="w-9 h-9 flex items-center justify-center rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-all"
+        className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
         title="Phóng to"
       >
         <ZoomInIcon size={18} />
@@ -74,16 +81,16 @@ function CanvasToolbar({ showMinimap, onToggleMinimap }: { showMinimap: boolean;
       <button
         type="button"
         onClick={() => zoomOut({ duration: 200 })}
-        className="w-9 h-9 flex items-center justify-center rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-all"
+        className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
         title="Thu nhỏ"
       >
         <ZoomOutIcon size={18} />
       </button>
-      <div className="w-px h-4 bg-white/10 mx-0.5" />
+      <div className="mx-0.5 h-4 w-px bg-border/80" />
       <button
         type="button"
         onClick={() => fitView({ duration: 300, padding: 0.2 })}
-        className="w-9 h-9 flex items-center justify-center rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-all"
+        className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
         title="Fit view"
       >
         <MaximizeIcon size={18} />
@@ -91,8 +98,8 @@ function CanvasToolbar({ showMinimap, onToggleMinimap }: { showMinimap: boolean;
       <button
         type="button"
         onClick={onToggleMinimap}
-        className={`w-9 h-9 flex items-center justify-center rounded-full transition-all ${
-          showMinimap ? "text-violet-300 bg-white/10" : "text-white/50 hover:text-white hover:bg-white/10"
+        className={`flex h-9 w-9 items-center justify-center rounded-full transition-all ${
+          showMinimap ? "bg-primary/12 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
         }`}
         title="Minimap"
       >
@@ -151,7 +158,7 @@ function CanvasInner({ userId, sessionId, fromIso, toIso, eventNames, sourceName
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-[680px] bg-[#0e0e0e] rounded-lg text-white/50">
+      <div className="flex h-[680px] items-center justify-center rounded-lg border bg-surface-overlay text-muted-foreground">
         <Loader2Icon className="mr-2 h-5 w-5 animate-spin" />
         Đang tải journey graph...
       </div>
@@ -160,14 +167,14 @@ function CanvasInner({ userId, sessionId, fromIso, toIso, eventNames, sourceName
 
   if (nodes.length === 0) {
     return (
-      <div className="flex items-center justify-center h-[680px] bg-[#0e0e0e] rounded-lg">
+      <div className="flex h-[680px] items-center justify-center rounded-lg border bg-surface-overlay">
         <Empty className="min-h-[320px]">
           <EmptyMedia variant="icon">
-            <ActivityIcon className="h-6 w-6 text-white/40" />
+            <ActivityIcon className="h-6 w-6 text-muted-foreground" />
           </EmptyMedia>
           <EmptyHeader>
-            <EmptyTitle className="text-white/70">Chưa có dữ liệu journey</EmptyTitle>
-            <EmptyDescription className="text-white/40">
+            <EmptyTitle>Chưa có dữ liệu journey</EmptyTitle>
+            <EmptyDescription>
               Không tìm thấy dữ liệu trong khoảng thời gian đã chọn.
             </EmptyDescription>
           </EmptyHeader>
@@ -178,7 +185,7 @@ function CanvasInner({ userId, sessionId, fromIso, toIso, eventNames, sourceName
   }
 
   return (
-    <div className="relative h-[680px] bg-[#0e0e0e] rounded-lg overflow-hidden border border-white/5">
+    <div className="relative h-[680px] overflow-hidden rounded-lg border bg-surface-overlay">
       <style>{CANVAS_STYLES}</style>
       <ReactFlow
         nodes={rfNodes}
@@ -203,21 +210,21 @@ function CanvasInner({ userId, sessionId, fromIso, toIso, eventNames, sourceName
           variant={BackgroundVariant.Dots}
           gap={16}
           size={1}
-          color="rgba(255,255,255,0.07)"
-          style={{ backgroundColor: "#0e0e0e" }}
+          color="color-mix(in oklch, var(--border) 50%, transparent)"
+          style={{ backgroundColor: journeyPalette.canvas }}
         />
         {showMinimap && (
           <MiniMap
             nodeColor={(node) => {
               const d = node.data as Record<string, unknown>;
-              if (node.type === "source") return "#f59e0b";
-              return d?.isLastSeen ? "#b6a0ff" : "#4a4a5a";
+              if (node.type === "source") return journeyPalette.source;
+              return d?.isLastSeen ? journeyPalette.highlight : journeyPalette.neutral;
             }}
             nodeStrokeWidth={3}
             nodeBorderRadius={8}
-            maskColor="rgba(0,0,0,0.7)"
+            maskColor={journeyPalette.minimapMask}
             style={{ width: 160, height: 120 }}
-            className="!bg-[#131313] !border-white/10"
+            className="!border-border/70 !bg-card/90"
             pannable
             zoomable
           />

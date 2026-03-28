@@ -1,9 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SpendingSummary } from '@/hooks/analytics/use-spending-summary';
 import { formatNumber } from '@/lib/locale-utils';
+import { themeIntentTones } from '@/lib/theme-intents';
 import { useTranslation } from 'react-i18next';
 
-import { TrendingUpIcon, TrendingDownIcon, ReceiptIcon, CreditCardIcon, ArrowUpDownIcon } from "@/components/ui/icons";
+import { TrendingUpIcon, TrendingDownIcon, ReceiptIcon, ArrowUpDownIcon } from "@/components/ui/icons";
 interface SpendingSummaryStatsProps {
   summary: SpendingSummary;
 }
@@ -31,10 +32,10 @@ export function SpendingSummaryStats({ summary }: SpendingSummaryStatsProps) {
       <Card className="border-border shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-xs sm:text-sm font-medium">{t('reports.totalReceived')}</CardTitle>
-          <TrendingUpIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
+          <TrendingUpIcon className={`h-4 w-4 ${themeIntentTones.success.icon}`} />
         </CardHeader>
         <CardContent>
-          <div className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400 tabular-nums">
+          <div className={`text-xl sm:text-2xl font-bold tabular-nums ${themeIntentTones.success.icon}`}>
             {formatNumber(summary.totalReceived)} ₫
           </div>
           <p className="text-xs text-muted-foreground mt-1">
@@ -49,7 +50,7 @@ export function SpendingSummaryStats({ summary }: SpendingSummaryStatsProps) {
           <ArrowUpDownIcon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className={`text-xl sm:text-2xl font-bold tabular-nums ${summary.netBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+          <div className={`text-xl sm:text-2xl font-bold tabular-nums ${summary.netBalance >= 0 ? themeIntentTones.success.icon : 'text-destructive'}`}>
             {summary.netBalance >= 0 ? '+' : ''}{formatNumber(summary.netBalance)} ₫
           </div>
           <p className="text-xs text-muted-foreground mt-1">

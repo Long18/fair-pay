@@ -2,6 +2,7 @@ import { memo } from "react";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
 import { Eye, MousePointerClick, FileText, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { journeyGradient, journeyMutedGradient, journeyPalette } from "./journey-theme";
 
 export type JourneyNodeData = {
   pagePath: string;
@@ -23,29 +24,28 @@ function formatDuration(seconds: number | null): string {
 }
 
 const EVENT_ICON_MAP: Record<string, React.ReactNode> = {
-  page_view: <Eye size={12} className="text-violet-300" />,
-  click: <MousePointerClick size={12} className="text-blue-300" />,
-  form: <FileText size={12} className="text-emerald-300" />,
+  page_view: <Eye size={12} className="text-primary" />,
+  click: <MousePointerClick size={12} className="text-status-info" />,
+  form: <FileText size={12} className="text-semantic-positive" />,
 };
 
 function getEventIcon(eventType: string): React.ReactNode {
   for (const [key, icon] of Object.entries(EVENT_ICON_MAP)) {
     if (eventType.toLowerCase().includes(key)) return icon;
   }
-  return <Eye size={12} className="text-white/40" />;
+  return <Eye size={12} className="text-muted-foreground" />;
 }
 
 const handleStyle: React.CSSProperties = {
   width: 8,
   height: 8,
-  background: "rgba(255,255,255,0.15)",
-  border: "1px solid rgba(255,255,255,0.25)",
+  background: "color-mix(in oklch, var(--card) 85%, transparent)",
+  border: "1px solid color-mix(in oklch, var(--border) 88%, transparent)",
   borderRadius: "50%",
 };
 
 const PULSE_GLOW_STYLE: React.CSSProperties = {
-  boxShadow:
-    "0 0 20px rgba(182,160,255,0.4), 0 0 40px rgba(119,161,255,0.2)",
+  boxShadow: journeyPalette.highlightShadow,
 };
 
 export const JourneyNode = memo(function JourneyNode({
@@ -84,21 +84,22 @@ export const JourneyNode = memo(function JourneyNode({
 
       <div
         className={[
-          "backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl shadow-2xl overflow-hidden",
+          "overflow-hidden rounded-xl border bg-card/90 shadow-2xl backdrop-blur-xl",
           "min-w-[240px] max-w-[300px] select-none",
-          isLastSeen ? "journey-node-glow border-violet-400/40" : "",
+          isLastSeen ? "journey-node-glow border-primary/40" : "border-border/70",
         ]
           .filter(Boolean)
           .join(" ")}
-        style={isLastSeen ? PULSE_GLOW_STYLE : undefined}
+        style={{
+          ...(isLastSeen ? PULSE_GLOW_STYLE : undefined),
+          boxShadow: isLastSeen ? journeyPalette.highlightShadow : journeyPalette.softShadow,
+        }}
       >
         {/* Top gradient bar */}
         <div
           className="h-0.5 w-full"
           style={{
-            background: isLastSeen
-              ? "linear-gradient(90deg, #b6a0ff 0%, #77a1ff 100%)"
-              : "linear-gradient(90deg, rgba(182,160,255,0.4) 0%, rgba(119,161,255,0.2) 100%)",
+            background: isLastSeen ? journeyGradient : journeyMutedGradient,
           }}
         />
 
@@ -107,7 +108,7 @@ export const JourneyNode = memo(function JourneyNode({
           <div className="flex items-start justify-between gap-2 mb-2">
             <div className="flex-1 min-w-0">
               <p
-                className="text-white/90 text-xs font-mono font-medium leading-snug break-all"
+                className="break-all text-xs font-mono font-medium leading-snug text-foreground"
                 title={pagePath}
               >
                 {pagePath}
@@ -121,13 +122,13 @@ export const JourneyNode = memo(function JourneyNode({
                   e.stopPropagation();
                   window.open(pagePath, "_blank", "noopener,noreferrer");
                 }}
-                className="text-white/30 hover:text-white/70 transition-colors"
+                className="text-muted-foreground transition-colors hover:text-foreground"
               >
                 <ExternalLink size={12} />
               </button>
               <Badge
                 variant="secondary"
-                className="bg-white/10 text-white/70 border-white/10 text-[10px] px-1.5 py-0"
+                className="border-border/70 bg-muted text-[10px] text-muted-foreground"
               >
                 {visitCount}
               </Badge>
@@ -135,7 +136,7 @@ export const JourneyNode = memo(function JourneyNode({
           </div>
 
           {/* Duration + time */}
-          <div className="flex items-center justify-between text-[11px] text-white/50 mb-3">
+          <div className="mb-3 flex items-center justify-between text-[11px] text-muted-foreground">
             <span>{formatDuration(avgDurationSeconds)}</span>
             <span>{relativeTime}</span>
           </div>
@@ -147,16 +148,16 @@ export const JourneyNode = memo(function JourneyNode({
                 <span
                   key={i}
                   title={et}
-                  className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-md px-1.5 py-0.5"
+                  className="flex items-center gap-1 rounded-md border border-border/70 bg-muted/70 px-1.5 py-0.5"
                 >
                   {getEventIcon(et)}
-                  <span className="text-[10px] text-white/40 leading-none">
+                  <span className="text-[10px] leading-none text-muted-foreground">
                     {et.length > 12 ? et.slice(0, 12) + "…" : et}
                   </span>
                 </span>
               ))}
               {eventTypes.length > 6 && (
-                <span className="text-[10px] text-white/30">
+                <span className="text-[10px] text-muted-foreground">
                   +{eventTypes.length - 6}
                 </span>
               )}
@@ -166,8 +167,8 @@ export const JourneyNode = memo(function JourneyNode({
           {/* Last-seen indicator */}
           {isLastSeen && (
             <div className="mt-3 flex items-center gap-1.5">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
-              <span className="text-[10px] text-violet-300/80 font-medium">
+              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+              <span className="text-[10px] font-medium text-primary">
                 Last seen here
               </span>
             </div>

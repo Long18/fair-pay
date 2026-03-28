@@ -37,6 +37,8 @@ import { Badge } from "@/components/ui/badge";
 import type { AdminStats } from "../types";
 
 import { formatNumber } from "@/lib/locale-utils";
+import { getCategoryMeta } from "@/modules/expenses";
+import { themeIntentTones, type ThemeIntent } from "@/lib/theme-intents";
 
 // ─── Latest Tracked Users ────────────────────────────────────────────
 
@@ -87,7 +89,7 @@ function TrendIndicator({ value, isPositive }: { value: number; isPositive: bool
     );
   }
   const Icon = isPositive ? ArrowUpIcon : ArrowDownIcon;
-  const colorClass = isPositive ? "text-emerald-600" : "text-red-500";
+  const colorClass = isPositive ? themeIntentTones.success.icon : themeIntentTones.danger.icon;
   return (
     <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${colorClass}`}>
       <Icon size={12} />
@@ -123,25 +125,12 @@ function StatCardSkeleton() {
 // ─── Stat Card Config ───────────────────────────────────────────────
 
 const STAT_CARDS = [
-  { key: "totalUsers", label: "Tổng người dùng", icon: UsersIcon, color: "bg-blue-500/10 text-blue-500" },
-  { key: "totalGroups", label: "Tổng nhóm", icon: GroupIcon, color: "bg-violet-500/10 text-violet-500" },
-  { key: "totalExpenses", label: "Tổng chi phí", icon: ReceiptIcon, color: "bg-amber-500/10 text-amber-500" },
-  { key: "totalPayments", label: "Tổng thanh toán", icon: CreditCardIcon, color: "bg-emerald-500/10 text-emerald-500" },
-  { key: "activeUsersLast7Days", label: "Hoạt động 7 ngày", icon: ActivityIcon, color: "bg-pink-500/10 text-pink-500" },
+  { key: "totalUsers", label: "Tổng người dùng", icon: UsersIcon, tone: "brand" },
+  { key: "totalGroups", label: "Tổng nhóm", icon: GroupIcon, tone: "chart2" },
+  { key: "totalExpenses", label: "Tổng chi phí", icon: ReceiptIcon, tone: "accent" },
+  { key: "totalPayments", label: "Tổng thanh toán", icon: CreditCardIcon, tone: "success" },
+  { key: "activeUsersLast7Days", label: "Hoạt động 7 ngày", icon: ActivityIcon, tone: "chart5" },
 ] as const;
-
-// ─── Chart Colors ───────────────────────────────────────────────────
-
-const CATEGORY_COLORS = [
-  "oklch(0.598 0.365 217.2)", // blue
-  "oklch(0.65 0.15 160)",     // green
-  "oklch(0.531 0.380 24.6)",  // orange
-  "oklch(0.65 0.22 300)",     // purple
-  "oklch(0.556 0 0)",         // gray
-  "oklch(0.75 0.15 80)",      // yellow
-  "oklch(0.65 0.22 340)",     // pink
-  "oklch(0.577 0.245 27.325)",// red
-];
 
 // ─── Data Hooks ─────────────────────────────────────────────────────
 
@@ -258,10 +247,10 @@ function useCategoryBreakdown() {
       }
 
       return Object.entries(grouped)
-        .map(([category, amount], i) => ({
+        .map(([category, amount]) => ({
           category,
           amount,
-          fill: CATEGORY_COLORS[i % CATEGORY_COLORS.length],
+          fill: getCategoryMeta(category).chartColor,
         }))
         .sort((a, b) => b.amount - a.amount);
     },
@@ -281,7 +270,7 @@ const expenseChartConfig = {
 const registrationChartConfig = {
   count: {
     label: "Đăng ký mới",
-    color: "oklch(0.65 0.15 160)", // success green
+    color: "var(--chart-positive)",
   },
 } satisfies ChartConfig;
 
@@ -296,11 +285,11 @@ export function AdminOverview() {
 
   // Build pie chart config dynamically
   const categoryChartConfig: ChartConfig = (categories ?? []).reduce(
-    (cfg, item, i) => {
+    (cfg, item) => {
       const key = item.category.toLowerCase().replace(/[^a-z0-9]/g, "_");
       cfg[key] = {
         label: item.category,
-        color: CATEGORY_COLORS[i % CATEGORY_COLORS.length],
+        color: item.fill,
       };
       return cfg;
     },
@@ -349,7 +338,7 @@ export function AdminOverview() {
                 <Card key={card.key} className="p-6">
                   <div className="flex items-center gap-4">
                     <div
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${card.color}`}
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${themeIntentTones[card.tone as ThemeIntent].surface} ${themeIntentTones[card.tone as ThemeIntent].icon}`}
                     >
                       <Icon className="h-5 w-5" />
                     </div>

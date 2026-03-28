@@ -1,5 +1,6 @@
 import { CarIcon, HomeIcon, ZapIcon, HeartIcon, MoreHorizontalIcon, UtensilsIcon, MonitorIcon, ShoppingCartIcon, BriefcaseIcon } from "@/components/ui/icons";
 import type { IconProps } from "@/components/ui/icons";
+import { themeIntentTones, type ThemeIntent } from "@/lib/theme-intents";
 import React from "react";
 
 export interface CategoryMeta {
@@ -7,6 +8,8 @@ export interface CategoryMeta {
   icon: React.FC<IconProps>;
   color: string;
   bgColor: string;
+  tone: ThemeIntent;
+  chartColor: string;
 }
 
 /**
@@ -26,56 +29,74 @@ export const CATEGORY_CONFIG: Record<string, CategoryMeta> = {
   'Food & Drink': {
     name: 'Food & Drink',
     icon: UtensilsIcon,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-100',
+    color: themeIntentTones.accent.icon,
+    bgColor: themeIntentTones.accent.surface,
+    tone: 'accent',
+    chartColor: themeIntentTones.accent.chartColor,
   },
   'Transportation': {
     name: 'Transportation',
     icon: CarIcon,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-100',
+    color: themeIntentTones.brand.icon,
+    bgColor: themeIntentTones.brand.surface,
+    tone: 'brand',
+    chartColor: themeIntentTones.brand.chartColor,
   },
   'Accommodation': {
     name: 'Accommodation',
     icon: HomeIcon,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-100',
+    color: themeIntentTones.chart2.icon,
+    bgColor: themeIntentTones.chart2.surface,
+    tone: 'chart2',
+    chartColor: themeIntentTones.chart2.chartColor,
   },
   'Entertainment': {
     name: 'Entertainment',
     icon: MonitorIcon,
-    color: 'text-pink-600',
-    bgColor: 'bg-pink-100',
+    color: themeIntentTones.chart5.icon,
+    bgColor: themeIntentTones.chart5.surface,
+    tone: 'chart5',
+    chartColor: themeIntentTones.chart5.chartColor,
   },
   'Shopping': {
     name: 'Shopping',
     icon: ShoppingCartIcon,
-    color: 'text-green-600',
-    bgColor: 'bg-green-100',
+    color: themeIntentTones.success.icon,
+    bgColor: themeIntentTones.success.surface,
+    tone: 'success',
+    chartColor: themeIntentTones.success.chartColor,
   },
   'Utilities': {
     name: 'Utilities',
     icon: ZapIcon,
-    color: 'text-yellow-600',
-    bgColor: 'bg-yellow-100',
+    color: themeIntentTones.warning.icon,
+    bgColor: themeIntentTones.warning.surface,
+    tone: 'warning',
+    chartColor: themeIntentTones.warning.chartColor,
   },
   'Healthcare': {
     name: 'Healthcare',
     icon: HeartIcon,
-    color: 'text-red-600',
-    bgColor: 'bg-red-100',
+    color: themeIntentTones.danger.icon,
+    bgColor: themeIntentTones.danger.surface,
+    tone: 'danger',
+    chartColor: themeIntentTones.danger.chartColor,
   },
   'Education': {
     name: 'Education',
     icon: BriefcaseIcon,
-    color: 'text-indigo-600',
-    bgColor: 'bg-indigo-100',
+    color: themeIntentTones.info.icon,
+    bgColor: themeIntentTones.info.surface,
+    tone: 'info',
+    chartColor: themeIntentTones.info.chartColor,
   },
   'Other': {
     name: 'Other',
     icon: MoreHorizontalIcon,
-    color: 'text-gray-600',
-    bgColor: 'bg-gray-100',
+    color: themeIntentTones.neutral.icon,
+    bgColor: themeIntentTones.neutral.surface,
+    tone: 'neutral',
+    chartColor: themeIntentTones.neutral.chartColor,
   },
 };
 

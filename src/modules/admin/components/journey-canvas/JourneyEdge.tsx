@@ -5,6 +5,7 @@ import {
   type EdgeProps,
   type Edge,
 } from "@xyflow/react";
+import { journeyPalette } from "./journey-theme";
 
 type JourneyEdgeData = { frequency: number };
 type JourneyEdge = Edge<JourneyEdgeData>;
@@ -36,8 +37,8 @@ function JourneyEdgeComponent({
     <>
       <defs>
         <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#b6a0ff" />
-          <stop offset="100%" stopColor="#77a1ff" />
+          <stop offset="0%" stopColor={journeyPalette.highlight} />
+          <stop offset="100%" stopColor={journeyPalette.highlightAlt} />
         </linearGradient>
       </defs>
       <BaseEdge
@@ -45,7 +46,7 @@ function JourneyEdgeComponent({
         style={{
           stroke: `url(#${gradientId})`,
           strokeWidth,
-          filter: "drop-shadow(0 0 4px rgba(119, 161, 255, 0.3))",
+          filter: "drop-shadow(0 0 4px color-mix(in oklch, var(--primary) 28%, transparent))",
         }}
       />
       <foreignObject
@@ -64,7 +65,7 @@ function JourneyEdgeComponent({
             height: "100%",
           }}
         >
-          <span className="bg-white/10 text-white/60 text-[10px] px-1.5 py-0.5 rounded-full whitespace-nowrap">
+          <span className="whitespace-nowrap rounded-full border border-border/70 bg-card/90 px-1.5 py-0.5 text-[10px] text-muted-foreground">
             {frequency}
           </span>
         </div>
