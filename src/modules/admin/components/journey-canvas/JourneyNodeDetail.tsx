@@ -1,5 +1,6 @@
 import { XIcon, ExternalLink, CalendarClock, BarChart2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { journeyGradient } from "./journey-theme";
 
 interface JourneyNodeDetailData {
   pagePath: string;
@@ -15,14 +16,14 @@ interface JourneyNodeDetailProps {
 }
 
 const EVENT_TYPE_COLORS: Record<string, string> = {
-  page_view: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  nav_click: "bg-violet-500/20 text-violet-300 border-violet-500/30",
-  cta_click: "bg-amber-500/20 text-amber-300 border-amber-500/30",
-  form_submit: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
-  form_success: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  form_error: "bg-red-500/20 text-red-300 border-red-500/30",
-  auth_login: "bg-green-500/20 text-green-300 border-green-500/30",
-  auth_register: "bg-pink-500/20 text-pink-300 border-pink-500/30",
+  page_view: "border-primary/25 bg-primary/10 text-primary",
+  nav_click: "border-chart-2/25 bg-chart-2/10 text-chart-2",
+  cta_click: "border-accent/25 bg-accent/10 text-accent",
+  form_submit: "border-status-info-border bg-status-info-bg text-status-info",
+  form_success: "border-status-success-border bg-status-success-bg text-semantic-positive",
+  form_error: "border-status-error-border bg-status-error-bg text-semantic-negative",
+  auth_login: "border-status-success-border bg-status-success-bg text-semantic-positive",
+  auth_register: "border-chart-5/25 bg-chart-5/10 text-chart-5",
 };
 
 function formatDuration(seconds: number | null): string {
@@ -48,26 +49,26 @@ export function JourneyNodeDetail({ node, onClose }: JourneyNodeDetailProps) {
   if (!node) return null;
 
   return (
-    <div className="absolute top-4 right-4 z-10 w-80 bg-[#1a1a1a]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl animate-in fade-in slide-in-from-right-2 overflow-hidden">
+    <div className="absolute right-4 top-4 z-10 w-80 overflow-hidden rounded-xl border border-border/70 bg-card/95 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-right-2">
       {/* Top accent bar */}
       <div
         className="h-0.5 w-full"
-        style={{ background: "linear-gradient(90deg, #b6a0ff 0%, #77a1ff 100%)" }}
+        style={{ background: journeyGradient }}
       />
 
       <div className="p-5">
         {/* Header */}
         <div className="flex items-start justify-between gap-2 mb-4">
           <div className="flex-1 min-w-0">
-            <p className="text-white/40 text-[10px] uppercase tracking-wider mb-1">Page</p>
+            <p className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">Page</p>
             <div className="flex items-start gap-1.5">
-              <p className="text-white text-sm font-medium leading-snug break-all flex-1">
+              <p className="flex-1 break-all text-sm font-medium leading-snug text-foreground">
                 {node.pagePath}
               </p>
               <button
                 type="button"
                 onClick={() => window.open(node.pagePath, "_blank", "noopener,noreferrer")}
-                className="shrink-0 text-white/30 hover:text-white/70 transition-colors mt-0.5"
+                className="mt-0.5 shrink-0 text-muted-foreground transition-colors hover:text-foreground"
                 title="Mở trang"
               >
                 <ExternalLink size={13} />
@@ -75,8 +76,9 @@ export function JourneyNodeDetail({ node, onClose }: JourneyNodeDetailProps) {
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="shrink-0 text-white/50 hover:text-white/90 transition-colors"
+            className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
             aria-label="Đóng"
           >
             <XIcon size={16} />
@@ -85,15 +87,15 @@ export function JourneyNodeDetail({ node, onClose }: JourneyNodeDetailProps) {
 
         {/* Stats grid */}
         <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="bg-white/5 rounded-lg p-3">
-            <p className="text-white/40 text-xs mb-1">Lượt xem</p>
-            <p className="text-white text-lg font-semibold">
+          <div className="rounded-lg bg-muted/80 p-3">
+            <p className="mb-1 text-xs text-muted-foreground">Lượt xem</p>
+            <p className="text-lg font-semibold text-foreground">
               {node.visitCount.toLocaleString("vi-VN")}
             </p>
           </div>
-          <div className="bg-white/5 rounded-lg p-3">
-            <p className="text-white/40 text-xs mb-1">Thời gian TB</p>
-            <p className="text-white text-lg font-semibold">
+          <div className="rounded-lg bg-muted/80 p-3">
+            <p className="mb-1 text-xs text-muted-foreground">Thời gian TB</p>
+            <p className="text-lg font-semibold text-foreground">
               {formatDuration(node.avgDurationSeconds)}
             </p>
           </div>
@@ -103,8 +105,8 @@ export function JourneyNodeDetail({ node, onClose }: JourneyNodeDetailProps) {
         {node.eventTypes.length > 0 && (
           <div className="mb-4">
             <div className="flex items-center gap-1.5 mb-2">
-              <BarChart2 size={12} className="text-white/40" />
-              <p className="text-white/40 text-xs">Loại event ({node.eventTypes.length})</p>
+              <BarChart2 size={12} className="text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">Loại event ({node.eventTypes.length})</p>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {node.eventTypes.map((type) => {
@@ -127,18 +129,18 @@ export function JourneyNodeDetail({ node, onClose }: JourneyNodeDetailProps) {
 
         {/* Last visited */}
         <div className="flex items-center gap-1.5 mb-3">
-          <CalendarClock size={12} className="text-white/40" />
-          <p className="text-white/40 text-xs">Lần cuối</p>
+          <CalendarClock size={12} className="text-muted-foreground" />
+          <p className="text-xs text-muted-foreground">Lần cuối</p>
         </div>
-        <p className="text-white/80 text-sm mb-4">
+        <p className="mb-4 text-sm text-foreground">
           {formatLastVisited(node.lastVisitedAt)}
         </p>
 
         {/* Timeline hint */}
-        <div className="border-t border-white/5 pt-3">
-          <p className="text-white/30 text-[11px] leading-relaxed">
+        <div className="border-t border-border/70 pt-3">
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
             Xem toàn bộ metadata và raw events tại tab{" "}
-            <span className="text-violet-300/70 font-medium">Timeline</span>.
+            <span className="font-medium text-primary">Timeline</span>.
           </p>
         </div>
       </div>
