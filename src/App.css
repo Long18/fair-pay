@@ -274,6 +274,7 @@ html.lenis, html.lenis body {
 
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./styles/viewport-transitions.css";
 
 @custom-variant dark (&:is(.dark *));
 

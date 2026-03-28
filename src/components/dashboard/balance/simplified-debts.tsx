@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
+import { AnimatedList } from "@/components/ui/animated-list";
+import { AnimatedRow } from "@/components/ui/animated-row";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -128,16 +130,17 @@ export const SimplifiedDebts: React.FC<SimplifiedDebtsProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="px-3 sm:px-6">
-        <div className="space-y-1.5">
-          {paginatedDebts.map((debt) => (
-            <DebtRow
-              key={debt.counterparty_id || debt.counterparty_email || debt.counterparty_name}
-              debt={debt}
-              isExpanded={expandedId === (debt.counterparty_id || debt.counterparty_email || debt.counterparty_name)}
-              onToggle={() => toggleExpand(debt.counterparty_id || debt.counterparty_email || debt.counterparty_name)}
-            />
+        <AnimatedList items={paginatedDebts} className="space-y-1.5">
+          {paginatedDebts.map((debt, index) => (
+            <AnimatedRow key={debt.counterparty_id || debt.counterparty_email || debt.counterparty_name} index={index}>
+              <DebtRow
+                debt={debt}
+                isExpanded={expandedId === (debt.counterparty_id || debt.counterparty_email || debt.counterparty_name)}
+                onToggle={() => toggleExpand(debt.counterparty_id || debt.counterparty_email || debt.counterparty_name)}
+              />
+            </AnimatedRow>
           ))}
-        </div>
+        </AnimatedList>
         {totalPages > 1 && (
           <div className="mt-4 pt-4 border-t">
             <PaginationControls
