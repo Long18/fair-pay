@@ -5,14 +5,11 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
+import packageJson from "../package.json" with { type: "json" };
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const projectRoot = resolve(__dirname, "..");
-const baseVersionFilePath = resolve(
-  projectRoot,
-  "src/lib/build-info/base-version.ts"
-);
 const versionOutputPath = resolve(projectRoot, "dist/version.json");
 const BUILD_INFO_TIMEZONE = "Asia/Ho_Chi_Minh";
 
@@ -71,16 +68,11 @@ function formatLocalVersion(baseVersion, localStamp) {
 }
 
 async function readBaseVersion() {
-  const fileContents = await readFile(baseVersionFilePath, "utf8");
-  const match = fileContents.match(/APP_BASE_VERSION\s*=\s*"(?<version>\d+\.\d+\.\d+)"/);
-
-  if (!match?.groups?.version) {
-    throw new Error(
-      `Unable to read APP_BASE_VERSION from ${baseVersionFilePath}`
-    );
+  if (typeof packageJson.version !== "string" || packageJson.version.length === 0) {
+    throw new Error("Unable to read version from package.json");
   }
 
-  return match.groups.version;
+  return packageJson.version;
 }
 
 function resolveChannel() {

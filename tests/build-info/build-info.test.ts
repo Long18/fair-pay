@@ -9,8 +9,13 @@ import {
   parseBuildVersion,
 } from "@/lib/build-info";
 import { describe, expect, it } from "vitest";
+import packageJson from "../../package.json";
 
 describe("build-info utilities", () => {
+  it("uses package.json as the single source of truth for the base version", () => {
+    expect(APP_BASE_VERSION).toBe(packageJson.version);
+  });
+
   it("formats Vietnam timezone date parts and builtAt", () => {
     const referenceDate = new Date("2026-03-12T17:15:00.000Z");
 
@@ -31,7 +36,7 @@ describe("build-info utilities", () => {
         dateCode: "260313",
         sequence: 1,
       })
-    ).toBe("1.0.1-26031301");
+    ).toBe(`${APP_BASE_VERSION}-26031301`);
   });
 
   it("keeps expanding digits when the sequence exceeds 99", () => {
@@ -42,13 +47,13 @@ describe("build-info utilities", () => {
         dateCode: "260313",
         sequence: 100,
       })
-    ).toBe("1.0.1-260313100");
+    ).toBe(`${APP_BASE_VERSION}-260313100`);
   });
 
   it("parses deployed build versions", () => {
-    expect(parseBuildVersion("1.0.1-26031301")).toEqual({
+    expect(parseBuildVersion(`${APP_BASE_VERSION}-26031301`)).toEqual({
       kind: "deployed",
-      baseVersion: "1.0.1",
+      baseVersion: APP_BASE_VERSION,
       dateCode: "260313",
       sequence: 1,
     });
@@ -60,10 +65,10 @@ describe("build-info utilities", () => {
       localStamp: "2603130915",
     });
 
-    expect(version).toBe("1.0.1-local-2603130915");
+    expect(version).toBe(`${APP_BASE_VERSION}-local-2603130915`);
     expect(parseBuildVersion(version)).toEqual({
       kind: "local",
-      baseVersion: "1.0.1",
+      baseVersion: APP_BASE_VERSION,
       localStamp: "2603130915",
     });
   });
@@ -71,8 +76,8 @@ describe("build-info utilities", () => {
   it("coerces a build info payload", () => {
     expect(
       coerceBuildInfo({
-        version: "1.0.1-26031301",
-        baseVersion: "1.0.1",
+        version: `${APP_BASE_VERSION}-26031301`,
+        baseVersion: APP_BASE_VERSION,
         dateCode: "260313",
         sequence: 1,
         channel: "production",
@@ -81,8 +86,8 @@ describe("build-info utilities", () => {
         commitSha: "abcdef1",
       })
     ).toEqual({
-      version: "1.0.1-26031301",
-      baseVersion: "1.0.1",
+      version: `${APP_BASE_VERSION}-26031301`,
+      baseVersion: APP_BASE_VERSION,
       dateCode: "260313",
       sequence: 1,
       channel: "production",
