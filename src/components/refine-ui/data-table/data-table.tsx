@@ -4,7 +4,10 @@ import type { BaseRecord, HttpError } from "@refinedev/core";
 import type { UseTableReturnType } from "@refinedev/react-table";
 import type { Column } from "@tanstack/react-table";
 import { flexRender } from "@tanstack/react-table";
+import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
+
+import { useStaggerAnimation } from "@/hooks/ui/use-stagger-animation";
 
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import {
@@ -40,6 +43,9 @@ export function DataTable<TData extends BaseRecord>({
   const columns = getAllColumns();
   const leafColumns = table.reactTable.getAllLeafColumns();
   const isLoading = tableQuery.isLoading;
+
+  const rows = getRowModel().rows;
+  const { containerVariants, rowVariants, animationKey } = useStaggerAnimation(rows);
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLTableElement>(null);
@@ -81,39 +87,39 @@ export function DataTable<TData extends BaseRecord>({
   return (
     <div className={cn("flex", "flex-col", "flex-1", "gap-4", "min-w-0")}>
       <div ref={tableContainerRef} className={cn("rounded-md", "border", "overflow-x-auto")}>
-        <Table ref={tableRef} style={{ tableLayout: "fixed", width: "100%" }}>
-          <TableHeader>
-            {getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  const isPlaceholder = header.isPlaceholder;
+        {isLoading ? (
+          <Table ref={tableRef} style={{ tableLayout: "fixed", width: "100%" }}>
+            <TableHeader>
+              {getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    const isPlaceholder = header.isPlaceholder;
 
-                  return (
-                    <TableHead
-                      key={header.id}
-                      style={{
-                        ...getCommonStyles({
-                          column: header.column,
-                          isOverflowing: isOverflowing,
-                        }),
-                      }}
-                    >
-                      {isPlaceholder ? null : (
-                        <div className={cn("flex", "items-center", "gap-1")}>
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                        </div>
-                      )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody className="relative">
-            {isLoading ? (
+                    return (
+                      <TableHead
+                        key={header.id}
+                        style={{
+                          ...getCommonStyles({
+                            column: header.column,
+                            isOverflowing: isOverflowing,
+                          }),
+                        }}
+                      >
+                        {isPlaceholder ? null : (
+                          <div className={cn("flex", "items-center", "gap-1")}>
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                          </div>
+                        )}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody className="relative">
               <>
                 {Array.from({ length: pageSize < 1 ? 1 : pageSize }).map(
                   (_, rowIndex) => (
@@ -159,15 +165,57 @@ export function DataTable<TData extends BaseRecord>({
                   </TableCell>
                 </TableRow>
               </>
-            ) : getRowModel().rows?.length ? (
-              getRowModel().rows.map((row) => {
-                return (
-                  <TableRow
-                    key={row.original?.id ?? row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
-                    {row.getVisibleCells().map((cell) => {
+            </TableBody>
+          </Table>
+        ) : (
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            key={animationKey}
+          >
+            <Table ref={tableRef} style={{ tableLayout: "fixed", width: "100%" }}>
+              <TableHeader>
+                {getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => {
+                      const isPlaceholder = header.isPlaceholder;
+
                       return (
+                        <TableHead
+                          key={header.id}
+                          style={{
+                            ...getCommonStyles({
+                              column: header.column,
+                              isOverflowing: isOverflowing,
+                            }),
+                          }}
+                        >
+                          {isPlaceholder ? null : (
+                            <div className={cn("flex", "items-center", "gap-1")}>
+                              {flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                            </div>
+                          )}
+                        </TableHead>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody className="relative">
+                {rows.length ? (
+                  rows.map((row, index) => (
+                    <motion.tr
+                      key={row.original?.id ?? row.id}
+                      variants={rowVariants}
+                      custom={index}
+                      data-state={row.getIsSelected() && "selected"}
+                      className="hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors"
+                    >
+                      {row.getVisibleCells().map((cell) => (
                         <TableCell
                           key={cell.id}
                           style={{
@@ -184,19 +232,19 @@ export function DataTable<TData extends BaseRecord>({
                             )}
                           </div>
                         </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                );
-              })
-            ) : (
-              <DataTableNoData
-                isOverflowing={isOverflowing}
-                columnsLength={columns.length}
-              />
-            )}
-          </TableBody>
-        </Table>
+                      ))}
+                    </motion.tr>
+                  ))
+                ) : (
+                  <DataTableNoData
+                    isOverflowing={isOverflowing}
+                    columnsLength={columns.length}
+                  />
+                )}
+              </TableBody>
+            </Table>
+          </motion.div>
+        )}
       </div>
       {!isLoading && getRowModel().rows?.length > 0 && (
         <DataTablePagination

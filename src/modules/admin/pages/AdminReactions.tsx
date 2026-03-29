@@ -1,5 +1,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import { useStaggerAnimation } from "@/hooks/ui/use-stagger-animation";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -393,6 +395,8 @@ export function AdminReactions() {
 
   const activeCount = useMemo(() => (items ?? []).filter((i) => i.is_active).length, [items]);
 
+  const { containerVariants, rowVariants, animationKey } = useStaggerAnimation(items ?? []);
+
   return (
     <div className="space-y-6">
       {/* Stats */}
@@ -451,61 +455,73 @@ export function AdminReactions() {
 
           {!isLoading && items && items.length > 0 && (
             <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="w-[60px]">Thứ tự</TableHead>
-                    <TableHead className="w-[60px]">Preview</TableHead>
-                    <TableHead className="w-[120px]">Code</TableHead>
-                    <TableHead>Label</TableHead>
-                    <TableHead className="w-[90px]">Loại</TableHead>
-                    <TableHead className="w-[90px]">Trạng thái</TableHead>
-                    <TableHead className="w-[100px] text-right">Thao tác</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((item) => (
-                    <TableRow key={item.id} className="group">
-                      <TableCell className="text-sm text-muted-foreground tabular-nums">{item.sort_order}</TableCell>
-                      <TableCell><ReactionPreview item={item} /></TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="font-mono text-xs">{item.code}</Badge>
-                      </TableCell>
-                      <TableCell className="text-sm">{item.label}</TableCell>
-                      <TableCell>
-                        <Badge
-                          className={
-                            item.media_type === "emoji"
-                              ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800"
-                              : item.media_type === "gif"
-                                ? "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-400 dark:border-violet-800"
-                                : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800"
-                          }
-                        >
-                          {item.media_type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Switch
-                          checked={item.is_active}
-                          onCheckedChange={(v) => handleToggle(item.id, v)}
-                          aria-label={`Toggle ${item.label}`}
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(item)} aria-label={`Edit ${item.label}`}>
-                            <PencilIcon className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { tap(); setDeleteTarget(item); }} aria-label={`Delete ${item.label}`}>
-                            <Trash2Icon className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                key={animationKey}
+              >
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="w-[60px]">Thứ tự</TableHead>
+                      <TableHead className="w-[60px]">Preview</TableHead>
+                      <TableHead className="w-[120px]">Code</TableHead>
+                      <TableHead>Label</TableHead>
+                      <TableHead className="w-[90px]">Loại</TableHead>
+                      <TableHead className="w-[90px]">Trạng thái</TableHead>
+                      <TableHead className="w-[100px] text-right">Thao tác</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {items.map((item, index) => (
+                      <motion.tr
+                        key={item.id}
+                        variants={rowVariants}
+                        custom={index}
+                        className="group hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors"
+                      >
+                        <TableCell className="text-sm text-muted-foreground tabular-nums">{item.sort_order}</TableCell>
+                        <TableCell><ReactionPreview item={item} /></TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="font-mono text-xs">{item.code}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">{item.label}</TableCell>
+                        <TableCell>
+                          <Badge
+                            className={
+                              item.media_type === "emoji"
+                                ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800"
+                                : item.media_type === "gif"
+                                  ? "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-400 dark:border-violet-800"
+                                  : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800"
+                            }
+                          >
+                            {item.media_type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Switch
+                            checked={item.is_active}
+                            onCheckedChange={(v) => handleToggle(item.id, v)}
+                            aria-label={`Toggle ${item.label}`}
+                          />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(item)} aria-label={`Edit ${item.label}`}>
+                              <PencilIcon className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { tap(); setDeleteTarget(item); }} aria-label={`Delete ${item.label}`}>
+                              <Trash2Icon className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </motion.tr>
+                    ))}
+                  </TableBody>
+                </Table>
+              </motion.div>
             </div>
           )}
         </CardContent>

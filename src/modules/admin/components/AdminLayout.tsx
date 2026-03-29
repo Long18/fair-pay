@@ -91,7 +91,8 @@ export function AdminLayout() {
           "md:px-4",
           "lg:px-6",
           "lg:pt-24",
-          "pb-6"
+          "pb-6",
+          "viewport-transition"
         )}
       >
         <AnimatedOutlet />

@@ -65,6 +65,10 @@ import {
 import { formatDate } from "@/lib/locale-utils";
 import type { AuditLogEntry, AuditLogsResponse, AuditStats, AuditFilterOptions } from "../types";
 import { useHaptics } from "@/hooks/use-haptics";
+import { motion } from "framer-motion";
+import { useStaggerAnimation } from "@/hooks/ui/use-stagger-animation";
+import { AnimatedList } from "@/components/ui/animated-list";
+import { AnimatedRow } from "@/components/ui/animated-row";
 
 // ─── Constants ──────────────────────────────────────────────────────
 
@@ -510,6 +514,8 @@ export function AdminAuditLogs() {
   const total = logsResponse?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
+  const { containerVariants, rowVariants, animationKey } = useStaggerAnimation(entries);
+
   // ─── Clear Filters ──────────────────────────────────────────────
 
   const clearFilters = useCallback(() => {
@@ -586,25 +592,27 @@ export function AdminAuditLogs() {
                 <CardTitle className="text-sm">Theo bảng dữ liệu</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {stats.by_table.map((item) => {
-                  const pct = stats.total > 0 ? (item.count / stats.total) * 100 : 0;
-                  return (
-                    <div key={item.name} className="flex items-center gap-2">
-                      <Badge variant="outline" className="font-mono text-xs min-w-[100px] justify-center">
-                        {item.name}
-                      </Badge>
-                      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary/60 rounded-full transition-all"
-                          style={{ width: `${Math.max(pct, 1)}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-muted-foreground tabular-nums w-12 text-right">
-                        {item.count.toLocaleString()}
-                      </span>
-                    </div>
-                  );
-                })}
+                <AnimatedList items={stats.by_table} className="space-y-2">
+                  {stats.by_table.map((item, index) => {
+                    const pct = stats.total > 0 ? (item.count / stats.total) * 100 : 0;
+                    return (
+                      <AnimatedRow key={item.name} index={index} className="flex items-center gap-2">
+                        <Badge variant="outline" className="font-mono text-xs min-w-[100px] justify-center">
+                          {item.name}
+                        </Badge>
+                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary/60 rounded-full transition-all"
+                            style={{ width: `${Math.max(pct, 1)}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground tabular-nums w-12 text-right">
+                          {item.count.toLocaleString()}
+                        </span>
+                      </AnimatedRow>
+                    );
+                  })}
+                </AnimatedList>
               </CardContent>
             </Card>
           )}
@@ -614,23 +622,25 @@ export function AdminAuditLogs() {
                 <CardTitle className="text-sm">Theo người thực hiện</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {stats.by_actor.map((item) => {
-                  const pct = stats.total > 0 ? (item.count / stats.total) * 100 : 0;
-                  return (
-                    <div key={item.name} className="flex items-center gap-2">
-                      <span className="text-xs min-w-[100px] truncate">{item.name}</span>
-                      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-violet-500/60 rounded-full transition-all"
-                          style={{ width: `${Math.max(pct, 1)}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-muted-foreground tabular-nums w-12 text-right">
-                        {item.count.toLocaleString()}
-                      </span>
-                    </div>
-                  );
-                })}
+                <AnimatedList items={stats.by_actor} className="space-y-2">
+                  {stats.by_actor.map((item, index) => {
+                    const pct = stats.total > 0 ? (item.count / stats.total) * 100 : 0;
+                    return (
+                      <AnimatedRow key={item.name} index={index} className="flex items-center gap-2">
+                        <span className="text-xs min-w-[100px] truncate">{item.name}</span>
+                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-violet-500/60 rounded-full transition-all"
+                            style={{ width: `${Math.max(pct, 1)}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground tabular-nums w-12 text-right">
+                          {item.count.toLocaleString()}
+                        </span>
+                      </AnimatedRow>
+                    );
+                  })}
+                </AnimatedList>
               </CardContent>
             </Card>
           )}
@@ -807,11 +817,20 @@ export function AdminAuditLogs() {
                       <TableHead className="w-[80px] text-center">Hoàn tác</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
-                    {entries.map((entry) => (
-                      <TableRow
+                  <motion.tbody
+                    key={animationKey}
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="[&_tr:last-child]:border-0"
+                  >
+                    {entries.map((entry, index) => (
+                      <motion.tr
                         key={entry.id}
-                        className="cursor-pointer hover:bg-accent/50 transition-colors group"
+                        custom={index}
+                        variants={rowVariants}
+                        data-slot="table-row"
+                        className="hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors cursor-pointer hover:bg-accent/50 group"
                         onClick={() => {
                           tap();
                           setSelectedEntry(entry);
@@ -868,9 +887,9 @@ export function AdminAuditLogs() {
                             <span className="text-xs text-muted-foreground/40">—</span>
                           )}
                         </TableCell>
-                      </TableRow>
+                      </motion.tr>
                     ))}
-                  </TableBody>
+                  </motion.tbody>
                 </Table>
               </div>
 
