@@ -15,6 +15,8 @@ import {
 } from "@tanstack/react-table";
 import { toast } from "sonner";
 
+import { AnimatedList } from "@/components/ui/animated-list";
+import { AnimatedRow } from "@/components/ui/animated-row";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { DataTable } from "@/components/refine-ui/data-table/data-table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -1364,18 +1366,19 @@ function UsersTab() {
               </CardHeader>
               <CollapsibleContent>
                 <CardContent className="pt-0">
-                  <div className="space-y-2">
-                    {newRegistrations.map((user) => (
-                      <NewRegistrationCard
-                        key={user.id}
-                        user={user}
-                        onViewDetail={() => {
-                          setSelectedUser(user);
-                          setDetailOpen(true);
-                        }}
-                      />
+                  <AnimatedList items={newRegistrations}>
+                    {newRegistrations.map((user, index) => (
+                      <AnimatedRow key={user.id} index={index}>
+                        <NewRegistrationCard
+                          user={user}
+                          onViewDetail={() => {
+                            setSelectedUser(user);
+                            setDetailOpen(true);
+                          }}
+                        />
+                      </AnimatedRow>
                     ))}
-                  </div>
+                  </AnimatedList>
                 </CardContent>
               </CollapsibleContent>
             </Card>

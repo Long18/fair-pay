@@ -12,6 +12,7 @@ import {
   AreaChart,
 } from "recharts";
 import { Link } from "react-router";
+import { motion } from "framer-motion";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { LoadingBeam } from "@/components/ui/loading-beam";
@@ -35,6 +36,9 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import type { AdminStats } from "../types";
+import { AnimatedList } from "@/components/ui/animated-list";
+import { AnimatedRow } from "@/components/ui/animated-row";
+import { useStaggerAnimation } from "@/hooks/ui/use-stagger-animation";
 
 import { formatNumber } from "@/lib/locale-utils";
 import { getCategoryMeta } from "@/modules/expenses";
@@ -283,6 +287,8 @@ export function AdminOverview() {
   const { data: categories, isLoading: catLoading } = useCategoryBreakdown();
   const { data: latestUsers, isLoading: latestLoading } = useLatestTrackedUsers();
 
+  const { containerVariants: statVariants, rowVariants: statRowVariants, animationKey: statKey } = useStaggerAnimation([...STAT_CARDS]);
+
   // Build pie chart config dynamically
   const categoryChartConfig: ChartConfig = (categories ?? []).reduce(
     (cfg, item) => {
@@ -305,10 +311,16 @@ export function AdminOverview() {
   return (
     <div className="space-y-6">
       {/* ── Stat Cards ─────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <motion.div
+        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 viewport-transition-grid"
+        variants={statVariants}
+        initial="hidden"
+        animate="visible"
+        key={statKey}
+      >
         {statsLoading
           ? Array.from({ length: 5 }).map((_, i) => <StatCardSkeleton key={i} />)
-          : STAT_CARDS.map((card) => {
+          : STAT_CARDS.map((card, index) => {
               const Icon = card.icon;
               const value = stats?.[card.key] ?? 0;
 
@@ -335,23 +347,25 @@ export function AdminOverview() {
               }
 
               return (
-                <Card key={card.key} className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${themeIntentTones[card.tone as ThemeIntent].surface} ${themeIntentTones[card.tone as ThemeIntent].icon}`}
-                    >
-                      <Icon className="h-5 w-5" />
+                <motion.div key={card.key} variants={statRowVariants} custom={index}>
+                  <Card className="p-6">
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${themeIntentTones[card.tone as ThemeIntent].surface} ${themeIntentTones[card.tone as ThemeIntent].icon}`}
+                      >
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm text-muted-foreground">{card.label}</span>
+                        <span className="text-2xl font-bold">{formatNumber(value)}</span>
+                        <TrendIndicator value={Math.abs(trendPercent)} isPositive={trendPercent >= 0} />
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-sm text-muted-foreground">{card.label}</span>
-                      <span className="text-2xl font-bold">{formatNumber(value)}</span>
-                      <TrendIndicator value={Math.abs(trendPercent)} isPositive={trendPercent >= 0} />
-                    </div>
-                  </div>
-                </Card>
+                  </Card>
+                </motion.div>
               );
             })}
-      </div>
+      </motion.div>
 
       {/* ── Line Chart: Expense Trend 30 days ──────────────────── */}
       <Card>
@@ -530,47 +544,48 @@ export function AdminOverview() {
               Chưa có dữ liệu theo dõi
             </p>
           ) : (
-            <div className="divide-y">
-              {latestUsers.map((user) => {
+            <AnimatedList items={latestUsers} className="divide-y">
+              {latestUsers.map((user, index) => {
                 const initials = (user.full_name ?? user.email).charAt(0).toUpperCase();
                 return (
-                  <Link
-                    key={user.user_id}
-                    to={`/admin/people/${user.user_id}/journey`}
-                    className="flex items-center gap-3 px-6 py-3 hover:bg-muted/50 transition-colors"
-                  >
-                    <Avatar className="h-8 w-8 shrink-0">
-                      {user.avatar_url && <AvatarImage src={user.avatar_url} alt={user.full_name ?? user.email} />}
-                      <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium leading-none truncate">
-                        {user.full_name ?? user.email}
-                      </p>
-                      {user.full_name && (
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
-                      )}
-                      {user.last_page && (
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">{user.last_page}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {user.device_type && (
-                        <Badge variant="secondary" className="text-xs hidden sm:inline-flex">
-                          {user.device_type}
+                  <AnimatedRow key={user.user_id} index={index}>
+                    <Link
+                      to={`/admin/people/${user.user_id}/journey`}
+                      className="flex items-center gap-3 px-6 py-3 hover:bg-muted/50 transition-colors"
+                    >
+                      <Avatar className="h-8 w-8 shrink-0">
+                        {user.avatar_url && <AvatarImage src={user.avatar_url} alt={user.full_name ?? user.email} />}
+                        <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium leading-none truncate">
+                          {user.full_name ?? user.email}
+                        </p>
+                        {user.full_name && (
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
+                        )}
+                        {user.last_page && (
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">{user.last_page}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {user.device_type && (
+                          <Badge variant="secondary" className="text-xs hidden sm:inline-flex">
+                            {user.device_type}
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="text-xs">
+                          {user.session_count} phiên
                         </Badge>
-                      )}
-                      <Badge variant="outline" className="text-xs">
-                        {user.session_count} phiên
-                      </Badge>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {formatRelativeTime(user.last_seen_at)}
-                      </span>
-                    </div>
-                  </Link>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {formatRelativeTime(user.last_seen_at)}
+                        </span>
+                      </div>
+                    </Link>
+                  </AnimatedRow>
                 );
               })}
-            </div>
+            </AnimatedList>
           )}
         </CardContent>
         <CardFooter className="border-t pt-3 pb-3">
