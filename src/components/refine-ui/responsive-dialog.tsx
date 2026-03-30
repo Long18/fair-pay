@@ -42,10 +42,14 @@ export function ResponsiveDialog({
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className={className} aria-describedby={description ? undefined : "dialog-content"}>
+        <DialogContent className={className}>
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
-            {description && <DialogDescription>{description}</DialogDescription>}
+            {description ? (
+              <DialogDescription>{description}</DialogDescription>
+            ) : (
+              <DialogDescription className="sr-only">{title}</DialogDescription>
+            )}
           </DialogHeader>
           {children}
         </DialogContent>
@@ -58,7 +62,11 @@ export function ResponsiveDialog({
       <DrawerContent>
         <DrawerHeader className="text-left">
           <DrawerTitle>{title}</DrawerTitle>
-          {description && <DrawerDescription>{description}</DrawerDescription>}
+          {description ? (
+            <DrawerDescription>{description}</DrawerDescription>
+          ) : (
+            <DrawerDescription className="sr-only">{title}</DrawerDescription>
+          )}
         </DrawerHeader>
         <div className="px-4 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-12rem)] max-w-full">{children}</div>
         {showCancel && (
