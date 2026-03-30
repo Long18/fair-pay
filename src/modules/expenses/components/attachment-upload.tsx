@@ -26,6 +26,13 @@ const ALLOWED_TYPES = [
   "application/pdf",
 ];
 
+const getClipboardFileName = (file: File) => {
+  if (file.name) return file.name;
+
+  const extension = file.type.split("/")[1] || "bin";
+  return `clipboard-${Date.now()}.${extension}`;
+};
+
 export const AttachmentUpload = ({
   attachments,
   onAttachmentsChange,
@@ -36,7 +43,7 @@ export const AttachmentUpload = ({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const validateFile = (file: File): string | null => {
+  const validateFile = (file: File, nextCount: number): string | null => {
     // Check file type
     if (!ALLOWED_TYPES.includes(file.type)) {
       return `${file.name}: File type not allowed. Please upload images or PDF files.`;
@@ -49,21 +56,28 @@ export const AttachmentUpload = ({
     }
 
     // Check total count
-    if (attachments.length >= maxFiles) {
+    if (nextCount > maxFiles) {
       return `Maximum ${maxFiles} files allowed.`;
     }
 
     return null;
   };
 
-  const handleFiles = (files: FileList | null) => {
+  const handleFiles = (files: FileList | File[] | null, source: "browse" | "drop" | "paste" = "browse") => {
     if (!files) return;
 
     const newAttachments: AttachmentFile[] = [];
     const errors: string[] = [];
 
-    Array.from(files).forEach((file) => {
-      const error = validateFile(file);
+    Array.from(files).forEach((rawFile) => {
+      const file = rawFile.name
+        ? rawFile
+        : new File([rawFile], getClipboardFileName(rawFile), {
+            type: rawFile.type,
+            lastModified: Date.now(),
+          });
+
+      const error = validateFile(file, attachments.length + newAttachments.length + 1);
       if (error) {
         errors.push(error);
         return;
@@ -84,7 +98,8 @@ export const AttachmentUpload = ({
 
     if (newAttachments.length > 0) {
       onAttachmentsChange([...attachments, ...newAttachments]);
-      toast.success(`${newAttachments.length} file(s) added`);
+      const sourceLabel = source === "paste" ? "from clipboard" : "";
+      toast.success(`${newAttachments.length} file(s) added ${sourceLabel}`.trim());
     }
   };
 
@@ -101,6 +116,18 @@ export const AttachmentUpload = ({
 
   const handleDragLeave = () => {
     setIsDragging(false);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const clipboardFiles = Array.from(e.clipboardData.items)
+      .filter((item) => item.kind === "file")
+      .map((item) => item.getAsFile())
+      .filter((file): file is File => file !== null);
+
+    if (clipboardFiles.length === 0) return;
+
+    e.preventDefault();
+    handleFiles(clipboardFiles, "paste");
   };
 
   const removeAttachment = (index: number) => {
@@ -124,11 +151,15 @@ export const AttachmentUpload = ({
         className={`border-2 border-dashed transition-colors ${
           isDragging
             ? "border-primary bg-primary/5"
-            : "border-muted-foreground/25 hover:border-primary/50"
+            : "border-muted-foreground/25 hover:border-primary/50 focus-within:border-primary/60 focus-within:bg-primary/5"
         }`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
+        onPaste={handlePaste}
+        tabIndex={0}
+        role="group"
+        aria-label="Attachment upload area"
       >
         <CardContent className="flex flex-col items-center justify-center py-8 px-6 text-center">
           <UploadIcon className="h-10 w-10 text-muted-foreground mb-4" />
@@ -137,6 +168,9 @@ export const AttachmentUpload = ({
           </p>
           <p className="text-xs text-muted-foreground mb-4">
             or click to browse (max {maxSizeMB}MB per file, up to {maxFiles} files)
+          </p>
+          <p className="text-xs text-muted-foreground mb-4">
+            Tip: click this box and press Ctrl+V or Cmd+V to paste from clipboard
           </p>
           <input
             ref={fileInputRef}
@@ -178,7 +212,7 @@ export const AttachmentUpload = ({
                     ) : (
                       <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
                         {attachment.file.type === "application/pdf" ? (
-                          <FileIcon className="h-8 w-8 text-red-500" />
+                          <FileIcon className="h-8 w-8 text-destructive" />
                         ) : (
                           <FileImageIcon className="h-8 w-8 text-muted-foreground" />
                         )}
