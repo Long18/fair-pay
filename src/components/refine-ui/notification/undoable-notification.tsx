@@ -8,6 +8,9 @@ type UndoableNotificationProps = {
   message: string;
   description?: string;
   undoableTimeout?: number;
+  /** Called when user clicks Undo — triggers reverse mutation via UndoManager */
+  onUndo?: () => void;
+  /** @deprecated Use onUndo instead. Kept for backward compatibility. */
   cancelMutation?: () => void;
   onClose?: () => void;
 };
@@ -16,6 +19,7 @@ export function UndoableNotification({
   message,
   description,
   undoableTimeout = 10,
+  onUndo,
   cancelMutation,
   onClose,
 }: UndoableNotificationProps) {
@@ -40,7 +44,7 @@ export function UndoableNotification({
 
   const handleUndo = () => {
     tap();
-    cancelMutation?.();
+    (onUndo ?? cancelMutation)?.();
     onClose?.();
   };
 

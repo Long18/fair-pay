@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
-import { useOne, useList, useDelete, useGo, useGetIdentity, useUpdate, useCreate } from "@refinedev/core";
+import { useOne, useList, useGo, useGetIdentity } from "@refinedev/core";
+import { useInstantCreate, useInstantUpdate, useInstantDelete } from "@/hooks/use-instant-mutation";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useParams, useSearchParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -111,11 +112,11 @@ export const GroupShow = () => {
     meta: { select: "*, profiles!user_id(*)" },
   });
 
-  const deleteGroupMutation = useDelete();
-  const deleteMemberMutation = useDelete();
-  const updateMemberMutation = useUpdate();
-  const createPaymentMutation = useCreate();
-  const updateGroupMutation = useUpdate();
+  const deleteGroupMutation = useInstantDelete();
+  const deleteMemberMutation = useInstantDelete();
+  const updateMemberMutation = useInstantUpdate();
+  const createPaymentMutation = useInstantCreate();
+  const updateGroupMutation = useInstantUpdate();
 
   const { query: expensesQuery } = useList({
     resource: "expenses",

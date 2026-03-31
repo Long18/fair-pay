@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
-import { useUpdate, useGo, useList, useGetIdentity, useOne } from "@refinedev/core";
+import { useGo, useList, useGetIdentity, useOne } from "@refinedev/core";
+import { useInstantUpdate } from "@/hooks/use-instant-mutation";
 import { useParams } from "react-router";
 import { ResponsiveDialog } from "@/components/refine-ui/responsive-dialog";
 import { ExpenseForm } from "../components/expense-form";
@@ -166,7 +167,7 @@ export const ExpenseEdit = () => {
     },
   });
 
-  const updateMutation = useUpdate();
+  const updateMutation = useInstantUpdate();
 
   // Determine members based on context (group members or friendship participants)
   const members = useMemo(() => {

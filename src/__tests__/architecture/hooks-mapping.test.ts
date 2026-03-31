@@ -77,7 +77,7 @@ const ROOT_LEVEL_HOOKS = [
   "use-contributing-expenses.ts",
   "use-bulk-operations.ts",
   "use-delete-splits.ts",
-  "use-undoable-mutation.ts",
+  "use-instant-mutation.ts",
 ];
 
 const DOMAIN_SUBFOLDERS = [

@@ -1,4 +1,5 @@
-import { useOne, useUpdate, useList, useGo, useGetIdentity } from "@refinedev/core";
+import { useOne, useList, useGo, useGetIdentity } from "@refinedev/core";
+import { useInstantUpdate } from "@/hooks/use-instant-mutation";
 import { useState, useMemo } from "react";
 import { useParams } from "react-router";
 import { GroupForm } from "../components/group-form";
@@ -44,7 +45,7 @@ export const GroupEdit = () => {
     queryOptions: { enabled: !!identity?.id },
   });
 
-  const updateMutation = useUpdate();
+  const updateMutation = useInstantUpdate();
   const { data, isLoading: isLoadingGroup } = groupQuery;
   const group = data?.data;
 

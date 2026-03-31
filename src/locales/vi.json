@@ -980,5 +980,13 @@
     "tracking": {
         "notice": "Chúng tôi sử dụng cookie và công nghệ theo dõi để cải thiện trải nghiệm của bạn trên ứng dụng này.",
         "ok": "Đã hiểu"
+    },
+    "undo": {
+        "created": "Đã tạo. Hoàn tác?",
+        "updated": "Đã lưu thay đổi. Hoàn tác?",
+        "deleted": "Đã xóa. Hoàn tác?",
+        "reverted": "Đã hoàn tác thành công",
+        "revertFailed": "Hoàn tác thất bại. Vui lòng thử lại.",
+        "button": "Hoàn tác"
     }
 }

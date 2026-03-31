@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useOne, useList, useDelete, useGo, useGetIdentity } from "@refinedev/core";
+import { useOne, useList, useGo, useGetIdentity } from "@refinedev/core";
+import { useInstantDelete } from "@/hooks/use-instant-mutation";
 import { useParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -169,7 +170,7 @@ export const ExpenseShow = () => {
     queryOptions: { refetchOnWindowFocus: true, refetchOnMount: "always" },
   });
 
-  const deleteMutation = useDelete();
+  const deleteMutation = useInstantDelete();
 
   const { data: expenseData, isLoading: isLoadingExpense } = expenseQuery;
   const { data: attachmentsData } = attachmentsQuery;
