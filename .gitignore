@@ -20,6 +20,7 @@ dist-ssr
 # Supabase backups (production data dumps)
 supabase/backups/
 *.sql.backup
+supabase/scripts/sync/dumps/test/
 
 # Scripts - generated reports and production data
 scripts/production/production-data.sql
