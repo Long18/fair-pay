@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { useCreate, useList, useGetIdentity } from "@refinedev/core";
+import { useList, useGetIdentity } from "@refinedev/core";
+import { useInstantCreate } from "@/hooks/use-instant-mutation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -68,7 +69,7 @@ export const AddMemberModal = ({
   const [searchValue, setSearchValue] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { data: identity } = useGetIdentity<Profile>();
-  const createMutation = useCreate();
+  const createMutation = useInstantCreate();
   const { tap, success } = useHaptics();
 
   const form = useForm({

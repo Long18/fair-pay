@@ -1,4 +1,5 @@
-import { useList, useCreate, useUpdate, useDelete, useOne } from '@refinedev/core';
+import { useList, useOne } from '@refinedev/core';
+import { useInstantCreate, useInstantUpdate, useInstantDelete } from '@/hooks/use-instant-mutation';
 import { useMemo } from 'react';
 import { RecurringExpense, RecurringExpenseFormValues, PrepaidCoverageInfo } from '../types/recurring';
 import { getPrepaidCoverageStatus } from '../utils/prepaid-calculations';
@@ -111,7 +112,7 @@ export function useRecurringExpense(id: string) {
 }
 
 export function useCreateRecurringExpense() {
-  const { mutate } = useCreate<RecurringExpense>();
+  const { mutate } = useInstantCreate();
 
   const createRecurring = async (
     templateExpenseId: string,
@@ -148,7 +149,7 @@ export function useCreateRecurringExpense() {
 }
 
 export function useUpdateRecurringExpense() {
-  const { mutate } = useUpdate<RecurringExpense>();
+  const { mutate } = useInstantUpdate();
 
   const updateRecurring = async (
     id: string,
@@ -196,7 +197,7 @@ export function useUpdateRecurringExpense() {
 }
 
 export function useDeleteRecurringExpense() {
-  const { mutate } = useDelete<RecurringExpense>();
+  const { mutate } = useInstantDelete();
 
   const deleteRecurring = async (id: string) => {
     return new Promise<void>((resolve, reject) => {

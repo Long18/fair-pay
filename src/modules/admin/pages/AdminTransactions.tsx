@@ -1,6 +1,7 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { useTable } from "@refinedev/react-table";
-import { useList, useCreate, useUpdate, useDelete } from "@refinedev/core";
+import { useList } from "@refinedev/core";
+import { useInstantCreate, useInstantUpdate, useInstantDelete } from "@/hooks/use-instant-mutation";
 import type { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
 
@@ -760,9 +761,9 @@ function ExpensesTab() {
 // ═══════════════════════════════════════════════════════════════════
 
 function PaymentsTab() {
-  const deleteMutation = useDelete();
-  const createMutation = useCreate();
-  const updateMutation = useUpdate();
+  const deleteMutation = useInstantDelete();
+  const createMutation = useInstantCreate();
+  const updateMutation = useInstantUpdate();
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
