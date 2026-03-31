@@ -1,6 +1,7 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { useTable } from "@refinedev/react-table";
-import { useDelete, useList, useCreate, useUpdate } from "@refinedev/core";
+import { useList } from "@refinedev/core";
+import { useInstantDelete, useInstantCreate, useInstantUpdate } from "@/hooks/use-instant-mutation";
 import type { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
 
@@ -437,9 +438,9 @@ function RowActions({
 // ─── Main Component ─────────────────────────────────────────────────
 
 export function AdminNotifications() {
-  const deleteMutation = useDelete();
-  const createMutation = useCreate();
-  const updateMutation = useUpdate();
+  const deleteMutation = useInstantDelete();
+  const createMutation = useInstantCreate();
+  const updateMutation = useInstantUpdate();
   const { tap, success, warning } = useHaptics();
 
   const [search, setSearch] = useState("");

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useOne, useUpdate, useGetIdentity, useNotification } from '@refinedev/core';
+import { useOne, useGetIdentity, useNotification } from '@refinedev/core';
+import { useInstantUpdate } from '@/hooks/use-instant-mutation';
 import { Profile } from '@/modules/profile/types';
 import { UserSettings, UserSettingsFormValues } from '../types';
 
@@ -16,7 +17,7 @@ export function useUserSettings() {
     },
   });
 
-  const { mutate: updateSettings } = useUpdate<UserSettings>();
+  const { mutate: updateSettings } = useInstantUpdate();
   const [isUpdating, setIsUpdating] = useState(false);
 
   const settings = query.data?.data;
@@ -36,7 +37,7 @@ export function useUserSettings() {
         {
           resource: 'user_settings',
           id: identity.id,
-          meta: { idColumnName: 'user_id' },
+          meta: { idColumnName: 'user_id', undoConfig: { enabled: false } },
           values: {
             ...values,
             updated_at: new Date().toISOString(),

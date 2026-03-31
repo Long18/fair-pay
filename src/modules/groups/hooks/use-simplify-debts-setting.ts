@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { useUpdate } from "@refinedev/core";
+import { useInstantUpdate } from "@/hooks/use-instant-mutation";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import type { Group } from "../types";
@@ -31,7 +31,7 @@ export function useSimplifyDebtsSetting({
   isAdmin,
 }: UseSimplifyDebtsSettingProps): UseSimplifyDebtsSettingReturn {
   const { t } = useTranslation();
-  const { mutate, mutation } = useUpdate();
+  const { mutate, mutation } = useInstantUpdate();
 
   const isSimplified = groupData?.simplify_debts ?? false;
   const canToggle = isAdmin || false;
@@ -46,6 +46,7 @@ export function useSimplifyDebtsSetting({
           id: groupId,
           values: { simplify_debts: enabled },
           mutationMode: "optimistic",
+          meta: { undoConfig: { enabled: false } },
           optimisticUpdateMap: {
             detail: (previous, values) => {
               if (!previous) return null;

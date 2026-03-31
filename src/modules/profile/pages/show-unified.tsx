@@ -1,4 +1,4 @@
-import { useOne, useGo, useGetIdentity, useList, useUpdate } from "@refinedev/core";
+import { useOne, useGo, useGetIdentity, useList } from "@refinedev/core";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useParams, useSearchParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

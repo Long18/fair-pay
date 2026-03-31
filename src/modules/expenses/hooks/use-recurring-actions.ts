@@ -1,12 +1,13 @@
 import { useCallback } from "react";
-import { useUpdate, useDelete, useNotification } from "@refinedev/core";
+import { useNotification } from "@refinedev/core";
+import { useInstantUpdate, useInstantDelete } from "@/hooks/use-instant-mutation";
 import { useTranslation } from "react-i18next";
 import { RecurringExpense } from "../types/recurring";
 import { calculateNextOccurrence } from "../types/recurring";
 
 export function useRecurringActions() {
-  const { mutate: updateRecurring } = useUpdate();
-  const { mutate: deleteRecurring } = useDelete();
+  const { mutate: updateRecurring } = useInstantUpdate();
+  const { mutate: deleteRecurring } = useInstantDelete();
   const { open: notify } = useNotification();
   const { t } = useTranslation();
 

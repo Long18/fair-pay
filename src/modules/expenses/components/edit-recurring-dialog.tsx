@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useUpdate, useNotification } from "@refinedev/core";
+import { useNotification } from "@refinedev/core";
+import { useInstantUpdate } from "@/hooks/use-instant-mutation";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -28,7 +29,7 @@ export function EditRecurringDialog({
 }: EditRecurringDialogProps) {
   const { t } = useTranslation();
   const { open: notify } = useNotification();
-  const { mutate: updateRecurring } = useUpdate();
+  const { mutate: updateRecurring } = useInstantUpdate();
   const { tap, success } = useHaptics();
 
   const [frequency, setFrequency] = useState<RecurringFrequency>("monthly");

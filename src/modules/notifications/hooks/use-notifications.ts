@@ -1,5 +1,6 @@
 import { createElement, useEffect, useState, useCallback, useRef } from "react";
-import { useGetIdentity, useList, useUpdate, useGo } from "@refinedev/core";
+import { useGetIdentity, useList, useGo } from "@refinedev/core";
+import { useInstantUpdate } from "@/hooks/use-instant-mutation";
 import { toast } from "sonner";
 import { supabaseClient } from "@/utility";
 import { Profile } from "@/modules/profile/types";
@@ -62,7 +63,7 @@ export const useNotifications = () => {
     },
   });
 
-  const updateMutation = useUpdate();
+  const updateMutation = useInstantUpdate();
 
   // Stable ref for query.refetch — avoids stale closure in realtime effect
   const refetchRef = useRef(query.refetch);
@@ -220,6 +221,7 @@ export const useNotifications = () => {
         values: {
           is_read: true,
         },
+        meta: { undoConfig: { enabled: false } },
       });
     },
     [updateMutation]
@@ -234,6 +236,7 @@ export const useNotifications = () => {
         values: {
           is_read: true,
         },
+        meta: { undoConfig: { enabled: false } },
       });
     });
   }, [notifications, updateMutation]);

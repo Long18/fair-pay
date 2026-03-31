@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useGetIdentity, useCreate, useList, useDelete } from '@refinedev/core';
+import { useGetIdentity, useList } from '@refinedev/core';
 import { supabaseClient } from '@/utility/supabaseClient';
 import { Profile } from '@/modules/profile/types';
 import { toast } from 'sonner';

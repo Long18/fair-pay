@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
-import { useGetIdentity, useGo, useUpdate, useDelete } from "@refinedev/core";
+import { useGetIdentity, useGo } from "@refinedev/core";
+import { useInstantUpdate, useInstantDelete } from "@/hooks/use-instant-mutation";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useTable } from "@refinedev/react-table";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -1518,8 +1519,8 @@ function UsersTab() {
 
 function GroupsTab() {
   const { tap, warning } = useHaptics();
-  const deleteMutation = useDelete();
-  const updateMutation = useUpdate();
+  const deleteMutation = useInstantDelete();
+  const updateMutation = useInstantUpdate();
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
@@ -1766,7 +1767,7 @@ function GroupsTab() {
 
 function FriendshipsTab() {
   const { tap, warning } = useHaptics();
-  const deleteMutation = useDelete();
+  const deleteMutation = useInstantDelete();
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
