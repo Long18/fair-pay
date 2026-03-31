@@ -4,8 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
-import { UploadIcon, XIcon, FileImageIcon, FileIcon } from "@/components/ui/icons";
+import { CopyIcon, UploadIcon, XIcon, FileImageIcon, FileIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
+import { useIsMobile } from "@/hooks/ui/use-mobile";
 export interface AttachmentFile {
   file: File;
   preview?: string;
@@ -26,12 +27,24 @@ const ALLOWED_TYPES = [
   "application/pdf",
 ];
 
-const getClipboardFileName = (file: File) => {
+const getClipboardFileName = (
+  file: Pick<File, "name" | "type">,
+  index?: number
+) => {
   if (file.name) return file.name;
 
   const extension = file.type.split("/")[1] || "bin";
-  return `clipboard-${Date.now()}.${extension}`;
+  const suffix = index ? `-${index}` : "";
+  return `clipboard-${Date.now()}${suffix}.${extension}`;
 };
+
+const normalizeClipboardType = (type: string) =>
+  type.startsWith("web ") ? type.slice(4) : type;
+
+const canReadClipboard = () =>
+  typeof navigator !== "undefined" &&
+  !!navigator.clipboard &&
+  typeof navigator.clipboard.read === "function";
 
 export const AttachmentUpload = ({
   attachments,
@@ -40,7 +53,9 @@ export const AttachmentUpload = ({
   maxSizeMB = 5,
 }: AttachmentUploadProps) => {
   const { tap } = useHaptics();
+  const isMobile = useIsMobile();
   const [isDragging, setIsDragging] = useState(false);
+  const [isReadingClipboard, setIsReadingClipboard] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateFile = (file: File, nextCount: number): string | null => {
@@ -130,6 +145,57 @@ export const AttachmentUpload = ({
     handleFiles(clipboardFiles, "paste");
   };
 
+  const handleClipboardButtonClick = async () => {
+    tap();
+
+    if (!canReadClipboard()) {
+      toast.error("Clipboard paste isn't supported in this browser. Use Browse Files instead.");
+      return;
+    }
+
+    setIsReadingClipboard(true);
+
+    try {
+      const clipboardItems = await navigator.clipboard.read();
+      const clipboardFiles: File[] = [];
+
+      for (const clipboardItem of clipboardItems) {
+        const matchingType = clipboardItem.types.find((type) =>
+          ALLOWED_TYPES.includes(normalizeClipboardType(type))
+        );
+
+        if (!matchingType) continue;
+
+        const normalizedType = normalizeClipboardType(matchingType);
+        const blob = await clipboardItem.getType(matchingType);
+        const clipboardFile = new File(
+          [blob],
+          getClipboardFileName(
+            { name: blob instanceof File ? blob.name : "", type: normalizedType },
+            clipboardFiles.length + 1
+          ),
+          {
+            type: normalizedType,
+            lastModified: Date.now(),
+          }
+        );
+
+        clipboardFiles.push(clipboardFile);
+      }
+
+      if (clipboardFiles.length === 0) {
+        toast.error("Clipboard doesn't contain an image or PDF to attach.");
+        return;
+      }
+
+      handleFiles(clipboardFiles, "paste");
+    } catch {
+      toast.error("Clipboard access was blocked. Allow paste and try again, or use Browse Files.");
+    } finally {
+      setIsReadingClipboard(false);
+    }
+  };
+
   const removeAttachment = (index: number) => {
     const attachment = attachments[index];
     if (attachment.preview) {
@@ -170,7 +236,9 @@ export const AttachmentUpload = ({
             or click to browse (max {maxSizeMB}MB per file, up to {maxFiles} files)
           </p>
           <p className="text-xs text-muted-foreground mb-4">
-            Tip: click this box and press Ctrl+V or Cmd+V to paste from clipboard
+            {isMobile
+              ? "Tip: tap Paste from Clipboard if your receipt is already copied"
+              : "Tip: click this box and press Ctrl+V or Cmd+V to paste from clipboard"}
           </p>
           <input
             ref={fileInputRef}
@@ -180,14 +248,30 @@ export const AttachmentUpload = ({
             className="hidden"
             onChange={(e) => handleFiles(e.target.files)}
           />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => { tap(); fileInputRef.current?.click(); }}
-          >
-            Browse Files
-          </Button>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full sm:w-auto"
+              onClick={() => { tap(); fileInputRef.current?.click(); }}
+            >
+              Browse Files
+            </Button>
+            {isMobile && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="w-full sm:w-auto"
+                disabled={isReadingClipboard}
+                onClick={() => { void handleClipboardButtonClick(); }}
+              >
+                <CopyIcon className="mr-2 h-4 w-4" />
+                {isReadingClipboard ? "Reading Clipboard..." : "Paste from Clipboard"}
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 

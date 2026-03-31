@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 const { mockTap, mockToastSuccess, mockToastError } = vi.hoisted(() => ({
   mockTap: vi.fn(),
@@ -13,6 +13,10 @@ vi.mock("@/hooks/use-haptics", () => ({
   }),
 }));
 
+vi.mock("@/hooks/ui/use-mobile", () => ({
+  useIsMobile: vi.fn(() => false),
+}));
+
 vi.mock("sonner", () => ({
   toast: {
     success: mockToastSuccess,
@@ -21,19 +25,43 @@ vi.mock("sonner", () => ({
 }));
 
 import { AttachmentUpload } from "@/modules/expenses/components/attachment-upload";
+import { useIsMobile } from "@/hooks/ui/use-mobile";
+
+const mockClipboardRead = vi.fn();
 
 describe("AttachmentUpload", () => {
   beforeEach(() => {
     mockTap.mockClear();
     mockToastSuccess.mockClear();
     mockToastError.mockClear();
+    mockClipboardRead.mockReset();
+    vi.mocked(useIsMobile).mockReturnValue(false);
+    Object.defineProperty(global.navigator, "clipboard", {
+      configurable: true,
+      value: {
+        read: mockClipboardRead,
+      },
+    });
   });
 
-  it("shows clipboard paste guidance", () => {
+  it("shows desktop clipboard paste guidance", () => {
     render(<AttachmentUpload attachments={[]} onAttachmentsChange={vi.fn()} />);
 
     expect(
       screen.getByText(/press Ctrl\+V or Cmd\+V to paste from clipboard/i)
+    ).toBeInTheDocument();
+  });
+
+  it("shows a mobile clipboard button and guidance", () => {
+    vi.mocked(useIsMobile).mockReturnValue(true);
+
+    render(<AttachmentUpload attachments={[]} onAttachmentsChange={vi.fn()} />);
+
+    expect(
+      screen.getByText(/tap Paste from Clipboard if your receipt is already copied/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /paste from clipboard/i })
     ).toBeInTheDocument();
   });
 
@@ -63,5 +91,52 @@ describe("AttachmentUpload", () => {
       }),
     ]);
     expect(mockToastSuccess).toHaveBeenCalledWith("1 file(s) added from clipboard");
+  });
+
+  it("reads clipboard files from the mobile paste button", async () => {
+    const onAttachmentsChange = vi.fn();
+    vi.mocked(useIsMobile).mockReturnValue(true);
+    mockClipboardRead.mockResolvedValue([
+      {
+        types: ["image/png"],
+        getType: vi.fn().mockResolvedValue(new Blob(["receipt"], { type: "image/png" })),
+      },
+    ]);
+
+    render(<AttachmentUpload attachments={[]} onAttachmentsChange={onAttachmentsChange} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /paste from clipboard/i }));
+
+    await waitFor(() => {
+      expect(onAttachmentsChange).toHaveBeenCalledTimes(1);
+    });
+
+    expect(onAttachmentsChange).toHaveBeenCalledWith([
+      expect.objectContaining({
+        file: expect.objectContaining({
+          type: "image/png",
+          name: expect.stringMatching(/^clipboard-\d+-1\.png$/),
+        }),
+        preview: expect.any(String),
+      }),
+    ]);
+    expect(mockToastSuccess).toHaveBeenCalledWith("1 file(s) added from clipboard");
+  });
+
+  it("shows a fallback error when mobile clipboard access is blocked", async () => {
+    const onAttachmentsChange = vi.fn();
+    vi.mocked(useIsMobile).mockReturnValue(true);
+    mockClipboardRead.mockRejectedValue(new Error("denied"));
+
+    render(<AttachmentUpload attachments={[]} onAttachmentsChange={onAttachmentsChange} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /paste from clipboard/i }));
+
+    await waitFor(() => {
+      expect(mockToastError).toHaveBeenCalledWith(
+        "Clipboard access was blocked. Allow paste and try again, or use Browse Files."
+      );
+    });
+    expect(onAttachmentsChange).not.toHaveBeenCalled();
   });
 });
