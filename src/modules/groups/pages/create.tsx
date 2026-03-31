@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useCreate, useGo, useGetIdentity, useList } from "@refinedev/core";
+import { useGo, useGetIdentity, useList } from "@refinedev/core";
+import { useInstantCreate } from "@/hooks/use-instant-mutation";
 import { ResponsiveDialog } from "@/components/refine-ui/responsive-dialog";
 import { GroupForm } from "../components/group-form";
 import { GroupFormValues } from "../types";
@@ -11,7 +12,7 @@ import { journeyTracking } from "@/lib/journey-tracking";
 
 export const GroupCreate = () => {
   const go = useGo();
-  const createMutation = useCreate();
+  const createMutation = useInstantCreate();
   const { data: identity } = useGetIdentity<Profile>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 

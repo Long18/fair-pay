@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useCreate, useGo, useList, useGetIdentity, useOne } from "@refinedev/core";
+import { useGo, useList, useGetIdentity, useOne } from "@refinedev/core";
+import { useInstantCreate } from "@/hooks/use-instant-mutation";
 import { useParams } from "react-router";
 import { ResponsiveDialog } from "@/components/refine-ui/responsive-dialog";
 import { ExpenseForm } from "../components/expense-form";
@@ -68,7 +69,7 @@ export const ExpenseCreate = () => {
     },
   });
 
-  const createMutation = useCreate();
+  const createMutation = useInstantCreate();
 
   useEffect(() => {
     journeyTracking.trackFormView("expense-create", isGroupContext ? "group-context" : "friend-context");

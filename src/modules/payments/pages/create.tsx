@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
-import { useCreate, useGo, useGetIdentity, useList, useOne } from "@refinedev/core";
+import { useGo, useGetIdentity, useList, useOne } from "@refinedev/core";
+import { useInstantCreate } from "@/hooks/use-instant-mutation";
 import { useParams, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { ResponsiveDialog } from "@/components/refine-ui/responsive-dialog";
@@ -32,7 +33,7 @@ export const PaymentCreate = () => {
   const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
 
-  const createMutation = useCreate();
+  const createMutation = useInstantCreate();
 
   const isGroupContext = !!groupId;
   const isFriendContext = !!friendshipId;

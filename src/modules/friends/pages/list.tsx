@@ -1,4 +1,5 @@
-import { useList, useGetIdentity, useDelete, useGo } from "@refinedev/core";
+import { useList, useGetIdentity, useGo } from "@refinedev/core";
+import { useInstantDelete } from "@/hooks/use-instant-mutation";
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ import { useHaptics } from "@/hooks/use-haptics";
 export const FriendListContent = () => {
   const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
-  const deleteMutation = useDelete();
+  const deleteMutation = useInstantDelete();
   const go = useGo();
 
   const [removingFriend, setRemovingFriend] = useState<Friend | null>(null);

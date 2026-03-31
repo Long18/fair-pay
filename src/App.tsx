@@ -24,6 +24,7 @@ import { supabaseClient } from "./utility";
 import { useDocumentTitle } from "./hooks/ui/use-document-title";
 import { GSAPProvider } from "./providers/gsap-provider";
 import { useSmoothScroll } from "./hooks/use-smooth-scroll";
+import { UndoManagerProvider } from "./contexts/undo-manager";
 import { analyticsManager } from "./lib/analytics/instance";
 import { JourneyTrackingBridge } from "./lib/journey-tracking";
 import { TrackingNoticeBanner } from "./components/tracking-consent-banner";
@@ -191,8 +192,7 @@ function App() {
                 options={{
                   syncWithLocation: true,
                   warnWhenUnsavedChanges: true,
-                  mutationMode: "undoable",
-                  undoableTimeout: 10000,
+                  mutationMode: "optimistic",
                   projectId: "efvxeD-2r07zg-niV06o",
                   // Application branding - controls browser tab title and sidebar display
                   title: {
@@ -311,6 +311,7 @@ function App() {
                   },
                 ]}
               >
+              <UndoManagerProvider>
                 <Routes>
                   {/* OAuth consent route - public but requires authentication */}
                   <Route path="/oauth/consent" element={<OAuthConsent />} />
@@ -591,6 +592,7 @@ function App() {
                   </Suspense>
                 </Authenticated>
                 <SmoothScrollInit />
+              </UndoManagerProvider>
               </Refine>
           </GSAPProvider>
         </ThemeProvider>

@@ -981,5 +981,13 @@
     "tracking": {
         "notice": "We use cookies and tracking technology to improve your experience on this app.",
         "ok": "Got it"
+    },
+    "undo": {
+        "created": "Item created. Undo?",
+        "updated": "Changes saved. Undo?",
+        "deleted": "Item deleted. Undo?",
+        "reverted": "Action undone successfully",
+        "revertFailed": "Failed to undo. Please try again.",
+        "button": "Undo"
     }
 }
