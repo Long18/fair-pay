@@ -84,6 +84,10 @@ import { AttachmentList } from "@/modules/expenses/components/attachment-list";
 import { Attachment } from "@/modules/expenses/types";
 import { AdminCreateExpenseDialog } from "../components/AdminCreateExpenseDialog";
 import { AdminEditExpenseDialog } from "../components/AdminEditExpenseDialog";
+import {
+  applySplitSettlementChangeTyped,
+  getExpenseSettlementStatus,
+} from "./admin-transactions.utils";
 import { useHaptics } from "@/hooks/use-haptics";
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -194,37 +198,89 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
 // ─── Expense Detail Dialog ──────────────────────────────────────────
 
 function ExpenseDetailDialog({
-  expense, open, onOpenChange, onEdit, onDelete,
+  expense, open, onOpenChange, onEdit, onDelete, onSettlementChange,
 }: {
-  expense: ExpenseRow | null; open: boolean; onOpenChange: (open: boolean) => void; onEdit: () => void; onDelete: () => void;
+  expense: ExpenseRow | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onSettlementChange: (expenseId: string, nextIsSettled: boolean) => void;
 }) {
   const [splits, setSplits] = useState<ExpenseSplit[]>([]);
   const [loadingSplits, setLoadingSplits] = useState(false);
+  const [updatingSplitId, setUpdatingSplitId] = useState<string | null>(null);
   const [comment, setComment] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const expenseId = expense?.id;
+  const resolvedIsSettled = getExpenseSettlementStatus(splits, expense?.is_settled ?? false);
+
+  const handleToggleSplitSettlement = useCallback(async (split: ExpenseSplit) => {
+    if (!expense) return;
+
+    setUpdatingSplitId(split.id);
+    try {
+      const { error } = split.is_settled
+        ? await supabaseClient.rpc("unsettle_split", { p_split_id: split.id })
+        : await supabaseClient.rpc("settle_split", {
+            p_split_id: split.id,
+            p_amount: split.computed_amount,
+          });
+
+      if (error) throw error;
+
+      const nextSplits = applySplitSettlementChangeTyped(splits, split.id, !split.is_settled);
+      setSplits(nextSplits);
+
+      const nextStatus = getExpenseSettlementStatus(nextSplits, expense.is_settled);
+      onSettlementChange(expense.id, nextStatus);
+
+      toast.success(
+        split.is_settled
+          ? `Đã chuyển ${split.user_name} về trạng thái chưa trả`
+          : `Đã ghi nhận ${split.user_name} là đã trả`,
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Không thể cập nhật trạng thái thanh toán";
+      toast.error(`Lỗi: ${message}`);
+    } finally {
+      setUpdatingSplitId(null);
+    }
+  }, [expense, onSettlementChange, splits]);
 
   useEffect(() => {
-    if (!expense || !open) { setSplits([]); setComment(null); setAttachments([]); return; }
+    if (!expenseId || !open) { setSplits([]); setComment(null); setAttachments([]); return; }
     setLoadingSplits(true);
+    type ExpenseSplitResponse = {
+      id: string;
+      user_id: string;
+      split_method: string;
+      computed_amount: number;
+      is_settled: boolean | null;
+      settled_amount: number | null;
+      profiles?: {
+        full_name: string | null;
+      } | null;
+    };
 
     // Fetch splits, comment, and attachments in parallel
     Promise.all([
       supabaseClient
         .from("expense_splits")
         .select("*, profiles!expense_splits_user_id_fkey(full_name)")
-        .eq("expense_id", expense.id),
+        .eq("expense_id", expenseId),
       supabaseClient
         .from("expenses")
         .select("comment")
-        .eq("id", expense.id)
+        .eq("id", expenseId)
         .single(),
       supabaseClient
         .from("attachments")
         .select("*")
-        .eq("expense_id", expense.id),
+        .eq("expense_id", expenseId),
     ]).then(([splitsRes, commentRes, attachmentsRes]) => {
       if (!splitsRes.error && splitsRes.data) {
-        setSplits(splitsRes.data.map((s: any) => ({
+        setSplits((splitsRes.data as ExpenseSplitResponse[]).map((s) => ({
           id: s.id, user_id: s.user_id, user_name: s.profiles?.full_name ?? "Không rõ",
           split_method: s.split_method, computed_amount: s.computed_amount,
           is_settled: s.is_settled ?? false, settled_amount: s.settled_amount ?? 0,
@@ -238,7 +294,7 @@ function ExpenseDetailDialog({
       }
       setLoadingSplits(false);
     });
-  }, [expense?.id, open]);
+  }, [expenseId, open]);
 
   if (!expense) return null;
 
@@ -269,7 +325,7 @@ function ExpenseDetailDialog({
               })()
             } />
             <DetailItem label="Trạng thái" value={
-              expense.is_settled
+              resolvedIsSettled
                 ? <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800">Đã thanh toán</Badge>
                 : <Badge className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800">Chờ xử lý</Badge>
             } />
@@ -301,6 +357,7 @@ function ExpenseDetailDialog({
                       <TableHead>Phương thức</TableHead>
                       <TableHead className="text-right">Số tiền</TableHead>
                       <TableHead>Trạng thái</TableHead>
+                      <TableHead className="text-right">Cập nhật</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -313,6 +370,17 @@ function ExpenseDetailDialog({
                           {split.is_settled
                             ? <Badge variant="secondary" className="text-xs">Đã trả</Badge>
                             : <Badge variant="outline" className="text-xs">Chưa trả</Badge>}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant={split.is_settled ? "outline" : "default"}
+                            onClick={() => void handleToggleSplitSettlement(split)}
+                            disabled={updatingSplitId === split.id}
+                          >
+                            {updatingSplitId === split.id ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            {split.is_settled ? "Đánh dấu chưa trả" : "Đánh dấu đã trả"}
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -694,6 +762,15 @@ function ExpensesTab() {
     table.refineCore.tableQuery.refetch();
   }, [table.refineCore.tableQuery, tap]);
 
+  const handleSettlementChange = useCallback((expenseId: string, nextIsSettled: boolean) => {
+    setSelectedExpense((current) =>
+      current && current.id === expenseId
+        ? { ...current, is_settled: nextIsSettled }
+        : current,
+    );
+    table.refineCore.tableQuery.refetch();
+  }, [table.refineCore.tableQuery]);
+
   const clearFilters = useCallback(() => { tap(); setSearch(""); setGroupFilter("all"); setStatusFilter("all"); setDateFrom(""); setDateTo(""); setAmountMin(""); setAmountMax(""); }, [tap]);
   const hasActiveFilters = search !== "" || groupFilter !== "all" || statusFilter !== "all" || dateFrom !== "" || dateTo !== "" || amountMin !== "" || amountMax !== "";
   const isEmptyResult = !table.refineCore.tableQuery.isLoading && table.reactTable.getRowModel().rows.length === 0;
@@ -743,6 +820,7 @@ function ExpensesTab() {
       </Card>
 
       <ExpenseDetailDialog expense={selectedExpense} open={detailOpen} onOpenChange={setDetailOpen}
+        onSettlementChange={handleSettlementChange}
         onEdit={() => { setDetailOpen(false); setEditExpenseId(selectedExpense?.id ?? null); setEditDialogOpen(true); }}
         onDelete={() => { setDetailOpen(false); setDeleteExpense(selectedExpense); setDeleteDialogOpen(true); }}
       />
