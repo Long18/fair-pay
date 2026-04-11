@@ -22,6 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/locale-utils";
+import { getOweStatusColors } from "@/lib/status-colors";
 import { ExpenseFormValues } from "../types";
 import { useSplitCalculation } from "../hooks/use-split-calculation";
 import { RecurringExpenseForm } from "./recurring-expense-form";
@@ -39,7 +40,7 @@ import {
 
 // Import new components
 import { CategoryGrid } from "./category-grid";
-import { AmountInput } from "./amount-input";
+import { AmountInput, type AmountExpressionState } from "./amount-input";
 import { QuickDatePicker } from "./quick-date-picker";
 import { ParticipantChips } from "./participant-chips";
 import { QuickTemplates } from "./quick-templates";
@@ -131,6 +132,12 @@ export const ExpenseForm = ({
   const [showAdvanced, setShowAdvanced] = useState(!!defaultValues?.comment || (attachments && attachments.length > 0));
   const [showComment, setShowComment] = useState(!!defaultValues?.comment);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [amountExpressionState, setAmountExpressionState] = useState<AmountExpressionState>({
+    rawValue: defaultValues?.amount !== undefined ? String(defaultValues.amount) : "",
+    status: defaultValues?.amount !== undefined ? "valid" : "empty",
+    value: defaultValues?.amount,
+  });
+  const [hasBlockingExactSplitExpressions, setHasBlockingExactSplitExpressions] = useState(false);
   const didAutoSelectRef = useRef(false);
 
   const amount = form.watch("amount");
@@ -139,6 +146,7 @@ export const ExpenseForm = ({
   const isRecurring = form.watch("is_recurring");
   const isLoan = form.watch("is_loan");
   const paidByUserId = form.watch("paid_by_user_id");
+  const owedStatusColors = getOweStatusColors("owed");
 
   // Auto-select participants
   useEffect(() => {
@@ -178,9 +186,17 @@ export const ExpenseForm = ({
         recalculate(amount, splitMethod);
       }
     }
-  }, [amount, splitMethod, participants.length, recalculate, isLoan, isFriendContext, paidByUserId, setSplitValue]);
+  }, [amount, splitMethod, participants, participants.length, recalculate, isLoan, isFriendContext, paidByUserId, setSplitValue]);
 
   const handleFormSubmit = (data: ExpenseFormSchema) => {
+    if (amountExpressionState.status !== "valid" || (amountExpressionState.value ?? 0) <= 0) {
+      return;
+    }
+
+    if (hasBlockingExactSplitExpressions) {
+      return;
+    }
+
     const validSplits = participants.filter(p => {
       // Either user_id or pending_email must be present
       if (!p.user_id && !p.pending_email) return false;
@@ -270,6 +286,7 @@ export const ExpenseForm = ({
                         <AmountInput
                           value={field.value}
                           onChange={field.onChange}
+                          onExpressionStateChange={setAmountExpressionState}
                           currency={currency}
                           placeholder="0.00"
                         />
@@ -432,20 +449,20 @@ export const ExpenseForm = ({
 
                     {/* Lender */}
                     <div className="flex flex-col items-center gap-1">
-                      <Avatar className="h-10 w-10 border-2 border-green-300">
+                      <Avatar className={cn("h-10 w-10 border-2", owedStatusColors.border)}>
                         <AvatarImage
                           src={members.find(m => m.id === paidByUserId)?.avatar_url || undefined}
                           alt={members.find(m => m.id === paidByUserId)?.full_name}
                         />
-                        <AvatarFallback className="text-xs bg-green-200 dark:bg-green-800">
+                        <AvatarFallback className={cn("text-xs", owedStatusColors.bg, owedStatusColors.text)}>
                           {(members.find(m => m.id === paidByUserId)?.full_name || "?")
                             .split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-xs font-medium text-green-800 dark:text-green-200">
+                      <span className={cn("text-xs font-medium", owedStatusColors.text)}>
                         {members.find(m => m.id === paidByUserId)?.full_name || t('expenses.unknown')}
                       </span>
-                      <Badge variant="outline" className="text-[10px] border-green-400 text-green-700 dark:text-green-300">
+                      <Badge variant="outline" className={cn("text-[10px]", owedStatusColors.border, owedStatusColors.text)}>
                         {t('expenses.lender')}
                       </Badge>
                     </div>
@@ -537,6 +554,7 @@ export const ExpenseForm = ({
               onAddParticipantByEmail={addParticipantByEmail}
               onRemoveParticipant={removeParticipant}
               onSplitValueChange={setSplitValue}
+              onExpressionStateChange={setHasBlockingExactSplitExpressions}
               totalSplit={totalSplit}
             />
           </CardContent>
@@ -662,7 +680,13 @@ export const ExpenseForm = ({
         <Button
           type="submit"
           className="w-full h-12 font-medium text-base"
-          disabled={isLoading || !isSplitValid}
+          disabled={
+            isLoading ||
+            !isSplitValid ||
+            amountExpressionState.status !== "valid" ||
+            (amountExpressionState.value ?? 0) <= 0 ||
+            hasBlockingExactSplitExpressions
+          }
         >
           {isLoading ? (
             <>

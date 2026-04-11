@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,9 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "@/components/ui/icons";
+import {
+  parseMoneyExpression,
+} from "../utils/money-expression";
 
 interface Participant {
   user_id?: string;
@@ -43,6 +46,7 @@ interface ParticipantChipsProps {
   onAddParticipantByEmail: (email: string) => void;
   onRemoveParticipant: (userIdOrEmail: string) => void;
   onSplitValueChange: (userIdOrEmail: string, value: number) => void;
+  onExpressionStateChange?: (hasBlockingIssue: boolean) => void;
   totalSplit: number;
 }
 
@@ -57,7 +61,6 @@ const getInitials = (name: string) =>
 export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
   members,
   participants,
-  availableMembers: _availableMembers,
   currentUserId,
   splitMethod,
   amount,
@@ -66,6 +69,7 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
   onAddParticipantByEmail,
   onRemoveParticipant,
   onSplitValueChange,
+  onExpressionStateChange,
   totalSplit,
 }) => {
   const { t } = useTranslation();
@@ -84,11 +88,39 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
 
   const handleManualValueChange = (key: string, value: string) => {
     setManualValues((prev) => ({ ...prev, [key]: value }));
-    onSplitValueChange(key, parseFloat(value) || 0);
+
+    if (splitMethod !== "exact") {
+      onSplitValueChange(key, parseFloat(value) || 0);
+      return;
+    }
+
+    const parsedValue = parseMoneyExpression(value);
+    if (parsedValue.status === "valid" && parsedValue.value !== undefined && parsedValue.value >= 0) {
+      onSplitValueChange(key, parsedValue.value);
+    }
   };
 
-  const getMember = (userId: string): Member | undefined =>
-    members.find((m) => m.id === userId);
+  const handleManualValueBlur = (key: string) => {
+    if (splitMethod !== "exact") {
+      return;
+    }
+
+    const rawValue = manualValues[key];
+    if (rawValue === undefined) {
+      return;
+    }
+
+    const parsedValue = parseMoneyExpression(rawValue);
+    if (parsedValue.status !== "valid" || parsedValue.value === undefined || parsedValue.value < 0) {
+      return;
+    }
+
+    const resolvedValue = parsedValue.value;
+    setManualValues((prev) => ({
+      ...prev,
+      [key]: Number.isInteger(resolvedValue) ? formatNumber(resolvedValue) : resolvedValue.toString(),
+    }));
+  };
 
   const isSelected = useCallback(
     (memberId: string) => participants.some((p) => p.user_id === memberId),
@@ -111,6 +143,95 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
     () => participants.filter((p) => !!p.pending_email && !p.user_id),
     [participants]
   );
+
+  const exactExpressionStates = useMemo(() => {
+    if (splitMethod !== "exact") {
+      return [];
+    }
+
+    return participants
+      .map((participant) => {
+        const key = getKey(participant);
+        const rawValue = manualValues[key];
+
+        if (rawValue === undefined) {
+          return null;
+        }
+
+        const parsedValue = parseMoneyExpression(rawValue);
+        const hasBlockingIssue = parsedValue.status !== "valid" || (parsedValue.value ?? 0) < 0;
+
+        return {
+          key,
+          rawValue,
+          parsedValue,
+          hasBlockingIssue,
+        };
+      })
+      .filter((state): state is NonNullable<typeof state> => Boolean(state));
+  }, [manualValues, participants, splitMethod]);
+
+  const hasBlockingExactExpressions = useMemo(
+    () => exactExpressionStates.some((state) => state.hasBlockingIssue),
+    [exactExpressionStates]
+  );
+
+  useEffect(() => {
+    onExpressionStateChange?.(hasBlockingExactExpressions);
+  }, [hasBlockingExactExpressions, onExpressionStateChange]);
+
+  const getExpressionState = (key: string) => {
+    const rawValue = manualValues[key];
+    if (rawValue === undefined) {
+      return null;
+    }
+
+    const parsedValue = parseMoneyExpression(rawValue);
+    const isNegativeValue = parsedValue.status === "valid" && (parsedValue.value ?? 0) < 0;
+
+    return {
+      rawValue,
+      parsedValue,
+      isNegativeValue,
+    };
+  };
+
+  const getExactSplitPreview = (key: string, fallbackValue: number) => {
+    const expressionState = getExpressionState(key);
+
+    if (!expressionState) {
+      return {
+        text: `= ${formatNumber(fallbackValue)} ${currencySymbol}`,
+        tone: "default" as const,
+      };
+    }
+
+    if (expressionState.parsedValue.status === "valid" && expressionState.parsedValue.value !== undefined && !expressionState.isNegativeValue) {
+      return {
+        text: `= ${formatNumber(expressionState.parsedValue.value)} ${currencySymbol}`,
+        tone: "default" as const,
+      };
+    }
+
+    if (expressionState.parsedValue.status === "invalid" || expressionState.isNegativeValue) {
+      return {
+        text: "Invalid expression",
+        tone: "error" as const,
+      };
+    }
+
+    if (expressionState.parsedValue.status === "empty") {
+      return {
+        text: "Enter amount",
+        tone: "muted" as const,
+      };
+    }
+
+    return {
+      text: "Finish expression",
+      tone: "muted" as const,
+    };
+  };
 
   const handleToggleMember = useCallback(
     (memberId: string) => {
@@ -194,6 +315,9 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
             const isSelf = member.id === currentUserId;
             const participant = getParticipantForMember(member.id);
             const key = member.id;
+            const exactSplitPreview = participant
+              ? getExactSplitPreview(key, participant.computed_amount)
+              : null;
 
             return (
               <div key={key} className={cn(
@@ -243,19 +367,27 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
                   <div className="flex items-center gap-2 px-3 pb-2.5 pl-[4.25rem]" onClick={(e) => e.stopPropagation()}>
                     <div className="flex-1 relative min-w-0">
                       <Input
-                        type="number" inputMode="decimal"
-                        step={splitMethod === "exact" ? "0.01" : "1"}
-                        min="0" max={splitMethod === "percentage" ? "100" : undefined}
+                        type={splitMethod === "exact" ? "text" : "number"}
+                        inputMode={splitMethod === "exact" ? "text" : "decimal"}
                         placeholder="0"
                         value={manualValues[key] ?? participant.split_value ?? ""}
                         onChange={(e) => handleManualValueChange(key, e.target.value)}
+                        onBlur={() => handleManualValueBlur(key)}
                         onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+                        aria-invalid={exactSplitPreview?.tone === "error"}
                         className="pr-8 h-8 w-full text-sm"
                       />
                       <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{splitUnit}</span>
                     </div>
-                    <span className="text-xs font-medium text-muted-foreground tabular-nums w-20 text-right flex-shrink-0">
-                      = {formatNumber(participant.computed_amount)} {currencySymbol}
+                    <span
+                      className={cn(
+                        "text-xs font-medium tabular-nums w-24 text-right flex-shrink-0",
+                        exactSplitPreview?.tone === "error" && "text-destructive",
+                        exactSplitPreview?.tone === "muted" && "text-muted-foreground",
+                        exactSplitPreview?.tone === "default" && "text-muted-foreground"
+                      )}
+                    >
+                      {exactSplitPreview?.text}
                     </span>
                   </div>
                 )}
@@ -357,6 +489,7 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
         <div className="space-y-2">
           {pendingParticipants.map((p) => {
             const pKey = getKey(p);
+            const exactSplitPreview = getExactSplitPreview(pKey, p.computed_amount);
             return (
               <div key={pKey} className="flex items-center gap-2">
                 <div className="flex items-center gap-1.5 min-w-0 w-28 flex-shrink-0">
@@ -367,24 +500,38 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
                 </div>
                 <div className="flex-1 relative min-w-0">
                   <Input
-                    type="number" inputMode="decimal"
-                    step={splitMethod === "exact" ? "0.01" : "1"}
-                    min="0" max={splitMethod === "percentage" ? "100" : undefined}
+                    type={splitMethod === "exact" ? "text" : "number"}
+                    inputMode={splitMethod === "exact" ? "text" : "decimal"}
                     placeholder="0"
                     value={manualValues[pKey] ?? p.split_value ?? ""}
                     onChange={(e) => handleManualValueChange(pKey, e.target.value)}
+                    onBlur={() => handleManualValueBlur(pKey)}
                     onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+                    aria-invalid={exactSplitPreview.tone === "error"}
                     className="pr-8 h-8 w-full text-sm"
                   />
                   <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{splitUnit}</span>
                 </div>
-                <span className="text-xs font-medium text-muted-foreground tabular-nums w-20 text-right flex-shrink-0">
-                  = {formatNumber(p.computed_amount)} {currencySymbol}
+                <span
+                  className={cn(
+                    "text-xs font-medium tabular-nums w-24 text-right flex-shrink-0",
+                    exactSplitPreview.tone === "error" && "text-destructive",
+                    exactSplitPreview.tone === "muted" && "text-muted-foreground",
+                    exactSplitPreview.tone === "default" && "text-muted-foreground"
+                  )}
+                >
+                  {exactSplitPreview.text}
                 </span>
               </div>
             );
           })}
         </div>
+      )}
+
+      {splitMethod === "exact" && hasBlockingExactExpressions && (
+        <p className="text-xs text-muted-foreground">
+          Complete any in-progress expressions before submitting.
+        </p>
       )}
 
       {/* Add by email */}
