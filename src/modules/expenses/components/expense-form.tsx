@@ -147,6 +147,10 @@ export const ExpenseForm = ({
   const isLoan = form.watch("is_loan");
   const paidByUserId = form.watch("paid_by_user_id");
   const owedStatusColors = getOweStatusColors("owed");
+  const participantIdentitySignature = useMemo(
+    () => participants.map((participant) => participant.user_id || participant.pending_email || "").join("|"),
+    [participants]
+  );
 
   // Auto-select participants
   useEffect(() => {
@@ -173,20 +177,22 @@ export const ExpenseForm = ({
       if (isLoan && isFriendContext) {
         // Loan mode: 100% goes to borrower (non-payer)
         // We handle this by setting exact amounts
-        participants.forEach(p => {
-          const key = p.user_id || p.pending_email || '';
+        participantIdentitySignature
+          .split("|")
+          .filter(Boolean)
+          .forEach((key) => {
           if (key === paidByUserId) {
             setSplitValue(key, 0);
           } else {
             setSplitValue(key, amount);
           }
-        });
+          });
         recalculate(amount, 'exact');
       } else {
         recalculate(amount, splitMethod);
       }
     }
-  }, [amount, splitMethod, participants, participants.length, recalculate, isLoan, isFriendContext, paidByUserId, setSplitValue]);
+  }, [amount, splitMethod, participants.length, participantIdentitySignature, recalculate, isLoan, isFriendContext, paidByUserId, setSplitValue]);
 
   const handleFormSubmit = (data: ExpenseFormSchema) => {
     if (amountExpressionState.status !== "valid" || (amountExpressionState.value ?? 0) <= 0) {
