@@ -1,3 +1,5 @@
+import { toVersionToken } from "@/lib/share-url";
+
 type ShareVersionSource = {
   id?: string | null
   updated_at?: string | null
@@ -11,17 +13,6 @@ function extractExpenseIdFromUrl(url: URL): string | null {
 
   const match = url.pathname.match(/\/expenses\/show\/([^/?#]+)/)
   return match?.[1] ?? null
-}
-
-function toVersionToken(raw: string): string {
-  const value = raw.trim()
-  const parsed = Date.parse(value)
-  if (!Number.isNaN(parsed)) {
-    return String(Math.floor(parsed / 1000))
-  }
-
-  const sanitized = value.replace(/[^a-zA-Z0-9_-]/g, "")
-  return sanitized || "0"
 }
 
 export function buildExpenseShareUrl(

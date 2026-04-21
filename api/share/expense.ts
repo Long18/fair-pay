@@ -1,9 +1,17 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
 
+import { formatOgAmount, formatOgDate } from '../_lib/og-format'
+import {
+  applyShareHeaders,
+  getBaseUrl,
+  renderRedirectPage,
+  renderSimplePage,
+  toVersionToken,
+} from './shared'
+
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY
-const appUrl = process.env.VITE_APP_URL
 
 type ShareExpense = {
   id: string
@@ -15,59 +23,6 @@ type ShareExpense = {
   updated_at?: string | null
   created_at?: string | null
   latest_settled_at?: string | null
-}
-
-const NO_CACHE = 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0'
-
-function escapeHtml(input: string): string {
-  return input
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
-
-function toVersionToken(raw: string): string {
-  const value = raw.trim()
-  const parsed = Date.parse(value)
-  if (!Number.isNaN(parsed)) {
-    return String(Math.floor(parsed / 1000))
-  }
-  const sanitized = value.replace(/[^a-zA-Z0-9_-]/g, '')
-  return sanitized || '0'
-}
-
-function fmtAmount(amount: number, currency: string): string {
-  const c = (currency || 'VND').toUpperCase()
-  const withDots = Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-  return `${withDots} ${c}`
-}
-
-function fmtDate(dateStr: string): string {
-  try {
-    const [y, m, d] = dateStr.split('-').map(Number)
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(new Date(y, m - 1, d))
-  } catch {
-    return dateStr
-  }
-}
-
-function getBaseUrl(req: VercelRequest): string {
-  if (appUrl) return appUrl.replace(/\/+$/, '')
-  const forwardedHost = typeof req.headers['x-forwarded-host'] === 'string'
-    ? req.headers['x-forwarded-host'].split(',')[0]?.trim()
-    : undefined
-  const host = forwardedHost || req.headers.host || 'long-pay.vercel.app'
-  const forwardedProto = typeof req.headers['x-forwarded-proto'] === 'string'
-    ? req.headers['x-forwarded-proto'].split(',')[0]?.trim()
-    : undefined
-  const proto = forwardedProto || (host.startsWith('localhost') ? 'http' : 'https')
-  return `${proto}://${host}`
 }
 
 async function fetchShareExpense(id: string): Promise<ShareExpense | null> {
@@ -102,14 +57,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const idParam = req.query.id || req.query.expense_id
   const id = Array.isArray(idParam) ? idParam[0] : idParam
   const base = getBaseUrl(req)
+  applyShareHeaders(res)
 
   if (!id) {
-    res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    res.setHeader('Cache-Control', NO_CACHE)
-    res.setHeader('CDN-Cache-Control', 'no-store')
-    res.setHeader('Vercel-CDN-Cache-Control', 'no-store')
-    res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
-    res.status(200).send(`<!doctype html><html><head><meta charset="utf-8"/><meta name="robots" content="noindex,nofollow,noarchive"/><title>FairPay</title></head><body>Missing expense id</body></html>`)
+    res.status(200).send(renderSimplePage({
+      title: 'FairPay',
+      body: 'Missing expense id',
+    }))
     return
   }
 
@@ -129,54 +83,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const ogImageUrl = `${base}/api/og/expense?id=${encodeURIComponent(id)}&v=${encodeURIComponent(version)}`
 
   const title = expense
-    ? `${expense.description} • ${fmtAmount(expense.amount, expense.currency)}`
+    ? `${expense.description} • ${formatOgAmount(expense.amount, expense.currency)}`
     : 'FairPay Expense'
   const description = expense
-    ? `${fmtDate(expense.expense_date)}${expense.payer_name ? ` • paid by ${expense.payer_name}` : ''}`
+    ? `${formatOgDate(expense.expense_date)}${expense.payer_name ? ` • paid by ${expense.payer_name}` : ''}`
     : 'Open expense details in FairPay.'
 
-  const safeTitle = escapeHtml(title)
-  const safeDescription = escapeHtml(description)
-  const safeRedirect = escapeHtml(redirectUrl)
-  const safeShare = escapeHtml(shareUrl)
-  const safeOgImage = escapeHtml(ogImageUrl)
-
-  res.setHeader('Content-Type', 'text/html; charset=utf-8')
-  res.setHeader('Cache-Control', NO_CACHE)
-  res.setHeader('CDN-Cache-Control', 'no-store')
-  res.setHeader('Vercel-CDN-Cache-Control', 'no-store')
-  res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
-
-  res.status(200).send(`<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${safeTitle} | FairPay</title>
-  <meta name="description" content="${safeDescription}" />
-  <meta name="robots" content="noindex,nofollow,noarchive" />
-  <link rel="canonical" href="${safeShare}" />
-  <meta http-equiv="refresh" content="0;url=${safeRedirect}" />
-
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="FairPay" />
-  <meta property="og:title" content="${safeTitle}" />
-  <meta property="og:description" content="${safeDescription}" />
-  <meta property="og:url" content="${safeShare}" />
-  <meta property="og:image" content="${safeOgImage}" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="${safeTitle}" />
-  <meta name="twitter:description" content="${safeDescription}" />
-  <meta name="twitter:image" content="${safeOgImage}" />
-
-  <script>window.location.replace(${JSON.stringify(redirectUrl)});</script>
-</head>
-<body>
-  <p>Redirecting to FairPay expense page...</p>
-  <p><a href="${safeRedirect}">Open expense</a></p>
-</body>
-</html>`)
+  res.status(200).send(renderRedirectPage({
+    title,
+    description,
+    shareUrl,
+    redirectUrl,
+    ogImageUrl,
+    bodyText: 'Redirecting to FairPay expense page...',
+    linkText: 'Open expense',
+  }))
 }
