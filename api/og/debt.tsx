@@ -22,7 +22,7 @@ import {
   sanitizeOgText,
   SETTLED_GREEN,
   withNoCacheHeaders,
-} from './shared'
+} from '../_lib/og-shared'
 
 export const config = {
   runtime: 'edge',

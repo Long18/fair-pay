@@ -14,7 +14,7 @@ import {
   renderRedirectPage,
   renderSimplePage,
   toVersionToken,
-} from './shared'
+} from '../_lib/share-shared'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {

@@ -12,7 +12,7 @@ import {
   SETTLED_GREEN,
   withNoCacheHeaders,
   BrandHeader,
-} from './shared'
+} from '../_lib/og-shared'
 
 export const config = {
   runtime: 'edge',

@@ -99,3 +99,14 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
 
 <!-- gitnexus:end -->
+
+## Learned User Preferences
+
+- Always verify builds locally before pushing to Vercel - user has repeatedly had to report "still error" after pushes
+- When fixing build errors, test the fix locally first rather than pushing directly and waiting for CI
+
+## Learned Workspace Facts
+
+- Project deploys to Vercel via github.com/Long18/fair-pay
+- Uses pnpm as package manager
+- Node.js version conflicts between 20.x and 24.x have caused build issues - check engines field in package.json
