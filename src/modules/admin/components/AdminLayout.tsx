@@ -32,6 +32,7 @@ import {
   PanelLeftIcon,
   ArrowLeftIcon,
   CodeIcon,
+  EyeIcon,
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 
@@ -43,6 +44,7 @@ const NAV_ITEMS = [
   { key: "transactions", label: "Transactions", icon: ReceiptIcon, path: "/admin/transactions" },
   { key: "audit-logs", label: "Audit Logs", icon: ScrollTextIcon, path: "/admin/audit-logs" },
   { key: "reactions", label: "Reactions", icon: SmilePlusIcon, path: "/admin/reactions" },
+  { key: "og-preview", label: "OG Preview", icon: EyeIcon, path: "/admin/og-preview" },
   { key: "api-docs", label: "API Docs", icon: CodeIcon, path: "/admin/api-docs" },
 ] as const;
 
