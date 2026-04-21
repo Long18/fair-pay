@@ -1,7 +1,7 @@
 import { useGetIdentity } from "@refinedev/core";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { Profile } from "@/modules/profile/types";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useId } from "react";
 import { onSettlementEvent } from "@/lib/settlement-events";
 
 export interface AggregatedDebt {
@@ -41,6 +41,7 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
     const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const channelId = useId();
 
     const fetchDebts = useCallback(async () => {
         // Wait for identity to finish loading before deciding which path to take
@@ -185,7 +186,7 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
 
         // Subscribe to changes in expenses table
         const expensesChannel = supabaseClient
-            .channel('expenses-changes')
+            .channel(`expenses-changes-${channelId}`)
             .on(
                 'postgres_changes',
                 {
@@ -202,7 +203,7 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
 
         // Subscribe to changes in expense_splits table
         const splitsChannel = supabaseClient
-            .channel('expense-splits-changes')
+            .channel(`expense-splits-changes-${channelId}`)
             .on(
                 'postgres_changes',
                 {
