@@ -723,6 +723,7 @@ function ExpensesTab() {
       pagination: { pageSize: 10 },
       filters: { permanent: filters as any },
       sorters: { initial: [{ field: "expense_date", order: "desc" }] },
+      syncWithLocation: false,
       queryOptions: {
         select: (data) => {
           const transformed = data.data.map((expense: any) => {
