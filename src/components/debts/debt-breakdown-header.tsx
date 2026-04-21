@@ -1,17 +1,21 @@
 import { useState } from "react";
-import { useGo } from "@refinedev/core";
+import { useGetIdentity, useGo } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   CheckCircle2Icon,
   CreditCardIcon,
   PlusIcon,
+  ShareIcon,
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { usePayeeSepaySettings } from "@/hooks/payment/use-sepay-settings";
 import { formatCurrency } from "@/lib/locale-utils";
 import { cn } from "@/lib/utils";
 import { SepayPaymentDialog } from "@/modules/payments/components/sepay-payment-dialog";
+import { buildDebtShareUrl } from "@/modules/debts/utils/share-url";
+import { Profile } from "@/modules/profile/types";
+import { toast } from "sonner";
 
 interface DebtBreakdownHeaderProps {
   counterpartyName: string;
@@ -24,6 +28,7 @@ interface DebtBreakdownHeaderProps {
   counterpartyId: string;
   onPaymentComplete?: () => void;
   onSettleAll?: () => void;
+  shareVersionSource?: string | null;
 }
 
 function formatSignedCurrency(amount: number, currency: string) {
@@ -45,10 +50,12 @@ export function DebtBreakdownHeader({
   counterpartyId,
   onPaymentComplete,
   onSettleAll,
+  shareVersionSource,
 }: DebtBreakdownHeaderProps) {
   const { t } = useTranslation();
   const go = useGo();
-  const { tap } = useHaptics();
+  const { tap, success } = useHaptics();
+  const { data: identity } = useGetIdentity<Profile>();
   const [sepayDialogOpen, setSepayDialogOpen] = useState(false);
   const { isConfigured: isSepayConfigured } = usePayeeSepaySettings(counterpartyId);
 
@@ -59,6 +66,51 @@ export function DebtBreakdownHeader({
 
   const canPayViaSePay = iOweThem && isSepayConfigured && netAmount > 0;
   const canSettle = totalTheyOwe > 0 && !!onSettleAll;
+
+  const getShareUrl = () => buildDebtShareUrl(
+    {
+      viewerId: identity?.id,
+      counterpartyId,
+      latestActivityAt: shareVersionSource,
+    },
+    window.location.href,
+  );
+
+  const handleCopyLink = async () => {
+    tap();
+
+    try {
+      await navigator.clipboard.writeText(getShareUrl());
+      success();
+      toast.success(t("common.linkCopied", "Link copied to clipboard"));
+    } catch {
+      toast.error(t("common.copyFailed", "Failed to copy link"));
+    }
+  };
+
+  const handleShare = async () => {
+    tap();
+    const shareUrl = getShareUrl();
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: t("debts.debtsSummary", "Debts Summary"),
+          text: t(
+            "debts.shareSummaryText",
+            "Check out the balance summary with {{name}} on FairPay",
+            { name: counterpartyName },
+          ),
+          url: shareUrl,
+        });
+        return;
+      } catch {
+        // User cancelled share sheet.
+      }
+    }
+
+    await handleCopyLink();
+  };
 
   return (
     <>
@@ -138,7 +190,7 @@ export function DebtBreakdownHeader({
               variant="outline"
               className={cn(
                 "h-12 min-w-0 rounded-xl px-3 text-sm sm:px-4",
-                canPayViaSePay || canSettle ? "flex-1" : "w-full"
+                canPayViaSePay || canSettle ? "flex-1" : "flex-1"
               )}
               onClick={() => {
                 tap();
@@ -149,6 +201,16 @@ export function DebtBreakdownHeader({
               <span className="truncate">
                 {t("debts.addExpense", "Add expense")}
               </span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="h-12 w-12 shrink-0 rounded-xl px-0"
+              onClick={handleShare}
+              aria-label={t("common.share", "Share")}
+            >
+              <ShareIcon className="h-4 w-4" />
+              <span className="sr-only">{t("common.share", "Share")}</span>
             </Button>
           </div>
         </div>
