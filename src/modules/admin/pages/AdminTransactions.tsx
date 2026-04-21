@@ -70,6 +70,7 @@ import {
   SearchIcon,
   ReceiptIcon,
   CreditCardIcon,
+  BellIcon,
   MoreHorizontalIcon,
   FilterIcon,
   AlertTriangleIcon,
@@ -77,6 +78,7 @@ import {
   PlusIcon,
   PencilIcon,
 } from "@/components/ui/icons";
+import { AdminNotifications } from "./AdminNotifications";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
 import { getCategoryMeta } from "@/modules/expenses/lib/categories";
 import { MarkdownComment } from "@/modules/expenses/components/markdown-comment";
@@ -1095,12 +1097,19 @@ export function AdminTransactions() {
             <CreditCardIcon className="h-4 w-4" />
             Thanh toán
           </TabsTrigger>
+          <TabsTrigger value="notifications" className="gap-2">
+            <BellIcon className="h-4 w-4" />
+            Thông báo
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="expenses" className="mt-4">
           <ExpensesTab />
         </TabsContent>
         <TabsContent value="payments" className="mt-4">
           <PaymentsTab />
+        </TabsContent>
+        <TabsContent value="notifications" className="mt-4">
+          <AdminNotifications />
         </TabsContent>
       </Tabs>
     </div>

@@ -99,9 +99,7 @@ const AdminOverview = lazy(() => import("./modules/admin/pages/AdminOverview").t
 const AdminPeople = lazy(() => import("./modules/admin/pages/AdminPeople").then(m => ({ default: m.AdminPeople })));
 const AdminUserJourney = lazy(() => import("./modules/admin/pages/AdminUserJourney").then(m => ({ default: m.AdminUserJourney })));
 const AdminTransactions = lazy(() => import("./modules/admin/pages/AdminTransactions").then(m => ({ default: m.AdminTransactions })));
-const AdminNotifications = lazy(() => import("./modules/admin/pages/AdminNotifications").then(m => ({ default: m.AdminNotifications })));
 const AdminAuditLogs = lazy(() => import("./modules/admin/pages/AdminAuditLogs").then(m => ({ default: m.AdminAuditLogs })));
-const AdminDonationSettings = lazy(() => import("./modules/admin/pages/AdminDonationSettings").then(m => ({ default: m.AdminDonationSettings })));
 const AdminReactions = lazy(() => import("./modules/admin/pages/AdminReactions").then(m => ({ default: m.AdminReactions })));
 const AdminApiDocs = lazy(() => import("./modules/admin/pages/AdminApiDocs").then(m => ({ default: m.AdminApiDocs })));
 
@@ -418,9 +416,7 @@ function App() {
                     <Route path="people" element={<Suspense fallback={<PageLoader />}><AdminPeople /></Suspense>} />
                     <Route path="people/:id/journey" element={<Suspense fallback={<PageLoader />}><AdminUserJourney /></Suspense>} />
                     <Route path="transactions" element={<Suspense fallback={<PageLoader />}><AdminTransactions /></Suspense>} />
-                    <Route path="notifications" element={<Suspense fallback={<PageLoader />}><AdminNotifications /></Suspense>} />
                     <Route path="audit-logs" element={<Suspense fallback={<PageLoader />}><AdminAuditLogs /></Suspense>} />
-                    <Route path="donation-settings" element={<Suspense fallback={<PageLoader />}><AdminDonationSettings /></Suspense>} />
                     <Route path="reactions" element={<Suspense fallback={<PageLoader />}><AdminReactions /></Suspense>} />
                     {isAdminApiDocsEnabled && <Route path="api-docs" element={<Suspense fallback={<PageLoader />}><AdminApiDocs /></Suspense>} />}
                   </Route>
