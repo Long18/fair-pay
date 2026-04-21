@@ -98,6 +98,7 @@ export async function fetchDebtOgData(
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseKey) {
+    console.error('[debt-og-data] Missing env: VITE_SUPABASE_URL or Supabase key')
     return null
   }
 
@@ -114,11 +115,15 @@ export async function fetchDebtOgData(
       fetchProfilesByIds([viewerId, counterpartyId]),
     ])
 
-    if (debtError || !profiles) {
+    if (debtError) {
+      console.error('[debt-og-data] RPC error:', debtError.message ?? debtError)
+    }
+
+    if (!profiles) {
       return null
     }
 
-    const rows = (rawRows ?? []) as DebtDetailRow[]
+    const rows = debtError ? [] : ((rawRows ?? []) as DebtDetailRow[])
     const profileMap = profiles
 
     const viewerProfile = profileMap.get(viewerId)
