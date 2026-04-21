@@ -8,6 +8,7 @@ import {
   fetchDebtOgCounterparty,
   fetchDebtOgData,
 } from '../_lib/debt-og-data'
+import { decodeDebtToken, encodeDebtToken } from '../_lib/share-token'
 import {
   applyShareHeaders,
   getBaseUrl,
@@ -21,7 +22,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return await handleDebtShare(req, res)
   } catch (err) {
     console.error('[share/debt] unhandled error:', err)
-    res.status(200).send(renderSimplePage({ title: 'FairPay', body: 'Open FairPay to view this debt.' }))
+    try {
+      res.status(200).send(renderSimplePage({ title: 'FairPay', body: 'Open FairPay to view this debt.' }))
+    } catch {
+      // Last-resort fallback if even renderSimplePage fails
+      res.status(200).send('<html><body><p>Open FairPay to view this debt.</p></body></html>')
+    }
   }
 }
 
@@ -31,12 +37,30 @@ async function handleDebtShare(req: VercelRequest, res: VercelResponse) {
     return
   }
 
-  const counterpartyParam = req.query.counterparty_id || req.query.id
-  const viewerParam = req.query.viewer_id || req.query.user_id
-  const counterpartyId = Array.isArray(counterpartyParam) ? counterpartyParam[0] : counterpartyParam
-  const viewerId = Array.isArray(viewerParam) ? viewerParam[0] : viewerParam
-
   applyShareHeaders(res)
+
+  // ── Resolve IDs: short token (`t`) or legacy query params ──
+  let viewerId: string | undefined
+  let counterpartyId: string | undefined
+
+  const tokenParam = Array.isArray(req.query.t) ? req.query.t[0] : req.query.t
+  if (tokenParam) {
+    const decoded = decodeDebtToken(tokenParam)
+    if (decoded) {
+      viewerId = decoded.viewerId
+      counterpartyId = decoded.counterpartyId
+    }
+  }
+
+  // Fall back to explicit query params (backward compatible)
+  if (!counterpartyId) {
+    const counterpartyParam = req.query.counterparty_id || req.query.id
+    counterpartyId = Array.isArray(counterpartyParam) ? counterpartyParam[0] : counterpartyParam
+  }
+  if (!viewerId) {
+    const viewerParam = req.query.viewer_id || req.query.user_id
+    viewerId = Array.isArray(viewerParam) ? viewerParam[0] : viewerParam
+  }
 
   if (!counterpartyId) {
     res.status(200).send(renderSimplePage({
@@ -49,6 +73,7 @@ async function handleDebtShare(req: VercelRequest, res: VercelResponse) {
   const base = getBaseUrl(req)
   const queryVersion = Array.isArray(req.query.v) ? req.query.v[0] : req.query.v
 
+  // ── Counterparty-only link (no viewer) ──
   if (!viewerId) {
     const counterparty = await fetchDebtOgCounterparty(counterpartyId)
     const version = queryVersion || toVersionToken(counterpartyId)
@@ -67,12 +92,15 @@ async function handleDebtShare(req: VercelRequest, res: VercelResponse) {
     return
   }
 
+  // ── Full debt share (viewer + counterparty) ──
   const debt = await fetchDebtOgData(viewerId, counterpartyId)
   const version = queryVersion || toVersionToken(
     debt?.latest_activity_at || `${viewerId}-${counterpartyId}`,
   )
+
+  const token = encodeDebtToken(viewerId, counterpartyId)
   const redirectUrl = `${base}/debts/${encodeURIComponent(counterpartyId)}?v=${encodeURIComponent(version)}`
-  const shareUrl = `${base}/api/share/debt?viewer_id=${encodeURIComponent(viewerId)}&counterparty_id=${encodeURIComponent(counterpartyId)}&v=${encodeURIComponent(version)}`
+  const shareUrl = `${base}/api/share/debt?t=${encodeURIComponent(token)}&v=${encodeURIComponent(version)}`
   const ogImageUrl = `${base}/api/og/debt?viewer_id=${encodeURIComponent(viewerId)}&counterparty_id=${encodeURIComponent(counterpartyId)}&v=${encodeURIComponent(version)}`
 
   res.status(200).send(renderRedirectPage({
