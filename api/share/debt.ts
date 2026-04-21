@@ -37,11 +37,10 @@ async function handleDebtShare(req: VercelRequest, res: VercelResponse) {
     return
   }
 
-  applyShareHeaders(res)
-
   // ── Resolve IDs: short token (`t`) or legacy query params ──
   let viewerId: string | undefined
   let counterpartyId: string | undefined
+  let usedToken = false
 
   const tokenParam = Array.isArray(req.query.t) ? req.query.t[0] : req.query.t
   if (tokenParam) {
@@ -49,6 +48,7 @@ async function handleDebtShare(req: VercelRequest, res: VercelResponse) {
     if (decoded) {
       viewerId = decoded.viewerId
       counterpartyId = decoded.counterpartyId
+      usedToken = true
     }
   }
 
@@ -61,6 +61,22 @@ async function handleDebtShare(req: VercelRequest, res: VercelResponse) {
     const viewerParam = req.query.viewer_id || req.query.user_id
     viewerId = Array.isArray(viewerParam) ? viewerParam[0] : viewerParam
   }
+
+  // ── Redirect legacy long URLs → compact token URL ──
+  // When both viewer + counterparty came from old-style query params (not token),
+  // 301 redirect to the short format so crawlers and users always see the canonical URL.
+  if (viewerId && counterpartyId && !usedToken) {
+    const base = getBaseUrl(req)
+    const queryVersion = Array.isArray(req.query.v) ? req.query.v[0] : req.query.v
+    const token = encodeDebtToken(viewerId, counterpartyId)
+    const shortUrl = `${base}/api/share/debt?t=${encodeURIComponent(token)}${queryVersion ? `&v=${encodeURIComponent(queryVersion)}` : ''}`
+    res.setHeader('Location', shortUrl)
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+    res.status(301).end()
+    return
+  }
+
+  applyShareHeaders(res)
 
   if (!counterpartyId) {
     res.status(200).send(renderSimplePage({
