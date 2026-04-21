@@ -584,6 +584,7 @@ export function AdminNotifications() {
       sorters: {
         initial: [{ field: "created_at", order: "desc" }],
       },
+      syncWithLocation: false,
       queryOptions: {
         select: (data) => {
           const transformed = data.data.map((n: any) => ({
