@@ -64,14 +64,14 @@ function pickLatestActivity(rows: DebtDetailRow[]): string | null {
 
 async function fetchProfilesByIds(profileIds: string[]): Promise<Map<string, ProfileRow> | null> {
   const supabaseUrl = process.env.VITE_SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY
 
-  if (!supabaseUrl || !serviceRoleKey) {
+  if (!supabaseUrl || !supabaseKey) {
     return null
   }
 
   try {
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    const supabase = createClient(supabaseUrl, supabaseKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
 
@@ -95,14 +95,14 @@ export async function fetchDebtOgData(
   counterpartyId: string,
 ): Promise<DebtOgData | null> {
   const supabaseUrl = process.env.VITE_SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY
 
-  if (!supabaseUrl || !serviceRoleKey) {
+  if (!supabaseUrl || !supabaseKey) {
     return null
   }
 
   try {
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    const supabase = createClient(supabaseUrl, supabaseKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
 
