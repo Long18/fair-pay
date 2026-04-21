@@ -256,6 +256,13 @@ export const PersonDebtBreakdown = () => {
 
   const hasSelection = selectedSplitIds.size > 0;
   const isLoading = isLoadingProfile || isLoadingExpenses || isLoadingSummary;
+  const shareVersionSource = useMemo(() => {
+    const candidates = expenses
+      .flatMap((expense) => [expense.settled_at, expense.expense_date])
+      .filter((value): value is string => Boolean(value));
+
+    return candidates.sort().pop() ?? null;
+  }, [expenses]);
 
   if (isLoading) {
     return (
@@ -306,6 +313,7 @@ export const PersonDebtBreakdown = () => {
           counterpartyId={userId!}
           onPaymentComplete={refetch}
           onSettleAll={handleSettleAll}
+          shareVersionSource={shareVersionSource}
         />
 
         <div className="sticky top-16 z-30 bg-background/95 py-4 backdrop-blur-sm md:top-20">
