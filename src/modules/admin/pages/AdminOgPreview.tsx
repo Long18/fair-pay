@@ -70,6 +70,15 @@ function formatTime(date: Date): string {
 }
 
 
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
 function parseOgMeta(html: string): OgMeta {
   const get = (property: string): string | null => {
     // Match both property="..." and name="..." patterns
@@ -81,7 +90,7 @@ function parseOgMeta(html: string): OgMeta {
     ];
     for (const re of patterns) {
       const match = html.match(re);
-      if (match?.[1]) return match[1];
+      if (match?.[1]) return decodeHtmlEntities(match[1]);
     }
     return null;
   };
