@@ -1,4 +1,5 @@
-import { createClient, SupabaseClient, User } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import type { User } from '@supabase/auth-js'
 
 interface AuthResult {
   user: User | null
@@ -32,7 +33,10 @@ export async function getAuthenticatedUser(authHeader: string | undefined): Prom
     global: { headers: { Authorization: `Bearer ${token}` } },
   })
 
-  const { data: { user }, error } = await supabase.auth.getUser()
+  // Some environments (notably Vercel's function typecheck pipeline) can see a
+  // narrower auth client type; runtime still supports getUser(). Cast to avoid
+  // false-negative build failures.
+  const { data: { user }, error } = await (supabase.auth as unknown as { getUser: () => Promise<{ data: { user: User | null }, error: unknown | null }> }).getUser()
   if (error || !user) {
     return { user: null, error: 'Invalid or expired token', supabase: null }
   }

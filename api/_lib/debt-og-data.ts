@@ -9,8 +9,10 @@ type DebtDetailRow = {
   currency: string
   settled_amount: number | string | null
   remaining_amount: number | string | null
+  split_amount: number | string | null
   is_settled: boolean | null
   i_owe_them: boolean | null
+  group_name: string | null
   created_at: string | null
 }
 
@@ -18,6 +20,12 @@ type ProfileRow = {
   id: string
   full_name: string | null
   avatar_url: string | null
+}
+
+export interface DebtOgCounterparty {
+  counterparty_id: string
+  counterparty_name: string
+  counterparty_avatar_url: string | null
 }
 
 export interface DebtOgData {
@@ -38,6 +46,7 @@ export interface DebtOgData {
   paid_count: number
   latest_activity_at: string | null
   all_settled: boolean
+  recent_transactions: DebtOgRecentTransaction[]
 }
 
 function toNumber(value: unknown): number {
@@ -51,6 +60,34 @@ function pickLatestActivity(rows: DebtDetailRow[]): string | null {
     .filter((value): value is string => Boolean(value))
 
   return candidates.sort().pop() ?? null
+}
+
+async function fetchProfilesByIds(profileIds: string[]): Promise<Map<string, ProfileRow> | null> {
+  const supabaseUrl = process.env.VITE_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    return null
+  }
+
+  try {
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, full_name, avatar_url')
+      .in('id', profileIds)
+
+    if (error) {
+      return null
+    }
+
+    return new Map(((data ?? []) as ProfileRow[]).map((profile) => [profile.id, profile]))
+  } catch {
+    return null
+  }
 }
 
 export async function fetchDebtOgData(
@@ -69,25 +106,20 @@ export async function fetchDebtOgData(
       auth: { autoRefreshToken: false, persistSession: false },
     })
 
-    const [{ data: rawRows, error: debtError }, { data: profiles, error: profileError }] = await Promise.all([
+    const [{ data: rawRows, error: debtError }, profiles] = await Promise.all([
       supabase.rpc('get_user_debt_details', {
         p_user_id: viewerId,
         p_counterparty_id: counterpartyId,
       }),
-      supabase
-        .from('profiles')
-        .select('id, full_name, avatar_url')
-        .in('id', [viewerId, counterpartyId]),
+      fetchProfilesByIds([viewerId, counterpartyId]),
     ])
 
-    if (debtError || profileError) {
+    if (debtError || !profiles) {
       return null
     }
 
     const rows = (rawRows ?? []) as DebtDetailRow[]
-    const profileMap = new Map(
-      ((profiles ?? []) as ProfileRow[]).map((profile) => [profile.id, profile]),
-    )
+    const profileMap = profiles
 
     const viewerProfile = profileMap.get(viewerId)
     const counterpartyProfile = profileMap.get(counterpartyId)
@@ -127,6 +159,25 @@ export async function fetchDebtOgData(
     const netAmount = Math.abs(totalTheyOwe - totalIOwe)
     const allSettled = totalIOwe <= 0 && totalTheyOwe <= 0
 
+    const recentCandidates: DebtOgRecentTransaction[] = rows.slice(0, 10).map((row) => {
+      const remainingAmount = toNumber(row.remaining_amount)
+      const splitAmount = toNumber(row.split_amount)
+      const isSettled = Boolean(row.is_settled) || remainingAmount <= 0
+
+      return {
+        expense_id: row.expense_id,
+        description: row.description,
+        expense_date: row.expense_date,
+        group_name: row.group_name,
+        remaining_amount: remainingAmount,
+        split_amount: splitAmount || remainingAmount,
+        is_settled: isSettled,
+        i_owe_them: Boolean(row.i_owe_them),
+      }
+    })
+
+    const recentTransactions = selectRecentTransactions(recentCandidates)
+
     return {
       viewer_id: viewerId,
       viewer_name: viewerProfile?.full_name || 'You',
@@ -145,10 +196,54 @@ export async function fetchDebtOgData(
       paid_count: paidCount,
       latest_activity_at: pickLatestActivity(rows),
       all_settled: allSettled,
+      recent_transactions: recentTransactions,
     }
   } catch {
     return null
   }
+}
+
+export async function fetchDebtOgCounterparty(
+  counterpartyId: string,
+): Promise<DebtOgCounterparty | null> {
+  const profileMap = await fetchProfilesByIds([counterpartyId])
+  const counterparty = profileMap?.get(counterpartyId)
+
+  if (!counterparty) {
+    return null
+  }
+
+  return {
+    counterparty_id: counterpartyId,
+    counterparty_name: counterparty.full_name || 'Unknown user',
+    counterparty_avatar_url: counterparty.avatar_url || null,
+  }
+}
+
+export interface DebtOgRecentTransaction {
+  expense_id: string
+  description: string
+  expense_date: string
+  group_name: string | null
+  remaining_amount: number
+  split_amount: number
+  is_settled: boolean
+  i_owe_them: boolean
+}
+
+export function selectRecentTransactions(
+  candidates: DebtOgRecentTransaction[],
+  limit = 3,
+): DebtOgRecentTransaction[] {
+  const open = candidates.filter((tx) => !tx.is_settled)
+  const settled = candidates.filter((tx) => tx.is_settled)
+  const selected = open.slice(0, limit)
+
+  if (selected.length < limit) {
+    selected.push(...settled.slice(0, limit - selected.length))
+  }
+
+  return selected
 }
 
 export function buildDebtRelationshipLabel(debt: DebtOgData): string {
@@ -171,6 +266,14 @@ export function buildDebtOgTitle(debt: DebtOgData | null): string {
     : `Debt Summary with ${debt.counterparty_name}`
 }
 
+export function buildDebtDirectOgTitle(counterparty: DebtOgCounterparty | null): string {
+  if (!counterparty) {
+    return 'FairPay Debt Detail'
+  }
+
+  return `Debt details with ${counterparty.counterparty_name}`
+}
+
 export function buildDebtOgDescription(debt: DebtOgData | null): string {
   if (!debt) {
     return 'Open debt details in FairPay.'
@@ -180,9 +283,27 @@ export function buildDebtOgDescription(debt: DebtOgData | null): string {
     return `No outstanding balance with ${debt.counterparty_name}.`
   }
 
-  return [
-    `You owe ${formatOgAmount(debt.total_i_owe, debt.currency)}.`,
-    `You are owed ${formatOgAmount(debt.total_they_owe, debt.currency)}.`,
-    `Net balance: ${formatOgAmount(debt.net_amount, debt.currency)}.`,
-  ].join(' ')
+  const parts: string[] = []
+
+  if (debt.total_i_owe > 0) {
+    parts.push(`Open: you owe ${formatOgAmount(debt.total_i_owe, debt.currency)}.`)
+  }
+
+  if (debt.total_they_owe > 0) {
+    parts.push(`Open: ${debt.counterparty_name} owes you ${formatOgAmount(debt.total_they_owe, debt.currency)}.`)
+  }
+
+  if (debt.net_amount > 0) {
+    parts.push(`Net balance: ${formatOgAmount(debt.net_amount, debt.currency)}.`)
+  }
+
+  return parts.join(' ')
+}
+
+export function buildDebtDirectOgDescription(counterparty: DebtOgCounterparty | null): string {
+  if (!counterparty) {
+    return 'Open debt details in FairPay.'
+  }
+
+  return `Open balances between you and ${counterparty.counterparty_name} on FairPay.`
 }

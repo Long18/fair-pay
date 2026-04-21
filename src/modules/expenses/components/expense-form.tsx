@@ -614,7 +614,8 @@ export const ExpenseForm = ({
                 {isRecurring && (
                   <div className="mt-4">
                     <RecurringExpenseForm
-                      control={form.control}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      control={form.control as unknown as import('react-hook-form').Control<any, any, any>}
                       isRecurring={isRecurring}
                     />
                   </div>

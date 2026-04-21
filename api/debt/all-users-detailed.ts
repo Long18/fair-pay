@@ -1,4 +1,4 @@
-import { VercelRequest, VercelResponse } from '@vercel/node'
+import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { getAuthenticatedUser } from '../_lib/auth'
 import { handleCorsPreflightIfNeeded, setCorsHeaders } from '../_lib/cors'
 

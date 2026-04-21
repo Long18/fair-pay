@@ -1,4 +1,4 @@
-import { VercelRequest, VercelResponse } from '@vercel/node'
+import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
 import { catalog } from '../../../src/modules/admin/api-docs/catalog'
 import type { ApiCatalogEntry } from '../../../src/modules/admin/api-docs/types'
@@ -127,7 +127,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     global: { headers: { Authorization: `Bearer ${token}` } },
   })
 
-  const { data: { user }, error: authError } = await authClient.auth.getUser()
+  const { data: { user }, error: authError } = await (authClient.auth as unknown as {
+    getUser: () => Promise<{ data: { user: { id: string } | null }, error: unknown | null }>
+  }).getUser()
   if (authError || !user) {
     return res.status(401).json({ success: false, status: 401, duration_ms: Date.now() - start, error: 'Invalid or expired token' })
   }
@@ -293,7 +295,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       status: responseStatus,
       duration_ms: Date.now() - start,
     },
-  }).then(() => void 0).catch(() => void 0)
+  }).then(() => void 0, () => void 0)
 
   // ── Step 8: Respond ──────────────────────────────────────────────────────────
 
