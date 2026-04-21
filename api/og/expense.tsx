@@ -1,6 +1,19 @@
 import { ImageResponse } from '@vercel/og'
 import { createClient } from '@supabase/supabase-js'
 
+import {
+  BRAND_TEAL,
+  buildFonts,
+  formatOgAmount,
+  formatOgDate,
+  OgAvatar,
+  PillBadge,
+  sanitizeOgText,
+  SETTLED_GREEN,
+  withNoCacheHeaders,
+  BrandHeader,
+} from './shared'
+
 export const config = {
   runtime: 'edge',
 }
@@ -41,71 +54,6 @@ const CATEGORY_META: Record<string, { label: string; color: string }> = {
   travel: { label: 'Travel', color: '#06b6d4' },
   groceries: { label: 'Groceries', color: '#22c55e' },
   other: { label: 'Expense', color: '#64748b' },
-}
-
-const BRAND_TEAL = '#0d9488'
-const SETTLED_GREEN = '#16a34a'
-const NO_CACHE_HEADERS = {
-  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
-  'CDN-Cache-Control': 'no-store',
-  'Vercel-CDN-Cache-Control': 'no-store',
-  Pragma: 'no-cache',
-  Expires: '0',
-}
-
-function withNoCacheHeaders(response: ImageResponse): ImageResponse {
-  Object.entries(NO_CACHE_HEADERS).forEach(([key, value]) => {
-    response.headers.set(key, value)
-  })
-  return response
-}
-
-/**
- * Load Google Font dynamically — fetches only the glyphs needed for the given text.
- * Returns null on failure instead of throwing, so the image can still render with default font.
- */
-async function loadGoogleFont(font: string, text: string): Promise<ArrayBuffer | null> {
-  try {
-    const url = `https://fonts.googleapis.com/css2?family=${font}:wght@400;700;800&text=${encodeURIComponent(text)}`
-    // No User-Agent header → Google Fonts serves truetype/opentype (not woff2)
-    // Satori only supports .ttf/.otf, NOT woff2
-    const css = await (await fetch(url)).text()
-    const resource = css.match(/src: url\((.+?)\) format\('(opentype|truetype)'\)/)
-    if (resource) {
-      const response = await fetch(resource[1])
-      if (response.status === 200) {
-        return await response.arrayBuffer()
-      }
-    }
-    return null
-  } catch {
-    return null
-  }
-}
-
-/** ASCII-safe number formatter — no ₫ or other Unicode currency symbols.
- *  Uses dots for thousands separator (Vietnamese style): 500.000 VND */
-function fmt(amount: number, currency: string): string {
-  const c = (currency || 'VND').toUpperCase()
-  const rounded = Math.round(amount)
-  const str = Math.abs(rounded).toString()
-  // Insert dots every 3 digits from the right
-  const withDots = str.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-  const formatted = rounded < 0 ? `-${withDots}` : withDots
-  return `${formatted} ${c}`
-}
-
-function fmtDate(dateStr: string): string {
-  try {
-    const [y, m, d] = dateStr.split('-').map(Number)
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(new Date(y, m - 1, d))
-  } catch {
-    return dateStr
-  }
 }
 
 async function fetchExpense(id: string): Promise<ExpenseData | null> {
@@ -216,38 +164,25 @@ async function fetchExpense(id: string): Promise<ExpenseData | null> {
 
 /* ── Shared layout pieces ── */
 
-function BrandHeader() {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <div style={{ display: 'flex', width: 28, height: 28, borderRadius: 8, background: BRAND_TEAL }} />
-      <span style={{ fontSize: 22, fontWeight: 700, color: BRAND_TEAL, letterSpacing: -0.5 }}>
-        FairPay
-      </span>
-    </div>
-  )
-}
-
 function CategoryBadge({ label, color }: { label: string; color: string }) {
   return (
-    <div style={{
-      display: 'flex', fontSize: 14, fontWeight: 600,
-      color, background: `${color}15`, border: `1.5px solid ${color}30`,
-      padding: '5px 14px', borderRadius: 20,
-    }}>
-      {label}
-    </div>
+    <PillBadge
+      label={label}
+      color={color}
+      background={`${color}15`}
+      borderColor={`${color}30`}
+    />
   )
 }
 
 function SettledBadge() {
   return (
-    <div style={{
-      display: 'flex', fontSize: 14, fontWeight: 600,
-      color: SETTLED_GREEN, background: `${SETTLED_GREEN}15`, border: `1.5px solid ${SETTLED_GREEN}30`,
-      padding: '5px 14px', borderRadius: 20, alignItems: 'center', gap: 4,
-    }}>
-      Settled
-    </div>
+    <PillBadge
+      label="Settled"
+      color={SETTLED_GREEN}
+      background={`${SETTLED_GREEN}15`}
+      borderColor={`${SETTLED_GREEN}30`}
+    />
   )
 }
 
@@ -265,9 +200,6 @@ function MetaLine({ date, payer }: { date: string; payer: string | null }) {
   )
 }
 
-// Avatar colors for participants without profile pictures
-const AVATAR_COLORS = ['#0d9488', '#3b82f6', '#f97316', '#a855f7', '#ec4899', '#22c55e', '#eab308', '#ef4444']
-
 function ParticipantChips({ participants, perPerson, currency }: {
   participants: Participant[]; perPerson: number; currency: string
 }) {
@@ -284,13 +216,11 @@ function ParticipantChips({ participants, perPerson, currency }: {
             borderRadius: 20, padding: '4px 12px 4px 4px',
           }}>
             <div style={{ display: 'flex', position: 'relative', width: 26, height: 26 }}>
-              {p.avatar_url ? (
-                <img src={p.avatar_url} width={26} height={26} style={{ borderRadius: 13, objectFit: 'cover' }} />
-              ) : (
-                <div style={{ display: 'flex', width: 26, height: 26, borderRadius: 13, background: AVATAR_COLORS[i % AVATAR_COLORS.length], alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 12, fontWeight: 700 }}>
-                  {p.name.charAt(0).toUpperCase()}
-                </div>
-              )}
+              <OgAvatar
+                name={p.name}
+                avatarUrl={p.avatar_url}
+                colorIndex={i}
+              />
               {p.is_settled && (
                 <div style={{
                   display: 'flex', position: 'absolute', bottom: -1, right: -2,
@@ -318,20 +248,10 @@ function ParticipantChips({ participants, perPerson, currency }: {
         )}
       </div>
       <div style={{ display: 'flex', fontSize: 14, color: '#94a3b8' }}>
-        {participants.length} people - {fmt(perPerson, currency)}/person
+        {participants.length} people - {formatOgAmount(perPerson, currency)}/person
       </div>
     </div>
   )
-}
-
-/** Build font options for ImageResponse — returns undefined if font loading fails */
-async function buildFonts(text: string) {
-  const fontData = await loadGoogleFont('Inter', text)
-  if (!fontData) return undefined
-  return [
-    { name: 'Inter', data: fontData, style: 'normal' as const, weight: 400 as const },
-    { name: 'Inter', data: fontData, style: 'normal' as const, weight: 700 as const },
-  ]
 }
 
 export default async function handler(req: Request) {
@@ -362,24 +282,20 @@ export default async function handler(req: Request) {
     }
 
     const cat = CATEGORY_META[expense.category ?? 'other'] ?? CATEGORY_META.other
-    const amount = fmt(expense.amount, expense.currency)
-    const date = fmtDate(expense.expense_date)
+    const amount = formatOgAmount(expense.amount, expense.currency)
+    const date = formatOgDate(expense.expense_date)
     // Sanitize description — strip currency symbols Satori can't render
-    const rawDesc = expense.description.replace(/[₫¥€£₹₩₪₱₴₸₺₼₽]/g, '').trim()
+    const rawDesc = sanitizeOgText(expense.description)
     const desc = rawDesc.length > 70
       ? rawDesc.slice(0, 67) + '...'
       : rawDesc
 
-    // Strip non-ASCII currency symbols (₫, ¥, €, £, etc.) that Satori can't render
-    // without a font that covers those glyphs — we use text labels like "VND" instead
-    const sanitize = (s: string) => s.replace(/[₫¥€£₹₩₪₱₴₸₺₼₽]/g, '').trim()
-
     // Collect all text that will be rendered so the font includes every glyph
-    const allText = sanitize([
+    const allText = sanitizeOgText([
       'FairPay', cat.label, desc, amount, date, 'Settled',
       expense.payer_name ? `paid by ${expense.payer_name}` : '',
       ...expense.participants.map((p) => p.name),
-      `${expense.split_count} people`, `${fmt(expense.per_person, expense.currency)}/person`,
+      `${expense.split_count} people`, `${formatOgAmount(expense.per_person, expense.currency)}/person`,
     ].join(' '))
     const fonts = await buildFonts(allText)
 
