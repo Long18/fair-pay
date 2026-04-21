@@ -185,15 +185,34 @@ export default defineConfig({
                 entryFileNames: 'assets/[name]-[hash].js',
                 chunkFileNames: 'assets/[name]-[hash].js',
                 assetFileNames: 'assets/[name]-[hash].[ext]',
-                manualChunks: {
-                    'vendor-react': ['react', 'react-dom', 'react-router'],
-                    'vendor-refine': ['@refinedev/core', '@refinedev/react-router', '@refinedev/supabase'],
-                    'vendor-supabase': ['@supabase/supabase-js'],
-                    'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-popover', '@radix-ui/react-select', '@radix-ui/react-tooltip', '@radix-ui/react-dropdown-menu'],
-                    'vendor-form': ['react-hook-form', '@hookform/resolvers', 'zod'],
-                    'vendor-table': ['@tanstack/react-table'],
-                    'vendor-date': ['date-fns', 'dayjs'],
-                    'vendor-i18n': ['i18next', 'react-i18next'],
+                manualChunks(id: string) {
+                    if (id.includes('node_modules')) {
+                        if (id.includes('react-dom') || id.includes('react-router') || id.match(/\/react\//) ) {
+                            return 'vendor-react';
+                        }
+                        if (id.includes('@refinedev/core') || id.includes('@refinedev/react-router') || id.includes('@refinedev/supabase')) {
+                            return 'vendor-refine';
+                        }
+                        if (id.includes('@supabase/supabase-js') || id.includes('@supabase/auth-js')) {
+                            return 'vendor-supabase';
+                        }
+                        if (id.includes('@radix-ui/')) {
+                            return 'vendor-ui';
+                        }
+                        if (id.includes('react-hook-form') || id.includes('@hookform/resolvers') || id.includes('/zod/')) {
+                            return 'vendor-form';
+                        }
+                        if (id.includes('@tanstack/react-table')) {
+                            return 'vendor-table';
+                        }
+                        if (id.includes('date-fns') || id.includes('dayjs')) {
+                            return 'vendor-date';
+                        }
+                        if (id.includes('i18next') || id.includes('react-i18next')) {
+                            return 'vendor-i18n';
+                        }
+                    }
+                    return undefined;
                 },
             },
 

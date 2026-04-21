@@ -104,8 +104,8 @@ export function CategoryPieChart({ data, title }: CategoryPieChartProps) {
               cy="50%"
               innerRadius="0%"
               outerRadius="80%"
-              label={({ percent }) => {
-                if (percent < 0.08) return null;
+              label={({ percent }: { percent?: number }) => {
+                if (!percent || percent < 0.08) return null;
                 return `${(percent * 100).toFixed(0)}%`;
               }}
               labelLine={false}

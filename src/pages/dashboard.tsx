@@ -54,7 +54,7 @@ export const Dashboard = () => {
   } = useEnhancedActivity({ limit: 50, enabled: activeTab === "activity" });
 
   const [loading, setLoading] = useState(true);
-  const visibilityDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const visibilityDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastRefetchTimeRef = useRef<number>(0);
 
   // Refetch data when component mounts or becomes visible (with debounce and stale time check)

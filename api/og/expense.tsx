@@ -21,6 +21,8 @@ export const config = {
 const supabaseUrl = process.env.VITE_SUPABASE_URL!
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY!
 
+type RpcResponse<T> = { data: T | null; error: unknown | null }
+
 interface Participant {
   name: string
   avatar_url: string | null
@@ -69,14 +71,12 @@ async function fetchExpense(id: string): Promise<ExpenseData | null> {
     }) : null
 
     const [ogResult, splits] = await Promise.all([
-      sbAnon.rpc('get_expense_og_data', { p_expense_id: id }).then(
-        (res) => res,
-        () => ({ data: null, error: null }),
-      ),
-      sbAnon.rpc('get_expense_splits_public', { p_expense_id: id }).then(
-        (res) => res,
-        () => ({ data: null, error: null }),
-      ),
+      Promise.resolve(sbAnon.rpc('get_expense_og_data', { p_expense_id: id })).then(
+        (res: unknown) => res as RpcResponse<unknown[]>,
+      ).catch(() => ({ data: null, error: null }) as RpcResponse<unknown[]>),
+      Promise.resolve(sbAnon.rpc('get_expense_splits_public', { p_expense_id: id })).then(
+        (res: unknown) => res as RpcResponse<unknown[]>,
+      ).catch(() => ({ data: null, error: null }) as RpcResponse<unknown[]>),
     ])
 
     let e: {

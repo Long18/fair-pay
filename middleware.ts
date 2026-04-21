@@ -29,6 +29,7 @@ const BOT_PATTERNS = [
 ]
 
 const EXPENSE_SHOW_REGEX = /^\/expenses\/show\/([a-f0-9-]{36})$/i
+const DEBT_SHOW_REGEX = /^\/debts\/([a-f0-9-]{36})$/i
 
 function isBot(userAgent: string): boolean {
   const ua = userAgent.toLowerCase()
@@ -41,15 +42,15 @@ export default function middleware(request: Request): Response {
 
   if (!isBot(userAgent)) return next()
 
-  const match = url.pathname.match(EXPENSE_SHOW_REGEX)
-  if (!match) return next()
-
-  const expenseId = match[1]
   const siteUrl = `${url.protocol}//${url.host}`
-  const ogImageUrl = `${siteUrl}/api/og/expense?id=${expenseId}`
-  const canonicalUrl = `${siteUrl}${url.pathname}`
+  const canonicalUrl = `${siteUrl}${url.pathname}${url.search}`
 
-  const html = `<!DOCTYPE html>
+  const expenseMatch = url.pathname.match(EXPENSE_SHOW_REGEX)
+  if (expenseMatch) {
+    const expenseId = expenseMatch[1]
+    const ogImageUrl = `${siteUrl}/api/og/expense?id=${expenseId}`
+
+    const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -70,15 +71,56 @@ export default function middleware(request: Request): Response {
 <body></body>
 </html>`
 
-  return new Response(html, {
-    status: 200,
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600, s-maxage=86400',
-    },
-  })
+    return new Response(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=3600, s-maxage=86400',
+      },
+    })
+  }
+
+  const debtMatch = url.pathname.match(DEBT_SHOW_REGEX)
+  if (debtMatch) {
+    const counterpartyId = debtMatch[1]
+    const viewerId = url.searchParams.get('viewer_id') || url.searchParams.get('user_id')
+    const ogImageUrl = viewerId
+      ? `${siteUrl}/api/og/debt?viewer_id=${encodeURIComponent(viewerId)}&counterparty_id=${encodeURIComponent(counterpartyId)}`
+      : `${siteUrl}/api/og/debt?counterparty_id=${encodeURIComponent(counterpartyId)}`
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>FairPay — Debt Detail</title>
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="FairPay" />
+  <meta property="og:title" content="FairPay — Debt Detail" />
+  <meta property="og:description" content="View open debt details on FairPay" />
+  <meta property="og:image" content="${ogImageUrl}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:url" content="${canonicalUrl}" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="FairPay — Debt Detail" />
+  <meta name="twitter:description" content="View open debt details on FairPay" />
+  <meta name="twitter:image" content="${ogImageUrl}" />
+</head>
+<body></body>
+</html>`
+
+    return new Response(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=3600, s-maxage=86400',
+      },
+    })
+  }
+
+  return next()
 }
 
 export const config = {
-  matcher: '/expenses/show/:path*',
+  matcher: ['/expenses/show/:path*', '/debts/:path*'],
 }

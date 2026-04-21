@@ -40,7 +40,7 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
     const [data, setData] = useState<AggregatedDebt[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
-    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const fetchDebts = useCallback(async () => {
         // Wait for identity to finish loading before deciding which path to take

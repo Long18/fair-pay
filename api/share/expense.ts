@@ -1,4 +1,4 @@
-import { VercelRequest, VercelResponse } from '@vercel/node'
+import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
 
 import { formatOgAmount, formatOgDate } from '../_lib/og-format'
@@ -49,6 +49,15 @@ async function fetchShareExpense(id: string): Promise<ShareExpense | null> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  try {
+    return await handleExpenseShare(req, res)
+  } catch (err) {
+    console.error('[share/expense] unhandled error:', err)
+    res.status(200).send(renderSimplePage({ title: 'FairPay', body: 'Open FairPay to view this expense.' }))
+  }
+}
+
+async function handleExpenseShare(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
     res.status(405).send('Method not allowed')
     return

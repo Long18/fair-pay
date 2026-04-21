@@ -35,7 +35,8 @@ import { useTranslation } from 'react-i18next';
 import { useHaptics } from '@/hooks/use-haptics';
 
 interface RecurringExpenseFormProps {
-  control: Control<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  control: Control<any, any, any>;
   isRecurring: boolean;
 }
 
