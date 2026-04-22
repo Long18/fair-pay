@@ -120,10 +120,12 @@ export async function fetchDebtOgData(
     }
 
     if (!profiles) {
+      console.error('[debt-og-data] profiles fetch returned null')
       return null
     }
 
     const rows = debtError ? [] : ((rawRows ?? []) as DebtDetailRow[])
+    console.log(`[debt-og-data] key=${process.env.SUPABASE_SERVICE_ROLE_KEY ? 'service_role' : 'anon'} rpc=${debtError ? 'FAIL' : 'OK'} rows=${rows.length} profiles=${profiles.size}`)
     const profileMap = profiles
 
     const viewerProfile = profileMap.get(viewerId)
@@ -163,6 +165,9 @@ export async function fetchDebtOgData(
 
     const netAmount = Math.abs(totalTheyOwe - totalIOwe)
     const allSettled = totalIOwe <= 0 && totalTheyOwe <= 0
+    if (rows.length > 0) {
+      console.log(`[debt-og-data] owe=${totalIOwe} theyOwe=${totalTheyOwe} net=${netAmount} settled=${allSettled} unpaid=${unpaidCount}`)
+    }
 
     const recentCandidates: DebtOgRecentTransaction[] = rows.slice(0, 10).map((row) => {
       const remainingAmount = toNumber(row.remaining_amount)
