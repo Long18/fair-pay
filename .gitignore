@@ -43,6 +43,10 @@ scripts/verification/*-output.txt
 .agents/skills/find-skills/
 .claude/
 .cursor/
+!.cursor/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/*.mdc
 .kiro/
 .omc/
 .omx/

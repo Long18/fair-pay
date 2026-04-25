@@ -353,7 +353,7 @@ function AdminEmailDevTools() {
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle>Nhắc nợ</CardTitle>
-            <CardDescription>Registered users whose `total_i_owe` is greater than zero.</CardDescription>
+            <CardDescription>Registered users whose dashboard-equivalent debt is greater than zero.</CardDescription>
           </div>
           <Button
             variant="outline"
