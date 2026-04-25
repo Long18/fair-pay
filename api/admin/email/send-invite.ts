@@ -1,7 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { getAuthenticatedUser } from '../../_lib/auth.js'
 import { handleCorsPreflightIfNeeded, setCorsHeaders } from '../../_lib/cors.js'
-import { normalizeInviteEmails } from '../../../src/modules/admin/email/invite-email.js'
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function normalizeInviteEmails(value: string | string[]): string[] {
+  const rawItems = Array.isArray(value) ? value : value.split(/[\s,;]+/)
+  const emails = rawItems
+    .map((email) => email.trim().toLowerCase())
+    .filter((email) => EMAIL_RE.test(email))
+  return Array.from(new Set(emails))
+}
 
 interface InviteRequest {
   emails?: string[] | string

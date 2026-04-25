@@ -170,14 +170,41 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#039;')
 }
 
+function foldToAscii(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+}
+
 function buildSubject(count: number, notifications: QueueRow[]): string {
   if (count === 1) {
     const n = notifications[0]
     const label = NOTIF_LABELS[n.notification_type]
     const typeEn = label?.en ?? 'Notification'
-    return `[FairPay] ${typeEn}: ${n.title}`
+    return foldToAscii(`[FairPay] ${typeEn}: ${n.title}`)
   }
-  return `[FairPay] ${count} new notifications / ${count} thông báo mới`
+  return foldToAscii(`[FairPay] ${count} new notifications`)
+}
+
+function buildEmailText(userName: string, notifications: QueueRow[], appUrl: string): string {
+  const lines: string[] = [
+    `Hi ${userName},`,
+    '',
+    `You have ${notifications.length} new notification${notifications.length === 1 ? '' : 's'} on FairPay.`,
+    '',
+  ]
+  for (const n of notifications) {
+    const label = NOTIF_LABELS[n.notification_type]
+    const badge = label ? `${label.en}` : n.notification_type
+    lines.push(`[${badge}] ${n.title}`)
+    lines.push(n.message)
+    if (n.link) lines.push(`Link: ${appUrl}${n.link}`)
+    lines.push('')
+  }
+  lines.push(`Open FairPay: ${appUrl}`)
+  return foldToAscii(lines.join('\n'))
 }
 
 function buildNotifRows(notifications: QueueRow[], appUrl: string): string {
@@ -532,6 +559,7 @@ serve(async (req) => {
 
       try {
         const html    = buildEmailHtml(user_name || 'there', notifs, appUrl)
+        const content = buildEmailText(user_name || 'there', notifs, appUrl)
         const subject = buildSubject(notifs.length, notifs)
 
         await smtp.send({
@@ -539,6 +567,7 @@ serve(async (req) => {
           to:      user_email,
           subject,
           html,
+          content,
         })
 
         // ── 5. Mark as sent ───────────────────────────────────────────────
