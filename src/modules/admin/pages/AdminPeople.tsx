@@ -1529,8 +1529,6 @@ function UsersTab() {
   return (
     <>
       <div className="space-y-4">
-        <InviteUsersCard inviterName={identity?.full_name || identity?.email} />
-
         {/* ── New Registrations Collapsible ──────────────────────── */}
         {!isLoading && newRegistrations.length > 0 && (
           <Collapsible defaultOpen>
@@ -2125,6 +2123,12 @@ function FriendshipsTab() {
   );
 }
 
+function InviteFriendsTab() {
+  const { data: identity } = useGetIdentity<Profile>();
+
+  return <InviteUsersCard inviterName={identity?.full_name || identity?.email} />;
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // ─── MAIN COMPONENT ─────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════
@@ -2147,6 +2151,10 @@ export function AdminPeople() {
             <HeartHandshakeIcon className="h-4 w-4" />
             Tình bạn
           </TabsTrigger>
+          <TabsTrigger value="invite" className="gap-2">
+            <MailIcon className="h-4 w-4" />
+            Mời bạn bè
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="mt-4">
@@ -2157,6 +2165,9 @@ export function AdminPeople() {
         </TabsContent>
         <TabsContent value="friendships" className="mt-4">
           <FriendshipsTab />
+        </TabsContent>
+        <TabsContent value="invite" className="mt-4">
+          <InviteFriendsTab />
         </TabsContent>
       </Tabs>
     </div>
