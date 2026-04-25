@@ -1,7 +1,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **FairPay** (8447 symbols, 15462 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **FairPay** (8473 symbols, 15527 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -108,5 +108,7 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 ## Learned Workspace Facts
 
 - Project deploys to Vercel via github.com/Long18/fair-pay
+- Production app URL is https://long-pay.vercel.app
 - Uses pnpm as package manager
 - Node.js version conflicts between 20.x and 24.x have caused build issues - check engines field in package.json
+- Supabase Edge Function `send-email-notifications` must be deployed separately from Vercel for email worker changes

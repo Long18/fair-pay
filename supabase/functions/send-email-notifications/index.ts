@@ -2,6 +2,8 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
 
+const textEncoder = new TextEncoder()
+
 function getCorsHeaders(): Record<string, string> {
   const origin = Deno.env.get('APP_URL')
   if (!origin) return { 'Content-Type': 'application/json' }
@@ -200,18 +202,65 @@ function buildEmailText(userName: string, notifications: QueueRow[], appUrl: str
     const badge = label ? `${label.en}` : n.notification_type
     lines.push(`[${badge}] ${n.title}`)
     lines.push(n.message)
-    if (n.link) lines.push(`Link: ${appUrl}${n.link}`)
+    if (n.link) lines.push(`Link: ${joinAppUrl(appUrl, n.link)}`)
     lines.push('')
   }
   lines.push(`Open FairPay: ${appUrl}`)
   return foldToAscii(lines.join('\n'))
 }
 
+function encodeBase64Mime(content: string): string {
+  const bytes = textEncoder.encode(content)
+  let binary = ''
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte)
+  }
+  return btoa(binary).replace(/.{1,76}/g, '$&\r\n').trim()
+}
+
+async function sendHtmlEmail(
+  smtp: SMTPClient,
+  options: {
+    fromName: string
+    fromEmail: string
+    to: string
+    subject: string
+    text: string
+    html: string
+    tag: string
+  }
+): Promise<void> {
+  await smtp.send({
+    from: `${options.fromName} <${options.fromEmail}>`,
+    to: options.to,
+    subject: options.subject,
+    mimeContent: [
+      {
+        mimeType: 'text/plain; charset="utf-8"',
+        content: encodeBase64Mime(options.text),
+        transferEncoding: 'base64',
+      },
+      {
+        mimeType: 'text/html; charset="utf-8"',
+        content: encodeBase64Mime(options.html),
+        transferEncoding: 'base64',
+      },
+    ],
+    headers: {
+      'X-FairPay-Email-Type': options.tag,
+    },
+  })
+}
+
+function joinAppUrl(appUrl: string, link: string): string {
+  return `${appUrl.replace(/\/$/, '')}/${link.replace(/^\//, '')}`
+}
+
 function buildNotifRows(notifications: QueueRow[], appUrl: string): string {
   return notifications.map(n => {
     const label = NOTIF_LABELS[n.notification_type]
     const badge = label ? `${label.vi} / ${label.en}` : n.notification_type
-    const href = n.link ? `${appUrl}${n.link}` : appUrl
+    const href = n.link ? joinAppUrl(appUrl, n.link) : appUrl
 
     return `
       <tr>
@@ -273,7 +322,7 @@ function buildEmailHtml(
           <tr>
             <td style="background:#fff;padding:32px;">
               <p style="margin:0 0 6px;font-size:16px;color:#1a1a1a;">
-                Xin chào / Hello, <strong>${escapeHtml(userName)}</strong> 👋
+                Xin chào / Hello, <strong>${escapeHtml(userName)}</strong>
               </p>
               <p style="margin:0 0 24px;font-size:14px;color:#666;">
                 Bạn có <strong>${countLabel}</strong>.
@@ -402,12 +451,14 @@ async function sendInviteEmails(
 
   for (const email of emails) {
     try {
-      await smtp.send({
-        from: `${fromName} <${fromEmail}>`,
+      await sendHtmlEmail(smtp, {
+        fromName,
+        fromEmail,
         to: email,
         subject,
         html,
-        content,
+        text: content,
+        tag: 'invite',
       })
       result.sent++
       console.log(`✓ invite ${email}`)
@@ -469,6 +520,7 @@ serve(async (req) => {
 
     if (body.invite?.emails.length) {
       const smtp = new SMTPClient({
+        debug: { encodeLB: true },
         connection: {
           hostname: smtpHost,
           port: smtpPort,
@@ -543,6 +595,7 @@ serve(async (req) => {
 
     // ── 3. Connect SMTP ───────────────────────────────────────────────────
     const smtp = new SMTPClient({
+      debug: { encodeLB: true },
       connection: {
         hostname: smtpHost,
         port: smtpPort,
@@ -562,12 +615,14 @@ serve(async (req) => {
         const content = buildEmailText(user_name || 'there', notifs, appUrl)
         const subject = buildSubject(notifs.length, notifs)
 
-        await smtp.send({
-          from:    `${smtpFromName} <${smtpUser}>`,
-          to:      user_email,
+        await sendHtmlEmail(smtp, {
+          fromName: smtpFromName,
+          fromEmail: smtpUser,
+          to: user_email,
           subject,
           html,
-          content,
+          text: content,
+          tag: 'notification-digest',
         })
 
         // ── 5. Mark as sent ───────────────────────────────────────────────

@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -34,6 +35,16 @@ import {
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { buildReminderEmailPreview } from "@/modules/admin/email/reminder-email";
+import type { ReminderDebtBreakdownItem } from "@/modules/admin/email/reminder-email";
+
+interface DebtBreakdownRow {
+  counterparty_key: string;
+  counterparty_name: string;
+  counterparty_email: string | null;
+  amount: number;
+  currency: string;
+  direction: "user_owes_counterparty";
+}
 
 interface DebtReminderRow {
   user_id: string;
@@ -42,6 +53,7 @@ interface DebtReminderRow {
   total_i_owe: number;
   net_balance: number;
   active_debt_relationships: number;
+  debt_breakdown: DebtBreakdownRow[];
 }
 
 interface EmailWorkerResponse {
@@ -67,16 +79,22 @@ interface SendReminderResponse {
   error?: string;
 }
 
-function formatCurrency(value: number): string {
+function formatCurrency(value: number, currency = "VND"): string {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
-    currency: "VND",
+    currency,
     maximumFractionDigits: 0,
   }).format(Math.abs(value));
 }
 
 function buildReminderMessage(row: DebtReminderRow): string {
-  return `${row.full_name}, bạn đang có ${formatCurrency(row.total_i_owe)} cần thanh toán trên FairPay. Vui lòng kiểm tra dashboard và settle up khi có thể.`;
+  const breakdown = row.debt_breakdown
+    .slice(0, 5)
+    .map((item) => `${item.counterparty_name}: ${formatCurrency(item.amount, item.currency)}`)
+    .join("; ");
+  const detail = breakdown ? ` Chi tiết: ${breakdown}.` : "";
+
+  return `${row.full_name}, bạn đang có ${formatCurrency(row.total_i_owe)} cần thanh toán trên FairPay.${detail} Vui lòng kiểm tra dashboard và settle up khi có thể.`;
 }
 
 async function getAccessToken(): Promise<string> {
@@ -164,6 +182,20 @@ function normalizeDebtRows(rows: unknown[]): DebtReminderRow[] {
   return rows
     .map((row) => {
       const value = row as Record<string, unknown>;
+      const debtBreakdown = Array.isArray(value.debt_breakdown)
+        ? value.debt_breakdown.map((item) => {
+            const debt = item as Record<string, unknown>;
+            return {
+              counterparty_key: String(debt.counterparty_key || ""),
+              counterparty_name: String(debt.counterparty_name || "Không rõ"),
+              counterparty_email: debt.counterparty_email ? String(debt.counterparty_email) : null,
+              amount: Number(debt.amount || 0),
+              currency: String(debt.currency || "VND"),
+              direction: "user_owes_counterparty" as const,
+            };
+          }).filter((item) => item.counterparty_key && item.amount > 0)
+        : [];
+
       return {
         user_id: String(value.user_id || ""),
         full_name: String(value.full_name || "Không rõ"),
@@ -171,9 +203,40 @@ function normalizeDebtRows(rows: unknown[]): DebtReminderRow[] {
         total_i_owe: Number(value.total_i_owe || 0),
         net_balance: Number(value.net_balance || 0),
         active_debt_relationships: Number(value.active_debt_relationships || 0),
+        debt_breakdown: debtBreakdown,
       };
     })
     .filter((row) => row.user_id && row.email && row.total_i_owe > 0);
+}
+
+function toReminderDebtBreakdown(items: DebtBreakdownRow[]): ReminderDebtBreakdownItem[] {
+  return items.map((item) => ({
+    counterpartyName: item.counterparty_name,
+    counterpartyEmail: item.counterparty_email,
+    amount: item.amount,
+    currency: item.currency,
+  }));
+}
+
+function DebtTableSkeletonRows() {
+  return (
+    <>
+      {Array.from({ length: 3 }).map((_, index) => (
+        <TableRow key={index}>
+          <TableCell>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-36" />
+              <Skeleton className="h-3 w-48" />
+            </div>
+          </TableCell>
+          <TableCell><Skeleton className="h-4 w-44" /></TableCell>
+          <TableCell className="text-right"><Skeleton className="ml-auto h-4 w-24" /></TableCell>
+          <TableCell className="text-right"><Skeleton className="ml-auto h-4 w-16" /></TableCell>
+          <TableCell className="text-right"><Skeleton className="ml-auto h-9 w-28" /></TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
 }
 
 function WorkerResultCard({ result }: { result: EmailWorkerResponse | null }) {
@@ -229,6 +292,8 @@ function AdminEmailDevTools() {
       userName: previewRow.full_name,
       title: "Nhắc thanh toán công nợ",
       message: buildReminderMessage(previewRow),
+      debtBreakdown: toReminderDebtBreakdown(previewRow.debt_breakdown),
+      totalAmount: previewRow.total_i_owe,
       appUrl: typeof window !== "undefined" ? window.location.origin : undefined,
       link: "/dashboard",
     });
@@ -382,7 +447,7 @@ function AdminEmailDevTools() {
             disabled={!debtors.length || sendingUserId !== null}
           >
             {sendingUserId === "__all__" ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : <SendIcon className="mr-2 h-4 w-4" />}
-            Nhắc tất cả
+            {sendingUserId === "__all__" ? "Đang gửi…" : "Nhắc tất cả"}
           </Button>
         </CardHeader>
         <CardContent>
@@ -398,18 +463,24 @@ function AdminEmailDevTools() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                    <Loader2Icon className="mx-auto h-5 w-5 animate-spin" />
-                  </TableCell>
-                </TableRow>
+                <DebtTableSkeletonRows />
               ) : debtors.length ? (
-                debtors.map((row) => (
+                debtors.map((row) => {
+                  const topDebt = row.debt_breakdown[0];
+
+                  return (
                   <TableRow key={row.user_id}>
-                    <TableCell className="font-medium">{row.full_name}</TableCell>
-                    <TableCell>{row.email}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(row.total_i_owe)}</TableCell>
-                    <TableCell className="text-right">{row.active_debt_relationships}</TableCell>
+                    <TableCell className="min-w-0">
+                      <div className="font-medium">{row.full_name}</div>
+                      {topDebt ? (
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          Nợ {topDebt.counterparty_name} {formatCurrency(topDebt.amount, topDebt.currency)}
+                        </div>
+                      ) : null}
+                    </TableCell>
+                    <TableCell className="max-w-[220px] truncate">{row.email}</TableCell>
+                    <TableCell className="text-right font-medium tabular-nums">{formatCurrency(row.total_i_owe)}</TableCell>
+                    <TableCell className="text-right">{row.debt_breakdown.length || row.active_debt_relationships}</TableCell>
                     <TableCell className="text-right">
                       <Button
                         size="sm"
@@ -418,11 +489,12 @@ function AdminEmailDevTools() {
                         disabled={sendingUserId !== null}
                       >
                         {sendingUserId === row.user_id ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : <EyeIcon className="mr-2 h-4 w-4" />}
-                        Preview & Nhắc
+                        {sendingUserId === row.user_id ? "Đang gửi…" : "Preview & Nhắc"}
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
@@ -435,8 +507,8 @@ function AdminEmailDevTools() {
         </CardContent>
       </Card>
 
-      <Dialog open={previewRow !== null} onOpenChange={(open) => !open && setPreviewRow(null)}>
-        <DialogContent className="max-w-3xl">
+      <Dialog open={previewRow !== null} onOpenChange={(open) => !open && sendingUserId === null && setPreviewRow(null)}>
+        <DialogContent className="max-w-3xl sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>Preview email nhắc nợ</DialogTitle>
             <DialogDescription>
@@ -449,7 +521,26 @@ function AdminEmailDevTools() {
                 <p className="truncate font-medium">{previewEmail.subject}</p>
                 <p className="truncate text-xs text-muted-foreground">{previewEmail.previewText}</p>
               </div>
-              <div className="h-[420px] overflow-hidden rounded-md border bg-white">
+              {previewRow.debt_breakdown.length ? (
+                <div className="rounded-md border p-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Ai đang nợ ai
+                  </p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    {previewRow.debt_breakdown.slice(0, 4).map((item) => (
+                      <div key={`${item.counterparty_key}-${item.currency}`} className="rounded-md bg-muted/40 p-3">
+                        <p className="text-sm font-medium">
+                          {previewRow.full_name} cần trả {item.counterparty_name}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-destructive tabular-nums">
+                          {formatCurrency(item.amount, item.currency)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              <div className="h-[420px] overflow-hidden rounded-md border bg-white sm:h-[520px]">
                 <iframe
                   title="Reminder email preview"
                   srcDoc={previewEmail.html}
@@ -467,8 +558,8 @@ function AdminEmailDevTools() {
               onClick={async () => {
                 if (!previewRow) return;
                 const row = previewRow;
-                setPreviewRow(null);
                 await handleRemindDebtor(row);
+                setPreviewRow(null);
               }}
               disabled={sendingUserId !== null}
             >
@@ -477,7 +568,7 @@ function AdminEmailDevTools() {
               ) : (
                 <SendIcon className="mr-2 h-4 w-4" />
               )}
-              Gửi nhắc nợ
+              {sendingUserId === previewRow?.user_id ? "Đang gửi…" : "Gửi nhắc nợ"}
             </Button>
           </DialogFooter>
         </DialogContent>
