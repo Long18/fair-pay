@@ -1,7 +1,18 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
-import { getCorsHeaders } from '../_shared/cors.ts'
+
+function getCorsHeaders(): Record<string, string> {
+  const origin = Deno.env.get('APP_URL')
+  if (!origin) return { 'Content-Type': 'application/json' }
+
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Content-Type': 'application/json',
+  }
+}
 
 // Bilingual labels for each notification type
 const NOTIF_LABELS: Record<string, { vi: string; en: string }> = {

@@ -45,6 +45,19 @@ interface EmailWorkerResponse {
   error?: string;
 }
 
+interface EmailOverviewResponse {
+  success: boolean;
+  pending_queue_count?: number;
+  debtors?: unknown[];
+  error?: string;
+}
+
+interface SendReminderResponse {
+  success: boolean;
+  notification_ids?: string[];
+  error?: string;
+}
+
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -84,6 +97,53 @@ async function runEmailWorker(body: Record<string, unknown> = {}): Promise<Email
   }
 
   return payload;
+}
+
+async function fetchEmailOverview(): Promise<EmailOverviewResponse> {
+  const token = await getAccessToken();
+  const response = await fetch("/api/admin/email/overview", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const raw = await response.text();
+  const payload = raw ? (JSON.parse(raw) as EmailOverviewResponse) : { success: response.ok };
+
+  if (!response.ok || payload.success === false) {
+    throw new Error(payload.error || `HTTP ${response.status}`);
+  }
+
+  return payload;
+}
+
+async function createReminderNotifications(rows: DebtReminderRow[]): Promise<string[]> {
+  const token = await getAccessToken();
+  const response = await fetch("/api/admin/email/send-reminder", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      reminders: rows.map((row) => ({
+        user_id: row.user_id,
+        title: "Nhắc thanh toán công nợ",
+        message: buildReminderMessage(row),
+        link: "/dashboard",
+      })),
+    }),
+  });
+
+  const raw = await response.text();
+  const payload = raw ? (JSON.parse(raw) as SendReminderResponse) : { success: response.ok };
+
+  if (!response.ok || payload.success === false) {
+    throw new Error(payload.error || `HTTP ${response.status}`);
+  }
+
+  return payload.notification_ids || [];
 }
 
 function normalizeDebtRows(rows: unknown[]): DebtReminderRow[] {
@@ -157,29 +217,9 @@ function AdminEmailDevTools() {
     setIsLoading(true);
     setPendingQueueError(null);
     try {
-      const [debtResult, queueResult] = await Promise.all([
-        supabaseClient.rpc("get_all_users_debt_detailed", {
-          p_limit: 100,
-          p_offset: 0,
-        }),
-        supabaseClient
-          .from("notifications")
-          .select("id", { count: "exact", head: true })
-          .is("email_sent_at", null),
-      ]);
-
-      if (debtResult.error) {
-        throw new Error(debtResult.error.message);
-      }
-
-      setDebtors(normalizeDebtRows((debtResult.data || []) as unknown[]));
-
-      if (queueResult.error) {
-        setPendingQueueError(queueResult.error.message);
-        setPendingQueueCount(null);
-      } else {
-        setPendingQueueCount(queueResult.count ?? 0);
-      }
+      const overview = await fetchEmailOverview();
+      setDebtors(normalizeDebtRows(overview.debtors || []));
+      setPendingQueueCount(overview.pending_queue_count ?? 0);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không tải được email devtool");
     } finally {
@@ -216,23 +256,10 @@ function AdminEmailDevTools() {
       tap();
       setSendingUserId(row.user_id);
       try {
-        const { data, error } = await supabaseClient
-          .from("notifications")
-          .insert({
-            user_id: row.user_id,
-            type: "settlement_reminder",
-            title: "Nhắc thanh toán công nợ",
-            message: buildReminderMessage(row),
-            link: "/dashboard",
-            is_read: false,
-          })
-          .select("id")
-          .single();
+        const ids = await createReminderNotifications([row]);
+        if (!ids.length) throw new Error("Không tạo được notification nhắc nợ");
 
-        if (error) throw new Error(error.message);
-        if (!data?.id) throw new Error("Không lấy được notification id");
-
-        const result = await runEmailWorker({ notification_ids: [data.id] });
+        const result = await runEmailWorker({ notification_ids: ids });
         setWorkerResult(result);
         success();
         toast.success(`Đã nhắc nợ ${row.full_name}`);
@@ -252,23 +279,7 @@ function AdminEmailDevTools() {
     tap();
     setSendingUserId("__all__");
     try {
-      const { data, error } = await supabaseClient
-        .from("notifications")
-        .insert(
-          debtors.map((row) => ({
-            user_id: row.user_id,
-            type: "settlement_reminder",
-            title: "Nhắc thanh toán công nợ",
-            message: buildReminderMessage(row),
-            link: "/dashboard",
-            is_read: false,
-          }))
-        )
-        .select("id");
-
-      if (error) throw new Error(error.message);
-
-      const ids = (data || []).map((row) => row.id).filter(Boolean);
+      const ids = await createReminderNotifications(debtors);
       if (!ids.length) throw new Error("Không tạo được notification nhắc nợ");
 
       const result = await runEmailWorker({ notification_ids: ids });

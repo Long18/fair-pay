@@ -33,9 +33,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(403).json({ success: false, error: 'Only administrators can run email worker' })
   }
 
-  const supabaseUrl = process.env.VITE_SUPABASE_URL
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
   const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY
-  if (!supabaseUrl || !supabaseAnonKey) {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const invokeKey = serviceRoleKey || supabaseAnonKey
+
+  if (!supabaseUrl || !invokeKey) {
     return res.status(500).json({ success: false, error: 'Server misconfiguration' })
   }
 
@@ -43,15 +46,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const edgeResponse = await fetch(`${supabaseUrl}/functions/v1/send-email-notifications`, {
       method: 'POST',
       headers: {
-        Authorization: authHeader || '',
-        apikey: supabaseAnonKey,
+        Authorization: `Bearer ${invokeKey}`,
+        apikey: invokeKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(getRequestBody(req)),
     })
 
     const text = await edgeResponse.text()
-    const payload = text ? JSON.parse(text) : { success: edgeResponse.ok }
+    let payload: Record<string, unknown>
+    try {
+      payload = text ? JSON.parse(text) as Record<string, unknown> : { success: edgeResponse.ok }
+    } catch {
+      payload = { success: false, error: text || edgeResponse.statusText }
+    }
 
     return res.status(edgeResponse.status).json(payload)
   } catch (error) {
