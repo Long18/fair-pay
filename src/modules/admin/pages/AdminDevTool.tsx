@@ -8,6 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -25,6 +33,7 @@ import {
   SendIcon,
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
+import { buildReminderEmailPreview } from "@/modules/admin/email/reminder-email";
 
 interface DebtReminderRow {
   user_id: string;
@@ -212,6 +221,18 @@ function AdminEmailDevTools() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRunningWorker, setIsRunningWorker] = useState(false);
   const [sendingUserId, setSendingUserId] = useState<string | null>(null);
+  const [previewRow, setPreviewRow] = useState<DebtReminderRow | null>(null);
+
+  const previewEmail = useMemo(() => {
+    if (!previewRow) return null;
+    return buildReminderEmailPreview({
+      userName: previewRow.full_name,
+      title: "Nhắc thanh toán công nợ",
+      message: buildReminderMessage(previewRow),
+      appUrl: typeof window !== "undefined" ? window.location.origin : undefined,
+      link: "/dashboard",
+    });
+  }, [previewRow]);
 
   const totalDebtToRemind = useMemo(
     () => debtors.reduce((sum, row) => sum + row.total_i_owe, 0),
@@ -392,11 +413,12 @@ function AdminEmailDevTools() {
                     <TableCell className="text-right">
                       <Button
                         size="sm"
-                        onClick={() => handleRemindDebtor(row)}
+                        variant="outline"
+                        onClick={() => { tap(); setPreviewRow(row); }}
                         disabled={sendingUserId !== null}
                       >
-                        {sendingUserId === row.user_id ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : <SendIcon className="mr-2 h-4 w-4" />}
-                        Nhắc nợ
+                        {sendingUserId === row.user_id ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : <EyeIcon className="mr-2 h-4 w-4" />}
+                        Preview & Nhắc
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -412,6 +434,54 @@ function AdminEmailDevTools() {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={previewRow !== null} onOpenChange={(open) => !open && setPreviewRow(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Preview email nhắc nợ</DialogTitle>
+            <DialogDescription>
+              {previewRow ? `Gửi tới ${previewRow.full_name} (${previewRow.email})` : null}
+            </DialogDescription>
+          </DialogHeader>
+          {previewEmail && previewRow ? (
+            <div className="space-y-3">
+              <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                <p className="truncate font-medium">{previewEmail.subject}</p>
+                <p className="truncate text-xs text-muted-foreground">{previewEmail.previewText}</p>
+              </div>
+              <div className="h-[420px] overflow-hidden rounded-md border bg-white">
+                <iframe
+                  title="Reminder email preview"
+                  srcDoc={previewEmail.html}
+                  sandbox=""
+                  className="h-full w-full"
+                />
+              </div>
+            </div>
+          ) : null}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreviewRow(null)} disabled={sendingUserId !== null}>
+              Hủy
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!previewRow) return;
+                const row = previewRow;
+                setPreviewRow(null);
+                await handleRemindDebtor(row);
+              }}
+              disabled={sendingUserId !== null}
+            >
+              {sendingUserId === previewRow?.user_id ? (
+                <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <SendIcon className="mr-2 h-4 w-4" />
+              )}
+              Gửi nhắc nợ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
