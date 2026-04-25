@@ -20,3 +20,4 @@ export { AdminTransactions } from "./pages/AdminTransactions";
 export { AdminAuditLogs } from "./pages/AdminAuditLogs";
 export { AdminReactions } from "./pages/AdminReactions";
 export { AdminApiDocs } from "./pages/AdminApiDocs";
+export { AdminDevTool } from "./pages/AdminDevTool";
