@@ -549,49 +549,53 @@ function AdminEmailDevTools() {
       </Card>
 
       <Dialog open={previewRow !== null} onOpenChange={(open) => !open && sendingUserId === null && setPreviewRow(null)}>
-        <DialogContent className="max-w-3xl sm:max-w-4xl">
-          <DialogHeader>
+        <DialogContent className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-5xl flex-col gap-0 overflow-hidden p-0 sm:w-[calc(100vw-2rem)]">
+          <DialogHeader className="border-b px-4 py-4 sm:px-6">
             <DialogTitle>Preview email nhắc nợ</DialogTitle>
             <DialogDescription>
               {previewRow ? `Gửi tới ${previewRow.full_name} (${previewRow.email})` : null}
             </DialogDescription>
           </DialogHeader>
-          {previewEmail && previewRow ? (
-            <div className="space-y-3">
-              <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
-                <p className="truncate font-medium">{previewEmail.subject}</p>
-                <p className="truncate text-xs text-muted-foreground">{previewEmail.previewText}</p>
-              </div>
-              {previewRow.debt_breakdown.length ? (
-                <div className="rounded-md border p-3">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Ai đang nợ ai
-                  </p>
-                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                    {previewRow.debt_breakdown.slice(0, 4).map((item) => (
-                      <div key={`${item.counterparty_key}-${item.currency}`} className="rounded-md bg-muted/40 p-3">
-                        <p className="text-sm font-medium">
-                          {previewRow.full_name} cần trả {item.counterparty_name}
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-destructive tabular-nums">
-                          {formatCurrency(item.amount, item.currency)}
-                        </p>
-                      </div>
-                    ))}
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+            {previewEmail && previewRow ? (
+              <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+                <div className="rounded-lg border bg-muted/30 px-3 py-2 text-sm">
+                  <p className="truncate font-medium">{previewEmail.subject}</p>
+                  <p className="line-clamp-2 text-xs text-muted-foreground">{previewEmail.previewText}</p>
+                </div>
+                {previewRow.debt_breakdown.length ? (
+                  <div className="rounded-xl border bg-card p-3 shadow-sm">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Ai đang nợ ai
+                    </p>
+                    <div className="mt-2 grid max-h-40 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+                      {previewRow.debt_breakdown.slice(0, 6).map((item) => (
+                        <div key={`${item.counterparty_key}-${item.currency}`} className="rounded-lg bg-muted/40 p-3">
+                          <p className="line-clamp-2 text-sm font-medium">
+                            {previewRow.full_name} cần trả {item.counterparty_name}
+                          </p>
+                          <p className="mt-1 text-sm font-semibold text-destructive tabular-nums">
+                            {formatCurrency(item.amount, item.currency)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                <div className="rounded-xl border bg-muted/40 p-2 shadow-sm sm:p-4">
+                  <div className="mx-auto h-[min(62dvh,680px)] min-h-[360px] w-full overflow-hidden rounded-lg border bg-white shadow-sm sm:w-[640px]">
+                    <iframe
+                      title="Reminder email preview"
+                      srcDoc={previewEmail.html}
+                      sandbox=""
+                      className="h-full w-full"
+                    />
                   </div>
                 </div>
-              ) : null}
-              <div className="h-[420px] overflow-hidden rounded-md border bg-white sm:h-[520px]">
-                <iframe
-                  title="Reminder email preview"
-                  srcDoc={previewEmail.html}
-                  sandbox=""
-                  className="h-full w-full"
-                />
               </div>
-            </div>
-          ) : null}
-          <DialogFooter>
+            ) : null}
+          </div>
+          <DialogFooter className="border-t bg-background/95 px-4 py-3 sm:px-6">
             <Button variant="outline" onClick={() => setPreviewRow(null)} disabled={sendingUserId !== null}>
               Hủy
             </Button>
