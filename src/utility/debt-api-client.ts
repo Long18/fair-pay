@@ -156,9 +156,9 @@ export class DebtApiClient {
 
   /**
    * Get public shareable link for debt data
-   * Format: https://fairpay.app/public/debt?user_id=xxxxx&secret=yyyyy
+   * Format: https://long-pay.vercel.app/public/debt?user_id=xxxxx&secret=yyyyy
    */
-  getPublicShareLink(userId: string, secret: string, baseUrl: string = 'https://fairpay.app'): string {
+  getPublicShareLink(userId: string, secret: string, baseUrl: string = 'https://long-pay.vercel.app'): string {
     return `${baseUrl}/public/debt?user_id=${userId}&secret=${secret}`
   }
 

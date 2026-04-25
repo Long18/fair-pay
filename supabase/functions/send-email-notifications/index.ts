@@ -437,7 +437,7 @@ async function sendInviteEmails(
  *   SMTP_USER      - sender email address
  *   SMTP_PASS      - app password or SMTP password
  *   SMTP_FROM_NAME - display name (default: FairPay)
- *   APP_URL        - frontend URL for deep links (default: https://fairpay.app)
+ *   APP_URL        - frontend URL for deep links (default: https://long-pay.vercel.app)
  */
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -454,7 +454,7 @@ serve(async (req) => {
     const smtpUser         = Deno.env.get('SMTP_USER')
     const smtpPass         = Deno.env.get('SMTP_PASS')
     const smtpFromName     = Deno.env.get('SMTP_FROM_NAME') || 'FairPay'
-    const appUrl           = Deno.env.get('APP_URL') || 'https://fairpay.app'
+    const appUrl           = Deno.env.get('APP_URL') || 'https://long-pay.vercel.app'
 
     const unauthorized = await authorizeWorkerRequest(req, supabaseUrl, supabaseKey, supabaseAnonKey)
     if (unauthorized) return unauthorized

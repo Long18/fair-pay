@@ -16,12 +16,12 @@ describe("admin invite email helpers", () => {
     const preview = buildInviteEmailPreview({
       emails: ["friend@example.com"],
       inviterName: "Long",
-      appUrl: "https://fairpay.app",
+      appUrl: "https://long-pay.vercel.app",
     });
 
     expect(preview.subject).toBe("Long mời bạn sử dụng FairPay");
     expect(preview.previewText).toContain("Chia tiền nhóm");
-    expect(preview.html).toContain("https://fairpay.app");
+    expect(preview.html).toContain("https://long-pay.vercel.app");
     expect(preview.html).toContain("Bắt đầu với FairPay");
   });
 
@@ -29,11 +29,11 @@ describe("admin invite email helpers", () => {
     const preview = buildInviteEmailPreview({
       emails: ["friend@example.com"],
       inviterName: "<script>alert(1)</script>",
-      appUrl: "https://fairpay.app?next=<bad>",
+      appUrl: "https://long-pay.vercel.app?next=<bad>",
     });
 
     expect(preview.html).not.toContain("<script>");
     expect(preview.html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
-    expect(preview.html).toContain("https://fairpay.app?next=&lt;bad&gt;");
+    expect(preview.html).toContain("https://long-pay.vercel.app?next=&lt;bad&gt;");
   });
 });

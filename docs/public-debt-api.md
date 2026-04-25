@@ -285,7 +285,7 @@ if (response.success && response.data) {
 const link = debtApiClient.getPublicShareLink(
   'user-uuid-here',
   'secret-token-here',
-  'https://fairpay.app'
+  'https://long-pay.vercel.app'
 )
 ```
 

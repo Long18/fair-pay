@@ -38,7 +38,7 @@ export function escapeInviteHtml(text: string): string {
 export function buildInviteEmailPreview(input: InviteEmailPreviewInput): InviteEmailPreview {
   const recipients = normalizeInviteEmails(input.emails);
   const inviterName = input.inviterName?.trim() || "Một người bạn";
-  const appUrl = input.appUrl || "https://fairpay.app";
+  const appUrl = input.appUrl || "https://long-pay.vercel.app";
   const subject = `${inviterName} mời bạn sử dụng FairPay`;
   const previewText = "Chia tiền nhóm, theo dõi ai nợ ai, và settle up rõ ràng hơn cùng FairPay.";
   const safeInviterName = escapeInviteHtml(inviterName);
