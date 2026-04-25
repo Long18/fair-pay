@@ -78,6 +78,30 @@ async function getAccessToken(): Promise<string> {
   return data.session.access_token;
 }
 
+async function readApiResponse<T extends { success?: boolean; error?: string; message?: string }>(
+  response: Response
+): Promise<T> {
+  const raw = await response.text();
+  let payload: T;
+
+  if (raw) {
+    try {
+      payload = JSON.parse(raw) as T;
+    } catch {
+      const detail = raw.trim().split("\n").filter(Boolean).slice(0, 2).join(" ");
+      throw new Error(detail ? `${detail} (HTTP ${response.status})` : `HTTP ${response.status}`);
+    }
+  } else {
+    payload = { success: response.ok } as T;
+  }
+
+  if (!response.ok || payload.success === false) {
+    throw new Error(payload.error || payload.message || `HTTP ${response.status}`);
+  }
+
+  return payload;
+}
+
 async function runEmailWorker(body: Record<string, unknown> = {}): Promise<EmailWorkerResponse> {
   const token = await getAccessToken();
   const response = await fetch("/api/admin/email/run-worker", {
@@ -89,14 +113,7 @@ async function runEmailWorker(body: Record<string, unknown> = {}): Promise<Email
     body: JSON.stringify(body),
   });
 
-  const raw = await response.text();
-  const payload = raw ? (JSON.parse(raw) as EmailWorkerResponse) : { success: response.ok };
-
-  if (!response.ok || payload.success === false) {
-    throw new Error(payload.error || payload.message || `HTTP ${response.status}`);
-  }
-
-  return payload;
+  return readApiResponse<EmailWorkerResponse>(response);
 }
 
 async function fetchEmailOverview(): Promise<EmailOverviewResponse> {
@@ -108,14 +125,7 @@ async function fetchEmailOverview(): Promise<EmailOverviewResponse> {
     },
   });
 
-  const raw = await response.text();
-  const payload = raw ? (JSON.parse(raw) as EmailOverviewResponse) : { success: response.ok };
-
-  if (!response.ok || payload.success === false) {
-    throw new Error(payload.error || `HTTP ${response.status}`);
-  }
-
-  return payload;
+  return readApiResponse<EmailOverviewResponse>(response);
 }
 
 async function createReminderNotifications(rows: DebtReminderRow[]): Promise<string[]> {
@@ -136,12 +146,7 @@ async function createReminderNotifications(rows: DebtReminderRow[]): Promise<str
     }),
   });
 
-  const raw = await response.text();
-  const payload = raw ? (JSON.parse(raw) as SendReminderResponse) : { success: response.ok };
-
-  if (!response.ok || payload.success === false) {
-    throw new Error(payload.error || `HTTP ${response.status}`);
-  }
+  const payload = await readApiResponse<SendReminderResponse>(response);
 
   return payload.notification_ids || [];
 }
