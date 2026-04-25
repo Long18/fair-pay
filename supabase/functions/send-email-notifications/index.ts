@@ -19,6 +19,7 @@ const NOTIF_LABELS: Record<string, { vi: string; en: string }> = {
   comment_reply:       { vi: 'Trả lời bình luận',           en: 'Comment reply' },
   comment_reaction:    { vi: 'Phản ứng bình luận',          en: 'Reaction' },
   expense_comment:     { vi: 'Bình luận chi phí',           en: 'Expense comment' },
+  settlement_reminder:  { vi: 'Nhắc thanh toán',             en: 'Payment reminder' },
 }
 
 interface QueueRow {
@@ -38,6 +39,86 @@ interface ProcessingResult {
   failed: number
   skipped: number
   errors: string[]
+}
+
+interface WorkerRequest {
+  notification_ids?: string[]
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+async function readWorkerRequest(req: Request): Promise<WorkerRequest> {
+  const raw = await req.text()
+  if (!raw) return {}
+
+  const parsed = JSON.parse(raw) as Record<string, unknown>
+  const notificationIds = Array.isArray(parsed.notification_ids)
+    ? parsed.notification_ids
+        .map((id) => String(id))
+        .filter((id) => UUID_RE.test(id))
+    : undefined
+
+  return {
+    notification_ids: notificationIds?.length ? Array.from(new Set(notificationIds)) : undefined,
+  }
+}
+
+async function authorizeWorkerRequest(
+  req: Request,
+  supabaseUrl: string,
+  supabaseServiceKey: string,
+  supabaseAnonKey: string | null
+): Promise<Response | null> {
+  const authHeader = req.headers.get('Authorization')
+  if (!authHeader) {
+    return new Response(JSON.stringify({ success: false, error: 'Missing authorization' }), {
+      status: 401,
+      headers: getCorsHeaders(),
+    })
+  }
+
+  const token = authHeader.replace(/^Bearer\s+/i, '')
+  if (!token) {
+    return new Response(JSON.stringify({ success: false, error: 'Invalid authorization' }), {
+      status: 401,
+      headers: getCorsHeaders(),
+    })
+  }
+
+  // Cron uses the service-role key. Browser/admin manual runs use a user JWT.
+  if (token === supabaseServiceKey) {
+    return null
+  }
+
+  if (!supabaseAnonKey) {
+    return new Response(JSON.stringify({ success: false, error: 'SUPABASE_ANON_KEY is not configured' }), {
+      status: 500,
+      headers: getCorsHeaders(),
+    })
+  }
+
+  const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  })
+
+  const { data: { user }, error: authError } = await userClient.auth.getUser()
+  if (authError || !user) {
+    return new Response(JSON.stringify({ success: false, error: 'Invalid or expired token' }), {
+      status: 401,
+      headers: getCorsHeaders(),
+    })
+  }
+
+  const { data: isAdmin, error: adminError } = await userClient.rpc('is_admin')
+  if (adminError || isAdmin !== true) {
+    return new Response(JSON.stringify({ success: false, error: 'Only administrators can run email worker' }), {
+      status: 403,
+      headers: getCorsHeaders(),
+    })
+  }
+
+  return null
 }
 
 function escapeHtml(text: string): string {
@@ -189,12 +270,18 @@ serve(async (req) => {
     // ── Config ────────────────────────────────────────────────────────────
     const supabaseUrl      = Deno.env.get('SUPABASE_URL')!
     const supabaseKey      = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabaseAnonKey  = Deno.env.get('SUPABASE_ANON_KEY')
     const smtpHost         = Deno.env.get('SMTP_HOST')
     const smtpPort         = parseInt(Deno.env.get('SMTP_PORT') || '587')
     const smtpUser         = Deno.env.get('SMTP_USER')
     const smtpPass         = Deno.env.get('SMTP_PASS')
     const smtpFromName     = Deno.env.get('SMTP_FROM_NAME') || 'FairPay'
     const appUrl           = Deno.env.get('APP_URL') || 'https://fairpay.app'
+
+    const unauthorized = await authorizeWorkerRequest(req, supabaseUrl, supabaseKey, supabaseAnonKey)
+    if (unauthorized) return unauthorized
+
+    const body = await readWorkerRequest(req)
 
     if (!smtpHost || !smtpUser || !smtpPass) {
       throw new Error(
@@ -209,8 +296,14 @@ serve(async (req) => {
     console.log('Starting email notification worker...')
 
     // ── 1. Fetch queue ────────────────────────────────────────────────────
-    const { data: queue, error: queueError } = await supabase
-      .rpc('get_email_notification_queue')
+    const queueRequest = body.notification_ids?.length
+      ? supabase.rpc('get_email_notification_queue', {
+          p_notification_ids: body.notification_ids,
+          p_include_recent: true,
+        })
+      : supabase.rpc('get_email_notification_queue')
+
+    const { data: queue, error: queueError } = await queueRequest
 
     if (queueError) {
       throw new Error(`Failed to fetch notification queue: ${queueError.message}`)
@@ -219,7 +312,15 @@ serve(async (req) => {
     if (!queue || (queue as QueueRow[]).length === 0) {
       console.log('No notifications pending email delivery')
       return new Response(
-        JSON.stringify({ success: true, sent: 0, message: 'Nothing to send' }),
+        JSON.stringify({
+          success: true,
+          sent: 0,
+          failed: 0,
+          skipped: body.notification_ids?.length ?? 0,
+          message: body.notification_ids?.length
+            ? 'No eligible notifications found for email delivery'
+            : 'Nothing to send',
+        }),
         { headers: getCorsHeaders() }
       )
     }
