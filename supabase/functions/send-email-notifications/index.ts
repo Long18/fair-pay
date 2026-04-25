@@ -45,6 +45,30 @@ interface QueueRow {
   message: string
   link: string | null
   created_at: string
+  email_context: unknown | null
+}
+
+interface DebtTransaction {
+  expense_id: string
+  description: string
+  amount: number
+  currency: string
+  expense_date: string | null
+}
+
+interface DebtBreakdownItem {
+  counterparty_key: string
+  counterparty_name: string
+  counterparty_email: string | null
+  amount: number
+  currency: string
+  direction: 'user_owes_counterparty'
+  transactions: DebtTransaction[]
+}
+
+interface ReminderEmailContext {
+  total_amount: number
+  debt_breakdown: DebtBreakdownItem[]
 }
 
 interface ProcessingResult {
@@ -60,6 +84,12 @@ interface WorkerRequest {
     emails: string[]
     inviter_name?: string
   }
+}
+
+interface EmailParts {
+  subject: string
+  text: string
+  html: string
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -172,12 +202,69 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#039;')
 }
 
-function foldToAscii(s: string): string {
-  return s
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
+function formatCurrency(value: number, currency = 'VND'): string {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: 0,
+  }).format(Math.abs(value))
+}
+
+function formatDate(value: string | null): string {
+  if (!value) return ''
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date)
+}
+
+function normalizeReminderEmailContext(value: unknown): ReminderEmailContext | null {
+  if (!value || typeof value !== 'object') return null
+
+  const raw = value as Record<string, unknown>
+  const debtBreakdown = Array.isArray(raw.debt_breakdown)
+    ? raw.debt_breakdown.map((item) => {
+        const debt = item as Record<string, unknown>
+        const currency = String(debt.currency || 'VND')
+        const transactions = Array.isArray(debt.transactions)
+          ? debt.transactions.map((transaction) => {
+              const tx = transaction as Record<string, unknown>
+              return {
+                expense_id: String(tx.expense_id || ''),
+                description: String(tx.description || 'Chi phí'),
+                amount: Number(tx.amount || 0),
+                currency: String(tx.currency || currency),
+                expense_date: tx.expense_date ? String(tx.expense_date) : null,
+              }
+            }).filter((transaction) => transaction.expense_id && transaction.amount > 0)
+          : []
+
+        return {
+          counterparty_key: String(debt.counterparty_key || ''),
+          counterparty_name: String(debt.counterparty_name || 'Không rõ'),
+          counterparty_email: debt.counterparty_email ? String(debt.counterparty_email) : null,
+          amount: Number(debt.amount || 0),
+          currency,
+          direction: 'user_owes_counterparty' as const,
+          transactions,
+        }
+      }).filter((item) => item.counterparty_key && item.amount > 0)
+    : []
+
+  if (!debtBreakdown.length) return null
+
+  const totalAmount = Number(raw.total_amount || 0)
+  return {
+    total_amount: totalAmount > 0
+      ? totalAmount
+      : debtBreakdown.reduce((sum, item) => sum + item.amount, 0),
+    debt_breakdown: debtBreakdown,
+  }
 }
 
 function buildSubject(count: number, notifications: QueueRow[]): string {
@@ -185,28 +272,32 @@ function buildSubject(count: number, notifications: QueueRow[]): string {
     const n = notifications[0]
     const label = NOTIF_LABELS[n.notification_type]
     const typeEn = label?.en ?? 'Notification'
-    return foldToAscii(`[FairPay] ${typeEn}: ${n.title}`)
+    return `[FairPay] ${typeEn}`
   }
-  return foldToAscii(`[FairPay] ${count} new notifications`)
+  return `[FairPay] ${count} new notifications`
 }
 
 function buildEmailText(userName: string, notifications: QueueRow[], appUrl: string): string {
   const lines: string[] = [
-    `Hi ${userName},`,
+    `Xin chào ${userName},`,
     '',
-    `You have ${notifications.length} new notification${notifications.length === 1 ? '' : 's'} on FairPay.`,
+    `Bạn có ${notifications.length} thông báo mới trên FairPay.`,
     '',
   ]
   for (const n of notifications) {
     const label = NOTIF_LABELS[n.notification_type]
-    const badge = label ? `${label.en}` : n.notification_type
+    const badge = label ? `${label.vi} / ${label.en}` : n.notification_type
     lines.push(`[${badge}] ${n.title}`)
     lines.push(n.message)
-    if (n.link) lines.push(`Link: ${joinAppUrl(appUrl, n.link)}`)
+    const reminderContext = n.notification_type === 'settlement_reminder'
+      ? normalizeReminderEmailContext(n.email_context)
+      : null
+    lines.push(...buildDebtTextLines(reminderContext))
+    if (n.link) lines.push(`Xem chi tiết / View: ${joinAppUrl(appUrl, n.link)}`)
     lines.push('')
   }
-  lines.push(`Open FairPay: ${appUrl}`)
-  return foldToAscii(lines.join('\n'))
+  lines.push(`Mở FairPay / Open FairPay: ${appUrl}`)
+  return lines.join('\n')
 }
 
 function encodeBase64Mime(content: string): string {
@@ -256,11 +347,93 @@ function joinAppUrl(appUrl: string, link: string): string {
   return `${appUrl.replace(/\/$/, '')}/${link.replace(/^\//, '')}`
 }
 
+function buildDebtTextLines(context: ReminderEmailContext | null): string[] {
+  if (!context) return []
+
+  const lines = [
+    `Tổng cần trả / Total due: ${formatCurrency(context.total_amount)}`,
+  ]
+
+  for (const debt of context.debt_breakdown) {
+    lines.push(`- Bạn cần trả ${debt.counterparty_name}: ${formatCurrency(debt.amount, debt.currency)}`)
+    for (const transaction of debt.transactions.slice(0, 6)) {
+      lines.push(`  • ${transaction.description}: ${formatCurrency(transaction.amount, transaction.currency)}`)
+    }
+  }
+
+  return lines
+}
+
+function buildDebtTransactionRows(transactions: DebtTransaction[], fallbackCurrency: string): string {
+  return transactions.slice(0, 6).map((transaction) => {
+    const safeDescription = escapeHtml(transaction.description || 'Chi phí')
+    const safeAmount = escapeHtml(formatCurrency(transaction.amount, transaction.currency || fallbackCurrency))
+    const safeDate = escapeHtml(formatDate(transaction.expense_date))
+
+    return `
+      <tr>
+        <td style="padding:9px 0;border-top:1px solid #e2e8f0;">
+          <div style="font-size:13px;line-height:1.45;font-weight:650;color:#334155;">${safeDescription}</div>
+          ${safeDate ? `<div style="font-size:11px;line-height:1.45;color:#94a3b8;">${safeDate}</div>` : ''}
+        </td>
+        <td align="right" style="padding:9px 0;border-top:1px solid #e2e8f0;white-space:nowrap;font-size:13px;font-weight:800;color:#0f172a;">
+          ${safeAmount}
+        </td>
+      </tr>`
+  }).join('')
+}
+
+function buildDebtBreakdownHtml(context: ReminderEmailContext | null): string {
+  if (!context) return ''
+
+  const safeTotal = escapeHtml(formatCurrency(context.total_amount))
+  const rows = context.debt_breakdown.map((item) => {
+    const safeName = escapeHtml(item.counterparty_name || 'Không rõ')
+    const safeEmail = item.counterparty_email ? escapeHtml(item.counterparty_email) : ''
+    const safeAmount = escapeHtml(formatCurrency(item.amount, item.currency))
+    const transactionRows = buildDebtTransactionRows(item.transactions, item.currency)
+
+    return `
+      <tr>
+        <td style="padding:14px 0 10px;border-top:1px solid #e2e8f0;">
+          <div style="font-size:12px;line-height:1.5;color:#64748b;">Bạn cần trả / You owe</div>
+          <div style="font-size:16px;line-height:1.45;font-weight:800;color:#0f172a;">${safeName}</div>
+          ${safeEmail ? `<div style="font-size:12px;line-height:1.45;color:#94a3b8;">${safeEmail}</div>` : ''}
+        </td>
+        <td align="right" style="padding:14px 0 10px;border-top:1px solid #e2e8f0;white-space:nowrap;">
+          <div style="font-size:17px;line-height:1.45;font-weight:900;color:#dc2626;">${safeAmount}</div>
+        </td>
+      </tr>
+      ${transactionRows ? `<tr>
+        <td colspan="2" style="padding:0 0 14px;">
+          <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-radius:12px;background:#ffffff;padding:4px 12px;border:1px solid #eef2f7;">
+            ${transactionRows}
+          </table>
+        </td>
+      </tr>` : ''}`
+  }).join('')
+
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:22px;border:1px solid #dbeafe;border-radius:16px;background:#f8fafc;padding:0 18px;">
+      <tr>
+        <td colspan="2" style="padding:18px 0 14px;">
+          <div style="font-size:12px;color:#4f46e5;text-transform:uppercase;letter-spacing:0.08em;font-weight:800;">Chi tiết công nợ / Debt breakdown</div>
+          <div style="margin-top:6px;font-size:24px;line-height:1.2;font-weight:900;color:#0f172a;">Tổng cần trả: ${safeTotal}</div>
+          <div style="margin-top:6px;font-size:13px;line-height:1.6;color:#64748b;">Các khoản bên dưới được nhóm theo người bạn cần thanh toán.</div>
+        </td>
+      </tr>
+      ${rows}
+    </table>`
+}
+
 function buildNotifRows(notifications: QueueRow[], appUrl: string): string {
   return notifications.map(n => {
     const label = NOTIF_LABELS[n.notification_type]
     const badge = label ? `${label.vi} / ${label.en}` : n.notification_type
     const href = n.link ? joinAppUrl(appUrl, n.link) : appUrl
+    const reminderContext = n.notification_type === 'settlement_reminder'
+      ? normalizeReminderEmailContext(n.email_context)
+      : null
 
     return `
       <tr>
@@ -279,6 +452,7 @@ function buildNotifRows(notifications: QueueRow[], appUrl: string): string {
              style="display:inline-block;margin-top:6px;font-size:12px;color:#6366f1;text-decoration:none;">
             Xem chi tiết / View &rarr;
           </a>` : ''}
+          ${buildDebtBreakdownHtml(reminderContext)}
         </td>
       </tr>`
   }).join('')
@@ -360,8 +534,12 @@ function buildEmailHtml(
 </html>`
 }
 
-function buildInviteSubject(inviterName: string): string {
+function buildInviteTitle(inviterName: string): string {
   return `${inviterName} mời bạn sử dụng FairPay`
+}
+
+function buildInviteSubject(): string {
+  return '[FairPay] You are invited to FairPay'
 }
 
 function buildInviteText(inviterName: string, appUrl: string): string {
@@ -377,7 +555,7 @@ function buildInviteText(inviterName: string, appUrl: string): string {
 }
 
 function buildInviteEmailHtml(inviterName: string, appUrl: string): string {
-  const subject = buildInviteSubject(inviterName)
+  const title = buildInviteTitle(inviterName)
   const previewText = 'Chia tiền nhóm, theo dõi ai nợ ai, và settle up rõ ràng hơn cùng FairPay.'
   const safeInviterName = escapeHtml(inviterName)
   const safeAppUrl = escapeHtml(appUrl)
@@ -387,7 +565,7 @@ function buildInviteEmailHtml(inviterName: string, appUrl: string): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>${escapeHtml(subject)}</title>
+  <title>${escapeHtml(title)}</title>
 </head>
 <body style="margin:0;padding:0;background:#f6f7fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#111827;">
   <div style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0;">
@@ -436,6 +614,14 @@ function buildInviteEmailHtml(inviterName: string, appUrl: string): string {
 </html>`
 }
 
+function buildInviteEmailParts(inviterName: string, appUrl: string): EmailParts {
+  return {
+    subject: buildInviteSubject(),
+    text: buildInviteText(inviterName, appUrl),
+    html: buildInviteEmailHtml(inviterName, appUrl),
+  }
+}
+
 async function sendInviteEmails(
   smtp: SMTPClient,
   fromName: string,
@@ -445,9 +631,7 @@ async function sendInviteEmails(
   appUrl: string
 ): Promise<ProcessingResult> {
   const result: ProcessingResult = { sent: 0, failed: 0, skipped: 0, errors: [] }
-  const subject = buildInviteSubject(inviterName)
-  const html = buildInviteEmailHtml(inviterName, appUrl)
-  const content = buildInviteText(inviterName, appUrl)
+  const inviteEmail = buildInviteEmailParts(inviterName, appUrl)
 
   for (const email of emails) {
     try {
@@ -455,9 +639,9 @@ async function sendInviteEmails(
         fromName,
         fromEmail,
         to: email,
-        subject,
-        html,
-        text: content,
+        subject: inviteEmail.subject,
+        html: inviteEmail.html,
+        text: inviteEmail.text,
         tag: 'invite',
       })
       result.sent++

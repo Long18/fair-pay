@@ -37,6 +37,14 @@ import { useHaptics } from "@/hooks/use-haptics";
 import { buildReminderEmailPreview } from "@/modules/admin/email/reminder-email";
 import type { ReminderDebtBreakdownItem } from "@/modules/admin/email/reminder-email";
 
+interface DebtTransactionRow {
+  expense_id: string;
+  description: string;
+  amount: number;
+  currency: string;
+  expense_date: string | null;
+}
+
 interface DebtBreakdownRow {
   counterparty_key: string;
   counterparty_name: string;
@@ -44,6 +52,7 @@ interface DebtBreakdownRow {
   amount: number;
   currency: string;
   direction: "user_owes_counterparty";
+  transactions: DebtTransactionRow[];
 }
 
 interface DebtReminderRow {
@@ -169,6 +178,18 @@ async function createReminderNotifications(rows: DebtReminderRow[]): Promise<str
         title: "Nhắc thanh toán công nợ",
         message: buildReminderMessage(row),
         link: "/dashboard",
+        email_context: {
+          total_amount: row.total_i_owe,
+          debt_breakdown: row.debt_breakdown.map((item) => ({
+            counterparty_key: item.counterparty_key,
+            counterparty_name: item.counterparty_name,
+            counterparty_email: item.counterparty_email,
+            amount: item.amount,
+            currency: item.currency,
+            direction: item.direction,
+            transactions: item.transactions,
+          })),
+        },
       })),
     }),
   });
@@ -185,6 +206,19 @@ function normalizeDebtRows(rows: unknown[]): DebtReminderRow[] {
       const debtBreakdown = Array.isArray(value.debt_breakdown)
         ? value.debt_breakdown.map((item) => {
             const debt = item as Record<string, unknown>;
+            const transactions = Array.isArray(debt.transactions)
+              ? debt.transactions.map((transaction) => {
+                  const tx = transaction as Record<string, unknown>;
+                  return {
+                    expense_id: String(tx.expense_id || ""),
+                    description: String(tx.description || "Chi phí"),
+                    amount: Number(tx.amount || 0),
+                    currency: String(tx.currency || debt.currency || "VND"),
+                    expense_date: tx.expense_date ? String(tx.expense_date) : null,
+                  };
+                }).filter((transaction) => transaction.expense_id && transaction.amount > 0)
+              : [];
+
             return {
               counterparty_key: String(debt.counterparty_key || ""),
               counterparty_name: String(debt.counterparty_name || "Không rõ"),
@@ -192,6 +226,7 @@ function normalizeDebtRows(rows: unknown[]): DebtReminderRow[] {
               amount: Number(debt.amount || 0),
               currency: String(debt.currency || "VND"),
               direction: "user_owes_counterparty" as const,
+              transactions,
             };
           }).filter((item) => item.counterparty_key && item.amount > 0)
         : [];
@@ -215,6 +250,12 @@ function toReminderDebtBreakdown(items: DebtBreakdownRow[]): ReminderDebtBreakdo
     counterpartyEmail: item.counterparty_email,
     amount: item.amount,
     currency: item.currency,
+    transactions: item.transactions.map((transaction) => ({
+      description: transaction.description,
+      amount: transaction.amount,
+      currency: transaction.currency,
+      expenseDate: transaction.expense_date,
+    })),
   }));
 }
 
