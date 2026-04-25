@@ -8,6 +8,17 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +27,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -65,7 +85,7 @@ interface DebtReminderRow {
   debt_breakdown: DebtBreakdownRow[];
 }
 
-interface EmailWorkerResponse {
+interface EmailSendResult {
   success: boolean;
   sent?: number;
   failed?: number;
@@ -138,7 +158,14 @@ async function readApiResponse<T extends { success?: boolean; error?: string; me
   return payload;
 }
 
-async function runEmailWorker(body: Record<string, unknown> = {}): Promise<EmailWorkerResponse> {
+/**
+ * Gửi email qua edge function CHỈ cho các notification_id đã chọn.
+ * Không gọi với danh sách rỗng (tránh lỡ gửi cả hàng đợi cũ giống worker cron).
+ */
+async function sendEmailForNotificationIds(notificationIds: string[]): Promise<EmailSendResult> {
+  if (!notificationIds.length) {
+    throw new Error("Cần ít nhất một thông báo để gửi email");
+  }
   const token = await getAccessToken();
   const response = await fetch("/api/admin/email/run-worker", {
     method: "POST",
@@ -146,10 +173,10 @@ async function runEmailWorker(body: Record<string, unknown> = {}): Promise<Email
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ notification_ids: notificationIds }),
   });
 
-  return readApiResponse<EmailWorkerResponse>(response);
+  return readApiResponse<EmailSendResult>(response);
 }
 
 async function fetchEmailOverview(): Promise<EmailOverviewResponse> {
@@ -264,23 +291,34 @@ function DebtTableSkeletonRows() {
     <>
       {Array.from({ length: 3 }).map((_, index) => (
         <TableRow key={index}>
+          <TableCell className="w-10">
+            <Skeleton className="h-4 w-4" />
+          </TableCell>
           <TableCell>
             <div className="space-y-2">
               <Skeleton className="h-4 w-36" />
               <Skeleton className="h-3 w-48" />
             </div>
           </TableCell>
-          <TableCell><Skeleton className="h-4 w-44" /></TableCell>
-          <TableCell className="text-right"><Skeleton className="ml-auto h-4 w-24" /></TableCell>
-          <TableCell className="text-right"><Skeleton className="ml-auto h-4 w-16" /></TableCell>
-          <TableCell className="text-right"><Skeleton className="ml-auto h-9 w-28" /></TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-44" />
+          </TableCell>
+          <TableCell className="text-right">
+            <Skeleton className="ml-auto h-4 w-24" />
+          </TableCell>
+          <TableCell className="text-right">
+            <Skeleton className="ml-auto h-4 w-16" />
+          </TableCell>
+          <TableCell className="text-right">
+            <Skeleton className="ml-auto h-9 w-24" />
+          </TableCell>
         </TableRow>
       ))}
     </>
   );
 }
 
-function WorkerResultCard({ result }: { result: EmailWorkerResponse | null }) {
+function SendResultCard({ result }: { result: EmailSendResult | null }) {
   if (!result) return null;
 
   const hasErrors = (result.errors?.length || 0) > 0 || result.success === false;
@@ -296,7 +334,7 @@ function WorkerResultCard({ result }: { result: EmailWorkerResponse | null }) {
     >
       <div className="flex items-center gap-2 font-medium">
         {hasErrors ? <AlertTriangleIcon className="h-4 w-4" /> : <CheckCircle2Icon className="h-4 w-4" />}
-        Email worker
+        Kết quả gửi email
       </div>
       <div className="mt-2 flex flex-wrap gap-2">
         <Badge variant="outline">sent: {result.sent ?? 0}</Badge>
@@ -319,13 +357,16 @@ function WorkerResultCard({ result }: { result: EmailWorkerResponse | null }) {
 function AdminEmailDevTools() {
   const { tap, success, warning } = useHaptics();
   const [debtors, setDebtors] = useState<DebtReminderRow[]>([]);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [pendingQueueCount, setPendingQueueCount] = useState<number | null>(null);
   const [pendingQueueError, setPendingQueueError] = useState<string | null>(null);
-  const [workerResult, setWorkerResult] = useState<EmailWorkerResponse | null>(null);
+  const [sendResult, setSendResult] = useState<EmailSendResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRunningWorker, setIsRunningWorker] = useState(false);
   const [sendingUserId, setSendingUserId] = useState<string | null>(null);
   const [previewRow, setPreviewRow] = useState<DebtReminderRow | null>(null);
+  const [bulkPreviewOpen, setBulkPreviewOpen] = useState(false);
+  const [bulkPreviewFocusUserId, setBulkPreviewFocusUserId] = useState<string | null>(null);
+  const [confirmBulkOpen, setConfirmBulkOpen] = useState(false);
 
   const previewEmail = useMemo(() => {
     if (!previewRow) return null;
@@ -340,9 +381,38 @@ function AdminEmailDevTools() {
     });
   }, [previewRow]);
 
-  const totalDebtToRemind = useMemo(
-    () => debtors.reduce((sum, row) => sum + row.total_i_owe, 0),
-    [debtors]
+  const bulkFocusRow = useMemo(() => {
+    if (!bulkPreviewFocusUserId) return null;
+    return debtors.find((d) => d.user_id === bulkPreviewFocusUserId) ?? null;
+  }, [debtors, bulkPreviewFocusUserId]);
+
+  const bulkPreviewEmail = useMemo(() => {
+    if (!bulkFocusRow) return null;
+    return buildReminderEmailPreview({
+      userName: bulkFocusRow.full_name,
+      title: "Nhắc thanh toán công nợ",
+      message: buildReminderMessage(bulkFocusRow),
+      debtBreakdown: toReminderDebtBreakdown(bulkFocusRow.debt_breakdown),
+      totalAmount: bulkFocusRow.total_i_owe,
+      appUrl: typeof window !== "undefined" ? window.location.origin : undefined,
+      link: "/dashboard",
+    });
+  }, [bulkFocusRow]);
+
+  const selectedRows = useMemo(
+    () => debtors.filter((d) => selectedUserIds.includes(d.user_id)),
+    [debtors, selectedUserIds]
+  );
+
+  const allSelected = debtors.length > 0 && selectedUserIds.length === debtors.length;
+  const someSelected = selectedUserIds.length > 0 && !allSelected;
+  const isBusy = sendingUserId !== null;
+
+  const totalDebtAll = useMemo(() => debtors.reduce((sum, row) => sum + row.total_i_owe, 0), [debtors]);
+
+  const totalDebtSelected = useMemo(
+    () => selectedRows.reduce((sum, row) => sum + row.total_i_owe, 0),
+    [selectedRows]
   );
 
   const refresh = useCallback(async () => {
@@ -353,7 +423,7 @@ function AdminEmailDevTools() {
       setDebtors(normalizeDebtRows(overview.debtors || []));
       setPendingQueueCount(overview.pending_queue_count ?? 0);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Không tải được email devtool");
+      toast.error(error instanceof Error ? error.message : "Không tải được dữ liệu nhắc nợ");
     } finally {
       setIsLoading(false);
     }
@@ -366,35 +436,22 @@ function AdminEmailDevTools() {
     return () => window.clearTimeout(timeout);
   }, [refresh]);
 
-  const handleRunWorker = useCallback(async () => {
-    tap();
-    setIsRunningWorker(true);
-    try {
-      const result = await runEmailWorker();
-      setWorkerResult(result);
-      success();
-      toast.success(result.message || "Đã chạy email worker");
-      refresh();
-    } catch (error) {
-      warning();
-      toast.error(error instanceof Error ? error.message : "Email worker lỗi");
-    } finally {
-      setIsRunningWorker(false);
-    }
-  }, [refresh, success, tap, warning]);
+  useEffect(() => {
+    setSelectedUserIds((prev) => prev.filter((id) => debtors.some((d) => d.user_id === id)));
+  }, [debtors]);
 
-  const handleRemindDebtor = useCallback(
+  const handleRemindOne = useCallback(
     async (row: DebtReminderRow) => {
       tap();
       setSendingUserId(row.user_id);
       try {
         const ids = await createReminderNotifications([row]);
-        if (!ids.length) throw new Error("Không tạo được notification nhắc nợ");
+        if (!ids.length) throw new Error("Không tạo được thông báo nhắc nợ");
 
-        const result = await runEmailWorker({ notification_ids: ids });
-        setWorkerResult(result);
+        const result = await sendEmailForNotificationIds(ids);
+        setSendResult(result);
         success();
-        toast.success(`Đã nhắc nợ ${row.full_name}`);
+        toast.success(`Đã gửi email nhắc nợ tới ${row.full_name}`);
         refresh();
       } catch (error) {
         warning();
@@ -406,18 +463,20 @@ function AdminEmailDevTools() {
     [refresh, success, tap, warning]
   );
 
-  const handleRemindAll = useCallback(async () => {
-    if (!debtors.length) return;
+  const handleRemindSelected = useCallback(async () => {
+    if (!selectedRows.length) return;
     tap();
-    setSendingUserId("__all__");
+    setSendingUserId("__bulk__");
     try {
-      const ids = await createReminderNotifications(debtors);
-      if (!ids.length) throw new Error("Không tạo được notification nhắc nợ");
+      const ids = await createReminderNotifications(selectedRows);
+      if (!ids.length) throw new Error("Không tạo được thông báo nhắc nợ");
 
-      const result = await runEmailWorker({ notification_ids: ids });
-      setWorkerResult(result);
+      const result = await sendEmailForNotificationIds(ids);
+      setSendResult(result);
       success();
-      toast.success(`Đã tạo ${ids.length} email nhắc nợ`);
+      toast.success(`Đã gửi ${ids.length} email nhắc nợ`);
+      setSelectedUserIds([]);
+      setConfirmBulkOpen(false);
       refresh();
     } catch (error) {
       warning();
@@ -425,32 +484,60 @@ function AdminEmailDevTools() {
     } finally {
       setSendingUserId(null);
     }
-  }, [debtors, refresh, success, tap, warning]);
+  }, [selectedRows, refresh, success, tap, warning]);
+
+  const openBulkPreview = useCallback(() => {
+    if (!selectedRows.length) return;
+    setBulkPreviewFocusUserId(selectedRows[0].user_id);
+    setBulkPreviewOpen(true);
+    tap();
+  }, [selectedRows, tap]);
+
+  useEffect(() => {
+    if (!bulkPreviewOpen) return;
+    if (bulkFocusRow) return;
+    if (selectedRows.length) {
+      setBulkPreviewFocusUserId(selectedRows[0].user_id);
+    }
+  }, [bulkPreviewOpen, bulkFocusRow, selectedRows]);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Email</h1>
-          <p className="text-sm text-muted-foreground">Worker, queue, và nhắc nợ qua email.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Nhắc công nợ qua email</h1>
+          <p className="text-sm text-muted-foreground text-pretty">
+            Chọn người cần nhắc, xem trước nội dung email, rồi gửi. Chỉ các thông báo bạn tạo từ màn
+            hình này mới được gửi — không mở hàng đợi cũ toàn bộ.
+          </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => { tap(); refresh(); }} disabled={isLoading}>
-            {isLoading ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCwIcon className="mr-2 h-4 w-4" />}
-            Refresh
-          </Button>
-          <Button onClick={handleRunWorker} disabled={isRunningWorker}>
-            {isRunningWorker ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : <MailIcon className="mr-2 h-4 w-4" />}
-            Run worker
-          </Button>
-        </div>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            tap();
+            refresh();
+          }}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCwIcon className="mr-2 h-4 w-4" />
+          )}
+          Tải lại
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Unsent queue</CardDescription>
-            <CardTitle className="text-3xl">{pendingQueueCount ?? "—"}</CardTitle>
+            <CardDescription>Thông báo chưa gửi (hàng đợi)</CardDescription>
+            <CardTitle className="text-3xl tabular-nums">{pendingQueueCount ?? "—"}</CardTitle>
+            <p className="pt-1 text-xs text-muted-foreground">
+              Số này gồm mọi email chờ; cron/định kỳ xử lý. Admin không cần &quot;chạy worker&quot;
+              thủ công ở đây nữa.
+            </p>
           </CardHeader>
           {pendingQueueError && (
             <CardContent>
@@ -461,45 +548,123 @@ function AdminEmailDevTools() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Debtors with email</CardDescription>
-            <CardTitle className="text-3xl">{debtors.length}</CardTitle>
+            <CardDescription>User đang nợ (có email)</CardDescription>
+            <CardTitle className="text-3xl tabular-nums">{debtors.length}</CardTitle>
           </CardHeader>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Total to remind</CardDescription>
-            <CardTitle className="text-3xl">{formatCurrency(totalDebtToRemind)}</CardTitle>
+            <CardDescription>Tổng nợ cần nhắc (cả bảng)</CardDescription>
+            <CardTitle className="text-3xl tabular-nums text-balance">
+              {debtors.length ? formatCurrency(totalDebtAll) : "—"}
+            </CardTitle>
           </CardHeader>
         </Card>
       </div>
 
-      <WorkerResultCard result={workerResult} />
+      <SendResultCard result={sendResult} />
 
       <Card>
-        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <CardTitle>Nhắc nợ</CardTitle>
-            <CardDescription>Registered users whose dashboard-equivalent debt is greater than zero.</CardDescription>
+        <CardHeader className="space-y-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle>Danh sách cần nhắc</CardTitle>
+              <CardDescription>
+                Chỉ tài khoản có nợ &gt; 0 (theo cùng nguồn dữ liệu với bảng công nợ).
+              </CardDescription>
+            </div>
           </div>
-          <Button
-            variant="outline"
-            onClick={handleRemindAll}
-            disabled={!debtors.length || sendingUserId !== null}
-          >
-            {sendingUserId === "__all__" ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : <SendIcon className="mr-2 h-4 w-4" />}
-            {sendingUserId === "__all__" ? "Đang gửi…" : "Nhắc tất cả"}
-          </Button>
+          {debtors.length > 0 && !isLoading ? (
+            <div className="flex min-w-0 flex-col gap-3 rounded-lg border bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
+                <span className="font-medium text-foreground tabular-nums">
+                  Đã chọn {selectedUserIds.length}/{debtors.length}
+                  {selectedRows.length ? ` · ${formatCurrency(totalDebtSelected)}` : ""}
+                </span>
+                <Separator orientation="vertical" className="hidden h-4 sm:block" />
+                <Button
+                  type="button"
+                  variant="link"
+                  className="h-auto min-h-0 p-0"
+                  onClick={() => {
+                    tap();
+                    setSelectedUserIds(debtors.map((d) => d.user_id));
+                  }}
+                >
+                  Chọn tất cả
+                </Button>
+                <Button
+                  type="button"
+                  variant="link"
+                  className="h-auto min-h-0 p-0"
+                  onClick={() => {
+                    tap();
+                    setSelectedUserIds([]);
+                  }}
+                  disabled={!selectedUserIds.length}
+                >
+                  Bỏ chọn
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={openBulkPreview}
+                  disabled={!selectedRows.length || isBusy}
+                >
+                  <EyeIcon className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Xem trước ({selectedUserIds.length})
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    tap();
+                    setConfirmBulkOpen(true);
+                  }}
+                  disabled={!selectedRows.length || isBusy}
+                >
+                  {sendingUserId === "__bulk__" ? (
+                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <SendIcon className="mr-2 h-4 w-4" aria-hidden="true" />
+                  )}
+                  Gửi email đã chọn
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="select-all-debtors"
+                      checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                      onCheckedChange={(checked) => {
+                        if (checked === true) {
+                          setSelectedUserIds(debtors.map((d) => d.user_id));
+                        } else {
+                          setSelectedUserIds([]);
+                        }
+                      }}
+                      disabled={!debtors.length || isLoading}
+                      aria-label="Chọn tất cả người đang nợ"
+                    />
+                    <Label htmlFor="select-all-debtors" className="sr-only">
+                      Chọn tất cả
+                    </Label>
+                  </div>
+                </TableHead>
                 <TableHead>Người dùng</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead className="text-right">Đang nợ</TableHead>
                 <TableHead className="text-right">Quan hệ nợ</TableHead>
-                <TableHead className="w-[120px]" />
+                <TableHead className="w-[200px] text-right">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -508,37 +673,85 @@ function AdminEmailDevTools() {
               ) : debtors.length ? (
                 debtors.map((row) => {
                   const topDebt = row.debt_breakdown[0];
-
+                  const rowSelected = selectedUserIds.includes(row.user_id);
                   return (
-                  <TableRow key={row.user_id}>
-                    <TableCell className="min-w-0">
-                      <div className="font-medium">{row.full_name}</div>
-                      {topDebt ? (
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          Nợ {topDebt.counterparty_name} {formatCurrency(topDebt.amount, topDebt.currency)}
+                    <TableRow key={row.user_id} data-state={rowSelected ? "selected" : undefined}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id={`debtor-${row.user_id}`}
+                            checked={rowSelected}
+                            onCheckedChange={(checked) => {
+                              setSelectedUserIds((prev) => {
+                                if (checked === true) {
+                                  if (prev.includes(row.user_id)) return prev;
+                                  return [...prev, row.user_id];
+                                }
+                                return prev.filter((id) => id !== row.user_id);
+                              });
+                            }}
+                            disabled={isBusy}
+                            aria-label={`Chọn ${row.full_name}`}
+                          />
                         </div>
-                      ) : null}
-                    </TableCell>
-                    <TableCell className="max-w-[220px] truncate">{row.email}</TableCell>
-                    <TableCell className="text-right font-medium tabular-nums">{formatCurrency(row.total_i_owe)}</TableCell>
-                    <TableCell className="text-right">{row.debt_breakdown.length || row.active_debt_relationships}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => { tap(); setPreviewRow(row); }}
-                        disabled={sendingUserId !== null}
-                      >
-                        {sendingUserId === row.user_id ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : <EyeIcon className="mr-2 h-4 w-4" />}
-                        {sendingUserId === row.user_id ? "Đang gửi…" : "Preview & Nhắc"}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+                      </TableCell>
+                      <TableCell className="min-w-0">
+                        <div className="font-medium">{row.full_name}</div>
+                        {topDebt ? (
+                          <div className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                            Nợ {topDebt.counterparty_name} {formatCurrency(topDebt.amount, topDebt.currency)}
+                          </div>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className="min-w-0 max-w-[min(100vw,220px)]">
+                        <span className="line-clamp-2 break-words" translate="no">
+                          {row.email}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right font-medium tabular-nums">
+                        {formatCurrency(row.total_i_owe)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {row.debt_breakdown.length || row.active_debt_relationships}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex flex-wrap items-center justify-end gap-1">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              tap();
+                              setPreviewRow(row);
+                            }}
+                            disabled={isBusy}
+                            aria-label={`Xem trước email gửi tới ${row.full_name}`}
+                          >
+                            <EyeIcon className="mr-1 h-4 w-4" aria-hidden="true" />
+                            Xem trước
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => handleRemindOne(row)}
+                            disabled={isBusy}
+                            aria-label={`Gửi email nhắc nợ tới ${row.full_name}`}
+                          >
+                            {sendingUserId === row.user_id ? (
+                              <Loader2Icon className="mr-1 h-4 w-4 animate-spin" />
+                            ) : (
+                              <SendIcon className="mr-1 h-4 w-4" aria-hidden="true" />
+                            )}
+                            Gửi
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   );
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                     Không có user đang nợ với email hợp lệ
                   </TableCell>
                 </TableRow>
@@ -548,29 +761,41 @@ function AdminEmailDevTools() {
         </CardContent>
       </Card>
 
-      <Dialog open={previewRow !== null} onOpenChange={(open) => !open && sendingUserId === null && setPreviewRow(null)}>
+      <Dialog
+        open={previewRow !== null}
+        onOpenChange={(open) => {
+          if (!open && !isBusy) {
+            setPreviewRow(null);
+          }
+        }}
+      >
         <DialogContent className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-5xl flex-col gap-0 overflow-hidden p-0 sm:w-[calc(100vw-2rem)]">
           <DialogHeader className="border-b px-4 py-4 sm:px-6">
-            <DialogTitle>Preview email nhắc nợ</DialogTitle>
+            <DialogTitle>Xem trước email</DialogTitle>
             <DialogDescription>
               {previewRow ? `Gửi tới ${previewRow.full_name} (${previewRow.email})` : null}
             </DialogDescription>
           </DialogHeader>
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
             {previewEmail && previewRow ? (
               <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
                 <div className="rounded-lg border bg-muted/30 px-3 py-2 text-sm">
-                  <p className="truncate font-medium">{previewEmail.subject}</p>
+                  <p className="max-w-full truncate font-medium" translate="no">
+                    {previewEmail.subject}
+                  </p>
                   <p className="line-clamp-2 text-xs text-muted-foreground">{previewEmail.previewText}</p>
                 </div>
                 {previewRow.debt_breakdown.length ? (
                   <div className="rounded-xl border bg-card p-3 shadow-sm">
                     <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Ai đang nợ ai
+                      Tóm tắt công nợ
                     </p>
                     <div className="mt-2 grid max-h-40 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
                       {previewRow.debt_breakdown.slice(0, 6).map((item) => (
-                        <div key={`${item.counterparty_key}-${item.currency}`} className="rounded-lg bg-muted/40 p-3">
+                        <div
+                          key={`${item.counterparty_key}-${item.currency}`}
+                          className="rounded-lg bg-muted/40 p-3"
+                        >
                           <p className="line-clamp-2 text-sm font-medium">
                             {previewRow.full_name} cần trả {item.counterparty_name}
                           </p>
@@ -596,28 +821,147 @@ function AdminEmailDevTools() {
             ) : null}
           </div>
           <DialogFooter className="border-t bg-background/95 px-4 py-3 sm:px-6">
-            <Button variant="outline" onClick={() => setPreviewRow(null)} disabled={sendingUserId !== null}>
-              Hủy
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setPreviewRow(null)}
+              disabled={isBusy}
+            >
+              Đóng
             </Button>
             <Button
+              type="button"
               onClick={async () => {
                 if (!previewRow) return;
                 const row = previewRow;
-                await handleRemindDebtor(row);
+                await handleRemindOne(row);
                 setPreviewRow(null);
               }}
-              disabled={sendingUserId !== null}
+              disabled={isBusy}
             >
               {sendingUserId === previewRow?.user_id ? (
                 <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <SendIcon className="mr-2 h-4 w-4" />
+                <SendIcon className="mr-2 h-4 w-4" aria-hidden="true" />
               )}
-              {sendingUserId === previewRow?.user_id ? "Đang gửi…" : "Gửi nhắc nợ"}
+              {sendingUserId === previewRow?.user_id ? "Đang gửi…" : "Gửi email nhắc nợ"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={bulkPreviewOpen} onOpenChange={setBulkPreviewOpen}>
+        <DialogContent className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-5xl flex-col gap-0 overflow-hidden p-0 sm:w-[calc(100vw-2rem)]">
+          <DialogHeader className="border-b px-4 py-4 sm:px-6">
+            <DialogTitle>Xem trước trước khi gửi hàng loạt</DialogTitle>
+            <DialogDescription>
+              Chọn từng người để xem đúng nội dung email sẽ gửi. Nội dung khớp với bản gửi thật (template
+              FairPay + chi tiết công nợ).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="min-h-0 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
+            {selectedRows.length > 0 ? (
+              <div className="space-y-2">
+                <Label htmlFor="bulk-preview-user">Xem nội dung cho</Label>
+                <Select
+                  value={bulkPreviewFocusUserId || selectedRows[0]?.user_id}
+                  onValueChange={setBulkPreviewFocusUserId}
+                >
+                  <SelectTrigger id="bulk-preview-user" className="w-full max-w-md">
+                    <SelectValue placeholder="Chọn người nhận" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectedRows.map((r) => (
+                      <SelectItem key={r.user_id} value={r.user_id}>
+                        {r.full_name} ({r.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Sắp gửi {selectedRows.length} email. Hãy kiểm tra từng nội dung, rồi đóng hộp thoại này và
+                  bấm &quot;Gửi email đã chọn&quot; trên bảng.
+                </p>
+              </div>
+            ) : null}
+            {bulkPreviewEmail && bulkFocusRow ? (
+              <div className="mx-auto flex w-full max-w-4xl flex-col gap-3">
+                <div className="rounded-lg border bg-muted/30 px-3 py-2 text-sm">
+                  <p className="max-w-full truncate font-medium" translate="no">
+                    {bulkPreviewEmail.subject}
+                  </p>
+                  <p className="line-clamp-2 text-xs text-muted-foreground">
+                    {bulkPreviewEmail.previewText}
+                  </p>
+                </div>
+                <div className="rounded-xl border bg-muted/40 p-2 shadow-sm sm:p-4">
+                  <div className="mx-auto h-[min(50dvh,560px)] min-h-[280px] w-full overflow-hidden rounded-lg border bg-white shadow-sm sm:w-[640px]">
+                    <iframe
+                      title="Bulk reminder email preview"
+                      srcDoc={bulkPreviewEmail.html}
+                      sandbox=""
+                      className="h-full w-full"
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+          <DialogFooter className="border-t px-4 py-3 sm:px-6">
+            <Button type="button" variant="outline" onClick={() => setBulkPreviewOpen(false)}>
+              Đóng
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setBulkPreviewOpen(false);
+                setConfirmBulkOpen(true);
+              }}
+              disabled={!selectedRows.length}
+            >
+              Tiếp tục: xác nhận gửi
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={confirmBulkOpen} onOpenChange={setConfirmBulkOpen}>
+        <AlertDialogContent className="max-h-[min(90dvh,720px)] overflow-y-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Gửi {selectedRows.length} email nhắc nợ?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>Email sẽ gửi tới:</p>
+                <ScrollArea className="h-40 max-h-40 rounded-md border pr-2">
+                  <ol className="list-inside list-decimal space-y-1 px-3 py-2 text-left text-sm">
+                    {selectedRows.map((r) => (
+                      <li key={r.user_id} className="min-w-0 break-words" translate="no">
+                        {r.full_name} — {r.email}
+                      </li>
+                    ))}
+                  </ol>
+                </ScrollArea>
+                <p className="text-xs text-muted-foreground">
+                  Hệ thống tạo thông báo mới theo công nợ hiện tại rồi gửi — không kích hoạt gửi toàn bộ
+                  hàng đợi cũ.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={sendingUserId === "__bulk__"}>Hủy</AlertDialogCancel>
+            <Button
+              type="button"
+              disabled={sendingUserId === "__bulk__"}
+              onClick={() => {
+                void handleRemindSelected();
+              }}
+            >
+              {sendingUserId === "__bulk__" ? "Đang gửi…" : "Gửi email"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -637,7 +981,7 @@ export function AdminDevTool() {
           </TabsTrigger>
           <TabsTrigger value="email">
             <MailIcon className="h-4 w-4" />
-            Email
+            Nhắc nợ
           </TabsTrigger>
         </TabsList>
       </div>
