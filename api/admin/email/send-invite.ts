@@ -29,6 +29,10 @@ function getRequestBody(req: VercelRequest): InviteRequest {
   return req.body as InviteRequest
 }
 
+function getBearerToken(authHeader: string | undefined): string {
+  return authHeader?.replace(/^Bearer\s+/i, '').trim() || ''
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res)
   if (handleCorsPreflightIfNeeded(req, res)) return
@@ -57,18 +61,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
   const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  const invokeKey = serviceRoleKey || supabaseAnonKey
+  const adminUserToken = getBearerToken(authHeader)
+  const invokeAuthToken = serviceRoleKey || adminUserToken
+  const invokeApiKey = serviceRoleKey || supabaseAnonKey
 
-  if (!supabaseUrl || !invokeKey || (!serviceRoleKey && !authHeader)) {
+  if (!supabaseUrl || !invokeAuthToken || !invokeApiKey) {
     return res.status(500).json({ success: false, error: 'Server misconfiguration' })
   }
 
   try {
-    const edgeResponse = await fetch(`${supabaseUrl}/functions/v1/send-email-notifications`, {
+    const invokeWorker = (authToken: string, apiKey: string) => fetch(`${supabaseUrl}/functions/v1/send-email-notifications`, {
       method: 'POST',
       headers: {
-        Authorization: serviceRoleKey ? `Bearer ${serviceRoleKey}` : authHeader!,
-        apikey: invokeKey,
+        Authorization: `Bearer ${authToken}`,
+        apikey: apiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -79,12 +85,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }),
     })
 
+    let edgeResponse = await invokeWorker(invokeAuthToken, invokeApiKey)
+    if (edgeResponse.status === 401 && serviceRoleKey && adminUserToken && supabaseAnonKey) {
+      edgeResponse = await invokeWorker(adminUserToken, supabaseAnonKey)
+    }
+
     const text = await edgeResponse.text()
     let payload: Record<string, unknown>
     try {
       payload = text ? JSON.parse(text) as Record<string, unknown> : { success: edgeResponse.ok }
     } catch {
       payload = { success: false, error: text || edgeResponse.statusText }
+    }
+
+    if (edgeResponse.status === 401 && !payload.error) {
+      payload.error = 'Email worker rejected authorization'
     }
 
     return res.status(edgeResponse.status).json(payload)
