@@ -9,6 +9,7 @@ interface ReminderRequest {
     title?: string
     message?: string
     link?: string
+    email_context?: unknown
   }>
 }
 
@@ -69,6 +70,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         title: reminder.title,
         message: reminder.message,
         link: reminder.link || '/dashboard',
+        email_context: reminder.email_context || null,
         is_read: false,
       })))
       .select('id')

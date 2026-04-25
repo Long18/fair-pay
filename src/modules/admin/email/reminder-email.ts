@@ -3,6 +3,12 @@ export interface ReminderDebtBreakdownItem {
   counterpartyEmail?: string | null;
   amount: number;
   currency?: string | null;
+  transactions?: Array<{
+    description: string;
+    amount: number;
+    currency?: string | null;
+    expenseDate?: string | null;
+  }>;
 }
 
 export interface ReminderEmailPreviewInput {
@@ -50,6 +56,23 @@ function buildDebtRows(debtBreakdown: ReminderDebtBreakdownItem[]): string {
     const safeName = escapeHtml(item.counterpartyName || "Không rõ");
     const safeEmail = item.counterpartyEmail ? escapeHtml(item.counterpartyEmail) : "";
     const safeAmount = escapeHtml(formatCurrency(item.amount, item.currency || "VND"));
+    const transactionRows = (item.transactions || []).slice(0, 5).map((transaction) => {
+      const safeDescription = escapeHtml(transaction.description || "Chi phí");
+      const safeTransactionAmount = escapeHtml(formatCurrency(transaction.amount, transaction.currency || item.currency || "VND"));
+      const safeDate = transaction.expenseDate
+        ? escapeHtml(new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(transaction.expenseDate)))
+        : "";
+
+      return `<tr>
+        <td style="padding:8px 0;border-top:1px solid #e2e8f0;">
+          <div style="font-size:13px;line-height:1.45;font-weight:600;color:#334155;">${safeDescription}</div>
+          ${safeDate ? `<div style="font-size:11px;line-height:1.45;color:#94a3b8;">${safeDate}</div>` : ""}
+        </td>
+        <td align="right" style="padding:8px 0;border-top:1px solid #e2e8f0;white-space:nowrap;font-size:13px;font-weight:700;color:#0f172a;">
+          ${safeTransactionAmount}
+        </td>
+      </tr>`;
+    }).join("");
 
     return `<tr>
       <td style="padding:12px 0;border-bottom:1px solid #eef2f7;">
@@ -60,7 +83,14 @@ function buildDebtRows(debtBreakdown: ReminderDebtBreakdownItem[]): string {
       <td align="right" style="padding:12px 0;border-bottom:1px solid #eef2f7;white-space:nowrap;">
         <div style="font-size:16px;line-height:1.45;font-weight:800;color:#dc2626;">${safeAmount}</div>
       </td>
-    </tr>`;
+    </tr>
+    ${transactionRows ? `<tr>
+      <td colspan="2" style="padding:0 0 14px;border-bottom:1px solid #eef2f7;">
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-radius:10px;background:#ffffff;padding:2px 12px;">
+          ${transactionRows}
+        </table>
+      </td>
+    </tr>` : ""}`;
   }).join("");
 }
 
@@ -68,7 +98,12 @@ function buildDebtTextLines(debtBreakdown: ReminderDebtBreakdownItem[]): string[
   if (!debtBreakdown.length) return [];
 
   return debtBreakdown.map((item) => (
-    `- You owe ${item.counterpartyName}: ${formatCurrency(item.amount, item.currency || "VND")}`
+    [
+      `- You owe ${item.counterpartyName}: ${formatCurrency(item.amount, item.currency || "VND")}`,
+      ...(item.transactions || []).slice(0, 5).map((transaction) => (
+        `  • ${transaction.description}: ${formatCurrency(transaction.amount, transaction.currency || item.currency || "VND")}`
+      )),
+    ].join("\n")
   ));
 }
 
