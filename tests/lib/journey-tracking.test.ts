@@ -28,7 +28,7 @@ class MemoryStorage implements StorageLike {
 describe("journey tracking helpers", () => {
   it("sanitizes page paths and keeps only allowed attribution params", () => {
     expect(
-      sanitizeTrackingPath("https://fairpay.app/groups/create?utm_source=meta&token=secret&ref=invite"),
+      sanitizeTrackingPath("https://long-pay.vercel.app/groups/create?utm_source=meta&token=secret&ref=invite"),
     ).toBe("/groups/create?utm_source=meta&ref=invite");
 
     expect(sanitizeTrackingPath("/dashboard?fbclid=123&email=test@example.com")).toBe(
@@ -54,7 +54,7 @@ describe("journey tracking helpers", () => {
     const firstSession = bootstrapJourneySession({
       localStorage,
       sessionStorage,
-      href: "https://fairpay.app/groups/create?utm_source=meta&token=secret",
+      href: "https://long-pay.vercel.app/groups/create?utm_source=meta&token=secret",
       referrer: "https://www.google.com/search?q=fairpay",
       locale: "vi-VN",
       userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
@@ -70,7 +70,7 @@ describe("journey tracking helpers", () => {
     const secondSession = bootstrapJourneySession({
       localStorage,
       sessionStorage,
-      href: "https://fairpay.app/dashboard?utm_source=other",
+      href: "https://long-pay.vercel.app/dashboard?utm_source=other",
       referrer: "https://facebook.com/ads",
       locale: "en-US",
       userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0)",
@@ -89,7 +89,7 @@ describe("journey tracking helpers", () => {
 
     const resetSession = resetJourneySession({
       sessionStorage,
-      href: "https://fairpay.app/payments/create?utm_campaign=launch",
+      href: "https://long-pay.vercel.app/payments/create?utm_campaign=launch",
       referrer: "https://zalo.me/ref/abc",
       locale: "vi-VN",
       userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
