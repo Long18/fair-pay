@@ -54,9 +54,28 @@ interface ProcessingResult {
 
 interface WorkerRequest {
   notification_ids?: string[]
+  invite?: {
+    emails: string[]
+    inviter_name?: string
+  }
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function normalizeInviteEmails(value: unknown): string[] {
+  const rawItems = Array.isArray(value)
+    ? value.map((email) => String(email))
+    : typeof value === 'string'
+      ? value.split(/[\s,;]+/)
+      : []
+
+  const emails = rawItems
+    .map((email) => email.trim().toLowerCase())
+    .filter((email) => EMAIL_RE.test(email))
+
+  return Array.from(new Set(emails))
+}
 
 async function readWorkerRequest(req: Request): Promise<WorkerRequest> {
   const raw = await req.text()
@@ -68,9 +87,19 @@ async function readWorkerRequest(req: Request): Promise<WorkerRequest> {
         .map((id) => String(id))
         .filter((id) => UUID_RE.test(id))
     : undefined
+  const invite = parsed.invite && typeof parsed.invite === 'object'
+    ? parsed.invite as Record<string, unknown>
+    : null
+  const inviteEmails = invite ? normalizeInviteEmails(invite.emails) : []
 
   return {
     notification_ids: notificationIds?.length ? Array.from(new Set(notificationIds)) : undefined,
+    invite: inviteEmails.length
+      ? {
+          emails: inviteEmails,
+          inviter_name: invite?.inviter_name ? String(invite.inviter_name).trim() : undefined,
+        }
+      : undefined,
   }
 }
 
@@ -255,6 +284,117 @@ function buildEmailHtml(
 </html>`
 }
 
+function buildInviteSubject(inviterName: string): string {
+  return `${inviterName} mời bạn sử dụng FairPay`
+}
+
+function buildInviteText(inviterName: string, appUrl: string): string {
+  return [
+    'Xin chào,',
+    '',
+    `${inviterName} mời bạn sử dụng FairPay để chia tiền nhóm, theo dõi ai nợ ai, và settle up rõ ràng hơn.`,
+    '',
+    `Bắt đầu với FairPay: ${appUrl}`,
+    '',
+    'FairPay - Chia sẻ chi phí thông minh',
+  ].join('\n')
+}
+
+function buildInviteEmailHtml(inviterName: string, appUrl: string): string {
+  const subject = buildInviteSubject(inviterName)
+  const previewText = 'Chia tiền nhóm, theo dõi ai nợ ai, và settle up rõ ràng hơn cùng FairPay.'
+  const safeInviterName = escapeHtml(inviterName)
+  const safeAppUrl = escapeHtml(appUrl)
+
+  return `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>${escapeHtml(subject)}</title>
+</head>
+<body style="margin:0;padding:0;background:#f6f7fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#111827;">
+  <div style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0;">
+    ${escapeHtml(previewText)}
+  </div>
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f6f7fb;padding:28px 12px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="width:100%;max-width:600px;background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden;box-shadow:0 18px 60px rgba(15,23,42,0.10);">
+          <tr>
+            <td style="padding:28px 32px;background:#111827;color:#ffffff;">
+              <div style="font-size:13px;letter-spacing:0.18em;text-transform:uppercase;color:#a5b4fc;font-weight:700;">FairPay Invite</div>
+              <div style="margin-top:10px;font-size:30px;line-height:1.15;font-weight:800;letter-spacing:-0.04em;">Chia tiền nhóm không còn rối</div>
+              <div style="margin-top:10px;font-size:14px;line-height:1.7;color:#d1d5db;">${safeInviterName} vừa mời bạn vào FairPay.</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;">
+              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;color:#111827;">Xin chào,</p>
+              <p style="margin:0 0 22px;font-size:15px;line-height:1.8;color:#4b5563;">
+                FairPay giúp bạn ghi lại chi phí chung, biết chính xác ai đang nợ ai, và settle up minh bạch sau mỗi chuyến đi, bữa ăn, hoặc nhóm bạn.
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 26px;border:1px solid #eef2ff;border-radius:14px;background:#f8fafc;">
+                <tr>
+                  <td style="padding:18px 20px;font-size:14px;line-height:1.8;color:#374151;">
+                    <strong style="color:#111827;">Bạn có thể dùng FairPay để:</strong><br>
+                    - Split bill nhanh giữa bạn bè và nhóm<br>
+                    - Theo dõi công nợ theo thời gian thực<br>
+                    - Nhận nhắc thanh toán qua email/thông báo
+                  </td>
+                </tr>
+              </table>
+              <div style="text-align:center;margin:30px 0;">
+                <a href="${safeAppUrl}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;border-radius:999px;padding:14px 28px;font-size:15px;font-weight:700;">
+                  Bắt đầu với FairPay
+                </a>
+              </div>
+              <p style="margin:0;font-size:12px;line-height:1.7;color:#9ca3af;text-align:center;">Nếu nút không hoạt động, mở liên kết này: <a href="${safeAppUrl}" style="color:#4f46e5;text-decoration:none;">${safeAppUrl}</a></p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+}
+
+async function sendInviteEmails(
+  smtp: SMTPClient,
+  fromName: string,
+  fromEmail: string,
+  emails: string[],
+  inviterName: string,
+  appUrl: string
+): Promise<ProcessingResult> {
+  const result: ProcessingResult = { sent: 0, failed: 0, skipped: 0, errors: [] }
+  const subject = buildInviteSubject(inviterName)
+  const html = buildInviteEmailHtml(inviterName, appUrl)
+  const content = buildInviteText(inviterName, appUrl)
+
+  for (const email of emails) {
+    try {
+      await smtp.send({
+        from: `${fromName} <${fromEmail}>`,
+        to: email,
+        subject,
+        html,
+        content,
+      })
+      result.sent++
+      console.log(`✓ invite ${email}`)
+    } catch (err) {
+      const msg = `Invite send failed for ${email}: ${(err as Error).message}`
+      console.error(msg)
+      result.failed++
+      result.errors.push(msg)
+    }
+  }
+
+  return result
+}
+
 /**
  * Send Email Notifications Edge Function
  *
@@ -297,6 +437,35 @@ serve(async (req) => {
     if (!smtpHost || !smtpUser || !smtpPass) {
       throw new Error(
         'SMTP configuration missing. Set SMTP_HOST, SMTP_USER, SMTP_PASS via `supabase secrets set`.'
+      )
+    }
+
+    if (body.invite?.emails.length) {
+      const smtp = new SMTPClient({
+        connection: {
+          hostname: smtpHost,
+          port: smtpPort,
+          tls: smtpPort === 465,
+          auth: { username: smtpUser, password: smtpPass },
+        },
+      })
+      const inviteResult = await sendInviteEmails(
+        smtp,
+        smtpFromName,
+        smtpUser,
+        body.invite.emails,
+        body.invite.inviter_name || 'Một người bạn',
+        appUrl
+      )
+      await smtp.close()
+
+      return new Response(
+        JSON.stringify({
+          success: inviteResult.failed === 0,
+          ...inviteResult,
+          message: `Invite email complete: ${inviteResult.sent} sent, ${inviteResult.failed} failed`,
+        }),
+        { status: inviteResult.failed === 0 ? 200 : 207, headers: getCorsHeaders() }
       )
     }
 

@@ -22,6 +22,7 @@ import { supabaseClient } from "@/utility/supabaseClient";
 import { DataTable } from "@/components/refine-ui/data-table/data-table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -94,8 +95,11 @@ import {
   ArchiveIcon,
   ArchiveRestoreIcon,
   StarIcon,
+  MailIcon,
+  SendIcon,
 } from "@/components/ui/icons";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
+import { buildInviteEmailPreview, normalizeInviteEmails } from "@/modules/admin/email/invite-email";
 import type { Profile } from "@/modules/profile/types";
 import type { AdminUserRow } from "../types";
 
@@ -125,6 +129,43 @@ interface FriendshipRow {
   user_b_avatar: string | null;
   status: "pending" | "accepted" | "rejected";
   created_at: string;
+}
+
+interface InviteEmailResponse {
+  success: boolean;
+  sent?: number;
+  failed?: number;
+  errors?: string[];
+  message?: string;
+  error?: string;
+}
+
+async function sendInviteEmails(emails: string[], inviterName?: string): Promise<InviteEmailResponse> {
+  const { data, error } = await supabaseClient.auth.getSession();
+  if (error || !data.session?.access_token) {
+    throw new Error("Không tìm thấy phiên đăng nhập admin");
+  }
+
+  const response = await fetch("/api/admin/email/send-invite", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${data.session.access_token}`,
+    },
+    body: JSON.stringify({
+      emails,
+      inviter_name: inviterName,
+    }),
+  });
+
+  const raw = await response.text();
+  const payload = raw ? (JSON.parse(raw) as InviteEmailResponse) : { success: response.ok };
+
+  if (!response.ok || payload.success === false) {
+    throw new Error(payload.error || payload.message || `HTTP ${response.status}`);
+  }
+
+  return payload;
 }
 
 // ─── Debounce Hook ──────────────────────────────────────────────────
@@ -1077,6 +1118,146 @@ function NewRegistrationCard({
   );
 }
 
+function InviteUsersCard({
+  inviterName,
+}: {
+  inviterName?: string | null;
+}) {
+  const { tap, success, warning } = useHaptics();
+  const [emailInput, setEmailInput] = useState("");
+  const [isSendingInvite, setIsSendingInvite] = useState(false);
+
+  const inviteEmails = useMemo(() => normalizeInviteEmails(emailInput), [emailInput]);
+  const invitePreview = useMemo(
+    () => buildInviteEmailPreview({
+      emails: inviteEmails,
+      inviterName,
+      appUrl: window.location.origin,
+    }),
+    [inviteEmails, inviterName],
+  );
+  const invalidEmailCount = useMemo(() => {
+    if (!emailInput.trim()) return 0;
+    const rawItems = emailInput.split(/[\s,;]+/).filter(Boolean);
+    return Math.max(rawItems.length - inviteEmails.length, 0);
+  }, [emailInput, inviteEmails.length]);
+
+  const handleSendInvite = useCallback(async () => {
+    if (!inviteEmails.length) {
+      warning();
+      toast.error("Nhập ít nhất một email hợp lệ");
+      return;
+    }
+
+    tap();
+    setIsSendingInvite(true);
+    try {
+      const result = await sendInviteEmails(inviteEmails, inviterName || undefined);
+      success();
+      toast.success(result.message || `Đã gửi ${result.sent ?? inviteEmails.length} email mời`);
+      setEmailInput("");
+    } catch (error) {
+      warning();
+      toast.error(error instanceof Error ? error.message : "Không gửi được email mời");
+    } finally {
+      setIsSendingInvite(false);
+    }
+  }, [inviteEmails, inviterName, success, tap, warning]);
+
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="border-b bg-muted/20">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <MailIcon className="h-4 w-4 text-primary" />
+              <CardTitle>Mời người dùng qua email</CardTitle>
+            </div>
+            <CardDescription>
+              Nhập email để preview và gửi lời mời bằng hệ thống email hiện có của FairPay.
+            </CardDescription>
+          </div>
+          <Badge variant="secondary" className="w-fit">
+            Gmail-style preview
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="grid gap-0 p-0 lg:grid-cols-[360px_minmax(0,1fr)]">
+        <div className="space-y-4 border-b p-4 lg:border-b-0 lg:border-r">
+          <div className="space-y-2">
+            <Label htmlFor="invite-emails">Email người nhận</Label>
+            <Textarea
+              id="invite-emails"
+              value={emailInput}
+              onChange={(event) => setEmailInput(event.target.value)}
+              placeholder="friend@example.com, teammate@example.com"
+              className="min-h-28 resize-none"
+            />
+            <p className="text-xs text-muted-foreground">
+              Có thể nhập nhiều email, phân tách bằng dấu phẩy, khoảng trắng hoặc xuống dòng.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {inviteEmails.length ? (
+              inviteEmails.map((email) => (
+                <Badge key={email} variant="outline" className="font-normal">
+                  {email}
+                </Badge>
+              ))
+            ) : (
+              <Badge variant="outline" className="font-normal text-muted-foreground">
+                Chưa có email hợp lệ
+              </Badge>
+            )}
+          </div>
+
+          {invalidEmailCount > 0 && (
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              Bỏ qua {invalidEmailCount} email chưa đúng định dạng.
+            </p>
+          )}
+
+          <Button
+            className="w-full"
+            onClick={handleSendInvite}
+            disabled={isSendingInvite || inviteEmails.length === 0}
+          >
+            {isSendingInvite ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : <SendIcon className="mr-2 h-4 w-4" />}
+            Gửi lời mời
+          </Button>
+        </div>
+
+        <div className="min-w-0 bg-background">
+          <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium">{invitePreview.subject}</p>
+              <p className="truncate text-xs text-muted-foreground">{invitePreview.previewText}</p>
+            </div>
+            <Badge variant="outline" className="shrink-0">
+              Preview
+            </Badge>
+          </div>
+          <div className="grid gap-3 border-b px-4 py-3 text-sm sm:grid-cols-[72px_minmax(0,1fr)]">
+            <span className="text-muted-foreground">From</span>
+            <span className="truncate">FairPay &lt;email hiện có&gt;</span>
+            <span className="text-muted-foreground">To</span>
+            <span className="truncate">{inviteEmails.length ? inviteEmails.join(", ") : "email@example.com"}</span>
+          </div>
+          <div className="h-[420px] bg-muted/30 p-3">
+            <iframe
+              title="FairPay invite email preview"
+              srcDoc={invitePreview.html}
+              sandbox=""
+              className="h-full w-full rounded-lg border bg-white shadow-sm"
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 // ═══════════════════════════════════════════════════════════════════
 // ─── USERS TAB ──────────────────────────────────────────────────────
@@ -1348,6 +1529,8 @@ function UsersTab() {
   return (
     <>
       <div className="space-y-4">
+        <InviteUsersCard inviterName={identity?.full_name || identity?.email} />
+
         {/* ── New Registrations Collapsible ──────────────────────── */}
         {!isLoading && newRegistrations.length > 0 && (
           <Collapsible defaultOpen>
