@@ -30,6 +30,8 @@ interface MemberListProps {
   showStats?: boolean;
   memberStats?: Record<string, MemberStats>;
   showHeader?: boolean;
+  /** Group context — passed to MemberCard so each member's group affiliation popover excludes the current group. */
+  currentGroupId?: string;
 }
 
 export const MemberList = ({
@@ -47,6 +49,7 @@ export const MemberList = ({
   showStats = false,
   memberStats,
   showHeader = true,
+  currentGroupId,
 }: MemberListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const { tap } = useHaptics();
@@ -113,6 +116,7 @@ export const MemberList = ({
             onToggleRole={onToggleRole}
             isLoading={isLoading}
             showStats={showStats}
+            currentGroupId={currentGroupId}
           />
         ))}
 

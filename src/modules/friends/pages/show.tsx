@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserGroupStack } from "@/components/user-display";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Profile } from "@/modules/profile/types";
@@ -336,6 +337,7 @@ export const FriendShow = () => {
                         defaultValue: `Friends since ${formatDateShort(friendship.created_at)}`
                       })}
                     </Badge>
+                    <UserGroupStack userId={friendProfile.id} size="sm" />
                   </div>
 
                   <p className="text-xs text-muted-foreground mb-3">

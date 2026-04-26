@@ -26,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar, UserGroupStack, getInitials } from "@/components/user-display";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -311,12 +312,18 @@ function UserDetailDialog({
         <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
           <DialogHeader>
             <div className="flex items-center gap-3">
-              <Avatar className="h-12 w-12">
-                <AvatarImage src={user.avatar_url ?? undefined} alt={user.full_name} />
-                <AvatarFallback>{user.full_name?.[0]?.toUpperCase() ?? "?"}</AvatarFallback>
-              </Avatar>
-              <div>
-                <DialogTitle>{user.full_name}</DialogTitle>
+              <UserAvatar
+                user={{
+                  full_name: user.full_name,
+                  avatar_url: user.avatar_url,
+                }}
+                size="lg"
+              />
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="flex items-center gap-2">
+                  <span>{user.full_name}</span>
+                  <UserGroupStack userId={user.id} size="xs" />
+                </DialogTitle>
                 <DialogDescription>{user.email}</DialogDescription>
               </div>
             </div>
@@ -1361,13 +1368,24 @@ function UsersTab() {
     {
       id: "avatar", header: "", accessorKey: "avatar_url", size: 50, enableSorting: false,
       cell: ({ row }) => (
-        <Avatar className="h-8 w-8">
-          <AvatarImage src={row.original.avatar_url ?? undefined} alt={row.original.full_name} />
-          <AvatarFallback className="text-xs">{row.original.full_name?.[0]?.toUpperCase() ?? "?"}</AvatarFallback>
-        </Avatar>
+        <UserAvatar
+          user={{
+            full_name: row.original.full_name,
+            avatar_url: row.original.avatar_url,
+          }}
+          size="md"
+        />
       ),
     },
-    { id: "full_name", header: "Tên", accessorKey: "full_name", size: 180 },
+    {
+      id: "full_name", header: "Tên", accessorKey: "full_name", size: 220,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="truncate">{row.original.full_name}</span>
+          <UserGroupStack userId={row.original.id} size="xs" />
+        </div>
+      ),
+    },
     { id: "email", header: "Email", accessorKey: "email", size: 220 },
     {
       id: "role", header: "Vai trò", accessorFn: (row) => row.role, size: 100,

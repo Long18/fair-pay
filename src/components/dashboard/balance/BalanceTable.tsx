@@ -13,8 +13,8 @@ import {
 import { AnimatedList } from "@/components/ui/animated-list";
 import { AnimatedRow } from "@/components/ui/animated-row";
 import { useStaggerAnimation } from "@/hooks/ui/use-stagger-animation";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { UserAvatar, UserGroupStack } from "@/components/user-display";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PaginationControls, PaginationMetadata } from "@/components/ui/pagination-controls";
@@ -177,12 +177,14 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div className="relative shrink-0">
-                          <Avatar className="h-10 w-10 border-2 border-border">
-                            <AvatarImage src={balance.counterparty_avatar_url || undefined} />
-                            <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
-                              {balance.counterparty_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                            </AvatarFallback>
-                          </Avatar>
+                          <UserAvatar
+                            user={{
+                              full_name: balance.counterparty_name,
+                              avatar_url: balance.counterparty_avatar_url ?? null,
+                            }}
+                            size="lg"
+                            className="border-2 border-border"
+                          />
                           {fullySettled && (
                             <div className={cn("absolute -bottom-1 -right-1 rounded-full p-0.5", getPaymentStateColors('paid').bg)}>
                               <CheckIcon className={cn("h-3 w-3", getPaymentStateColors('paid').icon)} />
@@ -190,9 +192,14 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className={cn("typography-row-title truncate", fullySettled && "line-through text-muted-foreground")}>
-                            {balance.counterparty_name}
-                          </p>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <p className={cn("typography-row-title truncate", fullySettled && "line-through text-muted-foreground")}>
+                              {balance.counterparty_name}
+                            </p>
+                            {balance.counterparty_id && (
+                              <UserGroupStack userId={balance.counterparty_id} size="xs" />
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 mt-1">
                             {fullySettled ? (
                               <PaymentStateBadge state="paid" size="sm" />
@@ -303,12 +310,13 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                 >
                   <TableCell>
                     <div className="relative">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={balance.counterparty_avatar_url || undefined} />
-                        <AvatarFallback className="text-xs">
-                          {balance.counterparty_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
+                      <UserAvatar
+                        user={{
+                          full_name: balance.counterparty_name,
+                          avatar_url: balance.counterparty_avatar_url ?? null,
+                        }}
+                        size="md"
+                      />
                       {fullySettled && (
                         <div className={cn("absolute -bottom-1 -right-1 rounded-full p-0.5", getPaymentStateColors('paid').bg)}>
                           <CheckIcon className={cn("h-3 w-3", getPaymentStateColors('paid').icon)} />
@@ -318,9 +326,14 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
-                      <span className={cn("typography-row-title", fullySettled && "line-through text-muted-foreground")}>
-                        {balance.counterparty_name}
-                      </span>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className={cn("typography-row-title", fullySettled && "line-through text-muted-foreground")}>
+                          {balance.counterparty_name}
+                        </span>
+                        {balance.counterparty_id && (
+                          <UserGroupStack userId={balance.counterparty_id} size="xs" />
+                        )}
+                      </div>
                       {showHistory && balance.last_transaction_date && (
                         <span className="typography-metadata">
                           {t('dashboard.lastTransaction', 'Last: ')}

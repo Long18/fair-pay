@@ -822,6 +822,7 @@ export const GroupShow = () => {
                         showStats={true}
                         memberStats={memberStats}
                         showHeader={false}
+                        currentGroupId={id}
                       />
                     </CardContent>
                   </Card>

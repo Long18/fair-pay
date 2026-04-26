@@ -7,6 +7,7 @@ import type { TFunction } from "i18next";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { UserAvatar, getInitials } from "@/components/user-display";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -220,21 +221,15 @@ function PayingParticipantsChips({
     <span className="inline-flex items-center">
       <span className="flex -space-x-1.5">
         {visibleParticipants.map((participant) => (
-          <Avatar
+          <UserAvatar
             key={participant.id}
-            className="h-5 w-5 border border-background shadow-xs"
-            aria-label={participant.name}
-          >
-            <AvatarImage src={participant.avatar || undefined} alt={participant.name} />
-            <AvatarFallback className="bg-primary/10 text-[8px] font-bold text-primary">
-              {participant.name
-                .split(" ")
-                .map((part) => part[0])
-                .join("")
-                .toUpperCase()
-                .slice(0, 2)}
-            </AvatarFallback>
-          </Avatar>
+            user={{
+              full_name: participant.name,
+              avatar_url: participant.avatar || null,
+            }}
+            size="xs"
+            className="border border-background shadow-xs"
+          />
         ))}
       </span>
 
@@ -523,12 +518,7 @@ const DefaultActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRowP
                       >
                         <AvatarImage src={participant.avatar || undefined} alt={participant.name} />
                         <AvatarFallback className="bg-status-success-bg text-[7px] font-bold text-status-success-foreground">
-                          {participant.name
-                            .split(" ")
-                            .map((name) => name[0])
-                            .join("")
-                            .toUpperCase()
-                            .slice(0, 2)}
+                          {getInitials(participant.name)}
                         </AvatarFallback>
                       </Avatar>
                     ))}

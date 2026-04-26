@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { getInitials, UserGroupStack } from "@/components/user-display";
 import { CheckCircle2Icon, ChevronDownIcon } from "@/components/ui/icons";
 import { PaymentMethodDropdown } from "@/modules/payments/components/payment-method-dropdown";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -127,25 +128,25 @@ export const ExpenseSplitCard = ({
                   ? cn(paidColors.bg, paidColors.text)
                   : "bg-gradient-to-br from-muted to-muted/50"
               )}>
-                {split.profiles?.full_name
-                  ?.split(" ")
-                  .map((n: string) => n[0])
-                  .join("")
-                  .toUpperCase()
-                  .slice(0, 2) || "?"}
+                {getInitials(split.profiles?.full_name)}
               </AvatarFallback>
             </Avatar>
 
             <div className="flex-1 min-w-0">
-              <div className={cn(
-                "font-semibold text-sm md:text-base truncate transition-colors",
-                isSplitSettled ? paidColors.text : "group-hover:text-primary"
-              )}>
-                {split.profiles?.full_name || split.pending_email || t('profile.unknown')}
-                {isCurrentUser && (
-                  <span className="text-xs text-muted-foreground ml-2 font-normal">
-                    ({t('common.you')})
-                  </span>
+              <div className="flex items-center gap-2 min-w-0">
+                <div className={cn(
+                  "font-semibold text-sm md:text-base truncate transition-colors",
+                  isSplitSettled ? paidColors.text : "group-hover:text-primary"
+                )}>
+                  {split.profiles?.full_name || split.pending_email || t('profile.unknown')}
+                  {isCurrentUser && (
+                    <span className="text-xs text-muted-foreground ml-2 font-normal">
+                      ({t('common.you')})
+                    </span>
+                  )}
+                </div>
+                {split.profiles?.id && (
+                  <UserGroupStack userId={split.profiles.id} size="xs" />
                 )}
               </div>
 

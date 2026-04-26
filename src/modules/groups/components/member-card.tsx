@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { getInitials, UserGroupStack } from "@/components/user-display";
 import { GroupMember } from "../types";
 import { Profile } from "@/modules/profile/types";
 import { formatNumber } from "@/lib/locale-utils";
@@ -37,6 +38,8 @@ interface MemberCardProps {
   onToggleRole?: (memberId: string, currentRole: string) => void;
   isLoading?: boolean;
   showStats?: boolean;
+  /** Group context for the member's other-groups stack — excludes the current group from the affiliation popover. */
+  currentGroupId?: string;
 }
 
 export function MemberCard({
@@ -49,22 +52,12 @@ export function MemberCard({
   onToggleRole,
   isLoading,
   showStats = false,
+  currentGroupId,
 }: MemberCardProps) {
   const { tap, warning } = useHaptics();
   const isCurrentUser = member.user_id === currentUserId;
   const isCreator = member.user_id === creatorId;
   const isAdminRole = member.role === "admin";
-
-  const getInitials = (name: string) => {
-    return (
-      name
-        ?.split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2) || "?"
-    );
-  };
 
   const formatRelativeDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -124,6 +117,11 @@ export function MemberCard({
                 You
               </Badge>
             )}
+            <UserGroupStack
+              userId={member.user_id}
+              size="xs"
+              excludeGroupIds={currentGroupId ? [currentGroupId] : undefined}
+            />
           </div>
 
           <div className="flex items-center gap-2 mt-1 flex-wrap">

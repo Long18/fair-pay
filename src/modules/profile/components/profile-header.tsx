@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { getInitials, UserGroupStack } from "@/components/user-display";
 import { Profile } from "../types";
 import { formatDateShort } from "@/lib/locale-utils";
 import { useTranslation } from "react-i18next";
@@ -58,11 +59,7 @@ export const ProfileHeader = ({
           >
             <AvatarImage src={profile.avatar_url || undefined} />
             <AvatarFallback className="text-2xl sm:text-3xl bg-gradient-to-br from-primary/20 to-primary/10">
-              {profile.full_name
-                ?.split(" ")
-                .map((n) => n[0])
-                .join("")
-                .toUpperCase() || "?"}
+              {getInitials(profile.full_name)}
             </AvatarFallback>
           </Avatar>
 
@@ -93,6 +90,7 @@ export const ProfileHeader = ({
                 defaultValue: `Member since ${formatDateShort(profile.created_at)}`
               })}
             </Badge>
+            <UserGroupStack userId={profile.id} size="sm" />
           </div>
 
           {profile.email && (

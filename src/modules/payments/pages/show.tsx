@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PaymentWithProfiles } from "../types";
 import { Profile } from "@/modules/profile/types";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { UserDisplay } from "@/components/user-display";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
 import { useTranslation } from "react-i18next";
 
@@ -106,39 +106,47 @@ export const PaymentShow = () => {
             {/* From User */}
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">From</p>
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarImage src={fromProfile?.avatar_url || undefined} />
-                  <AvatarFallback>
-                    {fromProfile?.full_name?.charAt(0) || "?"}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-medium">{fromProfile?.full_name || "Unknown"}</p>
-                  {identity?.id === payment.from_user && (
-                    <Badge variant="secondary" className="text-xs">You</Badge>
-                  )}
-                </div>
-              </div>
+              {fromProfile ? (
+                <UserDisplay
+                  user={{
+                    id: fromProfile.id,
+                    full_name: fromProfile.full_name,
+                    avatar_url: fromProfile.avatar_url ?? null,
+                  }}
+                  size="md"
+                  excludeGroupIds={group?.id ? [group.id] : undefined}
+                  badges={
+                    identity?.id === payment.from_user ? (
+                      <Badge variant="secondary" className="text-xs">You</Badge>
+                    ) : undefined
+                  }
+                />
+              ) : (
+                <p className="font-medium">Unknown</p>
+              )}
             </div>
 
             {/* To User */}
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">To</p>
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarImage src={toProfile?.avatar_url || undefined} />
-                  <AvatarFallback>
-                    {toProfile?.full_name?.charAt(0) || "?"}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-medium">{toProfile?.full_name || "Unknown"}</p>
-                  {identity?.id === payment.to_user && (
-                    <Badge variant="secondary" className="text-xs">You</Badge>
-                  )}
-                </div>
-              </div>
+              {toProfile ? (
+                <UserDisplay
+                  user={{
+                    id: toProfile.id,
+                    full_name: toProfile.full_name,
+                    avatar_url: toProfile.avatar_url ?? null,
+                  }}
+                  size="md"
+                  excludeGroupIds={group?.id ? [group.id] : undefined}
+                  badges={
+                    identity?.id === payment.to_user ? (
+                      <Badge variant="secondary" className="text-xs">You</Badge>
+                    ) : undefined
+                  }
+                />
+              ) : (
+                <p className="font-medium">Unknown</p>
+              )}
             </div>
           </div>
 

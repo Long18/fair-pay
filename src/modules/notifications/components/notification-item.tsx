@@ -2,6 +2,7 @@ import { useGo } from "@refinedev/core";
 import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/use-haptics";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getInitials } from "@/components/user-display";
 import { Notification } from "../types";
 import { formatDistanceToNow } from "date-fns";
 import { getNotificationMeta } from "./notification-theme";
@@ -11,17 +12,6 @@ interface NotificationItemProps {
   onMarkAsRead: (id: string) => void;
   onClose?: () => void;
 }
-
-/** Get initials from a name for avatar fallback */
-const getInitials = (name?: string) => {
-  if (!name) return "?";
-  return name
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-};
 
 export const NotificationItem = ({
   notification,

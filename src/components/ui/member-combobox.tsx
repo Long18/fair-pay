@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar, UserGroupStack } from "@/components/user-display";
 import { CheckIcon, ChevronsUpDownIcon, SearchIcon } from "@/components/ui/icons";
 import {
   Command,
@@ -68,48 +68,36 @@ export function MemberCombobox({
           <CommandList>
             <CommandEmpty>{emptyMessage}</CommandEmpty>
             <CommandGroup>
-              {availableMembers.map((member) => {
-                const getInitials = (name: string) => {
-                  return name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .toUpperCase()
-                    .slice(0, 2) || "?";
-                };
-
-                return (
-                  <CommandItem
-                    key={member.id}
-                    value={member.full_name}
-                    onSelect={() => {
-                      onSelect(member.id);
-                      setOpen(false);
-                    }}
-                    className="cursor-pointer flex items-center gap-2"
-                  >
-                    <CheckIcon
-                      className={cn(
-                        "h-4 w-4 shrink-0",
-                        selectedIds.includes(member.id) ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    <Avatar className="h-6 w-6 shrink-0">
-                      <AvatarImage
-                        src={member.avatar_url || undefined}
-                        alt={member.full_name}
-                      />
-                      <AvatarFallback className="text-[10px]">
-                        {getInitials(member.full_name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="flex-1">{member.full_name}</span>
-                    {member.id === currentUserId && (
-                      <span className="text-xs text-muted-foreground">(You)</span>
+              {availableMembers.map((member) => (
+                <CommandItem
+                  key={member.id}
+                  value={member.full_name}
+                  onSelect={() => {
+                    onSelect(member.id);
+                    setOpen(false);
+                  }}
+                  className="cursor-pointer flex items-center gap-2"
+                >
+                  <CheckIcon
+                    className={cn(
+                      "h-4 w-4 shrink-0",
+                      selectedIds.includes(member.id) ? "opacity-100" : "opacity-0"
                     )}
-                  </CommandItem>
-                );
-              })}
+                  />
+                  <UserAvatar
+                    user={{
+                      full_name: member.full_name,
+                      avatar_url: member.avatar_url ?? null,
+                    }}
+                    size="sm"
+                  />
+                  <span className="flex-1 truncate">{member.full_name}</span>
+                  <UserGroupStack userId={member.id} variant="collapsed" size="xs" />
+                  {member.id === currentUserId && (
+                    <span className="text-xs text-muted-foreground">(You)</span>
+                  )}
+                </CommandItem>
+              ))}
             </CommandGroup>
           </CommandList>
         </Command>

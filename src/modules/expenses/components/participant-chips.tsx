@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getInitials, UserGroupStack } from "@/components/user-display";
 import {
   UserPlusIcon,
   XIcon,
@@ -54,9 +55,6 @@ const PAGE_SIZE = 5;
 
 const isValidEmail = (email: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-const getInitials = (name: string) =>
-  name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?";
 
 export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
   members,
@@ -354,6 +352,7 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
                         {t("common.you")}
                       </Badge>
                     )}
+                    <UserGroupStack userId={member.id} variant="collapsed" size="xs" />
                   </div>
                   {!isManualSplit && selected && participant && amount && amount > 0 && (
                     <span className="text-xs font-semibold text-primary tabular-nums flex-shrink-0">

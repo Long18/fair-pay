@@ -196,8 +196,9 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
           {owedToMe.map((debt) => (
             <BalanceRow
               key={debt.counterparty_id || debt.counterparty_email || debt.counterparty_name}
+              counterpartyId={debt.counterparty_id ?? undefined}
               counterpartyName={debt.counterparty_name}
-              groupName="Friend"
+              counterpartyAvatarUrl={debt.counterparty_avatar_url ?? null}
               amount={debt.amount}
               iOweThemFlag={debt.i_owe_them}
               onClick={() => handleRowClick(debt)}
@@ -216,8 +217,9 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
           {iOwe.map((debt) => (
             <BalanceRow
               key={debt.counterparty_id || debt.counterparty_email || debt.counterparty_name}
+              counterpartyId={debt.counterparty_id ?? undefined}
               counterpartyName={debt.counterparty_name}
-              groupName="Friend"
+              counterpartyAvatarUrl={debt.counterparty_avatar_url ?? null}
               amount={debt.amount}
               iOweThemFlag={debt.i_owe_them}
               onClick={() => handleRowClick(debt)}
