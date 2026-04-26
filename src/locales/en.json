@@ -989,5 +989,50 @@
         "reverted": "Action undone successfully",
         "revertFailed": "Failed to undo. Please try again.",
         "button": "Undo"
+    },
+    "onboarding": {
+        "welcome": {
+            "title": "Welcome to FairPay",
+            "description": "Let us show you around! This quick tour will help you get the most out of FairPay."
+        },
+        "dashboard": {
+            "title": "Your Dashboard",
+            "description": "This is your home base. View balances, recent activity, and settled history all in one place."
+        },
+        "addExpense": {
+            "title": "Add an Expense",
+            "description": "Tap the + button anytime to quickly add a new shared expense."
+        },
+        "connections": {
+            "title": "Groups & Friends",
+            "description": "Manage your groups and friends here. Create groups for trips, roommates, or any shared expenses."
+        },
+        "theme": {
+            "title": "Customize Your Theme",
+            "description": "Choose from 8+ color themes and switch between light, dark, or system mode."
+        },
+        "payments": {
+            "title": "Payment Methods",
+            "description": "FairPay supports MoMo, SePay, VietQR, and bank transfers for easy settlements."
+        },
+        "notifications": {
+            "title": "Stay Updated",
+            "description": "Get notified when expenses are added, payments are received, or friends send requests."
+        },
+        "language": {
+            "title": "Switch Language",
+            "description": "FairPay is available in English and Vietnamese. Switch anytime from here."
+        },
+        "completion": {
+            "title": "You're All Set!",
+            "description": "You're ready to start splitting expenses fairly. Have fun using FairPay!"
+        },
+        "actions": {
+            "next": "Next",
+            "back": "Back",
+            "skip": "Skip",
+            "restart": "Restart Tutorial",
+            "done": "Done"
+        }
     }
 }

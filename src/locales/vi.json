@@ -988,5 +988,50 @@
         "reverted": "Đã hoàn tác thành công",
         "revertFailed": "Hoàn tác thất bại. Vui lòng thử lại.",
         "button": "Hoàn tác"
+    },
+    "onboarding": {
+        "welcome": {
+            "title": "Chào mừng đến FairPay",
+            "description": "Hãy để chúng tôi hướng dẫn bạn! Tour nhanh này sẽ giúp bạn tận dụng tối đa FairPay."
+        },
+        "dashboard": {
+            "title": "Bảng điều khiển",
+            "description": "Đây là trang chính của bạn. Xem số dư, hoạt động gần đây và lịch sử thanh toán tại đây."
+        },
+        "addExpense": {
+            "title": "Thêm chi phí",
+            "description": "Nhấn nút + bất cứ lúc nào để thêm chi phí chia sẻ mới."
+        },
+        "connections": {
+            "title": "Nhóm & Bạn bè",
+            "description": "Quản lý nhóm và bạn bè tại đây. Tạo nhóm cho chuyến đi, bạn cùng phòng hoặc chi phí chung."
+        },
+        "theme": {
+            "title": "Tùy chỉnh giao diện",
+            "description": "Chọn từ 8+ bảng màu và chuyển đổi giữa chế độ sáng, tối hoặc hệ thống."
+        },
+        "payments": {
+            "title": "Phương thức thanh toán",
+            "description": "FairPay hỗ trợ MoMo, SePay, VietQR và chuyển khoản ngân hàng để thanh toán dễ dàng."
+        },
+        "notifications": {
+            "title": "Cập nhật thông báo",
+            "description": "Nhận thông báo khi có chi phí mới, thanh toán hoặc lời mời kết bạn."
+        },
+        "language": {
+            "title": "Chuyển ngôn ngữ",
+            "description": "FairPay có sẵn bằng tiếng Anh và tiếng Việt. Chuyển đổi bất cứ lúc nào từ đây."
+        },
+        "completion": {
+            "title": "Bạn đã sẵn sàng!",
+            "description": "Bạn đã sẵn sàng chia sẻ chi phí công bằng. Chúc bạn sử dụng FairPay vui vẻ!"
+        },
+        "actions": {
+            "next": "Tiếp theo",
+            "back": "Quay lại",
+            "skip": "Bỏ qua",
+            "restart": "Khởi động lại hướng dẫn",
+            "done": "Hoàn tất"
+        }
     }
 }

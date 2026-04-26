@@ -154,6 +154,7 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
               <Button
                 size="icon"
                 onClick={toggleMenu}
+                data-onboarding-target="fab-button"
                 data-track-id="cta:fab:toggle"
                 data-track-event="cta_click"
                 data-track-type="button"
