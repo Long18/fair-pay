@@ -3,9 +3,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { MailIcon } from "@/components/ui/icons";
+import { UserDisplay } from "@/components/user-display";
 
 interface BalanceRowProps {
+  counterpartyId?: string;
   counterpartyName: string;
+  counterpartyAvatarUrl?: string | null;
+  /** Deprecated: kept for backwards compat. The UserGroupStack now supplies this context. */
   groupName?: string;
   amount: number;
   iOweThemFlag: boolean;
@@ -15,8 +19,9 @@ interface BalanceRowProps {
 }
 
 export function BalanceRow({
+  counterpartyId,
   counterpartyName,
-  groupName,
+  counterpartyAvatarUrl = null,
   amount,
   iOweThemFlag,
   onClick,
@@ -29,65 +34,94 @@ export function BalanceRow({
   };
 
   const displayAmount = `₫${formatCurrency(amount)}`;
+  const interactive = !disabled && !isPendingEmail;
+
+  const trailingBadge = (
+    <Badge
+      className={cn(
+        "ml-3 font-medium whitespace-nowrap",
+        iOweThemFlag
+          ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-950/30"
+          : "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/30"
+      )}
+    >
+      {displayAmount}
+    </Badge>
+  );
+
+  const handleClick = interactive ? () => { tap(); onClick?.(); } : undefined;
+
+  if (isPendingEmail || !counterpartyId) {
+    return (
+      <div
+        onClick={handleClick}
+        className={cn(
+          "flex items-center justify-between p-4 rounded-lg border bg-card transition-colors",
+          isPendingEmail && "border-amber-400/50 bg-amber-50/30 dark:bg-amber-950/20",
+          interactive && "cursor-pointer hover:bg-muted/50",
+          disabled && !isPendingEmail && "opacity-60 cursor-not-allowed"
+        )}
+      >
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          {isPendingEmail ? (
+            <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center border border-amber-300 dark:border-amber-700">
+              <MailIcon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            </div>
+          ) : (
+            <Avatar className="h-10 w-10 rounded-full border">
+              <AvatarFallback className="text-sm bg-muted text-muted-foreground">
+                {counterpartyName.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          )}
+
+          <div className="flex flex-col min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                "text-sm font-semibold truncate",
+                isPendingEmail && "text-amber-700 dark:text-amber-300"
+              )}>
+                {counterpartyName}
+              </span>
+              {isPendingEmail && (
+                <Badge variant="outline" className="h-5 px-1.5 text-[10px] flex-shrink-0 border-amber-400 text-amber-600 dark:text-amber-400">
+                  Pending
+                </Badge>
+              )}
+            </div>
+            {isPendingEmail && (
+              <span className="text-[11px] text-amber-600/70 dark:text-amber-400/70 truncate">
+                Not yet registered
+              </span>
+            )}
+          </div>
+        </div>
+
+        {trailingBadge}
+      </div>
+    );
+  }
 
   return (
     <div
-      onClick={!disabled && !isPendingEmail ? () => { tap(); onClick?.(); } : undefined}
+      onClick={handleClick}
       className={cn(
-        "flex items-center justify-between p-4 rounded-lg border bg-card transition-colors",
-        isPendingEmail && "border-amber-400/50 bg-amber-50/30 dark:bg-amber-950/20",
-        !disabled && !isPendingEmail && "cursor-pointer hover:bg-muted/50",
-        (disabled || isPendingEmail) && !isPendingEmail && "opacity-60 cursor-not-allowed"
+        "flex items-center p-4 rounded-lg border bg-card transition-colors",
+        interactive && "cursor-pointer hover:bg-muted/50",
+        disabled && "opacity-60 cursor-not-allowed"
       )}
     >
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        {isPendingEmail ? (
-          <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center border border-amber-300 dark:border-amber-700">
-            <MailIcon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-          </div>
-        ) : (
-          <Avatar className="h-10 w-10 rounded-full border">
-            <AvatarFallback className="text-sm bg-muted text-muted-foreground">
-              {counterpartyName.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-        )}
-
-        <div className="flex flex-col min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className={cn(
-              "text-sm font-semibold truncate",
-              isPendingEmail && "text-amber-700 dark:text-amber-300"
-            )}>
-              {counterpartyName}
-            </span>
-            {isPendingEmail && (
-              <Badge variant="outline" className="h-5 px-1.5 text-[10px] flex-shrink-0 border-amber-400 text-amber-600 dark:text-amber-400">
-                Pending
-              </Badge>
-            )}
-          </div>
-          {groupName && (
-            <span className="text-xs text-muted-foreground truncate">{groupName}</span>
-          )}
-          {isPendingEmail && (
-            <span className="text-[11px] text-amber-600/70 dark:text-amber-400/70 truncate">
-              Not yet registered
-            </span>
-          )}
-        </div>
-      </div>
-
-      <Badge
-        className={cn(
-          "ml-3 font-medium whitespace-nowrap",
-          iOweThemFlag
-            ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-950/30"
-            : "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/30"
-        )}
-      >
-        {displayAmount}
-      </Badge>
+      <UserDisplay
+        user={{
+          id: counterpartyId,
+          full_name: counterpartyName,
+          avatar_url: counterpartyAvatarUrl,
+        }}
+        size="lg"
+        layout="row"
+        groupStack="auto"
+        trailing={trailingBadge}
+      />
     </div>
   );
 }

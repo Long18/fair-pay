@@ -1,4 +1,3 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,8 +6,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { UserDisplay } from "@/components/user-display";
 import { cn } from "@/lib/utils";
-import { MoreVerticalIcon, UserIcon, Trash2Icon } from "@/components/ui/icons";
+import { MoreVerticalIcon, Trash2Icon } from "@/components/ui/icons";
 import { motion } from "framer-motion";
 import { useHaptics } from "@/hooks/use-haptics";
 
@@ -62,42 +62,30 @@ export const FriendRow = ({
     >
       {/* Primary click target - navigates to friend detail */}
       <div
-        className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+        className="flex-1 min-w-0 cursor-pointer"
         onClick={() => { tap(); onNavigate(); }}
       >
-        {/* Avatar */}
-        <Avatar className="h-12 w-12 shrink-0">
-          <AvatarImage src={friend.avatar_url || undefined} alt={friend.full_name} />
-          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10">
-            {friend.full_name
-              ?.split(" ")
-              .map((n) => n[0])
-              .join("")
-              .toUpperCase() || <UserIcon size={20} />}
-          </AvatarFallback>
-        </Avatar>
-
-        {/* Friend Info */}
-        <div className="flex-1 min-w-0">
-          <div className="font-medium text-sm sm:text-base truncate">
-            {friend.full_name}
-          </div>
-          {friend.email && (
-            <div className="text-xs sm:text-sm text-muted-foreground truncate">
-              {friend.email}
-            </div>
-          )}
-        </div>
-
-        {/* Balance Badge (optional) */}
-        {showBalance && balance !== undefined && balance !== 0 && (
-          <Badge
-            variant="secondary"
-            className={cn("shrink-0 hidden sm:flex", getBalanceColor(balance))}
-          >
-            {formatBalance(balance)} {currency}
-          </Badge>
-        )}
+        <UserDisplay
+          user={{
+            id: friend.id,
+            full_name: friend.full_name,
+            avatar_url: friend.avatar_url ?? null,
+            email: friend.email,
+          }}
+          size="lg"
+          showEmail={!!friend.email}
+          groupStack="auto"
+          trailing={
+            showBalance && balance !== undefined && balance !== 0 ? (
+              <Badge
+                variant="secondary"
+                className={cn("shrink-0 hidden sm:flex", getBalanceColor(balance))}
+              >
+                {formatBalance(balance)} {currency}
+              </Badge>
+            ) : undefined
+          }
+        />
       </div>
 
       {/* Actions Menu (3-dot) */}

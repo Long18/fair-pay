@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar, UserGroupStack } from "@/components/user-display";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -427,23 +428,35 @@ function PaymentDetailDialog({
         </DialogHeader>
         <div className="space-y-4 mt-2">
           <div className="flex items-center gap-3 rounded-lg border p-3">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={payment.from_user_avatar ?? undefined} alt={payment.from_user_name} />
-              <AvatarFallback>{payment.from_user_name?.[0]?.toUpperCase() ?? "?"}</AvatarFallback>
-            </Avatar>
-            <div>
+            <UserAvatar
+              user={{
+                full_name: payment.from_user_name,
+                avatar_url: payment.from_user_avatar,
+              }}
+              size="lg"
+            />
+            <div className="flex-1 min-w-0">
               <span className="text-xs text-muted-foreground">Người gửi</span>
-              <p className="text-sm font-medium">{payment.from_user_name}</p>
+              <div className="flex items-center gap-2 min-w-0">
+                <p className="text-sm font-medium truncate">{payment.from_user_name}</p>
+                <UserGroupStack userId={payment.from_user_id} size="xs" />
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3 rounded-lg border p-3">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={payment.to_user_avatar ?? undefined} alt={payment.to_user_name} />
-              <AvatarFallback>{payment.to_user_name?.[0]?.toUpperCase() ?? "?"}</AvatarFallback>
-            </Avatar>
-            <div>
+            <UserAvatar
+              user={{
+                full_name: payment.to_user_name,
+                avatar_url: payment.to_user_avatar,
+              }}
+              size="lg"
+            />
+            <div className="flex-1 min-w-0">
               <span className="text-xs text-muted-foreground">Người nhận</span>
-              <p className="text-sm font-medium">{payment.to_user_name}</p>
+              <div className="flex items-center gap-2 min-w-0">
+                <p className="text-sm font-medium truncate">{payment.to_user_name}</p>
+                <UserGroupStack userId={payment.to_user_id} size="xs" />
+              </div>
             </div>
           </div>
           <div className="space-y-3">
@@ -677,14 +690,18 @@ function ExpensesTab() {
       cell: ({ row }) => <div className="text-right font-mono tabular-nums">{formatNumber(row.original.amount)}</div>,
     },
     {
-      id: "paid_by", header: "Người trả", accessorKey: "paid_by_name", size: 180, enableSorting: false,
+      id: "paid_by", header: "Người trả", accessorKey: "paid_by_name", size: 220, enableSorting: false,
       cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <Avatar className="h-7 w-7">
-            <AvatarImage src={row.original.paid_by_avatar ?? undefined} alt={row.original.paid_by_name} />
-            <AvatarFallback className="text-xs">{row.original.paid_by_name?.[0]?.toUpperCase() ?? "?"}</AvatarFallback>
-          </Avatar>
-          <span className="text-sm">{row.original.paid_by_name}</span>
+        <div className="flex items-center gap-2 min-w-0">
+          <UserAvatar
+            user={{
+              full_name: row.original.paid_by_name,
+              avatar_url: row.original.paid_by_avatar,
+            }}
+            size="sm"
+          />
+          <span className="text-sm truncate">{row.original.paid_by_name}</span>
+          <UserGroupStack userId={row.original.paid_by_user_id} size="xs" />
         </div>
       ),
     },

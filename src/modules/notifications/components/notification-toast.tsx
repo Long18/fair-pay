@@ -1,16 +1,12 @@
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getInitials } from "@/components/user-display";
 import { Notification } from "../types";
 import { getNotificationMeta } from "./notification-theme";
 
 interface NotificationToastProps {
   notification: Notification;
 }
-
-const getInitials = (name?: string) => {
-  if (!name) return "?";
-  return name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
-};
 
 export const NotificationToast = ({ notification }: NotificationToastProps) => {
   const meta = getNotificationMeta(notification.type);

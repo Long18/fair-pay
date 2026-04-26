@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar, UserGroupStack } from "@/components/user-display";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -497,17 +497,16 @@ export function AdminNotifications() {
         size: 180,
         enableSorting: false,
         cell: ({ row }) => (
-          <div className="flex items-center gap-2">
-            <Avatar className="h-7 w-7">
-              <AvatarImage
-                src={row.original.user_avatar ?? undefined}
-                alt={row.original.user_name}
-              />
-              <AvatarFallback className="text-xs">
-                {row.original.user_name?.[0]?.toUpperCase() ?? "?"}
-              </AvatarFallback>
-            </Avatar>
-            <span className="text-sm">{row.original.user_name}</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <UserAvatar
+              user={{
+                full_name: row.original.user_name,
+                avatar_url: row.original.user_avatar,
+              }}
+              size="sm"
+            />
+            <span className="text-sm truncate">{row.original.user_name}</span>
+            <UserGroupStack userId={row.original.user_id} size="xs" />
           </div>
         ),
       },

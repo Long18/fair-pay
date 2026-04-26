@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { UserAvatar, UserGroupStack } from "@/components/user-display";
 import { useGo } from "@refinedev/core";
 import { motion } from "framer-motion";
 
@@ -163,16 +163,21 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <Avatar className="h-10 w-10 border-2 border-border shrink-0">
-                          <AvatarImage src={friend.counterparty_avatar_url || undefined} alt={friend.counterparty_name} />
-                          <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
-                            {friend.counterparty_name.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          user={{
+                            full_name: friend.counterparty_name,
+                            avatar_url: friend.counterparty_avatar_url ?? null,
+                          }}
+                          size="lg"
+                          className="border-2 border-border"
+                        />
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium text-foreground truncate">
-                            {friend.counterparty_name}
-                          </p>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <p className="font-medium text-foreground truncate">
+                              {friend.counterparty_name}
+                            </p>
+                            <UserGroupStack userId={friend.counterparty_id} size="xs" />
+                          </div>
                           <div className="flex items-center gap-2 mt-1">
                             <Badge
                               variant={friend.i_owe_them ? "destructive" : "default"}
@@ -245,16 +250,21 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
                   >
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9 border-2 border-border">
-                          <AvatarImage src={friend.counterparty_avatar_url || undefined} alt={friend.counterparty_name} />
-                          <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
-                            {friend.counterparty_name.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          user={{
+                            full_name: friend.counterparty_name,
+                            avatar_url: friend.counterparty_avatar_url ?? null,
+                          }}
+                          size="md"
+                          className="border-2 border-border"
+                        />
                         <div>
-                          <p className="font-medium text-foreground">
-                            {friend.counterparty_name}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-foreground">
+                              {friend.counterparty_name}
+                            </p>
+                            <UserGroupStack userId={friend.counterparty_id} size="xs" />
+                          </div>
                           <p className="text-xs text-muted-foreground">
                             View details
                           </p>
