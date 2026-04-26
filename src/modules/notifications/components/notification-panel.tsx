@@ -37,6 +37,7 @@ export const NotificationPanel = () => {
       variant="ghost"
       size="icon"
       className="relative h-9 w-9 md:h-10 md:w-10 rounded-full hover:bg-accent"
+      data-onboarding-target="notification-panel"
       aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
     >
       <BellIcon className="h-4 w-4 md:h-5 md:w-5" />

@@ -86,6 +86,9 @@ const SepaySettings = lazy(() => import("./modules/settings/pages/sepay-settings
 const DonationWidget = lazy(() => import("./components/donation-widget").then(m => ({ default: m.DonationWidget })));
 const ChatFAB = lazy(() => import("./modules/ai-chat").then(m => ({ default: m.ChatFAB })));
 
+// Onboarding module - lazy loaded (only needed on first visit)
+const OnboardingProvider = lazy(() => import("./modules/onboarding").then(m => ({ default: m.OnboardingProvider })));
+
 // Legal pages
 const PrivacyPage = lazy(() => import("./pages/privacy").then(m => ({ default: m.PrivacyPage })));
 const TermsPage = lazy(() => import("./pages/terms").then(m => ({ default: m.TermsPage })));
@@ -311,6 +314,8 @@ function App() {
                 ]}
               >
               <UndoManagerProvider>
+                <Suspense fallback={null}>
+                <OnboardingProvider>
                 <Routes>
                   {/* OAuth consent route - public but requires authentication */}
                   <Route path="/oauth/consent" element={<OAuthConsent />} />
@@ -591,6 +596,8 @@ function App() {
                   </Suspense>
                 </Authenticated>
                 <SmoothScrollInit />
+                </OnboardingProvider>
+                </Suspense>
               </UndoManagerProvider>
               </Refine>
           </GSAPProvider>

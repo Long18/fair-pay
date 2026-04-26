@@ -164,7 +164,7 @@ export const Dashboard = () => {
             {/* Tab Switcher */}
             <ScrollReveal direction="up">
             <div className="flex items-center justify-center w-full">
-              <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
+              <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit" data-onboarding-target="dashboard-tabs">
                 {([
                   { key: "balances" as const, label: t('balances.title', 'Balances'), icon: WalletIcon, count: balances.length },
                   { key: "activity" as const, label: t('dashboard.recentActivity', 'Activity'), icon: ActivityIcon, count: activities.length },

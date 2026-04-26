@@ -155,6 +155,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
         <Button
           variant="outline"
           size="icon"
+          data-onboarding-target="theme-selector"
           className={cn(
             "rounded-full",
             "border-sidebar-border",

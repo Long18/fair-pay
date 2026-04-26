@@ -1,15 +1,20 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { useUserSettings } from '../hooks/use-user-settings';
 import { DisplaySettingsForm, NotificationSettingsForm, PrivacySettingsForm } from '../components';
-import { SettingsIcon, BellIcon, AlertCircleIcon } from "@/components/ui/icons";
+import { SettingsIcon, BellIcon, AlertCircleIcon, RotateCcwIcon } from "@/components/ui/icons";
 import { useTranslation } from 'react-i18next';
 import { ReminderSettingsComponent } from '@/components/settings/reminder-settings';
+import { useOnboarding } from '@/modules/onboarding';
+import { useHaptics } from '@/hooks/use-haptics';
 
 export function SettingsPage() {
   const { settings, isLoading, isUpdating, saveSettings } = useUserSettings();
   const { t } = useTranslation();
+  const { restart } = useOnboarding();
+  const { tap } = useHaptics();
 
   if (isLoading) {
     return (
@@ -101,6 +106,27 @@ export function SettingsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("onboarding.actions.restart", "Restart Tutorial")}</CardTitle>
+          <CardDescription>
+            {t("settings.restartTutorialDescription", "Replay the guided tour to revisit FairPay's features.")}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="outline"
+            onClick={() => {
+              tap();
+              restart();
+            }}
+          >
+            <RotateCcwIcon className="h-4 w-4" />
+            {t("onboarding.actions.restart", "Restart Tutorial")}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -225,6 +225,7 @@ function NavItem({ item, isActive, onClick, showLabel = true }: NavItemProps) {
       data-track-event="nav_click"
       data-track-type="link"
       data-track-category="navigation"
+      {...((item.key === "connections" || item.name === "connections") ? { "data-onboarding-target": "nav-connections" } : {})}
       className={cn(
         "flex items-center gap-2 px-3 py-2 rounded-lg",
         "text-sm font-medium",
