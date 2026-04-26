@@ -73,9 +73,26 @@ export const PaymentList = ({ groupId, friendshipId }: PaymentListProps) => {
 
   if (payments.length === 0) {
     return (
-      <Card>
-        <CardContent className="py-8 text-center text-muted-foreground">
-          No payments recorded yet
+      <Card className="border-dashed">
+        <CardContent className="py-12 text-center">
+          <div className="mx-auto flex max-w-md flex-col items-center gap-4">
+            <picture className="block w-52 sm:w-60">
+              <source
+                srcSet="/assets/generated/empty-state-payments.webp"
+                type="image/webp"
+              />
+              <img
+                src="/assets/generated/empty-state-payments.png"
+                alt=""
+                width={1254}
+                height={1254}
+                className="h-auto w-full"
+                decoding="async"
+                loading="lazy"
+              />
+            </picture>
+            <p className="text-muted-foreground">No payments recorded yet</p>
+          </div>
         </CardContent>
       </Card>
     );
