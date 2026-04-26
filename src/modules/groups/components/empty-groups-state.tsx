@@ -36,7 +36,21 @@ export function EmptyGroupsState({ hasGroups }: EmptyGroupsStateProps) {
     <Card className="border-2 border-dashed">
       <CardContent className="py-20 text-center">
         <div className="space-y-6 max-w-md mx-auto">
-          <div className="text-7xl">👥</div>
+          <picture className="mx-auto block w-56 sm:w-64">
+            <source
+              srcSet="/assets/generated/empty-state-groups.webp"
+              type="image/webp"
+            />
+            <img
+              src="/assets/generated/empty-state-groups.png"
+              alt=""
+              width={1254}
+              height={1254}
+              className="h-auto w-full"
+              decoding="async"
+              loading="lazy"
+            />
+          </picture>
           <div>
             <h3 className="font-bold text-2xl mb-2">Create Your First Group</h3>
             <p className="text-muted-foreground">

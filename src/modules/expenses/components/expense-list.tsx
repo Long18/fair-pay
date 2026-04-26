@@ -230,11 +230,34 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
 
       {/* Empty State */}
       {!isLoading && expenses.length === 0 && (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            {hasActiveFilters
-              ? "No expenses match your filters. Try adjusting or clearing them."
-              : "No expenses yet. Create your first expense to get started!"}
+        <Card className="border-dashed">
+          <CardContent className="py-12 text-center">
+            {hasActiveFilters ? (
+              <p className="text-muted-foreground">
+                No expenses match your filters. Try adjusting or clearing them.
+              </p>
+            ) : (
+              <div className="mx-auto flex max-w-md flex-col items-center gap-4">
+                <picture className="block w-52 sm:w-60">
+                  <source
+                    srcSet="/assets/generated/empty-state-expenses.webp"
+                    type="image/webp"
+                  />
+                  <img
+                    src="/assets/generated/empty-state-expenses.png"
+                    alt=""
+                    width={1254}
+                    height={1254}
+                    className="h-auto w-full"
+                    decoding="async"
+                    loading="lazy"
+                  />
+                </picture>
+                <p className="text-muted-foreground">
+                  No expenses yet. Create your first expense to get started!
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

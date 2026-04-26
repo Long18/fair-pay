@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { InputPassword } from "@/components/refine-ui/form/input-password";
+import { AuthVisualPanel } from "@/components/refine-ui/form/auth-visual-panel";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -251,11 +252,14 @@ export const SignInForm = () => {
         <div className="w-full h-full bg-gradient-to-tr from-accent/20 to-primary/20 rounded-full blur-3xl" />
       </div>
 
-      <Card className={cn(
-        "w-full max-w-md", "p-6 sm:p-8", "shadow-xl", "border",
-        "glass bg-card/95", "backdrop-blur-sm", "z-10",
-        "animate-in fade-in slide-in-from-bottom-4 duration-500"
-      )}>
+      <div className="relative z-10 flex w-full max-w-6xl flex-col items-center justify-center gap-8 lg:flex-row">
+        <AuthVisualPanel />
+
+        <Card className={cn(
+          "w-full max-w-md", "p-6 sm:p-8", "shadow-xl", "border",
+          "glass bg-card/95", "backdrop-blur-sm",
+          "animate-in fade-in slide-in-from-bottom-4 duration-500"
+        )}>
         <CardHeader className={cn("px-0", "pb-6", "text-center", "space-y-2")}>
           <div className={cn("flex", "items-center", "justify-center", "mb-4")}>
             {title.icon && (
@@ -467,7 +471,8 @@ export const SignInForm = () => {
             </Link>
           </div>
         </CardFooter>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 };
