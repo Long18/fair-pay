@@ -186,6 +186,7 @@ export function OnboardingOrchestrator({
           if (!open) handleSkip();
         }}
         title={t(stepConfig.titleKey)}
+        description={t(stepConfig.descriptionKey)}
         className={showSpotlight ? "z-[60]" : undefined}
       >
         {stepContent}

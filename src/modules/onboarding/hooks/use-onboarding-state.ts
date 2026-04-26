@@ -3,6 +3,16 @@ import { useState, useCallback, useRef } from "react";
 import { STORAGE_KEY, APP_VERSION } from "../types";
 import type { OnboardingState } from "../types";
 
+// ─── Stable persistence helper ───────────────────────────────────────────────
+
+/**
+ * Persist state to localStorage. Extracted as a standalone function
+ * so callbacks can reference it without depending on React state.
+ */
+function persist(state: OnboardingState): void {
+  persistToLocalStorage(STORAGE_KEY, state);
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /**
@@ -141,10 +151,7 @@ export function initializeOnboarding(
 export function useOnboardingState(options?: UseOnboardingStateOptions) {
   const forceShow = options?.forceShow ?? false;
   const totalSteps = options?.totalSteps ?? 9;
-  // syncToSupabase placeholder — no-op for now
-  // const _syncToSupabase = options?.syncToSupabase ?? false;
 
-  // Use a ref to track whether forceShow is active for isActive computation
   const forceShowRef = useRef(forceShow);
   forceShowRef.current = forceShow;
 
@@ -153,63 +160,63 @@ export function useOnboardingState(options?: UseOnboardingStateOptions) {
     return initialState;
   });
 
-  /**
-   * Internal setter that also persists to localStorage.
-   * Falls back to in-memory only if localStorage is unavailable.
-   */
-  const setState = useCallback((nextState: OnboardingState) => {
-    setStateInternal(nextState);
-    persistToLocalStorage(STORAGE_KEY, nextState);
-  }, []);
+  // Keep a ref to the latest state so callbacks don't close over stale values.
+  // This breaks the dependency cycle: callbacks never depend on `state`,
+  // so their references stay stable across renders.
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
-  /**
-   * isActive: true IFF the tutorial should be displayed.
-   * INVARIANT: isActive === (!state.completed || forceShow)
-   */
   const isActive = !state.completed || forceShowRef.current;
 
   /**
    * Mark the tutorial as completed (or skipped).
    * Idempotent: calling twice produces the same result as calling once.
-   * (Requirement 16.1)
+   * Stable reference — does not depend on `state`.
    */
   const markCompleted = useCallback(
     (skipped?: boolean, skippedAtStep?: number) => {
-      setState({
-        ...state,
-        completed: true,
-        completedAt: state.completedAt ?? new Date().toISOString(),
-        skipped: state.completed ? state.skipped : (skipped ?? false),
-        skippedAtStep: state.completed
-          ? state.skippedAtStep
-          : (skippedAtStep ?? null),
+      setStateInternal((prev) => {
+        // Idempotent: if already completed, preserve existing values
+        if (prev.completed) return prev;
+        const next: OnboardingState = {
+          ...prev,
+          completed: true,
+          completedAt: new Date().toISOString(),
+          skipped: skipped ?? false,
+          skippedAtStep: skippedAtStep ?? null,
+        };
+        persist(next);
+        return next;
       });
     },
-    [state, setState],
+    [],
   );
 
   /**
    * Update the current step progress.
-   * Persists immediately to localStorage. (Requirement 6.1)
+   * Stable reference — does not depend on `state`.
    */
   const updateProgress = useCallback(
     (stepIndex: number) => {
-      setState({
-        ...state,
-        lastStepIndex: stepIndex,
+      setStateInternal((prev) => {
+        if (prev.lastStepIndex === stepIndex) return prev;
+        const next: OnboardingState = { ...prev, lastStepIndex: stepIndex };
+        persist(next);
+        return next;
       });
     },
-    [state, setState],
+    [],
   );
 
   /**
    * Reset all onboarding state to fresh defaults.
-   * Clears localStorage and returns to initial state. (Requirement 6.6)
+   * Stable reference.
    */
   const reset = useCallback(() => {
     const freshState = createFreshState(APP_VERSION);
-    setState(freshState);
-  }, [setState]);
+    persist(freshState);
+    setStateInternal(freshState);
+  }, []);
 
   return {
     state,

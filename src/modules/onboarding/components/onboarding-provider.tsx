@@ -66,6 +66,8 @@ export function OnboardingProvider({
   });
 
   // ── Persist step changes ─────────────────────────────────────────────
+  // updateProgress has a stable reference (no deps), so this effect
+  // only fires when currentStep actually changes.
   useEffect(() => {
     updateProgress(currentStep);
   }, [currentStep, updateProgress]);
