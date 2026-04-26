@@ -22,15 +22,17 @@ function getDateRangeForPreset(preset: DateRangePreset): DateRange {
   switch (preset) {
     case 'this_month':
       return { start: startOfMonth, end: endOfMonth };
-    case 'last_month':
+    case 'last_month': {
       const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
       return { start: lastMonth, end: lastMonthEnd };
+    }
     case 'this_year':
       return { start: new Date(now.getFullYear(), 0, 1), end: new Date(now.getFullYear(), 11, 31) };
-    case 'last_year':
+    case 'last_year': {
       const lastYear = now.getFullYear() - 1;
       return { start: new Date(lastYear, 0, 1), end: new Date(lastYear, 11, 31) };
+    }
     case 'all_time':
       return { start: new Date(2020, 0, 1), end: now };
     default:
@@ -41,9 +43,11 @@ function getDateRangeForPreset(preset: DateRangePreset): DateRange {
 export function useCategoryBreakdown(
   preset: DateRangePreset = 'this_month',
   customRange?: DateRange,
-  groupId?: string
+  groupId?: string,
+  options: { enabled?: boolean } = {}
 ) {
   const { data: identity } = useGetIdentity<Profile>();
+  const enabled = options.enabled ?? true;
 
   const dateRange = customRange || getDateRangeForPreset(preset);
 
@@ -60,6 +64,7 @@ export function useCategoryBreakdown(
       select: '*, expense_splits(*)',
     },
     queryOptions: {
+      enabled,
       staleTime: 2 * 60 * 1000, // 2 minutes - data is fresh
       gcTime: 5 * 60 * 1000, // 5 minutes - keep in cache
       refetchOnWindowFocus: false, // Don't refetch on window focus
@@ -87,8 +92,8 @@ export function useCategoryBreakdown(
       categoryMap.set(cat, { amount: 0, count: 0 });
     });
 
-    filteredExpenses.forEach((expense: any) => {
-      const mySplit = expense.expense_splits?.find((split: any) => split.user_id === userId);
+    filteredExpenses.forEach((expense) => {
+      const mySplit = expense.expense_splits?.find((split) => split.user_id === userId);
 
       if (mySplit) {
         const category = expense.category || 'other';
