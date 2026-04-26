@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useOne, useList, useGo, useGetIdentity } from "@refinedev/core";
 import { useInstantCreate, useInstantUpdate, useInstantDelete } from "@/hooks/use-instant-mutation";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -50,7 +50,6 @@ import {
   ReceiptIcon,
   RepeatIcon,
   UsersIcon,
-  Users2Icon,
   CalendarIcon,
   CheckCircle2Icon,
   BanknoteIcon,
@@ -75,7 +74,7 @@ export const GroupShow = () => {
   const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [, setIsRefreshing] = useState(false);
   const [addMemberModalOpen, setAddMemberModalOpen] = useState(false);
   const [settleAllDialogOpen, setSettleAllDialogOpen] = useState(false);
   const [quickSettleDialogOpen, setQuickSettleDialogOpen] = useState(false);
@@ -98,17 +97,46 @@ export const GroupShow = () => {
     setSearchParams(newParams, { replace: true });
   };
 
+  const { query: membershipQuery } = useList<GroupMember>({
+    resource: "group_members",
+    filters: [
+      { field: "group_id", operator: "eq", value: id },
+      { field: "user_id", operator: "eq", value: identity?.id },
+    ],
+    pagination: { mode: "off" },
+    queryOptions: { enabled: !!id && !!identity?.id },
+    meta: { select: "id, group_id, user_id, role, joined_at" },
+  });
+
+  const { data: membershipData, isLoading: isLoadingMembership } = membershipQuery;
+
+  const currentUserMember = membershipData?.data?.[0];
+  const isAdmin = currentUserMember?.role === "admin";
+  const canAccessGroupDetails = !!identity?.id && !!currentUserMember;
+  const shouldRedirectNonMember =
+    !!id &&
+    !!identity?.id &&
+    !isLoadingMembership &&
+    !currentUserMember;
+
   const { query: groupQuery } = useOne<Group>({
     resource: "groups",
     id: id!,
     meta: { select: "*" },
+    queryOptions: { enabled: canAccessGroupDetails },
   });
+
+  const { data: groupData, isLoading: isLoadingGroup } = groupQuery;
+  const group = groupData?.data;
+  const isCreator = group?.created_by === identity?.id;
+  const isArchived = group?.is_archived ?? false;
+  const canManage = isAdmin || isCreator;
 
   const { query: membersQuery } = useList<GroupMember>({
     resource: "group_members",
     filters: [{ field: "group_id", operator: "eq", value: id }],
     pagination: { mode: "off" },
-    queryOptions: { enabled: !!id },
+    queryOptions: { enabled: canAccessGroupDetails },
     meta: { select: "*, profiles!user_id(*)" },
   });
 
@@ -123,6 +151,7 @@ export const GroupShow = () => {
     filters: [{ field: "group_id", operator: "eq", value: id }],
     meta: { select: "*, expense_splits(*)" },
     queryOptions: {
+      enabled: canAccessGroupDetails,
       staleTime: 2 * 60 * 1000,
       gcTime: 5 * 60 * 1000,
       refetchOnWindowFocus: false,
@@ -133,6 +162,7 @@ export const GroupShow = () => {
     resource: "payments",
     filters: [{ field: "group_id", operator: "eq", value: id }],
     queryOptions: {
+      enabled: canAccessGroupDetails,
       staleTime: 2 * 60 * 1000,
       gcTime: 5 * 60 * 1000,
       refetchOnWindowFocus: false,
@@ -140,20 +170,10 @@ export const GroupShow = () => {
   });
 
   const settleAllMutation = useSettleAllGroupDebts();
-
-  const { data: groupData, isLoading: isLoadingGroup } = groupQuery;
   const { data: membersData, isLoading: isLoadingMembers } = membersQuery;
-
-  const group = groupData?.data;
   const allMembers = membersData?.data || [];
   const expenses: any[] = expensesQuery.data?.data || [];
   const payments: any[] = paymentsQuery.data?.data || [];
-
-  const currentUserMember = allMembers.find((m: any) => m.user_id === identity?.id);
-  const isAdmin = currentUserMember?.role === "admin";
-  const isCreator = group?.created_by === identity?.id;
-  const isArchived = group?.is_archived ?? false;
-  const canManage = isAdmin || isCreator;
 
   const {
     isSimplified: useServerSimplification,
@@ -171,7 +191,7 @@ export const GroupShow = () => {
     transactionCount: simplifiedCount,
   } = useSimplifiedDebts({
     groupId: id,
-    enabled: useServerSimplification && !!id,
+    enabled: canAccessGroupDetails && useServerSimplification && !!id,
   });
 
   const membersList = allMembers.map((m: any) => ({
@@ -187,12 +207,29 @@ export const GroupShow = () => {
     members: membersList,
   });
 
-  const { breakdown: categoryBreakdown } = useCategoryBreakdown('all_time', undefined, id);
+  const { breakdown: categoryBreakdown } = useCategoryBreakdown(
+    'all_time',
+    undefined,
+    id,
+    { enabled: canAccessGroupDetails }
+  );
 
   const {
     activities: enhancedActivities,
     isLoading: isLoadingActivities,
-  } = useEnhancedActivity({ groupId: id });
+  } = useEnhancedActivity({ groupId: id, enabled: canAccessGroupDetails });
+
+  useEffect(() => {
+    if (!shouldRedirectNonMember || !id) return;
+
+    warning();
+    const params = new URLSearchParams({
+      tab: "groups",
+      joinGroupId: id,
+    });
+
+    go({ to: `/connections?${params.toString()}`, type: "replace" });
+  }, [go, id, shouldRedirectNonMember, warning]);
 
   const memberStats = useMemo(() => {
     const stats: Record<string, { expense_count: number; total_paid: number }> = {};
@@ -392,7 +429,7 @@ export const GroupShow = () => {
   };
 
   // Loading state
-  if (isLoadingGroup || !group) {
+  if (isLoadingGroup || !group || isLoadingMembership || isLoadingMembers || shouldRedirectNonMember) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="flex items-center justify-center h-64">

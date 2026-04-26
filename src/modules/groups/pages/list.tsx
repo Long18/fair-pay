@@ -1,8 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useGo, useList, useGetIdentity } from '@refinedev/core';
 import { useHaptics } from '@/hooks/use-haptics';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -13,25 +21,30 @@ import {
 import { PaginationControls, PaginationMetadata } from '@/components/ui/pagination-controls';
 import { GroupCard, BalanceSummary, GroupMemberPreview } from '../components/group-card';
 import { EmptyGroupsState } from '../components/empty-groups-state';
-import { Group, GroupMember } from '../types';
+import { Group } from '../types';
 import { Profile } from '@/modules/profile/types';
 import { calculateBalances } from '@/modules/payments/hooks/use-balance-calculation';
 import { useJoinRequests } from '../hooks/use-join-request';
 import { supabaseClient } from '@/utility/supabaseClient';
 import { useQuery } from '@tanstack/react-query';
-import { PlusIcon, SearchIcon } from '@/components/ui/icons';
+import { Clock3Icon, Loader2Icon, LogInIcon, PlusIcon, SearchIcon } from '@/components/ui/icons';
+import { useSearchParams } from 'react-router';
+import { useTranslation } from 'react-i18next';
 
 type FilterType = 'all' | 'active' | 'settled' | 'admin' | 'archived' | 'discover';
 type SortType = 'recent' | 'oldest' | 'name' | 'balance';
 
 export const GroupListContent = () => {
+  const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
   const { tap } = useHaptics();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [sortBy, setSortBy] = useState<SortType>('recent');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 9;
+  const joinPromptGroupId = searchParams.get('joinGroupId');
 
   // Fetch ALL groups with member counts via RPC
   const { data: allGroupsData, isLoading: isLoadingAllGroups } = useQuery({
@@ -189,6 +202,39 @@ export const GroupListContent = () => {
       };
     });
   }, [allGroups, myGroupIds, myGroupsMap]);
+
+  const promptedGroup = useMemo(
+    () => groupsWithData.find((group) => group.id === joinPromptGroupId),
+    [groupsWithData, joinPromptGroupId]
+  );
+  const promptedJoinRequestStatus =
+    promptedGroup && !promptedGroup.isMember ? getRequestStatus(promptedGroup.id) : null;
+  const isJoinPromptRequesting =
+    !!promptedGroup && requestingGroupId === promptedGroup.id;
+  const shouldShowJoinPrompt =
+    !!joinPromptGroupId && !isLoadingAllGroups && !isLoadingMyGroups && !!promptedGroup && !promptedGroup.isMember;
+
+  const closeJoinPrompt = useCallback(() => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('tab', 'groups');
+    nextParams.delete('joinGroupId');
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  const handleRequestJoinFromPrompt = useCallback(async () => {
+    if (!promptedGroup) return;
+
+    tap();
+    await requestJoin(promptedGroup.id);
+    closeJoinPrompt();
+  }, [closeJoinPrompt, promptedGroup, requestJoin, tap]);
+
+  useEffect(() => {
+    if (!joinPromptGroupId || isLoadingAllGroups || isLoadingMyGroups) return;
+    if (!promptedGroup || promptedGroup.isMember) {
+      closeJoinPrompt();
+    }
+  }, [closeJoinPrompt, isLoadingAllGroups, isLoadingMyGroups, joinPromptGroupId, promptedGroup]);
 
   // Filter and sort groups
   const filteredGroups = useMemo(() => {
@@ -400,6 +446,81 @@ export const GroupListContent = () => {
       {!isLoading && filteredGroups.length === 0 && (
         <EmptyGroupsState hasGroups={hasGroups} />
       )}
+
+      <Dialog
+        open={shouldShowJoinPrompt}
+        onOpenChange={(open) => {
+          if (!open) closeJoinPrompt();
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary sm:mx-0">
+              {promptedJoinRequestStatus === 'pending' ? (
+                <Clock3Icon className="h-5 w-5" aria-hidden="true" />
+              ) : (
+                <LogInIcon className="h-5 w-5" aria-hidden="true" />
+              )}
+            </div>
+            <DialogTitle>
+              {t('groups.joinPrompt.title', 'Bạn chưa là thành viên')}
+            </DialogTitle>
+            <DialogDescription className="text-pretty">
+              {t(
+                'groups.joinPrompt.descriptionPrefix',
+                'FairPay đã đưa bạn về danh sách nhóm vì thông tin chi tiết chỉ dành cho thành viên.'
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground" aria-live="polite">
+            {promptedJoinRequestStatus === 'pending' ? (
+              <p>
+                {t(
+                  'groups.joinPrompt.pending',
+                  'Yêu cầu tham gia nhóm này của bạn đang chờ quản trị viên duyệt.'
+                )}
+              </p>
+            ) : (
+              <p>
+                {t('groups.joinPrompt.questionPrefix', 'Bạn có muốn gửi yêu cầu tham gia')}{' '}
+                <span className="font-medium text-foreground" translate="no">
+                  {promptedGroup?.name || t('groups.joinPrompt.thisGroup', 'nhóm này')}
+                </span>
+                ?
+              </p>
+            )}
+          </div>
+
+          <DialogFooter>
+            {promptedJoinRequestStatus === 'pending' ? (
+              <Button type="button" onClick={closeJoinPrompt}>
+                {t('common.ok', 'Đã hiểu')}
+              </Button>
+            ) : (
+              <>
+                <Button type="button" variant="outline" onClick={closeJoinPrompt}>
+                  {t('groups.joinPrompt.later', 'Để sau')}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleRequestJoinFromPrompt}
+                  disabled={isJoinPromptRequesting}
+                >
+                  {isJoinPromptRequesting ? (
+                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <LogInIcon className="mr-2 h-4 w-4" aria-hidden="true" />
+                  )}
+                  {promptedJoinRequestStatus === 'rejected'
+                    ? t('groups.joinPrompt.requestAgain', 'Gửi yêu cầu lại')
+                    : t('groups.joinPrompt.requestJoin', 'Gửi yêu cầu tham gia')}
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
