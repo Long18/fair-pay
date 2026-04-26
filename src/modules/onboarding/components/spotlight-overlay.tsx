@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { cn } from "@/lib/utils";
 
+import { useDarkMode } from "../hooks/use-dark-mode";
 import { useSpotlight } from "../hooks/use-spotlight";
 import type { SpotlightRect } from "../types";
 
@@ -24,6 +25,8 @@ export interface SpotlightOverlayProps {
   children?: React.ReactNode;
   /** Screen reader announcement for the current step */
   announcement?: string;
+  /** When true, allow all pointer events to pass through the entire overlay */
+  interactionMode?: boolean;
 }
 
 // ─── SVG Cutout Renderers ────────────────────────────────────────────────────
@@ -94,9 +97,11 @@ export function SpotlightOverlay({
   onBackdropClick,
   children,
   announcement,
+  interactionMode = false,
 }: SpotlightOverlayProps) {
   const maskId = useId();
   const reducedMotion = useReducedMotion();
+  const isDarkMode = useDarkMode();
   const { spotlightRect } = useSpotlight(targetSelector, isVisible);
 
   const animationDuration = reducedMotion ? 0 : 0.3;
@@ -154,10 +159,15 @@ export function SpotlightOverlay({
           >
             {/* SVG overlay with mask cutout */}
             <svg
-              className="pointer-events-auto absolute inset-0 h-full w-full"
+              className={cn(
+                "absolute inset-0 h-full w-full",
+                interactionMode
+                  ? "pointer-events-none"
+                  : "pointer-events-auto",
+              )}
               viewBox={`0 0 ${window.innerWidth} ${window.innerHeight}`}
               preserveAspectRatio="none"
-              onClick={handleBackdropClick}
+              onClick={interactionMode ? undefined : handleBackdropClick}
               aria-hidden="true"
             >
               <defs>
@@ -181,13 +191,13 @@ export function SpotlightOverlay({
                 y="0"
                 width="100%"
                 height="100%"
-                className="fill-black/50"
+                className={isDarkMode ? "fill-black/40" : "fill-black/50"}
                 mask={`url(#spotlight-mask-${maskId})`}
                 data-spotlight-backdrop="true"
               />
 
               {/* Border ring around the cutout for visual emphasis */}
-              {renderCutoutBorder(adjustedRect)}
+              {renderCutoutBorder(adjustedRect, isDarkMode)}
             </svg>
 
             {/* Cutout area: allow pointer events through */}
@@ -261,14 +271,14 @@ function computeAdjustedRect(
 
 /**
  * Renders a subtle border around the cutout shape for visual emphasis.
- * Uses a semantic border color token.
+ * Uses a semantic border color token with increased brightness in dark mode.
  */
-function renderCutoutBorder(rect: SpotlightRect) {
+function renderCutoutBorder(rect: SpotlightRect, isDarkMode: boolean) {
   const { x, y, width, height, shape, borderRadius } = rect;
 
   const commonProps = {
     fill: "none",
-    className: "stroke-primary/40",
+    className: isDarkMode ? "stroke-primary/60" : "stroke-primary/40",
     strokeWidth: 2,
   };
 

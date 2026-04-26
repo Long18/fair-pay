@@ -30,15 +30,12 @@ interface OnboardingProviderProps {
 // ─── Provider Component ──────────────────────────────────────────────────────
 
 /**
- * Root context provider that initializes onboarding state and the step engine.
- * Wraps the app and conditionally renders the OnboardingOrchestrator.
+ * Root context provider for the onboarding tutorial (v2).
  *
- * - Uses `useGetIdentity()` from `@refinedev/core` to determine auth state
- * - Passes `isAuthenticated` to `useTutorialSteps` for auth-based filtering
- * - Manages local `currentStep` state initialized from persisted `lastStepIndex`
- * - Exposes navigation actions: next, back, goToStep, skip, restart
- * - Computes progress as `currentStep / totalSteps` clamped to [0, 1]
- * - Conditionally renders `OnboardingOrchestrator` when active
+ * Enhancements over v1:
+ * - interactionMode state for try-it feature
+ * - enterTryIt / exitTryIt actions
+ * - Passes interactionMode to Orchestrator
  */
 export function OnboardingProvider({
   children,
@@ -55,9 +52,8 @@ export function OnboardingProvider({
   const { state, isActive, markCompleted, updateProgress, reset } =
     useOnboardingState({ forceShow, totalSteps });
 
-  // ── Local step index (initialized from persisted lastStepIndex) ──────
+  // ── Local step index ─────────────────────────────────────────────────
   const [currentStep, setCurrentStep] = useState(() => {
-    // Clamp persisted index to valid range for the current filtered steps
     const persisted = state.lastStepIndex;
     if (persisted >= 0 && persisted < totalSteps) {
       return persisted;
@@ -65,19 +61,20 @@ export function OnboardingProvider({
     return 0;
   });
 
+  // ── Interaction mode (try-it) ────────────────────────────────────────
+  const [interactionMode, setInteractionMode] = useState(false);
+
   // ── Persist step changes ─────────────────────────────────────────────
-  // updateProgress has a stable reference (no deps), so this effect
-  // only fires when currentStep actually changes.
   useEffect(() => {
     updateProgress(currentStep);
   }, [currentStep, updateProgress]);
 
   // ── Navigation: next ─────────────────────────────────────────────────
   const next = useCallback(() => {
+    setInteractionMode(false);
     setCurrentStep((prev) => {
       const nextIndex = prev + 1;
       if (nextIndex >= totalSteps) {
-        // Past last step → mark completed (not skipped)
         markCompleted(false);
         return prev;
       }
@@ -87,12 +84,14 @@ export function OnboardingProvider({
 
   // ── Navigation: back ─────────────────────────────────────────────────
   const back = useCallback(() => {
+    setInteractionMode(false);
     setCurrentStep((prev) => Math.max(0, prev - 1));
   }, []);
 
   // ── Navigation: goToStep ─────────────────────────────────────────────
   const goToStep = useCallback(
     (index: number) => {
+      setInteractionMode(false);
       setCurrentStep(Math.max(0, Math.min(index, totalSteps - 1)));
     },
     [totalSteps],
@@ -100,14 +99,34 @@ export function OnboardingProvider({
 
   // ── Navigation: skip ─────────────────────────────────────────────────
   const skip = useCallback(() => {
+    setInteractionMode(false);
     markCompleted(true, currentStep);
   }, [markCompleted, currentStep]);
 
   // ── Navigation: restart ──────────────────────────────────────────────
   const restart = useCallback(() => {
+    setInteractionMode(false);
     reset();
     setCurrentStep(0);
   }, [reset]);
+
+  // ── Interaction mode: enter ──────────────────────────────────────────
+  const enterTryIt = useCallback(() => {
+    setInteractionMode(true);
+  }, []);
+
+  // ── Interaction mode: exit + advance ─────────────────────────────────
+  const exitTryIt = useCallback(() => {
+    setInteractionMode(false);
+    setCurrentStep((prev) => {
+      const nextIndex = prev + 1;
+      if (nextIndex >= totalSteps) {
+        markCompleted(false);
+        return prev;
+      }
+      return nextIndex;
+    });
+  }, [totalSteps, markCompleted]);
 
   // ── Derived values ───────────────────────────────────────────────────
   const stepConfig = getStep(currentStep);
@@ -124,11 +143,14 @@ export function OnboardingProvider({
       stepConfig,
       progress,
       isCompleted: state.completed,
+      interactionMode,
       next,
       back,
       goToStep,
       skip,
       restart,
+      enterTryIt,
+      exitTryIt,
     }),
     [
       isActive,
@@ -137,11 +159,14 @@ export function OnboardingProvider({
       stepConfig,
       progress,
       state.completed,
+      interactionMode,
       next,
       back,
       goToStep,
       skip,
       restart,
+      enterTryIt,
+      exitTryIt,
     ],
   );
 
@@ -154,9 +179,12 @@ export function OnboardingProvider({
           currentStep={currentStep}
           totalSteps={totalSteps}
           progress={progress}
+          interactionMode={interactionMode}
           onNext={next}
           onBack={back}
           onSkip={skip}
+          onTryIt={enterTryIt}
+          onExitTryIt={exitTryIt}
         />
       )}
     </OnboardingContext.Provider>
@@ -165,10 +193,6 @@ export function OnboardingProvider({
 
 // ─── Consumer Hook ───────────────────────────────────────────────────────────
 
-/**
- * Access the onboarding context. Must be used within an `OnboardingProvider`.
- * Throws if used outside the provider tree.
- */
 export function useOnboarding(): OnboardingContextValue {
   const context = useContext(OnboardingContext);
   if (context === null) {

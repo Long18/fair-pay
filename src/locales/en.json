@@ -1032,7 +1032,13 @@
             "back": "Back",
             "skip": "Skip",
             "restart": "Restart Tutorial",
-            "done": "Done"
+            "done": "Done",
+            "tryIt": "Try it",
+            "continue": "Continue"
+        },
+        "interactionMode": {
+            "status": "Step {{current}} of {{total}}",
+            "stepProgress": "Step {{current}} of {{total}}"
         }
     }
 }

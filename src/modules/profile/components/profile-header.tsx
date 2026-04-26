@@ -5,10 +5,11 @@ import { getInitials, UserGroupStack } from "@/components/user-display";
 import { Profile } from "../types";
 import { formatDateShort } from "@/lib/locale-utils";
 import { useTranslation } from "react-i18next";
-import { CameraIcon, PencilIcon, ShareIcon } from "@/components/ui/icons";
+import { CameraIcon, PencilIcon, ShareIcon, RotateCcwIcon } from "@/components/ui/icons";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/use-haptics";
+import { useOnboarding } from "@/modules/onboarding";
 
 interface ProfileHeaderProps {
   profile: Profile;
@@ -31,6 +32,7 @@ export const ProfileHeader = ({
 }: ProfileHeaderProps) => {
   const { t } = useTranslation();
   const { tap } = useHaptics();
+  const { restart } = useOnboarding();
 
   return (
     <motion.div
@@ -120,6 +122,19 @@ export const ProfileHeader = ({
               <ShareIcon size={16} className="mr-2 sm:mr-0" />
               <span className="sm:sr-only">{t('common.share', 'Share')}</span>
             </Button>
+
+            {isOwnProfile && (
+              <Button
+                onClick={() => { tap(); restart(); }}
+                variant="ghost"
+                size="sm"
+                className="rounded-lg"
+                aria-label={t("onboarding.actions.restart", "Restart Tutorial")}
+              >
+                <RotateCcwIcon size={16} className="mr-2 sm:mr-0" />
+                <span className="sm:sr-only">{t("onboarding.actions.restart", "Restart Tutorial")}</span>
+              </Button>
+            )}
           </div>
         </div>
       </div>

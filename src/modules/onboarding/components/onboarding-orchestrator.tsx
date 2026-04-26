@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AnimatePresence, motion } from "framer-motion";
 
-import { BottomSheet } from "@/components/ui/bottom-sheet";
-import { useIsMobile } from "@/hooks/ui/use-mobile";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
 import type { TutorialStep } from "../types";
-import { OnboardingStepContent } from "./onboarding-step-content";
+import { useSpotlight } from "../hooks/use-spotlight";
+import { useCameraScroll } from "../hooks/use-camera-scroll";
 import { SpotlightOverlay } from "./spotlight-overlay";
+import { FloatingStepPanel } from "./floating-step-panel";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -21,12 +20,18 @@ export interface OnboardingOrchestratorProps {
   totalSteps: number;
   /** Progress as 0-1 fraction */
   progress: number;
+  /** Whether the user is in interactive try-it mode */
+  interactionMode: boolean;
   /** Advance to the next step */
   onNext: () => void;
   /** Go back to the previous step */
   onBack: () => void;
   /** Skip/dismiss the entire tutorial */
   onSkip: () => void;
+  /** Enter try-it interaction mode */
+  onTryIt: () => void;
+  /** Exit try-it mode and advance */
+  onExitTryIt: () => void;
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -34,22 +39,13 @@ export interface OnboardingOrchestratorProps {
 /** Minimum interval between navigation actions (ms) */
 const NAV_DEBOUNCE_MS = 150;
 
-/** Framer Motion transition for step content */
-const STEP_TRANSITION = { duration: 0.25, ease: "easeInOut" as const };
-
-/** Instant transition for reduced motion */
-const INSTANT_TRANSITION = { duration: 0 };
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /**
  * Checks whether a target selector resolves to a visible DOM element.
- * Returns `true` if the element exists, `false` otherwise.
- * Logs a dev warning when the selector is non-null but the element is missing.
  */
 function targetExists(selector: string | null): boolean {
   if (selector === null) return false;
-
   const el = document.querySelector(selector);
   if (!el) {
     if (import.meta.env.DEV) {
@@ -65,132 +61,119 @@ function targetExists(selector: string | null): boolean {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 /**
- * Orchestrates the onboarding tutorial presentation.
+ * Orchestrates the onboarding tutorial presentation (v2).
  *
- * - Detects mobile vs desktop via `useIsMobile()` and renders the appropriate
- *   container (BottomSheet on mobile / Dialog on desktop via the BottomSheet
- *   component which handles this internally).
- * - Renders `SpotlightOverlay` as a sibling when the current step has a
- *   non-null `targetSelector` that resolves to a DOM element.
- * - Falls back to center-screen mode (no spotlight) when `targetSelector` is
- *   null or the element is not found.
- * - Wraps step content in `AnimatePresence` with `mode="wait"` for smooth
- *   step transitions.
- * - Debounces rapid navigation actions (150ms) to prevent overlapping
- *   transitions.
- * - Disables animations when `prefers-reduced-motion: reduce` is active.
- * - Handles viewport breakpoint crossing without losing the current step
- *   (the BottomSheet component handles responsive switching internally,
- *   and the step state is managed by the parent provider).
+ * Changes from v1:
+ * - Replaces BottomSheet/Dialog with FloatingStepPanel (compact, draggable)
+ * - Integrates CameraController for smooth scroll-to-target before spotlight
+ * - Supports interactionMode for try-it feature
+ * - No backdrop-click dismiss — only Skip button dismisses
+ * - Unified desktop + mobile experience
  */
 export function OnboardingOrchestrator({
   stepConfig,
   currentStep,
   totalSteps,
   progress: _progress,
+  interactionMode,
   onNext,
   onBack,
   onSkip,
+  onTryIt,
+  onExitTryIt,
 }: OnboardingOrchestratorProps) {
   const { t } = useTranslation();
-  const isMobile = useIsMobile();
   const reducedMotion = useReducedMotion();
 
-  // Track whether the target element exists for spotlight rendering
-  const [showSpotlight, setShowSpotlight] = useState(false);
+  // Camera scroll hook
+  const { scrollToTarget, isScrolling } = useCameraScroll();
 
-  // Debounce ref: timestamp of the last accepted navigation action
+  // Spotlight hook — used to get the rect for FloatingStepPanel positioning
+  const hasTarget = targetExists(stepConfig.targetSelector);
+  const { spotlightRect } = useSpotlight(
+    hasTarget ? stepConfig.targetSelector : null,
+    !isScrolling, // only compute spotlight after scroll completes
+  );
+
+  // Track whether we've completed the camera scroll for the current step
+  const [cameraReady, setCameraReady] = useState(false);
+  const currentStepIdRef = useRef(stepConfig.id);
+
+  // Debounce ref
   const lastNavRef = useRef<number>(0);
 
-  // Re-check target existence whenever the step changes
-  useEffect(() => {
-    setShowSpotlight(targetExists(stepConfig.targetSelector));
-  }, [stepConfig.targetSelector, stepConfig.id]);
+  // ── Camera scroll on step change ───────────────────────────────────────
 
-  // ── Debounced navigation handlers ──────────────────────────────────────
+  useEffect(() => {
+    if (currentStepIdRef.current !== stepConfig.id) {
+      currentStepIdRef.current = stepConfig.id;
+      setCameraReady(false);
+
+      // Scroll to target, then mark camera as ready
+      scrollToTarget(stepConfig.targetSelector).then(() => {
+        setCameraReady(true);
+      });
+    } else if (!cameraReady) {
+      // Initial mount — scroll to first step's target
+      scrollToTarget(stepConfig.targetSelector).then(() => {
+        setCameraReady(true);
+      });
+    }
+  }, [stepConfig.id, stepConfig.targetSelector, scrollToTarget, cameraReady]);
+
+  // ── Debounced navigation ───────────────────────────────────────────────
 
   const debouncedNav = useCallback(
     (action: () => void) => {
+      // Block navigation during scroll animation
+      if (isScrolling) return;
       const now = Date.now();
       if (now - lastNavRef.current < NAV_DEBOUNCE_MS) return;
       lastNavRef.current = now;
       action();
     },
-    [],
+    [isScrolling],
   );
 
   const handleNext = useCallback(() => debouncedNav(onNext), [debouncedNav, onNext]);
   const handleBack = useCallback(() => debouncedNav(onBack), [debouncedNav, onBack]);
   const handleSkip = useCallback(() => debouncedNav(onSkip), [debouncedNav, onSkip]);
 
-  // ── Animation config ───────────────────────────────────────────────────
+  // ── Don't render until camera is ready ─────────────────────────────────
 
-  const transition = reducedMotion ? INSTANT_TRANSITION : STEP_TRANSITION;
-
-  const motionVariants = {
-    initial: reducedMotion
-      ? { opacity: 1 }
-      : { opacity: 0, y: 12 },
-    animate: { opacity: 1, y: 0 },
-    exit: reducedMotion
-      ? { opacity: 1 }
-      : { opacity: 0, y: -12 },
-  };
+  if (!cameraReady && !reducedMotion) {
+    return null;
+  }
 
   // ── Render ─────────────────────────────────────────────────────────────
 
-  const stepContent = (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={stepConfig.id}
-        variants={motionVariants}
-        initial="initial"
-        animate="animate"
-        exit="exit"
-        transition={transition}
-      >
-        <OnboardingStepContent
-          step={stepConfig}
-          currentIndex={currentStep}
-          totalSteps={totalSteps}
-          onNext={handleNext}
-          onBack={handleBack}
-          onSkip={handleSkip}
-        />
-      </motion.div>
-    </AnimatePresence>
-  );
-
   return (
     <>
-      {/* Spotlight overlay — rendered outside the BottomSheet/Dialog as a
-          sibling so it covers the full screen */}
-      {showSpotlight && (
+      {/* Spotlight overlay */}
+      {hasTarget && (
         <SpotlightOverlay
           targetSelector={stepConfig.targetSelector}
-          isVisible
+          isVisible={cameraReady}
           padding={stepConfig.spotlightPadding}
           shape={stepConfig.spotlightShape}
+          interactionMode={interactionMode}
           announcement={t(stepConfig.titleKey)}
         />
       )}
 
-      {/* Responsive container: BottomSheet renders Drawer on mobile,
-          Dialog on desktop. The component handles the responsive switch
-          internally, so viewport breakpoint crossing preserves the
-          current step without any extra logic. */}
-      <BottomSheet
-        open
-        onOpenChange={(open) => {
-          // Dismiss via backdrop click or swipe-down = skip
-          if (!open) handleSkip();
-        }}
-        title={t(stepConfig.titleKey)}
-        description={t(stepConfig.descriptionKey)}
-        className={showSpotlight ? "z-[60]" : undefined}
-      >
-        {stepContent}
-      </BottomSheet>
+      {/* Floating step panel (replaces BottomSheet/Dialog) */}
+      <FloatingStepPanel
+        step={stepConfig}
+        currentIndex={currentStep}
+        totalSteps={totalSteps}
+        spotlightRect={hasTarget ? spotlightRect : null}
+        interactionMode={interactionMode}
+        onNext={handleNext}
+        onBack={handleBack}
+        onSkip={handleSkip}
+        onTryIt={onTryIt}
+        onExitTryIt={onExitTryIt}
+      />
     </>
   );
 }

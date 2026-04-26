@@ -15,11 +15,18 @@ vi.mock("@/hooks/use-reduced-motion", () => ({
   useReducedMotion: vi.fn(() => false),
 }));
 
+// Mock useDarkMode
+vi.mock("../../hooks/use-dark-mode", () => ({
+  useDarkMode: vi.fn(() => false),
+}));
+
 import { useSpotlight } from "../../hooks/use-spotlight";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { useDarkMode } from "../../hooks/use-dark-mode";
 
 const mockUseSpotlight = vi.mocked(useSpotlight);
 const mockUseReducedMotion = vi.mocked(useReducedMotion);
+const mockUseDarkMode = vi.mocked(useDarkMode);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -41,6 +48,7 @@ describe("SpotlightOverlay", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseReducedMotion.mockReturnValue(false);
+    mockUseDarkMode.mockReturnValue(false);
     // Default: spotlight found
     mockUseSpotlight.mockReturnValue({
       spotlightRect: makeSpotlightRect(),
@@ -236,5 +244,136 @@ describe("SpotlightOverlay", () => {
     // while the SVG inside has pointer-events-auto
     const svg = container.querySelector("svg");
     expect(svg?.classList.contains("pointer-events-auto")).toBe(true);
+  });
+
+  // ─── Dark Theme Awareness (Task 13.1) ────────────────────────────────────
+
+  it("uses fill-black/50 backdrop in light mode", () => {
+    mockUseDarkMode.mockReturnValue(false);
+
+    const { container } = render(
+      <SpotlightOverlay targetSelector="[data-test]" isVisible={true} />,
+    );
+
+    const backdropRect = container.querySelector(
+      "[data-spotlight-backdrop='true']",
+    );
+    expect(backdropRect?.getAttribute("class")).toContain("fill-black/50");
+    expect(backdropRect?.getAttribute("class")).not.toContain("fill-black/40");
+  });
+
+  it("uses fill-black/40 backdrop in dark mode", () => {
+    mockUseDarkMode.mockReturnValue(true);
+
+    const { container } = render(
+      <SpotlightOverlay targetSelector="[data-test]" isVisible={true} />,
+    );
+
+    const backdropRect = container.querySelector(
+      "[data-spotlight-backdrop='true']",
+    );
+    expect(backdropRect?.getAttribute("class")).toContain("fill-black/40");
+    expect(backdropRect?.getAttribute("class")).not.toContain("fill-black/50");
+  });
+
+  it("uses stroke-primary/40 border ring in light mode", () => {
+    mockUseDarkMode.mockReturnValue(false);
+
+    const { container } = render(
+      <SpotlightOverlay targetSelector="[data-test]" isVisible={true} />,
+    );
+
+    // The border ring is a rect rendered after the backdrop (not inside the mask)
+    const svg = container.querySelector("svg");
+    const allRects = svg?.querySelectorAll("rect") ?? [];
+    const borderRect = Array.from(allRects).find(
+      (r) => r.getAttribute("class")?.includes("stroke-primary"),
+    );
+    expect(borderRect?.getAttribute("class")).toContain("stroke-primary/40");
+    expect(borderRect?.getAttribute("class")).not.toContain("stroke-primary/60");
+  });
+
+  it("uses stroke-primary/60 border ring in dark mode", () => {
+    mockUseDarkMode.mockReturnValue(true);
+
+    const { container } = render(
+      <SpotlightOverlay targetSelector="[data-test]" isVisible={true} />,
+    );
+
+    const svg = container.querySelector("svg");
+    const allRects = svg?.querySelectorAll("rect") ?? [];
+    const borderRect = Array.from(allRects).find(
+      (r) => r.getAttribute("class")?.includes("stroke-primary"),
+    );
+    expect(borderRect?.getAttribute("class")).toContain("stroke-primary/60");
+    expect(borderRect?.getAttribute("class")).not.toContain("stroke-primary/40");
+  });
+
+  // ─── Interaction Mode Passthrough (Task 13.2) ────────────────────────────
+
+  it("sets pointer-events-auto on SVG when interactionMode is false (default)", () => {
+    const { container } = render(
+      <SpotlightOverlay targetSelector="[data-test]" isVisible={true} />,
+    );
+
+    const svg = container.querySelector("svg");
+    expect(svg?.classList.contains("pointer-events-auto")).toBe(true);
+    expect(svg?.classList.contains("pointer-events-none")).toBe(false);
+  });
+
+  it("sets pointer-events-none on SVG when interactionMode is true", () => {
+    const { container } = render(
+      <SpotlightOverlay
+        targetSelector="[data-test]"
+        isVisible={true}
+        interactionMode={true}
+      />,
+    );
+
+    const svg = container.querySelector("svg");
+    expect(svg?.classList.contains("pointer-events-none")).toBe(true);
+    expect(svg?.classList.contains("pointer-events-auto")).toBe(false);
+  });
+
+  it("does not fire onBackdropClick when interactionMode is true", () => {
+    const handleClick = vi.fn();
+
+    const { container } = render(
+      <SpotlightOverlay
+        targetSelector="[data-test]"
+        isVisible={true}
+        interactionMode={true}
+        onBackdropClick={handleClick}
+      />,
+    );
+
+    const backdropRect = container.querySelector(
+      "[data-spotlight-backdrop='true']",
+    );
+    if (backdropRect) {
+      fireEvent.click(backdropRect);
+      expect(handleClick).not.toHaveBeenCalled();
+    }
+  });
+
+  it("fires onBackdropClick when interactionMode is false", () => {
+    const handleClick = vi.fn();
+
+    const { container } = render(
+      <SpotlightOverlay
+        targetSelector="[data-test]"
+        isVisible={true}
+        interactionMode={false}
+        onBackdropClick={handleClick}
+      />,
+    );
+
+    const backdropRect = container.querySelector(
+      "[data-spotlight-backdrop='true']",
+    );
+    if (backdropRect) {
+      fireEvent.click(backdropRect);
+      expect(handleClick).toHaveBeenCalledTimes(1);
+    }
   });
 });
