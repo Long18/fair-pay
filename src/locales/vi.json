@@ -1031,7 +1031,13 @@
             "back": "Quay lại",
             "skip": "Bỏ qua",
             "restart": "Khởi động lại hướng dẫn",
-            "done": "Hoàn tất"
+            "done": "Hoàn tất",
+            "tryIt": "Thử ngay",
+            "continue": "Tiếp tục"
+        },
+        "interactionMode": {
+            "status": "Bước {{current}} / {{total}}",
+            "stepProgress": "Bước {{current}} / {{total}}"
         }
     }
 }

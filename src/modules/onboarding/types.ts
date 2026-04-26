@@ -72,6 +72,8 @@ export interface OnboardingContextValue {
   progress: number;
   /** Whether tutorial was completed (not skipped) */
   isCompleted: boolean;
+  /** Whether the user is in interactive try-it mode */
+  interactionMode: boolean;
   /** Advance to next step */
   next: () => void;
   /** Go back to previous step */
@@ -82,6 +84,10 @@ export interface OnboardingContextValue {
   skip: () => void;
   /** Restart the tutorial from the beginning */
   restart: () => void;
+  /** Enter try-it interaction mode */
+  enterTryIt: () => void;
+  /** Exit try-it mode and advance to next step */
+  exitTryIt: () => void;
 }
 
 /** Computed spotlight rectangle for the overlay cutout */

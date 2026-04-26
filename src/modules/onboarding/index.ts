@@ -1,10 +1,14 @@
 export * from "./types";
 export { calculateSpotlightPosition, useSpotlight } from "./hooks/use-spotlight";
 export type { TooltipPosition } from "./hooks/use-spotlight";
+export { useCameraScroll } from "./hooks/use-camera-scroll";
+export { useDarkMode } from "./hooks/use-dark-mode";
 export { SpotlightOverlay } from "./components/spotlight-overlay";
 export type { SpotlightOverlayProps } from "./components/spotlight-overlay";
 export { OnboardingStepContent } from "./components/onboarding-step-content";
 export type { OnboardingStepContentProps } from "./components/onboarding-step-content";
 export { OnboardingOrchestrator } from "./components/onboarding-orchestrator";
 export type { OnboardingOrchestratorProps } from "./components/onboarding-orchestrator";
+export { FloatingStepPanel } from "./components/floating-step-panel";
+export type { FloatingStepPanelProps } from "./components/floating-step-panel";
 export { OnboardingProvider, useOnboarding } from "./components/onboarding-provider";

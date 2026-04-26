@@ -22,6 +22,8 @@ export interface OnboardingStepContentProps {
   onBack: () => void;
   /** Skip/dismiss the entire tutorial */
   onSkip: () => void;
+  /** Enter try-it interaction mode (shown when step has action) */
+  onTryIt?: () => void;
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -81,6 +83,7 @@ export function OnboardingStepContent({
   onNext,
   onBack,
   onSkip,
+  onTryIt,
 }: OnboardingStepContentProps) {
   const { t } = useTranslation();
   const { tap } = useHaptics();
@@ -90,6 +93,7 @@ export function OnboardingStepContent({
 
   const isFirstStep = currentIndex === 0;
   const isLastStep = currentIndex === totalSteps - 1;
+  const hasAction = !!step.action && !!onTryIt;
 
   const handleNext = () => {
     tap();
@@ -104,6 +108,11 @@ export function OnboardingStepContent({
   const handleSkip = () => {
     tap();
     onSkip();
+  };
+
+  const handleTryIt = () => {
+    tap();
+    onTryIt?.();
   };
 
   return (
@@ -134,6 +143,18 @@ export function OnboardingStepContent({
         totalSteps={totalSteps}
         intentText={tone.text}
       />
+
+      {/* Try It button — shown when step has an interactive action */}
+      {hasAction && (
+        <Button
+          className={cn("min-h-[44px] w-full", tone.surface, tone.text)}
+          variant="outline"
+          onClick={handleTryIt}
+          aria-label={t("onboarding.actions.tryIt", "Try it")}
+        >
+          {t("onboarding.actions.tryIt", "Try it")}
+        </Button>
+      )}
 
       {/* Navigation buttons */}
       <div className="flex w-full items-center justify-between gap-2 pt-2">
