@@ -186,7 +186,7 @@ export function FloatingStepPanel({
   onNext,
   onBack,
   onSkip,
-  onTryIt: _onTryIt,
+  onTryIt,
   onExitTryIt,
 }: FloatingStepPanelProps) {
   const reducedMotion = useReducedMotion();
@@ -292,6 +292,7 @@ export function FloatingStepPanel({
             onNext={onNext}
             onBack={onBack}
             onSkip={onSkip}
+            onTryIt={onTryIt}
           />
         </motion.div>
       )}

@@ -41,6 +41,10 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     intent: "brand",
     requiresAuth: false,
     tooltipPosition: "bottom",
+    action: {
+      labelKey: "onboarding.actions.tryIt",
+      handler: () => {},
+    },
   },
   {
     id: "add-expense",
@@ -53,6 +57,10 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     intent: "success",
     requiresAuth: true,
     tooltipPosition: "top",
+    action: {
+      labelKey: "onboarding.actions.tryIt",
+      handler: () => {},
+    },
   },
   {
     id: "connections",
@@ -65,6 +73,8 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     intent: "info",
     requiresAuth: true,
     tooltipPosition: "bottom",
+    // On mobile, connections is inside the hamburger menu — no spotlight target
+    mobileTargetSelector: null,
   },
   {
     id: "theme-customization",
@@ -77,6 +87,12 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     intent: "accent",
     requiresAuth: false,
     tooltipPosition: "bottom",
+    action: {
+      labelKey: "onboarding.actions.tryIt",
+      handler: () => {},
+    },
+    // On mobile, theme selector may be hidden on very small screens
+    mobileTargetSelector: null,
   },
   {
     id: "payments",

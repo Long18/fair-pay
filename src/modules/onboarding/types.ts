@@ -38,6 +38,8 @@ export interface TutorialStep {
     labelKey: string;
     handler: () => void;
   };
+  /** Fallback target selector for mobile when primary target is hidden */
+  mobileTargetSelector?: string | null;
 }
 
 /** Persisted state for the onboarding tutorial */

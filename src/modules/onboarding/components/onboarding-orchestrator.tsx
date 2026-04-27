@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { useIsMobile } from "@/hooks/ui/use-mobile";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
 import type { TutorialStep } from "../types";
@@ -84,14 +85,22 @@ export function OnboardingOrchestrator({
 }: OnboardingOrchestratorProps) {
   const { t } = useTranslation();
   const reducedMotion = useReducedMotion();
+  const isMobile = useIsMobile();
 
   // Camera scroll hook
   const { scrollToTarget, isScrolling } = useCameraScroll();
 
+  // Resolve the correct target selector based on device type
+  // On mobile, use mobileTargetSelector if defined (can be null to skip spotlight)
+  const resolvedSelector =
+    isMobile && stepConfig.mobileTargetSelector !== undefined
+      ? stepConfig.mobileTargetSelector
+      : stepConfig.targetSelector;
+
   // Spotlight hook — used to get the rect for FloatingStepPanel positioning
-  const hasTarget = targetExists(stepConfig.targetSelector);
+  const hasTarget = targetExists(resolvedSelector);
   const { spotlightRect } = useSpotlight(
-    hasTarget ? stepConfig.targetSelector : null,
+    hasTarget ? resolvedSelector : null,
     !isScrolling, // only compute spotlight after scroll completes
   );
 
@@ -110,16 +119,16 @@ export function OnboardingOrchestrator({
       setCameraReady(false);
 
       // Scroll to target, then mark camera as ready
-      scrollToTarget(stepConfig.targetSelector).then(() => {
+      scrollToTarget(resolvedSelector).then(() => {
         setCameraReady(true);
       });
     } else if (!cameraReady) {
       // Initial mount — scroll to first step's target
-      scrollToTarget(stepConfig.targetSelector).then(() => {
+      scrollToTarget(resolvedSelector).then(() => {
         setCameraReady(true);
       });
     }
-  }, [stepConfig.id, stepConfig.targetSelector, scrollToTarget, cameraReady]);
+  }, [stepConfig.id, resolvedSelector, scrollToTarget, cameraReady]);
 
   // ── Debounced navigation ───────────────────────────────────────────────
 
@@ -152,7 +161,7 @@ export function OnboardingOrchestrator({
       {/* Spotlight overlay */}
       {hasTarget && (
         <SpotlightOverlay
-          targetSelector={stepConfig.targetSelector}
+          targetSelector={resolvedSelector}
           isVisible={cameraReady}
           padding={stepConfig.spotlightPadding}
           shape={stepConfig.spotlightShape}

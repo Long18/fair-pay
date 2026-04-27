@@ -108,6 +108,10 @@ export function OnboardingProvider({
     setInteractionMode(false);
     reset();
     setCurrentStep(0);
+    // Navigate to home page so dashboard targets are available
+    if (window.location.pathname !== "/") {
+      window.location.href = "/";
+    }
   }, [reset]);
 
   // ── Interaction mode: enter ──────────────────────────────────────────
