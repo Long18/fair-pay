@@ -11,6 +11,19 @@ const ALLOWED_EVENT_NAMES = new Set([
   'form_error',
   'auth_login',
   'auth_register',
+  'expense_created',
+  'payment_created',
+  'group_created',
+  'invite_sent',
+  'invite_accepted',
+  'settlement_completed',
+  'profile_viewed_from_shared_link',
+  'share_link_generated',
+  'share_button_clicked',
+  'share_copy_link_clicked',
+  'share_native_sheet_opened',
+  'share_completed',
+  'share_failed',
 ])
 
 const ALLOWED_QUERY_PARAMS = new Set([
@@ -68,6 +81,25 @@ interface TrackClientRequestBody {
   session?: TrackingSessionPayload
   events?: TrackingEventPayload[]
   access_token?: string | null
+  attribution?: AttributionContextPayload | null
+}
+
+interface AttributionTouchPayload {
+  utm_source?: string | null
+  utm_medium?: string | null
+  utm_campaign?: string | null
+  utm_content?: string | null
+  utm_term?: string | null
+  referrer?: string | null
+  landing_url?: string | null
+  landing_path?: string | null
+  first_seen_at?: string | null
+  last_seen_at?: string | null
+}
+
+interface AttributionContextPayload {
+  first_touch?: AttributionTouchPayload | null
+  last_touch?: AttributionTouchPayload | null
 }
 
 function normalizeString(value: NullableString, maxLength = 255): string | null {
@@ -131,6 +163,52 @@ function deriveLandingSource(entryLink: string, referrer: string | null, attribu
     }
   }
   return 'direct'
+}
+
+function normalizeAttributionTouch(input?: AttributionTouchPayload | null): Record<string, string | null> | null {
+  if (!input) return null
+
+  const firstSeenAt = input.first_seen_at ? parseOccurredAt(input.first_seen_at) : null
+  const lastSeenAt = input.last_seen_at ? parseOccurredAt(input.last_seen_at) : firstSeenAt
+  const normalized = {
+    utm_source: normalizeString(input.utm_source),
+    utm_medium: normalizeString(input.utm_medium),
+    utm_campaign: normalizeString(input.utm_campaign),
+    utm_content: normalizeString(input.utm_content),
+    utm_term: normalizeString(input.utm_term),
+    referrer: normalizeString(input.referrer, 512),
+    landing_url: normalizeString(input.landing_url, 2048),
+    landing_path: sanitizePath(input.landing_path),
+    first_seen_at: firstSeenAt,
+    last_seen_at: lastSeenAt,
+  }
+
+  if (!normalized.utm_source && !normalized.referrer && !normalized.landing_url) {
+    return null
+  }
+
+  return normalized
+}
+
+function fallbackAttributionTouch(
+  attribution: ReturnType<typeof extractAttribution>,
+  landingReferrer: string | null,
+  landingPath: string,
+  entryLink: string,
+  seenAt: string,
+) {
+  return {
+    utm_source: attribution.utm_source ?? deriveLandingSource(entryLink, landingReferrer, attribution),
+    utm_medium: attribution.utm_medium ?? (landingReferrer && !attribution.utm_source ? 'referral' : 'none'),
+    utm_campaign: attribution.utm_campaign,
+    utm_content: attribution.utm_content,
+    utm_term: attribution.utm_term,
+    referrer: landingReferrer,
+    landing_url: entryLink,
+    landing_path: landingPath,
+    first_seen_at: seenAt,
+    last_seen_at: seenAt,
+  }
 }
 
 async function sha256(input: NullableString): Promise<string | null> {
@@ -282,6 +360,7 @@ Deno.serve(async (req: Request) => {
     const landingPath = sanitizePath(session.landing_path ?? events[0]?.page_path ?? '/')
     const landingReferrer = sanitizeReferrer(session.landing_referrer)
     const attribution = extractAttribution(entryLink)
+    const startedAt = parseOccurredAt(session.started_at)
     const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('cf-connecting-ip')
     const userAgent = req.headers.get('user-agent')
 
@@ -289,7 +368,7 @@ Deno.serve(async (req: Request) => {
       id: sessionId,
       anonymous_id: anonymousId,
       user_id: userId,
-      started_at: parseOccurredAt(session.started_at),
+      started_at: startedAt,
       last_seen_at: new Date().toISOString(),
       landing_path: landingPath,
       landing_referrer: landingReferrer,
@@ -316,6 +395,21 @@ Deno.serve(async (req: Request) => {
         status: 500,
         headers: getCorsHeaders(),
       })
+    }
+
+    const fallbackTouch = fallbackAttributionTouch(attribution, landingReferrer, landingPath, entryLink, startedAt)
+    const firstTouch = normalizeAttributionTouch(body.attribution?.first_touch) ?? fallbackTouch
+    const lastTouch = normalizeAttributionTouch(body.attribution?.last_touch) ?? fallbackTouch
+    const { error: attributionError } = await serviceClient.rpc('upsert_user_attribution', {
+      p_user_id: userId,
+      p_anonymous_id: anonymousId,
+      p_session_id: sessionId,
+      p_first: firstTouch,
+      p_last: lastTouch,
+    })
+
+    if (attributionError) {
+      console.error('Failed to upsert user attribution', attributionError)
     }
 
     const sanitizedEvents = events

@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { SepayPaymentDialog } from "@/modules/payments/components/sepay-payment-dialog";
 import { buildDebtShareUrl } from "@/modules/debts/utils/share-url";
 import { Profile } from "@/modules/profile/types";
+import { shareWithTracking } from "@/lib/share-tracking";
 import { toast } from "sonner";
 
 interface DebtBreakdownHeaderProps {
@@ -76,40 +77,28 @@ export function DebtBreakdownHeader({
     window.location.href,
   );
 
-  const handleCopyLink = async () => {
-    tap();
-
-    try {
-      await navigator.clipboard.writeText(getShareUrl());
-      success();
-      toast.success(t("common.linkCopied", "Link copied to clipboard"));
-    } catch {
-      toast.error(t("common.copyFailed", "Failed to copy link"));
-    }
-  };
-
   const handleShare = async () => {
     tap();
-    const shareUrl = getShareUrl();
+    const result = await shareWithTracking({
+      baseUrl: getShareUrl(),
+      title: t("debts.debtsSummary", "Debts Summary"),
+      text: t(
+        "debts.shareSummaryText",
+        "Check out the balance summary with {{name}} on FairPay",
+        { name: counterpartyName },
+      ),
+      entityType: "debt",
+      entityId: counterpartyId,
+      campaign: "debt_share",
+      content: "debt_detail_share_button",
+    });
 
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: t("debts.debtsSummary", "Debts Summary"),
-          text: t(
-            "debts.shareSummaryText",
-            "Check out the balance summary with {{name}} on FairPay",
-            { name: counterpartyName },
-          ),
-          url: shareUrl,
-        });
-        return;
-      } catch {
-        // User cancelled share sheet.
-      }
+    if (result.status === "copied") {
+      success();
+      toast.success(t("common.linkCopied", "Link copied to clipboard"));
+    } else if (result.status === "failed" && (result.error as { name?: string })?.name !== "AbortError") {
+      toast.error(t("common.shareError", "Failed to share link"));
     }
-
-    await handleCopyLink();
   };
 
   return (

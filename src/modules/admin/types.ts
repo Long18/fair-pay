@@ -151,3 +151,23 @@ export interface DeleteTrackingResponse {
   deleted_events: number;
   deleted_sessions: number;
 }
+
+export interface UtmMetricRow {
+  name: string;
+  count: number;
+}
+
+export interface UtmPerformanceResponse {
+  from: string;
+  to: string;
+  total_sessions: number;
+  total_events: number;
+  total_shares: number;
+  traffic_by_source: UtmMetricRow[];
+  traffic_by_campaign: UtmMetricRow[];
+  signup_by_source: UtmMetricRow[];
+  invite_accepted_by_campaign: UtmMetricRow[];
+  share_count_by_content: UtmMetricRow[];
+  conversion_by_first_touch_source: UtmMetricRow[];
+  conversion_by_last_touch_source: UtmMetricRow[];
+}

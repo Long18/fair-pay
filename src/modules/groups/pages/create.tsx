@@ -125,6 +125,21 @@ export const GroupCreate = () => {
               member_count: member_ids?.length ?? 0,
             },
           });
+          journeyTracking.trackEvent({
+            event_name: "group_created",
+            event_category: "group",
+            page_path: window.location.pathname,
+            target_type: "group",
+            target_key: "group:created",
+            flow_name: "group-create",
+            step_name: "success",
+            properties: {
+              entity_id: groupId,
+              entity_type: "group",
+              entity_path: `/groups/show/${groupId}`,
+              member_count: member_ids?.length ?? 0,
+            },
+          });
           go({ to: `/groups/show/${groupId}` });
         },
         onError: (error) => {

@@ -15,6 +15,7 @@ import {
 import { MoreVerticalIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/use-haptics";
+import { copyShareLinkWithTracking, shareWithTracking } from "@/lib/share-tracking";
 import { buildExpenseShareUrl } from "../utils/share-url";
 
 interface ExpenseHeaderProps {
@@ -39,30 +40,37 @@ export const ExpenseHeader = ({
 
   const handleShare = async () => {
     tap();
-    const shareUrl = getShareUrl();
+    const result = await shareWithTracking({
+      baseUrl: getShareUrl(),
+      title: expense.description,
+      text: `Check out this expense: ${expense.description}`,
+      entityType: "expense",
+      entityId: expense.id,
+      campaign: "expense_share",
+      content: "expense_detail_share_button",
+    });
 
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: expense.description,
-          text: `Check out this expense: ${expense.description}`,
-          url: shareUrl,
-        });
-      } catch (err) {
-        // User cancelled or share failed
-      }
-    } else {
-      // Fallback to copying URL
-      handleCopyLink();
+    if (result.status === "copied") {
+      success();
+      toast.success(t('common.linkCopied', 'Link copied to clipboard'));
+    } else if (result.status === "failed" && (result.error as { name?: string })?.name !== "AbortError") {
+      toast.error(t('common.shareError', 'Failed to share link'));
     }
   };
 
   const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(getShareUrl());
+    const result = await copyShareLinkWithTracking({
+      baseUrl: getShareUrl(),
+      entityType: "expense",
+      entityId: expense.id,
+      campaign: "expense_share",
+      content: "copy_link_button",
+    });
+
+    if (result.status === "copied") {
       success();
       toast.success(t('common.linkCopied', 'Link copied to clipboard'));
-    } catch (err) {
+    } else {
       toast.error(t('common.copyFailed', 'Failed to copy link'));
     }
   };

@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 
 import { formatOgAmount, formatOgDate } from '../_lib/og-format'
 import {
+  appendTrackingParams,
   escapeHtml,
   toVersionToken,
 } from '../_lib/share-shared'
@@ -160,8 +161,14 @@ async function handleExpenseShare(req: Request): Promise<Response> {
     latestTimestamp || expense?.expense_date || expense?.id || id,
   )
 
-  const redirectUrl = `${base}/expenses/show/${encodeURIComponent(id)}?v=${encodeURIComponent(version)}`
-  const shareUrl = `${base}/api/share/expense?id=${encodeURIComponent(id)}&v=${encodeURIComponent(version)}`
+  const redirectUrl = appendTrackingParams(
+    `${base}/expenses/show/${encodeURIComponent(id)}?v=${encodeURIComponent(version)}`,
+    url,
+  )
+  const shareUrl = appendTrackingParams(
+    `${base}/api/share/expense?id=${encodeURIComponent(id)}&v=${encodeURIComponent(version)}`,
+    url,
+  )
   const ogImageUrl = `${base}/api/og/expense?id=${encodeURIComponent(id)}&v=${encodeURIComponent(version)}`
 
   const title = expense

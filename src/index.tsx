@@ -7,7 +7,10 @@ import { initSentry } from "./lib/sentry";
 import { analytics } from "./lib/analytics";
 import { analyticsManager } from "./lib/analytics/instance";
 import { measureWebVitals } from "./lib/performance";
+import { captureAttributionFromUrl } from "./lib/utm";
 import App from "./App";
+
+captureAttributionFromUrl();
 
 // Initialize Vercel Web Analytics (tracks page views and Web Vitals)
 if (import.meta.env.PROD && import.meta.env.VITE_ENABLE_VERCEL_ANALYTICS === "true") {

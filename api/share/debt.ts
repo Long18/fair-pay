@@ -8,6 +8,7 @@ import {
 } from '../_lib/debt-og-data'
 import { decodeDebtToken, encodeDebtToken } from '../_lib/share-token'
 import {
+  appendTrackingParams,
   escapeHtml,
   toVersionToken,
 } from '../_lib/share-shared'
@@ -137,7 +138,10 @@ async function handleDebtShare(req: Request): Promise<Response> {
     const base = getBaseUrl(req)
     const queryVersion = url.searchParams.get('v')
     const token = encodeDebtToken(viewerId, counterpartyId)
-    const shortUrl = `${base}/api/share/debt?t=${encodeURIComponent(token)}${queryVersion ? `&v=${encodeURIComponent(queryVersion)}` : ''}`
+    const shortUrl = appendTrackingParams(
+      `${base}/api/share/debt?t=${encodeURIComponent(token)}${queryVersion ? `&v=${encodeURIComponent(queryVersion)}` : ''}`,
+      url,
+    )
     return new Response(null, {
       status: 301,
       headers: {
@@ -158,7 +162,10 @@ async function handleDebtShare(req: Request): Promise<Response> {
   if (!viewerId) {
     const counterparty = await fetchDebtOgCounterparty(counterpartyId)
     const version = queryVersion || toVersionToken(counterpartyId)
-    const directUrl = `${base}/debts/${encodeURIComponent(counterpartyId)}?v=${encodeURIComponent(version)}`
+    const directUrl = appendTrackingParams(
+      `${base}/debts/${encodeURIComponent(counterpartyId)}?v=${encodeURIComponent(version)}`,
+      url,
+    )
     const ogImageUrl = `${base}/api/og/debt?counterparty_id=${encodeURIComponent(counterpartyId)}&v=${encodeURIComponent(version)}`
 
     return redirectPage({
@@ -179,8 +186,14 @@ async function handleDebtShare(req: Request): Promise<Response> {
   )
 
   const token = encodeDebtToken(viewerId, counterpartyId)
-  const redirectUrl = `${base}/debts/${encodeURIComponent(counterpartyId)}?v=${encodeURIComponent(version)}`
-  const shareUrl = `${base}/api/share/debt?t=${encodeURIComponent(token)}&v=${encodeURIComponent(version)}`
+  const redirectUrl = appendTrackingParams(
+    `${base}/debts/${encodeURIComponent(counterpartyId)}?v=${encodeURIComponent(version)}`,
+    url,
+  )
+  const shareUrl = appendTrackingParams(
+    `${base}/api/share/debt?t=${encodeURIComponent(token)}&v=${encodeURIComponent(version)}`,
+    url,
+  )
   const ogImageUrl = `${base}/api/og/debt?viewer_id=${encodeURIComponent(viewerId)}&counterparty_id=${encodeURIComponent(counterpartyId)}&v=${encodeURIComponent(version)}`
 
   return redirectPage({

@@ -1,4 +1,5 @@
 import { track } from '@vercel/analytics';
+import { getAttributionEventProperties } from '@/lib/utm';
 import type { AnalyticsProvider, AnalyticsConfig } from '../types';
 
 export class VercelAnalyticsProvider implements AnalyticsProvider {
@@ -46,6 +47,7 @@ export class VercelAnalyticsProvider implements AnalyticsProvider {
             track('page_view', {
                 path,
                 title,
+                ...getAttributionEventProperties(),
             });
         } catch (error) {
             console.error('[VercelAnalytics] Page view error:', error);
@@ -58,6 +60,7 @@ export class VercelAnalyticsProvider implements AnalyticsProvider {
         try {
             track('user_identified', {
                 userId,
+                ...getAttributionEventProperties(),
                 ...this.sanitizeProperties(properties),
             });
         } catch (error) {

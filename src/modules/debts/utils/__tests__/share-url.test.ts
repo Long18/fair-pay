@@ -61,4 +61,27 @@ describe("buildDebtShareUrl", () => {
     );
     expect(url1).toBe(url2);
   });
+
+  it("adds UTM parameters when tracking context is provided", () => {
+    const result = buildDebtShareUrl(
+      {
+        viewerId,
+        counterpartyId,
+        latestActivityAt: "2026-04-21T12:30:00.000Z",
+      },
+      `https://long-pay.vercel.app/debts/${counterpartyId}`,
+      {
+        source: "Native Share",
+        medium: "Social Share",
+        content: "Debt Detail Share Button",
+      },
+    );
+
+    const url = new URL(result);
+    expect(url.pathname).toBe("/api/share/debt");
+    expect(url.searchParams.get("utm_source")).toBe("native_share");
+    expect(url.searchParams.get("utm_medium")).toBe("social_share");
+    expect(url.searchParams.get("utm_campaign")).toBe("debt_share");
+    expect(url.searchParams.get("utm_content")).toBe("debt_detail_share_button");
+  });
 });

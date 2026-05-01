@@ -29,6 +29,7 @@ import {
   ReceiptIcon,
   ScrollTextIcon,
   SmilePlusIcon,
+  PieChartIcon,
   PanelLeftIcon,
   ArrowLeftIcon,
   CodeIcon,
@@ -44,6 +45,7 @@ const NAV_ITEMS = [
   { key: "transactions", label: "Transactions", icon: ReceiptIcon, path: "/admin/transactions" },
   { key: "audit-logs", label: "Audit Logs", icon: ScrollTextIcon, path: "/admin/audit-logs" },
   { key: "reactions", label: "Reactions", icon: SmilePlusIcon, path: "/admin/reactions" },
+  { key: "utm", label: "UTM", icon: PieChartIcon, path: "/admin/utm" },
   { key: "devtool", label: "DevTool", icon: SettingsIcon, path: "/admin/devtool" },
   { key: "api-docs", label: "API Docs", icon: CodeIcon, path: "/admin/api-docs" },
 ] as const;

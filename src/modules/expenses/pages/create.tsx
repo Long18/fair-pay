@@ -262,6 +262,24 @@ export const ExpenseCreate = () => {
               participant_count: splits.length,
             },
           });
+          journeyTracking.trackEvent({
+            event_name: "expense_created",
+            event_category: "expense",
+            page_path: window.location.pathname,
+            target_type: "expense",
+            target_key: "expense:created",
+            flow_name: "expense-create",
+            step_name: "success",
+            properties: {
+              context: isGroupContext ? "group" : "friend",
+              entity_id: expenseId,
+              entity_type: "expense",
+              entity_path: `/expenses/show/${expenseId}`,
+              participant_count: splits.length,
+              amount: values.amount,
+              currency: values.currency,
+            },
+          });
 
           // Create recurring expense if requested
           if (is_recurring && recurring) {

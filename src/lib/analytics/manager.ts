@@ -1,4 +1,5 @@
 import { currentBuildInfo } from "../build-info";
+import { getAttributionEventProperties } from "../utm";
 import type { AnalyticsProvider, AnalyticsConfig, AnalyticsEvent } from './types';
 
 export class AnalyticsManager {
@@ -136,6 +137,7 @@ export class AnalyticsManager {
     private enrichEvent(event: AnalyticsEvent): Record<string, any> {
         return {
             ...event,
+            ...getAttributionEventProperties(),
             timestamp: event.timestamp || Date.now(),
             userId: this.userId,
             sessionId: this.sessionId,

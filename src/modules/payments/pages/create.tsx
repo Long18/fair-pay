@@ -180,6 +180,20 @@ export const PaymentCreate = () => {
               context: isGroupContext ? "group" : "friend",
             },
           });
+          journeyTracking.trackEvent({
+            event_name: "payment_created",
+            event_category: "payment",
+            page_path: window.location.pathname,
+            target_type: "payment",
+            target_key: "payment:created",
+            flow_name: "payment-create",
+            step_name: "success",
+            properties: {
+              context: isGroupContext ? "group" : "friend",
+              amount: values.amount,
+              currency: values.currency,
+            },
+          });
 
           if (isGroupContext) {
             go({ to: `/groups/show/${groupId}` });

@@ -30,6 +30,7 @@ import { Breadcrumb, createBreadcrumbs } from "@/components/refine-ui/layout/bre
 import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
 import { EnhancedActivityList } from "@/components/dashboard/activity/enhanced-activity-list";
 import { useHaptics } from "@/hooks/use-haptics";
+import { shareWithTracking } from "@/lib/share-tracking";
 
 export const FriendShow = () => {
   const { id } = useParams<{ id: string }>();
@@ -212,19 +213,21 @@ export const FriendShow = () => {
     tap();
     const friendUrl = `${window.location.origin}/friends/${id}`;
 
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: friendProfile?.full_name || 'Friend',
-          text: t('friends.shareText', `Check out expenses with ${friendProfile?.full_name} on FairPay`),
-          url: friendUrl,
-        });
-      } else {
-        await navigator.clipboard.writeText(friendUrl);
-        toast.success(t('common.linkCopied', 'Link copied to clipboard'));
-      }
-    } catch (error) {
-      console.error('Error sharing:', error);
+    const result = await shareWithTracking({
+      baseUrl: friendUrl,
+      title: friendProfile?.full_name || 'Friend',
+      text: t('friends.shareText', `Check out expenses with ${friendProfile?.full_name} on FairPay`),
+      entityType: "friend",
+      entityId: id,
+      campaign: "friend_invite",
+      content: "friend_detail_share_button",
+      fallbackContent: "copy_link_button",
+    });
+
+    if (result.status === "copied") {
+      toast.success(t('common.linkCopied', 'Link copied to clipboard'));
+    } else if (result.status === "failed" && (result.error as { name?: string })?.name !== "AbortError") {
+      toast.error(t('common.shareError', 'Failed to share link'));
     }
   };
 

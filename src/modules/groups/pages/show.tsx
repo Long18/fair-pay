@@ -67,6 +67,7 @@ import { SwipeableTabs, PullToRefresh, EmptyBalances } from "@/modules/profile";
 import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
 import { EnhancedActivityList } from "@/components/dashboard/activity/enhanced-activity-list";
 import { JoinRequestsList } from "../components/join-requests-list";
+import { shareWithTracking } from "@/lib/share-tracking";
 
 export const GroupShow = () => {
   const { id } = useParams<{ id: string }>();
@@ -412,19 +413,21 @@ export const GroupShow = () => {
   const handleShare = async () => {
     tap();
     const groupUrl = `${window.location.origin}/groups/show/${id}`;
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: group?.name || 'Group',
-          text: `Check out ${group?.name} on FairPay`,
-          url: groupUrl,
-        });
-      } else {
-        await navigator.clipboard.writeText(groupUrl);
-        toast.success(t('common.linkCopied', 'Link copied to clipboard'));
-      }
-    } catch {
-      // User cancelled share
+    const result = await shareWithTracking({
+      baseUrl: groupUrl,
+      title: group?.name || 'Group',
+      text: `Check out ${group?.name} on FairPay`,
+      entityType: "group",
+      entityId: id,
+      campaign: "group_invite",
+      content: "group_detail_invite_button",
+      fallbackContent: "copy_link_button",
+    });
+
+    if (result.status === "copied") {
+      toast.success(t('common.linkCopied', 'Link copied to clipboard'));
+    } else if (result.status === "failed" && (result.error as { name?: string })?.name !== "AbortError") {
+      toast.error(t('common.shareError', 'Failed to share link'));
     }
   };
 

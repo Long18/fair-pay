@@ -1,4 +1,5 @@
 import { currentBuildInfo } from "@/lib/build-info";
+import { captureAttributionFromUrl, getAttributionEventProperties, getCurrentAttributionContext } from "@/lib/utm";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { getTrackedElementPayload } from "./dom";
 import {
@@ -81,6 +82,11 @@ class JourneyTrackingManager {
   init() {
     if (this.initialized || typeof window === "undefined") return;
 
+    captureAttributionFromUrl({
+      href: window.location.href,
+      referrer: document.referrer,
+    });
+
     this.session = bootstrapJourneySession({
       localStorage: window.localStorage,
       sessionStorage: window.sessionStorage,
@@ -137,6 +143,10 @@ class JourneyTrackingManager {
 
   pageView(path: string, title?: string) {
     this.init();
+    captureAttributionFromUrl({
+      href: window.location.href,
+      referrer: document.referrer,
+    });
     const normalizedPath = sanitizeTrackingPath(path, window.location.origin);
     const now = Date.now();
 
@@ -179,6 +189,7 @@ class JourneyTrackingManager {
       page_path: pagePath,
       referrer_path: referrerPath,
       properties: sanitizeProperties({
+        ...getAttributionEventProperties(),
         ...(input.properties ?? {}),
         app_version: currentBuildInfo.version,
         app_channel: currentBuildInfo.channel,
@@ -232,6 +243,7 @@ class JourneyTrackingManager {
       session: toTrackingSessionPayload(this.session),
       events,
       access_token: this.accessToken,
+      attribution: getCurrentAttributionContext(),
     };
 
     try {

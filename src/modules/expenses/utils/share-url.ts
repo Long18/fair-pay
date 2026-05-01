@@ -1,10 +1,19 @@
 import { toVersionToken } from "@/lib/share-url";
+import { buildTrackedUrl } from "@/lib/utm";
 
 type ShareVersionSource = {
   id?: string | null
   updated_at?: string | null
   created_at?: string | null
   expense_date?: string | null
+}
+
+type ExpenseShareTracking = {
+  source: string
+  medium: string
+  campaign?: string
+  content: string
+  term?: string | null
 }
 
 function extractExpenseIdFromUrl(url: URL): string | null {
@@ -18,6 +27,7 @@ function extractExpenseIdFromUrl(url: URL): string | null {
 export function buildExpenseShareUrl(
   expense: ShareVersionSource,
   currentUrl: string,
+  tracking?: ExpenseShareTracking,
 ): string {
   try {
     const current = new URL(currentUrl)
@@ -34,7 +44,17 @@ export function buildExpenseShareUrl(
 
     url.searchParams.set("id", expenseId)
     url.searchParams.set("v", toVersionToken(versionSource))
-    return url.toString()
+
+    if (!tracking) return url.toString()
+
+    return buildTrackedUrl({
+      baseUrl: url.toString(),
+      source: tracking.source,
+      medium: tracking.medium,
+      campaign: tracking.campaign ?? "expense_share",
+      content: tracking.content,
+      term: tracking.term,
+    })
   } catch {
     return currentUrl
   }

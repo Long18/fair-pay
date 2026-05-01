@@ -1,4 +1,5 @@
 import { currentBuildInfo } from './build-info';
+import { getAttributionEventProperties } from './utm';
 
 /**
  * Analytics tracking utility
@@ -33,6 +34,7 @@ class Analytics {
 
   private enrichProperties(properties?: Record<string, any>) {
     return {
+      ...getAttributionEventProperties(),
       ...properties,
       app_version: currentBuildInfo.version,
       app_channel: currentBuildInfo.channel,

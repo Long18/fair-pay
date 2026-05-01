@@ -29,4 +29,23 @@ describe("buildExpenseShareUrl", () => {
       "https://long-pay.vercel.app/api/share/expense?id=expense-456&v=1776729600",
     );
   });
+
+  it("adds UTM parameters when tracking context is provided", () => {
+    const result = buildExpenseShareUrl(
+      {
+        id: "expense-123",
+        updated_at: "2026-04-21T12:30:00.000Z",
+      },
+      "https://long-pay.vercel.app/expenses/show/expense-123?tab=details",
+      {
+        source: "Native Share",
+        medium: "Social Share",
+        content: "Expense Detail Share Button",
+      },
+    );
+
+    expect(result).toBe(
+      "https://long-pay.vercel.app/api/share/expense?id=expense-123&v=1776774600&utm_source=native_share&utm_medium=social_share&utm_campaign=expense_share&utm_content=expense_detail_share_button",
+    );
+  });
 });

@@ -1,9 +1,18 @@
 import { toVersionToken } from "@/lib/share-url";
+import { buildTrackedUrl } from "@/lib/utm";
 
 type DebtShareVersionSource = {
   viewerId?: string | null;
   counterpartyId?: string | null;
   latestActivityAt?: string | null;
+};
+
+type DebtShareTracking = {
+  source: string;
+  medium: string;
+  campaign?: string;
+  content: string;
+  term?: string | null;
 };
 
 /** Strip hyphens from a UUID and convert the 32 hex chars to 16 bytes. */
@@ -46,6 +55,7 @@ function extractCounterpartyIdFromUrl(url: URL): string | null {
 export function buildDebtShareUrl(
   debt: DebtShareVersionSource,
   currentUrl: string,
+  tracking?: DebtShareTracking,
 ): string {
   try {
     const current = new URL(currentUrl);
@@ -64,7 +74,16 @@ export function buildDebtShareUrl(
     url.searchParams.set("t", token);
     url.searchParams.set("v", toVersionToken(versionSource));
 
-    return url.toString();
+    if (!tracking) return url.toString();
+
+    return buildTrackedUrl({
+      baseUrl: url.toString(),
+      source: tracking.source,
+      medium: tracking.medium,
+      campaign: tracking.campaign ?? "debt_share",
+      content: tracking.content,
+      term: tracking.term,
+    });
   } catch {
     return currentUrl;
   }

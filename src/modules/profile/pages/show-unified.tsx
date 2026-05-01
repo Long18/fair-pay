@@ -50,6 +50,8 @@ import { formatCurrency, formatDateShort } from "@/lib/locale-utils";
 import { useAggregatedDebts } from "@/hooks/balance/use-aggregated-debts";
 import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
 import { EnhancedActivityList } from "@/components/dashboard/activity/enhanced-activity-list";
+import { shareWithTracking } from "@/lib/share-tracking";
+import { journeyTracking } from "@/lib/journey-tracking";
 
 // Import new components
 import { ProfileHeader } from "../components/profile-header";
@@ -141,6 +143,29 @@ export const ProfileShowUnified = () => {
   const isOwnProfile = identity?.id === id;
   const profileId = id || identity?.id;
   const [isUserAdmin, setIsUserAdmin] = useState(false);
+  const trackingQuery = searchParams.toString();
+
+  useEffect(() => {
+    if (!profileId) return;
+    const hasUtm = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"]
+      .some((key) => searchParams.has(key));
+    if (!hasUtm) return;
+
+    journeyTracking.trackEvent({
+      event_name: "profile_viewed_from_shared_link",
+      event_category: "share",
+      page_path: window.location.pathname,
+      target_type: "profile",
+      target_key: "profile:shared-link:view",
+      flow_name: "profile-share",
+      step_name: "view",
+      properties: {
+        entity_type: "profile",
+        entity_id: profileId,
+        entity_path: `/profile/${profileId}`,
+      },
+    });
+  }, [profileId, searchParams, trackingQuery]);
 
   // Check admin status
   useEffect(() => {
@@ -435,19 +460,20 @@ export const ProfileShowUnified = () => {
   const handleShareProfile = async () => {
     const profileUrl = `${window.location.origin}/profile/${profileId}`;
 
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: profile?.full_name || 'Profile',
-          text: t('profile.checkOutProfile', `Check out ${profile?.full_name}'s profile on FairPay`),
-          url: profileUrl,
-        });
-      } else {
-        await navigator.clipboard.writeText(profileUrl);
-        toast.success(t('profile.linkCopied', 'Profile link copied to clipboard'));
-      }
-    } catch (error) {
-      console.error('Error sharing profile:', error);
+    const result = await shareWithTracking({
+      baseUrl: profileUrl,
+      title: profile?.full_name || 'Profile',
+      text: t('profile.checkOutProfile', `Check out ${profile?.full_name}'s profile on FairPay`),
+      entityType: "profile",
+      entityId: profileId,
+      campaign: "profile_share",
+      content: "profile_header_share_button",
+      fallbackContent: "copy_link_button",
+    });
+
+    if (result.status === "copied") {
+      toast.success(t('profile.linkCopied', 'Profile link copied to clipboard'));
+    } else if (result.status === "failed" && (result.error as { name?: string })?.name !== "AbortError") {
       toast.error(t('profile.shareError', 'Failed to share profile'));
     }
   };
