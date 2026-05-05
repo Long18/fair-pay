@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { AdminOgPreview } from "./AdminOgPreview";
+import { AdminUtmDevTool } from "./AdminUtmDevTool";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -50,6 +52,7 @@ import {
   EyeIcon,
   Loader2Icon,
   MailIcon,
+  PieChartIcon,
   RefreshCwIcon,
   SendIcon,
 } from "@/components/ui/icons";
@@ -967,14 +970,25 @@ function AdminEmailDevTools() {
 }
 
 export function AdminDevTool() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const activeTab = requestedTab === "email" || requestedTab === "utm" || requestedTab === "og-preview"
+    ? requestedTab
+    : "og-preview";
+  const handleTabChange = (value: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", value);
+    setSearchParams(next, { replace: true });
+  };
+
   return (
-    <Tabs defaultValue="og-preview" className="space-y-5">
+    <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">DevTool</h1>
           <p className="text-sm text-muted-foreground">Admin utilities</p>
         </div>
-        <TabsList className="grid w-full grid-cols-2 sm:w-fit">
+        <TabsList className="grid w-full grid-cols-3 sm:w-fit">
           <TabsTrigger value="og-preview">
             <EyeIcon className="h-4 w-4" />
             OG Preview
@@ -982,6 +996,10 @@ export function AdminDevTool() {
           <TabsTrigger value="email">
             <MailIcon className="h-4 w-4" />
             Nhắc nợ
+          </TabsTrigger>
+          <TabsTrigger value="utm">
+            <PieChartIcon className="h-4 w-4" />
+            UTM
           </TabsTrigger>
         </TabsList>
       </div>
@@ -991,6 +1009,9 @@ export function AdminDevTool() {
       </TabsContent>
       <TabsContent value="email">
         <AdminEmailDevTools />
+      </TabsContent>
+      <TabsContent value="utm">
+        <AdminUtmDevTool />
       </TabsContent>
     </Tabs>
   );

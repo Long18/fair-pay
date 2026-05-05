@@ -30,7 +30,7 @@ import { Breadcrumb, createBreadcrumbs } from "@/components/refine-ui/layout/bre
 import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
 import { EnhancedActivityList } from "@/components/dashboard/activity/enhanced-activity-list";
 import { useHaptics } from "@/hooks/use-haptics";
-import { shareWithTracking } from "@/lib/share-tracking";
+import { SharePlatformPicker } from "@/components/share/share-platform-picker";
 
 export const FriendShow = () => {
   const { id } = useParams<{ id: string }>();
@@ -209,26 +209,8 @@ export const FriendShow = () => {
     });
   };
 
-  const handleShare = async () => {
+  const handleShare = () => {
     tap();
-    const friendUrl = `${window.location.origin}/friends/${id}`;
-
-    const result = await shareWithTracking({
-      baseUrl: friendUrl,
-      title: friendProfile?.full_name || 'Friend',
-      text: t('friends.shareText', `Check out expenses with ${friendProfile?.full_name} on FairPay`),
-      entityType: "friend",
-      entityId: id,
-      campaign: "friend_invite",
-      content: "friend_detail_share_button",
-      fallbackContent: "copy_link_button",
-    });
-
-    if (result.status === "copied") {
-      toast.success(t('common.linkCopied', 'Link copied to clipboard'));
-    } else if (result.status === "failed" && (result.error as { name?: string })?.name !== "AbortError") {
-      toast.error(t('common.shareError', 'Failed to share link'));
-    }
   };
 
   if (isLoadingFriendship) {
@@ -291,15 +273,30 @@ export const FriendShow = () => {
               {t('common.back', 'Back')}
             </Button>
 
-            <Button
-              onClick={handleShare}
-              variant="outline"
-              size="sm"
-              className="rounded-lg ml-auto"
-            >
-              <ShareIcon size={16} className="mr-2 sm:mr-0" />
-              <span className="sm:sr-only">{t('common.share', 'Share')}</span>
-            </Button>
+            <SharePlatformPicker
+              shareUrl={() => `${window.location.origin}/friends/${id}`}
+              destinationUrl={() => `${window.location.origin}/friends/${id}`}
+              title={friendProfile?.full_name || "Friend"}
+              text={t('friends.shareText', `Check out expenses with ${friendProfile?.full_name} on FairPay`)}
+              entityType="friend"
+              entityId={id}
+              campaign="friend_invite"
+              content="friend_detail_share_button"
+              templateKey="friend_detail_share_button"
+              copyMessage={t('common.linkCopied', 'Link copied to clipboard')}
+              errorMessage={t('common.shareError', 'Failed to share link')}
+              trigger={
+                <Button
+                  onClick={handleShare}
+                  variant="outline"
+                  size="sm"
+                  className="rounded-lg ml-auto"
+                >
+                  <ShareIcon size={16} className="mr-2 sm:mr-0" />
+                  <span className="sm:sr-only">{t('common.share', 'Share')}</span>
+                </Button>
+              }
+            />
           </div>
 
           {/* Friend Header */}

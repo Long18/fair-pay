@@ -50,7 +50,7 @@ import { formatCurrency, formatDateShort } from "@/lib/locale-utils";
 import { useAggregatedDebts } from "@/hooks/balance/use-aggregated-debts";
 import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
 import { EnhancedActivityList } from "@/components/dashboard/activity/enhanced-activity-list";
-import { shareWithTracking } from "@/lib/share-tracking";
+import { SharePlatformPicker } from "@/components/share/share-platform-picker";
 import { journeyTracking } from "@/lib/journey-tracking";
 
 // Import new components
@@ -98,6 +98,7 @@ export const ProfileShowUnified = () => {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [activeTab, setActiveTab] = useState("activity");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [shareProfileOpen, setShareProfileOpen] = useState(false);
 
   // Edit mode support
   const isEditMode = searchParams.get("edit") === "true";
@@ -457,25 +458,9 @@ export const ProfileShowUnified = () => {
   };
 
   // Handle share profile
-  const handleShareProfile = async () => {
-    const profileUrl = `${window.location.origin}/profile/${profileId}`;
-
-    const result = await shareWithTracking({
-      baseUrl: profileUrl,
-      title: profile?.full_name || 'Profile',
-      text: t('profile.checkOutProfile', `Check out ${profile?.full_name}'s profile on FairPay`),
-      entityType: "profile",
-      entityId: profileId,
-      campaign: "profile_share",
-      content: "profile_header_share_button",
-      fallbackContent: "copy_link_button",
-    });
-
-    if (result.status === "copied") {
-      toast.success(t('profile.linkCopied', 'Profile link copied to clipboard'));
-    } else if (result.status === "failed" && (result.error as { name?: string })?.name !== "AbortError") {
-      toast.error(t('profile.shareError', 'Failed to share profile'));
-    }
+  const handleShareProfile = () => {
+    tap();
+    setShareProfileOpen(true);
   };
 
   // Handle settle all
@@ -848,6 +833,22 @@ export const ProfileShowUnified = () => {
           showSettle={netBalance !== 0 && !isOwnProfile && (netBalance > 0 || isUserAdmin)}
         />
       )}
+
+      <SharePlatformPicker
+        open={shareProfileOpen}
+        onOpenChange={setShareProfileOpen}
+        shareUrl={() => `${window.location.origin}/profile/${profileId}`}
+        destinationUrl={() => `${window.location.origin}/profile/${profileId}`}
+        title={profile?.full_name || "Profile"}
+        text={t('profile.checkOutProfile', `Check out ${profile?.full_name}'s profile on FairPay`)}
+        entityType="profile"
+        entityId={profileId}
+        campaign="profile_share"
+        content="profile_header_share_button"
+        templateKey="profile_header_share_button"
+        copyMessage={t('profile.linkCopied', 'Profile link copied to clipboard')}
+        errorMessage={t('profile.shareError', 'Failed to share profile')}
+      />
 
       {/* Change Password Dialog */}
       <Dialog open={changePasswordDialogOpen} onOpenChange={setChangePasswordDialogOpen}>

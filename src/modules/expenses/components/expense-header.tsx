@@ -1,10 +1,10 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CardTitle } from "@/components/ui/card";
-import { PencilIcon, Trash2Icon, ShareIcon, CopyIcon } from "@/components/ui/icons";
+import { PencilIcon, Trash2Icon, ShareIcon } from "@/components/ui/icons";
 import { CategoryIcon } from "./category-icon";
 import { formatDate } from "@/lib/locale-utils";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +15,7 @@ import {
 import { MoreVerticalIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/use-haptics";
-import { copyShareLinkWithTracking, shareWithTracking } from "@/lib/share-tracking";
+import { SharePlatformPicker } from "@/components/share/share-platform-picker";
 import { buildExpenseShareUrl } from "../utils/share-url";
 
 interface ExpenseHeaderProps {
@@ -34,46 +34,31 @@ export const ExpenseHeader = ({
   className
 }: ExpenseHeaderProps) => {
   const { t } = useTranslation();
-  const { tap, success, warning } = useHaptics();
+  const { tap, warning } = useHaptics();
+  const [shareOpen, setShareOpen] = useState(false);
 
   const getShareUrl = () => buildExpenseShareUrl(expense, window.location.href);
-
-  const handleShare = async () => {
-    tap();
-    const result = await shareWithTracking({
-      baseUrl: getShareUrl(),
-      title: expense.description,
-      text: `Check out this expense: ${expense.description}`,
-      entityType: "expense",
-      entityId: expense.id,
-      campaign: "expense_share",
-      content: "expense_detail_share_button",
-    });
-
-    if (result.status === "copied") {
-      success();
-      toast.success(t('common.linkCopied', 'Link copied to clipboard'));
-    } else if (result.status === "failed" && (result.error as { name?: string })?.name !== "AbortError") {
-      toast.error(t('common.shareError', 'Failed to share link'));
-    }
-  };
-
-  const handleCopyLink = async () => {
-    const result = await copyShareLinkWithTracking({
-      baseUrl: getShareUrl(),
-      entityType: "expense",
-      entityId: expense.id,
-      campaign: "expense_share",
-      content: "copy_link_button",
-    });
-
-    if (result.status === "copied") {
-      success();
-      toast.success(t('common.linkCopied', 'Link copied to clipboard'));
-    } else {
-      toast.error(t('common.copyFailed', 'Failed to copy link'));
-    }
-  };
+  const getDestinationUrl = () => `${window.location.origin}/expenses/show/${expense.id}`;
+  const shareTitle = expense.description;
+  const shareText = `Check out this expense: ${expense.description}`;
+  const sharePicker = (
+    <SharePlatformPicker
+      open={shareOpen}
+      onOpenChange={setShareOpen}
+      shareUrl={getShareUrl}
+      destinationUrl={getDestinationUrl}
+      title={shareTitle}
+      text={shareText}
+      entityType="expense"
+      entityId={expense.id}
+      campaign="expense_share"
+      content="expense_detail_share_button"
+      templateKey="expense_detail_share_button"
+      successMessage={t('common.shareOpened', 'Share link opened')}
+      copyMessage={t('common.linkCopied', 'Link copied to clipboard')}
+      errorMessage={t('common.shareError', 'Failed to share link')}
+    />
+  );
 
   return (
     <div className={cn("space-y-3", className)}>
@@ -106,13 +91,15 @@ export const ExpenseHeader = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={handleShare}>
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault();
+                  tap();
+                  setShareOpen(true);
+                }}
+              >
                 <ShareIcon className="h-4 w-4 mr-2" />
                 {t('common.share', 'Share')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleCopyLink}>
-                <CopyIcon className="h-4 w-4 mr-2" />
-                {t('common.copyLink', 'Copy Link')}
               </DropdownMenuItem>
               {canEdit && (
                 <>
@@ -157,23 +144,55 @@ export const ExpenseHeader = ({
           </div>
 
           <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleShare}
-              className="hidden lg:flex"
-            >
-              <ShareIcon className="h-4 w-4 mr-2" />
-              {t('common.share', 'Share')}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleShare}
-              className="lg:hidden"
-            >
-              <ShareIcon className="h-4 w-4" />
-            </Button>
+            <SharePlatformPicker
+              shareUrl={getShareUrl}
+              destinationUrl={getDestinationUrl}
+              title={shareTitle}
+              text={shareText}
+              entityType="expense"
+              entityId={expense.id}
+              campaign="expense_share"
+              content="expense_detail_share_button"
+              templateKey="expense_detail_share_button"
+              successMessage={t('common.shareOpened', 'Share link opened')}
+              copyMessage={t('common.linkCopied', 'Link copied to clipboard')}
+              errorMessage={t('common.shareError', 'Failed to share link')}
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={tap}
+                  className="hidden lg:flex"
+                >
+                  <ShareIcon className="h-4 w-4 mr-2" />
+                  {t('common.share', 'Share')}
+                </Button>
+              }
+            />
+            <SharePlatformPicker
+              shareUrl={getShareUrl}
+              destinationUrl={getDestinationUrl}
+              title={shareTitle}
+              text={shareText}
+              entityType="expense"
+              entityId={expense.id}
+              campaign="expense_share"
+              content="expense_detail_share_button"
+              templateKey="expense_detail_share_button"
+              successMessage={t('common.shareOpened', 'Share link opened')}
+              copyMessage={t('common.linkCopied', 'Link copied to clipboard')}
+              errorMessage={t('common.shareError', 'Failed to share link')}
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={tap}
+                  className="lg:hidden"
+                >
+                  <ShareIcon className="h-4 w-4" />
+                </Button>
+              }
+            />
 
             {canEdit && (
               <>
@@ -198,6 +217,7 @@ export const ExpenseHeader = ({
           </div>
         </div>
       </div>
+      {sharePicker}
     </div>
   );
 };

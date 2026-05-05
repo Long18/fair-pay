@@ -11,6 +11,8 @@ export type {
   PaginatedAdminResponse,
   UtmMetricRow,
   UtmPerformanceResponse,
+  UtmRecentShareRow,
+  UtmCanvasResponse,
 } from "./types";
 export { useIsAdmin } from "./hooks/use-is-admin";
 export { AdminGuard } from "./components/AdminGuard";
@@ -23,4 +25,4 @@ export { AdminAuditLogs } from "./pages/AdminAuditLogs";
 export { AdminReactions } from "./pages/AdminReactions";
 export { AdminApiDocs } from "./pages/AdminApiDocs";
 export { AdminDevTool } from "./pages/AdminDevTool";
-export { AdminUtmAnalytics } from "./pages/AdminUtmAnalytics";
+export { AdminUtmDevTool } from "./pages/AdminUtmDevTool";

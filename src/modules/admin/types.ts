@@ -168,6 +168,66 @@ export interface UtmPerformanceResponse {
   signup_by_source: UtmMetricRow[];
   invite_accepted_by_campaign: UtmMetricRow[];
   share_count_by_content: UtmMetricRow[];
+  destination_pages: UtmMetricRow[];
   conversion_by_first_touch_source: UtmMetricRow[];
   conversion_by_last_touch_source: UtmMetricRow[];
+  recent_shares: UtmRecentShareRow[];
+}
+
+export interface UtmRecentShareRow {
+  occurred_at: string;
+  event_name: string;
+  user_id: string | null;
+  session_id: string | null;
+  share_method: string | null;
+  share_platform: string | null;
+  share_platform_detection: string | null;
+  destination_path: string | null;
+  destination_url: string | null;
+  generated_path: string | null;
+  generated_url_hash: string | null;
+  generated_url: string | null;
+  entity_type: string | null;
+  entity_id: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  utm_content: string | null;
+}
+
+export interface UtmCanvasNodeMetrics {
+  events: number;
+  sessions: number;
+  shares: number;
+  signups: number;
+  conversions: number;
+  conversion_rate: number;
+}
+
+export interface UtmCanvasNodeRow {
+  id: string;
+  type: string;
+  label: string;
+  layer_index: number;
+  order: number;
+  metrics: UtmCanvasNodeMetrics;
+}
+
+export interface UtmCanvasEdgeRow {
+  source: string;
+  target: string;
+  count: number;
+}
+
+export interface UtmCanvasResponse {
+  summary: {
+    from: string;
+    to: string;
+    events: number;
+    sessions: number;
+    shares: number;
+    conversions: number;
+  };
+  nodes: UtmCanvasNodeRow[];
+  edges: UtmCanvasEdgeRow[];
 }

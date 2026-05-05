@@ -106,7 +106,6 @@ const AdminAuditLogs = lazy(() => import("./modules/admin/pages/AdminAuditLogs")
 const AdminReactions = lazy(() => import("./modules/admin/pages/AdminReactions").then(m => ({ default: m.AdminReactions })));
 const AdminApiDocs = lazy(() => import("./modules/admin/pages/AdminApiDocs").then(m => ({ default: m.AdminApiDocs })));
 const AdminDevTool = lazy(() => import("./modules/admin/pages/AdminDevTool").then(m => ({ default: m.AdminDevTool })));
-const AdminUtmAnalytics = lazy(() => import("./modules/admin/pages/AdminUtmAnalytics").then(m => ({ default: m.AdminUtmAnalytics })));
 
 // Optimized loading fallback component
 // Profile Edit Redirect Component
@@ -425,7 +424,7 @@ function App() {
                     <Route path="transactions" element={<Suspense fallback={<PageLoader />}><AdminTransactions /></Suspense>} />
                     <Route path="audit-logs" element={<Suspense fallback={<PageLoader />}><AdminAuditLogs /></Suspense>} />
                     <Route path="reactions" element={<Suspense fallback={<PageLoader />}><AdminReactions /></Suspense>} />
-                    <Route path="utm" element={<Suspense fallback={<PageLoader />}><AdminUtmAnalytics /></Suspense>} />
+                    <Route path="utm" element={<Navigate to="/admin/devtool?tab=utm" replace />} />
                     <Route path="devtool" element={<Suspense fallback={<PageLoader />}><AdminDevTool /></Suspense>} />
                     <Route path="og-preview" element={<Navigate to="/admin/devtool" replace />} />
                     {isAdminApiDocsEnabled && <Route path="api-docs" element={<Suspense fallback={<PageLoader />}><AdminApiDocs /></Suspense>} />}

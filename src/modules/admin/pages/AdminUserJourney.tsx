@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link, useParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { Button } from "@/components/ui/button";
@@ -130,6 +130,7 @@ function EventBadge({ eventName }: { eventName: string }) {
 
 export function AdminUserJourney() {
   const { id: userId } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [dateFrom, setDateFrom] = useState(() => {
     const value = new Date();
@@ -137,7 +138,7 @@ export function AdminUserJourney() {
     return toDateInput(value);
   });
   const [dateTo, setDateTo] = useState(() => toDateInput(new Date()));
-  const [selectedSessionId, setSelectedSessionId] = useState<string>("all");
+  const [selectedSessionId, setSelectedSessionId] = useState<string>(() => searchParams.get("session") || "all");
   const [eventFilter, setEventFilter] = useState<string>("all");
   const [rawEvent, setRawEvent] = useState<UserTrackingEventRow | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -368,7 +369,7 @@ export function AdminUserJourney() {
               fromIso={fromIso}
               toIso={toIso}
               eventNames={selectedEventNames}
-              sourceName={selectedSession?.landing_source ?? overview?.top_sources?.[0]?.name ?? null}
+              sourceName={searchParams.get("source") || selectedSession?.landing_source || overview?.top_sources?.[0]?.name || null}
               entryLink={selectedSession?.entry_link ?? overview?.latest_entry_link ?? null}
             />
           </TabsContent>

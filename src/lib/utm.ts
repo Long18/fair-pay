@@ -64,6 +64,8 @@ export const ATTRIBUTION_STORAGE_KEYS = {
 
 const DEFAULT_ORIGIN = "https://long-pay.vercel.app";
 const MAX_COOKIE_AGE_SECONDS = 60 * 60 * 24 * 180;
+const TRACKING_DISPLAY_PARAM_PREFIXES = ["utm_"];
+const TRACKING_DISPLAY_PARAMS = new Set(["gclid", "fbclid"]);
 const TRACKED_REFERRERS: Array<[RegExp, string]> = [
   [/(\.|^)facebook\.com$/i, "facebook"],
   [/(\.|^)fb\.com$/i, "facebook"],
@@ -73,6 +75,13 @@ const TRACKED_REFERRERS: Array<[RegExp, string]> = [
   [/(\.|^)instagram\.com$/i, "instagram"],
   [/(\.|^)zalo\.me$/i, "zalo"],
   [/(\.|^)zalo\.com$/i, "zalo"],
+  [/(\.|^)whatsapp\.com$/i, "whatsapp"],
+  [/(\.|^)wa\.me$/i, "whatsapp"],
+  [/(\.|^)telegram\.org$/i, "telegram"],
+  [/(\.|^)telegram\.me$/i, "telegram"],
+  [/(\.|^)t\.me$/i, "telegram"],
+  [/(\.|^)twitter\.com$/i, "x"],
+  [/(\.|^)x\.com$/i, "x"],
 ];
 
 function getWindowOrigin() {
@@ -109,9 +118,13 @@ function formatUrlOutput(url: URL, originalInput: string) {
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
+function parseUrl(input: string, baseOrigin = getWindowOrigin()) {
+  return new URL(input, baseOrigin);
+}
+
 export function buildTrackedUrl(options: BuildTrackedUrlOptions): string {
   const origin = options.baseOrigin ?? getWindowOrigin();
-  const url = new URL(options.baseUrl, origin);
+  const url = parseUrl(options.baseUrl, origin);
   const utmValues: Record<UtmParamKey, string | null> = {
     utm_source: normalizeOptionalValue(options.source) || "unknown",
     utm_medium: normalizeOptionalValue(options.medium) || "social_share",
@@ -139,6 +152,49 @@ export function buildTrackedUrl(options: BuildTrackedUrlOptions): string {
   }
 
   return formatUrlOutput(url, options.baseUrl);
+}
+
+function shouldStripDisplayParam(key: string) {
+  return TRACKING_DISPLAY_PARAMS.has(key) || TRACKING_DISPLAY_PARAM_PREFIXES.some((prefix) => key.startsWith(prefix));
+}
+
+export function stripTrackingParams(input: string, baseOrigin = getWindowOrigin()): string {
+  try {
+    const url = parseUrl(input, baseOrigin);
+    for (const key of Array.from(url.searchParams.keys())) {
+      if (shouldStripDisplayParam(key)) {
+        url.searchParams.delete(key);
+      }
+    }
+    return formatUrlOutput(url, input);
+  } catch {
+    return input;
+  }
+}
+
+export function getCanonicalDestinationPath(input: string, baseOrigin = getWindowOrigin()) {
+  try {
+    const url = parseUrl(stripTrackingParams(input, baseOrigin), baseOrigin);
+    return `${url.pathname}${url.search}${url.hash}` || "/";
+  } catch {
+    return "/";
+  }
+}
+
+export function getCanonicalDestinationUrl(input: string, baseOrigin = getWindowOrigin()) {
+  try {
+    return parseUrl(stripTrackingParams(input, baseOrigin), baseOrigin).toString();
+  } catch {
+    return baseOrigin;
+  }
+}
+
+export function stableUrlHash(input: string) {
+  let hash = 5381;
+  for (let index = 0; index < input.length; index += 1) {
+    hash = (hash * 33) ^ input.charCodeAt(index);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
 }
 
 function getDefaultStorage(): StorageLike | null {

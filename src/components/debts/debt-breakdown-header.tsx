@@ -15,8 +15,7 @@ import { cn } from "@/lib/utils";
 import { SepayPaymentDialog } from "@/modules/payments/components/sepay-payment-dialog";
 import { buildDebtShareUrl } from "@/modules/debts/utils/share-url";
 import { Profile } from "@/modules/profile/types";
-import { shareWithTracking } from "@/lib/share-tracking";
-import { toast } from "sonner";
+import { SharePlatformPicker } from "@/components/share/share-platform-picker";
 
 interface DebtBreakdownHeaderProps {
   counterpartyName: string;
@@ -55,7 +54,7 @@ export function DebtBreakdownHeader({
 }: DebtBreakdownHeaderProps) {
   const { t } = useTranslation();
   const go = useGo();
-  const { tap, success } = useHaptics();
+  const { tap } = useHaptics();
   const { data: identity } = useGetIdentity<Profile>();
   const [sepayDialogOpen, setSepayDialogOpen] = useState(false);
   const { isConfigured: isSepayConfigured } = usePayeeSepaySettings(counterpartyId);
@@ -76,30 +75,13 @@ export function DebtBreakdownHeader({
     },
     window.location.href,
   );
-
-  const handleShare = async () => {
-    tap();
-    const result = await shareWithTracking({
-      baseUrl: getShareUrl(),
-      title: t("debts.debtsSummary", "Debts Summary"),
-      text: t(
-        "debts.shareSummaryText",
-        "Check out the balance summary with {{name}} on FairPay",
-        { name: counterpartyName },
-      ),
-      entityType: "debt",
-      entityId: counterpartyId,
-      campaign: "debt_share",
-      content: "debt_detail_share_button",
-    });
-
-    if (result.status === "copied") {
-      success();
-      toast.success(t("common.linkCopied", "Link copied to clipboard"));
-    } else if (result.status === "failed" && (result.error as { name?: string })?.name !== "AbortError") {
-      toast.error(t("common.shareError", "Failed to share link"));
-    }
-  };
+  const getDestinationUrl = () => `${window.location.origin}/debts/${counterpartyId}`;
+  const shareTitle = t("debts.debtsSummary", "Debts Summary");
+  const shareText = t(
+    "debts.shareSummaryText",
+    "Check out the balance summary with {{name}} on FairPay",
+    { name: counterpartyName },
+  );
 
   return (
     <>
@@ -192,15 +174,31 @@ export function DebtBreakdownHeader({
               </span>
             </Button>
 
-            <Button
-              variant="outline"
-              className="h-12 w-12 shrink-0 rounded-xl px-0"
-              onClick={handleShare}
-              aria-label={t("common.share", "Share")}
-            >
-              <ShareIcon className="h-4 w-4" />
-              <span className="sr-only">{t("common.share", "Share")}</span>
-            </Button>
+            <SharePlatformPicker
+              shareUrl={getShareUrl}
+              destinationUrl={getDestinationUrl}
+              title={shareTitle}
+              text={shareText}
+              entityType="debt"
+              entityId={counterpartyId}
+              campaign="debt_share"
+              content="debt_detail_share_button"
+              templateKey="debt_detail_share_button"
+              successMessage={t("common.shareOpened", "Share link opened")}
+              copyMessage={t("common.linkCopied", "Link copied to clipboard")}
+              errorMessage={t("common.shareError", "Failed to share link")}
+              trigger={
+                <Button
+                  variant="outline"
+                  className="h-12 w-12 shrink-0 rounded-xl px-0"
+                  onClick={tap}
+                  aria-label={t("common.share", "Share")}
+                >
+                  <ShareIcon className="h-4 w-4" />
+                  <span className="sr-only">{t("common.share", "Share")}</span>
+                </Button>
+              }
+            />
           </div>
         </div>
       </section>

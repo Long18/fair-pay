@@ -4,7 +4,9 @@ import {
   buildTrackedUrl,
   captureAttributionFromUrl,
   getAttributionEventProperties,
+  getCanonicalDestinationPath,
   getCurrentAttributionContext,
+  stripTrackingParams,
   type CookieAdapter,
   type StorageLike,
 } from "@/lib/utm";
@@ -92,6 +94,16 @@ describe("buildTrackedUrl", () => {
     ).toBe(
       "/profile/123?utm_source=facebook&utm_campaign=profile_share&utm_medium=social_share&utm_content=profile_header_share_button",
     );
+  });
+
+  it("strips tracking params for compact admin destination display", () => {
+    expect(
+      stripTrackingParams("https://long-pay.vercel.app/debts/123?tab=activity&utm_source=facebook&utm_campaign=debt_share&fbclid=abc"),
+    ).toBe("https://long-pay.vercel.app/debts/123?tab=activity");
+
+    expect(
+      getCanonicalDestinationPath("/api/share/debt?t=abc&utm_source=facebook&utm_medium=social_share"),
+    ).toBe("/api/share/debt?t=abc");
   });
 });
 

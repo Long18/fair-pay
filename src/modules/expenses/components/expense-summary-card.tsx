@@ -8,7 +8,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -26,14 +25,12 @@ import {
   PencilIcon,
   Trash2Icon,
   ShareIcon,
-  CopyIcon,
   MoreVerticalIcon,
   RepeatIcon,
   CalendarIcon,
   PauseIcon,
   PlayIcon,
   UserIcon,
-  MessageSquareIcon,
   ChevronDownIcon,
   ChevronUpIcon,
 } from "@/components/ui/icons";
@@ -47,7 +44,6 @@ import { useReactionTypes, useExpenseReactions } from "../hooks/use-reactions";
 import { formatDate, formatNumber, formatCurrency } from "@/lib/locale-utils";
 import { getOweStatusColors } from "@/lib/status-colors";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
@@ -57,7 +53,7 @@ import type { RecurringExpense } from "../types/recurring";
 import type { CommentUser } from "../types/comments";
 import { buildExpenseShareUrl } from "../utils/share-url";
 import { useHaptics } from "@/hooks/use-haptics";
-import { copyShareLinkWithTracking, shareWithTracking } from "@/lib/share-tracking";
+import { SharePlatformPicker } from "@/components/share/share-platform-picker";
 
 interface ExpenseSummaryCardProps {
   expense: {
@@ -199,42 +195,9 @@ export const ExpenseSummaryCard = memo(({
   const getShareUrl = useCallback(() => {
     return buildExpenseShareUrl(expense, window.location.href);
   }, [expense]);
-
-  const handleShare = async () => {
-    tap();
-    const result = await shareWithTracking({
-      baseUrl: getShareUrl(),
-      title: expense.description,
-      text: `Check out this expense: ${expense.description}`,
-      entityType: "expense",
-      entityId: expense.id,
-      campaign: "expense_share",
-      content: "expense_summary_share_button",
-    });
-
-    if (result.status === "copied") {
-      toast.success(t("common.linkCopied", "Link copied to clipboard"));
-    } else if (result.status === "failed" && (result.error as { name?: string })?.name !== "AbortError") {
-      toast.error(t("common.shareError", "Failed to share link"));
-    }
-  };
-
-  const handleCopyLink = async () => {
-    tap();
-    const result = await copyShareLinkWithTracking({
-      baseUrl: getShareUrl(),
-      entityType: "expense",
-      entityId: expense.id,
-      campaign: "expense_share",
-      content: "copy_link_button",
-    });
-
-    if (result.status === "copied") {
-      toast.success(t("common.linkCopied", "Link copied to clipboard"));
-    } else {
-      toast.error(t("common.copyFailed", "Failed to copy link"));
-    }
-  };
+  const getDestinationUrl = useCallback(() => {
+    return `${window.location.origin}/expenses/show/${expense.id}`;
+  }, [expense.id]);
 
   const statusColors = userPosition
     ? getOweStatusColors(
@@ -267,15 +230,31 @@ export const ExpenseSummaryCard = memo(({
 
           {/* Actions */}
           <div className="flex items-center gap-1.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9"
-              onClick={handleShare}
-              aria-label={t("common.share", "Share")}
-            >
-              <ShareIcon className="h-4 w-4" />
-            </Button>
+            <SharePlatformPicker
+              shareUrl={getShareUrl}
+              destinationUrl={getDestinationUrl}
+              title={expense.description}
+              text={`Check out this expense: ${expense.description}`}
+              entityType="expense"
+              entityId={expense.id}
+              campaign="expense_share"
+              content="expense_summary_share_button"
+              templateKey="expense_summary_share_button"
+              successMessage={t("common.shareOpened", "Share link opened")}
+              copyMessage={t("common.linkCopied", "Link copied to clipboard")}
+              errorMessage={t("common.shareError", "Failed to share link")}
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9"
+                  onClick={tap}
+                  aria-label={t("common.share", "Share")}
+                >
+                  <ShareIcon className="h-4 w-4" />
+                </Button>
+              }
+            />
 
             {canEdit && (
               <DropdownMenu>
@@ -285,11 +264,6 @@ export const ExpenseSummaryCard = memo(({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem onClick={handleCopyLink}>
-                    <CopyIcon className="h-4 w-4 mr-2" />
-                    {t("common.copyLink", "Copy Link")}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => { tap(); onEdit(); }}>
                     <PencilIcon className="h-4 w-4 mr-2" />
                     {t("common.edit", "Edit")}

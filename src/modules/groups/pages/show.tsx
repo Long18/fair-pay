@@ -67,7 +67,7 @@ import { SwipeableTabs, PullToRefresh, EmptyBalances } from "@/modules/profile";
 import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
 import { EnhancedActivityList } from "@/components/dashboard/activity/enhanced-activity-list";
 import { JoinRequestsList } from "../components/join-requests-list";
-import { shareWithTracking } from "@/lib/share-tracking";
+import { SharePlatformPicker } from "@/components/share/share-platform-picker";
 
 export const GroupShow = () => {
   const { id } = useParams<{ id: string }>();
@@ -410,25 +410,8 @@ export const GroupShow = () => {
     );
   };
 
-  const handleShare = async () => {
+  const handleShare = () => {
     tap();
-    const groupUrl = `${window.location.origin}/groups/show/${id}`;
-    const result = await shareWithTracking({
-      baseUrl: groupUrl,
-      title: group?.name || 'Group',
-      text: `Check out ${group?.name} on FairPay`,
-      entityType: "group",
-      entityId: id,
-      campaign: "group_invite",
-      content: "group_detail_invite_button",
-      fallbackContent: "copy_link_button",
-    });
-
-    if (result.status === "copied") {
-      toast.success(t('common.linkCopied', 'Link copied to clipboard'));
-    } else if (result.status === "failed" && (result.error as { name?: string })?.name !== "AbortError") {
-      toast.error(t('common.shareError', 'Failed to share link'));
-    }
   };
 
   // Loading state
@@ -476,15 +459,30 @@ export const GroupShow = () => {
               <ArrowLeftIcon size={16} className="mr-2" />
               {t('common.back', 'Back')}
             </Button>
-            <Button
-              onClick={handleShare}
-              variant="outline"
-              size="sm"
-              className="rounded-lg ml-auto"
-            >
-              <ShareIcon size={16} className="mr-2 sm:mr-0" />
-              <span className="sm:sr-only">{t('common.share', 'Share')}</span>
-            </Button>
+            <SharePlatformPicker
+              shareUrl={() => `${window.location.origin}/groups/show/${id}`}
+              destinationUrl={() => `${window.location.origin}/groups/show/${id}`}
+              title={group?.name || "Group"}
+              text={`Check out ${group?.name} on FairPay`}
+              entityType="group"
+              entityId={id}
+              campaign="group_invite"
+              content="group_detail_invite_button"
+              templateKey="group_detail_invite_button"
+              copyMessage={t('common.linkCopied', 'Link copied to clipboard')}
+              errorMessage={t('common.shareError', 'Failed to share link')}
+              trigger={
+                <Button
+                  onClick={handleShare}
+                  variant="outline"
+                  size="sm"
+                  className="rounded-lg ml-auto"
+                >
+                  <ShareIcon size={16} className="mr-2 sm:mr-0" />
+                  <span className="sm:sr-only">{t('common.share', 'Share')}</span>
+                </Button>
+              }
+            />
           </div>
 
           {/* Group Header */}

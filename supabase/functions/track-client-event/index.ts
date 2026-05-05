@@ -51,6 +51,37 @@ const BLOCKED_PROPERTY_KEYS = new Set([
   'token',
 ])
 
+const LONG_STRING_PROPERTY_LIMITS = new Map<string, number>([
+  ['destination_url', 2048],
+  ['first_landing_url', 2048],
+  ['last_landing_url', 2048],
+  ['landing_url', 2048],
+  ['destination_path', 1024],
+  ['generated_path', 1024],
+  ['first_landing_path', 1024],
+  ['last_landing_path', 1024],
+  ['landing_path', 1024],
+  ['generated_url_hash', 128],
+])
+
+const TRACKED_REFERRERS: Array<[RegExp, string]> = [
+  [/(\.|^)facebook\.com$/i, 'facebook'],
+  [/(\.|^)fb\.com$/i, 'facebook'],
+  [/(\.|^)messenger\.com$/i, 'messenger'],
+  [/(\.|^)m\.me$/i, 'messenger'],
+  [/(\.|^)tiktok\.com$/i, 'tiktok'],
+  [/(\.|^)instagram\.com$/i, 'instagram'],
+  [/(\.|^)zalo\.me$/i, 'zalo'],
+  [/(\.|^)zalo\.com$/i, 'zalo'],
+  [/(\.|^)whatsapp\.com$/i, 'whatsapp'],
+  [/(\.|^)wa\.me$/i, 'whatsapp'],
+  [/(\.|^)telegram\.org$/i, 'telegram'],
+  [/(\.|^)telegram\.me$/i, 'telegram'],
+  [/(\.|^)t\.me$/i, 'telegram'],
+  [/(\.|^)twitter\.com$/i, 'x'],
+  [/(\.|^)x\.com$/i, 'x'],
+]
+
 type NullableString = string | null | undefined
 
 interface TrackingSessionPayload {
@@ -152,16 +183,33 @@ function extractAttribution(entryLink: string) {
   }
 }
 
+function sanitizeUtmValue(value: string): string | null {
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+  return normalized ? normalized.slice(0, 255) : null
+}
+
+function mapReferrerSource(referrer: string | null): string | null {
+  if (!referrer) return null
+
+  try {
+    const url = new URL(referrer)
+    const hostname = url.hostname.replace(/^www\./i, '')
+    const mapped = TRACKED_REFERRERS.find(([pattern]) => pattern.test(hostname))
+    return mapped?.[1] ?? sanitizeUtmValue(hostname) ?? 'referral'
+  } catch {
+    return 'referral'
+  }
+}
+
 function deriveLandingSource(entryLink: string, referrer: string | null, attribution: ReturnType<typeof extractAttribution>) {
   if (attribution.utm_source) return attribution.utm_source
   if (attribution.ref) return attribution.ref
-  if (referrer) {
-    try {
-      return new URL(referrer).hostname.slice(0, 255)
-    } catch {
-      return 'referrer'
-    }
-  }
+  const referrerSource = mapReferrerSource(referrer)
+  if (referrerSource) return referrerSource
   return 'direct'
 }
 
@@ -231,7 +279,7 @@ function sanitizeProperties(input: Record<string, unknown> | null | undefined, d
     if (rawValue === null || rawValue === undefined) continue
 
     if (typeof rawValue === 'string') {
-      sanitized[key] = rawValue.slice(0, 255)
+      sanitized[key] = rawValue.slice(0, LONG_STRING_PROPERTY_LIMITS.get(key) ?? 255)
       continue
     }
 
