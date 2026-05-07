@@ -407,17 +407,17 @@ export function AdminReactions() {
         </Card>
         <Card className="p-3">
           <div className="text-xs text-muted-foreground">Đang hoạt động</div>
-          <div className="text-xl font-semibold mt-1 text-emerald-600 dark:text-emerald-400">{activeCount}</div>
+          <div className="text-xl font-semibold mt-1 text-[var(--status-success-foreground)]">{activeCount}</div>
         </Card>
         <Card className="p-3">
           <div className="text-xs text-muted-foreground">Đã tắt</div>
-          <div className="text-xl font-semibold mt-1 text-red-600 dark:text-red-400">{(items?.length ?? 0) - activeCount}</div>
+          <div className="text-xl font-semibold mt-1 text-[var(--status-error-foreground)]">{(items?.length ?? 0) - activeCount}</div>
         </Card>
       </div>
 
       {/* Main Table */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <div>
             <CardTitle>Quản lý Reactions</CardTitle>
             <CardDescription>Thêm, sửa, xóa emoji và icon cho hệ thống reaction</CardDescription>
