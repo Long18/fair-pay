@@ -10,6 +10,14 @@ import { useEffect, useRef, useState } from "react";
 import { useStaggerAnimation } from "@/hooks/ui/use-stagger-animation";
 
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Loader2Icon, SlidersHorizontalIcon } from "@/components/ui/icons";
 import {
   Table,
   TableBody,
@@ -19,15 +27,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-
-import { Loader2Icon, SlidersHorizontalIcon } from "@/components/ui/icons";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 type DataTableProps<TData extends BaseRecord> = {
   table: UseTableReturnType<TData, HttpError>;
@@ -51,6 +50,7 @@ export function DataTable<TData extends BaseRecord>({
   } = table;
 
   const columns = getAllColumns();
+  const hideableColumns = columns.filter((col) => col.getCanHide());
   const leafColumns = table.reactTable.getAllLeafColumns();
   const isLoading = tableQuery.isLoading;
 
@@ -96,7 +96,7 @@ export function DataTable<TData extends BaseRecord>({
 
   return (
     <div className={cn("flex", "flex-col", "flex-1", "gap-4", "min-w-0")}>
-      {showColumnVisibility && (
+      {showColumnVisibility && hideableColumns.length > 0 && (
         <div className="flex justify-end">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -106,17 +106,14 @@ export function DataTable<TData extends BaseRecord>({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
-              {table.reactTable
-                .getAllColumns()
-                .filter((col) => col.getCanHide())
-                .map((col) => (
+              {hideableColumns.map((col) => (
                   <DropdownMenuCheckboxItem
                     key={col.id}
                     className="capitalize text-xs"
                     checked={col.getIsVisible()}
                     onCheckedChange={(value) => col.toggleVisibility(!!value)}
                   >
-                    {col.id}
+                    {typeof col.columnDef.header === "string" ? col.columnDef.header : col.id}
                   </DropdownMenuCheckboxItem>
                 ))}
             </DropdownMenuContent>
