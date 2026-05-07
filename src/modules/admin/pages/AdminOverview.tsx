@@ -355,7 +355,7 @@ export function AdminOverview() {
                       >
                         <Icon className="h-5 w-5" />
                       </div>
-                      <div className="flex flex-col gap-1">
+                      <div className="flex flex-col gap-1 min-w-0">
                         <span className="text-xs text-muted-foreground truncate">{card.label}</span>
                         <span className="text-2xl font-semibold tabular-nums">{formatNumber(value)}</span>
                         <TrendIndicator value={Math.abs(trendPercent)} isPositive={trendPercent >= 0} />
