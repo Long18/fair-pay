@@ -551,31 +551,31 @@ export function AdminAuditLogs() {
           </Card>
           <Card className="p-3">
             <div className="text-xs text-muted-foreground">INSERT</div>
-            <div className="text-xl font-semibold mt-1 text-emerald-600 dark:text-emerald-400">
+            <div className="text-xl font-semibold mt-1 text-[var(--status-success-foreground)]">
               {stats.inserts.toLocaleString()}
             </div>
           </Card>
           <Card className="p-3">
             <div className="text-xs text-muted-foreground">UPDATE</div>
-            <div className="text-xl font-semibold mt-1 text-amber-600 dark:text-amber-400">
+            <div className="text-xl font-semibold mt-1 text-[var(--status-warning-foreground)]">
               {stats.updates.toLocaleString()}
             </div>
           </Card>
           <Card className="p-3">
             <div className="text-xs text-muted-foreground">DELETE</div>
-            <div className="text-xl font-semibold mt-1 text-red-600 dark:text-red-400">
+            <div className="text-xl font-semibold mt-1 text-[var(--status-error-foreground)]">
               {stats.deletes.toLocaleString()}
             </div>
           </Card>
           <Card className="p-3">
             <div className="text-xs text-muted-foreground">Hôm nay</div>
-            <div className="text-xl font-semibold mt-1 text-blue-600 dark:text-blue-400">
+            <div className="text-xl font-semibold mt-1 text-[var(--status-info-foreground)]">
               {stats.today.toLocaleString()}
             </div>
           </Card>
           <Card className="p-3">
             <div className="text-xs text-muted-foreground">Tuần này</div>
-            <div className="text-xl font-semibold mt-1 text-violet-600 dark:text-violet-400">
+            <div className="text-xl font-semibold mt-1 text-foreground">
               {stats.this_week.toLocaleString()}
             </div>
           </Card>
@@ -630,7 +630,7 @@ export function AdminAuditLogs() {
                         <span className="text-xs min-w-[100px] truncate">{item.name}</span>
                         <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-violet-500/60 rounded-full transition-all"
+                            className="h-full bg-primary/40 rounded-full transition-all"
                             style={{ width: `${Math.max(pct, 1)}%` }}
                           />
                         </div>
@@ -650,7 +650,7 @@ export function AdminAuditLogs() {
 
       {/* Main Table Card */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <div>
             <CardTitle>Nhật ký kiểm toán</CardTitle>
             <CardDescription>
