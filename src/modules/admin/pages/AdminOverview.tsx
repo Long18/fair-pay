@@ -113,8 +113,8 @@ function calcTrendPercent(current: number, previous: number): number {
 
 function StatCardSkeleton() {
   return (
-    <Card className="p-6">
-      <div className="flex items-center gap-4">
+    <Card className="p-5">
+      <div className="flex items-start gap-4">
         <div className="h-10 w-10 rounded-lg bg-muted animate-pulse" />
         <div className="flex flex-col gap-2">
           <div className="h-3 w-24 bg-muted rounded animate-pulse" />
@@ -348,16 +348,16 @@ export function AdminOverview() {
 
               return (
                 <motion.div key={card.key} variants={statRowVariants} custom={index}>
-                  <Card className="p-6">
-                    <div className="flex items-center gap-4">
+                  <Card className="p-5">
+                    <div className="flex items-start gap-4">
                       <div
                         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${themeIntentTones[card.tone as ThemeIntent].surface} ${themeIntentTones[card.tone as ThemeIntent].icon}`}
                       >
                         <Icon className="h-5 w-5" />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <span className="text-sm text-muted-foreground">{card.label}</span>
-                        <span className="text-2xl font-bold">{formatNumber(value)}</span>
+                        <span className="text-xs text-muted-foreground truncate">{card.label}</span>
+                        <span className="text-2xl font-semibold tabular-nums">{formatNumber(value)}</span>
                         <TrendIndicator value={Math.abs(trendPercent)} isPositive={trendPercent >= 0} />
                       </div>
                     </div>
