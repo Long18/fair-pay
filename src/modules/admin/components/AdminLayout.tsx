@@ -189,7 +189,7 @@ function AdminLogo() {
       )}
     >
       <FairPayIcon className="w-10 h-10" />
-      <span className="text-base md:text-lg font-bold hidden lg:inline">Admin</span>
+      <span className="text-sm font-semibold hidden lg:inline">Admin</span>
     </Link>
   );
 }
@@ -216,9 +216,10 @@ function DesktopAdminNav({ scrolled }: { scrolled: boolean }) {
                 <Link
                   to={item.path}
                   className={cn(
-                    "relative flex items-center gap-2 rounded-full",
+                    "relative flex items-center gap-2 rounded-md",
                     "text-sm font-medium whitespace-nowrap",
                     "transition-all duration-300 ease-out",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20",
                     active
                       ? "bg-primary/10 text-primary px-3 py-2"
                       : showLabel
@@ -332,7 +333,7 @@ function MobileAdminMenu() {
         <SheetHeader className="p-4 border-b">
           <SheetTitle className="flex items-center gap-3">
             <FairPayIcon className="w-10 h-10" />
-            <span className="text-lg font-bold">FairPay Admin</span>
+            <span className="text-sm font-semibold">FairPay Admin</span>
           </SheetTitle>
         </SheetHeader>
 
@@ -346,7 +347,7 @@ function MobileAdminMenu() {
                 to={item.path}
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-lg",
-                  "text-base font-medium",
+                  "text-sm font-medium",
                   "transition-all duration-200",
                   active
                     ? "bg-primary/10 text-primary"
