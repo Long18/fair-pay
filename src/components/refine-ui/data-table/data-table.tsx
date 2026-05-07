@@ -20,13 +20,23 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
-import { Loader2Icon } from "@/components/ui/icons";
+import { Loader2Icon, SlidersHorizontalIcon } from "@/components/ui/icons";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
 type DataTableProps<TData extends BaseRecord> = {
   table: UseTableReturnType<TData, HttpError>;
+  showColumnVisibility?: boolean;
 };
 
 export function DataTable<TData extends BaseRecord>({
   table,
+  showColumnVisibility,
 }: DataTableProps<TData>) {
   const {
     reactTable: { getHeaderGroups, getRowModel, getAllColumns },
@@ -86,6 +96,33 @@ export function DataTable<TData extends BaseRecord>({
 
   return (
     <div className={cn("flex", "flex-col", "flex-1", "gap-4", "min-w-0")}>
+      {showColumnVisibility && (
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1.5">
+                <SlidersHorizontalIcon className="h-3.5 w-3.5" />
+                <span className="text-xs">Columns</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              {table.reactTable
+                .getAllColumns()
+                .filter((col) => col.getCanHide())
+                .map((col) => (
+                  <DropdownMenuCheckboxItem
+                    key={col.id}
+                    className="capitalize text-xs"
+                    checked={col.getIsVisible()}
+                    onCheckedChange={(value) => col.toggleVisibility(!!value)}
+                  >
+                    {col.id}
+                  </DropdownMenuCheckboxItem>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
       <div ref={tableContainerRef} className={cn("rounded-md", "border", "overflow-x-auto")}>
         {isLoading ? (
           <Table ref={tableRef} style={{ tableLayout: "fixed", width: "100%" }}>

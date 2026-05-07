@@ -124,6 +124,7 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
+  SlidersHorizontal,
 } from "lucide-react";
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -968,3 +969,5 @@ export const AtSignIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
 export const Undo2Icon: React.FC<IconProps> = ({ size = 24, ...props }) => (
   <Undo2 size={size} {...props} />
 );
+
+export const SlidersHorizontalIcon = SlidersHorizontal;
