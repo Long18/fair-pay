@@ -219,7 +219,7 @@ function DesktopAdminNav({ scrolled }: { scrolled: boolean }) {
                     "relative flex items-center gap-2 rounded-md",
                     "text-sm font-medium whitespace-nowrap",
                     "transition-all duration-300 ease-out",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                     active
                       ? "bg-primary/10 text-primary px-3 py-2"
                       : showLabel
