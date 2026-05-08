@@ -259,7 +259,7 @@ function EntryRow({
       style={{ contentVisibility: "auto", containIntrinsicSize: "120px" }}
       className={cn(
         "w-full text-left px-3 py-2.5 flex items-start gap-2 border-b border-border/30",
-        "hover:bg-accent transition-colors duration-150",
+        "hover:bg-accent transition-colors duration-200",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
         isSelected && "bg-primary/8 border-l-2 border-l-primary"
       )}
