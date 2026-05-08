@@ -331,8 +331,8 @@ function SendResultCard({ result }: { result: EmailSendResult | null }) {
       className={cn(
         "rounded-lg border p-3 text-sm",
         hasErrors
-          ? "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100"
-          : "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-100"
+          ? "border-[var(--status-warning-bg)] bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)]"
+          : "border-[var(--status-success-bg)] bg-[var(--status-success-bg)] text-[var(--status-success-foreground)]"
       )}
     >
       <div className="flex items-center gap-2 font-medium">

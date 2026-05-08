@@ -126,21 +126,21 @@ function StatusBadge({ status }: { status: CheckStatus }) {
   switch (status) {
     case "loading":
       return (
-        <Badge variant="outline" className="gap-1.5 text-blue-600 border-blue-200 bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:bg-blue-950">
+        <Badge variant="outline" className="gap-1.5 bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] border-[var(--status-info-bg)]">
           <Loader2Icon className="h-3 w-3 animate-spin" />
           Checking…
         </Badge>
       );
     case "success":
       return (
-        <Badge variant="outline" className="gap-1.5 text-emerald-600 border-emerald-200 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950">
+        <Badge variant="outline" className="gap-1.5 bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] border-[var(--status-success-bg)]">
           <CheckCircle2Icon className="h-3 w-3" />
           Valid
         </Badge>
       );
     case "error":
       return (
-        <Badge variant="outline" className="gap-1.5 text-red-600 border-red-200 bg-red-50 dark:text-red-400 dark:border-red-800 dark:bg-red-950">
+        <Badge variant="outline" className="gap-1.5 bg-[var(--status-error-bg)] text-[var(--status-error-foreground)] border-[var(--status-error-bg)]">
           <XCircleIcon className="h-3 w-3" />
           Error
         </Badge>
@@ -203,13 +203,13 @@ function OgImagePreview({ src, alt }: { src: string; alt: string }) {
 function LogLevelIcon({ level }: { level: LogEntry["level"] }) {
   switch (level) {
     case "success":
-      return <CheckCircle2Icon className="h-3.5 w-3.5 text-emerald-500 shrink-0" />;
+      return <CheckCircle2Icon className="h-3.5 w-3.5 text-[var(--status-success-foreground)] shrink-0" />;
     case "warn":
-      return <AlertTriangleIcon className="h-3.5 w-3.5 text-amber-500 shrink-0" />;
+      return <AlertTriangleIcon className="h-3.5 w-3.5 text-[var(--status-warning-foreground)] shrink-0" />;
     case "error":
-      return <XCircleIcon className="h-3.5 w-3.5 text-red-500 shrink-0" />;
+      return <XCircleIcon className="h-3.5 w-3.5 text-[var(--status-error-foreground)] shrink-0" />;
     default:
-      return <GlobeIcon className="h-3.5 w-3.5 text-blue-500 shrink-0" />;
+      return <GlobeIcon className="h-3.5 w-3.5 text-[var(--status-info-foreground)] shrink-0" />;
   }
 }
 
@@ -705,9 +705,9 @@ export function AdminOgPreview() {
                     <span
                       className={cn(
                         "break-all",
-                        log.level === "success" && "text-emerald-400",
-                        log.level === "warn" && "text-amber-400",
-                        log.level === "error" && "text-red-400",
+                        log.level === "success" && "text-[var(--status-success-foreground)]",
+                        log.level === "warn" && "text-[var(--status-warning-foreground)]",
+                        log.level === "error" && "text-[var(--status-error-foreground)]",
                         log.level === "info" && "text-zinc-300"
                       )}
                     >
