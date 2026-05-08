@@ -79,7 +79,7 @@ import {
   PlusIcon,
   PencilIcon,
 } from "@/components/ui/icons";
-import { AdminNotifications } from "./AdminNotifications";
+import { AdminNotifications } from "@/modules/admin/sub-pages/AdminNotifications";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
 import { getCategoryMeta } from "@/modules/expenses/lib/categories";
 import { MarkdownComment } from "@/modules/expenses/components/markdown-comment";
@@ -329,8 +329,8 @@ function ExpenseDetailDialog({
             } />
             <DetailItem label="Trạng thái" value={
               resolvedIsSettled
-                ? <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800">Đã thanh toán</Badge>
-                : <Badge className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800">Chờ xử lý</Badge>
+                ? <Badge className="bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] border-[var(--status-success-border)]">Đã thanh toán</Badge>
+                : <Badge className="bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)] border-[var(--status-warning-border)]">Chờ xử lý</Badge>
             } />
           </div>
 
@@ -464,8 +464,8 @@ function PaymentDetailDialog({
             <DetailRow label="Nhóm/Bạn bè" value={payment.group_name ?? "Bạn bè"} />
             <DetailRow label="Phương thức" value={
               <Badge className={payment.context_type === "group"
-                ? "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-400 dark:border-violet-800"
-                : "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800"
+                ? "bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] border-[var(--status-info-border)]"
+                : "bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] border-[var(--status-success-border)]"
               }>{payment.context_type === "group" ? "Nhóm" : "Bạn bè"}</Badge>
             } />
             <DetailRow label="Ngày thanh toán" value={formatDate(payment.payment_date)} />
@@ -713,8 +713,8 @@ function ExpensesTab() {
     {
       id: "status", header: "Trạng thái", accessorKey: "is_settled", size: 130, enableSorting: false,
       cell: ({ row }) => row.original.is_settled
-        ? <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800">Đã thanh toán</Badge>
-        : <Badge className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800">Chờ xử lý</Badge>,
+        ? <Badge className="bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] border-[var(--status-success-border)]">Đã thanh toán</Badge>
+        : <Badge className="bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)] border-[var(--status-warning-border)]">Chờ xử lý</Badge>,
     },
     {
       id: "actions", header: "", size: 50, enableSorting: false,
@@ -798,7 +798,7 @@ function ExpensesTab() {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <div><CardTitle>Quản lý chi phí</CardTitle><CardDescription>Xem và quản lý tất cả chi phí trong hệ thống</CardDescription></div>
           <div className="flex items-center gap-2">
             <Button size="sm" onClick={() => { tap(); setCreateDialogOpen(true); }}><PlusIcon className="mr-2 h-4 w-4" />Tạo chi phí</Button>
@@ -943,8 +943,8 @@ function PaymentsTab() {
       cell: ({ row }) => (
         <Badge className={
           row.original.context_type === "group"
-            ? "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-400 dark:border-violet-800"
-            : "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800"
+            ? "bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] border-[var(--status-info-border)]"
+            : "bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] border-[var(--status-success-border)]"
         }>{row.original.context_type === "group" ? "Nhóm" : "Bạn bè"}</Badge>
       ),
     },
@@ -1041,7 +1041,7 @@ function PaymentsTab() {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <div><CardTitle>Quản lý thanh toán</CardTitle><CardDescription>Xem và quản lý tất cả thanh toán trong hệ thống</CardDescription></div>
           <div className="flex items-center gap-2">
             <Button size="sm" onClick={() => { tap(); setCreateDialogOpen(true); }}><PlusIcon className="mr-2 h-4 w-4" />Tạo thanh toán</Button>
