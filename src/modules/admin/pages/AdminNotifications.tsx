@@ -114,7 +114,7 @@ const NOTIFICATION_TYPES = [
 
 function TypeBadge({ type }: { type: string }) {
   return (
-    <Badge className="bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-400 dark:border-violet-800">
+    <Badge className="bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] border-[var(--status-info-border)]">
       {type.replace(/_/g, " ")}
     </Badge>
   );
@@ -122,11 +122,11 @@ function TypeBadge({ type }: { type: string }) {
 
 function ReadStatusBadge({ isRead }: { isRead: boolean }) {
   return isRead ? (
-    <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800">
+    <Badge className="bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] border-[var(--status-success-border)]">
       Đã đọc
     </Badge>
   ) : (
-    <Badge className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800">
+    <Badge className="bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)] border-[var(--status-warning-border)]">
       Chưa đọc
     </Badge>
   );

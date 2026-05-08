@@ -144,27 +144,27 @@ function useAuditFilterOptions() {
 function ActionBadge({ action }: { action: string }) {
   if (action === "DELETE") {
     return (
-      <Badge className="bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800">
+      <Badge className="bg-[var(--status-error-bg)] text-[var(--status-error-foreground)] border-[var(--status-error-border)]">
         {action}
       </Badge>
     );
   }
   if (action === "INSERT") {
     return (
-      <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800">
+      <Badge className="bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] border-[var(--status-success-border)]">
         {action}
       </Badge>
     );
   }
   if (action === "UPDATE") {
     return (
-      <Badge className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800">
+      <Badge className="bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)] border-[var(--status-warning-border)]">
         {action}
       </Badge>
     );
   }
   return (
-    <Badge className="bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-400 dark:border-violet-800">
+    <Badge className="bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] border-[var(--status-info-border)]">
       {action.replace(/_/g, " ")}
     </Badge>
   );
@@ -228,30 +228,30 @@ function DiffView({ oldData, newData }: { oldData: Record<string, unknown> | nul
           key={key}
           className={`flex items-start gap-2 rounded-md px-2 py-1 text-xs font-mono ${
             type === "added"
-              ? "bg-emerald-50 dark:bg-emerald-950/30"
+              ? "bg-[var(--status-success-bg)]"
               : type === "removed"
-                ? "bg-red-50 dark:bg-red-950/30"
+                ? "bg-[var(--status-error-bg)]"
                 : type === "changed"
-                  ? "bg-amber-50 dark:bg-amber-950/30"
+                  ? "bg-[var(--status-warning-bg)]"
                   : "bg-transparent"
           }`}
         >
           <span className="w-1.5 shrink-0 mt-0.5">
-            {type === "added" && <span className="text-emerald-600">+</span>}
-            {type === "removed" && <span className="text-red-600">−</span>}
-            {type === "changed" && <span className="text-amber-600">~</span>}
+            {type === "added" && <span className="text-[var(--status-success-foreground)]">+</span>}
+            {type === "removed" && <span className="text-[var(--status-error-foreground)]">−</span>}
+            {type === "changed" && <span className="text-[var(--status-warning-foreground)]">~</span>}
           </span>
           <span className="text-muted-foreground min-w-[100px] shrink-0">{key}:</span>
           <div className="flex-1 min-w-0">
             {type === "changed" ? (
               <div className="space-y-0.5">
-                <div className="text-red-600 dark:text-red-400 line-through break-all">{formatVal(oldVal)}</div>
-                <div className="text-emerald-600 dark:text-emerald-400 break-all">{formatVal(newVal)}</div>
+                <div className="text-[var(--status-error-foreground)] line-through break-all">{formatVal(oldVal)}</div>
+                <div className="text-[var(--status-success-foreground)] break-all">{formatVal(newVal)}</div>
               </div>
             ) : type === "removed" ? (
-              <span className="text-red-600 dark:text-red-400 break-all">{formatVal(oldVal)}</span>
+              <span className="text-[var(--status-error-foreground)] break-all">{formatVal(oldVal)}</span>
             ) : type === "added" ? (
-              <span className="text-emerald-600 dark:text-emerald-400 break-all">{formatVal(newVal)}</span>
+              <span className="text-[var(--status-success-foreground)] break-all">{formatVal(newVal)}</span>
             ) : (
               <span className="text-muted-foreground break-all">{formatVal(newVal)}</span>
             )}
@@ -861,7 +861,7 @@ export function AdminAuditLogs() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <span className={`text-xs ${entry.source === "audit_logs" ? "text-blue-600 dark:text-blue-400" : "text-violet-600 dark:text-violet-400"}`}>
+                          <span className={`text-xs ${entry.source === "audit_logs" ? "text-[var(--status-info-foreground)]" : "text-muted-foreground"}`}>
                             {entry.source === "audit_logs" ? "DB" : "Trail"}
                           </span>
                         </TableCell>
@@ -873,7 +873,7 @@ export function AdminAuditLogs() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 w-7 p-0 text-muted-foreground hover:text-orange-600"
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-[var(--status-warning-foreground)]"
                               aria-label="Hoàn tác thao tác này"
                               onClick={() => {
                                 warning();
