@@ -155,12 +155,12 @@ function MetaRow({ label, value, warn }: { label: string; value: string | null; 
     <div className="flex items-start gap-3 py-2 border-b border-border/40 last:border-0">
       <span className="text-xs font-mono text-muted-foreground w-36 shrink-0 pt-0.5">{label}</span>
       {value ? (
-        <span className={cn("text-sm break-all", warn && "text-amber-600 dark:text-amber-400")}>
+        <span className={cn("text-sm break-all", warn && "text-[var(--status-warning-foreground)]")}>
           {value}
         </span>
       ) : (
         <span className="text-sm text-muted-foreground/50 italic flex items-center gap-1">
-          <AlertTriangleIcon className="h-3 w-3 text-amber-500" />
+          <AlertTriangleIcon className="h-3 w-3 text-[var(--status-warning-foreground)]" />
           Missing
         </span>
       )}
@@ -587,7 +587,7 @@ export function AdminOgPreview() {
                             className="h-7 w-7"
                             onClick={handleCopyMeta}
                           >
-                            <CopyIcon className={cn("h-3.5 w-3.5", copied && "text-emerald-500")} />
+                            <CopyIcon className={cn("h-3.5 w-3.5", copied && "text-[var(--status-success-foreground)]")} />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>{copied ? "Copied!" : "Copy meta tags"}</TooltipContent>
@@ -643,7 +643,7 @@ export function AdminOgPreview() {
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base flex items-center gap-2 font-mono">
-              <span className="text-emerald-500">❯</span>
+              <span className="text-zinc-400">❯</span>
               Console
               {logs.length > 0 && (
                 <Badge variant="secondary" className="text-xs font-mono ml-1">

@@ -544,7 +544,7 @@ function AdminEmailDevTools() {
           </CardHeader>
           {pendingQueueError && (
             <CardContent>
-              <p className="text-sm text-amber-600 dark:text-amber-400">{pendingQueueError}</p>
+              <p className="text-sm text-[var(--status-warning-foreground)]">{pendingQueueError}</p>
             </CardContent>
           )}
         </Card>
