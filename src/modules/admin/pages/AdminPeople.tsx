@@ -309,7 +309,7 @@ function UserDetailDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
           <DialogHeader>
             <div className="flex items-center gap-3">
               <UserAvatar
@@ -320,7 +320,7 @@ function UserDetailDialog({
                 size="lg"
               />
               <div className="flex-1 min-w-0">
-                <DialogTitle className="flex items-center gap-2">
+                <DialogTitle className="flex items-center gap-2 text-base font-semibold">
                   <span>{user.full_name}</span>
                   <UserGroupStack userId={user.id} size="xs" />
                 </DialogTitle>
@@ -656,7 +656,7 @@ function GroupDetailDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
           <DialogHeader>
             <div className="flex items-center gap-3">
               <Avatar className="h-12 w-12">
@@ -667,9 +667,9 @@ function GroupDetailDialog({
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <DialogTitle className="truncate">{group.name}</DialogTitle>
+                  <DialogTitle className="truncate text-base font-semibold">{group.name}</DialogTitle>
                   {group.is_archived && (
-                    <Badge className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800 text-xs shrink-0">
+                    <Badge className="bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)] text-xs shrink-0">
                       Archived
                     </Badge>
                   )}
@@ -1063,9 +1063,9 @@ function EditGroupDialog({
 // ─── Friendship Status Badge ────────────────────────────────────────
 
 const FRIENDSHIP_STATUS = {
-  accepted: { label: "Đã chấp nhận", className: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800" },
-  pending: { label: "Chờ xử lý", className: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800" },
-  rejected: { label: "Từ chối", className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800" },
+  accepted: { label: "Đã chấp nhận", className: "bg-[var(--status-success-bg)] text-[var(--status-success-foreground)]" },
+  pending: { label: "Chờ xử lý", className: "bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)]" },
+  rejected: { label: "Từ chối", className: "bg-[var(--status-error-bg)] text-[var(--status-error-foreground)]" },
 } as const;
 
 function FriendshipStatusBadge({ status }: { status: keyof typeof FRIENDSHIP_STATUS }) {
@@ -1108,9 +1108,9 @@ function NewRegistrationCard({
           variant="secondary"
           className={
             daysSinceRegistration <= 1
-              ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800 text-xs mt-1"
+              ? "bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] text-xs mt-1"
               : daysSinceRegistration <= 7
-                ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800 text-xs mt-1"
+                ? "bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] text-xs mt-1"
                 : "text-xs mt-1"
           }
         >
@@ -1220,7 +1220,7 @@ function InviteUsersCard({
           </div>
 
           {invalidEmailCount > 0 && (
-            <p className="text-xs text-amber-600 dark:text-amber-400">
+            <p className="text-xs text-[var(--status-warning-foreground)]">
               Bỏ qua {invalidEmailCount} email chưa đúng định dạng.
             </p>
           )}
@@ -1417,8 +1417,8 @@ function UsersTab() {
                 variant="secondary"
                 className={
                   daysSince <= 1
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800 text-[10px] leading-none px-1.5 py-0.5"
-                    : "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800 text-[10px] leading-none px-1.5 py-0.5"
+                    ? "bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] text-[10px] leading-none px-1.5 py-0.5"
+                    : "bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] text-[10px] leading-none px-1.5 py-0.5"
                 }
               >
                 {daysSince === 0 ? "Hôm nay" : daysSince === 1 ? "Hôm qua" : "Mới"}
@@ -1554,9 +1554,9 @@ function UsersTab() {
               <CardHeader className="pb-3">
                 <CollapsibleTrigger className="flex w-full items-center justify-between [&[data-state=open]>svg]:rotate-180">
                   <div className="flex items-center gap-2">
-                    <UserPlusIcon className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    <UserPlusIcon className="h-4 w-4 text-[var(--status-success-foreground)]" />
                     <CardTitle className="text-base">Đăng ký mới</CardTitle>
-                    <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800 text-xs">
+                    <Badge variant="secondary" className="bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] text-xs">
                       {newRegistrations.length}
                     </Badge>
                   </div>
@@ -1762,7 +1762,7 @@ function GroupsTab() {
             <div className="flex items-center gap-1.5">
               <span className="text-sm font-medium truncate">{row.original.name}</span>
               {row.original.is_archived && (
-                <Badge className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800 text-[10px] px-1.5 py-0">
+                <Badge className="bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)] text-[10px] px-1.5 py-0">
                   Archived
                 </Badge>
               )}
