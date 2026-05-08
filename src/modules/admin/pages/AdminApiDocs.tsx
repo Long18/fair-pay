@@ -124,9 +124,9 @@ function generateRpcSnippet(entry: ApiCatalogEntry): string {
 
 function riskColor(risk: ApiRiskLevel) {
   const map: Record<ApiRiskLevel, string> = {
-    low: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
-    medium: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
-    high: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20",
+    low: "bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] border-[var(--status-success-bg)]",
+    medium: "bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)] border-[var(--status-warning-bg)]",
+    high: "bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)] border-[var(--status-warning-bg)]",
     critical: "bg-destructive/10 text-destructive border-destructive/20",
   };
   return map[risk];
@@ -134,9 +134,9 @@ function riskColor(risk: ApiRiskLevel) {
 
 function authColor(auth: ApiAuthLevel) {
   const map: Record<ApiAuthLevel, string> = {
-    public: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
-    authenticated: "bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/20",
-    admin: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20",
+    public: "bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] border-[var(--status-info-bg)]",
+    authenticated: "bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] border-[var(--status-info-bg)]",
+    admin: "bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)] border-[var(--status-warning-bg)]",
     service_role: "bg-destructive/10 text-destructive border-destructive/20",
   };
   return map[auth];
@@ -144,8 +144,8 @@ function authColor(auth: ApiAuthLevel) {
 
 function statusColor(status: ApiEntryStatus) {
   const map: Record<ApiEntryStatus, string> = {
-    active: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-    legacy: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+    active: "bg-[var(--status-success-bg)] text-[var(--status-success-foreground)]",
+    legacy: "bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)]",
     unverified: "bg-muted text-muted-foreground",
   };
   return map[status];
@@ -153,10 +153,10 @@ function statusColor(status: ApiEntryStatus) {
 
 function methodColor(method: string) {
   const map: Record<string, string> = {
-    GET: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
-    POST: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-    PUT: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
-    PATCH: "bg-violet-500/10 text-violet-700 dark:text-violet-400",
+    GET: "bg-[var(--status-info-bg)] text-[var(--status-info-foreground)]",
+    POST: "bg-[var(--status-success-bg)] text-[var(--status-success-foreground)]",
+    PUT: "bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)]",
+    PATCH: "bg-[var(--status-info-bg)] text-[var(--status-info-foreground)]",
     DELETE: "bg-destructive/10 text-destructive",
   };
   return map[method] ?? "bg-muted text-muted-foreground";
@@ -170,8 +170,8 @@ function callabilityIcon(callability: ApiCallability) {
 }
 
 function httpStatusColor(status: number) {
-  if (status >= 200 && status < 300) return "text-emerald-600 dark:text-emerald-400";
-  if (status >= 400 && status < 500) return "text-amber-600 dark:text-amber-400";
+  if (status >= 200 && status < 300) return "text-[var(--status-success-foreground)]";
+  if (status >= 400 && status < 500) return "text-[var(--status-warning-foreground)]";
   if (status >= 500) return "text-destructive";
   return "text-muted-foreground";
 }
@@ -195,7 +195,7 @@ function CopyButton({ text, className }: { text: string; className?: string }) {
       onClick={handleCopy}
       aria-label="Copy to clipboard"
     >
-      {copied ? <CheckIcon className="w-3.5 h-3.5 text-emerald-500" /> : <CopyIcon className="w-3.5 h-3.5" />}
+      {copied ? <CheckIcon className="w-3.5 h-3.5 text-[var(--status-success-foreground)]" /> : <CopyIcon className="w-3.5 h-3.5" />}
     </Button>
   );
 }
@@ -206,7 +206,7 @@ function MethodBadge({ entry, large }: { entry: ApiCatalogEntry; large?: boolean
   const sz = large ? "text-xs px-2 py-1" : "text-[10px] px-1.5 py-0.5";
   if (entry.kind === "rpc") {
     return (
-      <span className={cn("rounded font-mono font-bold uppercase bg-violet-500/10 text-violet-700 dark:text-violet-400", sz)}>
+      <span className={cn("rounded font-mono font-bold uppercase bg-[var(--status-info-bg)] text-[var(--status-info-foreground)]", sz)}>
         RPC
       </span>
     );
@@ -828,7 +828,7 @@ function ResponseViewer({ result }: { result: ApiExecutionResult }) {
             {result.duration_ms}ms
           </span>
           {result.success ? (
-            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">OK</span>
+            <span className="text-xs text-[var(--status-success-foreground)] font-medium">OK</span>
           ) : (
             <span className="text-xs text-destructive font-medium">Error</span>
           )}
@@ -840,7 +840,7 @@ function ResponseViewer({ result }: { result: ApiExecutionResult }) {
           onClick={handleCopy}
           aria-label="Copy response JSON"
         >
-          {copied ? <CheckIcon className="w-3 h-3 text-emerald-500" /> : <CopyIcon className="w-3 h-3" />}
+          {copied ? <CheckIcon className="w-3 h-3 text-[var(--status-success-foreground)]" /> : <CopyIcon className="w-3 h-3" />}
         </Button>
       </div>
       {result.error && (
@@ -1011,7 +1011,7 @@ function ExecutionTab({ entry }: { entry: ApiCatalogEntry }) {
             "rounded-lg border px-3 py-2.5 flex items-center gap-2 text-xs",
             mutationModeEnabled
               ? "border-destructive/30 bg-destructive/5"
-              : "border-amber-500/30 bg-amber-500/5"
+              : "border-[var(--status-warning-bg)] bg-[var(--status-warning-bg)]"
           )}
         >
           <LockIcon className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
