@@ -141,6 +141,13 @@ interface InviteEmailResponse {
   error?: string;
 }
 
+interface CreateUserFormValues {
+  full_name: string;
+  email: string;
+  role: string;
+  avatar_url?: string;
+}
+
 async function sendInviteEmails(emails: string[], inviterName?: string): Promise<InviteEmailResponse> {
   const { data, error } = await supabaseClient.auth.getSession();
   if (error || !data.session?.access_token) {
@@ -889,15 +896,16 @@ function CreateUserDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: { full_name: string; email: string; role: string }) => void;
+  onSubmit: (data: CreateUserFormValues) => void;
   isCreating: boolean;
 }) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [role, setRole] = useState("user");
 
   useEffect(() => {
-    if (!open) { setFullName(""); setEmail(""); setRole("user"); }
+    if (!open) { setFullName(""); setEmail(""); setAvatarUrl(""); setRole("user"); }
   }, [open]);
 
   return (
@@ -917,6 +925,10 @@ function CreateUserDialog({
             <Input id="user-email" type="email" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div className="space-y-2">
+            <Label htmlFor="user-avatar">Avatar URL</Label>
+            <Input id="user-avatar" type="url" placeholder="https://..." value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="user-role">Vai trò</Label>
             <Select value={role} onValueChange={setRole}>
               <SelectTrigger id="user-role"><SelectValue /></SelectTrigger>
@@ -929,7 +941,7 @@ function CreateUserDialog({
         </div>
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isCreating}>Hủy</Button>
-          <Button onClick={() => { if (!fullName || !email) { toast.error("Vui lòng điền đầy đủ thông tin"); return; } onSubmit({ full_name: fullName, email, role }); }} disabled={isCreating || !fullName || !email}>
+          <Button onClick={() => { if (!fullName.trim() || !email.trim()) { toast.error("Vui lòng điền đầy đủ thông tin"); return; } onSubmit({ full_name: fullName.trim(), email: email.trim(), role, avatar_url: avatarUrl.trim() || undefined }); }} disabled={isCreating || !fullName.trim() || !email.trim()}>
             {isCreating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
             Tạo người dùng
           </Button>
@@ -1509,15 +1521,16 @@ function UsersTab() {
     } finally { setIsDeleting(false); }
   }, [deleteUser, queryClient]);
 
-  const handleCreateUser = useCallback(async (data: { full_name: string; email: string; role: string }) => {
+  const handleCreateUser = useCallback(async (data: CreateUserFormValues) => {
     setIsCreating(true);
     try {
-      const { error } = await supabaseClient.from("profiles").insert({ full_name: data.full_name, email: data.email });
+      const { error } = await supabaseClient.rpc("admin_create_profile", {
+        p_full_name: data.full_name,
+        p_email: data.email,
+        p_role: data.role,
+        p_avatar_url: data.avatar_url ?? null,
+      });
       if (error) throw error;
-      if (data.role === "admin") {
-        const { data: newProfile } = await supabaseClient.from("profiles").select("id").eq("email", data.email).single();
-        if (newProfile) await supabaseClient.from("user_roles").upsert({ user_id: newProfile.id, role: "admin" });
-      }
       toast.success(`Đã tạo người dùng "${data.full_name}"`);
       setCreateDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });

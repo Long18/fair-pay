@@ -38,6 +38,7 @@ const ADMIN_READABLE_TABLES = [
 ] as const;
 
 type AdminTable = (typeof ADMIN_READABLE_TABLES)[number];
+type ProfileWriteAction = 'insert' | 'update' | 'delete';
 
 /**
  * Simulates the is_admin() PostgreSQL function.
@@ -57,6 +58,10 @@ function adminRlsSelectPolicy(user: User, _table: AdminTable): 'all_records' | '
     return 'all_records';
   }
   return 'filtered';
+}
+
+function adminProfileWritePolicy(user: User, _action: ProfileWriteAction): 'allowed' | 'denied' {
+  return isAdmin(user) ? 'allowed' : 'denied';
 }
 
 /**
@@ -110,6 +115,7 @@ const arbNonAdminUser: fc.Arbitrary<User> = arbUserId.map((id) => ({
 
 /** Generate a random admin-readable table name */
 const arbAdminTable: fc.Arbitrary<AdminTable> = fc.constantFrom(...ADMIN_READABLE_TABLES);
+const arbProfileWriteAction: fc.Arbitrary<ProfileWriteAction> = fc.constantFrom('insert', 'update', 'delete');
 
 // ============================================================
 // Property Tests
@@ -153,6 +159,26 @@ describe('Feature: admin-dashboard - Admin RLS Policies', () => {
         fc.property(arbNonAdminUser, arbAdminTable, (user, table) => {
           const result = adminRlsSelectPolicy(user, table);
           expect(result).toBe('filtered');
+        }),
+        { numRuns: 100 },
+      );
+    });
+  });
+
+  describe('Admin profile write policies', () => {
+    it('admin users can create, update, and delete profiles', () => {
+      fc.assert(
+        fc.property(arbAdminUser, arbProfileWriteAction, (admin, action) => {
+          expect(adminProfileWritePolicy(admin, action)).toBe('allowed');
+        }),
+        { numRuns: 100 },
+      );
+    });
+
+    it('non-admin users cannot use admin profile write policies', () => {
+      fc.assert(
+        fc.property(arbNonAdminUser, arbProfileWriteAction, (user, action) => {
+          expect(adminProfileWritePolicy(user, action)).toBe('denied');
         }),
         { numRuns: 100 },
       );
