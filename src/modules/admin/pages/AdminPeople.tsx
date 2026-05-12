@@ -50,6 +50,13 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -316,9 +323,9 @@ function UserDetailDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
-          <DialogHeader>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="right" className="w-full sm:max-w-[540px] flex flex-col p-0 gap-0">
+          <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
             <div className="flex items-center gap-3">
               <UserAvatar
                 user={{
@@ -328,123 +335,125 @@ function UserDetailDialog({
                 size="lg"
               />
               <div className="flex-1 min-w-0">
-                <DialogTitle className="flex items-center gap-2 text-base font-semibold">
+                <SheetTitle className="flex items-center gap-2 text-base font-semibold">
                   <span>{user.full_name}</span>
                   <UserGroupStack userId={user.id} size="xs" />
-                </DialogTitle>
-                <DialogDescription>{user.email}</DialogDescription>
+                </SheetTitle>
+                <SheetDescription>{user.email}</SheetDescription>
               </div>
             </div>
-          </DialogHeader>
+          </SheetHeader>
 
-          <Tabs defaultValue="profile" className="flex-1 overflow-hidden flex flex-col">
-            <TabsList className="w-full">
-              <TabsTrigger value="profile" className="flex-1">Hồ sơ</TabsTrigger>
-              <TabsTrigger value="groups" className="flex-1">Nhóm ({groups.length})</TabsTrigger>
-            </TabsList>
+          <div className="flex-1 overflow-hidden flex flex-col">
+            <Tabs defaultValue="profile" className="flex-1 overflow-hidden flex flex-col">
+              <TabsList className="w-full mx-0 rounded-none border-b">
+                <TabsTrigger value="profile" className="flex-1">Hồ sơ</TabsTrigger>
+                <TabsTrigger value="groups" className="flex-1">Nhóm ({groups.length})</TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="profile" className="mt-4 space-y-4 overflow-y-auto flex-1">
-              <div className="space-y-3">
-                <DetailRow label="Email" value={user.email} />
-                <DetailRow
-                  label="Vai trò"
-                  value={
-                    <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                      {user.role === "admin" ? "Admin" : "User"}
-                    </Badge>
-                  }
-                />
-                <DetailRow
-                  label="Journey tracking"
-                  value={
-                    <Badge variant={user.journey_tracking_ignored ? "outline" : "secondary"}>
-                      {user.journey_tracking_ignored ? "Ignored" : "Tracked"}
-                    </Badge>
-                  }
-                />
-                <DetailRow label="Ngày tạo" value={formatDate(user.created_at)} />
-                <DetailRow label="ID" value={<span className="text-xs font-mono">{user.id}</span>} />
-              </div>
-
-              {/* Actions inside modal */}
-              <div className="flex flex-wrap gap-2 pt-2 border-t">
-                <Button size="sm" variant="outline" onClick={onViewJourney}>
-                  <ActivityIcon className="mr-2 h-4 w-4" />
-                  View journey
-                </Button>
-                <Button size="sm" variant="outline" onClick={onToggleJourneyTracking}>
-                  {user.journey_tracking_ignored ? "Resume tracking" : "Ignore tracking"}
-                </Button>
-                <Button size="sm" variant="outline" onClick={onEdit}>
-                  <PencilIcon className="mr-2 h-4 w-4" />
-                  Chỉnh sửa
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onToggleRole}
-                  disabled={isSelf}
-                >
-                  {user.role === "admin" ? "Hạ cấp thành User" : "Nâng cấp thành Admin"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={onDelete}
-                  disabled={isSelf}
-                >
-                  Xóa người dùng
-                </Button>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="groups" className="mt-4 overflow-y-auto flex-1">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-muted-foreground">{groups.length} nhóm</span>
-                <Button size="sm" variant="outline" onClick={() => setAddGroupOpen(true)}>
-                  <PlusIcon className="mr-2 h-4 w-4" />
-                  Thêm vào nhóm
-                </Button>
-              </div>
-              {loadingGroups ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
+              <TabsContent value="profile" className="mt-4 space-y-4 overflow-y-auto flex-1 px-6 pb-6">
+                <div className="space-y-3">
+                  <DetailRow label="Email" value={user.email} />
+                  <DetailRow
+                    label="Vai trò"
+                    value={
+                      <Badge variant={user.role === "admin" ? "default" : "secondary"}>
+                        {user.role === "admin" ? "Admin" : "User"}
+                      </Badge>
+                    }
+                  />
+                  <DetailRow
+                    label="Journey tracking"
+                    value={
+                      <Badge variant={user.journey_tracking_ignored ? "outline" : "secondary"}>
+                        {user.journey_tracking_ignored ? "Ignored" : "Tracked"}
+                      </Badge>
+                    }
+                  />
+                  <DetailRow label="Ngày tạo" value={formatDate(user.created_at)} />
+                  <DetailRow label="ID" value={<span className="text-xs font-mono">{user.id}</span>} />
                 </div>
-              ) : groups.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  Chưa tham gia nhóm nào
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {groups.map((g) => (
-                    <div key={g.id} className="flex items-center justify-between rounded-lg border p-3">
-                      <span className="text-sm font-medium">{g.name}</span>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={g.role === "admin" ? "default" : "secondary"} className="text-xs">
-                          {g.role === "admin" ? "Admin" : "Member"}
-                        </Badge>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                          onClick={() => handleRemoveFromGroup(g.id)}
-                          disabled={removingGroupId === g.id}
-                        >
-                          {removingGroupId === g.id ? (
-                            <Loader2Icon className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <UserMinusIcon className="h-3.5 w-3.5" />
-                          )}
-                        </Button>
+
+                {/* Actions inside sheet */}
+                <div className="flex flex-wrap gap-2 pt-2 border-t">
+                  <Button size="sm" variant="outline" onClick={onViewJourney}>
+                    <ActivityIcon className="mr-2 h-4 w-4" />
+                    View journey
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={onToggleJourneyTracking}>
+                    {user.journey_tracking_ignored ? "Resume tracking" : "Ignore tracking"}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={onEdit}>
+                    <PencilIcon className="mr-2 h-4 w-4" />
+                    Chỉnh sửa
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onToggleRole}
+                    disabled={isSelf}
+                  >
+                    {user.role === "admin" ? "Hạ cấp thành User" : "Nâng cấp thành Admin"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={onDelete}
+                    disabled={isSelf}
+                  >
+                    Xóa người dùng
+                  </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="groups" className="mt-4 overflow-y-auto flex-1 px-6 pb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm text-muted-foreground">{groups.length} nhóm</span>
+                  <Button size="sm" variant="outline" onClick={() => setAddGroupOpen(true)}>
+                    <PlusIcon className="mr-2 h-4 w-4" />
+                    Thêm vào nhóm
+                  </Button>
+                </div>
+                {loadingGroups ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : groups.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Chưa tham gia nhóm nào
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {groups.map((g) => (
+                      <div key={g.id} className="flex items-center justify-between rounded-lg border p-3">
+                        <span className="text-sm font-medium">{g.name}</span>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={g.role === "admin" ? "default" : "secondary"} className="text-xs">
+                            {g.role === "admin" ? "Admin" : "Member"}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                            onClick={() => handleRemoveFromGroup(g.id)}
+                            disabled={removingGroupId === g.id}
+                          >
+                            {removingGroupId === g.id ? (
+                              <Loader2Icon className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <UserMinusIcon className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </DialogContent>
-      </Dialog>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Add to Group Dialog */}
       <Dialog open={addGroupOpen} onOpenChange={setAddGroupOpen}>
