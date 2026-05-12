@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart as RechartsBarChart,
@@ -32,7 +33,10 @@ import {
   ActivityIcon,
   ArrowUpIcon,
   ArrowDownIcon,
+  ArrowRightIcon,
 } from "@/components/ui/icons";
+import { AdminPageHeader } from "../components/AdminPageHeader";
+import { AdminSectionLabel } from "../components/AdminSectionLabel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import type { AdminStats } from "../types";
@@ -108,6 +112,41 @@ function calcTrendPercent(current: number, previous: number): number {
   if (previous === 0) return current > 0 ? 100 : 0;
   return Math.round(((current - previous) / previous) * 100);
 }
+
+// ─── Mini Sparkline ─────────────────────────────────────────────────
+
+function MiniSparkline({ data, dataKey, color }: { data: Record<string, unknown>[]; dataKey: string; color: string }) {
+  if (!data.length) return null;
+  return (
+    <AreaChart width={80} height={36} data={data} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
+      <defs>
+        <linearGradient id={`spark-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity={0.3} />
+          <stop offset="100%" stopColor={color} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <Area
+        type="monotone"
+        dataKey={dataKey}
+        stroke={color}
+        strokeWidth={1.5}
+        fill={`url(#spark-${dataKey})`}
+        dot={false}
+        isAnimationActive={false}
+      />
+    </AreaChart>
+  );
+}
+
+// ─── Stat Accent Vars ────────────────────────────────────────────────
+
+const STAT_ACCENT_VARS: Record<string, string> = {
+  brand: "var(--primary)",
+  chart2: "var(--chart-2)",
+  accent: "var(--accent)",
+  success: "var(--status-success-foreground)",
+  chart5: "var(--chart-5)",
+};
 
 // ─── Stat Card Skeleton ─────────────────────────────────────────────
 
@@ -289,6 +328,13 @@ export function AdminOverview() {
 
   const { containerVariants: statVariants, rowVariants: statRowVariants, animationKey: statKey } = useStaggerAnimation([...STAT_CARDS]);
 
+  // Sparkline data — only for keys with semantically meaningful time-series
+  const sparkDataMap = useMemo<Record<string, { data: Record<string, unknown>[]; dataKey: string }>>(() => ({
+    totalExpenses: { data: (expenseTrend ?? []) as Record<string, unknown>[], dataKey: "total" },
+    totalUsers: { data: (registrations ?? []) as Record<string, unknown>[], dataKey: "count" },
+    // activeUsersLast7Days excluded: a single scalar, not a trend series
+  }), [expenseTrend, registrations]);
+
   // Build pie chart config dynamically
   const categoryChartConfig: ChartConfig = (categories ?? []).reduce(
     (cfg, item) => {
@@ -310,123 +356,143 @@ export function AdminOverview() {
 
   return (
     <div className="space-y-6">
+      <AdminPageHeader title="Tổng quan" description="Thống kê và hoạt động hệ thống" />
+
       {/* ── Stat Cards ─────────────────────────────────────────── */}
-      <motion.div
-        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 viewport-transition-grid"
-        variants={statVariants}
-        initial="hidden"
-        animate="visible"
-        key={statKey}
-      >
-        {statsLoading
-          ? Array.from({ length: 5 }).map((_, i) => <StatCardSkeleton key={i} />)
-          : STAT_CARDS.map((card, index) => {
-              const Icon = card.icon;
-              const value = stats?.[card.key] ?? 0;
+      <div className="space-y-3">
+        <AdminSectionLabel>Key Metrics</AdminSectionLabel>
+        <motion.div
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 viewport-transition-grid"
+          variants={statVariants}
+          initial="hidden"
+          animate="visible"
+          key={statKey}
+        >
+          {statsLoading
+            ? Array.from({ length: 5 }).map((_, i) => <StatCardSkeleton key={i} />)
+            : STAT_CARDS.map((card, index) => {
+                const Icon = card.icon;
+                const value = stats?.[card.key] ?? 0;
+                const accentColor = STAT_ACCENT_VARS[card.tone] ?? "var(--primary)";
+                const sparkEntry = sparkDataMap[card.key];
 
-              // Compute trend % based on comparison period
-              let trendPercent = 0;
-              if (stats) {
-                switch (card.key) {
-                  case "totalUsers":
-                    trendPercent = calcTrendPercent(stats.totalUsers, stats.prevTotalUsers);
-                    break;
-                  case "totalGroups":
-                    trendPercent = calcTrendPercent(stats.totalGroups, stats.prevTotalGroups);
-                    break;
-                  case "totalExpenses":
-                    trendPercent = calcTrendPercent(stats.currExpenses30d, stats.prevExpenses30d);
-                    break;
-                  case "totalPayments":
-                    trendPercent = calcTrendPercent(stats.currPayments30d, stats.prevPayments30d);
-                    break;
-                  case "activeUsersLast7Days":
-                    trendPercent = calcTrendPercent(stats.activeUsersLast7Days, stats.prevActiveUsers7d);
-                    break;
-                }
-              }
-
-              return (
-                <motion.div key={card.key} variants={statRowVariants} custom={index}>
-                  <Card className="p-5">
-                    <div className="flex items-start gap-4">
-                      <div
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${themeIntentTones[card.tone as ThemeIntent].surface} ${themeIntentTones[card.tone as ThemeIntent].icon}`}
-                      >
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <div className="flex flex-col gap-1 min-w-0">
-                        <span className="text-xs text-muted-foreground truncate">{card.label}</span>
-                        <span className="text-2xl font-semibold tabular-nums">{formatNumber(value)}</span>
-                        <TrendIndicator value={Math.abs(trendPercent)} isPositive={trendPercent >= 0} />
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              );
-            })}
-      </motion.div>
-
-      {/* ── Line Chart: Expense Trend 30 days ──────────────────── */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Xu hướng chi phí</CardTitle>
-          <CardDescription>30 ngày gần nhất</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {trendLoading ? (
-            <LoadingBeam text="Đang tải biểu đồ..." className="py-8" />
-          ) : (
-            <ChartContainer config={expenseChartConfig} className="h-[300px] w-full">
-              <AreaChart
-                data={expenseTrend ?? []}
-                margin={{ top: 5, right: 10, left: -10, bottom: 5 }}
-              >
-                <defs>
-                  <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--color-total)" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="var(--color-total)" stopOpacity={0.05} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={6}
-                  interval="preserveStartEnd"
-                />
-                <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={4}
-                  tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-                  width={34}
-                />
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      formatter={(value) => (
-                        <span className="font-medium">{formatNumber(Number(value))} ₫</span>
-                      )}
-                    />
+                // Compute trend % based on comparison period
+                let trendPercent = 0;
+                if (stats) {
+                  switch (card.key) {
+                    case "totalUsers":
+                      trendPercent = calcTrendPercent(stats.totalUsers, stats.prevTotalUsers);
+                      break;
+                    case "totalGroups":
+                      trendPercent = calcTrendPercent(stats.totalGroups, stats.prevTotalGroups);
+                      break;
+                    case "totalExpenses":
+                      trendPercent = calcTrendPercent(stats.currExpenses30d, stats.prevExpenses30d);
+                      break;
+                    case "totalPayments":
+                      trendPercent = calcTrendPercent(stats.currPayments30d, stats.prevPayments30d);
+                      break;
+                    case "activeUsersLast7Days":
+                      trendPercent = calcTrendPercent(stats.activeUsersLast7Days, stats.prevActiveUsers7d);
+                      break;
                   }
-                />
-                <Area
-                  type="monotone"
-                  dataKey="total"
-                  stroke="var(--color-total)"
-                  strokeWidth={2}
-                  fill="url(#expenseGradient)"
-                />
-              </AreaChart>
-            </ChartContainer>
-          )}
-        </CardContent>
-      </Card>
+                }
 
-      {/* ── Bar + Pie Charts ───────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                return (
+                  <motion.div key={card.key} variants={statRowVariants} custom={index}>
+                    <Card className="p-5 border-l-4" style={{ borderLeftColor: accentColor }}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-4 min-w-0">
+                          <div
+                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${themeIntentTones[card.tone as ThemeIntent].surface} ${themeIntentTones[card.tone as ThemeIntent].icon}`}
+                          >
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div className="flex flex-col gap-1 min-w-0">
+                            <span className="text-xs text-muted-foreground truncate">{card.label}</span>
+                            <span className="text-2xl font-semibold tabular-nums">{formatNumber(value)}</span>
+                            <TrendIndicator value={Math.abs(trendPercent)} isPositive={trendPercent >= 0} />
+                          </div>
+                        </div>
+                        {sparkEntry && (
+                          <div className="shrink-0 opacity-70">
+                            <MiniSparkline data={sparkEntry.data} dataKey={sparkEntry.dataKey} color={accentColor} />
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+        </motion.div>
+      </div>
+
+      {/* ── Trends ──────────────────────────────────────────────── */}
+      <div className="space-y-4">
+        <AdminSectionLabel>Trends</AdminSectionLabel>
+        <Card>
+          <CardHeader>
+            <CardTitle>Xu hướng chi phí</CardTitle>
+            <CardDescription>30 ngày gần nhất</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {trendLoading ? (
+              <LoadingBeam text="Đang tải biểu đồ..." className="py-8" />
+            ) : (
+              <ChartContainer config={expenseChartConfig} className="h-[300px] w-full">
+                <AreaChart
+                  data={expenseTrend ?? []}
+                  margin={{ top: 5, right: 10, left: -10, bottom: 5 }}
+                >
+                  <defs>
+                    <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--color-total)" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="var(--color-total)" stopOpacity={0.05} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={6}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={4}
+                    tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                    width={34}
+                  />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        formatter={(value) => (
+                          <span className="font-medium">{formatNumber(Number(value))} ₫</span>
+                        )}
+                      />
+                    }
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="total"
+                    stroke="var(--color-total)"
+                    strokeWidth={2}
+                    fill="url(#expenseGradient)"
+                  />
+                </AreaChart>
+              </ChartContainer>
+            )}
+          </CardContent>
+          <CardFooter className="border-t pt-3 pb-3">
+            <Link to="/admin/transactions" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Xem chi tiết giao dịch <ArrowRightIcon className="h-3 w-3" />
+            </Link>
+          </CardFooter>
+        </Card>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Bar Chart: New Registrations 12 weeks */}
         <Card>
           <CardHeader>
@@ -517,10 +583,13 @@ export function AdminOverview() {
             )}
           </CardContent>
         </Card>
+        </div>
       </div>
 
-      {/* ── Latest Tracked Users ───────────────────────────────── */}
-      <Card>
+      {/* ── Recent Activity ──────────────────────────────────────── */}
+      <div className="space-y-4">
+        <AdminSectionLabel>Recent Activity</AdminSectionLabel>
+        <Card>
         <CardHeader>
           <CardTitle>Người dùng truy cập gần đây</CardTitle>
           <CardDescription>Người dùng được theo dõi gần nhất</CardDescription>
@@ -589,11 +658,12 @@ export function AdminOverview() {
           )}
         </CardContent>
         <CardFooter className="border-t pt-3 pb-3">
-          <Link to="/admin/people" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            Xem tất cả →
+          <Link to="/admin/people" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            Xem tất cả người dùng <ArrowRightIcon className="h-3 w-3" />
           </Link>
         </CardFooter>
       </Card>
+      </div>
 
     </div>
   );
