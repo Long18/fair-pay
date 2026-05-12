@@ -35,8 +35,6 @@ import {
   ArrowDownIcon,
   ArrowRightIcon,
 } from "@/components/ui/icons";
-import { AdminPageHeader } from "../components/AdminPageHeader";
-import { AdminSectionLabel } from "../components/AdminSectionLabel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import type { AdminStats } from "../types";
@@ -356,11 +354,14 @@ export function AdminOverview() {
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader title="Tổng quan" description="Thống kê và hoạt động hệ thống" />
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Tổng quan</h1>
+        <p className="text-sm text-muted-foreground mt-1">Thống kê và hoạt động hệ thống</p>
+      </div>
 
       {/* ── Stat Cards ─────────────────────────────────────────── */}
       <div className="space-y-3">
-        <AdminSectionLabel>Key Metrics</AdminSectionLabel>
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Key Metrics</p>
         <motion.div
           className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 viewport-transition-grid"
           variants={statVariants}
@@ -429,7 +430,7 @@ export function AdminOverview() {
 
       {/* ── Trends ──────────────────────────────────────────────── */}
       <div className="space-y-4">
-        <AdminSectionLabel>Trends</AdminSectionLabel>
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Trends</p>
         <Card>
           <CardHeader>
             <CardTitle>Xu hướng chi phí</CardTitle>
@@ -588,7 +589,7 @@ export function AdminOverview() {
 
       {/* ── Recent Activity ──────────────────────────────────────── */}
       <div className="space-y-4">
-        <AdminSectionLabel>Recent Activity</AdminSectionLabel>
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Recent Activity</p>
         <Card>
         <CardHeader>
           <CardTitle>Người dùng truy cập gần đây</CardTitle>
