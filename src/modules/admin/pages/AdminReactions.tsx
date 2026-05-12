@@ -57,6 +57,7 @@ import {
   Loader2Icon,
   RefreshCwIcon,
 } from "@/components/ui/icons";
+import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { toast } from "sonner";
 import { useHaptics } from "@/hooks/use-haptics";
 import type { ReactionType } from "@/modules/expenses/types/comments";
@@ -399,6 +400,7 @@ export function AdminReactions() {
 
   return (
     <div className="space-y-6">
+      <AdminPageHeader title="Reactions" description="Quản lý các loại reaction trong hệ thống" />
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <Card className="p-3">
