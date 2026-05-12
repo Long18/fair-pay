@@ -61,7 +61,11 @@ import {
   DownloadIcon,
   RefreshCwIcon,
   Undo2Icon,
+  XIcon,
 } from "@/components/ui/icons";
+import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
+import { AdminTableToolbar } from "@/modules/admin/components/AdminTableToolbar";
+import { AdminStatusBadge } from "@/modules/admin/components/AdminStatusBadge";
 import { formatDate } from "@/lib/locale-utils";
 import type { AuditLogEntry, AuditLogsResponse, AuditStats, AuditFilterOptions } from "../types";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -138,37 +142,6 @@ function useAuditFilterOptions() {
   });
 }
 
-
-// ─── Action Badge ───────────────────────────────────────────────────
-
-function ActionBadge({ action }: { action: string }) {
-  if (action === "DELETE") {
-    return (
-      <Badge className="bg-[var(--status-error-bg)] text-[var(--status-error-foreground)] border-[var(--status-error-border)]">
-        {action}
-      </Badge>
-    );
-  }
-  if (action === "INSERT") {
-    return (
-      <Badge className="bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] border-[var(--status-success-border)]">
-        {action}
-      </Badge>
-    );
-  }
-  if (action === "UPDATE") {
-    return (
-      <Badge className="bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)] border-[var(--status-warning-border)]">
-        {action}
-      </Badge>
-    );
-  }
-  return (
-    <Badge className="bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] border-[var(--status-info-border)]">
-      {action.replace(/_/g, " ")}
-    </Badge>
-  );
-}
 
 // ─── Diff View ──────────────────────────────────────────────────────
 
@@ -293,7 +266,7 @@ function AuditDetailDialog({
       <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ActionBadge action={entry.action_type} />
+            <AdminStatusBadge type="audit-action" action={entry.action_type} />
             <span>{entry.table_name ?? entry.entity_type ?? "—"}</span>
           </DialogTitle>
           <DialogDescription>
@@ -542,6 +515,7 @@ export function AdminAuditLogs() {
 
   return (
     <div className="space-y-6">
+      <AdminPageHeader title="Nhật ký" description="Theo dõi toàn bộ thay đổi dữ liệu trong hệ thống" />
       {/* Stats Cards */}
       {!statsLoading && stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
@@ -691,19 +665,24 @@ export function AdminAuditLogs() {
             </Button>
           </div>
         </CardHeader>
-
-        <CardContent className="space-y-4">
-          {/* Search */}
-          <div className="relative max-w-sm">
+        <AdminTableToolbar>
+          <div className="relative flex-1 max-w-xs">
             <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Tìm kiếm theo tên, email, thao tác..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
+              className="pl-9 h-8"
             />
           </div>
+          {search && (
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => { tap(); setSearch(""); }}>
+              <XIcon className="h-4 w-4" />
+            </Button>
+          )}
+        </AdminTableToolbar>
 
+        <CardContent className="space-y-4">
           {/* Collapsible Filters */}
           <Collapsible open={showFilters} onOpenChange={setShowFilters}>
             <CollapsibleContent>
@@ -761,12 +740,6 @@ export function AdminAuditLogs() {
                     </SelectContent>
                   </Select>
                 </div>
-
-                {hasActiveFilters && (
-                  <Button variant="ghost" size="sm" onClick={clearFilters}>
-                    Xóa bộ lọc
-                  </Button>
-                )}
               </div>
             </CollapsibleContent>
           </Collapsible>
@@ -853,7 +826,7 @@ export function AdminAuditLogs() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <ActionBadge action={entry.action_type} />
+                          <AdminStatusBadge type="audit-action" action={entry.action_type} />
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="font-mono text-xs">
