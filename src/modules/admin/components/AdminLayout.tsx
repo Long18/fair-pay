@@ -31,7 +31,6 @@ import {
   SmilePlusIcon,
   PanelLeftIcon,
   ArrowLeftIcon,
-  CodeIcon,
   SettingsIcon,
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -45,7 +44,6 @@ const NAV_ITEMS = [
   { key: "audit-logs", label: "Audit Logs", icon: ScrollTextIcon, path: "/admin/audit-logs" },
   { key: "reactions", label: "Reactions", icon: SmilePlusIcon, path: "/admin/reactions" },
   { key: "devtool", label: "DevTool", icon: SettingsIcon, path: "/admin/devtool" },
-  { key: "api-docs", label: "API Docs", icon: CodeIcon, path: "/admin/api-docs" },
 ] as const;
 
 // ─── Helpers ────────────────────────────────────────────────────────

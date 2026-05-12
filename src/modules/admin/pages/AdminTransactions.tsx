@@ -80,7 +80,6 @@ import {
   ClockIcon,
 } from "@/components/ui/icons";
 import { AdminNotifications } from "@/modules/admin/sub-pages/AdminNotifications";
-import { AdminStatCard } from "@/modules/admin/components/AdminStatCard";
 import { AdminPageToolbar } from "@/modules/admin/components/AdminPageToolbar";
 import { AdminFilterChips } from "@/modules/admin/components/AdminFilterChips";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
@@ -800,13 +799,6 @@ function ExpensesTab() {
 
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <AdminStatCard
-          title="Tổng chi phí"
-          value={table.refineCore.tableQuery.data?.total ?? 0}
-          icon={<ReceiptIcon className="size-4" />}
-        />
-      </div>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <div><CardTitle>Quản lý chi phí</CardTitle><CardDescription>Xem và quản lý tất cả chi phí trong hệ thống</CardDescription></div>
@@ -1065,13 +1057,6 @@ function PaymentsTab() {
 
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <AdminStatCard
-          title="Tổng thanh toán"
-          value={table.refineCore.tableQuery.data?.total ?? 0}
-          icon={<CreditCardIcon className="size-4" />}
-        />
-      </div>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <div><CardTitle>Quản lý thanh toán</CardTitle><CardDescription>Xem và quản lý tất cả thanh toán trong hệ thống</CardDescription></div>

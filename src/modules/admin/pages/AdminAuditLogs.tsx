@@ -64,7 +64,6 @@ import {
   PencilIcon,
   Trash2Icon,
 } from "@/components/ui/icons";
-import { AdminStatCard } from "@/modules/admin/components/AdminStatCard";
 import { AdminPageToolbar } from "@/modules/admin/components/AdminPageToolbar";
 import { AdminFilterChips } from "@/modules/admin/components/AdminFilterChips";
 import { formatDate } from "@/lib/locale-utils";
@@ -526,31 +525,7 @@ export function AdminAuditLogs() {
         <h1 className="text-2xl font-semibold tracking-tight">Nhật ký</h1>
         <p className="text-sm text-muted-foreground mt-1">Theo dõi toàn bộ thay đổi dữ liệu trong hệ thống</p>
       </div>
-      {/* Stats Cards */}
-      {!statsLoading && stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <AdminStatCard
-            title="Tổng nhật ký"
-            value={stats.total.toLocaleString()}
-            icon={<ScrollTextIcon className="size-4" />}
-          />
-          <AdminStatCard
-            title="INSERT"
-            value={stats.inserts.toLocaleString()}
-            icon={<PlusIcon className="size-4" />}
-          />
-          <AdminStatCard
-            title="UPDATE"
-            value={stats.updates.toLocaleString()}
-            icon={<PencilIcon className="size-4" />}
-          />
-          <AdminStatCard
-            title="DELETE"
-            value={stats.deletes.toLocaleString()}
-            icon={<Trash2Icon className="size-4" />}
-          />
-        </div>
-      )}
+
 
 
       {/* Analytics: by table + by actor */}

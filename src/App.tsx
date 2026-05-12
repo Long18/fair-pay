@@ -129,8 +129,6 @@ const PageLoader = memo(() => (
 const isVercelAnalyticsEnabled =
   import.meta.env.PROD && import.meta.env.VITE_ENABLE_VERCEL_ANALYTICS === "true";
 
-const isAdminApiDocsEnabled = import.meta.env.VITE_ENABLE_ADMIN_API_DOCS === "true";
-
 // Analytics initializer component to set user identity
 const AnalyticsInitializer = memo(() => {
   const { data: identity } = useGetIdentity();
@@ -426,7 +424,6 @@ function App() {
                     <Route path="utm" element={<Navigate to="/admin/devtool?tab=utm" replace />} />
                     <Route path="devtool" element={<Suspense fallback={<PageLoader />}><AdminDevTool /></Suspense>} />
                     <Route path="og-preview" element={<Navigate to="/admin/devtool" replace />} />
-                    {isAdminApiDocsEnabled && <Route path="api-docs" element={<Navigate to="/admin/devtool?tab=api-docs" replace />} />}
                   </Route>
 
                   {/* Authenticated routes - require login */}

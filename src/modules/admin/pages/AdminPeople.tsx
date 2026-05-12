@@ -98,7 +98,6 @@ import { formatDate, formatNumber } from "@/lib/locale-utils";
 import { buildInviteEmailPreview, normalizeInviteEmails } from "@/modules/admin/email/invite-email";
 import type { Profile } from "@/modules/profile/types";
 import type { AdminUserRow } from "../types";
-import { AdminStatCard } from "../components/AdminStatCard";
 import { AdminPageToolbar } from "../components/AdminPageToolbar";
 import { AdminFilterChips } from "../components/AdminFilterChips";
 import { AdminTableSkeleton } from "../components/AdminTableSkeleton";
@@ -1598,14 +1597,6 @@ function UsersTab() {
         )}
 
         {/* ── Users Table ────────────────────────────────────────── */}
-        {/* Stat strip */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <AdminStatCard
-            title="Tổng người dùng"
-            value={usersData?.length ?? 0}
-            icon={<UsersIcon className="size-4" />}
-          />
-        </div>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
@@ -1925,14 +1916,7 @@ function GroupsTab() {
 
   return (
     <>
-      {/* Stat strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <AdminStatCard
-          title="Tổng nhóm"
-          value={table.refineCore.tableQuery.data?.total ?? 0}
-          icon={<LayersIcon className="size-4" />}
-        />
-      </div>
+
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
@@ -2113,14 +2097,7 @@ function FriendshipsTab() {
 
   return (
     <>
-      {/* Stat strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <AdminStatCard
-          title="Tổng kết bạn"
-          value={table.refineCore.tableQuery.data?.total ?? 0}
-          icon={<HeartIcon className="size-4" />}
-        />
-      </div>
+
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
