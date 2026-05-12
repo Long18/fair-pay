@@ -1146,6 +1146,208 @@ function CreateGroupSheet({
   );
 }
 
+// ─── Create Friendship Sheet ────────────────────────────────────────
+
+function CreateFriendshipSheet({
+  open,
+  onOpenChange,
+  onCreated,
+  createdBy,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreated: () => void;
+  createdBy: string;
+}) {
+  const [userA, setUserA] = useState("");
+  const [userB, setUserB] = useState("");
+  const [status, setStatus] = useState<"pending" | "accepted" | "rejected">("accepted");
+  const [submitting, setSubmitting] = useState(false);
+
+  const { data: profiles } = useQuery({
+    queryKey: ["admin", "profiles-for-friendship"],
+    queryFn: async () => {
+      const { data, error } = await supabaseClient
+        .from("profiles")
+        .select("id, full_name")
+        .order("full_name");
+      if (error) throw error;
+      return (data ?? []) as Array<{ id: string; full_name: string }>;
+    },
+    enabled: open,
+    staleTime: 60_000,
+  });
+
+  const reset = () => {
+    setUserA("");
+    setUserB("");
+    setStatus("accepted");
+  };
+
+  const handleSubmit = async () => {
+    if (!userA || !userB) {
+      toast.error("Cần chọn cả hai người dùng");
+      return;
+    }
+    if (userA === userB) {
+      toast.error("Hai người dùng phải khác nhau");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { data: existing, error: checkError } = await supabaseClient
+        .from("friendships")
+        .select("id")
+        .or(`and(user_a.eq.${userA},user_b.eq.${userB}),and(user_a.eq.${userB},user_b.eq.${userA})`);
+      if (checkError) throw checkError;
+      if (existing && existing.length > 0) {
+        toast.error("Tình bạn giữa hai người dùng này đã tồn tại");
+        return;
+      }
+      const { error } = await supabaseClient.from("friendships").insert({
+        user_a: userA,
+        user_b: userB,
+        status,
+        created_by: createdBy,
+      });
+      if (error) throw error;
+      toast.success("Đã tạo tình bạn");
+      reset();
+      onOpenChange(false);
+      onCreated();
+    } catch (err: any) {
+      toast.error(`Lỗi: ${err.message}`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <AdminCrudSheet
+      open={open}
+      onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}
+      title="Tạo tình bạn"
+      description="Kết nối hai người dùng với nhau."
+      isSubmitting={submitting}
+      submitLabel="Tạo tình bạn"
+      onSubmit={handleSubmit}
+    >
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label>Người dùng A *</Label>
+          <Select value={userA} onValueChange={setUserA}>
+            <SelectTrigger>
+              <SelectValue placeholder="Chọn người dùng..." />
+            </SelectTrigger>
+            <SelectContent>
+              {(profiles ?? []).map((u) => (
+                <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Người dùng B *</Label>
+          <Select value={userB} onValueChange={setUserB}>
+            <SelectTrigger>
+              <SelectValue placeholder="Chọn người dùng..." />
+            </SelectTrigger>
+            <SelectContent>
+              {(profiles ?? []).filter((u) => u.id !== userA).map((u) => (
+                <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Trạng thái</Label>
+          <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="accepted">Đã chấp nhận</SelectItem>
+              <SelectItem value="pending">Chờ xử lý</SelectItem>
+              <SelectItem value="rejected">Từ chối</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </AdminCrudSheet>
+  );
+}
+
+// ─── Edit Friendship Sheet ──────────────────────────────────────────
+
+function EditFriendshipSheet({
+  friendship,
+  open,
+  onOpenChange,
+  onUpdated,
+}: {
+  friendship: FriendshipRow | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onUpdated: () => void;
+}) {
+  const [status, setStatus] = useState<"pending" | "accepted" | "rejected">("accepted");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (friendship) setStatus(friendship.status);
+  }, [friendship]);
+
+  const handleSubmit = async () => {
+    if (!friendship) return;
+    setSubmitting(true);
+    try {
+      const { error } = await supabaseClient
+        .from("friendships")
+        .update({ status })
+        .eq("id", friendship.id);
+      if (error) throw error;
+      toast.success("Đã cập nhật tình bạn");
+      onOpenChange(false);
+      onUpdated();
+    } catch (err: any) {
+      toast.error(`Lỗi: ${err.message}`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <AdminCrudSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Chỉnh sửa tình bạn"
+      description={friendship ? `${friendship.user_a_name} ↔ ${friendship.user_b_name}` : undefined}
+      isSubmitting={submitting}
+      submitLabel="Lưu"
+      onSubmit={handleSubmit}
+    >
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label>Trạng thái</Label>
+          <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="accepted">Đã chấp nhận</SelectItem>
+              <SelectItem value="pending">Chờ xử lý</SelectItem>
+              <SelectItem value="rejected">Từ chối</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Không thể thay đổi người dùng sau khi tạo.
+        </p>
+      </div>
+    </AdminCrudSheet>
+  );
+}
+
 // ─── Friendship Status Badge ────────────────────────────────────────
 
 const FRIENDSHIP_STATUS = {
@@ -2062,6 +2264,7 @@ function GroupsTab() {
 
 function FriendshipsTab() {
   const { tap, warning } = useHaptics();
+  const { data: identity } = useGetIdentity<Profile>();
   const deleteMutation = useInstantDelete();
 
   const [search, setSearch] = useState("");
@@ -2071,6 +2274,8 @@ function FriendshipsTab() {
   const [deleteFriendship, setDeleteFriendship] = useState<FriendshipRow | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [createFriendshipOpen, setCreateFriendshipOpen] = useState(false);
+  const [editFriendship, setEditFriendship] = useState<FriendshipRow | null>(null);
 
   const filters = useMemo(() => {
     const f: Array<{ field: string; operator: string; value: unknown }> = [];
@@ -2122,6 +2327,10 @@ function FriendshipsTab() {
             {row.original.status === "pending" && (
               <DropdownMenuItem onClick={() => { tap(); handleAccept(row.original); }}>Chấp nhận kết bạn</DropdownMenuItem>
             )}
+            <DropdownMenuItem onClick={() => { tap(); setEditFriendship(row.original); }}>
+              <PencilIcon className="mr-2 h-4 w-4" />
+              Chỉnh sửa
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => { warning(); setDeleteFriendship(row.original); setDeleteDialogOpen(true); }} className="text-destructive">Xóa tình bạn</DropdownMenuItem>
           </DropdownMenuContent>
@@ -2194,6 +2403,10 @@ function FriendshipsTab() {
             <CardTitle>Quản lý tình bạn</CardTitle>
             <CardDescription>Xem và quản lý tất cả kết nối bạn bè trong hệ thống</CardDescription>
           </div>
+          <Button size="sm" onClick={() => { tap(); setCreateFriendshipOpen(true); }}>
+            <PlusIcon className="mr-2 h-4 w-4" />
+            Tạo tình bạn
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           <AdminPageToolbar
@@ -2232,6 +2445,18 @@ function FriendshipsTab() {
         onOpenChange={(o) => { if (!o && !isDeleting) { setDeleteDialogOpen(false); setDeleteFriendship(null); } }}
         onConfirm={handleDelete}
         isDeleting={isDeleting}
+      />
+      <CreateFriendshipSheet
+        open={createFriendshipOpen}
+        onOpenChange={setCreateFriendshipOpen}
+        onCreated={() => table.refineCore.tableQuery.refetch()}
+        createdBy={identity?.id ?? ""}
+      />
+      <EditFriendshipSheet
+        friendship={editFriendship}
+        open={!!editFriendship}
+        onOpenChange={(v) => { if (!v) setEditFriendship(null); }}
+        onUpdated={() => table.refineCore.tableQuery.refetch()}
       />
     </>
   );
