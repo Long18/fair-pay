@@ -68,22 +68,21 @@ import {
   EmptyContent,
 } from "@/components/ui/empty";
 import {
-  SearchIcon,
   ReceiptIcon,
   CreditCardIcon,
   BellIcon,
   MoreHorizontalIcon,
-  FilterIcon,
   AlertTriangleIcon,
   Loader2Icon,
   PlusIcon,
   PencilIcon,
-  XIcon,
+  CheckCircle2Icon,
+  ClockIcon,
 } from "@/components/ui/icons";
 import { AdminNotifications } from "@/modules/admin/sub-pages/AdminNotifications";
-import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
-import { AdminTableToolbar } from "@/modules/admin/components/AdminTableToolbar";
-import { AdminStatusBadge } from "@/modules/admin/components/AdminStatusBadge";
+import { AdminStatCard } from "@/modules/admin/components/AdminStatCard";
+import { AdminPageToolbar } from "@/modules/admin/components/AdminPageToolbar";
+import { AdminFilterChips } from "@/modules/admin/components/AdminFilterChips";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
 import { getCategoryMeta } from "@/modules/expenses/lib/categories";
 import { MarkdownComment } from "@/modules/expenses/components/markdown-comment";
@@ -332,7 +331,9 @@ function ExpenseDetailDialog({
               })()
             } />
             <DetailItem label="Trạng thái" value={
-              <AdminStatusBadge type="settlement" settled={resolvedIsSettled} settledLabel="Đã thanh toán" pendingLabel="Chờ xử lý" />
+              resolvedIsSettled
+                ? <Badge className="gap-1"><CheckCircle2Icon className="size-3" aria-hidden="true" />Đã thanh toán</Badge>
+                : <Badge variant="outline" className="gap-1"><ClockIcon className="size-3" aria-hidden="true" />Chờ xử lý</Badge>
             } />
           </div>
 
@@ -372,7 +373,9 @@ function ExpenseDetailDialog({
                         <TableCell className="text-sm capitalize">{split.split_method}</TableCell>
                         <TableCell className="text-right font-mono tabular-nums text-sm">{formatNumber(split.computed_amount)}</TableCell>
                         <TableCell>
-                          <AdminStatusBadge type="settlement" settled={split.is_settled} settledLabel="Đã trả" pendingLabel="Chưa trả" />
+                          {split.is_settled
+                            ? <Badge className="gap-1"><CheckCircle2Icon className="size-3" aria-hidden="true" />Đã trả</Badge>
+                            : <Badge variant="outline" className="gap-1"><ClockIcon className="size-3" aria-hidden="true" />Chưa trả</Badge>}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
@@ -712,7 +715,9 @@ function ExpensesTab() {
     { id: "expense_date", header: "Ngày", accessorKey: "expense_date", size: 110, cell: ({ getValue }) => formatDate(getValue() as string) },
     {
       id: "status", header: "Trạng thái", accessorKey: "is_settled", size: 130, enableSorting: false,
-      cell: ({ row }) => <AdminStatusBadge type="settlement" settled={row.original.is_settled} settledLabel="Đã thanh toán" pendingLabel="Chờ xử lý" />,
+      cell: ({ row }) => row.original.is_settled
+        ? <Badge className="gap-1"><CheckCircle2Icon className="size-3" aria-hidden="true" />Đã thanh toán</Badge>
+        : <Badge variant="outline" className="gap-1"><ClockIcon className="size-3" aria-hidden="true" />Chờ xử lý</Badge>,
     },
     {
       id: "actions", header: "", size: 50, enableSorting: false,
@@ -795,26 +800,42 @@ function ExpensesTab() {
 
   return (
     <>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <AdminStatCard
+          title="Tổng chi phí"
+          value={table.refineCore.tableQuery.data?.total ?? 0}
+          icon={<ReceiptIcon className="size-4" />}
+        />
+      </div>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <div><CardTitle>Quản lý chi phí</CardTitle><CardDescription>Xem và quản lý tất cả chi phí trong hệ thống</CardDescription></div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" onClick={() => { tap(); setCreateDialogOpen(true); }}><PlusIcon className="mr-2 h-4 w-4" />Tạo chi phí</Button>
-            <Button variant="outline" size="sm" onClick={() => { tap(); setShowFilters((v) => !v); }}><FilterIcon className="mr-2 h-4 w-4" />Bộ lọc</Button>
-          </div>
         </CardHeader>
-        <AdminTableToolbar>
-          <div className="relative flex-1 max-w-xs">
-            <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Tìm kiếm theo mô tả..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8" />
-          </div>
-          {search && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => { tap(); setSearch(""); }}>
-              <XIcon className="h-4 w-4" />
-            </Button>
-          )}
-        </AdminTableToolbar>
         <CardContent className="space-y-4">
+          <AdminPageToolbar
+            search={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Tìm kiếm theo mô tả..."
+            filterCount={[groupFilter !== "all", statusFilter !== "all", dateFrom !== "", dateTo !== "", amountMin !== "", amountMax !== ""].filter(Boolean).length}
+            onFilterToggle={() => setShowFilters((v) => !v)}
+            actions={
+              <Button size="sm" onClick={() => { tap(); setCreateDialogOpen(true); }}>
+                <PlusIcon className="mr-2 h-4 w-4" />
+                Tạo chi phí
+              </Button>
+            }
+          />
+          <AdminFilterChips
+            filters={[
+              ...(groupFilter !== "all" ? [{ key: "group", label: `Nhóm: ${groups.find((g: any) => g.id === groupFilter)?.name ?? groupFilter}`, onRemove: () => { tap(); setGroupFilter("all"); } }] : []),
+              ...(statusFilter !== "all" ? [{ key: "status", label: `Trạng thái: ${statusFilter === "settled" ? "Đã thanh toán" : "Chờ xử lý"}`, onRemove: () => { tap(); setStatusFilter("all"); } }] : []),
+              ...(dateFrom !== "" ? [{ key: "dateFrom", label: `Từ: ${dateFrom}`, onRemove: () => setDateFrom("") }] : []),
+              ...(dateTo !== "" ? [{ key: "dateTo", label: `Đến: ${dateTo}`, onRemove: () => setDateTo("") }] : []),
+              ...(amountMin !== "" ? [{ key: "amountMin", label: `Tối thiểu: ${amountMin}`, onRemove: () => setAmountMin("") }] : []),
+              ...(amountMax !== "" ? [{ key: "amountMax", label: `Tối đa: ${amountMax}`, onRemove: () => setAmountMax("") }] : []),
+            ]}
+            onClearAll={clearFilters}
+          />
           <Collapsible open={showFilters} onOpenChange={setShowFilters}>
             <CollapsibleContent>
               <div className="flex items-end gap-3 flex-wrap pb-2">
@@ -1044,26 +1065,41 @@ function PaymentsTab() {
 
   return (
     <>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <AdminStatCard
+          title="Tổng thanh toán"
+          value={table.refineCore.tableQuery.data?.total ?? 0}
+          icon={<CreditCardIcon className="size-4" />}
+        />
+      </div>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <div><CardTitle>Quản lý thanh toán</CardTitle><CardDescription>Xem và quản lý tất cả thanh toán trong hệ thống</CardDescription></div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" onClick={() => { tap(); setCreateDialogOpen(true); }}><PlusIcon className="mr-2 h-4 w-4" />Tạo thanh toán</Button>
-            <Button variant="outline" size="sm" onClick={() => { tap(); setShowFilters((v) => !v); }}><FilterIcon className="mr-2 h-4 w-4" />Bộ lọc</Button>
-          </div>
         </CardHeader>
-        <AdminTableToolbar>
-          <div className="relative flex-1 max-w-xs">
-            <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Tìm kiếm theo ghi chú..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8" />
-          </div>
-          {search && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => { tap(); setSearch(""); }}>
-              <XIcon className="h-4 w-4" />
-            </Button>
-          )}
-        </AdminTableToolbar>
         <CardContent className="space-y-4">
+          <AdminPageToolbar
+            search={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Tìm kiếm theo ghi chú..."
+            filterCount={[groupFilter !== "all", senderFilter !== "all", receiverFilter !== "all", dateFrom !== "", dateTo !== ""].filter(Boolean).length}
+            onFilterToggle={() => setShowFilters((v) => !v)}
+            actions={
+              <Button size="sm" onClick={() => { tap(); setCreateDialogOpen(true); }}>
+                <PlusIcon className="mr-2 h-4 w-4" />
+                Tạo thanh toán
+              </Button>
+            }
+          />
+          <AdminFilterChips
+            filters={[
+              ...(groupFilter !== "all" ? [{ key: "group", label: `Nhóm: ${groups.find((g: any) => g.id === groupFilter)?.name ?? groupFilter}`, onRemove: () => { tap(); setGroupFilter("all"); } }] : []),
+              ...(senderFilter !== "all" ? [{ key: "sender", label: `Người gửi: ${profiles.find((p: any) => p.id === senderFilter)?.full_name ?? senderFilter}`, onRemove: () => { tap(); setSenderFilter("all"); } }] : []),
+              ...(receiverFilter !== "all" ? [{ key: "receiver", label: `Người nhận: ${profiles.find((p: any) => p.id === receiverFilter)?.full_name ?? receiverFilter}`, onRemove: () => { tap(); setReceiverFilter("all"); } }] : []),
+              ...(dateFrom !== "" ? [{ key: "dateFrom", label: `Từ: ${dateFrom}`, onRemove: () => setDateFrom("") }] : []),
+              ...(dateTo !== "" ? [{ key: "dateTo", label: `Đến: ${dateTo}`, onRemove: () => setDateTo("") }] : []),
+            ]}
+            onClearAll={clearFilters}
+          />
           <Collapsible open={showFilters} onOpenChange={setShowFilters}>
             <CollapsibleContent>
               <div className="flex items-end gap-3 flex-wrap pb-2">
@@ -1115,7 +1151,10 @@ function PaymentsTab() {
 export function AdminTransactions() {
   return (
     <div className="space-y-6">
-      <AdminPageHeader title="Giao dịch" description="Quản lý chi phí, thanh toán và thông báo trong hệ thống" />
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Giao dịch</h1>
+        <p className="text-sm text-muted-foreground mt-1">Quản lý chi phí, thanh toán và thông báo trong hệ thống</p>
+      </div>
       <Tabs defaultValue="expenses" className="w-full">
         <TabsList>
           <TabsTrigger value="expenses" className="gap-2">
