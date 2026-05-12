@@ -1,34 +1,30 @@
-import { type LucideIcon } from "lucide-react";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
 interface AdminEmptyStateProps {
-  icon?: LucideIcon;
+  icon: ReactNode;
   title: string;
   description?: string;
-  action?: ReactNode;
+  action?: { label: string; onClick: () => void };
+  className?: string;
 }
 
-export function AdminEmptyState({ icon: Icon, title, description, action }: AdminEmptyStateProps) {
+export function AdminEmptyState({ icon, title, description, action, className }: AdminEmptyStateProps) {
   return (
-    <Empty>
-      {Icon && (
-        <EmptyMedia>
-          <Icon className="h-10 w-10 text-muted-foreground/50" />
-        </EmptyMedia>
+    <div className={cn("flex flex-col items-center justify-center py-16 gap-3 text-center", className)}>
+      <div className="rounded-full bg-muted p-4 text-muted-foreground">
+        {icon}
+      </div>
+      <p className="text-base font-medium">{title}</p>
+      {description && (
+        <p className="text-sm text-muted-foreground max-w-xs">{description}</p>
       )}
-      <EmptyHeader>
-        <EmptyTitle>{title}</EmptyTitle>
-        {description && <EmptyDescription>{description}</EmptyDescription>}
-      </EmptyHeader>
-      {action && <EmptyContent>{action}</EmptyContent>}
-    </Empty>
+      {action && (
+        <Button variant="outline" size="sm" onClick={action.onClick}>
+          {action.label}
+        </Button>
+      )}
+    </div>
   );
 }
