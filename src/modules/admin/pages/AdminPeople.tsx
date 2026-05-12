@@ -1042,41 +1042,107 @@ function EditGroupDialog({
   const hasChanges = name.trim() !== group.name || description.trim() !== (group.description ?? "");
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={group.avatar_url ?? undefined} alt={group.name} />
-              <AvatarFallback className="text-sm bg-primary/10 text-primary">
-                {group.name?.[0]?.toUpperCase() ?? "?"}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <DialogTitle>Chỉnh sửa nhóm</DialogTitle>
-              <DialogDescription>Cập nhật thông tin nhóm &ldquo;{group.name}&rdquo;</DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
-        <div className="space-y-4 mt-2">
-          <div className="space-y-2">
-            <Label htmlFor="group-name">Tên nhóm</Label>
-            <Input id="group-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nhập tên nhóm..." />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="group-description">Mô tả</Label>
-            <Input id="group-description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Mô tả nhóm (tùy chọn)..." />
-          </div>
+    <AdminCrudSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Chỉnh sửa nhóm"
+      description={`Cập nhật thông tin nhóm "${group.name}"`}
+      isSubmitting={isUpdating}
+      submitLabel="Lưu"
+      onSubmit={() => onConfirm({ name: name.trim(), description: description.trim() })}
+    >
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="group-name">Tên nhóm</Label>
+          <Input id="group-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nhập tên nhóm..." />
         </div>
-        <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isUpdating}>Hủy</Button>
-          <Button onClick={() => onConfirm({ name: name.trim(), description: description.trim() })} disabled={isUpdating || !name.trim() || !hasChanges}>
-            {isUpdating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Lưu
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <div className="space-y-2">
+          <Label htmlFor="group-description">Mô tả</Label>
+          <Input id="group-description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Mô tả nhóm (tùy chọn)..." />
+        </div>
+      </div>
+    </AdminCrudSheet>
+  );
+}
+
+// ─── Create Group Sheet ─────────────────────────────────────────────
+
+function CreateGroupSheet({
+  open,
+  onOpenChange,
+  onCreated,
+  createdBy,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreated: () => void;
+  createdBy: string;
+}) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const reset = () => {
+    setName("");
+    setDescription("");
+  };
+
+  const handleSubmit = async () => {
+    if (!name.trim()) {
+      toast.error("Tên nhóm là bắt buộc");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { error } = await supabaseClient.from("groups").insert({
+        name: name.trim(),
+        description: description.trim() || null,
+        created_by: createdBy,
+      });
+      if (error) throw error;
+      toast.success("Đã tạo nhóm");
+      reset();
+      onOpenChange(false);
+      onCreated();
+    } catch (err: any) {
+      toast.error(`Lỗi: ${err.message}`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <AdminCrudSheet
+      open={open}
+      onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}
+      title="Tạo nhóm mới"
+      description="Thiết lập nhóm chia sẻ chi phí mới."
+      isSubmitting={submitting}
+      submitLabel="Tạo nhóm"
+      onSubmit={handleSubmit}
+    >
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="new-group-name">Tên nhóm *</Label>
+          <Input
+            id="new-group-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="VD: Chuyến đi Đà Lạt"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="new-group-desc">Mô tả</Label>
+          <Textarea
+            id="new-group-desc"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Mô tả nhóm (tùy chọn)"
+            rows={3}
+          />
+        </div>
+      </div>
+    </AdminCrudSheet>
   );
 }
 
@@ -1731,6 +1797,7 @@ function UsersTab() {
 
 function GroupsTab() {
   const { tap, warning } = useHaptics();
+  const { data: identity } = useGetIdentity<Profile>();
   const deleteMutation = useInstantDelete();
   const updateMutation = useInstantUpdate();
 
@@ -1750,6 +1817,9 @@ function GroupsTab() {
   const [editGroup, setEditGroup] = useState<GroupRow | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // Create
+  const [createGroupOpen, setCreateGroupOpen] = useState(false);
 
   // Archive
   const [isArchiving, setIsArchiving] = useState(false);
@@ -1933,6 +2003,10 @@ function GroupsTab() {
             <CardTitle>Quản lý nhóm</CardTitle>
             <CardDescription>Xem và quản lý tất cả nhóm trong hệ thống</CardDescription>
           </div>
+          <Button size="sm" onClick={() => { tap(); setCreateGroupOpen(true); }}>
+            <PlusIcon className="mr-2 h-4 w-4" />
+            Tạo nhóm
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           <AdminPageToolbar
@@ -1972,6 +2046,12 @@ function GroupsTab() {
         isDeleting={isDeleting}
       />
       <EditGroupDialog group={editGroup} open={editDialogOpen} onOpenChange={(o) => { if (!o && !isUpdating) { setEditDialogOpen(false); setEditGroup(null); } }} onConfirm={handleEdit} isUpdating={isUpdating} />
+      <CreateGroupSheet
+        open={createGroupOpen}
+        onOpenChange={setCreateGroupOpen}
+        onCreated={() => table.refineCore.tableQuery.refetch()}
+        createdBy={identity?.id ?? ""}
+      />
     </>
   );
 }
