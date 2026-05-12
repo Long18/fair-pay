@@ -71,14 +71,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Empty,
-  EmptyMedia,
-  EmptyHeader,
-  EmptyTitle,
-  EmptyDescription,
-  EmptyContent,
-} from "@/components/ui/empty";
-import {
   SearchIcon,
   UsersIcon,
   GroupIcon,
@@ -99,13 +91,18 @@ import {
   StarIcon,
   MailIcon,
   SendIcon,
+  LayersIcon,
+  HeartIcon,
 } from "@/components/ui/icons";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
 import { buildInviteEmailPreview, normalizeInviteEmails } from "@/modules/admin/email/invite-email";
 import type { Profile } from "@/modules/profile/types";
 import type { AdminUserRow } from "../types";
-import { AdminPageHeader } from "../components/AdminPageHeader";
-import { AdminTableToolbar } from "../components/AdminTableToolbar";
+import { AdminStatCard } from "../components/AdminStatCard";
+import { AdminPageToolbar } from "../components/AdminPageToolbar";
+import { AdminFilterChips } from "../components/AdminFilterChips";
+import { AdminTableSkeleton } from "../components/AdminTableSkeleton";
+import { AdminEmptyState } from "../components/AdminEmptyState";
 
 // ─── Shared Types ───────────────────────────────────────────────────
 
@@ -1601,50 +1598,54 @@ function UsersTab() {
         )}
 
         {/* ── Users Table ────────────────────────────────────────── */}
+        {/* Stat strip */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <AdminStatCard
+            title="Tổng người dùng"
+            value={usersData?.length ?? 0}
+            icon={<UsersIcon className="size-4" />}
+          />
+        </div>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <div>
               <CardTitle>Quản lý người dùng</CardTitle>
               <CardDescription>Xem và quản lý tất cả người dùng trong hệ thống</CardDescription>
             </div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" onClick={() => { tap(); setCreateDialogOpen(true); }}>
-                <PlusIcon className="mr-2 h-4 w-4" />
-                Tạo người dùng
-              </Button>
-            </div>
           </CardHeader>
-          <AdminTableToolbar>
-            <div className="relative flex-1 max-w-xs">
-              <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Tìm kiếm theo tên hoặc email..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8 text-sm" />
-            </div>
-            <Select value={roleFilter} onValueChange={(v) => { tap(); setRoleFilter(v); }}>
-              <SelectTrigger className="w-[150px] h-8 text-sm"><SelectValue placeholder="Vai trò" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả vai trò</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="user">User</SelectItem>
-              </SelectContent>
-            </Select>
-            {hasActiveFilters && (
-              <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1.5" onClick={() => { tap(); clearFilters(); }}>
-                <XIcon className="h-3 w-3" />
-                Xóa bộ lọc
-              </Button>
-            )}
-          </AdminTableToolbar>
           <CardContent className="space-y-4">
+            <AdminPageToolbar
+              search={search}
+              onSearchChange={setSearch}
+              searchPlaceholder="Tìm kiếm theo tên hoặc email..."
+              filterCount={roleFilter !== "all" ? 1 : 0}
+              onFilterToggle={() => {}}
+              actions={
+                <Button size="sm" onClick={() => { tap(); setCreateDialogOpen(true); }}>
+                  <PlusIcon className="mr-2 h-4 w-4" />
+                  Tạo người dùng
+                </Button>
+              }
+            />
+            <AdminFilterChips
+              filters={[
+                ...(roleFilter !== "all"
+                  ? [{ key: "role", label: `Vai trò: ${roleFilter === "admin" ? "Admin" : "User"}`, onRemove: () => { tap(); setRoleFilter("all"); } }]
+                  : []),
+              ]}
+              onClearAll={() => { tap(); clearFilters(); }}
+            />
 
-            {isEmptyResult && hasActiveFilters ? (
-              <Empty className="min-h-[400px]">
-                <EmptyMedia variant="icon"><UsersIcon className="h-6 w-6" /></EmptyMedia>
-                <EmptyHeader>
-                  <EmptyTitle>Không tìm thấy người dùng</EmptyTitle>
-                  <EmptyDescription>Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</EmptyDescription>
-                </EmptyHeader>
-                <EmptyContent><Button variant="outline" onClick={clearFilters}>Xóa bộ lọc</Button></EmptyContent>
-              </Empty>
+            {isLoading ? (
+              <AdminTableSkeleton rows={7} columns={6} />
+            ) : isEmptyResult && hasActiveFilters ? (
+              <AdminEmptyState
+                icon={<UsersIcon className="h-8 w-8" />}
+                title="Không tìm thấy người dùng"
+                description="Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+                action={{ label: "Xóa bộ lọc", onClick: clearFilters }}
+              />
             ) : (
               <div className="rounded-md border overflow-x-auto">
                 <Table>
@@ -1660,9 +1661,7 @@ function UsersTab() {
                     ))}
                   </TableHeader>
                   <TableBody>
-                    {isLoading ? (
-                      <TableRow><TableCell colSpan={columns.length} className="h-24 text-center">Đang tải...</TableCell></TableRow>
-                    ) : reactTable.getRowModel().rows.length ? (
+                    {reactTable.getRowModel().rows.length ? (
                       reactTable.getRowModel().rows.map((row) => (
                         <TableRow key={row.original?.id ?? row.id}>
                           {row.getVisibleCells().map((cell) => (
@@ -1926,6 +1925,15 @@ function GroupsTab() {
 
   return (
     <>
+      {/* Stat strip */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <AdminStatCard
+          title="Tổng nhóm"
+          value={table.refineCore.tableQuery.data?.total ?? 0}
+          icon={<LayersIcon className="size-4" />}
+        />
+      </div>
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div>
@@ -1933,28 +1941,21 @@ function GroupsTab() {
             <CardDescription>Xem và quản lý tất cả nhóm trong hệ thống</CardDescription>
           </div>
         </CardHeader>
-        <AdminTableToolbar>
-          <div className="relative flex-1 max-w-xs">
-            <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Tìm kiếm theo tên nhóm..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8 text-sm" />
-          </div>
-          {hasActiveFilters && (
-            <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1.5" onClick={() => { tap(); clearFilters(); }}>
-              <XIcon className="h-3 w-3" />
-              Xóa bộ lọc
-            </Button>
-          )}
-        </AdminTableToolbar>
         <CardContent className="space-y-4">
-          {isEmptyResult && hasActiveFilters ? (
-            <Empty className="min-h-[400px]">
-              <EmptyMedia variant="icon"><GroupIcon className="h-6 w-6" /></EmptyMedia>
-              <EmptyHeader>
-                <EmptyTitle>Không tìm thấy nhóm</EmptyTitle>
-                <EmptyDescription>Thử thay đổi từ khóa tìm kiếm</EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent><Button variant="outline" onClick={clearFilters}>Xóa bộ lọc</Button></EmptyContent>
-            </Empty>
+          <AdminPageToolbar
+            search={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Tìm kiếm theo tên nhóm..."
+          />
+          {table.refineCore.tableQuery.isLoading ? (
+            <AdminTableSkeleton rows={7} columns={6} />
+          ) : isEmptyResult && hasActiveFilters ? (
+            <AdminEmptyState
+              icon={<GroupIcon className="h-8 w-8" />}
+              title="Không tìm thấy nhóm"
+              description="Thử thay đổi từ khóa tìm kiếm"
+              action={{ label: "Xóa bộ lọc", onClick: clearFilters }}
+            />
           ) : (
             <DataTable table={table} />
           )}
@@ -2112,6 +2113,15 @@ function FriendshipsTab() {
 
   return (
     <>
+      {/* Stat strip */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <AdminStatCard
+          title="Tổng kết bạn"
+          value={table.refineCore.tableQuery.data?.total ?? 0}
+          icon={<HeartIcon className="size-4" />}
+        />
+      </div>
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div>
@@ -2119,37 +2129,30 @@ function FriendshipsTab() {
             <CardDescription>Xem và quản lý tất cả kết nối bạn bè trong hệ thống</CardDescription>
           </div>
         </CardHeader>
-        <AdminTableToolbar>
-          <div className="relative flex-1 max-w-xs">
-            <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Tìm kiếm theo tên người dùng..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8 text-sm" />
-          </div>
-          <Select value={statusFilter} onValueChange={(v) => { tap(); setStatusFilter(v); }}>
-            <SelectTrigger className="w-[160px] h-8 text-sm"><SelectValue placeholder="Trạng thái" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả</SelectItem>
-              <SelectItem value="pending">Chờ xử lý</SelectItem>
-              <SelectItem value="accepted">Đã chấp nhận</SelectItem>
-              <SelectItem value="rejected">Từ chối</SelectItem>
-            </SelectContent>
-          </Select>
-          {hasActiveFilters && (
-            <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1.5" onClick={() => { tap(); clearFilters(); }}>
-              <XIcon className="h-3 w-3" />
-              Xóa bộ lọc
-            </Button>
-          )}
-        </AdminTableToolbar>
         <CardContent className="space-y-4">
-          {isEmptyResult && hasActiveFilters ? (
-            <Empty className="min-h-[400px]">
-              <EmptyMedia variant="icon"><HeartHandshakeIcon className="h-6 w-6" /></EmptyMedia>
-              <EmptyHeader>
-                <EmptyTitle>Không tìm thấy tình bạn</EmptyTitle>
-                <EmptyDescription>Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent><Button variant="outline" onClick={clearFilters}>Xóa bộ lọc</Button></EmptyContent>
-            </Empty>
+          <AdminPageToolbar
+            search={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Tìm kiếm theo tên người dùng..."
+            filterCount={statusFilter !== "all" ? 1 : 0}
+          />
+          <AdminFilterChips
+            filters={[
+              ...(statusFilter !== "all"
+                ? [{ key: "status", label: `Trạng thái: ${statusFilter}`, onRemove: () => { tap(); setStatusFilter("all"); } }]
+                : []),
+            ]}
+            onClearAll={() => { tap(); clearFilters(); }}
+          />
+          {table.refineCore.tableQuery.isLoading ? (
+            <AdminTableSkeleton rows={7} columns={5} />
+          ) : isEmptyResult && hasActiveFilters ? (
+            <AdminEmptyState
+              icon={<HeartHandshakeIcon className="h-8 w-8" />}
+              title="Không tìm thấy tình bạn"
+              description="Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+              action={{ label: "Xóa bộ lọc", onClick: clearFilters }}
+            />
           ) : (
             <DataTable table={table} />
           )}
@@ -2182,7 +2185,10 @@ export function AdminPeople() {
   const { tap } = useHaptics();
   return (
     <div className="space-y-6">
-      <AdminPageHeader title="People" description="Manage users, groups and friendships" />
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">People</h1>
+        <p className="text-sm text-muted-foreground mt-1">Manage users, groups and friendships</p>
+      </div>
       <Tabs defaultValue="users" onValueChange={() => tap()}>
         <TabsList>
           <TabsTrigger value="users" className="gap-2">
