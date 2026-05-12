@@ -92,6 +92,7 @@ import {
   UserMinusIcon,
   PencilIcon,
   PlusIcon,
+  XIcon,
   ChevronDownIcon,
   ArchiveIcon,
   ArchiveRestoreIcon,
@@ -103,6 +104,8 @@ import { formatDate, formatNumber } from "@/lib/locale-utils";
 import { buildInviteEmailPreview, normalizeInviteEmails } from "@/modules/admin/email/invite-email";
 import type { Profile } from "@/modules/profile/types";
 import type { AdminUserRow } from "../types";
+import { AdminPageHeader } from "../components/AdminPageHeader";
+import { AdminTableToolbar } from "../components/AdminTableToolbar";
 
 // ─── Shared Types ───────────────────────────────────────────────────
 
@@ -1291,7 +1294,6 @@ function UsersTab() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
   const [roleFilter, setRoleFilter] = useState<string>("all");
-  const [showFilters, setShowFilters] = useState(false);
 
   // Detail dialog
   const [selectedUser, setSelectedUser] = useState<AdminUserRow | null>(null);
@@ -1610,30 +1612,29 @@ function UsersTab() {
                 <PlusIcon className="mr-2 h-4 w-4" />
                 Tạo người dùng
               </Button>
-              <Button variant="outline" size="sm" onClick={() => { tap(); setShowFilters((v) => !v); }}>
-                <FilterIcon className="mr-2 h-4 w-4" />
-                Bộ lọc
-              </Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="relative max-w-sm">
+          <AdminTableToolbar>
+            <div className="relative flex-1 max-w-xs">
               <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Tìm kiếm theo tên hoặc email..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+              <Input placeholder="Tìm kiếm theo tên hoặc email..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8 text-sm" />
             </div>
-            {showFilters && (
-              <div className="flex items-center gap-3 flex-wrap">
-                <Select value={roleFilter} onValueChange={(v) => { tap(); setRoleFilter(v); }}>
-                  <SelectTrigger className="w-[150px]"><SelectValue placeholder="Vai trò" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tất cả vai trò</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="user">User</SelectItem>
-                  </SelectContent>
-                </Select>
-                {hasActiveFilters && <Button variant="ghost" size="sm" onClick={clearFilters}>Xóa bộ lọc</Button>}
-              </div>
+            <Select value={roleFilter} onValueChange={(v) => { tap(); setRoleFilter(v); }}>
+              <SelectTrigger className="w-[150px] h-8 text-sm"><SelectValue placeholder="Vai trò" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả vai trò</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="user">User</SelectItem>
+              </SelectContent>
+            </Select>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1.5" onClick={() => { tap(); clearFilters(); }}>
+                <XIcon className="h-3 w-3" />
+                Xóa bộ lọc
+              </Button>
             )}
+          </AdminTableToolbar>
+          <CardContent className="space-y-4">
 
             {isEmptyResult && hasActiveFilters ? (
               <Empty className="min-h-[400px]">
@@ -1932,11 +1933,19 @@ function GroupsTab() {
             <CardDescription>Xem và quản lý tất cả nhóm trong hệ thống</CardDescription>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="relative max-w-sm">
+        <AdminTableToolbar>
+          <div className="relative flex-1 max-w-xs">
             <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Tìm kiếm theo tên nhóm..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+            <Input placeholder="Tìm kiếm theo tên nhóm..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8 text-sm" />
           </div>
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1.5" onClick={() => { tap(); clearFilters(); }}>
+              <XIcon className="h-3 w-3" />
+              Xóa bộ lọc
+            </Button>
+          )}
+        </AdminTableToolbar>
+        <CardContent className="space-y-4">
           {isEmptyResult && hasActiveFilters ? (
             <Empty className="min-h-[400px]">
               <EmptyMedia variant="icon"><GroupIcon className="h-6 w-6" /></EmptyMedia>
@@ -2110,23 +2119,28 @@ function FriendshipsTab() {
             <CardDescription>Xem và quản lý tất cả kết nối bạn bè trong hệ thống</CardDescription>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="relative max-w-sm flex-1">
-              <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Tìm kiếm theo tên người dùng..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
-            </div>
-            <Select value={statusFilter} onValueChange={(v) => { tap(); setStatusFilter(v); }}>
-              <SelectTrigger className="w-[160px]"><SelectValue placeholder="Trạng thái" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="pending">Chờ xử lý</SelectItem>
-                <SelectItem value="accepted">Đã chấp nhận</SelectItem>
-                <SelectItem value="rejected">Từ chối</SelectItem>
-              </SelectContent>
-            </Select>
-            {hasActiveFilters && <Button variant="ghost" size="sm" onClick={clearFilters}>Xóa bộ lọc</Button>}
+        <AdminTableToolbar>
+          <div className="relative flex-1 max-w-xs">
+            <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder="Tìm kiếm theo tên người dùng..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8 text-sm" />
           </div>
+          <Select value={statusFilter} onValueChange={(v) => { tap(); setStatusFilter(v); }}>
+            <SelectTrigger className="w-[160px] h-8 text-sm"><SelectValue placeholder="Trạng thái" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả</SelectItem>
+              <SelectItem value="pending">Chờ xử lý</SelectItem>
+              <SelectItem value="accepted">Đã chấp nhận</SelectItem>
+              <SelectItem value="rejected">Từ chối</SelectItem>
+            </SelectContent>
+          </Select>
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1.5" onClick={() => { tap(); clearFilters(); }}>
+              <XIcon className="h-3 w-3" />
+              Xóa bộ lọc
+            </Button>
+          )}
+        </AdminTableToolbar>
+        <CardContent className="space-y-4">
           {isEmptyResult && hasActiveFilters ? (
             <Empty className="min-h-[400px]">
               <EmptyMedia variant="icon"><HeartHandshakeIcon className="h-6 w-6" /></EmptyMedia>
@@ -2168,6 +2182,7 @@ export function AdminPeople() {
   const { tap } = useHaptics();
   return (
     <div className="space-y-6">
+      <AdminPageHeader title="People" description="Manage users, groups and friendships" />
       <Tabs defaultValue="users" onValueChange={() => tap()}>
         <TabsList>
           <TabsTrigger value="users" className="gap-2">
