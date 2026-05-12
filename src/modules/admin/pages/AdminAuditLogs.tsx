@@ -54,18 +54,19 @@ import {
   EmptyContent,
 } from "@/components/ui/empty";
 import {
-  SearchIcon,
   ScrollTextIcon,
   FilterIcon,
   Loader2Icon,
   DownloadIcon,
   RefreshCwIcon,
   Undo2Icon,
-  XIcon,
+  PlusIcon,
+  PencilIcon,
+  Trash2Icon,
 } from "@/components/ui/icons";
-import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
-import { AdminTableToolbar } from "@/modules/admin/components/AdminTableToolbar";
-import { AdminStatusBadge } from "@/modules/admin/components/AdminStatusBadge";
+import { AdminStatCard } from "@/modules/admin/components/AdminStatCard";
+import { AdminPageToolbar } from "@/modules/admin/components/AdminPageToolbar";
+import { AdminFilterChips } from "@/modules/admin/components/AdminFilterChips";
 import { formatDate } from "@/lib/locale-utils";
 import type { AuditLogEntry, AuditLogsResponse, AuditStats, AuditFilterOptions } from "../types";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -266,7 +267,13 @@ function AuditDetailDialog({
       <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AdminStatusBadge type="audit-action" action={entry.action_type} />
+            {(() => {
+              const action = entry.action_type;
+              if (action === "DELETE") return <Badge variant="destructive" className="gap-1 text-xs"><Trash2Icon className="size-3" aria-hidden="true" />DELETE</Badge>;
+              if (action === "INSERT") return <Badge className="gap-1 text-xs"><PlusIcon className="size-3" aria-hidden="true" />INSERT</Badge>;
+              if (action === "UPDATE") return <Badge variant="secondary" className="gap-1 text-xs"><PencilIcon className="size-3" aria-hidden="true" />UPDATE</Badge>;
+              return <Badge variant="outline" className="gap-1 text-xs">{action}</Badge>;
+            })()}
             <span>{entry.table_name ?? entry.entity_type ?? "—"}</span>
           </DialogTitle>
           <DialogDescription>
@@ -515,44 +522,33 @@ export function AdminAuditLogs() {
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader title="Nhật ký" description="Theo dõi toàn bộ thay đổi dữ liệu trong hệ thống" />
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Nhật ký</h1>
+        <p className="text-sm text-muted-foreground mt-1">Theo dõi toàn bộ thay đổi dữ liệu trong hệ thống</p>
+      </div>
       {/* Stats Cards */}
       {!statsLoading && stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-          <Card className="p-3">
-            <div className="text-xs text-muted-foreground">Tổng nhật ký</div>
-            <div className="text-xl font-semibold mt-1">{stats.total.toLocaleString()}</div>
-          </Card>
-          <Card className="p-3">
-            <div className="text-xs text-muted-foreground">INSERT</div>
-            <div className="text-xl font-semibold mt-1 text-[var(--status-success-foreground)]">
-              {stats.inserts.toLocaleString()}
-            </div>
-          </Card>
-          <Card className="p-3">
-            <div className="text-xs text-muted-foreground">UPDATE</div>
-            <div className="text-xl font-semibold mt-1 text-[var(--status-warning-foreground)]">
-              {stats.updates.toLocaleString()}
-            </div>
-          </Card>
-          <Card className="p-3">
-            <div className="text-xs text-muted-foreground">DELETE</div>
-            <div className="text-xl font-semibold mt-1 text-[var(--status-error-foreground)]">
-              {stats.deletes.toLocaleString()}
-            </div>
-          </Card>
-          <Card className="p-3">
-            <div className="text-xs text-muted-foreground">Hôm nay</div>
-            <div className="text-xl font-semibold mt-1 text-[var(--status-info-foreground)]">
-              {stats.today.toLocaleString()}
-            </div>
-          </Card>
-          <Card className="p-3">
-            <div className="text-xs text-muted-foreground">Tuần này</div>
-            <div className="text-xl font-semibold mt-1 text-foreground">
-              {stats.this_week.toLocaleString()}
-            </div>
-          </Card>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <AdminStatCard
+            title="Tổng nhật ký"
+            value={stats.total.toLocaleString()}
+            icon={<ScrollTextIcon className="size-4" />}
+          />
+          <AdminStatCard
+            title="INSERT"
+            value={stats.inserts.toLocaleString()}
+            icon={<PlusIcon className="size-4" />}
+          />
+          <AdminStatCard
+            title="UPDATE"
+            value={stats.updates.toLocaleString()}
+            icon={<PencilIcon className="size-4" />}
+          />
+          <AdminStatCard
+            title="DELETE"
+            value={stats.deletes.toLocaleString()}
+            icon={<Trash2Icon className="size-4" />}
+          />
         </div>
       )}
 
@@ -665,22 +661,23 @@ export function AdminAuditLogs() {
             </Button>
           </div>
         </CardHeader>
-        <AdminTableToolbar>
-          <div className="relative flex-1 max-w-xs">
-            <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Tìm kiếm theo tên, email, thao tác..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-8"
-            />
-          </div>
-          {search && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => { tap(); setSearch(""); }}>
-              <XIcon className="h-4 w-4" />
-            </Button>
-          )}
-        </AdminTableToolbar>
+        <AdminPageToolbar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Tìm kiếm theo tên, email, thao tác..."
+          filterCount={[actionFilter !== "all", tableFilter !== "all", actorFilter !== "all", dateFrom !== "", dateTo !== ""].filter(Boolean).length}
+          onFilterToggle={() => setShowFilters((v) => !v)}
+        />
+        <AdminFilterChips
+          filters={[
+            ...(actionFilter !== "all" ? [{ key: "action", label: `Thao tác: ${actionFilter}`, onRemove: () => { tap(); setActionFilter("all"); } }] : []),
+            ...(tableFilter !== "all" ? [{ key: "table", label: `Bảng: ${tableFilter}`, onRemove: () => { tap(); setTableFilter("all"); } }] : []),
+            ...(actorFilter !== "all" ? [{ key: "actor", label: `Người thực hiện: ${filterOptions?.actors?.find((a: any) => a.id === actorFilter)?.name ?? actorFilter}`, onRemove: () => { tap(); setActorFilter("all"); } }] : []),
+            ...(dateFrom !== "" ? [{ key: "dateFrom", label: `Từ: ${dateFrom}`, onRemove: () => setDateFrom("") }] : []),
+            ...(dateTo !== "" ? [{ key: "dateTo", label: `Đến: ${dateTo}`, onRemove: () => setDateTo("") }] : []),
+          ]}
+          onClearAll={clearFilters}
+        />
 
         <CardContent className="space-y-4">
           {/* Collapsible Filters */}
@@ -826,7 +823,13 @@ export function AdminAuditLogs() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <AdminStatusBadge type="audit-action" action={entry.action_type} />
+                          {(() => {
+                            const action = entry.action_type;
+                            if (action === "DELETE") return <Badge variant="destructive" className="gap-1 text-xs"><Trash2Icon className="size-3" aria-hidden="true" />DELETE</Badge>;
+                            if (action === "INSERT") return <Badge className="gap-1 text-xs"><PlusIcon className="size-3" aria-hidden="true" />INSERT</Badge>;
+                            if (action === "UPDATE") return <Badge variant="secondary" className="gap-1 text-xs"><PencilIcon className="size-3" aria-hidden="true" />UPDATE</Badge>;
+                            return <Badge variant="outline" className="gap-1 text-xs">{action}</Badge>;
+                          })()}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="font-mono text-xs">
