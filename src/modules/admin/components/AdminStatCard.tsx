@@ -25,13 +25,13 @@ export function AdminStatCard({ title, value, icon, trend, className }: AdminSta
                 className="mt-1.5 gap-1 text-xs"
               >
                 {trend.positive
-                  ? <TrendingUpIcon className="size-3" />
-                  : <TrendingDownIcon className="size-3" />}
+                  ? <TrendingUpIcon className="size-3" aria-hidden="true" />
+                  : <TrendingDownIcon className="size-3" aria-hidden="true" />}
                 {trend.value}
               </Badge>
             )}
           </div>
-          <div className="rounded-lg border bg-muted flex items-center justify-center size-9 shrink-0">
+          <div className="rounded-lg border bg-muted flex items-center justify-center size-9 shrink-0" aria-hidden="true">
             {icon}
           </div>
         </div>
