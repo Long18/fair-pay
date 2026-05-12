@@ -51,13 +51,16 @@ import {
 } from "@/components/ui/empty";
 import {
   SmilePlusIcon,
+  SmileIcon,
+  CheckCircle2Icon,
+  XIcon,
   PencilIcon,
   Trash2Icon,
   PlusIcon,
   Loader2Icon,
   RefreshCwIcon,
 } from "@/components/ui/icons";
-import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
+import { AdminStatCard } from "@/modules/admin/components/AdminStatCard";
 import { toast } from "sonner";
 import { useHaptics } from "@/hooks/use-haptics";
 import type { ReactionType } from "@/modules/expenses/types/comments";
@@ -400,21 +403,28 @@ export function AdminReactions() {
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader title="Reactions" description="Quản lý các loại reaction trong hệ thống" />
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <Card className="p-3">
-          <div className="text-xs text-muted-foreground">Tổng reactions</div>
-          <div className="text-xl font-semibold mt-1">{items?.length ?? 0}</div>
-        </Card>
-        <Card className="p-3">
-          <div className="text-xs text-muted-foreground">Đang hoạt động</div>
-          <div className="text-xl font-semibold mt-1 text-[var(--status-success-foreground)]">{activeCount}</div>
-        </Card>
-        <Card className="p-3">
-          <div className="text-xs text-muted-foreground">Đã tắt</div>
-          <div className="text-xl font-semibold mt-1 text-[var(--status-error-foreground)]">{(items?.length ?? 0) - activeCount}</div>
-        </Card>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Reactions</h1>
+        <p className="text-sm text-muted-foreground mt-1">Quản lý các loại reaction trong hệ thống</p>
+      </div>
+
+      {/* Stat strip */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <AdminStatCard
+          title="Tổng reactions"
+          value={items?.length ?? 0}
+          icon={<SmileIcon className="size-4" />}
+        />
+        <AdminStatCard
+          title="Đang hoạt động"
+          value={activeCount}
+          icon={<CheckCircle2Icon className="size-4" />}
+        />
+        <AdminStatCard
+          title="Đã tắt"
+          value={(items?.length ?? 0) - activeCount}
+          icon={<XIcon className="size-4" />}
+        />
       </div>
 
       {/* Main Table */}
