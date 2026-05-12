@@ -125,6 +125,8 @@ import {
   ZoomOut,
   RotateCcw,
   SlidersHorizontal,
+  Layers,
+  BookOpen,
 } from "lucide-react";
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -971,3 +973,11 @@ export const Undo2Icon: React.FC<IconProps> = ({ size = 24, ...props }) => (
 );
 
 export const SlidersHorizontalIcon = SlidersHorizontal;
+
+export const LayersIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Layers size={size} {...props} />
+);
+
+export const BookOpenIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <BookOpen size={size} {...props} />
+);
