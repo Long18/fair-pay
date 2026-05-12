@@ -102,6 +102,8 @@ import { AdminPageToolbar } from "../components/AdminPageToolbar";
 import { AdminFilterChips } from "../components/AdminFilterChips";
 import { AdminTableSkeleton } from "../components/AdminTableSkeleton";
 import { AdminEmptyState } from "../components/AdminEmptyState";
+import { AdminCrudSheet } from "../components/AdminCrudSheet";
+import { useIsMobile } from "@/hooks/ui/use-mobile";
 
 // ─── Shared Types ───────────────────────────────────────────────────
 
@@ -907,46 +909,49 @@ function CreateUserDialog({
     if (!open) { setFullName(""); setEmail(""); setAvatarUrl(""); setRole("user"); }
   }, [open]);
 
+  const handleSubmit = () => {
+    if (!fullName.trim() || !email.trim()) {
+      toast.error("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+    onSubmit({ full_name: fullName.trim(), email: email.trim(), role, avatar_url: avatarUrl.trim() || undefined });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Tạo người dùng mới</DialogTitle>
-          <DialogDescription>Thêm hồ sơ người dùng mới vào hệ thống</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 mt-2">
-          <div className="space-y-2">
-            <Label htmlFor="user-name">Họ tên</Label>
-            <Input id="user-name" placeholder="Nhập họ tên..." value={fullName} onChange={(e) => setFullName(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="user-email">Email</Label>
-            <Input id="user-email" type="email" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="user-avatar">Avatar URL</Label>
-            <Input id="user-avatar" type="url" placeholder="https://..." value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="user-role">Vai trò</Label>
-            <Select value={role} onValueChange={setRole}>
-              <SelectTrigger id="user-role"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="user">User</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+    <AdminCrudSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Tạo người dùng mới"
+      description="Thêm hồ sơ người dùng mới vào hệ thống"
+      isSubmitting={isCreating}
+      submitLabel="Tạo người dùng"
+      onSubmit={handleSubmit}
+    >
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="user-name">Họ tên</Label>
+          <Input id="user-name" placeholder="Nhập họ tên..." value={fullName} onChange={(e) => setFullName(e.target.value)} />
         </div>
-        <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isCreating}>Hủy</Button>
-          <Button onClick={() => { if (!fullName.trim() || !email.trim()) { toast.error("Vui lòng điền đầy đủ thông tin"); return; } onSubmit({ full_name: fullName.trim(), email: email.trim(), role, avatar_url: avatarUrl.trim() || undefined }); }} disabled={isCreating || !fullName.trim() || !email.trim()}>
-            {isCreating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Tạo người dùng
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <div className="space-y-2">
+          <Label htmlFor="user-email">Email</Label>
+          <Input id="user-email" type="email" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="user-avatar">Avatar URL</Label>
+          <Input id="user-avatar" type="url" placeholder="https://..." value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="user-role">Vai trò</Label>
+          <Select value={role} onValueChange={setRole}>
+            <SelectTrigger id="user-role"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="user">User</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </AdminCrudSheet>
   );
 }
 
@@ -975,31 +980,26 @@ function EditUserDialog({
   if (!user) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Chỉnh sửa hồ sơ</DialogTitle>
-          <DialogDescription>Cập nhật thông tin người dùng &ldquo;{user.full_name}&rdquo;</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 mt-2">
-          <div className="space-y-2">
-            <Label htmlFor="edit-user-name">Họ tên</Label>
-            <Input id="edit-user-name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="edit-user-email">Email</Label>
-            <Input id="edit-user-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
+    <AdminCrudSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Chỉnh sửa hồ sơ"
+      description={`Cập nhật thông tin người dùng "${user.full_name}"`}
+      isSubmitting={isUpdating}
+      submitLabel="Lưu"
+      onSubmit={() => onSubmit({ full_name: fullName, email })}
+    >
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="edit-user-name">Họ tên</Label>
+          <Input id="edit-user-name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
         </div>
-        <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isUpdating}>Hủy</Button>
-          <Button onClick={() => onSubmit({ full_name: fullName, email })} disabled={isUpdating || !fullName || !email}>
-            {isUpdating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Lưu
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <div className="space-y-2">
+          <Label htmlFor="edit-user-email">Email</Label>
+          <Input id="edit-user-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        </div>
+      </div>
+    </AdminCrudSheet>
   );
 }
 
@@ -2160,32 +2160,53 @@ function InviteFriendsTab() {
 
 export function AdminPeople() {
   const { tap } = useHaptics();
+  const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState<"users" | "groups" | "friendships" | "invite">("users");
+
+  const handleTabChange = (value: string) => {
+    tap();
+    setActiveTab(value as typeof activeTab);
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">People</h1>
         <p className="text-sm text-muted-foreground mt-1">Manage users, groups and friendships</p>
       </div>
-      <Tabs defaultValue="users" onValueChange={() => tap()}>
-        <TabsList>
-          <TabsTrigger value="users" className="gap-2">
-            <UsersIcon className="h-4 w-4" />
-            Người dùng
-          </TabsTrigger>
-          <TabsTrigger value="groups" className="gap-2">
-            <GroupIcon className="h-4 w-4" />
-            Nhóm
-          </TabsTrigger>
-          <TabsTrigger value="friendships" className="gap-2">
-            <HeartHandshakeIcon className="h-4 w-4" />
-            Tình bạn
-          </TabsTrigger>
-          <TabsTrigger value="invite" className="gap-2">
-            <MailIcon className="h-4 w-4" />
-            Mời bạn bè
-          </TabsTrigger>
-        </TabsList>
-
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
+        {isMobile ? (
+          <Select value={activeTab} onValueChange={handleTabChange}>
+            <SelectTrigger className="mb-4">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="users">Người dùng</SelectItem>
+              <SelectItem value="groups">Nhóm</SelectItem>
+              <SelectItem value="friendships">Tình bạn</SelectItem>
+              <SelectItem value="invite">Mời bạn bè</SelectItem>
+            </SelectContent>
+          </Select>
+        ) : (
+          <TabsList>
+            <TabsTrigger value="users" className="gap-2">
+              <UsersIcon className="h-4 w-4" />
+              Người dùng
+            </TabsTrigger>
+            <TabsTrigger value="groups" className="gap-2">
+              <GroupIcon className="h-4 w-4" />
+              Nhóm
+            </TabsTrigger>
+            <TabsTrigger value="friendships" className="gap-2">
+              <HeartHandshakeIcon className="h-4 w-4" />
+              Tình bạn
+            </TabsTrigger>
+            <TabsTrigger value="invite" className="gap-2">
+              <MailIcon className="h-4 w-4" />
+              Mời bạn bè
+            </TabsTrigger>
+          </TabsList>
+        )}
         <TabsContent value="users" className="mt-4">
           <UsersTab />
         </TabsContent>
