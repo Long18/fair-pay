@@ -104,7 +104,6 @@ const AdminUserJourney = lazy(() => import("./modules/admin/pages/AdminUserJourn
 const AdminTransactions = lazy(() => import("./modules/admin/pages/AdminTransactions").then(m => ({ default: m.AdminTransactions })));
 const AdminAuditLogs = lazy(() => import("./modules/admin/pages/AdminAuditLogs").then(m => ({ default: m.AdminAuditLogs })));
 const AdminReactions = lazy(() => import("./modules/admin/pages/AdminReactions").then(m => ({ default: m.AdminReactions })));
-const AdminApiDocs = lazy(() => import("./modules/admin/pages/AdminApiDocs").then(m => ({ default: m.AdminApiDocs })));
 const AdminDevTool = lazy(() => import("./modules/admin/pages/AdminDevTool").then(m => ({ default: m.AdminDevTool })));
 
 // Optimized loading fallback component
@@ -427,7 +426,7 @@ function App() {
                     <Route path="utm" element={<Navigate to="/admin/devtool?tab=utm" replace />} />
                     <Route path="devtool" element={<Suspense fallback={<PageLoader />}><AdminDevTool /></Suspense>} />
                     <Route path="og-preview" element={<Navigate to="/admin/devtool" replace />} />
-                    {isAdminApiDocsEnabled && <Route path="api-docs" element={<Suspense fallback={<PageLoader />}><AdminApiDocs /></Suspense>} />}
+                    {isAdminApiDocsEnabled && <Route path="api-docs" element={<Navigate to="/admin/devtool?tab=api-docs" replace />} />}
                   </Route>
 
                   {/* Authenticated routes - require login */}

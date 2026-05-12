@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { AdminOgPreview } from "./AdminOgPreview";
 import { AdminUtmDevTool } from "./AdminUtmDevTool";
+import { AdminApiDocs } from "./AdminApiDocs";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ import {
 } from "@/components/ui/table";
 import {
   AlertTriangleIcon,
+  BookOpenIcon,
   CheckCircle2Icon,
   EyeIcon,
   Loader2Icon,
@@ -972,8 +974,10 @@ function AdminEmailDevTools() {
 export function AdminDevTool() {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab");
-  const activeTab = requestedTab === "email" || requestedTab === "utm" || requestedTab === "og-preview"
-    ? requestedTab
+  const isApiDocsEnabled = import.meta.env.VITE_ENABLE_ADMIN_API_DOCS === "true";
+  const validTabs = ["og-preview", "email", "utm", ...(isApiDocsEnabled ? ["api-docs"] : [])] as const;
+  const activeTab = validTabs.includes(requestedTab as typeof validTabs[number])
+    ? (requestedTab as typeof validTabs[number])
     : "og-preview";
   const handleTabChange = (value: string) => {
     const next = new URLSearchParams(searchParams);
@@ -985,10 +989,10 @@ export function AdminDevTool() {
     <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">DevTool</h1>
-          <p className="text-sm text-muted-foreground">Admin utilities</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Developer Tools</h1>
+          <p className="text-sm text-muted-foreground mt-1">Internal tooling and API documentation</p>
         </div>
-        <TabsList className="grid w-full grid-cols-3 sm:w-fit">
+        <TabsList className={`grid w-full sm:w-fit ${isApiDocsEnabled ? "grid-cols-4" : "grid-cols-3"}`}>
           <TabsTrigger value="og-preview">
             <EyeIcon className="h-4 w-4" />
             OG Preview
@@ -1001,6 +1005,12 @@ export function AdminDevTool() {
             <PieChartIcon className="h-4 w-4" />
             UTM
           </TabsTrigger>
+          {isApiDocsEnabled && (
+            <TabsTrigger value="api-docs">
+              <BookOpenIcon className="h-4 w-4" />
+              API Docs
+            </TabsTrigger>
+          )}
         </TabsList>
       </div>
 
@@ -1013,6 +1023,11 @@ export function AdminDevTool() {
       <TabsContent value="utm">
         <AdminUtmDevTool />
       </TabsContent>
+      {isApiDocsEnabled && (
+        <TabsContent value="api-docs">
+          <AdminApiDocs />
+        </TabsContent>
+      )}
     </Tabs>
   );
 }
