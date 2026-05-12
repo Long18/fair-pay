@@ -10,12 +10,12 @@ import { type AttachmentFile } from "@/modules/expenses/components/attachment-up
 import { useAttachments } from "@/modules/expenses/hooks/use-attachments";
 import { Profile } from "@/modules/profile/types";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Loader2Icon } from "@/components/ui/icons";
 
@@ -304,67 +304,69 @@ export function AdminEditExpenseDialog({
   const isReady = expense && members.length > 0 && existingSplits.length > 0 && defaultValues;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Chỉnh sửa chi phí (Admin)</DialogTitle>
-          <DialogDescription>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full sm:max-w-[680px] flex flex-col p-0 gap-0 overflow-y-auto">
+        <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+          <SheetTitle>Chỉnh sửa chi phí (Admin)</SheetTitle>
+          <SheetDescription>
             Cập nhật chi phí với đầy đủ tính năng như phía Client
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : isReady ? (
-          <div className="space-y-4 mt-2">
-            {/* Context badge */}
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-xs">
-                Admin
-              </Badge>
-              <span className="text-sm text-muted-foreground">
-                {expense.context_type === "group" ? "Nhóm" : "Bạn bè"}
-              </span>
+        <div className="flex-1 px-6 py-4">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-
-            <ExpenseForm
-              groupId={expense.group_id || undefined}
-              members={members}
-              currentUserId={expense.paid_by_user_id}
-              onSubmit={handleSubmit}
-              isLoading={isSubmitting}
-              defaultValues={defaultValues}
-              isEdit={true}
-              attachments={attachments}
-              onAttachmentsChange={setAttachments}
-            />
-
-            {/* Existing attachments */}
-            {existingAttachments.length > 0 && (
-              <div className="space-y-2 -mt-2">
-                <h3 className="text-sm font-semibold">
-                  Tệp đính kèm hiện có ({existingAttachments.length})
-                </h3>
-                <AttachmentList
-                  attachments={existingAttachments}
-                  canDelete={true}
-                  onDelete={(attachmentId) => {
-                    setExistingAttachments((prev) =>
-                      prev.filter((a) => a.id !== attachmentId)
-                    );
-                  }}
-                />
+          ) : isReady ? (
+            <div className="space-y-4">
+              {/* Context badge */}
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs">
+                  Admin
+                </Badge>
+                <span className="text-sm text-muted-foreground">
+                  {expense.context_type === "group" ? "Nhóm" : "Bạn bè"}
+                </span>
               </div>
-            )}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-muted-foreground text-sm">
-            Không thể tải dữ liệu chi phí
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+
+              <ExpenseForm
+                groupId={expense.group_id || undefined}
+                members={members}
+                currentUserId={expense.paid_by_user_id}
+                onSubmit={handleSubmit}
+                isLoading={isSubmitting}
+                defaultValues={defaultValues}
+                isEdit={true}
+                attachments={attachments}
+                onAttachmentsChange={setAttachments}
+              />
+
+              {/* Existing attachments */}
+              {existingAttachments.length > 0 && (
+                <div className="space-y-2 -mt-2">
+                  <h3 className="text-sm font-semibold">
+                    Tệp đính kèm hiện có ({existingAttachments.length})
+                  </h3>
+                  <AttachmentList
+                    attachments={existingAttachments}
+                    canDelete={true}
+                    onDelete={(attachmentId) => {
+                      setExistingAttachments((prev) =>
+                        prev.filter((a) => a.id !== attachmentId)
+                      );
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground text-sm">
+              Không thể tải dữ liệu chi phí
+            </div>
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
