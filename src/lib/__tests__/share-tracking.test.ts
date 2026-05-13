@@ -4,7 +4,7 @@ import { buildShareTrackedUrl } from "../share-tracking";
 import { DEFAULT_UTM_PLATFORMS, findUtmPlatform } from "../utm-config";
 
 describe("buildShareTrackedUrl", () => {
-  it("emits compact copy-link taxonomy without visible UTM params", () => {
+  it("emits compact base62 ref without visible UTM params", () => {
     const result = buildShareTrackedUrl({
       shareUrl: "/groups/show/group-123",
       source: "copy_link",
@@ -15,9 +15,8 @@ describe("buildShareTrackedUrl", () => {
 
     const url = new URL(result, "https://long-pay.vercel.app");
     expect(url.pathname).toBe("/groups/show/group-123");
-    expect(url.searchParams.get("ref")).toBe(
-      "fp1_copy_link~copy_link~group_invite~group_detail_invite_button",
-    );
+    // copy_link(9)/copy_link(3)/group_invite(4)/group_detail_invite_button(5) → n=2873 → "kL"
+    expect(url.searchParams.get("ref")).toBe("kL");
     expect(url.searchParams.has("utm_source")).toBe(false);
   });
 

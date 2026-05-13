@@ -83,8 +83,7 @@ describe("buildDebtShareUrl", () => {
     expect(url.searchParams.has("utm_medium")).toBe(false);
     expect(url.searchParams.has("utm_campaign")).toBe(false);
     expect(url.searchParams.has("utm_content")).toBe(false);
-    expect(url.searchParams.get("ref")).toBe(
-      "fp1_native_share~social_share~debt_share~debt_detail_share_button",
-    );
+    // native_share/social_share/debt_share/debt_detail_share_button → n=1690 → "RG"
+    expect(url.searchParams.get("ref")).toBe("RG");
   });
 });
