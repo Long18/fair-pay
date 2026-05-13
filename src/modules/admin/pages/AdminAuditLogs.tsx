@@ -3,8 +3,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { supabaseClient } from "@/utility/supabaseClient";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -55,7 +56,6 @@ import {
 } from "@/components/ui/empty";
 import {
   ScrollTextIcon,
-  FilterIcon,
   Loader2Icon,
   DownloadIcon,
   RefreshCwIcon,
@@ -67,6 +67,7 @@ import {
 import { AdminPageToolbar } from "@/modules/admin/components/AdminPageToolbar";
 import { AdminSection, AdminSectionHeader } from "@/modules/admin/components/AdminSection";
 import { AdminFilterChips } from "@/modules/admin/components/AdminFilterChips";
+import { useAdminTranslation } from "../i18n";
 import { formatDate } from "@/lib/locale-utils";
 import type { AuditLogEntry, AuditLogsResponse, AuditStats, AuditFilterOptions } from "../types";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -452,6 +453,7 @@ function exportToCsv(entries: AuditLogEntry[]) {
 // ─── Main Component ─────────────────────────────────────────────────
 
 export function AdminAuditLogs() {
+  const { tAdmin } = useAdminTranslation();
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 400);
   const [showFilters, setShowFilters] = useState(false);
@@ -476,6 +478,8 @@ export function AdminAuditLogs() {
   }, [debouncedSearch, actionFilter, tableFilter, actorFilter, dateFrom, dateTo]);
 
   // ─── Data fetching ──────────────────────────────────────────────
+
+  const [isExporting, setIsExporting] = useState(false);
 
   const { data: logsResponse, isLoading, refetch, isFetching } = useAuditLogs({
     search: debouncedSearch,
@@ -506,7 +510,7 @@ export function AdminAuditLogs() {
     setActorFilter("all");
     setDateFrom("");
     setDateTo("");
-  }, []);
+  }, [tap]);
 
   const hasActiveFilters =
     search !== "" ||
@@ -516,6 +520,30 @@ export function AdminAuditLogs() {
     dateFrom !== "" ||
     dateTo !== "";
 
+  const handleExportAll = useCallback(async () => {
+    if (total === 0) return;
+    tap();
+    setIsExporting(true);
+    try {
+      const { data, error } = await supabaseClient.rpc("read_admin_audit_logs", {
+        p_search: debouncedSearch || null,
+        p_action_type: actionFilter !== "all" ? actionFilter : null,
+        p_table_name: tableFilter !== "all" ? tableFilter : null,
+        p_actor_id: actorFilter !== "all" ? actorFilter : null,
+        p_date_from: dateFrom ? new Date(dateFrom).toISOString() : null,
+        p_date_to: dateTo ? new Date(dateTo + "T23:59:59").toISOString() : null,
+        p_limit: Math.min(total, 5000),
+        p_offset: 0,
+      });
+      if (error) throw error;
+      exportToCsv((data as AuditLogsResponse).data);
+    } catch (err: unknown) {
+      toast.error(`Lỗi xuất CSV: ${err instanceof Error ? err.message : "Không thể xuất dữ liệu"}`);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [total, debouncedSearch, actionFilter, tableFilter, actorFilter, dateFrom, dateTo, tap]);
+
   const isEmptyResult = !isLoading && entries.length === 0;
 
   // ─── Render ─────────────────────────────────────────────────────
@@ -523,8 +551,8 @@ export function AdminAuditLogs() {
   return (
     <AdminSection>
       <AdminSectionHeader
-        title="Nhật ký"
-        description="Theo dõi toàn bộ thay đổi dữ liệu trong hệ thống"
+        title={tAdmin("auditLogs.title")}
+        description={tAdmin("auditLogs.description")}
       />
 
 
@@ -596,81 +624,69 @@ export function AdminAuditLogs() {
 
       {/* Main Table Card */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <div>
-            <CardTitle>Nhật ký kiểm toán</CardTitle>
-            <CardDescription>
-              Theo dõi toàn bộ thay đổi dữ liệu trong hệ thống
-            </CardDescription>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => { tap(); refetch(); }}
-              disabled={isFetching}
-            >
-              <RefreshCwIcon className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-              Làm mới
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => { tap(); exportToCsv(entries); }}
-              disabled={entries.length === 0}
-            >
-              <DownloadIcon className="mr-2 h-4 w-4" />
-              Xuất CSV
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => { tap(); setShowFilters((v) => !v); }}
-            >
-              <FilterIcon className="mr-2 h-4 w-4" />
-              Bộ lọc
-              {hasActiveFilters && (
-                <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
-                  {[actionFilter !== "all", tableFilter !== "all", actorFilter !== "all", dateFrom, dateTo, search].filter(Boolean).length}
-                </Badge>
-              )}
-            </Button>
-          </div>
+        <CardHeader className="pb-3">
+          <CardTitle>{tAdmin("auditLogs.title")}</CardTitle>
         </CardHeader>
-        <AdminPageToolbar
-          search={search}
-          onSearchChange={setSearch}
-          searchPlaceholder="Tìm kiếm theo tên, email, thao tác..."
-          filterCount={[actionFilter !== "all", tableFilter !== "all", actorFilter !== "all", dateFrom !== "", dateTo !== ""].filter(Boolean).length}
-          onFilterToggle={() => setShowFilters((v) => !v)}
-        />
-        <AdminFilterChips
-          filters={[
-            ...(actionFilter !== "all" ? [{ key: "action", label: `Thao tác: ${actionFilter}`, onRemove: () => { tap(); setActionFilter("all"); } }] : []),
-            ...(tableFilter !== "all" ? [{ key: "table", label: `Bảng: ${tableFilter}`, onRemove: () => { tap(); setTableFilter("all"); } }] : []),
-            ...(actorFilter !== "all" ? [{ key: "actor", label: `Người thực hiện: ${filterOptions?.actors?.find((a: any) => a.id === actorFilter)?.name ?? actorFilter}`, onRemove: () => { tap(); setActorFilter("all"); } }] : []),
-            ...(dateFrom !== "" ? [{ key: "dateFrom", label: `Từ: ${dateFrom}`, onRemove: () => setDateFrom("") }] : []),
-            ...(dateTo !== "" ? [{ key: "dateTo", label: `Đến: ${dateTo}`, onRemove: () => setDateTo("") }] : []),
-          ]}
-          onClearAll={clearFilters}
-        />
 
         <CardContent className="p-0 space-y-4">
+          <div className="px-6">
+            <AdminPageToolbar
+              search={search}
+              onSearchChange={setSearch}
+              searchPlaceholder="Tìm kiếm theo tên, email, thao tác..."
+              filterCount={[actionFilter !== "all", tableFilter !== "all", actorFilter !== "all", dateFrom !== "", dateTo !== ""].filter(Boolean).length}
+              onFilterToggle={() => setShowFilters((v) => !v)}
+              actions={
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { tap(); refetch(); }}
+                    disabled={isFetching}
+                  >
+                    <RefreshCwIcon className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+                    Làm mới
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void handleExportAll()}
+                    disabled={total === 0 || isExporting}
+                  >
+                    {isExporting
+                      ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                      : <DownloadIcon className="mr-2 h-4 w-4" />}
+                    {isExporting ? `Đang xuất…` : `Xuất CSV (${total.toLocaleString()})`}
+                  </Button>
+                </>
+              }
+            />
+            <AdminFilterChips
+              filters={[
+                ...(actionFilter !== "all" ? [{ key: "action", label: `Thao tác: ${actionFilter}`, onRemove: () => { tap(); setActionFilter("all"); } }] : []),
+                ...(tableFilter !== "all" ? [{ key: "table", label: `Bảng: ${tableFilter}`, onRemove: () => { tap(); setTableFilter("all"); } }] : []),
+                ...(actorFilter !== "all" ? [{ key: "actor", label: `Người thực hiện: ${filterOptions?.actors?.find((a: any) => a.id === actorFilter)?.name ?? actorFilter}`, onRemove: () => { tap(); setActorFilter("all"); } }] : []),
+                ...(dateFrom !== "" ? [{ key: "dateFrom", label: `Từ: ${dateFrom}`, onRemove: () => setDateFrom("") }] : []),
+                ...(dateTo !== "" ? [{ key: "dateTo", label: `Đến: ${dateTo}`, onRemove: () => setDateTo("") }] : []),
+              ]}
+              onClearAll={clearFilters}
+            />
+          </div>
           {/* Collapsible Filters */}
           <Collapsible open={showFilters} onOpenChange={setShowFilters}>
             <CollapsibleContent>
-              <div className="flex items-end gap-3 flex-wrap pb-2">
+              <div className="flex items-end gap-3 flex-wrap pb-4 px-6">
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Từ ngày</label>
+                  <Label className="text-xs text-muted-foreground">Từ ngày</Label>
                   <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Đến ngày</label>
+                  <Label className="text-xs text-muted-foreground">Đến ngày</Label>
                   <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Loại thao tác</label>
+                  <Label className="text-xs text-muted-foreground">Loại thao tác</Label>
                   <Select value={actionFilter} onValueChange={(v) => { tap(); setActionFilter(v); }}>
                     <SelectTrigger className="w-[160px]">
                       <SelectValue placeholder="Tất cả" />
@@ -685,7 +701,7 @@ export function AdminAuditLogs() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Bảng dữ liệu</label>
+                  <Label className="text-xs text-muted-foreground">Bảng dữ liệu</Label>
                   <Select value={tableFilter} onValueChange={(v) => { tap(); setTableFilter(v); }}>
                     <SelectTrigger className="w-[160px]">
                       <SelectValue placeholder="Tất cả" />
@@ -700,7 +716,7 @@ export function AdminAuditLogs() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Người thực hiện</label>
+                  <Label className="text-xs text-muted-foreground">Người thực hiện</Label>
                   <Select value={actorFilter} onValueChange={(v) => { tap(); setActorFilter(v); }}>
                     <SelectTrigger className="w-[160px]">
                       <SelectValue placeholder="Tất cả" />
@@ -813,9 +829,12 @@ export function AdminAuditLogs() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <span className={`text-xs ${entry.source === "audit_logs" ? "text-[var(--status-info-foreground)]" : "text-muted-foreground"}`}>
+                          <Badge
+                            variant={entry.source === "audit_logs" ? "secondary" : "outline"}
+                            className="text-xs font-mono"
+                          >
                             {entry.source === "audit_logs" ? "DB" : "Trail"}
-                          </span>
+                          </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground truncate max-w-[200px] group-hover:text-foreground transition-colors">
                           {getDetailSummary(entry)}
@@ -854,7 +873,20 @@ export function AdminAuditLogs() {
                   <Button variant="outline" size="sm" disabled={page === 0} onClick={() => { tap(); setPage((p) => p - 1); }}>
                     Trước
                   </Button>
-                  <span className="text-sm">{page + 1} / {totalPages}</span>
+                  <div className="flex items-center gap-1.5">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={totalPages}
+                      value={page + 1}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        if (v >= 1 && v <= totalPages) { tap(); setPage(v - 1); }
+                      }}
+                      className="h-8 w-14 text-center tabular-nums"
+                    />
+                    <span className="text-sm text-muted-foreground">/ {totalPages}</span>
+                  </div>
                   <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => { tap(); setPage((p) => p + 1); }}>
                     Sau
                   </Button>
