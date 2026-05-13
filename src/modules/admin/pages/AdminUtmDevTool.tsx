@@ -46,11 +46,12 @@ import {
   CopyIcon,
   ExternalLinkIcon,
   LinkIcon,
+  ListFilterIcon,
   Loader2Icon,
-  PieChartIcon,
   RefreshCwIcon,
   ShareIcon,
   UserPlusIcon,
+  ZapIcon,
 } from "@/components/ui/icons";
 import type {
   UtmMetricRow,
@@ -107,13 +108,11 @@ function formatDateTime(value: string | null | undefined) {
   }).format(new Date(value));
 }
 
-function compactUrlForDisplay(row: Pick<UtmRecentShareRow, "destination_path" | "destination_url" | "generated_url" | "generated_path">) {
+function compactUrlForDisplay(
+  row: Pick<UtmRecentShareRow, "destination_path" | "destination_url" | "generated_url" | "generated_path">,
+) {
   return getCanonicalDestinationPath(
-    row.destination_path ||
-      row.destination_url ||
-      row.generated_url ||
-      row.generated_path ||
-      "/",
+    row.destination_path || row.destination_url || row.generated_url || row.generated_path || "/",
   );
 }
 
@@ -139,62 +138,103 @@ function getRefRows(properties: Record<string, string>) {
     .filter((row) => row.value);
 }
 
+function extractRefCode(url: string): { base: string; ref: string } | null {
+  try {
+    const u = new URL(url);
+    const ref = u.searchParams.get("ref");
+    if (!ref) return null;
+    u.searchParams.delete("ref");
+    return { base: u.toString(), ref };
+  } catch {
+    return null;
+  }
+}
+
+function eventBadgeVariant(eventName: string): "default" | "secondary" | "destructive" | "outline" {
+  if (eventName.includes("completed")) return "default";
+  if (eventName.includes("copied")) return "secondary";
+  if (eventName.includes("failed")) return "destructive";
+  return "outline";
+}
+
 function MetricCard({
   label,
   value,
   description,
   icon: Icon,
+  isText = false,
 }: {
   label: string;
   value: number | string;
   description: string;
   icon: typeof ActivityIcon;
+  isText?: boolean;
 }) {
   return (
-    <Card>
+    <Card className="transition-shadow hover:shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardDescription>{label}</CardDescription>
+        <CardDescription className="text-xs font-medium uppercase tracking-wide">{label}</CardDescription>
         <Icon className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <CardTitle className="break-words text-2xl">{value}</CardTitle>
-        <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+        {isText ? (
+          <Badge variant="secondary" className="max-w-full truncate font-mono text-xs" title={String(value)}>
+            {value}
+          </Badge>
+        ) : (
+          <CardTitle className="break-words text-2xl tabular-nums">{value}</CardTitle>
+        )}
+        <p className="mt-1.5 text-xs text-muted-foreground">{description}</p>
       </CardContent>
     </Card>
   );
 }
 
 function MetricTable({ title, description, rows }: { title: string; description: string; rows: UtmMetricRow[] }) {
+  const max = rows.reduce((m, r) => Math.max(m, r.count), 0);
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-semibold">{title}</CardTitle>
+        <CardDescription className="text-xs">{description}</CardDescription>
       </CardHeader>
       <CardContent>
         {rows.length ? (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead className="w-24 text-right">Count</TableHead>
+                <TableHead className="text-xs">Name</TableHead>
+                <TableHead className="w-24 text-right text-xs">Count</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((row) => (
-                <TableRow key={row.name}>
-                  <TableCell className="max-w-[320px] truncate font-medium" title={row.name}>
-                    {row.name}
+                <TableRow key={row.name} className="transition-colors hover:bg-muted/40">
+                  <TableCell className="py-2">
+                    <div className="space-y-1">
+                      <p className="max-w-[260px] truncate font-mono text-xs" title={row.name}>
+                        {row.name}
+                      </p>
+                      {max > 0 ? (
+                        <div className="h-1 w-full rounded-full bg-muted">
+                          <div
+                            className="h-1 rounded-full bg-primary/60 transition-all"
+                            style={{ width: `${Math.round((row.count / max) * 100)}%` }}
+                          />
+                        </div>
+                      ) : null}
+                    </div>
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">{row.count}</TableCell>
+                  <TableCell className="py-2 text-right tabular-nums text-xs font-medium">{row.count}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         ) : (
-          <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-            No matching data.
-          </p>
+          <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-8 text-center">
+            <ActivityIcon className="h-6 w-6 text-muted-foreground/40" />
+            <p className="text-xs text-muted-foreground">No data for current filters</p>
+          </div>
         )}
       </CardContent>
     </Card>
@@ -212,50 +252,62 @@ function FilterPanel({
   isFetching: boolean;
   onRefresh: () => void;
 }) {
-  const update = (key: keyof FilterState, value: string) => {
-    setFilters({ ...filters, [key]: value });
-  };
+  const update = (key: keyof FilterState, value: string) => setFilters({ ...filters, [key]: value });
 
   return (
     <Card>
-      <CardHeader className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div>
-          <CardTitle className="text-lg">Filters</CardTitle>
-          <CardDescription>Date range plus optional source, campaign, medium, entity, and user filters.</CardDescription>
+      <CardHeader className="flex flex-col gap-3 pb-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-2">
+          <ListFilterIcon className="h-4 w-4 text-muted-foreground" />
+          <div>
+            <CardTitle className="text-sm font-semibold">Filters</CardTitle>
+            <CardDescription className="text-xs">Date range and optional dimension filters</CardDescription>
+          </div>
         </div>
-        <Button type="button" variant="outline" onClick={onRefresh} disabled={isFetching}>
-          {isFetching ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCwIcon className="mr-2 h-4 w-4" />}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="cursor-pointer transition-colors"
+          onClick={onRefresh}
+          disabled={isFetching}
+        >
+          {isFetching ? (
+            <Loader2Icon className="mr-2 h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <RefreshCwIcon className="mr-2 h-3.5 w-3.5" />
+          )}
           Refresh
         </Button>
       </CardHeader>
-      <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
+      <CardContent className="grid gap-3 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-7">
         <div className="space-y-1.5">
-          <Label htmlFor="share-filter-from">From</Label>
-          <Input id="share-filter-from" type="date" value={filters.dateFrom} onChange={(event) => update("dateFrom", event.target.value)} />
+          <Label htmlFor="share-filter-from" className="text-xs">From</Label>
+          <Input id="share-filter-from" type="date" className="h-8 text-xs" value={filters.dateFrom} onChange={(e) => update("dateFrom", e.target.value)} />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="share-filter-to">To</Label>
-          <Input id="share-filter-to" type="date" value={filters.dateTo} onChange={(event) => update("dateTo", event.target.value)} />
+          <Label htmlFor="share-filter-to" className="text-xs">To</Label>
+          <Input id="share-filter-to" type="date" className="h-8 text-xs" value={filters.dateTo} onChange={(e) => update("dateTo", e.target.value)} />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="share-filter-source">Source</Label>
-          <Input id="share-filter-source" value={filters.source} onChange={(event) => update("source", event.target.value)} placeholder="facebook" />
+          <Label htmlFor="share-filter-source" className="text-xs">Source</Label>
+          <Input id="share-filter-source" className="h-8 text-xs" value={filters.source} onChange={(e) => update("source", e.target.value)} placeholder="facebook" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="share-filter-campaign">Campaign</Label>
-          <Input id="share-filter-campaign" value={filters.campaign} onChange={(event) => update("campaign", event.target.value)} placeholder="group_invite" />
+          <Label htmlFor="share-filter-campaign" className="text-xs">Campaign</Label>
+          <Input id="share-filter-campaign" className="h-8 text-xs" value={filters.campaign} onChange={(e) => update("campaign", e.target.value)} placeholder="group_invite" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="share-filter-medium">Medium</Label>
-          <Input id="share-filter-medium" value={filters.medium} onChange={(event) => update("medium", event.target.value)} placeholder="social_share" />
+          <Label htmlFor="share-filter-medium" className="text-xs">Medium</Label>
+          <Input id="share-filter-medium" className="h-8 text-xs" value={filters.medium} onChange={(e) => update("medium", e.target.value)} placeholder="social_share" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="share-filter-entity">Entity</Label>
-          <Input id="share-filter-entity" value={filters.entityType} onChange={(event) => update("entityType", event.target.value)} placeholder="group" />
+          <Label htmlFor="share-filter-entity" className="text-xs">Entity</Label>
+          <Input id="share-filter-entity" className="h-8 text-xs" value={filters.entityType} onChange={(e) => update("entityType", e.target.value)} placeholder="group" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="share-filter-user">User ID</Label>
-          <Input id="share-filter-user" value={filters.userId} onChange={(event) => update("userId", event.target.value)} placeholder="uuid" />
+          <Label htmlFor="share-filter-user" className="text-xs">User ID</Label>
+          <Input id="share-filter-user" className="h-8 font-mono text-xs" value={filters.userId} onChange={(e) => update("userId", e.target.value)} placeholder="uuid" />
         </div>
       </CardContent>
     </Card>
@@ -279,6 +331,48 @@ function getShareSource(platform: UtmPlatform | null | undefined) {
   return platform.source || platform.platform_key || "unknown";
 }
 
+function RefPreview({ url }: { url: string }) {
+  const parts = extractRefCode(url);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Share URL copied");
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
+
+  return (
+    <div className="rounded-lg border bg-muted/20 p-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+          <ZapIcon className="h-3.5 w-3.5" />
+          Share URL preview
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="h-7 cursor-pointer px-2 text-xs transition-colors"
+          onClick={() => void copy()}
+        >
+          <CopyIcon className="mr-1.5 h-3 w-3" />
+          Copy
+        </Button>
+      </div>
+      {parts ? (
+        <p className="break-all font-mono text-xs">
+          <span className="text-muted-foreground">{parts.base}</span>
+          <span className="text-muted-foreground">?ref=</span>
+          <span className="rounded bg-primary/10 px-1 py-0.5 font-semibold text-primary">{parts.ref}</span>
+        </p>
+      ) : (
+        <p className="break-all font-mono text-xs text-muted-foreground">{url}</p>
+      )}
+    </div>
+  );
+}
+
 function BuilderTab({ config }: { config: UtmShareConfig }) {
   const configuredTemplates = config.templates.length ? config.templates : DEFAULT_UTM_SHARE_CONFIG.templates;
   const enabledTemplates = configuredTemplates.filter((item) => item.enabled);
@@ -294,16 +388,22 @@ function BuilderTab({ config }: { config: UtmShareConfig }) {
 
   const template = findUtmTemplate(templates, templateKey) ?? templates[0];
   const platform = findUtmPlatform(platforms, platformKey) ?? platforms[0];
-  const shareUrl = template && platform ? appendShareRef(destinationUrl || "/", {
-    source: getShareSource(platform),
-    medium: platform.medium,
-    campaign: template.campaign,
-    content: template.content,
-  }) : destinationUrl;
+  const shareUrl =
+    template && platform
+      ? appendShareRef(destinationUrl || "/", {
+          source: getShareSource(platform),
+          medium: platform.medium,
+          campaign: template.campaign,
+          content: template.content,
+        })
+      : destinationUrl;
   const refProperties = getShareRefPropertiesFromUrl(shareUrl);
   const refRows = getRefRows(refProperties);
   const hasShareRef = Boolean(refProperties.share_ref);
-  const intentUrl = platform?.method === "platform" ? buildPlatformShareIntent({ trackedUrl: shareUrl, title, text, platform }) : null;
+  const intentUrl =
+    platform?.method === "platform"
+      ? buildPlatformShareIntent({ trackedUrl: shareUrl, title, text, platform })
+      : null;
   const cleanDestinationUrl = getCanonicalDestinationUrl(destinationUrl || "/");
   const destinationPath = getCanonicalDestinationPath(destinationUrl || "/");
 
@@ -311,9 +411,7 @@ function BuilderTab({ config }: { config: UtmShareConfig }) {
     setTemplateKey(nextTemplateKey);
     const nextTemplate = findUtmTemplate(templates, nextTemplateKey);
     setDestinationUrl(getSampleDestinationForTemplate(nextTemplate));
-    if (nextTemplate?.default_platform) {
-      setPlatformKey(nextTemplate.default_platform);
-    }
+    if (nextTemplate?.default_platform) setPlatformKey(nextTemplate.default_platform);
   };
 
   const copy = async (value: string, label: string) => {
@@ -327,145 +425,153 @@ function BuilderTab({ config }: { config: UtmShareConfig }) {
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="border-b">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <LinkIcon className="h-4 w-4" />
-              Builder
-            </CardTitle>
-            <CardDescription>Generate a compact share link and preview the decoded attribution values stored internally.</CardDescription>
+      <CardHeader className="border-b bg-muted/20">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-2">
+            <LinkIcon className="h-4 w-4 text-primary" />
+            <div>
+              <CardTitle className="text-sm font-semibold">Link Builder</CardTitle>
+              <CardDescription className="text-xs">
+                Configure entry point and platform to generate a compact attributed share URL.
+              </CardDescription>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant={hasShareRef ? "secondary" : "destructive"}>
+          <div className="flex flex-wrap gap-1.5">
+            <Badge variant={hasShareRef ? "secondary" : "destructive"} className="text-xs">
               {hasShareRef ? "ref ready" : "missing ref"}
             </Badge>
-            <Badge variant="outline">{template?.entity_type ?? "entity"}</Badge>
+            <Badge variant="outline" className="font-mono text-xs">
+              {template?.entity_type ?? "entity"}
+            </Badge>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-5">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+
+      <CardContent className="space-y-4 pt-4">
+        {/* Controls */}
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <div className="space-y-1.5">
-            <Label htmlFor="share-builder-template">Entry point</Label>
+            <Label htmlFor="share-builder-template" className="text-xs">Entry point</Label>
             <Select value={template?.template_key ?? ""} onValueChange={selectTemplate}>
-              <SelectTrigger id="share-builder-template">
+              <SelectTrigger id="share-builder-template" className="h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {templates.map((item) => (
-                  <SelectItem key={item.template_key} value={item.template_key}>{item.entry_point}</SelectItem>
+                  <SelectItem key={item.template_key} value={item.template_key} className="text-xs">
+                    {item.entry_point}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="share-builder-platform">Share action</Label>
+            <Label htmlFor="share-builder-platform" className="text-xs">Share action</Label>
             <Select value={platform?.platform_key ?? ""} onValueChange={setPlatformKey}>
-              <SelectTrigger id="share-builder-platform">
+              <SelectTrigger id="share-builder-platform" className="h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {platforms.map((item) => (
-                  <SelectItem key={item.platform_key} value={item.platform_key}>{item.label}</SelectItem>
+                  <SelectItem key={item.platform_key} value={item.platform_key} className="text-xs">
+                    {item.label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="share-builder-title">Title</Label>
-            <Input id="share-builder-title" value={title} onChange={(event) => setTitle(event.target.value)} />
+            <Label htmlFor="share-builder-title" className="text-xs">Title</Label>
+            <Input id="share-builder-title" className="h-8 text-xs" value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="share-builder-text">Text</Label>
-            <Input id="share-builder-text" value={text} onChange={(event) => setText(event.target.value)} />
+            <Label htmlFor="share-builder-text" className="text-xs">Text</Label>
+            <Input id="share-builder-text" className="h-8 text-xs" value={text} onChange={(e) => setText(e.target.value)} />
           </div>
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="share-builder-destination">Destination URL</Label>
+          <Label htmlFor="share-builder-destination" className="text-xs">Destination URL</Label>
           <Input
             id="share-builder-destination"
             value={destinationUrl}
-            onChange={(event) => setDestinationUrl(event.target.value)}
-            className="font-mono text-sm"
+            onChange={(e) => setDestinationUrl(e.target.value)}
+            className="h-8 font-mono text-xs"
           />
         </div>
 
-        <div className="grid gap-3 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.3fr)]">
-          <div className="rounded-lg border bg-muted/30 p-3">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <CheckCircle2Icon className="h-4 w-4 text-muted-foreground" />
-              Destination display
-            </div>
-            <p className="mt-2 break-all font-mono text-sm">{destinationPath}</p>
-            <p className="mt-2 break-all font-mono text-xs text-muted-foreground">{cleanDestinationUrl}</p>
-          </div>
-          <div className="rounded-lg border p-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <LinkIcon className="h-4 w-4 text-muted-foreground" />
-                Share URL
-              </div>
-              <Button type="button" size="sm" variant="outline" className="cursor-pointer" onClick={() => void copy(shareUrl, "Share URL")}>
-                <CopyIcon className="mr-2 h-4 w-4" />
-                Copy
-              </Button>
-            </div>
-            <p className="mt-2 break-all font-mono text-xs">{shareUrl}</p>
-          </div>
-        </div>
+        {/* Ref preview — highlighted compact code */}
+        <RefPreview url={shareUrl} />
 
+        <Separator />
+
+        {/* Destination + decoded fields */}
         <div className="grid gap-3 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.3fr)]">
+          <div className="rounded-lg border bg-muted/10 p-3">
+            <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <CheckCircle2Icon className="h-3.5 w-3.5" />
+              Destination (no tracking noise)
+            </div>
+            <p className="break-all font-mono text-xs font-medium">{destinationPath}</p>
+            <p className="mt-1 break-all font-mono text-xs text-muted-foreground">{cleanDestinationUrl}</p>
+          </div>
+
           <div className="rounded-lg border p-3">
-            <p className="text-sm font-medium">Decoded fields</p>
+            <p className="mb-2 text-xs font-medium">Decoded attribution fields</p>
             {refRows.length ? (
-              <Table className="mt-2">
+              <Table>
                 <TableBody>
                   {refRows.map((row) => (
-                    <TableRow key={row.key}>
-                      <TableCell className="w-32 py-2 font-mono text-xs text-muted-foreground">{row.key}</TableCell>
-                      <TableCell className="break-all py-2 font-mono text-xs">{row.value}</TableCell>
+                    <TableRow key={row.key} className="transition-colors hover:bg-muted/30">
+                      <TableCell className="w-36 py-1.5 font-mono text-xs text-muted-foreground">{row.key}</TableCell>
+                      <TableCell className="break-all py-1.5 font-mono text-xs font-medium">{row.value}</TableCell>
                     </TableRow>
                   ))}
-                  <TableRow>
-                    <TableCell className="w-32 py-2 font-mono text-xs text-muted-foreground">share_method</TableCell>
-                    <TableCell className="break-all py-2 font-mono text-xs">{platform?.method ?? "unknown"}</TableCell>
+                  <TableRow className="transition-colors hover:bg-muted/30">
+                    <TableCell className="w-36 py-1.5 font-mono text-xs text-muted-foreground">share_method</TableCell>
+                    <TableCell className="py-1.5 font-mono text-xs font-medium">{platform?.method ?? "unknown"}</TableCell>
                   </TableRow>
                   {platform?.method === "platform" ? (
-                    <TableRow>
-                      <TableCell className="w-32 py-2 font-mono text-xs text-muted-foreground">share_platform</TableCell>
-                      <TableCell className="break-all py-2 font-mono text-xs">{platform.platform_key}</TableCell>
+                    <TableRow className="transition-colors hover:bg-muted/30">
+                      <TableCell className="w-36 py-1.5 font-mono text-xs text-muted-foreground">share_platform</TableCell>
+                      <TableCell className="py-1.5 font-mono text-xs font-medium">{platform.platform_key}</TableCell>
                     </TableRow>
                   ) : null}
                 </TableBody>
               </Table>
             ) : (
-              <Alert variant="destructive" className="mt-3">
+              <Alert variant="destructive" className="mt-2 py-2">
                 <AlertCircleIcon className="h-4 w-4" />
-                <AlertTitle>Invalid ref</AlertTitle>
-                <AlertDescription>Check the destination URL and selected share action.</AlertDescription>
+                <AlertTitle className="text-xs">Invalid ref</AlertTitle>
+                <AlertDescription className="text-xs">Check destination URL and share action.</AlertDescription>
               </Alert>
             )}
           </div>
+        </div>
+
+        {/* Platform intent */}
+        {platform?.method === "platform" ? (
           <div className="rounded-lg border p-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium">Platform intent</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Platform actions open an external share intent. Copy and native actions use the share URL directly.
-                </p>
-              </div>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <p className="text-xs font-medium">Platform intent URL</p>
               {intentUrl ? (
-                <Button type="button" size="sm" variant="outline" className="cursor-pointer" onClick={() => void copy(intentUrl, "Intent URL")}>
-                  <CopyIcon className="mr-2 h-4 w-4" />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 cursor-pointer px-2 text-xs transition-colors"
+                  onClick={() => void copy(intentUrl, "Intent URL")}
+                >
+                  <CopyIcon className="mr-1.5 h-3 w-3" />
                   Copy
                 </Button>
               ) : null}
             </div>
-            <p className="mt-3 break-all font-mono text-xs">{intentUrl ?? "No platform intent for this action."}</p>
+            <p className="break-all font-mono text-xs text-muted-foreground">
+              {intentUrl ?? "No platform intent for this action."}
+            </p>
           </div>
-        </div>
+        ) : null}
       </CardContent>
     </Card>
   );
@@ -474,27 +580,28 @@ function BuilderTab({ config }: { config: UtmShareConfig }) {
 function MetricsTab({ data, isLoading }: { data: UtmPerformanceResponse | undefined; isLoading: boolean }) {
   const topSource = data?.traffic_by_source?.[0]?.name ?? "direct";
   const topCampaign = data?.traffic_by_campaign?.[0]?.name ?? "none";
+  const totalSignups = data?.signup_by_source?.reduce((sum, row) => sum + row.count, 0) ?? 0;
 
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <Card key={index}>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Card key={i}>
               <CardHeader className="space-y-2 pb-2">
-                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-3 w-20" />
               </CardHeader>
               <CardContent className="space-y-2">
-                <Skeleton className="h-8 w-20" />
-                <Skeleton className="h-3 w-32" />
+                <Skeleton className="h-7 w-16" />
+                <Skeleton className="h-2.5 w-28" />
               </CardContent>
             </Card>
           ))}
         </div>
         <Card>
-          <CardContent className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+          <CardContent className="flex items-center justify-center py-10 text-sm text-muted-foreground">
             <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-            Loading share metrics...
+            Loading share metrics…
           </CardContent>
         </Card>
       </div>
@@ -503,96 +610,118 @@ function MetricsTab({ data, isLoading }: { data: UtmPerformanceResponse | undefi
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard label="Sessions" value={data?.total_sessions ?? 0} description={`Top source: ${topSource}`} icon={ActivityIcon} />
-        <MetricCard label="Events" value={data?.total_events ?? 0} description="Events carrying attribution context" icon={PieChartIcon} />
-        <MetricCard label="Shares" value={data?.total_shares ?? 0} description="Generated, copied, completed, and failed shares" icon={ShareIcon} />
-        <MetricCard label="Campaign" value={topCampaign} description="Highest traffic campaign" icon={PieChartIcon} />
-        <MetricCard
-          label="Signups"
-          value={data?.signup_by_source?.reduce((sum, row) => sum + row.count, 0) ?? 0}
-          description="Auth register events by source"
-          icon={UserPlusIcon}
-        />
+        <MetricCard label="Events" value={data?.total_events ?? 0} description="Events with attribution context" icon={ZapIcon} />
+        <MetricCard label="Shares" value={data?.total_shares ?? 0} description="Generated, copied, completed, failed" icon={ShareIcon} />
+        <MetricCard label="Top campaign" value={topCampaign} description="Highest-traffic campaign" icon={LinkIcon} isText />
+        <MetricCard label="Signups" value={totalSignups} description="Auth register events by source" icon={UserPlusIcon} />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <MetricTable title="Traffic by source" description="Session starts grouped by decoded source or referrer fallback." rows={data?.traffic_by_source ?? []} />
-        <MetricTable title="Traffic by campaign" description="Session starts grouped by decoded campaign." rows={data?.traffic_by_campaign ?? []} />
-        <MetricTable title="Destination pages" description="Shared destination pages shown without attribution query noise." rows={data?.destination_pages ?? []} />
-        <MetricTable title="Share count by content" description="Share events grouped by exact UI entry point." rows={data?.share_count_by_content ?? []} />
+      <div className="grid gap-3 xl:grid-cols-2">
+        <MetricTable title="Traffic by source" description="Sessions grouped by decoded source or referrer fallback." rows={data?.traffic_by_source ?? []} />
+        <MetricTable title="Traffic by campaign" description="Sessions grouped by decoded campaign." rows={data?.traffic_by_campaign ?? []} />
+        <MetricTable title="Destination pages" description="Shared destinations without attribution noise." rows={data?.destination_pages ?? []} />
+        <MetricTable title="Share count by entry point" description="Share events grouped by UI entry point." rows={data?.share_count_by_content ?? []} />
         <MetricTable title="Signup by source" description="Registration events grouped by last-touch source." rows={data?.signup_by_source ?? []} />
-        <MetricTable title="Invite accepted by campaign" description="Invite acceptance conversion events grouped by campaign." rows={data?.invite_accepted_by_campaign ?? []} />
-        <MetricTable title="Conversion by first-touch source" description="Authenticated attribution by original source." rows={data?.conversion_by_first_touch_source ?? []} />
-        <MetricTable title="Conversion by last-touch source" description="Authenticated attribution by most recent source." rows={data?.conversion_by_last_touch_source ?? []} />
+        <MetricTable title="Invite accepted by campaign" description="Invite acceptance events grouped by campaign." rows={data?.invite_accepted_by_campaign ?? []} />
+        <MetricTable title="Conversion — first-touch" description="Authenticated attribution by original source." rows={data?.conversion_by_first_touch_source ?? []} />
+        <MetricTable title="Conversion — last-touch" description="Authenticated attribution by most recent source." rows={data?.conversion_by_last_touch_source ?? []} />
       </div>
     </div>
   );
 }
 
 function RecentSharesTab({ rows }: { rows: UtmRecentShareRow[] }) {
+  if (!rows.length) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
+          <ShareIcon className="h-8 w-8 text-muted-foreground/30" />
+          <p className="text-sm text-muted-foreground">No share events for the current filters.</p>
+          <p className="text-xs text-muted-foreground">Adjust the date range or clear dimension filters.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <ActivityIcon className="h-4 w-4" />
-          Recent shares
-        </CardTitle>
-        <CardDescription>Recent attributed share events with compact destination display and journey handoff.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {rows.length ? (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Event</TableHead>
-                  <TableHead>Destination</TableHead>
-                  <TableHead>Source</TableHead>
-                  <TableHead>Campaign</TableHead>
-                  <TableHead>When</TableHead>
-                  <TableHead className="w-32 text-right">Journey</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((row, index) => {
-                  const displayPath = compactUrlForDisplay(row);
-                  return (
-                    <TableRow key={`${row.session_id}-${row.event_name}-${row.occurred_at}-${index}`}>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1.5">
-                          <Badge variant="secondary">{row.event_name}</Badge>
-                          <Badge variant="outline">{row.share_method ?? "unknown"}</Badge>
-                          {row.share_platform ? <Badge variant="outline">{row.share_platform}</Badge> : null}
-                        </div>
-                      </TableCell>
-                      <TableCell className="max-w-[360px] break-all font-mono text-xs">{displayPath}</TableCell>
-                      <TableCell>{row.utm_source ?? "-"}</TableCell>
-                      <TableCell>{row.utm_campaign ?? "-"}</TableCell>
-                      <TableCell className="whitespace-nowrap text-muted-foreground">{formatDateTime(row.occurred_at)}</TableCell>
-                      <TableCell className="text-right">
-                        {row.user_id ? (
-                          <Button asChild type="button" variant="outline" size="sm">
-                            <Link to={`/admin/people/${row.user_id}/journey?session=${row.session_id ?? "all"}&source=${row.utm_source ?? ""}&campaign=${row.utm_campaign ?? ""}`}>
-                              <ExternalLinkIcon className="mr-2 h-4 w-4" />
-                              Open
-                            </Link>
-                          </Button>
-                        ) : (
-                          <Badge variant="outline">anonymous</Badge>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-2">
+          <ActivityIcon className="h-4 w-4 text-muted-foreground" />
+          <div>
+            <CardTitle className="text-sm font-semibold">Recent shares</CardTitle>
+            <CardDescription className="text-xs">
+              Attributed share events with compact destination and journey handoff.
+            </CardDescription>
           </div>
-        ) : (
-          <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-            No recent share events for the current filters.
-          </p>
-        )}
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-t">
+                <TableHead className="text-xs">Event</TableHead>
+                <TableHead className="text-xs">Destination</TableHead>
+                <TableHead className="text-xs">Source</TableHead>
+                <TableHead className="text-xs">Campaign</TableHead>
+                <TableHead className="text-xs">When</TableHead>
+                <TableHead className="w-28 text-right text-xs">Journey</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((row, index) => {
+                const displayPath = compactUrlForDisplay(row);
+                return (
+                  <TableRow
+                    key={`${row.session_id}-${row.event_name}-${row.occurred_at}-${index}`}
+                    className="transition-colors hover:bg-muted/30"
+                  >
+                    <TableCell className="py-2.5">
+                      <div className="flex flex-wrap gap-1">
+                        <Badge variant={eventBadgeVariant(row.event_name)} className="text-xs">
+                          {row.event_name}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {row.share_method ?? "unknown"}
+                        </Badge>
+                        {row.share_platform ? (
+                          <Badge variant="outline" className="font-mono text-xs">
+                            {row.share_platform}
+                          </Badge>
+                        ) : null}
+                      </div>
+                    </TableCell>
+                    <TableCell className="max-w-[280px] break-all py-2.5 font-mono text-xs text-muted-foreground">
+                      {displayPath}
+                    </TableCell>
+                    <TableCell className="py-2.5 text-xs">{row.utm_source ?? "-"}</TableCell>
+                    <TableCell className="py-2.5 font-mono text-xs">{row.utm_campaign ?? "-"}</TableCell>
+                    <TableCell className="whitespace-nowrap py-2.5 text-xs text-muted-foreground">
+                      {formatDateTime(row.occurred_at)}
+                    </TableCell>
+                    <TableCell className="py-2.5 text-right">
+                      {row.user_id ? (
+                        <Button asChild type="button" variant="outline" size="sm" className="h-7 cursor-pointer px-2 text-xs transition-colors">
+                          <Link
+                            to={`/admin/people/${row.user_id}/journey?session=${row.session_id ?? "all"}&source=${row.utm_source ?? ""}&campaign=${row.utm_campaign ?? ""}`}
+                          >
+                            <ExternalLinkIcon className="mr-1.5 h-3 w-3" />
+                            Open
+                          </Link>
+                        </Button>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">anonymous</Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );
@@ -601,15 +730,18 @@ function RecentSharesTab({ rows }: { rows: UtmRecentShareRow[] }) {
 export function AdminUtmDevTool() {
   const [filters, setFilters] = useState<FilterState>(() => getInitialFilters());
 
-  const rpcFilters = useMemo(() => ({
-    fromIso: toIsoStart(filters.dateFrom),
-    toIso: toIsoEnd(filters.dateTo),
-    source: optionalFilter(filters.source),
-    campaign: optionalFilter(filters.campaign),
-    medium: optionalFilter(filters.medium),
-    entityType: optionalFilter(filters.entityType),
-    userId: optionalFilter(filters.userId),
-  }), [filters]);
+  const rpcFilters = useMemo(
+    () => ({
+      fromIso: toIsoStart(filters.dateFrom),
+      toIso: toIsoEnd(filters.dateTo),
+      source: optionalFilter(filters.source),
+      campaign: optionalFilter(filters.campaign),
+      medium: optionalFilter(filters.medium),
+      entityType: optionalFilter(filters.entityType),
+      userId: optionalFilter(filters.userId),
+    }),
+    [filters],
+  );
 
   const configQuery = useShareConfig();
   const config = configQuery.data ?? DEFAULT_UTM_SHARE_CONFIG;
@@ -638,20 +770,26 @@ export function AdminUtmDevTool() {
   };
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <PieChartIcon className="h-5 w-5 text-primary" />
-            <h2 className="text-xl font-semibold tracking-tight">Share Links</h2>
+    <div className="space-y-4">
+      {/* Page header */}
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-primary/5">
+            <ShareIcon className="h-4 w-4 text-primary" />
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Generate compact share URLs, inspect decoded attribution, and monitor share performance.
-          </p>
+          <div>
+            <h2 className="text-base font-semibold tracking-tight">Share Links</h2>
+            <p className="text-xs text-muted-foreground">
+              Build compact share URLs, inspect decoded attribution, and monitor performance.
+            </p>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="secondary">one visible ref</Badge>
-          <Badge variant="outline">legacy links accepted</Badge>
+        <div className="flex flex-wrap gap-1.5">
+          <Badge variant="secondary" className="text-xs">
+            <ZapIcon className="mr-1 h-3 w-3" />
+            compact ref
+          </Badge>
+          <Badge variant="outline" className="text-xs">legacy links accepted</Badge>
         </div>
       </div>
 
@@ -666,15 +804,17 @@ export function AdminUtmDevTool() {
         <Alert variant="destructive">
           <AlertCircleIcon className="h-4 w-4" />
           <AlertTitle>Share data unavailable</AlertTitle>
-          <AlertDescription>Builder fallback config is active; metrics may be incomplete until the admin RPC responds.</AlertDescription>
+          <AlertDescription className="text-xs">
+            Builder is using fallback config. Metrics may be incomplete until the RPC responds.
+          </AlertDescription>
         </Alert>
       ) : null}
 
-      <Tabs defaultValue="builder" className="space-y-4">
+      <Tabs defaultValue="builder" className="space-y-3">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="builder">Builder</TabsTrigger>
-          <TabsTrigger value="metrics">Metrics</TabsTrigger>
-          <TabsTrigger value="recent">Recent shares</TabsTrigger>
+          <TabsTrigger value="builder" className="text-xs">Builder</TabsTrigger>
+          <TabsTrigger value="metrics" className="text-xs">Metrics</TabsTrigger>
+          <TabsTrigger value="recent" className="text-xs">Recent shares</TabsTrigger>
         </TabsList>
 
         <TabsContent value="builder">
@@ -688,9 +828,8 @@ export function AdminUtmDevTool() {
         </TabsContent>
       </Tabs>
 
-      <Separator />
       <p className="text-xs text-muted-foreground">
-        The database still accepts older campaign links; new shares keep the visible URL to a single ref parameter.
+        Older campaign links still work — new shares use a single compact <code className="rounded bg-muted px-1 py-0.5 font-mono">ref</code> parameter.
       </p>
     </div>
   );
