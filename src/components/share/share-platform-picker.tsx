@@ -16,13 +16,15 @@ import { Separator } from "@/components/ui/separator";
 import {
   CopyIcon,
   ExternalLinkIcon,
+  LinkIcon,
   MailIcon,
   MessageSquareIcon,
   SendIcon,
   ShareIcon,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
-import { copyShareLinkWithTracking, shareWithTracking } from "@/lib/share-tracking";
+import { buildShareTrackedUrl, copyShareLinkWithTracking, shareWithTracking } from "@/lib/share-tracking";
+import { getCanonicalDestinationPath } from "@/lib/utm";
 import {
   DEFAULT_UTM_SHARE_CONFIG,
   findUtmTemplate,
@@ -113,17 +115,18 @@ export function SharePlatformPicker({
 
   const { platforms, copyEnabled, nativeEnabled } = useMemo(() => {
     const allowedPlatforms = new Set(allowedPlatformSignature ? allowedPlatformSignature.split("\u0000") : []);
+    const allowsPlatform = (platformKey: string) => allowedPlatforms.size === 0 || allowedPlatforms.has(platformKey);
     const enabled = sortUtmPlatforms(config.platforms).filter((platform) => {
       if (!platform.enabled) return false;
       if (platform.method !== "platform") return false;
       if (!platform.intent_url_template) return false;
-      return allowedPlatforms.size === 0 || allowedPlatforms.has(platform.platform_key);
+      return allowsPlatform(platform.platform_key);
     });
 
     return {
       platforms: enabled,
-      copyEnabled: config.platforms.some((platform) => platform.platform_key === "copy_link" && platform.enabled),
-      nativeEnabled: config.platforms.some((platform) => platform.platform_key === "native_share" && platform.enabled),
+      copyEnabled: config.platforms.some((platform) => platform.platform_key === "copy_link" && platform.enabled && allowsPlatform(platform.platform_key)),
+      nativeEnabled: config.platforms.some((platform) => platform.platform_key === "native_share" && platform.enabled && allowsPlatform(platform.platform_key)),
     };
   }, [allowedPlatformSignature, config.platforms]);
 
@@ -137,6 +140,18 @@ export function SharePlatformPicker({
     templateKey: template?.template_key ?? templateKey,
     pagePath,
   };
+  const previewBaseUrl = dialogOpen ? resolveValue(shareUrl, "/") : "";
+  const previewDestinationUrl = dialogOpen ? resolveValue(destinationUrl, previewBaseUrl || "/") : "";
+  const previewTrackedUrl = previewBaseUrl
+    ? buildShareTrackedUrl({
+        ...shareBase,
+        content: "copy_link_button",
+        shareUrl: previewBaseUrl,
+        source: "copy_link",
+        medium: "copy_link",
+      })
+    : "";
+  const previewDestinationPath = previewDestinationUrl ? getCanonicalDestinationPath(previewDestinationUrl) : "/";
 
   const runPlatformShare = async (platform: UtmPlatform) => {
     const url = resolveValue(shareUrl, "/");
@@ -194,17 +209,31 @@ export function SharePlatformPicker({
       {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
       <DialogContent className={cn("max-w-lg", className)}>
         <DialogHeader>
-          <DialogTitle>Share with tracking</DialogTitle>
+          <DialogTitle>Share link</DialogTitle>
           <DialogDescription>
-            Pick a platform to use that platform as UTM source. Native share cannot reveal the selected app.
+            Pick where you want to share. FairPay keeps the link compact while preserving attribution internally.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5">
+          {previewTrackedUrl ? (
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2 text-sm font-medium">
+                  <LinkIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="truncate">Preview</span>
+                </div>
+                <Badge variant="secondary">ref only</Badge>
+              </div>
+              <p className="mt-2 break-all font-mono text-xs">{previewTrackedUrl}</p>
+              <p className="mt-1 break-all font-mono text-[11px] text-muted-foreground">{previewDestinationPath}</p>
+            </div>
+          ) : null}
+
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <div className="text-sm font-medium">Platforms</div>
-              <Badge variant="outline">utm_source = platform</Badge>
+              <Badge variant="outline">compact ref link</Badge>
             </div>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {platforms.map((platform) => {
@@ -214,7 +243,7 @@ export function SharePlatformPicker({
                     key={platform.platform_key}
                     type="button"
                     variant="outline"
-                    className="h-12 justify-start gap-2"
+                    className="h-12 cursor-pointer justify-start gap-2 transition-colors"
                     onClick={() => void runPlatformShare(platform)}
                   >
                     <Icon className="h-4 w-4" />
@@ -224,7 +253,7 @@ export function SharePlatformPicker({
               })}
               {platforms.length === 0 ? (
                 <div className="col-span-full rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                  No enabled platform templates. Use DevTool UTM setup to enable platforms.
+                  No enabled share platforms. Use the admin share tools to enable platforms.
                 </div>
               ) : null}
             </div>
@@ -239,16 +268,21 @@ export function SharePlatformPicker({
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {copyEnabled ? (
-                <Button type="button" variant="secondary" className="h-12 justify-start gap-2" onClick={() => void runCopy()}>
+                <Button type="button" variant="secondary" className="h-12 cursor-pointer justify-start gap-2 transition-colors" onClick={() => void runCopy()}>
                   <CopyIcon className="h-4 w-4" />
-                  Copy tracked link
+                  Copy link
                 </Button>
               ) : null}
               {nativeEnabled ? (
-                <Button type="button" variant="secondary" className="h-12 justify-start gap-2" onClick={() => void runNative()}>
+                <Button type="button" variant="secondary" className="h-12 cursor-pointer justify-start gap-2 transition-colors" onClick={() => void runNative()}>
                   <ShareIcon className="h-4 w-4" />
                   Native share
                 </Button>
+              ) : null}
+              {!copyEnabled && !nativeEnabled ? (
+                <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                  No utility share actions are enabled.
+                </div>
               ) : null}
             </div>
           </div>
