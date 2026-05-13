@@ -1,6 +1,7 @@
 import { XIcon, ExternalLink, CalendarClock, BarChart2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { journeyGradient } from "./journey-theme";
+import { useAdminTranslation } from "../../i18n";
 
 interface JourneyNodeDetailData {
   pagePath: string;
@@ -34,9 +35,9 @@ function formatDuration(seconds: number | null): string {
   return `${m}m ${s}s`;
 }
 
-function formatLastVisited(dateStr: string): string {
+function formatLastVisited(dateStr: string, locale: string): string {
   try {
-    return new Intl.DateTimeFormat("vi-VN", {
+    return new Intl.DateTimeFormat(locale, {
       dateStyle: "short",
       timeStyle: "short",
     }).format(new Date(dateStr));
@@ -46,6 +47,8 @@ function formatLastVisited(dateStr: string): string {
 }
 
 export function JourneyNodeDetail({ node, onClose }: JourneyNodeDetailProps) {
+  const { tAdmin, locale } = useAdminTranslation();
+
   if (!node) return null;
 
   return (
@@ -60,7 +63,7 @@ export function JourneyNodeDetail({ node, onClose }: JourneyNodeDetailProps) {
         {/* Header */}
         <div className="flex items-start justify-between gap-2 mb-4">
           <div className="flex-1 min-w-0">
-            <p className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">Page</p>
+            <p className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">{tAdmin("journey.canvas.page")}</p>
             <div className="flex items-start gap-1.5">
               <p className="flex-1 break-all text-sm font-medium leading-snug text-foreground">
                 {node.pagePath}
@@ -69,7 +72,7 @@ export function JourneyNodeDetail({ node, onClose }: JourneyNodeDetailProps) {
                 type="button"
                 onClick={() => window.open(node.pagePath, "_blank", "noopener,noreferrer")}
                 className="mt-0.5 shrink-0 text-muted-foreground transition-colors hover:text-foreground"
-                title="Mở trang"
+                title={tAdmin("journey.canvas.openPage")}
               >
                 <ExternalLink size={13} />
               </button>
@@ -79,7 +82,7 @@ export function JourneyNodeDetail({ node, onClose }: JourneyNodeDetailProps) {
             type="button"
             onClick={onClose}
             className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
-            aria-label="Đóng"
+            aria-label={tAdmin("common.close")}
           >
             <XIcon size={16} />
           </button>
@@ -88,13 +91,13 @@ export function JourneyNodeDetail({ node, onClose }: JourneyNodeDetailProps) {
         {/* Stats grid */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="rounded-lg bg-muted/80 p-3">
-            <p className="mb-1 text-xs text-muted-foreground">Lượt xem</p>
+            <p className="mb-1 text-xs text-muted-foreground">{tAdmin("journey.canvas.views")}</p>
             <p className="text-lg font-semibold text-foreground">
-              {node.visitCount.toLocaleString("vi-VN")}
+              {node.visitCount.toLocaleString(locale)}
             </p>
           </div>
           <div className="rounded-lg bg-muted/80 p-3">
-            <p className="mb-1 text-xs text-muted-foreground">Thời gian TB</p>
+            <p className="mb-1 text-xs text-muted-foreground">{tAdmin("journey.canvas.avgTime")}</p>
             <p className="text-lg font-semibold text-foreground">
               {formatDuration(node.avgDurationSeconds)}
             </p>
@@ -106,7 +109,7 @@ export function JourneyNodeDetail({ node, onClose }: JourneyNodeDetailProps) {
           <div className="mb-4">
             <div className="flex items-center gap-1.5 mb-2">
               <BarChart2 size={12} className="text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">Loại event ({node.eventTypes.length})</p>
+              <p className="text-xs text-muted-foreground">{tAdmin("journey.canvas.eventTypes", { count: node.eventTypes.length })}</p>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {node.eventTypes.map((type) => {
@@ -130,17 +133,16 @@ export function JourneyNodeDetail({ node, onClose }: JourneyNodeDetailProps) {
         {/* Last visited */}
         <div className="flex items-center gap-1.5 mb-3">
           <CalendarClock size={12} className="text-muted-foreground" />
-          <p className="text-xs text-muted-foreground">Lần cuối</p>
+          <p className="text-xs text-muted-foreground">{tAdmin("journey.canvas.lastSeen")}</p>
         </div>
         <p className="mb-4 text-sm text-foreground">
-          {formatLastVisited(node.lastVisitedAt)}
+          {formatLastVisited(node.lastVisitedAt, locale)}
         </p>
 
         {/* Timeline hint */}
         <div className="border-t border-border/70 pt-3">
           <p className="text-[11px] leading-relaxed text-muted-foreground">
-            Xem toàn bộ metadata và raw events tại tab{" "}
-            <span className="font-medium text-primary">Timeline</span>.
+            {tAdmin("journey.canvas.timelineHint")}
           </p>
         </div>
       </div>

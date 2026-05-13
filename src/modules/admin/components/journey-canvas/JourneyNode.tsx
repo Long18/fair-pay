@@ -3,6 +3,7 @@ import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
 import { Eye, MousePointerClick, FileText, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { journeyGradient, journeyMutedGradient, journeyPalette } from "./journey-theme";
+import { useAdminTranslation } from "../../i18n";
 
 export type JourneyNodeData = {
   pagePath: string;
@@ -51,6 +52,7 @@ const PULSE_GLOW_STYLE: React.CSSProperties = {
 export const JourneyNode = memo(function JourneyNode({
   data,
 }: NodeProps<JourneyNodeType>) {
+  const { tAdmin } = useAdminTranslation();
   const {
     pagePath,
     visitCount,
@@ -64,11 +66,11 @@ export const JourneyNode = memo(function JourneyNode({
     try {
       const diff = Date.now() - new Date(lastVisitedAt).getTime();
       const mins = Math.floor(diff / 60000);
-      if (mins < 1) return "just now";
-      if (mins < 60) return `${mins}m ago`;
+      if (mins < 1) return tAdmin("journey.canvas.justNow");
+      if (mins < 60) return tAdmin("journey.canvas.minsAgo", { count: mins });
       const hrs = Math.floor(mins / 60);
-      if (hrs < 24) return `${hrs}h ago`;
-      return `${Math.floor(hrs / 24)}d ago`;
+      if (hrs < 24) return tAdmin("journey.canvas.hoursAgo", { count: hrs });
+      return tAdmin("journey.canvas.daysAgo", { count: Math.floor(hrs / 24) });
     } catch {
       return lastVisitedAt;
     }
@@ -117,7 +119,7 @@ export const JourneyNode = memo(function JourneyNode({
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
-                title={`Open ${pagePath}`}
+                title={tAdmin("journey.canvas.openPage")}
                 onClick={(e) => {
                   e.stopPropagation();
                   window.open(pagePath, "_blank", "noopener,noreferrer");
@@ -169,7 +171,7 @@ export const JourneyNode = memo(function JourneyNode({
             <div className="mt-3 flex items-center gap-1.5">
               <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
               <span className="text-[10px] font-medium text-primary">
-                Last seen here
+                {tAdmin("journey.canvas.lastSeenBadge")}
               </span>
             </div>
           )}

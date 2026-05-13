@@ -35,6 +35,7 @@ import { JourneyEdge } from "./JourneyEdge";
 import { JourneyNodeDetail } from "./JourneyNodeDetail";
 import { useJourneyGraph } from "./use-journey-graph";
 import { journeyPalette } from "./journey-theme";
+import { useAdminTranslation } from "../../i18n";
 
 const nodeTypes = { journey: JourneyNode, source: JourneySourceNode } as const;
 const edgeTypes = { journey: JourneyEdge } as const;
@@ -61,6 +62,7 @@ interface JourneyCanvasViewProps {
 
 function CanvasToolbar({ showMinimap, onToggleMinimap }: { showMinimap: boolean; onToggleMinimap: () => void }) {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
+  const { tAdmin } = useAdminTranslation();
 
   return (
     <div
@@ -74,7 +76,7 @@ function CanvasToolbar({ showMinimap, onToggleMinimap }: { showMinimap: boolean;
         type="button"
         onClick={() => zoomIn({ duration: 200 })}
         className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
-        title="Phóng to"
+        title={tAdmin("journey.canvas.zoomIn")}
       >
         <ZoomInIcon size={18} />
       </button>
@@ -82,7 +84,7 @@ function CanvasToolbar({ showMinimap, onToggleMinimap }: { showMinimap: boolean;
         type="button"
         onClick={() => zoomOut({ duration: 200 })}
         className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
-        title="Thu nhỏ"
+        title={tAdmin("journey.canvas.zoomOut")}
       >
         <ZoomOutIcon size={18} />
       </button>
@@ -91,7 +93,7 @@ function CanvasToolbar({ showMinimap, onToggleMinimap }: { showMinimap: boolean;
         type="button"
         onClick={() => fitView({ duration: 300, padding: 0.2 })}
         className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
-        title="Fit view"
+        title={tAdmin("journey.canvas.fitView")}
       >
         <MaximizeIcon size={18} />
       </button>
@@ -101,7 +103,7 @@ function CanvasToolbar({ showMinimap, onToggleMinimap }: { showMinimap: boolean;
         className={`flex h-9 w-9 items-center justify-center rounded-full transition-all ${
           showMinimap ? "bg-primary/12 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
         }`}
-        title="Minimap"
+        title={tAdmin("journey.canvas.minimap")}
       >
         <MapIcon size={18} />
       </button>
@@ -110,6 +112,7 @@ function CanvasToolbar({ showMinimap, onToggleMinimap }: { showMinimap: boolean;
 }
 
 function CanvasInner({ userId, sessionId, fromIso, toIso, eventNames, sourceName, entryLink }: JourneyCanvasViewProps) {
+  const { tAdmin } = useAdminTranslation();
   const { nodes, edges, isLoading } = useJourneyGraph({
     userId,
     sessionId,
@@ -160,7 +163,7 @@ function CanvasInner({ userId, sessionId, fromIso, toIso, eventNames, sourceName
     return (
       <div className="flex h-[680px] items-center justify-center rounded-lg border bg-surface-overlay text-muted-foreground">
         <Loader2Icon className="mr-2 h-5 w-5 animate-spin" />
-        Đang tải journey graph...
+        {tAdmin("journey.canvas.loading")}
       </div>
     );
   }
@@ -173,9 +176,9 @@ function CanvasInner({ userId, sessionId, fromIso, toIso, eventNames, sourceName
             <ActivityIcon className="h-6 w-6 text-muted-foreground" />
           </EmptyMedia>
           <EmptyHeader>
-            <EmptyTitle>Chưa có dữ liệu journey</EmptyTitle>
+            <EmptyTitle>{tAdmin("journey.canvas.emptyTitle")}</EmptyTitle>
             <EmptyDescription>
-              Không tìm thấy dữ liệu trong khoảng thời gian đã chọn.
+              {tAdmin("journey.canvas.emptyDescription")}
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent />
