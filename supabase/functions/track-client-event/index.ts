@@ -37,8 +37,36 @@ const ALLOWED_QUERY_PARAMS = new Set([
   'fbclid',
 ])
 
-const SHARE_REF_PREFIX = 'fp1_'
+// ─── Share-ref decoding (mirrors src/lib/share-ref.ts) ──────────────────────
+// Taxonomy lookup tables — index 0 is always "unknown/fallback"
+const SHARE_SOURCES   = ['unknown','facebook','messenger','zalo','whatsapp','telegram','x','email','sms','copy_link','native_share']
+const SHARE_MEDIUMS   = ['unknown','social_share','direct_share','copy_link']
+const SHARE_CAMPAIGNS = ['unknown','expense_share','debt_share','friend_invite','group_invite','profile_share']
+const SHARE_CONTENTS  = ['unknown','expense_detail_share_button','expense_summary_share_button','debt_detail_share_button','friend_detail_share_button','group_detail_invite_button','profile_header_share_button']
+
+// Bit layout: [content:3][campaign:3][medium:2][source:4] = 12 bits, max 4095
+const SHARE_SRC_BITS = 4
+const SHARE_MED_BITS = 2
+const SHARE_CAM_BITS = 3
+const SHARE_MAX_N    = 1 << (SHARE_SRC_BITS + SHARE_MED_BITS + SHARE_CAM_BITS + 3) // 4096
+
+const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+
+function fromBase62(s: string): number {
+  let n = 0
+  for (const c of s) {
+    const i = BASE62.indexOf(c)
+    if (i === -1) return -1
+    n = n * 62 + i
+    if (n >= SHARE_MAX_N) return -1 // guard against long/garbage strings
+  }
+  return n
+}
+
+// Legacy fp1_ format constants (kept for backward compat only)
+const SHARE_REF_PREFIX    = 'fp1_'
 const SHARE_REF_SEPARATOR = '~'
+// ─────────────────────────────────────────────────────────────────────────────
 
 const BLOCKED_PROPERTY_KEYS = new Set([
   'access_token',
@@ -208,18 +236,31 @@ function parseShareRef(ref: string | null): {
   campaign: string
   content: string
 } | null {
-  if (!ref?.startsWith(SHARE_REF_PREFIX)) return null
+  if (!ref) return null
 
-  const parts = ref.slice(SHARE_REF_PREFIX.length).split(SHARE_REF_SEPARATOR).map((value) => sanitizeUtmValue(value))
-  if (parts.length !== 4) return null
-  const [source, medium, campaign, content] = parts
-  if (!source || !medium || !campaign || !content) return null
+  // Legacy verbose format: fp1_source~medium~campaign~content
+  if (ref.startsWith(SHARE_REF_PREFIX)) {
+    const parts = ref.slice(SHARE_REF_PREFIX.length).split(SHARE_REF_SEPARATOR).map((v) => sanitizeUtmValue(v))
+    if (parts.length !== 4) return null
+    const [source, medium, campaign, content] = parts
+    if (!source || !medium || !campaign || !content) return null
+    return { source, medium, campaign, content }
+  }
+
+  // Compact base62 format: "9Z", "9i", "kL", etc.
+  const n = fromBase62(ref)
+  if (n < 0) return null
+
+  const si = n & ((1 << SHARE_SRC_BITS) - 1)
+  const mi = (n >> SHARE_SRC_BITS) & ((1 << SHARE_MED_BITS) - 1)
+  const ci = (n >> (SHARE_SRC_BITS + SHARE_MED_BITS)) & ((1 << SHARE_CAM_BITS) - 1)
+  const oi = (n >> (SHARE_SRC_BITS + SHARE_MED_BITS + SHARE_CAM_BITS)) & 0x7
 
   return {
-    source,
-    medium,
-    campaign,
-    content,
+    source:   SHARE_SOURCES[si]   ?? 'unknown',
+    medium:   SHARE_MEDIUMS[mi]   ?? 'unknown',
+    campaign: SHARE_CAMPAIGNS[ci] ?? 'unknown',
+    content:  SHARE_CONTENTS[oi]  ?? 'unknown',
   }
 }
 
