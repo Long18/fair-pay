@@ -65,6 +65,7 @@ import {
   Trash2Icon,
 } from "@/components/ui/icons";
 import { AdminPageToolbar } from "@/modules/admin/components/AdminPageToolbar";
+import { AdminSection, AdminSectionHeader } from "@/modules/admin/components/AdminSection";
 import { AdminFilterChips } from "@/modules/admin/components/AdminFilterChips";
 import { formatDate } from "@/lib/locale-utils";
 import type { AuditLogEntry, AuditLogsResponse, AuditStats, AuditFilterOptions } from "../types";
@@ -520,11 +521,11 @@ export function AdminAuditLogs() {
   // ─── Render ─────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Nhật ký</h1>
-        <p className="text-sm text-muted-foreground mt-1">Theo dõi toàn bộ thay đổi dữ liệu trong hệ thống</p>
-      </div>
+    <AdminSection>
+      <AdminSectionHeader
+        title="Nhật ký"
+        description="Theo dõi toàn bộ thay đổi dữ liệu trong hệ thống"
+      />
 
 
 
@@ -654,7 +655,7 @@ export function AdminAuditLogs() {
           onClearAll={clearFilters}
         />
 
-        <CardContent className="space-y-4">
+        <CardContent className="p-0 space-y-4">
           {/* Collapsible Filters */}
           <Collapsible open={showFilters} onOpenChange={setShowFilters}>
             <CollapsibleContent>
@@ -888,7 +889,7 @@ export function AdminAuditLogs() {
         }}
         isReverting={revertMutation.isPending}
       />
-    </div>
+    </AdminSection>
   );
 }
 
