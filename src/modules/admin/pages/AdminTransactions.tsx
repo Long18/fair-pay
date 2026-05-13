@@ -89,6 +89,8 @@ import { AttachmentList } from "@/modules/expenses/components/attachment-list";
 import { Attachment } from "@/modules/expenses/types";
 import { AdminCreateExpenseDialog } from "../components/AdminCreateExpenseDialog";
 import { AdminEditExpenseDialog } from "../components/AdminEditExpenseDialog";
+import { AdminCrudSheet } from "../components/AdminCrudSheet";
+import { useIsMobile } from "@/hooks/ui/use-mobile";
 import {
   applySplitSettlementChangeTyped,
   getExpenseSettlementStatus,
@@ -524,65 +526,76 @@ function CreatePaymentDialog({
     if (!open) { setFromUser(""); setToUser(""); setAmount(""); setCurrency("VND"); setPaymentDate(new Date().toISOString().split("T")[0]); setGroupId("none"); setNote(""); }
   }, [open]);
 
+  const handleSubmit = () => {
+    if (!fromUser || !toUser || !amount || !paymentDate) {
+      toast.error("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+    if (fromUser === toUser) {
+      toast.error("Người gửi và người nhận không thể giống nhau");
+      return;
+    }
+    tap();
+    onSubmit({
+      from_user: fromUser,
+      to_user: toUser,
+      amount: Number(amount),
+      currency,
+      payment_date: paymentDate,
+      group_id: groupId === "none" ? null : groupId,
+      note,
+    });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Tạo thanh toán mới</DialogTitle>
-          <DialogDescription>Thêm thanh toán thủ công vào hệ thống</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 mt-2">
-          <div className="space-y-2">
-            <Label>Người gửi</Label>
-            <Select value={fromUser} onValueChange={(v) => { tap(); setFromUser(v); }}>
-              <SelectTrigger><SelectValue placeholder="Chọn người gửi" /></SelectTrigger>
-              <SelectContent>{profilesList.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Người nhận</Label>
-            <Select value={toUser} onValueChange={(v) => { tap(); setToUser(v); }}>
-              <SelectTrigger><SelectValue placeholder="Chọn người nhận" /></SelectTrigger>
-              <SelectContent>{profilesList.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2"><Label>Số tiền</Label><Input type="number" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
-            <div className="space-y-2">
-              <Label>Tiền tệ</Label>
-              <Select value={currency} onValueChange={(v) => { tap(); setCurrency(v); }}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="VND">VND</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="space-y-2"><Label>Ngày thanh toán</Label><Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} /></div>
-          <div className="space-y-2">
-            <Label>Nhóm (tùy chọn)</Label>
-            <Select value={groupId} onValueChange={(v) => { tap(); setGroupId(v); }}>
-              <SelectTrigger><SelectValue placeholder="Không có nhóm" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Không có nhóm (Bạn bè)</SelectItem>
-                {groupsList.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2"><Label>Ghi chú (tùy chọn)</Label><Input placeholder="Ghi chú..." value={note} onChange={(e) => setNote(e.target.value)} /></div>
+    <AdminCrudSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Tạo thanh toán mới"
+      description="Thêm thanh toán thủ công vào hệ thống"
+      isSubmitting={isCreating}
+      submitLabel="Tạo thanh toán"
+      onSubmit={handleSubmit}
+    >
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label>Người gửi</Label>
+          <Select value={fromUser} onValueChange={(v) => { tap(); setFromUser(v); }}>
+            <SelectTrigger><SelectValue placeholder="Chọn người gửi" /></SelectTrigger>
+            <SelectContent>{profilesList.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
+          </Select>
         </div>
-        <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={() => { tap(); onOpenChange(false); }} disabled={isCreating}>Hủy</Button>
-          <Button onClick={() => {
-            if (!fromUser || !toUser || !amount || !paymentDate) { toast.error("Vui lòng điền đầy đủ thông tin"); return; }
-            if (fromUser === toUser) { toast.error("Người gửi và người nhận không thể giống nhau"); return; }
-            tap();
-            onSubmit({ from_user: fromUser, to_user: toUser, amount: Number(amount), currency, payment_date: paymentDate, group_id: groupId === "none" ? null : groupId, note });
-          }} disabled={isCreating || !fromUser || !toUser || !amount}>
-            {isCreating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Tạo thanh toán
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <div className="space-y-2">
+          <Label>Người nhận</Label>
+          <Select value={toUser} onValueChange={(v) => { tap(); setToUser(v); }}>
+            <SelectTrigger><SelectValue placeholder="Chọn người nhận" /></SelectTrigger>
+            <SelectContent>{profilesList.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2"><Label>Số tiền</Label><Input type="number" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
+          <div className="space-y-2">
+            <Label>Tiền tệ</Label>
+            <Select value={currency} onValueChange={(v) => { tap(); setCurrency(v); }}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="VND">VND</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="space-y-2"><Label>Ngày thanh toán</Label><Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} /></div>
+        <div className="space-y-2">
+          <Label>Nhóm (tùy chọn)</Label>
+          <Select value={groupId} onValueChange={(v) => { tap(); setGroupId(v); }}>
+            <SelectTrigger><SelectValue placeholder="Không có nhóm" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Không có nhóm (Bạn bè)</SelectItem>
+              {groupsList.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2"><Label>Ghi chú (tùy chọn)</Label><Input placeholder="Ghi chú..." value={note} onChange={(e) => setNote(e.target.value)} /></div>
+      </div>
+    </AdminCrudSheet>
   );
 }
 
@@ -607,26 +620,21 @@ function EditPaymentDialog({
   if (!payment) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Chỉnh sửa thanh toán</DialogTitle>
-          <DialogDescription>Cập nhật thông tin thanh toán từ {payment.from_user_name} đến {payment.to_user_name}</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 mt-2">
-          <div className="space-y-2"><Label>Số tiền</Label><Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
-          <div className="space-y-2"><Label>Ngày thanh toán</Label><Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} /></div>
-          <div className="space-y-2"><Label>Ghi chú</Label><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ghi chú..." /></div>
-        </div>
-        <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={() => { tap(); onOpenChange(false); }} disabled={isUpdating}>Hủy</Button>
-          <Button onClick={() => { tap(); onSubmit({ amount: Number(amount), payment_date: paymentDate, note }); }} disabled={isUpdating || !amount}>
-            {isUpdating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Lưu
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <AdminCrudSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Chỉnh sửa thanh toán"
+      description={`Cập nhật thông tin thanh toán từ ${payment.from_user_name} đến ${payment.to_user_name}`}
+      isSubmitting={isUpdating}
+      submitLabel="Lưu"
+      onSubmit={() => { tap(); onSubmit({ amount: Number(amount), payment_date: paymentDate, note }); }}
+    >
+      <div className="space-y-4">
+        <div className="space-y-2"><Label>Số tiền</Label><Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
+        <div className="space-y-2"><Label>Ngày thanh toán</Label><Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} /></div>
+        <div className="space-y-2"><Label>Ghi chú</Label><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ghi chú..." /></div>
+      </div>
+    </AdminCrudSheet>
   );
 }
 
@@ -1134,27 +1142,43 @@ function PaymentsTab() {
 // ═══════════════════════════════════════════════════════════════════
 
 export function AdminTransactions() {
+  const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState<"expenses" | "payments" | "notifications">("expenses");
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Giao dịch</h1>
         <p className="text-sm text-muted-foreground mt-1">Quản lý chi phí, thanh toán và thông báo trong hệ thống</p>
       </div>
-      <Tabs defaultValue="expenses" className="w-full">
-        <TabsList>
-          <TabsTrigger value="expenses" className="gap-2">
-            <ReceiptIcon className="h-4 w-4" />
-            Chi phí
-          </TabsTrigger>
-          <TabsTrigger value="payments" className="gap-2">
-            <CreditCardIcon className="h-4 w-4" />
-            Thanh toán
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="gap-2">
-            <BellIcon className="h-4 w-4" />
-            Thông báo
-          </TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="w-full">
+        {isMobile ? (
+          <Select value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
+            <SelectTrigger className="mb-4">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="expenses">Chi phí</SelectItem>
+              <SelectItem value="payments">Thanh toán</SelectItem>
+              <SelectItem value="notifications">Thông báo</SelectItem>
+            </SelectContent>
+          </Select>
+        ) : (
+          <TabsList>
+            <TabsTrigger value="expenses" className="gap-2">
+              <ReceiptIcon className="h-4 w-4" />
+              Chi phí
+            </TabsTrigger>
+            <TabsTrigger value="payments" className="gap-2">
+              <CreditCardIcon className="h-4 w-4" />
+              Thanh toán
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="gap-2">
+              <BellIcon className="h-4 w-4" />
+              Thông báo
+            </TabsTrigger>
+          </TabsList>
+        )}
         <TabsContent value="expenses" className="mt-4">
           <ExpensesTab />
         </TabsContent>
