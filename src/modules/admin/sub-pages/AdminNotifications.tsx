@@ -69,6 +69,7 @@ import {
 import { formatDate } from "@/lib/locale-utils";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { useHaptics } from "@/hooks/use-haptics";
+import { useAdminTranslation } from "../i18n";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -112,21 +113,25 @@ const NOTIFICATION_TYPES = [
 ] as const;
 
 function TypeBadge({ type }: { type: string }) {
+  const { tAdmin } = useAdminTranslation();
+
   return (
     <Badge className="bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] border-[var(--status-info-border)]">
-      {type.replace(/_/g, " ")}
+      {tAdmin(`notifications.types.${type}`)}
     </Badge>
   );
 }
 
 function ReadStatusBadge({ isRead }: { isRead: boolean }) {
+  const { tAdmin } = useAdminTranslation();
+
   return isRead ? (
     <Badge className="bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] border-[var(--status-success-border)]">
-      Đã đọc
+      {tAdmin("status.read")}
     </Badge>
   ) : (
     <Badge className="bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)] border-[var(--status-warning-border)]">
-      Chưa đọc
+      {tAdmin("status.unread")}
     </Badge>
   );
 }
@@ -146,6 +151,8 @@ function DeleteNotificationDialog({
   onConfirm: () => void;
   isDeleting: boolean;
 }) {
+  const { tAdmin } = useAdminTranslation();
+
   if (!notification) return null;
 
   return (
@@ -154,15 +161,17 @@ function DeleteNotificationDialog({
         <AlertDialogHeader>
           <div className="flex items-center gap-2">
             <AlertTriangleIcon className="h-5 w-5 text-destructive" />
-            <AlertDialogTitle>Xác nhận xóa thông báo</AlertDialogTitle>
+            <AlertDialogTitle>{tAdmin("notifications.deleteTitle")}</AlertDialogTitle>
           </div>
           <AlertDialogDescription>
-            Bạn có chắc chắn muốn xóa thông báo &ldquo;{notification.message.slice(0, 60)}...&rdquo;
-            gửi đến {notification.user_name}? Hành động này không thể hoàn tác.
+            {tAdmin("notifications.deleteDescription", {
+              message: notification.message.slice(0, 60),
+              name: notification.user_name,
+            })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Hủy</AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting}>{tAdmin("common.cancel")}</AlertDialogCancel>
           <AlertDialogAction
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             onClick={(e) => {
@@ -172,7 +181,7 @@ function DeleteNotificationDialog({
             disabled={isDeleting}
           >
             {isDeleting ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Xóa
+            {tAdmin("common.delete")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -198,6 +207,7 @@ function CreateNotificationDialog({
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const { tap } = useHaptics();
+  const { tAdmin } = useAdminTranslation();
 
   const [profiles, setProfiles] = useState<Array<{ id: string; full_name: string }>>([]);
   useEffect(() => {
@@ -213,7 +223,7 @@ function CreateNotificationDialog({
 
   const handleSubmit = () => {
     if (!userId || !title || !message) {
-      toast.error("Vui lòng điền đầy đủ thông tin");
+      toast.error(tAdmin("notifications.requiredFields"));
       return;
     }
     onSubmit({ user_id: userId, type, title, message });
@@ -232,18 +242,18 @@ function CreateNotificationDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Tạo thông báo mới</DialogTitle>
+          <DialogTitle>{tAdmin("notifications.createTitle")}</DialogTitle>
           <DialogDescription>
-            Gửi thông báo đến người dùng trong hệ thống
+            {tAdmin("notifications.createDescription")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 mt-2">
           <div className="space-y-2">
-            <Label htmlFor="notif-user">Người nhận</Label>
+            <Label htmlFor="notif-user">{tAdmin("notifications.recipient")}</Label>
             <Select value={userId} onValueChange={(v) => { tap(); setUserId(v); }}>
               <SelectTrigger id="notif-user">
-                <SelectValue placeholder="Chọn người nhận" />
+                <SelectValue placeholder={tAdmin("people.selectUser")} />
               </SelectTrigger>
               <SelectContent>
                 {profiles.map((p) => (
@@ -256,7 +266,7 @@ function CreateNotificationDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notif-type">Loại thông báo</Label>
+            <Label htmlFor="notif-type">{tAdmin("notifications.notificationType")}</Label>
             <Select value={type} onValueChange={(v) => { tap(); setType(v); }}>
               <SelectTrigger id="notif-type">
                 <SelectValue />
@@ -264,7 +274,7 @@ function CreateNotificationDialog({
               <SelectContent>
                 {NOTIFICATION_TYPES.map((t) => (
                   <SelectItem key={t} value={t}>
-                    {t.replace(/_/g, " ")}
+                    {tAdmin(`notifications.types.${t}`)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -272,20 +282,20 @@ function CreateNotificationDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notif-title">Tiêu đề</Label>
+            <Label htmlFor="notif-title">{tAdmin("common.title")}</Label>
             <Input
               id="notif-title"
-              placeholder="Tiêu đề thông báo..."
+              placeholder={tAdmin("notifications.titlePlaceholder")}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notif-message">Nội dung</Label>
+            <Label htmlFor="notif-message">{tAdmin("common.content")}</Label>
             <Textarea
               id="notif-message"
-              placeholder="Nội dung thông báo..."
+              placeholder={tAdmin("notifications.messagePlaceholder")}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               rows={3}
@@ -295,11 +305,11 @@ function CreateNotificationDialog({
 
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={() => { tap(); onOpenChange(false); }} disabled={isCreating}>
-            Hủy
+            {tAdmin("common.cancel")}
           </Button>
           <Button onClick={() => { tap(); handleSubmit(); }} disabled={isCreating || !userId || !title || !message}>
             {isCreating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Gửi thông báo
+            {tAdmin("notifications.send")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -326,6 +336,7 @@ function EditNotificationDialog({
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const { tap } = useHaptics();
+  const { tAdmin } = useAdminTranslation();
 
   useEffect(() => {
     if (notification && open) {
@@ -341,15 +352,15 @@ function EditNotificationDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Chỉnh sửa thông báo</DialogTitle>
+          <DialogTitle>{tAdmin("notifications.editTitle")}</DialogTitle>
           <DialogDescription>
-            Cập nhật nội dung thông báo gửi đến {notification.user_name}
+            {tAdmin("notifications.editDescription", { name: notification.user_name })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 mt-2">
           <div className="space-y-2">
-            <Label htmlFor="edit-notif-type">Loại thông báo</Label>
+            <Label htmlFor="edit-notif-type">{tAdmin("notifications.notificationType")}</Label>
             <Select value={type} onValueChange={(v) => { tap(); setType(v); }}>
               <SelectTrigger id="edit-notif-type">
                 <SelectValue />
@@ -357,7 +368,7 @@ function EditNotificationDialog({
               <SelectContent>
                 {NOTIFICATION_TYPES.map((t) => (
                   <SelectItem key={t} value={t}>
-                    {t.replace(/_/g, " ")}
+                    {tAdmin(`notifications.types.${t}`)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -365,7 +376,7 @@ function EditNotificationDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-notif-title">Tiêu đề</Label>
+            <Label htmlFor="edit-notif-title">{tAdmin("common.title")}</Label>
             <Input
               id="edit-notif-title"
               value={title}
@@ -374,7 +385,7 @@ function EditNotificationDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-notif-message">Nội dung</Label>
+            <Label htmlFor="edit-notif-message">{tAdmin("common.content")}</Label>
             <Textarea
               id="edit-notif-message"
               value={message}
@@ -386,14 +397,14 @@ function EditNotificationDialog({
 
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={() => { tap(); onOpenChange(false); }} disabled={isUpdating}>
-            Hủy
+            {tAdmin("common.cancel")}
           </Button>
           <Button
             onClick={() => { tap(); onSubmit({ type, title, message }); }}
             disabled={isUpdating || !title || !message}
           >
             {isUpdating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Lưu
+            {tAdmin("common.save")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -410,22 +421,24 @@ function RowActions({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { tAdmin } = useAdminTranslation();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="h-8 w-8">
           <MoreHorizontalIcon className="h-4 w-4" />
-          <span className="sr-only">Mở menu</span>
+          <span className="sr-only">{tAdmin("notifications.menu")}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={onEdit}>
           <PencilIcon className="mr-2 h-4 w-4" />
-          Chỉnh sửa
+          {tAdmin("common.edit")}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onDelete} className="text-destructive">
-          Xóa thông báo
+          {tAdmin("notifications.deleteTitle")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -439,6 +452,7 @@ export function AdminNotifications() {
   const createMutation = useInstantCreate();
   const updateMutation = useInstantUpdate();
   const { tap, success, warning } = useHaptics();
+  const { tAdmin } = useAdminTranslation();
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
@@ -483,7 +497,7 @@ export function AdminNotifications() {
     () => [
       {
         id: "recipient",
-        header: "Người nhận",
+        header: tAdmin("notifications.recipient"),
         accessorKey: "user_name",
         size: 180,
         enableSorting: false,
@@ -503,7 +517,7 @@ export function AdminNotifications() {
       },
       {
         id: "type",
-        header: "Loại thông báo",
+        header: tAdmin("notifications.notificationType"),
         accessorKey: "type",
         size: 160,
         enableSorting: false,
@@ -511,7 +525,7 @@ export function AdminNotifications() {
       },
       {
         id: "message",
-        header: "Nội dung",
+        header: tAdmin("common.content"),
         accessorKey: "message",
         size: 250,
         enableSorting: false,
@@ -523,7 +537,7 @@ export function AdminNotifications() {
       },
       {
         id: "is_read",
-        header: "Trạng thái",
+        header: tAdmin("common.status"),
         accessorKey: "is_read",
         size: 120,
         enableSorting: false,
@@ -531,7 +545,7 @@ export function AdminNotifications() {
       },
       {
         id: "created_at",
-        header: "Ngày tạo",
+        header: tAdmin("common.createdAt"),
         accessorKey: "created_at",
         size: 120,
         cell: ({ getValue }) => formatDate(getValue() as string),
@@ -555,7 +569,7 @@ export function AdminNotifications() {
         ),
       },
     ],
-    [],
+    [tAdmin],
   );
 
   const table = useTable<NotificationRow>({
@@ -578,7 +592,7 @@ export function AdminNotifications() {
           const transformed = data.data.map((n: any) => ({
             id: n.id,
             user_id: n.user_id,
-            user_name: n.profiles?.full_name ?? "Không rõ",
+            user_name: n.profiles?.full_name ?? tAdmin("common.unknown"),
             user_avatar: n.profiles?.avatar_url ?? null,
             type: n.type,
             title: n.title ?? "",
@@ -623,19 +637,19 @@ export function AdminNotifications() {
       },
       {
         onSuccess: () => {
-          toast.success("Đã xóa thông báo");
+          toast.success(tAdmin("notifications.deleted"));
           setDeleteDialogOpen(false);
           setDeleteNotification(null);
           setIsDeleting(false);
           table.refineCore.tableQuery.refetch();
         },
         onError: (error) => {
-          toast.error(`Lỗi: ${error.message}`);
+          toast.error(tAdmin("common.errorWithMessage", { message: error.message }));
           setIsDeleting(false);
         },
       },
     );
-  }, [deleteNotification, deleteMutation, table.refineCore.tableQuery, warning]);
+  }, [deleteNotification, deleteMutation, table.refineCore.tableQuery, warning, tAdmin]);
 
   const handleCreate = useCallback(
     (data: { user_id: string; type: string; title: string; message: string }) => {
@@ -654,19 +668,19 @@ export function AdminNotifications() {
         {
           onSuccess: () => {
             success();
-            toast.success("Đã tạo thông báo mới");
+            toast.success(tAdmin("notifications.created"));
             setCreateDialogOpen(false);
             setIsCreating(false);
             table.refineCore.tableQuery.refetch();
           },
           onError: (error) => {
-            toast.error(`Lỗi: ${error.message}`);
+            toast.error(tAdmin("common.errorWithMessage", { message: error.message }));
             setIsCreating(false);
           },
         },
       );
     },
-    [createMutation, table.refineCore.tableQuery, success],
+    [createMutation, table.refineCore.tableQuery, success, tAdmin],
   );
 
   const handleEdit = useCallback(
@@ -686,20 +700,20 @@ export function AdminNotifications() {
         {
           onSuccess: () => {
             success();
-            toast.success("Đã cập nhật thông báo");
+            toast.success(tAdmin("notifications.updated"));
             setEditDialogOpen(false);
             setEditNotification(null);
             setIsUpdating(false);
             table.refineCore.tableQuery.refetch();
           },
           onError: (error) => {
-            toast.error(`Lỗi: ${error.message}`);
+            toast.error(tAdmin("common.errorWithMessage", { message: error.message }));
             setIsUpdating(false);
           },
         },
       );
     },
-    [editNotification, updateMutation, table.refineCore.tableQuery, success],
+    [editNotification, updateMutation, table.refineCore.tableQuery, success, tAdmin],
   );
 
   return (
@@ -707,9 +721,9 @@ export function AdminNotifications() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div>
-            <CardTitle>Quản lý thông báo</CardTitle>
+            <CardTitle>{tAdmin("notifications.title")}</CardTitle>
             <CardDescription>
-              Xem và quản lý tất cả thông báo trong hệ thống
+              {tAdmin("notifications.description")}
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -718,7 +732,7 @@ export function AdminNotifications() {
               onClick={() => { tap(); setCreateDialogOpen(true); }}
             >
               <PlusIcon className="mr-2 h-4 w-4" />
-              Tạo thông báo
+              {tAdmin("notifications.create")}
             </Button>
             <Button
               variant="outline"
@@ -726,7 +740,7 @@ export function AdminNotifications() {
               onClick={() => { tap(); setShowFilters((v) => !v); }}
             >
               <FilterIcon className="mr-2 h-4 w-4" />
-              Bộ lọc
+              {tAdmin("common.filter")}
             </Button>
           </div>
         </CardHeader>
@@ -735,7 +749,7 @@ export function AdminNotifications() {
           <div className="relative max-w-sm">
             <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Tìm kiếm theo nội dung..."
+              placeholder={tAdmin("notifications.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
@@ -746,16 +760,16 @@ export function AdminNotifications() {
             <CollapsibleContent>
               <div className="flex items-end gap-3 flex-wrap pb-2">
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Loại thông báo</label>
+                  <label className="text-xs text-muted-foreground">{tAdmin("notifications.notificationType")}</label>
                   <Select value={typeFilter} onValueChange={(v) => { tap(); setTypeFilter(v); }}>
                     <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Tất cả" />
+                      <SelectValue placeholder={tAdmin("common.all")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Tất cả</SelectItem>
+                      <SelectItem value="all">{tAdmin("common.all")}</SelectItem>
                       {NOTIFICATION_TYPES.map((t) => (
                         <SelectItem key={t} value={t}>
-                          {t.replace(/_/g, " ")}
+                          {tAdmin(`notifications.types.${t}`)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -763,21 +777,21 @@ export function AdminNotifications() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Trạng thái</label>
+                  <label className="text-xs text-muted-foreground">{tAdmin("common.status")}</label>
                   <Select value={readFilter} onValueChange={(v) => { tap(); setReadFilter(v); }}>
                     <SelectTrigger className="w-[160px]">
-                      <SelectValue placeholder="Tất cả" />
+                      <SelectValue placeholder={tAdmin("common.all")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Tất cả</SelectItem>
-                      <SelectItem value="read">Đã đọc</SelectItem>
-                      <SelectItem value="unread">Chưa đọc</SelectItem>
+                      <SelectItem value="all">{tAdmin("common.all")}</SelectItem>
+                      <SelectItem value="read">{tAdmin("status.read")}</SelectItem>
+                      <SelectItem value="unread">{tAdmin("status.unread")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Từ ngày</label>
+                  <label className="text-xs text-muted-foreground">{tAdmin("common.fromDate")}</label>
                   <Input
                     type="date"
                     value={dateFrom}
@@ -786,7 +800,7 @@ export function AdminNotifications() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Đến ngày</label>
+                  <label className="text-xs text-muted-foreground">{tAdmin("common.toDate")}</label>
                   <Input
                     type="date"
                     value={dateTo}
@@ -797,7 +811,7 @@ export function AdminNotifications() {
 
                 {hasActiveFilters && (
                   <Button variant="ghost" size="sm" onClick={clearFilters}>
-                    Xóa bộ lọc
+                    {tAdmin("common.clearFilters")}
                   </Button>
                 )}
               </div>
@@ -810,17 +824,17 @@ export function AdminNotifications() {
                 <BellIcon className="h-6 w-6" />
               </EmptyMedia>
               <EmptyHeader>
-                <EmptyTitle>Không có thông báo</EmptyTitle>
+                <EmptyTitle>{tAdmin("notifications.noResultsTitle")}</EmptyTitle>
                 <EmptyDescription>
                   {hasActiveFilters
-                    ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
-                    : "Chưa có thông báo nào trong hệ thống"}
+                    ? tAdmin("notifications.noResultsFiltered")
+                    : tAdmin("notifications.noResultsEmpty")}
                 </EmptyDescription>
               </EmptyHeader>
               {hasActiveFilters && (
                 <EmptyContent>
                   <Button variant="outline" onClick={clearFilters}>
-                    Xóa bộ lọc
+                    {tAdmin("common.clearFilters")}
                   </Button>
                 </EmptyContent>
               )}
