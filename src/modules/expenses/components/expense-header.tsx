@@ -41,24 +41,6 @@ export const ExpenseHeader = ({
   const getDestinationUrl = () => `${window.location.origin}/expenses/show/${expense.id}`;
   const shareTitle = expense.description;
   const shareText = `Check out this expense: ${expense.description}`;
-  const sharePicker = (
-    <SharePlatformPicker
-      open={shareOpen}
-      onOpenChange={setShareOpen}
-      shareUrl={getShareUrl}
-      destinationUrl={getDestinationUrl}
-      title={shareTitle}
-      text={shareText}
-      entityType="expense"
-      entityId={expense.id}
-      campaign="expense_share"
-      content="expense_detail_share_button"
-      templateKey="expense_detail_share_button"
-      successMessage={t('common.shareOpened', 'Share link opened')}
-      copyMessage={t('common.linkCopied', 'Link copied to clipboard')}
-      errorMessage={t('common.shareError', 'Failed to share link')}
-    />
-  );
 
   return (
     <div className={cn("space-y-3", className)}>
@@ -145,6 +127,8 @@ export const ExpenseHeader = ({
 
           <div className="flex gap-2">
             <SharePlatformPicker
+              open={shareOpen}
+              onOpenChange={setShareOpen}
               shareUrl={getShareUrl}
               destinationUrl={getDestinationUrl}
               title={shareTitle}
@@ -158,39 +142,26 @@ export const ExpenseHeader = ({
               copyMessage={t('common.linkCopied', 'Link copied to clipboard')}
               errorMessage={t('common.shareError', 'Failed to share link')}
               trigger={
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={tap}
-                  className="hidden lg:flex"
-                >
-                  <ShareIcon className="h-4 w-4 mr-2" />
-                  {t('common.share', 'Share')}
-                </Button>
-              }
-            />
-            <SharePlatformPicker
-              shareUrl={getShareUrl}
-              destinationUrl={getDestinationUrl}
-              title={shareTitle}
-              text={shareText}
-              entityType="expense"
-              entityId={expense.id}
-              campaign="expense_share"
-              content="expense_detail_share_button"
-              templateKey="expense_detail_share_button"
-              successMessage={t('common.shareOpened', 'Share link opened')}
-              copyMessage={t('common.linkCopied', 'Link copied to clipboard')}
-              errorMessage={t('common.shareError', 'Failed to share link')}
-              trigger={
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={tap}
-                  className="lg:hidden"
-                >
-                  <ShareIcon className="h-4 w-4" />
-                </Button>
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={tap}
+                    className="hidden cursor-pointer lg:flex"
+                  >
+                    <ShareIcon className="mr-2 h-4 w-4" />
+                    {t('common.share', 'Share')}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={tap}
+                    className="cursor-pointer lg:hidden"
+                    aria-label={t('common.share', 'Share')}
+                  >
+                    <ShareIcon className="h-4 w-4" />
+                  </Button>
+                </>
               }
             />
 
@@ -217,7 +188,6 @@ export const ExpenseHeader = ({
           </div>
         </div>
       </div>
-      {sharePicker}
     </div>
   );
 };
