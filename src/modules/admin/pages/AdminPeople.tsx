@@ -93,7 +93,23 @@ import {
   SendIcon,
   LayersIcon,
   HeartIcon,
+  ChevronsUpDownIcon,
+  CheckIcon,
 } from "@/components/ui/icons";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
 import { buildInviteEmailPreview, normalizeInviteEmails } from "@/modules/admin/email/invite-email";
 import type { Profile } from "@/modules/profile/types";
@@ -104,6 +120,7 @@ import { AdminTableSkeleton } from "../components/AdminTableSkeleton";
 import { AdminEmptyState } from "../components/AdminEmptyState";
 import { AdminCrudSheet } from "../components/AdminCrudSheet";
 import { useIsMobile } from "@/hooks/ui/use-mobile";
+import { useAdminTranslation } from "../i18n";
 
 // ─── Shared Types ───────────────────────────────────────────────────
 
@@ -186,6 +203,65 @@ function useDebounce<T>(value: T, delay: number): T {
     return () => clearTimeout(timer);
   }, [value, delay]);
   return debounced;
+}
+
+// ─── Reusable single-select combobox with search ────────────────────
+
+function UserSingleCombobox({
+  value,
+  onChange,
+  users,
+  placeholder,
+  disabled,
+}: {
+  value: string;
+  onChange: (id: string) => void;
+  users: Array<{ id: string; full_name: string }>;
+  placeholder: string;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = users.find((u) => u.id === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between font-normal"
+          disabled={disabled}
+        >
+          {selected
+            ? <span className="truncate">{selected.full_name}</span>
+            : <span className="text-muted-foreground truncate">{placeholder}</span>}
+          <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Tìm kiếm..." />
+          <CommandList>
+            <CommandEmpty>Không tìm thấy</CommandEmpty>
+            <CommandGroup>
+              {users.map((user) => (
+                <CommandItem
+                  key={user.id}
+                  value={user.full_name}
+                  onSelect={() => { onChange(user.id); setOpen(false); }}
+                  className="cursor-pointer"
+                >
+                  <CheckIcon className={cn("mr-2 h-4 w-4 shrink-0", value === user.id ? "opacity-100" : "opacity-0")} />
+                  {user.full_name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 // ─── User Detail Dialog (replaces Sheet) ────────────────────────────
@@ -341,7 +417,7 @@ function UserDetailDialog({
             <Tabs defaultValue="profile" className="flex-1 overflow-hidden flex flex-col">
               <TabsList className="w-full mx-0 rounded-none border-b">
                 <TabsTrigger value="profile" className="flex-1">Hồ sơ</TabsTrigger>
-                <TabsTrigger value="groups" className="flex-1">Nhóm ({groups.length})</TabsTrigger>
+                <TabsTrigger value="groups" className="flex-1">Nhóm ({loadingGroups ? "…" : groups.length})</TabsTrigger>
               </TabsList>
 
               <TabsContent value="profile" className="mt-4 space-y-4 overflow-y-auto flex-1 px-6 pb-6">
@@ -356,10 +432,10 @@ function UserDetailDialog({
                     }
                   />
                   <DetailRow
-                    label="Journey tracking"
+                    label="Theo dõi hành trình"
                     value={
                       <Badge variant={user.journey_tracking_ignored ? "outline" : "secondary"}>
-                        {user.journey_tracking_ignored ? "Ignored" : "Tracked"}
+                        {user.journey_tracking_ignored ? "Tắt" : "Đang bật"}
                       </Badge>
                     }
                   />
@@ -371,10 +447,10 @@ function UserDetailDialog({
                 <div className="flex flex-wrap gap-2 pt-2 border-t">
                   <Button size="sm" variant="outline" onClick={onViewJourney}>
                     <ActivityIcon className="mr-2 h-4 w-4" />
-                    View journey
+                    Xem hành trình
                   </Button>
                   <Button size="sm" variant="outline" onClick={onToggleJourneyTracking}>
-                    {user.journey_tracking_ignored ? "Resume tracking" : "Ignore tracking"}
+                    {user.journey_tracking_ignored ? "Tiếp tục theo dõi" : "Bỏ qua theo dõi"}
                   </Button>
                   <Button size="sm" variant="outline" onClick={onEdit}>
                     <PencilIcon className="mr-2 h-4 w-4" />
@@ -422,7 +498,7 @@ function UserDetailDialog({
                         <span className="text-sm font-medium">{g.name}</span>
                         <div className="flex items-center gap-2">
                           <Badge variant={g.role === "admin" ? "default" : "secondary"} className="text-xs">
-                            {g.role === "admin" ? "Admin" : "Member"}
+                            {g.role === "admin" ? "Admin" : "Thành viên"}
                           </Badge>
                           <Button
                             variant="ghost"
@@ -459,20 +535,13 @@ function UserDetailDialog({
           </DialogHeader>
           <div className="space-y-2 mt-2">
             <Label>Chọn nhóm</Label>
-            <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Chọn nhóm..." />
-              </SelectTrigger>
-              <SelectContent>
-                {availableGroups.length === 0 ? (
-                  <SelectItem value="__none" disabled>Không còn nhóm nào</SelectItem>
-                ) : (
-                  availableGroups.map((g) => (
-                    <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+            <UserSingleCombobox
+              value={selectedGroupId}
+              onChange={setSelectedGroupId}
+              users={availableGroups.map((g) => ({ id: g.id, full_name: g.name }))}
+              placeholder={availableGroups.length === 0 ? "Không còn nhóm nào" : "Chọn nhóm..."}
+              disabled={availableGroups.length === 0}
+            />
           </div>
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setAddGroupOpen(false)} disabled={addingToGroup}>Hủy</Button>
@@ -652,7 +721,7 @@ function GroupDetailDialog({
         .eq("group_id", group.id)
         .eq("user_id", userId);
       if (error) throw error;
-      toast.success(newRole === "admin" ? "Đã nâng cấp thành Admin" : "Đã hạ cấp thành Member");
+      toast.success(newRole === "admin" ? "Đã nâng cấp thành Admin" : "Đã hạ cấp thành Thành viên");
       fetchMembers();
     } catch (err: any) {
       toast.error(`Lỗi: ${err.message}`);
@@ -680,7 +749,7 @@ function GroupDetailDialog({
                   <DialogTitle className="truncate text-base font-semibold">{group.name}</DialogTitle>
                   {group.is_archived && (
                     <Badge className="bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)] text-xs shrink-0">
-                      Archived
+                      Đã lưu trữ
                     </Badge>
                   )}
                 </div>
@@ -723,7 +792,7 @@ function GroupDetailDialog({
                         <p className="text-sm font-medium truncate">{m.full_name}</p>
                       </div>
                       <Badge variant={m.role === "admin" ? "default" : "secondary"} className="text-xs">
-                        {m.role === "admin" ? "Admin" : "Member"}
+                        {m.role === "admin" ? "Admin" : "Thành viên"}
                       </Badge>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -743,7 +812,7 @@ function GroupDetailDialog({
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleToggleRole(m.id, m.role)}>
                             <StarIcon className="mr-2 h-4 w-4" />
-                            {m.role === "admin" ? "Hạ cấp thành Member" : "Nâng cấp thành Admin"}
+                            {m.role === "admin" ? "Hạ cấp thành Thành viên" : "Nâng cấp thành Admin"}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -818,20 +887,13 @@ function GroupDetailDialog({
           </DialogHeader>
           <div className="space-y-2 mt-2">
             <Label>Chọn người dùng</Label>
-            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Chọn người dùng..." />
-              </SelectTrigger>
-              <SelectContent>
-                {availableProfiles.length === 0 ? (
-                  <SelectItem value="__none" disabled>Không còn người dùng nào</SelectItem>
-                ) : (
-                  availableProfiles.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+            <UserSingleCombobox
+              value={selectedUserId}
+              onChange={setSelectedUserId}
+              users={availableProfiles}
+              placeholder={availableProfiles.length === 0 ? "Không còn người dùng nào" : "Chọn người dùng..."}
+              disabled={availableProfiles.length === 0}
+            />
           </div>
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setAddMemberOpen(false)} disabled={addingMember}>Hủy</Button>
@@ -1228,29 +1290,21 @@ function CreateFriendshipSheet({
       <div className="space-y-4">
         <div className="space-y-2">
           <Label>Người dùng A *</Label>
-          <Select value={userA} onValueChange={setUserA}>
-            <SelectTrigger>
-              <SelectValue placeholder="Chọn người dùng..." />
-            </SelectTrigger>
-            <SelectContent>
-              {(profiles ?? []).map((u) => (
-                <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <UserSingleCombobox
+            value={userA}
+            onChange={setUserA}
+            users={profiles ?? []}
+            placeholder="Chọn người dùng..."
+          />
         </div>
         <div className="space-y-2">
           <Label>Người dùng B *</Label>
-          <Select value={userB} onValueChange={setUserB}>
-            <SelectTrigger>
-              <SelectValue placeholder="Chọn người dùng..." />
-            </SelectTrigger>
-            <SelectContent>
-              {(profiles ?? []).filter((u) => u.id !== userA).map((u) => (
-                <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <UserSingleCombobox
+            value={userB}
+            onChange={setUserB}
+            users={(profiles ?? []).filter((u) => u.id !== userA)}
+            placeholder="Chọn người dùng..."
+          />
         </div>
         <div className="space-y-2">
           <Label>Trạng thái</Label>
@@ -1466,7 +1520,7 @@ function InviteUsersCard({
             </CardDescription>
           </div>
           <Badge variant="secondary" className="w-fit">
-            Gmail-style preview
+            Xem trước kiểu Gmail
           </Badge>
         </div>
       </CardHeader>
@@ -1523,13 +1577,13 @@ function InviteUsersCard({
               <p className="truncate text-xs text-muted-foreground">{invitePreview.previewText}</p>
             </div>
             <Badge variant="outline" className="shrink-0">
-              Preview
+              Xem trước
             </Badge>
           </div>
           <div className="grid gap-3 border-b px-4 py-3 text-sm sm:grid-cols-[72px_minmax(0,1fr)]">
-            <span className="text-muted-foreground">From</span>
+            <span className="text-muted-foreground">Từ</span>
             <span className="truncate">FairPay &lt;email hiện có&gt;</span>
-            <span className="text-muted-foreground">To</span>
+            <span className="text-muted-foreground">Đến</span>
             <span className="truncate">{inviteEmails.length ? inviteEmails.join(", ") : "email@example.com"}</span>
           </div>
           <div className="h-[420px] bg-muted/30 p-3">
@@ -1679,7 +1733,7 @@ function UsersTab() {
       id: "journey_tracking_ignored", header: "Journey", accessorFn: (row) => row.journey_tracking_ignored, size: 120,
       cell: ({ row }) => (
         <Badge variant={row.original.journey_tracking_ignored ? "outline" : "secondary"}>
-          {row.original.journey_tracking_ignored ? "Ignored" : "Tracked"}
+          {row.original.journey_tracking_ignored ? "Tắt" : "Đang bật"}
         </Badge>
       ),
     },
@@ -1723,10 +1777,10 @@ function UsersTab() {
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => { tap(); go({ to: `/admin/people/${row.original.id}/journey` }); }}>
               <ActivityIcon className="mr-2 h-4 w-4" />
-              View journey
+              Xem hành trình
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => { tap(); void handleToggleJourneyTracking(row.original); }}>
-              {row.original.journey_tracking_ignored ? "Resume tracking" : "Ignore tracking"}
+              {row.original.journey_tracking_ignored ? "Tiếp tục theo dõi" : "Bỏ qua theo dõi"}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => { tap(); setEditUser(row.original); setEditDialogOpen(true); }}>
               <PencilIcon className="mr-2 h-4 w-4" />
@@ -2467,6 +2521,7 @@ function InviteFriendsTab() {
 
 export function AdminPeople() {
   const { tap } = useHaptics();
+  const { tAdmin } = useAdminTranslation();
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<"users" | "groups" | "friendships" | "invite">("users");
 
@@ -2478,8 +2533,8 @@ export function AdminPeople() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">People</h1>
-        <p className="text-sm text-muted-foreground mt-1">Manage users, groups and friendships</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{tAdmin("people.title")}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{tAdmin("people.subtitle")}</p>
       </div>
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         {isMobile ? (
@@ -2488,29 +2543,29 @@ export function AdminPeople() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="users">Người dùng</SelectItem>
-              <SelectItem value="groups">Nhóm</SelectItem>
-              <SelectItem value="friendships">Tình bạn</SelectItem>
-              <SelectItem value="invite">Mời bạn bè</SelectItem>
+              <SelectItem value="users">{tAdmin("people.usersTab")}</SelectItem>
+              <SelectItem value="groups">{tAdmin("people.groupsTab")}</SelectItem>
+              <SelectItem value="friendships">{tAdmin("people.friendshipsTab")}</SelectItem>
+              <SelectItem value="invite">{tAdmin("people.inviteTab")}</SelectItem>
             </SelectContent>
           </Select>
         ) : (
           <TabsList>
             <TabsTrigger value="users" className="gap-2">
               <UsersIcon className="h-4 w-4" />
-              Người dùng
+              {tAdmin("people.usersTab")}
             </TabsTrigger>
             <TabsTrigger value="groups" className="gap-2">
               <GroupIcon className="h-4 w-4" />
-              Nhóm
+              {tAdmin("people.groupsTab")}
             </TabsTrigger>
             <TabsTrigger value="friendships" className="gap-2">
               <HeartHandshakeIcon className="h-4 w-4" />
-              Tình bạn
+              {tAdmin("people.friendshipsTab")}
             </TabsTrigger>
             <TabsTrigger value="invite" className="gap-2">
               <MailIcon className="h-4 w-4" />
-              Mời bạn bè
+              {tAdmin("people.inviteTab")}
             </TabsTrigger>
           </TabsList>
         )}
