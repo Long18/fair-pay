@@ -32,6 +32,20 @@ import {
   CollapsibleContent,
 } from "@/components/ui/collapsible";
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -78,10 +92,13 @@ import {
   PencilIcon,
   CheckCircle2Icon,
   ClockIcon,
+  ChevronsUpDownIcon,
+  CheckIcon,
 } from "@/components/ui/icons";
 import { AdminNotifications } from "@/modules/admin/sub-pages/AdminNotifications";
 import { AdminPageToolbar } from "@/modules/admin/components/AdminPageToolbar";
 import { AdminFilterChips } from "@/modules/admin/components/AdminFilterChips";
+import { useAdminTranslation } from "../i18n";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
 import { getCategoryMeta } from "@/modules/expenses/lib/categories";
 import { MarkdownComment } from "@/modules/expenses/components/markdown-comment";
@@ -491,6 +508,65 @@ function PaymentDetailDialog({
 // ─── Edit Expense Dialog (uses shared ExpenseForm) ──────────────
 // See AdminEditExpenseDialog component
 
+// ─── User Single Combobox ────────────────────────────────────────────
+
+function UserSingleCombobox({
+  value,
+  onChange,
+  users,
+  placeholder,
+  disabled,
+}: {
+  value: string;
+  onChange: (id: string) => void;
+  users: Array<{ id: string; full_name: string }>;
+  placeholder: string;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = users.find((u) => u.id === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between font-normal"
+          disabled={disabled}
+        >
+          {selected
+            ? <span className="truncate">{selected.full_name}</span>
+            : <span className="text-muted-foreground truncate">{placeholder}</span>}
+          <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Tìm kiếm..." />
+          <CommandList>
+            <CommandEmpty>Không tìm thấy người dùng</CommandEmpty>
+            <CommandGroup>
+              {users.map((user) => (
+                <CommandItem
+                  key={user.id}
+                  value={user.full_name}
+                  onSelect={() => { onChange(user.id); setOpen(false); }}
+                  className="cursor-pointer"
+                >
+                  <CheckIcon className={cn("mr-2 h-4 w-4 shrink-0", value === user.id ? "opacity-100" : "opacity-0")} />
+                  {user.full_name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 // ─── Create Payment Dialog ───────────────────────────────────────────
 
 function CreatePaymentDialog({
@@ -560,17 +636,21 @@ function CreatePaymentDialog({
       <div className="space-y-4">
         <div className="space-y-2">
           <Label>Người gửi</Label>
-          <Select value={fromUser} onValueChange={(v) => { tap(); setFromUser(v); }}>
-            <SelectTrigger><SelectValue placeholder="Chọn người gửi" /></SelectTrigger>
-            <SelectContent>{profilesList.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
-          </Select>
+          <UserSingleCombobox
+            value={fromUser}
+            onChange={(v) => { tap(); setFromUser(v); }}
+            users={profilesList}
+            placeholder="Chọn người gửi..."
+          />
         </div>
         <div className="space-y-2">
           <Label>Người nhận</Label>
-          <Select value={toUser} onValueChange={(v) => { tap(); setToUser(v); }}>
-            <SelectTrigger><SelectValue placeholder="Chọn người nhận" /></SelectTrigger>
-            <SelectContent>{profilesList.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
-          </Select>
+          <UserSingleCombobox
+            value={toUser}
+            onChange={(v) => { tap(); setToUser(v); }}
+            users={profilesList}
+            placeholder="Chọn người nhận..."
+          />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2"><Label>Số tiền</Label><Input type="number" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
@@ -839,20 +919,24 @@ function ExpensesTab() {
           <Collapsible open={showFilters} onOpenChange={setShowFilters}>
             <CollapsibleContent>
               <div className="flex items-end gap-3 flex-wrap pb-2">
-                <div className="space-y-1"><label className="text-xs text-muted-foreground">Từ ngày</label><Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" /></div>
-                <div className="space-y-1"><label className="text-xs text-muted-foreground">Đến ngày</label><Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" /></div>
-                <div className="space-y-1"><label className="text-xs text-muted-foreground">Nhóm</label>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Từ ngày</Label><Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" /></div>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Đến ngày</Label><Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" /></div>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Nhóm</Label>
                   <Select value={groupFilter} onValueChange={(v) => { tap(); setGroupFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder="Tất cả nhóm" /></SelectTrigger>
                     <SelectContent><SelectItem value="all">Tất cả nhóm</SelectItem>{groups.map((g: any) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1"><label className="text-xs text-muted-foreground">Trạng thái</label>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1.5">
+                    <Label className="text-xs text-muted-foreground">Trạng thái</Label>
+                    <span className="text-[10px] text-muted-foreground/60">(lọc trên trang hiện tại)</span>
+                  </div>
                   <Select value={statusFilter} onValueChange={(v) => { tap(); setStatusFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder="Tất cả" /></SelectTrigger>
                     <SelectContent><SelectItem value="all">Tất cả</SelectItem><SelectItem value="settled">Đã thanh toán</SelectItem><SelectItem value="pending">Chờ xử lý</SelectItem></SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1"><label className="text-xs text-muted-foreground">Số tiền từ</label><Input type="number" placeholder="0" value={amountMin} onChange={(e) => setAmountMin(e.target.value)} className="w-[120px]" /></div>
-                <div className="space-y-1"><label className="text-xs text-muted-foreground">Số tiền đến</label><Input type="number" placeholder="∞" value={amountMax} onChange={(e) => setAmountMax(e.target.value)} className="w-[120px]" /></div>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Số tiền từ</Label><Input type="number" placeholder="0" value={amountMin} onChange={(e) => setAmountMin(e.target.value)} className="w-[120px]" /></div>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Số tiền đến</Label><Input type="number" placeholder="∞" value={amountMax} onChange={(e) => setAmountMax(e.target.value)} className="w-[120px]" /></div>
               </div>
             </CollapsibleContent>
           </Collapsible>
@@ -1096,19 +1180,19 @@ function PaymentsTab() {
           <Collapsible open={showFilters} onOpenChange={setShowFilters}>
             <CollapsibleContent>
               <div className="flex items-end gap-3 flex-wrap pb-2">
-                <div className="space-y-1"><label className="text-xs text-muted-foreground">Từ ngày</label><Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" /></div>
-                <div className="space-y-1"><label className="text-xs text-muted-foreground">Đến ngày</label><Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" /></div>
-                <div className="space-y-1"><label className="text-xs text-muted-foreground">Nhóm</label>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Từ ngày</Label><Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" /></div>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Đến ngày</Label><Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" /></div>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Nhóm</Label>
                   <Select value={groupFilter} onValueChange={(v) => { tap(); setGroupFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder="Tất cả nhóm" /></SelectTrigger>
                     <SelectContent><SelectItem value="all">Tất cả nhóm</SelectItem>{groups.map((g: any) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1"><label className="text-xs text-muted-foreground">Người gửi</label>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Người gửi</Label>
                   <Select value={senderFilter} onValueChange={(v) => { tap(); setSenderFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder="Tất cả" /></SelectTrigger>
                     <SelectContent><SelectItem value="all">Tất cả</SelectItem>{profiles.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1"><label className="text-xs text-muted-foreground">Người nhận</label>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Người nhận</Label>
                   <Select value={receiverFilter} onValueChange={(v) => { tap(); setReceiverFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder="Tất cả" /></SelectTrigger>
                     <SelectContent><SelectItem value="all">Tất cả</SelectItem>{profiles.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
                   </Select>
@@ -1143,13 +1227,14 @@ function PaymentsTab() {
 
 export function AdminTransactions() {
   const isMobile = useIsMobile();
+  const { tAdmin } = useAdminTranslation();
   const [activeTab, setActiveTab] = useState<"expenses" | "payments" | "notifications">("expenses");
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Giao dịch</h1>
-        <p className="text-sm text-muted-foreground mt-1">Quản lý chi phí, thanh toán và thông báo trong hệ thống</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{tAdmin("transactions.title")}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{tAdmin("transactions.subtitle")}</p>
       </div>
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="w-full">
         {isMobile ? (
@@ -1158,24 +1243,24 @@ export function AdminTransactions() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="expenses">Chi phí</SelectItem>
-              <SelectItem value="payments">Thanh toán</SelectItem>
-              <SelectItem value="notifications">Thông báo</SelectItem>
+              <SelectItem value="expenses">{tAdmin("transactions.expensesTab")}</SelectItem>
+              <SelectItem value="payments">{tAdmin("transactions.paymentsTab")}</SelectItem>
+              <SelectItem value="notifications">{tAdmin("transactions.notificationsTab")}</SelectItem>
             </SelectContent>
           </Select>
         ) : (
           <TabsList>
             <TabsTrigger value="expenses" className="gap-2">
               <ReceiptIcon className="h-4 w-4" />
-              Chi phí
+              {tAdmin("transactions.expensesTab")}
             </TabsTrigger>
             <TabsTrigger value="payments" className="gap-2">
               <CreditCardIcon className="h-4 w-4" />
-              Thanh toán
+              {tAdmin("transactions.paymentsTab")}
             </TabsTrigger>
             <TabsTrigger value="notifications" className="gap-2">
               <BellIcon className="h-4 w-4" />
-              Thông báo
+              {tAdmin("transactions.notificationsTab")}
             </TabsTrigger>
           </TabsList>
         )}
