@@ -362,8 +362,8 @@ export function AdminUserJourney() {
         {/* Tab toggle: Canvas / Timeline */}
         <Tabs defaultValue="canvas" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="canvas">Canvas</TabsTrigger>
-            <TabsTrigger value="timeline">Timeline</TabsTrigger>
+            <TabsTrigger value="canvas">{tAdmin("journey.canvasTab")}</TabsTrigger>
+            <TabsTrigger value="timeline">{tAdmin("journey.timelineTab")}</TabsTrigger>
           </TabsList>
 
           {/* Canvas tab */}
@@ -429,9 +429,9 @@ export function AdminUserJourney() {
                             </div>
                             <Separator className="my-3" />
                             <div className="space-y-1 text-xs text-muted-foreground">
-                              <p>Start: {formatDateTime(session.started_at, locale)}</p>
+                              <p>{tAdmin("journey.start", { value: formatDateTime(session.started_at, locale) })}</p>
                               <p>{tAdmin("journey.lastSeen", { value: formatDateTime(session.last_seen_at, locale) })}</p>
-                              <p className="truncate">Entry: {session.entry_link}</p>
+                              <p className="truncate">{tAdmin("journey.entry", { value: session.entry_link })}</p>
                               {session.landing_referrer ? <p className="truncate">{tAdmin("journey.referrer", { value: session.landing_referrer })}</p> : null}
                             </div>
                           </button>
@@ -458,15 +458,17 @@ export function AdminUserJourney() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <ActivityIcon className="h-4 w-4" />
-                      Summary
+                      {tAdmin("journey.summary")}
                     </CardTitle>
                     <CardDescription>
-                      {selectedSession ? `Đang xem session ${selectedSession.id.slice(0, 8)}` : "Đang xem toàn bộ sessions"}
+                      {selectedSession
+                        ? tAdmin("journey.viewingSession", { id: selectedSession.id.slice(0, 8) })
+                        : tAdmin("journey.viewingAllSessions")}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Top pages</p>
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{tAdmin("journey.topPages")}</p>
                       <div className="flex flex-wrap gap-2">
                         {(overview?.top_pages ?? []).slice(0, 6).map((row) => (
                           <Badge key={row.name} variant="secondary">{row.name} ({row.count})</Badge>
@@ -474,7 +476,7 @@ export function AdminUserJourney() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Top CTAs</p>
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{tAdmin("journey.topCtas")}</p>
                       <div className="flex flex-wrap gap-2">
                         {(overview?.top_ctas ?? []).slice(0, 6).map((row) => (
                           <Badge key={row.name} variant="secondary">{row.name} ({row.count})</Badge>
@@ -482,7 +484,7 @@ export function AdminUserJourney() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Flows</p>
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{tAdmin("journey.flows")}</p>
                       <div className="flex flex-wrap gap-2">
                         {(overview?.recent_flows ?? []).slice(0, 6).map((row) => (
                           <Badge key={row.name} variant="secondary">{row.name} ({row.count})</Badge>
@@ -490,9 +492,9 @@ export function AdminUserJourney() {
                       </div>
                     </div>
                     <div className="space-y-2 text-sm text-muted-foreground">
-                      <p>Selected session source: {selectedSession?.landing_source ?? "all"}</p>
-                      <p>Selected session device: {selectedSession?.device_type ?? "—"}</p>
-                      <p>Selected session locale: {selectedSession?.locale ?? "—"}</p>
+                      <p>{tAdmin("journey.selectedSessionSource", { value: selectedSession?.landing_source ?? tAdmin("common.all") })}</p>
+                      <p>{tAdmin("journey.selectedSessionDevice", { value: selectedSession?.device_type ?? "—" })}</p>
+                      <p>{tAdmin("journey.selectedSessionLocale", { value: selectedSession?.locale ?? "—" })}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -501,17 +503,17 @@ export function AdminUserJourney() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <ClockIcon className="h-4 w-4" />
-                      Event Timeline
+                      {tAdmin("journey.eventTimeline")}
                     </CardTitle>
                     <CardDescription>
-                      {events?.total ?? 0} event trong phạm vi đang lọc.
+                      {tAdmin("journey.eventsInScope", { count: events?.total ?? 0 })}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     {isLoading && !events ? (
                       <div className="flex items-center justify-center py-12 text-muted-foreground">
                         <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                        Đang tải event...
+                        {tAdmin("journey.loadingEvents")}
                       </div>
                     ) : events?.data?.length ? (
                       <ScrollArea className="h-[560px] pr-3">
@@ -533,10 +535,10 @@ export function AdminUserJourney() {
                                     </div>
                                     <p className="truncate text-sm font-medium">{event.page_path}</p>
                                     <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-                                      <span>Session: {event.session_id.slice(0, 8)}</span>
-                                      <span>Occurred: {formatDateTime(event.occurred_at, locale)}</span>
-                                      {event.referrer_path ? <span>Referrer: {event.referrer_path}</span> : null}
-                                      {event.target_type ? <span>Type: {event.target_type}</span> : null}
+                                      <span>{tAdmin("journey.sessionShort", { value: event.session_id.slice(0, 8) })}</span>
+                                      <span>{tAdmin("journey.occurred", { value: formatDateTime(event.occurred_at, locale) })}</span>
+                                      {event.referrer_path ? <span>{tAdmin("journey.referrer", { value: event.referrer_path })}</span> : null}
+                                      {event.target_type ? <span>{tAdmin("journey.eventType", { value: event.target_type })}</span> : null}
                                     </div>
                                   </div>
 
@@ -545,13 +547,13 @@ export function AdminUserJourney() {
                                       <Button asChild size="sm" variant="outline">
                                         <Link to={entityPath}>
                                           <ExternalLinkIcon className="mr-2 h-4 w-4" />
-                                          Open entity
+                                          {tAdmin("journey.openEntity")}
                                         </Link>
                                       </Button>
                                     ) : null}
                                     <Button size="sm" variant="outline" onClick={() => setRawEvent(event)}>
                                       <FileTextIcon className="mr-2 h-4 w-4" />
-                                      Raw metadata
+                                      {tAdmin("journey.rawMetadata")}
                                     </Button>
                                   </div>
                                 </div>
@@ -566,8 +568,8 @@ export function AdminUserJourney() {
                           <ActivityIcon className="h-6 w-6" />
                         </EmptyMedia>
                         <EmptyHeader>
-                          <EmptyTitle>Không có event nào</EmptyTitle>
-                          <EmptyDescription>Thử đổi date range, event filter hoặc chọn session khác.</EmptyDescription>
+                          <EmptyTitle>{tAdmin("journey.noEventsTitle")}</EmptyTitle>
+                          <EmptyDescription>{tAdmin("journey.noEventsDescription")}</EmptyDescription>
                         </EmptyHeader>
                         <EmptyContent />
                       </Empty>
@@ -584,9 +586,12 @@ export function AdminUserJourney() {
       <Dialog open={!!rawEvent} onOpenChange={(open) => !open && setRawEvent(null)}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Raw metadata</DialogTitle>
+            <DialogTitle>{tAdmin("journey.rawMetadata")}</DialogTitle>
             <DialogDescription>
-              {rawEvent?.event_name} tại {formatDateTime(rawEvent?.occurred_at, locale)}
+              {tAdmin("journey.rawEventTitle", {
+                event: rawEvent?.event_name,
+                date: formatDateTime(rawEvent?.occurred_at, locale),
+              })}
             </DialogDescription>
           </DialogHeader>
           <pre className="max-h-[60vh] overflow-auto rounded-lg bg-muted p-4 text-xs">
@@ -599,15 +604,15 @@ export function AdminUserJourney() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xoá dữ liệu tracking</AlertDialogTitle>
+            <AlertDialogTitle>{tAdmin("journey.deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Hành động này sẽ xoá vĩnh viễn dữ liệu tracking của người dùng trong khoảng thời gian đã chọn. Không thể hoàn tác.
+              {tAdmin("journey.deleteDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-4">
             <Select value={deleteTimeRange} onValueChange={setDeleteTimeRange}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Chọn khoảng thời gian" />
+                <SelectValue placeholder={tAdmin("journey.deleteRangePlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {DELETE_TIME_RANGE_OPTIONS.map((option) => (
@@ -619,7 +624,7 @@ export function AdminUserJourney() {
             </Select>
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Huỷ</AlertDialogCancel>
+            <AlertDialogCancel>{tAdmin("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteMutation.mutate(deleteTimeRange)}
               disabled={deleteMutation.isPending}
@@ -628,10 +633,10 @@ export function AdminUserJourney() {
               {deleteMutation.isPending ? (
                 <>
                   <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                  Đang xoá...
+                  {tAdmin("journey.deleting")}
                 </>
               ) : (
-                "Xác nhận xoá"
+                tAdmin("journey.confirmDelete")
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

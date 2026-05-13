@@ -61,6 +61,7 @@ import {
 import { useHaptics } from "@/hooks/use-haptics";
 import { buildReminderEmailPreview } from "@/modules/admin/email/reminder-email";
 import type { ReminderDebtBreakdownItem } from "@/modules/admin/email/reminder-email";
+import { useAdminTranslation } from "../i18n";
 
 interface DebtTransactionRow {
   expense_id: string;
@@ -121,20 +122,26 @@ function formatCurrency(value: number, currency = "VND"): string {
   }).format(Math.abs(value));
 }
 
-function buildReminderMessage(row: DebtReminderRow): string {
+type AdminT = ReturnType<typeof useAdminTranslation>["tAdmin"];
+
+function buildReminderMessage(row: DebtReminderRow, tAdmin: AdminT): string {
   const breakdown = row.debt_breakdown
     .slice(0, 5)
     .map((item) => `${item.counterparty_name}: ${formatCurrency(item.amount, item.currency)}`)
     .join("; ");
-  const detail = breakdown ? ` Chi tiết: ${breakdown}.` : "";
+  const detail = breakdown ? ` ${tAdmin("devtool.debtDetailPrefix", { details: breakdown })}` : "";
 
-  return `${row.full_name}, bạn đang có ${formatCurrency(row.total_i_owe)} cần thanh toán trên FairPay.${detail} Vui lòng kiểm tra dashboard và settle up khi có thể.`;
+  return tAdmin("devtool.reminderBody", {
+    name: row.full_name,
+    amount: formatCurrency(row.total_i_owe),
+    details: detail,
+  });
 }
 
 async function getAccessToken(): Promise<string> {
   const { data, error } = await supabaseClient.auth.getSession();
   if (error || !data.session?.access_token) {
-    throw new Error("Không tìm thấy phiên đăng nhập admin");
+    throw new Error("admin-session-missing");
   }
   return data.session.access_token;
 }
@@ -164,12 +171,12 @@ async function readApiResponse<T extends { success?: boolean; error?: string; me
 }
 
 /**
- * Gửi email qua edge function CHỈ cho các notification_id đã chọn.
- * Không gọi với danh sách rỗng (tránh lỡ gửi cả hàng đợi cũ giống worker cron).
+ * Send only explicitly selected notification IDs through the edge function.
+ * Do not call with an empty list; that would risk sending an old full queue.
  */
 async function sendEmailForNotificationIds(notificationIds: string[]): Promise<EmailSendResult> {
   if (!notificationIds.length) {
-    throw new Error("Cần ít nhất một thông báo để gửi email");
+    throw new Error("at-least-one-notification");
   }
   const token = await getAccessToken();
   const response = await fetch("/api/admin/email/run-worker", {
@@ -196,7 +203,7 @@ async function fetchEmailOverview(): Promise<EmailOverviewResponse> {
   return readApiResponse<EmailOverviewResponse>(response);
 }
 
-async function createReminderNotifications(rows: DebtReminderRow[]): Promise<string[]> {
+async function createReminderNotifications(rows: DebtReminderRow[], tAdmin: AdminT): Promise<string[]> {
   const token = await getAccessToken();
   const response = await fetch("/api/admin/email/send-reminder", {
     method: "POST",
@@ -207,8 +214,8 @@ async function createReminderNotifications(rows: DebtReminderRow[]): Promise<str
     body: JSON.stringify({
       reminders: rows.map((row) => ({
         user_id: row.user_id,
-        title: "Nhắc thanh toán công nợ",
-        message: buildReminderMessage(row),
+        title: tAdmin("devtool.messageTitle"),
+        message: buildReminderMessage(row, tAdmin),
         link: "/dashboard",
         email_context: {
           total_amount: row.total_i_owe,
@@ -231,7 +238,7 @@ async function createReminderNotifications(rows: DebtReminderRow[]): Promise<str
   return payload.notification_ids || [];
 }
 
-function normalizeDebtRows(rows: unknown[]): DebtReminderRow[] {
+function normalizeDebtRows(rows: unknown[], tAdmin: AdminT): DebtReminderRow[] {
   return rows
     .map((row) => {
       const value = row as Record<string, unknown>;
@@ -243,7 +250,7 @@ function normalizeDebtRows(rows: unknown[]): DebtReminderRow[] {
                   const tx = transaction as Record<string, unknown>;
                   return {
                     expense_id: String(tx.expense_id || ""),
-                    description: String(tx.description || "Chi phí"),
+                    description: String(tx.description || tAdmin("devtool.fallbackExpense")),
                     amount: Number(tx.amount || 0),
                     currency: String(tx.currency || debt.currency || "VND"),
                     expense_date: tx.expense_date ? String(tx.expense_date) : null,
@@ -253,7 +260,7 @@ function normalizeDebtRows(rows: unknown[]): DebtReminderRow[] {
 
             return {
               counterparty_key: String(debt.counterparty_key || ""),
-              counterparty_name: String(debt.counterparty_name || "Không rõ"),
+              counterparty_name: String(debt.counterparty_name || tAdmin("common.unknown")),
               counterparty_email: debt.counterparty_email ? String(debt.counterparty_email) : null,
               amount: Number(debt.amount || 0),
               currency: String(debt.currency || "VND"),
@@ -265,7 +272,7 @@ function normalizeDebtRows(rows: unknown[]): DebtReminderRow[] {
 
       return {
         user_id: String(value.user_id || ""),
-        full_name: String(value.full_name || "Không rõ"),
+        full_name: String(value.full_name || tAdmin("common.unknown")),
         email: value.email ? String(value.email) : null,
         total_i_owe: Number(value.total_i_owe || 0),
         net_balance: Number(value.net_balance || 0),
@@ -324,6 +331,7 @@ function DebtTableSkeletonRows() {
 }
 
 function SendResultCard({ result }: { result: EmailSendResult | null }) {
+  const { tAdmin } = useAdminTranslation();
   if (!result) return null;
 
   const hasErrors = (result.errors?.length || 0) > 0 || result.success === false;
@@ -339,7 +347,7 @@ function SendResultCard({ result }: { result: EmailSendResult | null }) {
     >
       <div className="flex items-center gap-2 font-medium">
         {hasErrors ? <AlertTriangleIcon className="h-4 w-4" /> : <CheckCircle2Icon className="h-4 w-4" />}
-        Kết quả gửi email
+        {tAdmin("devtool.resultTitle")}
       </div>
       <div className="mt-2 flex flex-wrap gap-2">
         <Badge variant="outline">sent: {result.sent ?? 0}</Badge>
@@ -360,6 +368,7 @@ function SendResultCard({ result }: { result: EmailSendResult | null }) {
 }
 
 function AdminEmailDevTools() {
+  const { tAdmin } = useAdminTranslation();
   const { tap, success, warning } = useHaptics();
   const [debtors, setDebtors] = useState<DebtReminderRow[]>([]);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
@@ -377,14 +386,14 @@ function AdminEmailDevTools() {
     if (!previewRow) return null;
     return buildReminderEmailPreview({
       userName: previewRow.full_name,
-      title: "Nhắc thanh toán công nợ",
-      message: buildReminderMessage(previewRow),
+      title: tAdmin("devtool.messageTitle"),
+      message: buildReminderMessage(previewRow, tAdmin),
       debtBreakdown: toReminderDebtBreakdown(previewRow.debt_breakdown),
       totalAmount: previewRow.total_i_owe,
       appUrl: typeof window !== "undefined" ? window.location.origin : undefined,
       link: "/dashboard",
     });
-  }, [previewRow]);
+  }, [previewRow, tAdmin]);
 
   const bulkFocusRow = useMemo(() => {
     if (!bulkPreviewFocusUserId) return null;
@@ -395,14 +404,14 @@ function AdminEmailDevTools() {
     if (!bulkFocusRow) return null;
     return buildReminderEmailPreview({
       userName: bulkFocusRow.full_name,
-      title: "Nhắc thanh toán công nợ",
-      message: buildReminderMessage(bulkFocusRow),
+      title: tAdmin("devtool.messageTitle"),
+      message: buildReminderMessage(bulkFocusRow, tAdmin),
       debtBreakdown: toReminderDebtBreakdown(bulkFocusRow.debt_breakdown),
       totalAmount: bulkFocusRow.total_i_owe,
       appUrl: typeof window !== "undefined" ? window.location.origin : undefined,
       link: "/dashboard",
     });
-  }, [bulkFocusRow]);
+  }, [bulkFocusRow, tAdmin]);
 
   const selectedRows = useMemo(
     () => debtors.filter((d) => selectedUserIds.includes(d.user_id)),
@@ -425,14 +434,17 @@ function AdminEmailDevTools() {
     setPendingQueueError(null);
     try {
       const overview = await fetchEmailOverview();
-      setDebtors(normalizeDebtRows(overview.debtors || []));
+      setDebtors(normalizeDebtRows(overview.debtors || [], tAdmin));
       setPendingQueueCount(overview.pending_queue_count ?? 0);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Không tải được dữ liệu nhắc nợ");
+      const message = error instanceof Error && error.message === "admin-session-missing"
+        ? tAdmin("devtool.missingAdminSession")
+        : error instanceof Error ? error.message : tAdmin("devtool.loadError");
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [tAdmin]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -450,22 +462,27 @@ function AdminEmailDevTools() {
       tap();
       setSendingUserId(row.user_id);
       try {
-        const ids = await createReminderNotifications([row]);
-        if (!ids.length) throw new Error("Không tạo được thông báo nhắc nợ");
+        const ids = await createReminderNotifications([row], tAdmin);
+        if (!ids.length) throw new Error("queue-error");
 
         const result = await sendEmailForNotificationIds(ids);
         setSendResult(result);
         success();
-        toast.success(`Đã gửi email nhắc nợ tới ${row.full_name}`);
+        toast.success(tAdmin("devtool.sentOne", { name: row.full_name }));
         refresh();
       } catch (error) {
         warning();
-        toast.error(error instanceof Error ? error.message : "Không gửi được email nhắc nợ");
+        const message = error instanceof Error && error.message === "queue-error"
+          ? tAdmin("devtool.queueError")
+          : error instanceof Error && error.message === "at-least-one-notification"
+            ? tAdmin("devtool.atLeastOneNotification")
+            : error instanceof Error ? error.message : tAdmin("devtool.sendError");
+        toast.error(message);
       } finally {
         setSendingUserId(null);
       }
     },
-    [refresh, success, tap, warning]
+    [refresh, success, tap, tAdmin, warning]
   );
 
   const handleRemindSelected = useCallback(async () => {
@@ -473,23 +490,28 @@ function AdminEmailDevTools() {
     tap();
     setSendingUserId("__bulk__");
     try {
-      const ids = await createReminderNotifications(selectedRows);
-      if (!ids.length) throw new Error("Không tạo được thông báo nhắc nợ");
+      const ids = await createReminderNotifications(selectedRows, tAdmin);
+      if (!ids.length) throw new Error("queue-error");
 
       const result = await sendEmailForNotificationIds(ids);
       setSendResult(result);
       success();
-      toast.success(`Đã gửi ${ids.length} email nhắc nợ`);
+      toast.success(tAdmin("devtool.sentMany", { count: ids.length }));
       setSelectedUserIds([]);
       setConfirmBulkOpen(false);
       refresh();
     } catch (error) {
       warning();
-      toast.error(error instanceof Error ? error.message : "Không gửi được email nhắc nợ");
+      const message = error instanceof Error && error.message === "queue-error"
+        ? tAdmin("devtool.queueError")
+        : error instanceof Error && error.message === "at-least-one-notification"
+          ? tAdmin("devtool.atLeastOneNotification")
+          : error instanceof Error ? error.message : tAdmin("devtool.sendError");
+      toast.error(message);
     } finally {
       setSendingUserId(null);
     }
-  }, [selectedRows, refresh, success, tap, warning]);
+  }, [selectedRows, refresh, success, tap, tAdmin, warning]);
 
   const openBulkPreview = useCallback(() => {
     if (!selectedRows.length) return;
@@ -510,11 +532,8 @@ function AdminEmailDevTools() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Nhắc công nợ qua email</h1>
-          <p className="text-sm text-muted-foreground text-pretty">
-            Chọn người cần nhắc, xem trước nội dung email, rồi gửi. Chỉ các thông báo bạn tạo từ màn
-            hình này mới được gửi — không mở hàng đợi cũ toàn bộ.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight">{tAdmin("devtool.title")}</h1>
+          <p className="text-sm text-muted-foreground text-pretty">{tAdmin("devtool.subtitle")}</p>
         </div>
         <Button
           type="button"
@@ -530,18 +549,17 @@ function AdminEmailDevTools() {
           ) : (
             <RefreshCwIcon className="mr-2 h-4 w-4" />
           )}
-          Tải lại
+          {tAdmin("common.refresh")}
         </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Thông báo chưa gửi (hàng đợi)</CardDescription>
+            <CardDescription>{tAdmin("devtool.pendingQueue")}</CardDescription>
             <CardTitle className="text-3xl tabular-nums">{pendingQueueCount ?? "—"}</CardTitle>
             <p className="pt-1 text-xs text-muted-foreground">
-              Số này gồm mọi email chờ; cron/định kỳ xử lý. Admin không cần &quot;chạy worker&quot;
-              thủ công ở đây nữa.
+              {tAdmin("devtool.pendingQueueHelp")}
             </p>
           </CardHeader>
           {pendingQueueError && (
@@ -553,14 +571,14 @@ function AdminEmailDevTools() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>User đang nợ (có email)</CardDescription>
+            <CardDescription>{tAdmin("devtool.debtorsWithEmail")}</CardDescription>
             <CardTitle className="text-3xl tabular-nums">{debtors.length}</CardTitle>
           </CardHeader>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Tổng nợ cần nhắc (cả bảng)</CardDescription>
+            <CardDescription>{tAdmin("devtool.totalDebtAll")}</CardDescription>
             <CardTitle className="text-3xl tabular-nums text-balance">
               {debtors.length ? formatCurrency(totalDebtAll) : "—"}
             </CardTitle>
@@ -574,17 +592,15 @@ function AdminEmailDevTools() {
         <CardHeader className="space-y-4">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <CardTitle>Danh sách cần nhắc</CardTitle>
-              <CardDescription>
-                Chỉ tài khoản có nợ &gt; 0 (theo cùng nguồn dữ liệu với bảng công nợ).
-              </CardDescription>
+              <CardTitle>{tAdmin("devtool.debtorListTitle")}</CardTitle>
+              <CardDescription>{tAdmin("devtool.debtorListDescription")}</CardDescription>
             </div>
           </div>
           {debtors.length > 0 && !isLoading ? (
             <div className="flex min-w-0 flex-col gap-3 rounded-lg border bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
                 <span className="font-medium text-foreground tabular-nums">
-                  Đã chọn {selectedUserIds.length}/{debtors.length}
+                  {tAdmin("devtool.selectedCount", { selected: selectedUserIds.length, total: debtors.length })}
                   {selectedRows.length ? ` · ${formatCurrency(totalDebtSelected)}` : ""}
                 </span>
                 <Separator orientation="vertical" className="hidden h-4 sm:block" />
@@ -597,7 +613,7 @@ function AdminEmailDevTools() {
                     setSelectedUserIds(debtors.map((d) => d.user_id));
                   }}
                 >
-                  Chọn tất cả
+                  {tAdmin("common.all")}
                 </Button>
                 <Button
                   type="button"
@@ -609,7 +625,7 @@ function AdminEmailDevTools() {
                   }}
                   disabled={!selectedUserIds.length}
                 >
-                  Bỏ chọn
+                  {tAdmin("devtool.clearSelection")}
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -620,7 +636,7 @@ function AdminEmailDevTools() {
                   disabled={!selectedRows.length || isBusy}
                 >
                   <EyeIcon className="mr-2 h-4 w-4" aria-hidden="true" />
-                  Xem trước ({selectedUserIds.length})
+                  {tAdmin("devtool.previewCount", { count: selectedUserIds.length })}
                 </Button>
                 <Button
                   type="button"
@@ -635,7 +651,7 @@ function AdminEmailDevTools() {
                   ) : (
                     <SendIcon className="mr-2 h-4 w-4" aria-hidden="true" />
                   )}
-                  Gửi email đã chọn
+                  {tAdmin("devtool.sendSelectedEmail")}
                 </Button>
               </div>
             </div>
@@ -658,18 +674,18 @@ function AdminEmailDevTools() {
                         }
                       }}
                       disabled={!debtors.length || isLoading}
-                      aria-label="Chọn tất cả người đang nợ"
+                      aria-label={tAdmin("devtool.selectAllDebtors")}
                     />
                     <Label htmlFor="select-all-debtors" className="sr-only">
-                      Chọn tất cả
+                      {tAdmin("devtool.selectAllDebtors")}
                     </Label>
                   </div>
                 </TableHead>
-                <TableHead>Người dùng</TableHead>
+                <TableHead>{tAdmin("devtool.userColumn")}</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead className="text-right">Đang nợ</TableHead>
-                <TableHead className="text-right">Quan hệ nợ</TableHead>
-                <TableHead className="w-[200px] text-right">Thao tác</TableHead>
+                <TableHead className="text-right">{tAdmin("devtool.debtColumn")}</TableHead>
+                <TableHead className="text-right">{tAdmin("devtool.relationshipsColumn")}</TableHead>
+                <TableHead className="w-[200px] text-right">{tAdmin("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -696,7 +712,7 @@ function AdminEmailDevTools() {
                               });
                             }}
                             disabled={isBusy}
-                            aria-label={`Chọn ${row.full_name}`}
+                            aria-label={`${tAdmin("common.select")} ${row.full_name}`}
                           />
                         </div>
                       </TableCell>
@@ -704,7 +720,7 @@ function AdminEmailDevTools() {
                         <div className="font-medium">{row.full_name}</div>
                         {topDebt ? (
                           <div className="mt-1 text-xs text-muted-foreground line-clamp-2">
-                            Nợ {topDebt.counterparty_name} {formatCurrency(topDebt.amount, topDebt.currency)}
+                            {tAdmin("devtool.debtTo", { name: topDebt.counterparty_name, amount: formatCurrency(topDebt.amount, topDebt.currency) })}
                           </div>
                         ) : null}
                       </TableCell>
@@ -730,24 +746,24 @@ function AdminEmailDevTools() {
                               setPreviewRow(row);
                             }}
                             disabled={isBusy}
-                            aria-label={`Xem trước email gửi tới ${row.full_name}`}
+                            aria-label={`${tAdmin("common.preview")} ${row.full_name}`}
                           >
                             <EyeIcon className="mr-1 h-4 w-4" aria-hidden="true" />
-                            Xem trước
+                            {tAdmin("common.preview")}
                           </Button>
                           <Button
                             type="button"
                             size="sm"
                             onClick={() => handleRemindOne(row)}
                             disabled={isBusy}
-                            aria-label={`Gửi email nhắc nợ tới ${row.full_name}`}
+                            aria-label={`${tAdmin("devtool.sendReminder")} ${row.full_name}`}
                           >
                             {sendingUserId === row.user_id ? (
                               <Loader2Icon className="mr-1 h-4 w-4 animate-spin" />
                             ) : (
                               <SendIcon className="mr-1 h-4 w-4" aria-hidden="true" />
                             )}
-                            Gửi
+                            {tAdmin("common.send")}
                           </Button>
                         </div>
                       </TableCell>
@@ -757,7 +773,7 @@ function AdminEmailDevTools() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                    Không có user đang nợ với email hợp lệ
+                    {tAdmin("devtool.noDebtors")}
                   </TableCell>
                 </TableRow>
               )}
@@ -776,9 +792,9 @@ function AdminEmailDevTools() {
       >
         <DialogContent className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-5xl flex-col gap-0 overflow-hidden p-0 sm:w-[calc(100vw-2rem)]">
           <DialogHeader className="border-b px-4 py-4 sm:px-6">
-            <DialogTitle>Xem trước email</DialogTitle>
+            <DialogTitle>{tAdmin("devtool.previewEmailTitle")}</DialogTitle>
             <DialogDescription>
-              {previewRow ? `Gửi tới ${previewRow.full_name} (${previewRow.email})` : null}
+              {previewRow ? tAdmin("devtool.sendTo", { name: previewRow.full_name, email: previewRow.email }) : null}
             </DialogDescription>
           </DialogHeader>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
@@ -793,7 +809,7 @@ function AdminEmailDevTools() {
                 {previewRow.debt_breakdown.length ? (
                   <div className="rounded-xl border bg-card p-3 shadow-sm">
                     <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Tóm tắt công nợ
+                      {tAdmin("devtool.debtSummary")}
                     </p>
                     <div className="mt-2 grid max-h-40 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
                       {previewRow.debt_breakdown.slice(0, 6).map((item) => (
@@ -802,7 +818,7 @@ function AdminEmailDevTools() {
                           className="rounded-lg bg-muted/40 p-3"
                         >
                           <p className="line-clamp-2 text-sm font-medium">
-                            {previewRow.full_name} cần trả {item.counterparty_name}
+                            {tAdmin("devtool.debtSummaryLine", { user: previewRow.full_name, counterparty: item.counterparty_name })}
                           </p>
                           <p className="mt-1 text-sm font-semibold text-destructive tabular-nums">
                             {formatCurrency(item.amount, item.currency)}
@@ -832,7 +848,7 @@ function AdminEmailDevTools() {
               onClick={() => setPreviewRow(null)}
               disabled={isBusy}
             >
-              Đóng
+              {tAdmin("common.close")}
             </Button>
             <Button
               type="button"
@@ -849,7 +865,7 @@ function AdminEmailDevTools() {
               ) : (
                 <SendIcon className="mr-2 h-4 w-4" aria-hidden="true" />
               )}
-              {sendingUserId === previewRow?.user_id ? "Đang gửi…" : "Gửi email nhắc nợ"}
+              {sendingUserId === previewRow?.user_id ? tAdmin("devtool.sending") : tAdmin("devtool.sendReminder")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -858,22 +874,21 @@ function AdminEmailDevTools() {
       <Dialog open={bulkPreviewOpen} onOpenChange={setBulkPreviewOpen}>
         <DialogContent className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-5xl flex-col gap-0 overflow-hidden p-0 sm:w-[calc(100vw-2rem)]">
           <DialogHeader className="border-b px-4 py-4 sm:px-6">
-            <DialogTitle>Xem trước trước khi gửi hàng loạt</DialogTitle>
+            <DialogTitle>{tAdmin("devtool.bulkPreviewTitle")}</DialogTitle>
             <DialogDescription>
-              Chọn từng người để xem đúng nội dung email sẽ gửi. Nội dung khớp với bản gửi thật (template
-              FairPay + chi tiết công nợ).
+              {tAdmin("devtool.bulkPreviewDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="min-h-0 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
             {selectedRows.length > 0 ? (
               <div className="space-y-2">
-                <Label htmlFor="bulk-preview-user">Xem nội dung cho</Label>
+                <Label htmlFor="bulk-preview-user">{tAdmin("devtool.previewRecipient")}</Label>
                 <Select
                   value={bulkPreviewFocusUserId || selectedRows[0]?.user_id}
                   onValueChange={setBulkPreviewFocusUserId}
                 >
                   <SelectTrigger id="bulk-preview-user" className="w-full max-w-md">
-                    <SelectValue placeholder="Chọn người nhận" />
+                    <SelectValue placeholder={tAdmin("devtool.previewRecipient")} />
                   </SelectTrigger>
                   <SelectContent>
                     {selectedRows.map((r) => (
@@ -884,8 +899,7 @@ function AdminEmailDevTools() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Sắp gửi {selectedRows.length} email. Hãy kiểm tra từng nội dung, rồi đóng hộp thoại này và
-                  bấm &quot;Gửi email đã chọn&quot; trên bảng.
+                  {tAdmin("devtool.bulkPreviewHint", { count: selectedRows.length })}
                 </p>
               </div>
             ) : null}
@@ -914,7 +928,7 @@ function AdminEmailDevTools() {
           </div>
           <DialogFooter className="border-t px-4 py-3 sm:px-6">
             <Button type="button" variant="outline" onClick={() => setBulkPreviewOpen(false)}>
-              Đóng
+              {tAdmin("common.close")}
             </Button>
             <Button
               type="button"
@@ -924,7 +938,7 @@ function AdminEmailDevTools() {
               }}
               disabled={!selectedRows.length}
             >
-              Tiếp tục: xác nhận gửi
+              {tAdmin("devtool.continueConfirm")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -933,10 +947,10 @@ function AdminEmailDevTools() {
       <AlertDialog open={confirmBulkOpen} onOpenChange={setConfirmBulkOpen}>
         <AlertDialogContent className="max-h-[min(90dvh,720px)] overflow-y-auto">
           <AlertDialogHeader>
-            <AlertDialogTitle>Gửi {selectedRows.length} email nhắc nợ?</AlertDialogTitle>
+            <AlertDialogTitle>{tAdmin("devtool.confirmBulkTitle", { count: selectedRows.length })}</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2">
-                <p>Email sẽ gửi tới:</p>
+                <p>{tAdmin("devtool.emailRecipients")}</p>
                 <ScrollArea className="h-40 max-h-40 rounded-md border pr-2">
                   <ol className="list-inside list-decimal space-y-1 px-3 py-2 text-left text-sm">
                     {selectedRows.map((r) => (
@@ -947,14 +961,13 @@ function AdminEmailDevTools() {
                   </ol>
                 </ScrollArea>
                 <p className="text-xs text-muted-foreground">
-                  Hệ thống tạo thông báo mới theo công nợ hiện tại rồi gửi — không kích hoạt gửi toàn bộ
-                  hàng đợi cũ.
+                  {tAdmin("devtool.confirmBulkDescription")}
                 </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={sendingUserId === "__bulk__"}>Hủy</AlertDialogCancel>
+            <AlertDialogCancel disabled={sendingUserId === "__bulk__"}>{tAdmin("common.cancel")}</AlertDialogCancel>
             <Button
               type="button"
               disabled={sendingUserId === "__bulk__"}
@@ -962,7 +975,7 @@ function AdminEmailDevTools() {
                 void handleRemindSelected();
               }}
             >
-              {sendingUserId === "__bulk__" ? "Đang gửi…" : "Gửi email"}
+              {sendingUserId === "__bulk__" ? tAdmin("devtool.sending") : tAdmin("devtool.sendEmail")}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -972,6 +985,7 @@ function AdminEmailDevTools() {
 }
 
 export function AdminDevTool() {
+  const { tAdmin } = useAdminTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab");
   const isApiDocsEnabled = import.meta.env.VITE_ENABLE_ADMIN_API_DOCS === "true";
@@ -989,8 +1003,8 @@ export function AdminDevTool() {
     <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Developer Tools</h1>
-          <p className="text-sm text-muted-foreground mt-1">Internal tooling and API documentation</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{tAdmin("devtool.developerToolsTitle")}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{tAdmin("devtool.developerToolsSubtitle")}</p>
         </div>
         <TabsList className={`grid w-full sm:w-fit ${isApiDocsEnabled ? "grid-cols-4" : "grid-cols-3"}`}>
           <TabsTrigger value="og-preview">
@@ -999,7 +1013,7 @@ export function AdminDevTool() {
           </TabsTrigger>
           <TabsTrigger value="email">
             <MailIcon className="h-4 w-4" />
-            Nhắc nợ
+            {tAdmin("devtool.debtTab")}
           </TabsTrigger>
           <TabsTrigger value="utm">
             <PieChartIcon className="h-4 w-4" />

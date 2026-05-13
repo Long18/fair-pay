@@ -56,6 +56,7 @@ import {
 import { toast } from "sonner";
 import { useHaptics } from "@/hooks/use-haptics";
 import type { ReactionType } from "@/modules/expenses/types/comments";
+import { useAdminTranslation } from "../i18n";
 
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -99,6 +100,7 @@ function useReactionTypesList() {
 
 function useUpsertReaction() {
   const qc = useQueryClient();
+  const { tAdmin } = useAdminTranslation();
   return useMutation({
     mutationFn: async ({ id, form, maxSortOrder }: { id?: string; form: ReactionFormData; maxSortOrder: number }) => {
       const payload: Record<string, unknown> = {
@@ -122,16 +124,17 @@ function useUpsertReaction() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "reaction-types"] });
-      toast.success("Đã lưu reaction type");
+      toast.success(tAdmin("reactions.saved"));
     },
     onError: (err: Error) => {
-      toast.error(`Lỗi: ${err.message}`);
+      toast.error(tAdmin("common.errorWithMessage", { message: err.message }));
     },
   });
 }
 
 function useDeleteReaction() {
   const qc = useQueryClient();
+  const { tAdmin } = useAdminTranslation();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabaseClient.from("reaction_types").delete().eq("id", id);
@@ -139,16 +142,17 @@ function useDeleteReaction() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "reaction-types"] });
-      toast.success("Đã xóa reaction type");
+      toast.success(tAdmin("reactions.deleted"));
     },
     onError: (err: Error) => {
-      toast.error(`Lỗi: ${err.message}`);
+      toast.error(tAdmin("common.errorWithMessage", { message: err.message }));
     },
   });
 }
 
 function useToggleActive() {
   const qc = useQueryClient();
+  const { tAdmin } = useAdminTranslation();
   return useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
       const { error } = await supabaseClient.from("reaction_types").update({ is_active }).eq("id", id);
@@ -158,7 +162,7 @@ function useToggleActive() {
       qc.invalidateQueries({ queryKey: ["admin", "reaction-types"] });
     },
     onError: (err: Error) => {
-      toast.error(`Lỗi: ${err.message}`);
+      toast.error(tAdmin("common.errorWithMessage", { message: err.message }));
     },
   });
 }
@@ -191,6 +195,7 @@ function ReactionFormDialog({
   onSave: (form: ReactionFormData, id?: string) => void;
   isSaving: boolean;
 }) {
+  const { tAdmin } = useAdminTranslation();
   const [form, setForm] = useState<ReactionFormData>(EMPTY_FORM);
   const { tap } = useHaptics();
 
@@ -234,10 +239,10 @@ function ReactionFormDialog({
     <AdminCrudSheet
       open={open}
       onOpenChange={handleOpenChange}
-      title={editItem ? "Chỉnh sửa Reaction" : "Thêm Reaction mới"}
-      description={editItem ? "Cập nhật thông tin reaction type" : "Tạo một reaction type mới cho hệ thống"}
+      title={editItem ? tAdmin("reactions.editTitle") : tAdmin("reactions.createTitle")}
+      description={editItem ? tAdmin("reactions.editDescription") : tAdmin("reactions.createDescription")}
       isSubmitting={isSaving}
-      submitLabel={editItem ? "Cập nhật" : "Tạo mới"}
+      submitLabel={editItem ? tAdmin("reactions.updateSubmit") : tAdmin("reactions.createSubmit")}
       onSubmit={() => { tap(); handleSubmit(); }}
     >
       <div className="space-y-4">
@@ -252,7 +257,7 @@ function ReactionFormDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="label">Label</Label>
+            <Label htmlFor="label">{tAdmin("reactions.label")}</Label>
             <Input
               id="label"
               value={form.label}
@@ -263,7 +268,7 @@ function ReactionFormDialog({
         </div>
 
         <div className="space-y-2">
-          <Label>Loại media</Label>
+          <Label>{tAdmin("reactions.mediaType")}</Label>
           <Select
             value={form.media_type}
             onValueChange={(v) => { tap(); setForm((f) => ({ ...f, media_type: v as ReactionFormData["media_type"] })); }}
@@ -312,9 +317,7 @@ function ReactionFormDialog({
             onChange={(e) => setForm((f) => ({ ...f, emoji_mart_id: e.target.value }))}
             placeholder="+1, joy, fire..."
           />
-          <p className="text-[11px] text-muted-foreground">
-            ID trong emoji-mart để matching khi chọn từ picker
-          </p>
+          <p className="text-[11px] text-muted-foreground">{tAdmin("reactions.emojiMartHelp")}</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -323,7 +326,7 @@ function ReactionFormDialog({
             checked={form.is_active}
             onCheckedChange={(v) => { tap(); setForm((f) => ({ ...f, is_active: v })); }}
           />
-          <Label htmlFor="is_active">Kích hoạt</Label>
+          <Label htmlFor="is_active">{tAdmin("reactions.active")}</Label>
         </div>
       </div>
     </AdminCrudSheet>
@@ -334,6 +337,7 @@ function ReactionFormDialog({
 // ─── Main Component ─────────────────────────────────────────────────
 
 export function AdminReactions() {
+  const { tAdmin } = useAdminTranslation();
   const { data: items, isLoading, refetch, isFetching } = useReactionTypesList();
   const upsertMutation = useUpsertReaction();
   const deleteMutation = useDeleteReaction();
@@ -387,25 +391,25 @@ export function AdminReactions() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Reactions</h1>
-        <p className="text-sm text-muted-foreground mt-1">Quản lý các loại reaction trong hệ thống</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{tAdmin("reactions.title")}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{tAdmin("reactions.subtitle")}</p>
       </div>
 
       {/* Main Table */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <div>
-            <CardTitle>Quản lý Reactions</CardTitle>
-            <CardDescription>Thêm, sửa, xóa emoji và icon cho hệ thống reaction</CardDescription>
+            <CardTitle>{tAdmin("reactions.cardTitle")}</CardTitle>
+            <CardDescription>{tAdmin("reactions.cardDescription")}</CardDescription>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => { tap(); refetch(); }} disabled={isFetching}>
               <RefreshCwIcon className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-              Làm mới
+              {tAdmin("common.refresh")}
             </Button>
             <Button size="sm" onClick={handleAdd}>
               <PlusIcon className="mr-2 h-4 w-4" />
-              Thêm mới
+              {tAdmin("reactions.create")}
             </Button>
           </div>
         </CardHeader>
@@ -423,8 +427,8 @@ export function AdminReactions() {
                 <SmilePlusIcon className="h-6 w-6" />
               </EmptyMedia>
               <EmptyHeader>
-                <EmptyTitle>Chưa có reaction nào</EmptyTitle>
-                <EmptyDescription>Thêm reaction type đầu tiên cho hệ thống</EmptyDescription>
+                <EmptyTitle>{tAdmin("reactions.emptyTitle")}</EmptyTitle>
+                <EmptyDescription>{tAdmin("reactions.emptyDescription")}</EmptyDescription>
               </EmptyHeader>
             </Empty>
           )}
@@ -440,13 +444,13 @@ export function AdminReactions() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
-                      <TableHead className="w-[60px]">Thứ tự</TableHead>
+                      <TableHead className="w-[60px]">{tAdmin("reactions.order")}</TableHead>
                       <TableHead className="w-[60px]">Preview</TableHead>
                       <TableHead className="w-[120px]">Code</TableHead>
-                      <TableHead>Label</TableHead>
-                      <TableHead className="w-[90px]">Loại</TableHead>
-                      <TableHead className="w-[90px]">Trạng thái</TableHead>
-                      <TableHead className="w-[100px] text-right">Thao tác</TableHead>
+                      <TableHead>{tAdmin("reactions.label")}</TableHead>
+                      <TableHead className="w-[90px]">{tAdmin("common.type")}</TableHead>
+                      <TableHead className="w-[90px]">{tAdmin("common.status")}</TableHead>
+                      <TableHead className="w-[100px] text-right">{tAdmin("common.actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -480,15 +484,15 @@ export function AdminReactions() {
                           <Switch
                             checked={item.is_active}
                             onCheckedChange={(v) => handleToggle(item.id, v)}
-                            aria-label={`Toggle ${item.label}`}
+                            aria-label={`${tAdmin("reactions.active")} ${item.label}`}
                           />
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(item)} aria-label={`Edit ${item.label}`}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(item)} aria-label={`${tAdmin("common.edit")} ${item.label}`}>
                               <PencilIcon className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { tap(); setDeleteTarget(item); }} aria-label={`Delete ${item.label}`}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { tap(); setDeleteTarget(item); }} aria-label={`${tAdmin("common.delete")} ${item.label}`}>
                               <Trash2Icon className="h-4 w-4" />
                             </Button>
                           </div>
@@ -516,17 +520,16 @@ export function AdminReactions() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xóa reaction type?</AlertDialogTitle>
+            <AlertDialogTitle>{tAdmin("reactions.deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc muốn xóa &quot;{deleteTarget?.label}&quot;? Thao tác này không thể hoàn tác.
-              Các reaction đã sử dụng sẽ bị xóa theo.
+              {tAdmin("reactions.deleteDescription", { label: deleteTarget?.label ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogCancel>{tAdmin("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {deleteMutation.isPending && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
-              Xóa
+              {tAdmin("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

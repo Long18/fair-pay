@@ -179,6 +179,8 @@ function DeleteConfirmDialog({
 }: {
   title: string; description: string; open: boolean; onOpenChange: (open: boolean) => void; onConfirm: () => void; isDeleting: boolean;
 }) {
+  const { tAdmin } = useAdminTranslation();
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -190,10 +192,10 @@ function DeleteConfirmDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Hủy</AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting}>{tAdmin("common.cancel")}</AlertDialogCancel>
           <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={(e) => { e.preventDefault(); onConfirm(); }} disabled={isDeleting}>
             {isDeleting ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Xóa
+            {tAdmin("common.delete")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -231,6 +233,7 @@ function ExpenseDetailDialog({
   onDelete: () => void;
   onSettlementChange: (expenseId: string, nextIsSettled: boolean) => void;
 }) {
+  const { tAdmin } = useAdminTranslation();
   const [splits, setSplits] = useState<ExpenseSplit[]>([]);
   const [loadingSplits, setLoadingSplits] = useState(false);
   const [updatingSplitId, setUpdatingSplitId] = useState<string | null>(null);
@@ -261,16 +264,16 @@ function ExpenseDetailDialog({
 
       toast.success(
         split.is_settled
-          ? `Đã chuyển ${split.user_name} về trạng thái chưa trả`
-          : `Đã ghi nhận ${split.user_name} là đã trả`,
+          ? tAdmin("transactions.expenses.splitMarkedUnpaid", { name: split.user_name })
+          : tAdmin("transactions.expenses.splitMarkedPaid", { name: split.user_name }),
       );
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Không thể cập nhật trạng thái thanh toán";
-      toast.error(`Lỗi: ${message}`);
+      const message = err instanceof Error ? err.message : tAdmin("transactions.expenses.splitSettlementError");
+      toast.error(tAdmin("common.errorWithMessage", { message }));
     } finally {
       setUpdatingSplitId(null);
     }
-  }, [expense, onSettlementChange, splits]);
+  }, [expense, onSettlementChange, splits, tAdmin]);
 
   useEffect(() => {
     if (!expenseId || !open) { setSplits([]); setComment(null); setAttachments([]); return; }
@@ -305,7 +308,7 @@ function ExpenseDetailDialog({
     ]).then(([splitsRes, commentRes, attachmentsRes]) => {
       if (!splitsRes.error && splitsRes.data) {
         setSplits((splitsRes.data as ExpenseSplitResponse[]).map((s) => ({
-          id: s.id, user_id: s.user_id, user_name: s.profiles?.full_name ?? "Không rõ",
+          id: s.id, user_id: s.user_id, user_name: s.profiles?.full_name ?? tAdmin("common.unknown"),
           split_method: s.split_method, computed_amount: s.computed_amount,
           is_settled: s.is_settled ?? false, settled_amount: s.settled_amount ?? 0,
         })));
@@ -318,7 +321,7 @@ function ExpenseDetailDialog({
       }
       setLoadingSplits(false);
     });
-  }, [expenseId, open]);
+  }, [expenseId, open, tAdmin]);
 
   if (!expense) return null;
 
@@ -327,14 +330,14 @@ function ExpenseDetailDialog({
       <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{expense.description}</DialogTitle>
-          <DialogDescription>Chi tiết chi phí · {formatDate(expense.expense_date)}</DialogDescription>
+          <DialogDescription>{tAdmin("transactions.expenses.detailDescription", { date: formatDate(expense.expense_date) })}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 mt-2 overflow-y-auto flex-1">
           <div className="grid grid-cols-2 gap-4">
-            <DetailItem label="Số tiền" value={`${formatNumber(expense.amount)} ${expense.currency}`} />
-            <DetailItem label="Người trả" value={expense.paid_by_name} />
-            <DetailItem label="Nhóm" value={expense.group_name ?? "Bạn bè"} />
-            <DetailItem label="Danh mục" value={
+            <DetailItem label={tAdmin("common.amount")} value={`${formatNumber(expense.amount)} ${expense.currency}`} />
+            <DetailItem label={tAdmin("transactions.expenses.payer")} value={expense.paid_by_name} />
+            <DetailItem label={tAdmin("common.group")} value={expense.group_name ?? tAdmin("context.friends")} />
+            <DetailItem label={tAdmin("transactions.expenses.category")} value={
               (() => {
                 const cat = getCategoryMeta(expense.category);
                 const CatIcon = cat.icon;
@@ -348,17 +351,17 @@ function ExpenseDetailDialog({
                 );
               })()
             } />
-            <DetailItem label="Trạng thái" value={
+            <DetailItem label={tAdmin("common.status")} value={
               resolvedIsSettled
-                ? <Badge className="gap-1"><CheckCircle2Icon className="size-3" aria-hidden="true" />Đã thanh toán</Badge>
-                : <Badge variant="outline" className="gap-1"><ClockIcon className="size-3" aria-hidden="true" />Chờ xử lý</Badge>
+                ? <Badge className="gap-1"><CheckCircle2Icon className="size-3" aria-hidden="true" />{tAdmin("transactions.expenses.settled")}</Badge>
+                : <Badge variant="outline" className="gap-1"><ClockIcon className="size-3" aria-hidden="true" />{tAdmin("transactions.expenses.pending")}</Badge>
             } />
           </div>
 
           {/* Comment section - parity with Client show page */}
           {comment && comment.trim() !== "" && (
             <div>
-              <h4 className="text-sm font-medium mb-2">Ghi chú</h4>
+              <h4 className="text-sm font-medium mb-2">{tAdmin("transactions.expenses.comment")}</h4>
               <div className="rounded-md border p-3 bg-muted/30">
                 <MarkdownComment content={comment} className="text-sm" />
               </div>
@@ -367,21 +370,21 @@ function ExpenseDetailDialog({
 
           {/* Splits section */}
           <div>
-            <h4 className="text-sm font-medium mb-2">Chia tiền</h4>
+            <h4 className="text-sm font-medium mb-2">{tAdmin("transactions.expenses.splits")}</h4>
             {loadingSplits ? (
               <div className="flex items-center justify-center py-6"><Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" /></div>
             ) : splits.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">Không có dữ liệu chia tiền</p>
+              <p className="text-sm text-muted-foreground text-center py-4">{tAdmin("transactions.expenses.noSplits")}</p>
             ) : (
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Người</TableHead>
-                      <TableHead>Phương thức</TableHead>
-                      <TableHead className="text-right">Số tiền</TableHead>
-                      <TableHead>Trạng thái</TableHead>
-                      <TableHead className="text-right">Cập nhật</TableHead>
+                      <TableHead>{tAdmin("common.user")}</TableHead>
+                      <TableHead>{tAdmin("transactions.expenses.splitMethod")}</TableHead>
+                      <TableHead className="text-right">{tAdmin("common.amount")}</TableHead>
+                      <TableHead>{tAdmin("common.status")}</TableHead>
+                      <TableHead className="text-right">{tAdmin("transactions.expenses.splitUpdate")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -392,8 +395,8 @@ function ExpenseDetailDialog({
                         <TableCell className="text-right font-mono tabular-nums text-sm">{formatNumber(split.computed_amount)}</TableCell>
                         <TableCell>
                           {split.is_settled
-                            ? <Badge className="gap-1"><CheckCircle2Icon className="size-3" aria-hidden="true" />Đã trả</Badge>
-                            : <Badge variant="outline" className="gap-1"><ClockIcon className="size-3" aria-hidden="true" />Chưa trả</Badge>}
+                            ? <Badge className="gap-1"><CheckCircle2Icon className="size-3" aria-hidden="true" />{tAdmin("transactions.expenses.splitPaid")}</Badge>
+                            : <Badge variant="outline" className="gap-1"><ClockIcon className="size-3" aria-hidden="true" />{tAdmin("transactions.expenses.splitUnpaid")}</Badge>}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
@@ -403,7 +406,7 @@ function ExpenseDetailDialog({
                             disabled={updatingSplitId === split.id}
                           >
                             {updatingSplitId === split.id ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            {split.is_settled ? "Đánh dấu chưa trả" : "Đánh dấu đã trả"}
+                            {split.is_settled ? tAdmin("transactions.expenses.markUnpaid") : tAdmin("transactions.expenses.markPaid")}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -417,14 +420,14 @@ function ExpenseDetailDialog({
           {/* Attachments section - parity with Client show page */}
           {attachments.length > 0 && (
             <div>
-              <h4 className="text-sm font-medium mb-2">Tệp đính kèm ({attachments.length})</h4>
+              <h4 className="text-sm font-medium mb-2">{tAdmin("transactions.expenses.attachments")} ({attachments.length})</h4>
               <AttachmentList attachments={attachments} canDelete={false} />
             </div>
           )}
         </div>
         <div className="flex gap-2 pt-2 border-t">
-          <Button size="sm" variant="outline" onClick={onEdit}><PencilIcon className="mr-2 h-4 w-4" />Chỉnh sửa</Button>
-          <Button size="sm" variant="destructive" onClick={onDelete}>Xóa chi phí</Button>
+          <Button size="sm" variant="outline" onClick={onEdit}><PencilIcon className="mr-2 h-4 w-4" />{tAdmin("common.edit")}</Button>
+          <Button size="sm" variant="destructive" onClick={onDelete}>{tAdmin("common.delete")}</Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -438,13 +441,15 @@ function PaymentDetailDialog({
 }: {
   payment: PaymentRow | null; open: boolean; onOpenChange: (open: boolean) => void; onEdit: () => void; onDelete: () => void;
 }) {
+  const { tAdmin } = useAdminTranslation();
+
   if (!payment) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Chi tiết thanh toán</DialogTitle>
+          <DialogTitle>{tAdmin("transactions.payments.detailTitle")}</DialogTitle>
           <DialogDescription>{formatDate(payment.payment_date)}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 mt-2">
@@ -457,7 +462,7 @@ function PaymentDetailDialog({
               size="lg"
             />
             <div className="flex-1 min-w-0">
-              <span className="text-xs text-muted-foreground">Người gửi</span>
+              <span className="text-xs text-muted-foreground">{tAdmin("transactions.payments.fromUser")}</span>
               <div className="flex items-center gap-2 min-w-0">
                 <p className="text-sm font-medium truncate">{payment.from_user_name}</p>
                 <UserGroupStack userId={payment.from_user_id} size="xs" />
@@ -473,7 +478,7 @@ function PaymentDetailDialog({
               size="lg"
             />
             <div className="flex-1 min-w-0">
-              <span className="text-xs text-muted-foreground">Người nhận</span>
+              <span className="text-xs text-muted-foreground">{tAdmin("transactions.payments.toUser")}</span>
               <div className="flex items-center gap-2 min-w-0">
                 <p className="text-sm font-medium truncate">{payment.to_user_name}</p>
                 <UserGroupStack userId={payment.to_user_id} size="xs" />
@@ -481,21 +486,21 @@ function PaymentDetailDialog({
             </div>
           </div>
           <div className="space-y-3">
-            <DetailRow label="Số tiền" value={<span className="font-mono tabular-nums font-medium">{formatNumber(payment.amount)} {payment.currency}</span>} />
-            <DetailRow label="Nhóm/Bạn bè" value={payment.group_name ?? "Bạn bè"} />
-            <DetailRow label="Phương thức" value={
+            <DetailRow label={tAdmin("common.amount")} value={<span className="font-mono tabular-nums font-medium">{formatNumber(payment.amount)} {payment.currency}</span>} />
+            <DetailRow label={tAdmin("transactions.expenses.context")} value={payment.group_name ?? tAdmin("context.friends")} />
+            <DetailRow label={tAdmin("transactions.payments.method")} value={
               <Badge className={payment.context_type === "group"
                 ? "bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] border-[var(--status-info-border)]"
                 : "bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] border-[var(--status-success-border)]"
-              }>{payment.context_type === "group" ? "Nhóm" : "Bạn bè"}</Badge>
+              }>{payment.context_type === "group" ? tAdmin("context.group") : tAdmin("context.friends")}</Badge>
             } />
-            <DetailRow label="Ngày thanh toán" value={formatDate(payment.payment_date)} />
-            {payment.note && <DetailRow label="Ghi chú" value={payment.note} />}
+            <DetailRow label={tAdmin("transactions.payments.paymentDate")} value={formatDate(payment.payment_date)} />
+            {payment.note && <DetailRow label={tAdmin("transactions.payments.note")} value={payment.note} />}
           </div>
         </div>
         <div className="flex gap-2 pt-2 border-t">
-          <Button size="sm" variant="outline" onClick={onEdit}><PencilIcon className="mr-2 h-4 w-4" />Chỉnh sửa</Button>
-          <Button size="sm" variant="destructive" onClick={onDelete}>Xóa thanh toán</Button>
+          <Button size="sm" variant="outline" onClick={onEdit}><PencilIcon className="mr-2 h-4 w-4" />{tAdmin("common.edit")}</Button>
+          <Button size="sm" variant="destructive" onClick={onDelete}>{tAdmin("common.delete")}</Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -523,6 +528,7 @@ function UserSingleCombobox({
   placeholder: string;
   disabled?: boolean;
 }) {
+  const { tAdmin } = useAdminTranslation();
   const [open, setOpen] = useState(false);
   const selected = users.find((u) => u.id === value);
 
@@ -544,9 +550,9 @@ function UserSingleCombobox({
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <Command>
-          <CommandInput placeholder="Tìm kiếm..." />
+          <CommandInput placeholder={tAdmin("transactions.payments.searchUsers")} />
           <CommandList>
-            <CommandEmpty>Không tìm thấy người dùng</CommandEmpty>
+            <CommandEmpty>{tAdmin("transactions.payments.noUsersFound")}</CommandEmpty>
             <CommandGroup>
               {users.map((user) => (
                 <CommandItem
@@ -576,6 +582,7 @@ function CreatePaymentDialog({
   onSubmit: (data: { from_user: string; to_user: string; amount: number; currency: string; payment_date: string; group_id: string | null; note: string }) => void;
   isCreating: boolean;
 }) {
+  const { tAdmin } = useAdminTranslation();
   const [fromUser, setFromUser] = useState("");
   const [toUser, setToUser] = useState("");
   const [amount, setAmount] = useState("");
@@ -604,11 +611,11 @@ function CreatePaymentDialog({
 
   const handleSubmit = () => {
     if (!fromUser || !toUser || !amount || !paymentDate) {
-      toast.error("Vui lòng điền đầy đủ thông tin");
+      toast.error(tAdmin("transactions.payments.requiredFields"));
       return;
     }
     if (fromUser === toUser) {
-      toast.error("Người gửi và người nhận không thể giống nhau");
+      toast.error(tAdmin("transactions.payments.sameUserError"));
       return;
     }
     tap();
@@ -627,53 +634,53 @@ function CreatePaymentDialog({
     <AdminCrudSheet
       open={open}
       onOpenChange={onOpenChange}
-      title="Tạo thanh toán mới"
-      description="Thêm thanh toán thủ công vào hệ thống"
+      title={tAdmin("transactions.payments.createTitle")}
+      description={tAdmin("transactions.payments.createDescription")}
       isSubmitting={isCreating}
-      submitLabel="Tạo thanh toán"
+      submitLabel={tAdmin("transactions.payments.create")}
       onSubmit={handleSubmit}
     >
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label>Người gửi</Label>
+          <Label>{tAdmin("transactions.payments.fromUser")}</Label>
           <UserSingleCombobox
             value={fromUser}
             onChange={(v) => { tap(); setFromUser(v); }}
             users={profilesList}
-            placeholder="Chọn người gửi..."
+            placeholder={tAdmin("transactions.payments.selectSender")}
           />
         </div>
         <div className="space-y-2">
-          <Label>Người nhận</Label>
+          <Label>{tAdmin("transactions.payments.toUser")}</Label>
           <UserSingleCombobox
             value={toUser}
             onChange={(v) => { tap(); setToUser(v); }}
             users={profilesList}
-            placeholder="Chọn người nhận..."
+            placeholder={tAdmin("transactions.payments.selectReceiver")}
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-2"><Label>Số tiền</Label><Input type="number" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
+          <div className="space-y-2"><Label>{tAdmin("common.amount")}</Label><Input type="number" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
           <div className="space-y-2">
-            <Label>Tiền tệ</Label>
+            <Label>{tAdmin("transactions.payments.currency")}</Label>
             <Select value={currency} onValueChange={(v) => { tap(); setCurrency(v); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent><SelectItem value="VND">VND</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent>
             </Select>
           </div>
         </div>
-        <div className="space-y-2"><Label>Ngày thanh toán</Label><Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} /></div>
+        <div className="space-y-2"><Label>{tAdmin("transactions.payments.paymentDate")}</Label><Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} /></div>
         <div className="space-y-2">
-          <Label>Nhóm (tùy chọn)</Label>
+          <Label>{tAdmin("transactions.payments.groupOptional")}</Label>
           <Select value={groupId} onValueChange={(v) => { tap(); setGroupId(v); }}>
-            <SelectTrigger><SelectValue placeholder="Không có nhóm" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder={tAdmin("transactions.payments.noGroup")} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">Không có nhóm (Bạn bè)</SelectItem>
+              <SelectItem value="none">{tAdmin("transactions.payments.noGroupFriends")}</SelectItem>
               {groupsList.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-2"><Label>Ghi chú (tùy chọn)</Label><Input placeholder="Ghi chú..." value={note} onChange={(e) => setNote(e.target.value)} /></div>
+        <div className="space-y-2"><Label>{tAdmin("transactions.payments.noteOptional")}</Label><Input placeholder={tAdmin("transactions.payments.notePlaceholder")} value={note} onChange={(e) => setNote(e.target.value)} /></div>
       </div>
     </AdminCrudSheet>
   );
@@ -688,6 +695,7 @@ function EditPaymentDialog({
   onSubmit: (data: { amount: number; payment_date: string; note: string }) => void;
   isUpdating: boolean;
 }) {
+  const { tAdmin } = useAdminTranslation();
   const [amount, setAmount] = useState("");
   const [paymentDate, setPaymentDate] = useState("");
   const [note, setNote] = useState("");
@@ -703,16 +711,19 @@ function EditPaymentDialog({
     <AdminCrudSheet
       open={open}
       onOpenChange={onOpenChange}
-      title="Chỉnh sửa thanh toán"
-      description={`Cập nhật thông tin thanh toán từ ${payment.from_user_name} đến ${payment.to_user_name}`}
+      title={tAdmin("transactions.payments.editTitle")}
+      description={tAdmin("transactions.payments.editDescriptionForUsers", {
+        from: payment.from_user_name,
+        to: payment.to_user_name,
+      })}
       isSubmitting={isUpdating}
-      submitLabel="Lưu"
+      submitLabel={tAdmin("common.save")}
       onSubmit={() => { tap(); onSubmit({ amount: Number(amount), payment_date: paymentDate, note }); }}
     >
       <div className="space-y-4">
-        <div className="space-y-2"><Label>Số tiền</Label><Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
-        <div className="space-y-2"><Label>Ngày thanh toán</Label><Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} /></div>
-        <div className="space-y-2"><Label>Ghi chú</Label><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ghi chú..." /></div>
+        <div className="space-y-2"><Label>{tAdmin("common.amount")}</Label><Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
+        <div className="space-y-2"><Label>{tAdmin("transactions.payments.paymentDate")}</Label><Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} /></div>
+        <div className="space-y-2"><Label>{tAdmin("transactions.payments.note")}</Label><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder={tAdmin("transactions.payments.notePlaceholder")} /></div>
       </div>
     </AdminCrudSheet>
   );
@@ -723,6 +734,7 @@ function EditPaymentDialog({
 // ═══════════════════════════════════════════════════════════════════
 
 function ExpensesTab() {
+  const { tAdmin } = useAdminTranslation();
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
   const [showFilters, setShowFilters] = useState(false);
@@ -759,9 +771,9 @@ function ExpensesTab() {
   }, [debouncedSearch, groupFilter, dateFrom, dateTo, amountMin, amountMax]);
 
   const columns = useMemo<ColumnDef<ExpenseRow>[]>(() => [
-    { id: "description", header: "Mô tả", accessorKey: "description", size: 200 },
+    { id: "description", header: tAdmin("transactions.expenses.description"), accessorKey: "description", size: 200 },
     {
-      id: "category", header: "Danh mục", accessorKey: "category", size: 120, enableSorting: false,
+      id: "category", header: tAdmin("transactions.expenses.category"), accessorKey: "category", size: 120, enableSorting: false,
       cell: ({ row }) => {
         const cat = getCategoryMeta(row.original.category);
         const CatIcon = cat.icon;
@@ -776,11 +788,11 @@ function ExpensesTab() {
       },
     },
     {
-      id: "amount", header: () => <div className="text-right">Số tiền</div>, accessorKey: "amount", size: 140,
+      id: "amount", header: () => <div className="text-right">{tAdmin("common.amount")}</div>, accessorKey: "amount", size: 140,
       cell: ({ row }) => <div className="text-right font-mono tabular-nums">{formatNumber(row.original.amount)}</div>,
     },
     {
-      id: "paid_by", header: "Người trả", accessorKey: "paid_by_name", size: 220, enableSorting: false,
+      id: "paid_by", header: tAdmin("transactions.expenses.payer"), accessorKey: "paid_by_name", size: 220, enableSorting: false,
       cell: ({ row }) => (
         <div className="flex items-center gap-2 min-w-0">
           <UserAvatar
@@ -796,15 +808,15 @@ function ExpensesTab() {
       ),
     },
     {
-      id: "group", header: "Nhóm/Bạn bè", accessorKey: "group_name", size: 140, enableSorting: false,
-      cell: ({ row }) => <span className="text-sm">{row.original.group_name ?? "Bạn bè"}</span>,
+      id: "group", header: tAdmin("transactions.expenses.context"), accessorKey: "group_name", size: 140, enableSorting: false,
+      cell: ({ row }) => <span className="text-sm">{row.original.group_name ?? tAdmin("context.friends")}</span>,
     },
-    { id: "expense_date", header: "Ngày", accessorKey: "expense_date", size: 110, cell: ({ getValue }) => formatDate(getValue() as string) },
+    { id: "expense_date", header: tAdmin("transactions.expenses.date"), accessorKey: "expense_date", size: 110, cell: ({ getValue }) => formatDate(getValue() as string) },
     {
-      id: "status", header: "Trạng thái", accessorKey: "is_settled", size: 130, enableSorting: false,
+      id: "status", header: tAdmin("common.status"), accessorKey: "is_settled", size: 130, enableSorting: false,
       cell: ({ row }) => row.original.is_settled
-        ? <Badge className="gap-1"><CheckCircle2Icon className="size-3" aria-hidden="true" />Đã thanh toán</Badge>
-        : <Badge variant="outline" className="gap-1"><ClockIcon className="size-3" aria-hidden="true" />Chờ xử lý</Badge>,
+        ? <Badge className="gap-1"><CheckCircle2Icon className="size-3" aria-hidden="true" />{tAdmin("transactions.expenses.settled")}</Badge>
+        : <Badge variant="outline" className="gap-1"><ClockIcon className="size-3" aria-hidden="true" />{tAdmin("transactions.expenses.pending")}</Badge>,
     },
     {
       id: "actions", header: "", size: 50, enableSorting: false,
@@ -812,15 +824,15 @@ function ExpensesTab() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontalIcon className="h-4 w-4" /></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => { tap(); setSelectedExpense(row.original); setDetailOpen(true); }}>Xem chi tiết</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { tap(); setEditExpenseId(row.original.id); setEditDialogOpen(true); }}><PencilIcon className="mr-2 h-4 w-4" />Chỉnh sửa</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { tap(); setSelectedExpense(row.original); setDetailOpen(true); }}>{tAdmin("common.details")}</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { tap(); setEditExpenseId(row.original.id); setEditDialogOpen(true); }}><PencilIcon className="mr-2 h-4 w-4" />{tAdmin("common.edit")}</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => { warning(); setDeleteExpense(row.original); setDeleteDialogOpen(true); }} className="text-destructive">Xóa chi phí</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { warning(); setDeleteExpense(row.original); setDeleteDialogOpen(true); }} className="text-destructive">{tAdmin("common.delete")}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
     },
-  ], [tap, warning]);
+  ], [tap, tAdmin, warning]);
 
   const table = useTable<ExpenseRow>({
     columns,
@@ -842,7 +854,7 @@ function ExpensesTab() {
               expense_date: expense.expense_date,
               context_type: expense.context_type, group_id: expense.group_id,
               group_name: expense.groups?.name ?? null, paid_by_user_id: expense.paid_by_user_id,
-              paid_by_name: expense.profiles?.full_name ?? "Không rõ",
+              paid_by_name: expense.profiles?.full_name ?? tAdmin("common.unknown"),
               paid_by_avatar: expense.profiles?.avatar_url ?? null,
               is_settled: allSettled, created_at: expense.created_at,
             };
@@ -861,11 +873,11 @@ function ExpensesTab() {
     try {
       const { error } = await supabaseClient.rpc("soft_delete_expense", { p_expense_id: deleteExpense.id });
       if (error) throw error;
-      toast.success(`Đã xóa chi phí "${deleteExpense.description}"`);
+      toast.success(tAdmin("transactions.expenses.deleted", { description: deleteExpense.description }));
       setDeleteDialogOpen(false); setDeleteExpense(null); table.refineCore.tableQuery.refetch();
-    } catch (err: any) { toast.error(`Lỗi: ${err.message ?? "Không thể xóa chi phí"}`); }
+    } catch (err: any) { toast.error(tAdmin("common.errorWithMessage", { message: err.message ?? tAdmin("transactions.expenses.deleteTitle") })); }
     finally { setIsDeleting(false); }
-  }, [deleteExpense, table.refineCore.tableQuery, warning]);
+  }, [deleteExpense, table.refineCore.tableQuery, tAdmin, warning]);
 
   const handleRefetch = useCallback(() => {
     tap();
@@ -889,59 +901,59 @@ function ExpensesTab() {
     <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <div><CardTitle>Quản lý chi phí</CardTitle><CardDescription>Xem và quản lý tất cả chi phí trong hệ thống</CardDescription></div>
+          <div><CardTitle>{tAdmin("transactions.expenses.cardTitle")}</CardTitle><CardDescription>{tAdmin("transactions.expenses.cardDescription")}</CardDescription></div>
         </CardHeader>
         <CardContent className="space-y-4">
           <AdminPageToolbar
             search={search}
             onSearchChange={setSearch}
-            searchPlaceholder="Tìm kiếm theo mô tả..."
+            searchPlaceholder={tAdmin("transactions.expenses.searchPlaceholder")}
             filterCount={[groupFilter !== "all", statusFilter !== "all", dateFrom !== "", dateTo !== "", amountMin !== "", amountMax !== ""].filter(Boolean).length}
             onFilterToggle={() => setShowFilters((v) => !v)}
             actions={
               <Button size="sm" onClick={() => { tap(); setCreateDialogOpen(true); }}>
                 <PlusIcon className="mr-2 h-4 w-4" />
-                Tạo chi phí
+                {tAdmin("transactions.expenses.create")}
               </Button>
             }
           />
           <AdminFilterChips
             filters={[
-              ...(groupFilter !== "all" ? [{ key: "group", label: `Nhóm: ${groups.find((g: any) => g.id === groupFilter)?.name ?? groupFilter}`, onRemove: () => { tap(); setGroupFilter("all"); } }] : []),
-              ...(statusFilter !== "all" ? [{ key: "status", label: `Trạng thái: ${statusFilter === "settled" ? "Đã thanh toán" : "Chờ xử lý"}`, onRemove: () => { tap(); setStatusFilter("all"); } }] : []),
-              ...(dateFrom !== "" ? [{ key: "dateFrom", label: `Từ: ${dateFrom}`, onRemove: () => setDateFrom("") }] : []),
-              ...(dateTo !== "" ? [{ key: "dateTo", label: `Đến: ${dateTo}`, onRemove: () => setDateTo("") }] : []),
-              ...(amountMin !== "" ? [{ key: "amountMin", label: `Tối thiểu: ${amountMin}`, onRemove: () => setAmountMin("") }] : []),
-              ...(amountMax !== "" ? [{ key: "amountMax", label: `Tối đa: ${amountMax}`, onRemove: () => setAmountMax("") }] : []),
+              ...(groupFilter !== "all" ? [{ key: "group", label: tAdmin("transactions.filterChips.group", { value: groups.find((g: any) => g.id === groupFilter)?.name ?? groupFilter }), onRemove: () => { tap(); setGroupFilter("all"); } }] : []),
+              ...(statusFilter !== "all" ? [{ key: "status", label: tAdmin("transactions.filterChips.status", { value: statusFilter === "settled" ? tAdmin("transactions.expenses.settled") : tAdmin("transactions.expenses.pending") }), onRemove: () => { tap(); setStatusFilter("all"); } }] : []),
+              ...(dateFrom !== "" ? [{ key: "dateFrom", label: tAdmin("transactions.filterChips.dateFrom", { value: dateFrom }), onRemove: () => setDateFrom("") }] : []),
+              ...(dateTo !== "" ? [{ key: "dateTo", label: tAdmin("transactions.filterChips.dateTo", { value: dateTo }), onRemove: () => setDateTo("") }] : []),
+              ...(amountMin !== "" ? [{ key: "amountMin", label: tAdmin("transactions.filterChips.amountMin", { value: amountMin }), onRemove: () => setAmountMin("") }] : []),
+              ...(amountMax !== "" ? [{ key: "amountMax", label: tAdmin("transactions.filterChips.amountMax", { value: amountMax }), onRemove: () => setAmountMax("") }] : []),
             ]}
             onClearAll={clearFilters}
           />
           <Collapsible open={showFilters} onOpenChange={setShowFilters}>
             <CollapsibleContent>
               <div className="flex items-end gap-3 flex-wrap pb-2">
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Từ ngày</Label><Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" /></div>
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Đến ngày</Label><Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" /></div>
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Nhóm</Label>
-                  <Select value={groupFilter} onValueChange={(v) => { tap(); setGroupFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder="Tất cả nhóm" /></SelectTrigger>
-                    <SelectContent><SelectItem value="all">Tất cả nhóm</SelectItem>{groups.map((g: any) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">{tAdmin("common.fromDate")}</Label><Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" /></div>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">{tAdmin("common.toDate")}</Label><Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" /></div>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">{tAdmin("common.group")}</Label>
+                  <Select value={groupFilter} onValueChange={(v) => { tap(); setGroupFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder={tAdmin("transactions.expenses.allGroups")} /></SelectTrigger>
+                    <SelectContent><SelectItem value="all">{tAdmin("transactions.expenses.allGroups")}</SelectItem>{groups.map((g: any) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-1.5">
-                    <Label className="text-xs text-muted-foreground">Trạng thái</Label>
-                    <span className="text-[10px] text-muted-foreground/60">(lọc trên trang hiện tại)</span>
+                    <Label className="text-xs text-muted-foreground">{tAdmin("common.status")}</Label>
+                    <span className="text-[10px] text-muted-foreground/60">({tAdmin("transactions.expenses.localPageFilterHint")})</span>
                   </div>
-                  <Select value={statusFilter} onValueChange={(v) => { tap(); setStatusFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder="Tất cả" /></SelectTrigger>
-                    <SelectContent><SelectItem value="all">Tất cả</SelectItem><SelectItem value="settled">Đã thanh toán</SelectItem><SelectItem value="pending">Chờ xử lý</SelectItem></SelectContent>
+                  <Select value={statusFilter} onValueChange={(v) => { tap(); setStatusFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder={tAdmin("common.all")} /></SelectTrigger>
+                    <SelectContent><SelectItem value="all">{tAdmin("common.all")}</SelectItem><SelectItem value="settled">{tAdmin("transactions.expenses.settled")}</SelectItem><SelectItem value="pending">{tAdmin("transactions.expenses.pending")}</SelectItem></SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Số tiền từ</Label><Input type="number" placeholder="0" value={amountMin} onChange={(e) => setAmountMin(e.target.value)} className="w-[120px]" /></div>
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Số tiền đến</Label><Input type="number" placeholder="∞" value={amountMax} onChange={(e) => setAmountMax(e.target.value)} className="w-[120px]" /></div>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">{tAdmin("transactions.expenses.amountFrom")}</Label><Input type="number" placeholder="0" value={amountMin} onChange={(e) => setAmountMin(e.target.value)} className="w-[120px]" /></div>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">{tAdmin("transactions.expenses.amountTo")}</Label><Input type="number" placeholder="∞" value={amountMax} onChange={(e) => setAmountMax(e.target.value)} className="w-[120px]" /></div>
               </div>
             </CollapsibleContent>
           </Collapsible>
           {isEmptyResult && hasActiveFilters ? (
-            <Empty className="min-h-[400px]"><EmptyMedia variant="icon"><ReceiptIcon className="h-6 w-6" /></EmptyMedia><EmptyHeader><EmptyTitle>Không tìm thấy chi phí</EmptyTitle><EmptyDescription>Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</EmptyDescription></EmptyHeader><EmptyContent><Button variant="outline" onClick={clearFilters}>Xóa bộ lọc</Button></EmptyContent></Empty>
+            <Empty className="min-h-[400px]"><EmptyMedia variant="icon"><ReceiptIcon className="h-6 w-6" /></EmptyMedia><EmptyHeader><EmptyTitle>{tAdmin("transactions.expenses.noResultsTitle")}</EmptyTitle><EmptyDescription>{tAdmin("transactions.expenses.noResultsDescription")}</EmptyDescription></EmptyHeader><EmptyContent><Button variant="outline" onClick={clearFilters}>{tAdmin("common.clearFilters")}</Button></EmptyContent></Empty>
           ) : (
             <DataTable table={table} />
           )}
@@ -953,7 +965,7 @@ function ExpensesTab() {
         onEdit={() => { setDetailOpen(false); setEditExpenseId(selectedExpense?.id ?? null); setEditDialogOpen(true); }}
         onDelete={() => { setDetailOpen(false); setDeleteExpense(selectedExpense); setDeleteDialogOpen(true); }}
       />
-      <DeleteConfirmDialog title="Xác nhận xóa chi phí" description={`Bạn có chắc chắn muốn xóa chi phí "${deleteExpense?.description ?? ""}" (${formatNumber(deleteExpense?.amount ?? 0)})? Chi phí sẽ được soft-delete.`}
+      <DeleteConfirmDialog title={tAdmin("transactions.expenses.deleteTitle")} description={tAdmin("transactions.expenses.deleteDescription", { description: deleteExpense?.description ?? "", amount: formatNumber(deleteExpense?.amount ?? 0) })}
         open={deleteDialogOpen} onOpenChange={(o) => { if (!o && !isDeleting) { setDeleteDialogOpen(false); setDeleteExpense(null); } }} onConfirm={handleDelete} isDeleting={isDeleting}
       />
       <AdminCreateExpenseDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} onSuccess={handleRefetch} />
@@ -968,6 +980,7 @@ function ExpensesTab() {
 // ═══════════════════════════════════════════════════════════════════
 
 function PaymentsTab() {
+  const { tAdmin } = useAdminTranslation();
   const deleteMutation = useInstantDelete();
   const createMutation = useInstantCreate();
   const updateMutation = useInstantUpdate();
@@ -1012,7 +1025,7 @@ function PaymentsTab() {
 
   const columns = useMemo<ColumnDef<PaymentRow>[]>(() => [
     {
-      id: "from_user", header: "Người gửi", accessorKey: "from_user_name", size: 180, enableSorting: false,
+      id: "from_user", header: tAdmin("transactions.payments.sender"), accessorKey: "from_user_name", size: 180, enableSorting: false,
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
           <Avatar className="h-7 w-7">
@@ -1024,7 +1037,7 @@ function PaymentsTab() {
       ),
     },
     {
-      id: "to_user", header: "Người nhận", accessorKey: "to_user_name", size: 180, enableSorting: false,
+      id: "to_user", header: tAdmin("transactions.payments.receiver"), accessorKey: "to_user_name", size: 180, enableSorting: false,
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
           <Avatar className="h-7 w-7">
@@ -1036,25 +1049,25 @@ function PaymentsTab() {
       ),
     },
     {
-      id: "amount", header: () => <div className="text-right">Số tiền</div>, accessorKey: "amount", size: 140,
+      id: "amount", header: () => <div className="text-right">{tAdmin("common.amount")}</div>, accessorKey: "amount", size: 140,
       cell: ({ row }) => <div className="text-right font-mono tabular-nums">{formatNumber(row.original.amount)}</div>,
     },
     {
-      id: "group", header: "Nhóm/Bạn bè", accessorKey: "group_name", size: 140, enableSorting: false,
-      cell: ({ row }) => <span className="text-sm">{row.original.group_name ?? "Bạn bè"}</span>,
+      id: "group", header: tAdmin("transactions.expenses.context"), accessorKey: "group_name", size: 140, enableSorting: false,
+      cell: ({ row }) => <span className="text-sm">{row.original.group_name ?? tAdmin("context.friends")}</span>,
     },
     {
-      id: "payment_date", header: "Ngày", accessorKey: "payment_date", size: 110,
+      id: "payment_date", header: tAdmin("common.date"), accessorKey: "payment_date", size: 110,
       cell: ({ getValue }) => formatDate(getValue() as string),
     },
     {
-      id: "context_type", header: "Phương thức", accessorKey: "context_type", size: 120, enableSorting: false,
+      id: "context_type", header: tAdmin("transactions.payments.method"), accessorKey: "context_type", size: 120, enableSorting: false,
       cell: ({ row }) => (
         <Badge className={
           row.original.context_type === "group"
             ? "bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] border-[var(--status-info-border)]"
             : "bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] border-[var(--status-success-border)]"
-        }>{row.original.context_type === "group" ? "Nhóm" : "Bạn bè"}</Badge>
+        }>{row.original.context_type === "group" ? tAdmin("context.group") : tAdmin("context.friends")}</Badge>
       ),
     },
     {
@@ -1063,15 +1076,15 @@ function PaymentsTab() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontalIcon className="h-4 w-4" /></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => { tap(); setSelectedPayment(row.original); setDetailOpen(true); }}>Xem chi tiết</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { tap(); setEditPayment(row.original); setEditDialogOpen(true); }}><PencilIcon className="mr-2 h-4 w-4" />Chỉnh sửa</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { tap(); setSelectedPayment(row.original); setDetailOpen(true); }}>{tAdmin("common.details")}</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { tap(); setEditPayment(row.original); setEditDialogOpen(true); }}><PencilIcon className="mr-2 h-4 w-4" />{tAdmin("common.edit")}</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => { warning(); setDeletePayment(row.original); setDeleteDialogOpen(true); }} className="text-destructive">Xóa thanh toán</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { warning(); setDeletePayment(row.original); setDeleteDialogOpen(true); }} className="text-destructive">{tAdmin("common.delete")}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
     },
-  ], [tap, warning]);
+  ], [tap, tAdmin, warning]);
 
   const table = useTable<PaymentRow>({
     columns,
@@ -1087,10 +1100,10 @@ function PaymentsTab() {
           const transformed = data.data.map((payment: any) => ({
             id: payment.id,
             from_user_id: payment.from_user,
-            from_user_name: payment.from?.full_name ?? "Không rõ",
+            from_user_name: payment.from?.full_name ?? tAdmin("common.unknown"),
             from_user_avatar: payment.from?.avatar_url ?? null,
             to_user_id: payment.to_user,
-            to_user_name: payment.to?.full_name ?? "Không rõ",
+            to_user_name: payment.to?.full_name ?? tAdmin("common.unknown"),
             to_user_avatar: payment.to?.avatar_url ?? null,
             amount: payment.amount ?? 0,
             currency: payment.currency ?? "VND",
@@ -1114,22 +1127,22 @@ function PaymentsTab() {
     deleteMutation.mutate(
       { resource: "payments", id: deletePayment.id },
       {
-        onSuccess: () => { toast.success(`Đã xóa thanh toán ${formatNumber(deletePayment.amount)} ${deletePayment.currency}`); setDeleteDialogOpen(false); setDeletePayment(null); setIsDeleting(false); table.refineCore.tableQuery.refetch(); },
-        onError: (error) => { toast.error(`Lỗi: ${error.message}`); setIsDeleting(false); },
+        onSuccess: () => { toast.success(tAdmin("transactions.payments.deleted", { amount: formatNumber(deletePayment.amount), currency: deletePayment.currency })); setDeleteDialogOpen(false); setDeletePayment(null); setIsDeleting(false); table.refineCore.tableQuery.refetch(); },
+        onError: (error) => { toast.error(tAdmin("common.errorWithMessage", { message: error.message })); setIsDeleting(false); },
       },
     );
-  }, [deletePayment, deleteMutation, table.refineCore.tableQuery, warning]);
+  }, [deletePayment, deleteMutation, table.refineCore.tableQuery, tAdmin, warning]);
 
   const handleCreate = useCallback((data: { from_user: string; to_user: string; amount: number; currency: string; payment_date: string; group_id: string | null; note: string }) => {
     setIsCreating(true);
     createMutation.mutate(
       { resource: "payments", values: { from_user: data.from_user, to_user: data.to_user, amount: data.amount, currency: data.currency, payment_date: data.payment_date, group_id: data.group_id, context_type: data.group_id ? "group" : "friend", note: data.note || null } },
       {
-        onSuccess: () => { success(); toast.success("Đã tạo thanh toán mới"); setCreateDialogOpen(false); setIsCreating(false); table.refineCore.tableQuery.refetch(); },
-        onError: (error) => { toast.error(`Lỗi: ${error.message}`); setIsCreating(false); },
+        onSuccess: () => { success(); toast.success(tAdmin("transactions.payments.created")); setCreateDialogOpen(false); setIsCreating(false); table.refineCore.tableQuery.refetch(); },
+        onError: (error) => { toast.error(tAdmin("common.errorWithMessage", { message: error.message })); setIsCreating(false); },
       },
     );
-  }, [createMutation, table.refineCore.tableQuery, success]);
+  }, [createMutation, table.refineCore.tableQuery, success, tAdmin]);
 
   const handleEdit = useCallback((data: { amount: number; payment_date: string; note: string }) => {
     if (!editPayment) return;
@@ -1137,11 +1150,11 @@ function PaymentsTab() {
     updateMutation.mutate(
       { resource: "payments", id: editPayment.id, values: { amount: data.amount, payment_date: data.payment_date, note: data.note || null } },
       {
-        onSuccess: () => { success(); toast.success("Đã cập nhật thanh toán"); setEditDialogOpen(false); setEditPayment(null); setIsUpdating(false); table.refineCore.tableQuery.refetch(); },
-        onError: (error) => { toast.error(`Lỗi: ${error.message}`); setIsUpdating(false); },
+        onSuccess: () => { success(); toast.success(tAdmin("transactions.payments.updated")); setEditDialogOpen(false); setEditPayment(null); setIsUpdating(false); table.refineCore.tableQuery.refetch(); },
+        onError: (error) => { toast.error(tAdmin("common.errorWithMessage", { message: error.message })); setIsUpdating(false); },
       },
     );
-  }, [editPayment, updateMutation, table.refineCore.tableQuery, success]);
+  }, [editPayment, updateMutation, table.refineCore.tableQuery, success, tAdmin]);
 
   const clearFilters = useCallback(() => { tap(); setSearch(""); setGroupFilter("all"); setSenderFilter("all"); setReceiverFilter("all"); setDateFrom(""); setDateTo(""); }, [tap]);
   const hasActiveFilters = search !== "" || groupFilter !== "all" || senderFilter !== "all" || receiverFilter !== "all" || dateFrom !== "" || dateTo !== "";
@@ -1151,57 +1164,57 @@ function PaymentsTab() {
     <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <div><CardTitle>Quản lý thanh toán</CardTitle><CardDescription>Xem và quản lý tất cả thanh toán trong hệ thống</CardDescription></div>
+          <div><CardTitle>{tAdmin("transactions.payments.cardTitle")}</CardTitle><CardDescription>{tAdmin("transactions.payments.cardDescription")}</CardDescription></div>
         </CardHeader>
         <CardContent className="space-y-4">
           <AdminPageToolbar
             search={search}
             onSearchChange={setSearch}
-            searchPlaceholder="Tìm kiếm theo ghi chú..."
+            searchPlaceholder={tAdmin("transactions.payments.searchPlaceholder")}
             filterCount={[groupFilter !== "all", senderFilter !== "all", receiverFilter !== "all", dateFrom !== "", dateTo !== ""].filter(Boolean).length}
             onFilterToggle={() => setShowFilters((v) => !v)}
             actions={
               <Button size="sm" onClick={() => { tap(); setCreateDialogOpen(true); }}>
                 <PlusIcon className="mr-2 h-4 w-4" />
-                Tạo thanh toán
+                {tAdmin("transactions.payments.create")}
               </Button>
             }
           />
           <AdminFilterChips
             filters={[
-              ...(groupFilter !== "all" ? [{ key: "group", label: `Nhóm: ${groups.find((g: any) => g.id === groupFilter)?.name ?? groupFilter}`, onRemove: () => { tap(); setGroupFilter("all"); } }] : []),
-              ...(senderFilter !== "all" ? [{ key: "sender", label: `Người gửi: ${profiles.find((p: any) => p.id === senderFilter)?.full_name ?? senderFilter}`, onRemove: () => { tap(); setSenderFilter("all"); } }] : []),
-              ...(receiverFilter !== "all" ? [{ key: "receiver", label: `Người nhận: ${profiles.find((p: any) => p.id === receiverFilter)?.full_name ?? receiverFilter}`, onRemove: () => { tap(); setReceiverFilter("all"); } }] : []),
-              ...(dateFrom !== "" ? [{ key: "dateFrom", label: `Từ: ${dateFrom}`, onRemove: () => setDateFrom("") }] : []),
-              ...(dateTo !== "" ? [{ key: "dateTo", label: `Đến: ${dateTo}`, onRemove: () => setDateTo("") }] : []),
+              ...(groupFilter !== "all" ? [{ key: "group", label: tAdmin("transactions.filterChips.group", { value: groups.find((g: any) => g.id === groupFilter)?.name ?? groupFilter }), onRemove: () => { tap(); setGroupFilter("all"); } }] : []),
+              ...(senderFilter !== "all" ? [{ key: "sender", label: tAdmin("transactions.filterChips.sender", { value: profiles.find((p: any) => p.id === senderFilter)?.full_name ?? senderFilter }), onRemove: () => { tap(); setSenderFilter("all"); } }] : []),
+              ...(receiverFilter !== "all" ? [{ key: "receiver", label: tAdmin("transactions.filterChips.receiver", { value: profiles.find((p: any) => p.id === receiverFilter)?.full_name ?? receiverFilter }), onRemove: () => { tap(); setReceiverFilter("all"); } }] : []),
+              ...(dateFrom !== "" ? [{ key: "dateFrom", label: tAdmin("transactions.filterChips.dateFrom", { value: dateFrom }), onRemove: () => setDateFrom("") }] : []),
+              ...(dateTo !== "" ? [{ key: "dateTo", label: tAdmin("transactions.filterChips.dateTo", { value: dateTo }), onRemove: () => setDateTo("") }] : []),
             ]}
             onClearAll={clearFilters}
           />
           <Collapsible open={showFilters} onOpenChange={setShowFilters}>
             <CollapsibleContent>
               <div className="flex items-end gap-3 flex-wrap pb-2">
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Từ ngày</Label><Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" /></div>
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Đến ngày</Label><Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" /></div>
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Nhóm</Label>
-                  <Select value={groupFilter} onValueChange={(v) => { tap(); setGroupFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder="Tất cả nhóm" /></SelectTrigger>
-                    <SelectContent><SelectItem value="all">Tất cả nhóm</SelectItem>{groups.map((g: any) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">{tAdmin("common.fromDate")}</Label><Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" /></div>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">{tAdmin("common.toDate")}</Label><Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" /></div>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">{tAdmin("common.group")}</Label>
+                  <Select value={groupFilter} onValueChange={(v) => { tap(); setGroupFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder={tAdmin("transactions.expenses.allGroups")} /></SelectTrigger>
+                    <SelectContent><SelectItem value="all">{tAdmin("transactions.expenses.allGroups")}</SelectItem>{groups.map((g: any) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Người gửi</Label>
-                  <Select value={senderFilter} onValueChange={(v) => { tap(); setSenderFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder="Tất cả" /></SelectTrigger>
-                    <SelectContent><SelectItem value="all">Tất cả</SelectItem>{profiles.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">{tAdmin("transactions.payments.sender")}</Label>
+                  <Select value={senderFilter} onValueChange={(v) => { tap(); setSenderFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder={tAdmin("common.all")} /></SelectTrigger>
+                    <SelectContent><SelectItem value="all">{tAdmin("common.all")}</SelectItem>{profiles.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Người nhận</Label>
-                  <Select value={receiverFilter} onValueChange={(v) => { tap(); setReceiverFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder="Tất cả" /></SelectTrigger>
-                    <SelectContent><SelectItem value="all">Tất cả</SelectItem>{profiles.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">{tAdmin("transactions.payments.receiver")}</Label>
+                  <Select value={receiverFilter} onValueChange={(v) => { tap(); setReceiverFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder={tAdmin("common.all")} /></SelectTrigger>
+                    <SelectContent><SelectItem value="all">{tAdmin("common.all")}</SelectItem>{profiles.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               </div>
             </CollapsibleContent>
           </Collapsible>
           {isEmptyResult && hasActiveFilters ? (
-            <Empty className="min-h-[400px]"><EmptyMedia variant="icon"><CreditCardIcon className="h-6 w-6" /></EmptyMedia><EmptyHeader><EmptyTitle>Không tìm thấy thanh toán</EmptyTitle><EmptyDescription>Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</EmptyDescription></EmptyHeader><EmptyContent><Button variant="outline" onClick={clearFilters}>Xóa bộ lọc</Button></EmptyContent></Empty>
+            <Empty className="min-h-[400px]"><EmptyMedia variant="icon"><CreditCardIcon className="h-6 w-6" /></EmptyMedia><EmptyHeader><EmptyTitle>{tAdmin("transactions.payments.noResultsTitle")}</EmptyTitle><EmptyDescription>{tAdmin("transactions.payments.noResultsDescription")}</EmptyDescription></EmptyHeader><EmptyContent><Button variant="outline" onClick={clearFilters}>{tAdmin("common.clearFilters")}</Button></EmptyContent></Empty>
           ) : (
             <DataTable table={table} />
           )}
@@ -1212,7 +1225,7 @@ function PaymentsTab() {
         onEdit={() => { setDetailOpen(false); setEditPayment(selectedPayment); setEditDialogOpen(true); }}
         onDelete={() => { setDetailOpen(false); setDeletePayment(selectedPayment); setDeleteDialogOpen(true); }}
       />
-      <DeleteConfirmDialog title="Xác nhận xóa thanh toán" description={`Bạn có chắc chắn muốn xóa thanh toán ${formatNumber(deletePayment?.amount ?? 0)} ${deletePayment?.currency ?? "VND"} từ "${deletePayment?.from_user_name ?? ""}" đến "${deletePayment?.to_user_name ?? ""}"?`}
+      <DeleteConfirmDialog title={tAdmin("transactions.payments.deleteTitle")} description={tAdmin("transactions.payments.deleteDescription", { amount: formatNumber(deletePayment?.amount ?? 0), currency: deletePayment?.currency ?? "VND", from: deletePayment?.from_user_name ?? "", to: deletePayment?.to_user_name ?? "" })}
         open={deleteDialogOpen} onOpenChange={(o) => { if (!o && !isDeleting) { setDeleteDialogOpen(false); setDeletePayment(null); } }} onConfirm={handleDelete} isDeleting={isDeleting}
       />
       <CreatePaymentDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} onSubmit={handleCreate} isCreating={isCreating} />

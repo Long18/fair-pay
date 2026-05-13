@@ -13,6 +13,7 @@ import {
   UserPlusIcon,
 } from "@/components/ui/icons";
 import type { UtmMetricRow, UtmPerformanceResponse } from "../types";
+import { useAdminTranslation } from "../i18n";
 
 function toDateInput(value: Date) {
   return value.toISOString().slice(0, 10);
@@ -57,6 +58,7 @@ function MetricCard({
 }
 
 function MetricList({ title, description, rows }: { title: string; description: string; rows: UtmMetricRow[] }) {
+  const { tAdmin } = useAdminTranslation();
   return (
     <Card>
       <CardHeader>
@@ -74,7 +76,7 @@ function MetricList({ title, description, rows }: { title: string; description: 
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">No matching data.</p>
+          <p className="text-sm text-muted-foreground">{tAdmin("utm.noMatchingData")}</p>
         )}
       </CardContent>
     </Card>
@@ -82,6 +84,7 @@ function MetricList({ title, description, rows }: { title: string; description: 
 }
 
 export function AdminUtmAnalytics() {
+  const { tAdmin } = useAdminTranslation();
   const [dateFrom, setDateFrom] = useState(() => {
     const value = new Date();
     value.setDate(value.getDate() - 30);
@@ -131,23 +134,23 @@ export function AdminUtmAnalytics() {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <PieChartIcon className="h-5 w-5 text-primary" />
-            <h1 className="text-2xl font-semibold tracking-tight">UTM Analytics</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{tAdmin("utm.analyticsTitle")}</h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            Inspect campaign attribution, share performance, signups, and first/last-touch conversion sources.
+            {tAdmin("utm.analyticsDescription")}
           </p>
         </div>
 
         <Button type="button" variant="outline" onClick={() => refetch()} disabled={isFetching}>
           {isFetching ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Refresh
+          {tAdmin("utm.refresh")}
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Filters</CardTitle>
-          <CardDescription>Date range and optional UTM/entity/user filters.</CardDescription>
+          <CardTitle className="text-lg">{tAdmin("utm.filtersTitle")}</CardTitle>
+          <CardDescription>{tAdmin("utm.filtersDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
           <Input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
@@ -164,78 +167,78 @@ export function AdminUtmAnalytics() {
         <Card>
           <CardContent className="flex items-center justify-center py-16 text-muted-foreground">
             <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-            Loading UTM analytics...
+            {tAdmin("utm.loadingAnalytics")}
           </CardContent>
         </Card>
       ) : (
         <>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             <MetricCard
-              label="Sessions"
+              label={tAdmin("utm.sessions")}
               value={data?.total_sessions ?? 0}
-              description={`Top source: ${topSource}`}
+              description={tAdmin("utm.topSource", { source: topSource })}
               icon={ActivityIcon}
             />
             <MetricCard
-              label="Events"
+              label={tAdmin("utm.events")}
               value={data?.total_events ?? 0}
-              description="Events carrying attribution context"
+              description={tAdmin("utm.eventsDescription")}
               icon={PieChartIcon}
             />
             <MetricCard
-              label="Shares"
+              label={tAdmin("utm.shares")}
               value={data?.total_shares ?? 0}
-              description="Generated, copied, completed, and failed share events"
+              description={tAdmin("utm.sharesDescription")}
               icon={ShareIcon}
             />
             <MetricCard
-              label="Campaign"
+              label={tAdmin("utm.campaign")}
               value={topCampaign}
-              description="Highest traffic campaign"
+              description={tAdmin("utm.topCampaign")}
               icon={PieChartIcon}
             />
             <MetricCard
-              label="Signups"
+              label={tAdmin("utm.signups")}
               value={data?.signup_by_source?.reduce((sum, row) => sum + row.count, 0) ?? 0}
-              description="Auth register events by source"
+              description={tAdmin("utm.signupsDescription")}
               icon={UserPlusIcon}
             />
           </div>
 
           <div className="grid gap-4 xl:grid-cols-2">
             <MetricList
-              title="Traffic by source"
-              description="Session starts grouped by UTM source or referrer fallback."
+              title={tAdmin("utm.trafficBySource")}
+              description={tAdmin("utm.trafficBySourceDescription")}
               rows={data?.traffic_by_source ?? []}
             />
             <MetricList
-              title="Traffic by campaign"
-              description="Session starts grouped by UTM campaign."
+              title={tAdmin("utm.trafficByCampaign")}
+              description={tAdmin("utm.trafficByCampaignDescription")}
               rows={data?.traffic_by_campaign ?? []}
             />
             <MetricList
-              title="Signup by source"
-              description="Registration events grouped by last-touch source."
+              title={tAdmin("utm.signupBySource")}
+              description={tAdmin("utm.signupBySourceDescription")}
               rows={data?.signup_by_source ?? []}
             />
             <MetricList
-              title="Invite accepted by campaign"
-              description="Invite acceptance conversion events grouped by campaign."
+              title={tAdmin("utm.inviteAcceptedByCampaign")}
+              description={tAdmin("utm.inviteAcceptedByCampaignDescription")}
               rows={data?.invite_accepted_by_campaign ?? []}
             />
             <MetricList
-              title="Share count by content"
-              description="Share events grouped by the exact UI entry point."
+              title={tAdmin("utm.shareCountByContent")}
+              description={tAdmin("utm.shareCountByContentDescription")}
               rows={data?.share_count_by_content ?? []}
             />
             <MetricList
-              title="Conversion by first-touch source"
-              description="Authenticated attribution records grouped by original source."
+              title={tAdmin("utm.conversionFirstTouch")}
+              description={tAdmin("utm.conversionFirstTouchDescription")}
               rows={data?.conversion_by_first_touch_source ?? []}
             />
             <MetricList
-              title="Conversion by last-touch source"
-              description="Authenticated attribution records grouped by most recent source."
+              title={tAdmin("utm.conversionLastTouch")}
+              description={tAdmin("utm.conversionLastTouchDescription")}
               rows={data?.conversion_by_last_touch_source ?? []}
             />
           </div>

@@ -148,6 +148,7 @@ function useAuditFilterOptions() {
 // ─── Diff View ──────────────────────────────────────────────────────
 
 function DiffView({ oldData, newData }: { oldData: Record<string, unknown> | null; newData: Record<string, unknown> | null }) {
+  const { tAdmin } = useAdminTranslation();
   const changes = useMemo(() => {
     if (!oldData && !newData) return [];
 
@@ -187,7 +188,7 @@ function DiffView({ oldData, newData }: { oldData: Record<string, unknown> | nul
   }, [oldData, newData]);
 
   if (changes.length === 0) {
-    return <p className="text-sm text-muted-foreground text-center py-4">Không có dữ liệu chi tiết</p>;
+    return <p className="text-sm text-muted-foreground text-center py-4">{tAdmin("auditLogs.noDetailData")}</p>;
   }
 
   const formatVal = (v: unknown) => {
@@ -258,6 +259,7 @@ function AuditDetailDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { tAdmin } = useAdminTranslation();
   if (!entry) return null;
 
   const hasOldNewData = entry.old_data || entry.new_data;
@@ -278,22 +280,22 @@ function AuditDetailDialog({
             <span>{entry.table_name ?? entry.entity_type ?? "—"}</span>
           </DialogTitle>
           <DialogDescription>
-            {formatDate(entry.timestamp)} · {entry.actor_name || entry.actor_email || "System"} · Nguồn: {entry.source}
+            {formatDate(entry.timestamp)} · {entry.actor_name || entry.actor_email || tAdmin("common.system")} · {tAdmin("auditLogs.sourceLabel")}: {entry.source}
           </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="flex-1 -mx-6 px-6">
           <div className="space-y-4 pb-4">
             <div className="grid grid-cols-2 gap-4">
-              <DetailItem label="Người thực hiện" value={entry.actor_name || entry.actor_email || "System"} />
-              <DetailItem label="Email" value={entry.actor_email || "—"} />
-              <DetailItem label="Loại thao tác" value={entry.action_type} />
-              <DetailItem label="Bảng/Thực thể" value={entry.table_name ?? entry.entity_type ?? "—"} />
-              <DetailItem label="Entity ID" value={<span className="font-mono text-xs">{entry.entity_id || "—"}</span>} />
-              <DetailItem label="Thời gian" value={formatDate(entry.timestamp)} />
-              <DetailItem label="Nguồn" value={
+              <DetailItem label={tAdmin("auditLogs.actor")} value={entry.actor_name || entry.actor_email || tAdmin("common.system")} />
+              <DetailItem label={tAdmin("common.email")} value={entry.actor_email || "—"} />
+              <DetailItem label={tAdmin("auditLogs.actionType")} value={entry.action_type} />
+              <DetailItem label={tAdmin("auditLogs.tableEntity")} value={entry.table_name ?? entry.entity_type ?? "—"} />
+              <DetailItem label={tAdmin("auditLogs.entityId")} value={<span className="font-mono text-xs">{entry.entity_id || "—"}</span>} />
+              <DetailItem label={tAdmin("auditLogs.timestamp")} value={formatDate(entry.timestamp)} />
+              <DetailItem label={tAdmin("auditLogs.sourceLabel")} value={
                 <Badge variant="outline" className="text-xs">
-                  {entry.source === "audit_logs" ? "Thay đổi dữ liệu" : "Settlement"}
+                  {entry.source === "audit_logs" ? tAdmin("auditLogs.dataChanges") : "Settlement"}
                 </Badge>
               } />
             </div>
@@ -301,7 +303,7 @@ function AuditDetailDialog({
             {/* Diff View for old/new data */}
             {hasOldNewData && (
               <div>
-                <h4 className="text-sm font-medium mb-2">Thay đổi dữ liệu</h4>
+                <h4 className="text-sm font-medium mb-2">{tAdmin("auditLogs.dataChanges")}</h4>
                 <DiffView oldData={entry.old_data} newData={entry.new_data} />
               </div>
             )}
@@ -318,7 +320,7 @@ function AuditDetailDialog({
 
             {!hasOldNewData && !hasMetadata && (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Không có dữ liệu chi tiết
+                {tAdmin("auditLogs.noDetailData")}
               </p>
             )}
           </div>
@@ -333,6 +335,7 @@ function AuditDetailDialog({
 
 function useRevertAuditEntry() {
   const queryClient = useQueryClient();
+  const { tAdmin } = useAdminTranslation();
 
   return useMutation<
     { success: boolean; reverted_audit_id: string; action: string; table_name: string; record_id: string },
@@ -347,12 +350,12 @@ function useRevertAuditEntry() {
       return data as { success: boolean; reverted_audit_id: string; action: string; table_name: string; record_id: string };
     },
     onSuccess: (data) => {
-      toast.success(`Đã hoàn tác thao tác ${data.action} trên bảng ${data.table_name}`);
+      toast.success(tAdmin("auditLogs.revertSuccess", { action: data.action, table: data.table_name }));
       queryClient.invalidateQueries({ queryKey: ["admin-audit-logs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-audit-stats"] });
     },
     onError: (error) => {
-      toast.error(`Lỗi hoàn tác: ${error.message}`);
+      toast.error(tAdmin("auditLogs.revertError", { message: error.message }));
     },
   });
 }
@@ -380,37 +383,37 @@ function RevertAuditDialog({
   onConfirm: () => void;
   isReverting: boolean;
 }) {
+  const { tAdmin } = useAdminTranslation();
   if (!entry) return null;
 
   const actionLabel =
     entry.action_type === "DELETE"
-      ? "khôi phục bản ghi đã xóa"
+      ? tAdmin("auditLogs.revertAction.delete")
       : entry.action_type === "UPDATE"
-        ? "hoàn tác về dữ liệu cũ"
-        : "xóa bản ghi đã tạo";
+        ? tAdmin("auditLogs.revertAction.update")
+        : tAdmin("auditLogs.revertAction.insert");
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Xác nhận hoàn tác</AlertDialogTitle>
+          <AlertDialogTitle>{tAdmin("auditLogs.confirmRevertTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
-            Bạn sắp {actionLabel} trong bảng <span className="font-mono font-semibold">{entry.table_name}</span>.
-            Thao tác này sẽ được ghi lại trong audit trail.
+            {tAdmin("auditLogs.confirmRevertDetailed", { action: actionLabel, table: entry.table_name })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isReverting}>Hủy</AlertDialogCancel>
+          <AlertDialogCancel disabled={isReverting}>{tAdmin("common.cancel")}</AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm} disabled={isReverting}>
             {isReverting ? (
               <>
                 <Loader2Icon className="h-4 w-4 animate-spin mr-2" />
-                Đang hoàn tác...
+                {tAdmin("auditLogs.reverting")}
               </>
             ) : (
               <>
                 <Undo2Icon className="h-4 w-4 mr-2" />
-                Hoàn tác
+                {tAdmin("auditLogs.revert")}
               </>
             )}
           </AlertDialogAction>
@@ -423,11 +426,19 @@ function RevertAuditDialog({
 
 // ─── Export CSV ─────────────────────────────────────────────────────
 
-function exportToCsv(entries: AuditLogEntry[]) {
-  const headers = ["Thời gian", "Người thực hiện", "Email", "Loại thao tác", "Bảng", "Entity ID", "Nguồn"];
+function exportToCsv(entries: AuditLogEntry[], tAdmin: ReturnType<typeof useAdminTranslation>["tAdmin"]) {
+  const headers = [
+    tAdmin("auditLogs.timestamp"),
+    tAdmin("auditLogs.actor"),
+    tAdmin("common.email"),
+    tAdmin("auditLogs.actionType"),
+    tAdmin("auditLogs.tableEntity"),
+    tAdmin("auditLogs.entityId"),
+    tAdmin("auditLogs.sourceLabel"),
+  ];
   const rows = entries.map((e) => [
     e.timestamp,
-    e.actor_name || "System",
+    e.actor_name || tAdmin("common.system"),
     e.actor_email || "",
     e.action_type,
     e.table_name ?? e.entity_type ?? "",
@@ -536,13 +547,13 @@ export function AdminAuditLogs() {
         p_offset: 0,
       });
       if (error) throw error;
-      exportToCsv((data as AuditLogsResponse).data);
+      exportToCsv((data as AuditLogsResponse).data, tAdmin);
     } catch (err: unknown) {
-      toast.error(`Lỗi xuất CSV: ${err instanceof Error ? err.message : "Không thể xuất dữ liệu"}`);
+      toast.error(tAdmin("common.errorWithMessage", { message: err instanceof Error ? err.message : tAdmin("common.exportCsv") }));
     } finally {
       setIsExporting(false);
     }
-  }, [total, debouncedSearch, actionFilter, tableFilter, actorFilter, dateFrom, dateTo, tap]);
+  }, [total, debouncedSearch, actionFilter, tableFilter, actorFilter, dateFrom, dateTo, tap, tAdmin]);
 
   const isEmptyResult = !isLoading && entries.length === 0;
 
@@ -563,7 +574,7 @@ export function AdminAuditLogs() {
           {stats.by_table.length > 0 && (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Theo bảng dữ liệu</CardTitle>
+                <CardTitle className="text-sm">{tAdmin("auditLogs.byTable")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <AnimatedList items={stats.by_table} className="space-y-2">
@@ -593,7 +604,7 @@ export function AdminAuditLogs() {
           {stats.by_actor.length > 0 && (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Theo người thực hiện</CardTitle>
+                <CardTitle className="text-sm">{tAdmin("auditLogs.byActor")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <AnimatedList items={stats.by_actor} className="space-y-2">
@@ -633,7 +644,7 @@ export function AdminAuditLogs() {
             <AdminPageToolbar
               search={search}
               onSearchChange={setSearch}
-              searchPlaceholder="Tìm kiếm theo tên, email, thao tác..."
+              searchPlaceholder={tAdmin("auditLogs.searchPlaceholder")}
               filterCount={[actionFilter !== "all", tableFilter !== "all", actorFilter !== "all", dateFrom !== "", dateTo !== ""].filter(Boolean).length}
               onFilterToggle={() => setShowFilters((v) => !v)}
               actions={
@@ -645,7 +656,7 @@ export function AdminAuditLogs() {
                     disabled={isFetching}
                   >
                     <RefreshCwIcon className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-                    Làm mới
+                    {tAdmin("common.refresh")}
                   </Button>
                   <Button
                     variant="outline"
@@ -656,18 +667,20 @@ export function AdminAuditLogs() {
                     {isExporting
                       ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
                       : <DownloadIcon className="mr-2 h-4 w-4" />}
-                    {isExporting ? `Đang xuất…` : `Xuất CSV (${total.toLocaleString()})`}
+                    {isExporting
+                      ? tAdmin("auditLogs.exporting")
+                      : tAdmin("auditLogs.exportCsvCount", { total: total.toLocaleString() })}
                   </Button>
                 </>
               }
             />
             <AdminFilterChips
               filters={[
-                ...(actionFilter !== "all" ? [{ key: "action", label: `Thao tác: ${actionFilter}`, onRemove: () => { tap(); setActionFilter("all"); } }] : []),
-                ...(tableFilter !== "all" ? [{ key: "table", label: `Bảng: ${tableFilter}`, onRemove: () => { tap(); setTableFilter("all"); } }] : []),
-                ...(actorFilter !== "all" ? [{ key: "actor", label: `Người thực hiện: ${filterOptions?.actors?.find((a: any) => a.id === actorFilter)?.name ?? actorFilter}`, onRemove: () => { tap(); setActorFilter("all"); } }] : []),
-                ...(dateFrom !== "" ? [{ key: "dateFrom", label: `Từ: ${dateFrom}`, onRemove: () => setDateFrom("") }] : []),
-                ...(dateTo !== "" ? [{ key: "dateTo", label: `Đến: ${dateTo}`, onRemove: () => setDateTo("") }] : []),
+                ...(actionFilter !== "all" ? [{ key: "action", label: tAdmin("auditLogs.filters.action", { value: actionFilter }), onRemove: () => { tap(); setActionFilter("all"); } }] : []),
+                ...(tableFilter !== "all" ? [{ key: "table", label: tAdmin("auditLogs.filters.table", { value: tableFilter }), onRemove: () => { tap(); setTableFilter("all"); } }] : []),
+                ...(actorFilter !== "all" ? [{ key: "actor", label: tAdmin("auditLogs.filters.actor", { value: filterOptions?.actors?.find((a: any) => a.id === actorFilter)?.name ?? actorFilter }), onRemove: () => { tap(); setActorFilter("all"); } }] : []),
+                ...(dateFrom !== "" ? [{ key: "dateFrom", label: tAdmin("transactions.filterChips.dateFrom", { value: dateFrom }), onRemove: () => setDateFrom("") }] : []),
+                ...(dateTo !== "" ? [{ key: "dateTo", label: tAdmin("transactions.filterChips.dateTo", { value: dateTo }), onRemove: () => setDateTo("") }] : []),
               ]}
               onClearAll={clearFilters}
             />
@@ -677,22 +690,22 @@ export function AdminAuditLogs() {
             <CollapsibleContent>
               <div className="flex items-end gap-3 flex-wrap pb-4 px-6">
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Từ ngày</Label>
+                  <Label className="text-xs text-muted-foreground">{tAdmin("common.fromDate")}</Label>
                   <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Đến ngày</Label>
+                  <Label className="text-xs text-muted-foreground">{tAdmin("common.toDate")}</Label>
                   <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" />
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Loại thao tác</Label>
+                  <Label className="text-xs text-muted-foreground">{tAdmin("auditLogs.actionType")}</Label>
                   <Select value={actionFilter} onValueChange={(v) => { tap(); setActionFilter(v); }}>
                     <SelectTrigger className="w-[160px]">
-                      <SelectValue placeholder="Tất cả" />
+                      <SelectValue placeholder={tAdmin("common.all")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Tất cả</SelectItem>
+                      <SelectItem value="all">{tAdmin("auditLogs.allActions")}</SelectItem>
                       {(filterOptions?.action_types ?? []).map((t) => (
                         <SelectItem key={t} value={t}>{t.replace(/_/g, " ")}</SelectItem>
                       ))}
@@ -701,13 +714,13 @@ export function AdminAuditLogs() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Bảng dữ liệu</Label>
+                  <Label className="text-xs text-muted-foreground">{tAdmin("auditLogs.tableEntity")}</Label>
                   <Select value={tableFilter} onValueChange={(v) => { tap(); setTableFilter(v); }}>
                     <SelectTrigger className="w-[160px]">
-                      <SelectValue placeholder="Tất cả" />
+                      <SelectValue placeholder={tAdmin("common.all")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Tất cả</SelectItem>
+                      <SelectItem value="all">{tAdmin("auditLogs.allTables")}</SelectItem>
                       {(filterOptions?.tables ?? []).map((t) => (
                         <SelectItem key={t} value={t}>{t}</SelectItem>
                       ))}
@@ -716,13 +729,13 @@ export function AdminAuditLogs() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Người thực hiện</Label>
+                  <Label className="text-xs text-muted-foreground">{tAdmin("auditLogs.actor")}</Label>
                   <Select value={actorFilter} onValueChange={(v) => { tap(); setActorFilter(v); }}>
                     <SelectTrigger className="w-[160px]">
-                      <SelectValue placeholder="Tất cả" />
+                      <SelectValue placeholder={tAdmin("common.all")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Tất cả</SelectItem>
+                      <SelectItem value="all">{tAdmin("auditLogs.allActors")}</SelectItem>
                       {(filterOptions?.actors ?? []).map((a) => (
                         <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                       ))}
@@ -748,16 +761,16 @@ export function AdminAuditLogs() {
                 <ScrollTextIcon className="h-6 w-6" />
               </EmptyMedia>
               <EmptyHeader>
-                <EmptyTitle>Không tìm thấy nhật ký</EmptyTitle>
+                <EmptyTitle>{tAdmin("auditLogs.noResultsTitle")}</EmptyTitle>
                 <EmptyDescription>
                   {hasActiveFilters
-                    ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
-                    : "Chưa có nhật ký kiểm toán nào trong hệ thống"}
+                    ? tAdmin("auditLogs.noResultsFiltered")
+                    : tAdmin("auditLogs.noResultsEmpty")}
                 </EmptyDescription>
               </EmptyHeader>
               {hasActiveFilters && (
                 <EmptyContent>
-                  <Button variant="outline" onClick={clearFilters}>Xóa bộ lọc</Button>
+                  <Button variant="outline" onClick={clearFilters}>{tAdmin("common.clearFilters")}</Button>
                 </EmptyContent>
               )}
             </Empty>
@@ -770,13 +783,13 @@ export function AdminAuditLogs() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
-                      <TableHead className="w-[160px]">Thời gian</TableHead>
-                      <TableHead className="w-[180px]">Người thực hiện</TableHead>
-                      <TableHead className="w-[100px]">Thao tác</TableHead>
-                      <TableHead className="w-[130px]">Bảng</TableHead>
-                      <TableHead className="w-[80px]">Nguồn</TableHead>
-                      <TableHead>Chi tiết</TableHead>
-                      <TableHead className="w-[80px] text-center">Hoàn tác</TableHead>
+                      <TableHead className="w-[160px]">{tAdmin("auditLogs.timestamp")}</TableHead>
+                      <TableHead className="w-[180px]">{tAdmin("auditLogs.actor")}</TableHead>
+                      <TableHead className="w-[100px]">{tAdmin("auditLogs.actionType")}</TableHead>
+                      <TableHead className="w-[130px]">{tAdmin("auditLogs.tableEntity")}</TableHead>
+                      <TableHead className="w-[80px]">{tAdmin("auditLogs.sourceLabel")}</TableHead>
+                      <TableHead>{tAdmin("common.details")}</TableHead>
+                      <TableHead className="w-[80px] text-center">{tAdmin("auditLogs.revert")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <motion.tbody
@@ -810,7 +823,7 @@ export function AdminAuditLogs() {
                               </AvatarFallback>
                             </Avatar>
                             <span className="text-sm truncate max-w-[120px]">
-                              {entry.actor_name || entry.actor_email || "System"}
+                              {entry.actor_name || entry.actor_email || tAdmin("common.system")}
                             </span>
                           </div>
                         </TableCell>
@@ -837,7 +850,7 @@ export function AdminAuditLogs() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground truncate max-w-[200px] group-hover:text-foreground transition-colors">
-                          {getDetailSummary(entry)}
+                          {getDetailSummary(entry, tAdmin)}
                         </TableCell>
                         <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                           {canRevertEntry(entry) ? (
@@ -845,7 +858,7 @@ export function AdminAuditLogs() {
                               variant="ghost"
                               size="sm"
                               className="h-7 w-7 p-0 text-muted-foreground hover:text-[var(--status-warning-foreground)]"
-                              aria-label="Hoàn tác thao tác này"
+                              aria-label={tAdmin("auditLogs.revertAria")}
                               onClick={() => {
                                 warning();
                                 setRevertEntry(entry);
@@ -867,11 +880,15 @@ export function AdminAuditLogs() {
               {/* Pagination */}
               <div className="flex items-center justify-between pt-2">
                 <span className="text-sm text-muted-foreground">
-                  Hiển thị {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} / {total.toLocaleString()} kết quả
+                  {tAdmin("auditLogs.showingResults", {
+                    from: page * PAGE_SIZE + 1,
+                    to: Math.min((page + 1) * PAGE_SIZE, total),
+                    total: total.toLocaleString(),
+                  })}
                 </span>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" disabled={page === 0} onClick={() => { tap(); setPage((p) => p - 1); }}>
-                    Trước
+                    {tAdmin("common.previous")}
                   </Button>
                   <div className="flex items-center gap-1.5">
                     <Input
@@ -888,7 +905,7 @@ export function AdminAuditLogs() {
                     <span className="text-sm text-muted-foreground">/ {totalPages}</span>
                   </div>
                   <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => { tap(); setPage((p) => p + 1); }}>
-                    Sau
+                    {tAdmin("common.next")}
                   </Button>
                 </div>
               </div>
@@ -928,7 +945,7 @@ export function AdminAuditLogs() {
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
-function getDetailSummary(entry: AuditLogEntry): string {
+function getDetailSummary(entry: AuditLogEntry, tAdmin: ReturnType<typeof useAdminTranslation>["tAdmin"]): string {
   if (entry.old_data || entry.new_data) {
     const data = entry.new_data ?? entry.old_data ?? {};
     const keys = Object.keys(data);
@@ -940,16 +957,18 @@ function getDetailSummary(entry: AuditLogEntry): string {
         (k) => JSON.stringify(entry.old_data?.[k]) !== JSON.stringify(entry.new_data?.[k])
       );
       if (changed.length > 0) {
-        return `Đổi: ${changed.slice(0, 3).join(", ")}${changed.length > 3 ? "…" : ""}`;
+        return tAdmin("auditLogs.changedFields", {
+          fields: `${changed.slice(0, 3).join(", ")}${changed.length > 3 ? "..." : ""}`,
+        });
       }
     }
 
-    return `${keys.slice(0, 3).join(", ")}${keys.length > 3 ? "…" : ""}`;
+    return `${keys.slice(0, 3).join(", ")}${keys.length > 3 ? "..." : ""}`;
   }
   if (entry.metadata) {
     const keys = Object.keys(entry.metadata);
     if (keys.length === 0) return `Entity ${entry.entity_id?.slice(0, 8) ?? "—"}`;
-    return `${keys.slice(0, 3).join(", ")}${keys.length > 3 ? "…" : ""}`;
+    return `${keys.slice(0, 3).join(", ")}${keys.length > 3 ? "..." : ""}`;
   }
   return entry.entity_id?.slice(0, 8) || "—";
 }

@@ -27,6 +27,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Loader2Icon, UsersIcon, UserIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
+import { useAdminTranslation } from "../i18n";
 
 interface GroupOption {
   id: string;
@@ -58,6 +59,7 @@ export function AdminCreateExpenseDialog({
   onOpenChange,
   onSuccess,
 }: AdminCreateExpenseDialogProps) {
+  const { tAdmin } = useAdminTranslation();
   const { data: identity } = useGetIdentity<Profile>();
   const { tap, success } = useHaptics();
 
@@ -102,13 +104,13 @@ export function AdminCreateExpenseDialog({
             id: f.id,
             user_a: f.user_a,
             user_b: f.user_b,
-            user_a_name: f.user_a_profile?.full_name ?? "Unknown",
-            user_b_name: f.user_b_profile?.full_name ?? "Unknown",
+            user_a_name: f.user_a_profile?.full_name ?? tAdmin("common.unknown"),
+            user_b_name: f.user_b_profile?.full_name ?? tAdmin("common.unknown"),
           }))
         );
       }
     });
-  }, [open]);
+  }, [open, tAdmin]);
 
   // Load members when context changes
   useEffect(() => {
@@ -237,33 +239,33 @@ export function AdminCreateExpenseDialog({
             const ctxType = contextType;
             const ctxId = selectedGroupId || selectedFriendshipId;
             await createRecurring(expense.id, recurring, ctxType, ctxId);
-            toast.success("Đã tạo chi phí và lịch lặp lại thành công");
+            toast.success(tAdmin("transactions.expenses.createdWithRecurring"));
           } catch {
-            toast.error("Đã tạo chi phí nhưng không thể tạo lịch lặp lại");
+            toast.error(tAdmin("transactions.expenses.recurringCreateFailed"));
           }
         } else {
-          toast.success("Đã tạo chi phí mới thành công");
+          toast.success(tAdmin("transactions.expenses.created"));
         }
 
         success();
         onOpenChange(false);
         onSuccess();
       } catch (err: any) {
-        toast.error(`Lỗi: ${err.message ?? "Không thể tạo chi phí"}`);
+        toast.error(tAdmin("common.errorWithMessage", { message: err.message ?? tAdmin("transactions.expenses.create") }));
       } finally {
         setIsSubmitting(false);
       }
     },
-    [identity, contextType, selectedGroupId, selectedFriendshipId, attachments, uploadAttachments, createRecurring, onOpenChange, onSuccess]
+    [identity, contextType, selectedGroupId, selectedFriendshipId, attachments, uploadAttachments, createRecurring, onOpenChange, onSuccess, tAdmin]
   );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[680px] max-h-[90vh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
-          <DialogTitle>Tạo chi phí mới (Admin)</DialogTitle>
+          <DialogTitle>{tAdmin("transactions.expenses.createAdminTitle")}</DialogTitle>
           <DialogDescription>
-            Tạo chi phí với đầy đủ tính năng như phía Client
+            {tAdmin("transactions.expenses.createAdminDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -274,7 +276,7 @@ export function AdminCreateExpenseDialog({
               <Badge variant="outline" className="text-xs">
                 Admin
               </Badge>
-              <span className="text-sm font-medium">Chọn ngữ cảnh</span>
+              <span className="text-sm font-medium">{tAdmin("transactions.expenses.chooseContext")}</span>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -293,7 +295,7 @@ export function AdminCreateExpenseDialog({
                 }`}
               >
                 <UsersIcon className="h-4 w-4" />
-                Nhóm
+                {tAdmin("context.group")}
               </button>
               <button
                 type="button"
@@ -310,16 +312,16 @@ export function AdminCreateExpenseDialog({
                 }`}
               >
                 <UserIcon className="h-4 w-4" />
-                Bạn bè
+                {tAdmin("context.friends")}
               </button>
             </div>
 
             {contextType === "group" ? (
               <div className="space-y-2">
-                <Label>Chọn nhóm</Label>
+                <Label>{tAdmin("people.selectGroup")}</Label>
                 <Select value={selectedGroupId} onValueChange={(v) => { tap(); setSelectedGroupId(v); }}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Chọn nhóm..." />
+                    <SelectValue placeholder={tAdmin("people.selectGroupPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {groups.map((g) => (
@@ -332,13 +334,13 @@ export function AdminCreateExpenseDialog({
               </div>
             ) : (
               <div className="space-y-2">
-                <Label>Chọn cặp bạn bè</Label>
+                <Label>{tAdmin("transactions.expenses.selectFriendship")}</Label>
                 <Select
                   value={selectedFriendshipId}
                   onValueChange={(v) => { tap(); setSelectedFriendshipId(v); }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Chọn cặp bạn bè..." />
+                    <SelectValue placeholder={tAdmin("transactions.expenses.selectFriendshipPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {friendships.map((f) => (
@@ -354,7 +356,7 @@ export function AdminCreateExpenseDialog({
             {loadingContext && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2Icon className="h-4 w-4 animate-spin" />
-                Đang tải thành viên...
+                {tAdmin("transactions.expenses.loadingMembers")}
               </div>
             )}
           </div>
@@ -373,7 +375,7 @@ export function AdminCreateExpenseDialog({
           ) : (
             !loadingContext && (
               <div className="text-center py-8 text-muted-foreground text-sm">
-                Vui lòng chọn nhóm hoặc cặp bạn bè để tiếp tục
+                {tAdmin("transactions.expenses.selectContextHint")}
               </div>
             )
           )}

@@ -25,6 +25,7 @@ import {
   GlobeIcon,
   EyeIcon,
 } from "@/components/ui/icons";
+import { useAdminTranslation } from "../i18n";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -169,6 +170,7 @@ function MetaRow({ label, value, warn }: { label: string; value: string | null; 
 }
 
 function OgImagePreview({ src, alt }: { src: string; alt: string }) {
+  const { tAdmin } = useAdminTranslation();
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
 
@@ -182,7 +184,7 @@ function OgImagePreview({ src, alt }: { src: string; alt: string }) {
       {error ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
           <XCircleIcon className="h-8 w-8" />
-          <span className="text-sm">Failed to load OG image</span>
+          <span className="text-sm">{tAdmin("ogPreview.failedImage")}</span>
         </div>
       ) : (
         <img
@@ -217,6 +219,7 @@ function LogLevelIcon({ level }: { level: LogEntry["level"] }) {
 // ─── Social Preview Cards ───────────────────────────────────────────
 
 function FacebookPreview({ meta }: { meta: OgMeta }) {
+  const { tAdmin } = useAdminTranslation();
   return (
     <div className="rounded-lg border border-border overflow-hidden bg-card max-w-md">
       {meta.image && (
@@ -234,7 +237,7 @@ function FacebookPreview({ meta }: { meta: OgMeta }) {
           {meta.siteName || new URL(meta.url || "https://example.com").hostname}
         </p>
         <p className="text-sm font-semibold text-foreground line-clamp-2 leading-snug">
-          {meta.title || "No title"}
+          {meta.title || tAdmin("ogPreview.noTitle")}
         </p>
         {meta.description && (
           <p className="text-xs text-muted-foreground line-clamp-2">{meta.description}</p>
@@ -245,6 +248,7 @@ function FacebookPreview({ meta }: { meta: OgMeta }) {
 }
 
 function TwitterPreview({ meta }: { meta: OgMeta }) {
+  const { tAdmin } = useAdminTranslation();
   const title = meta.twitterTitle || meta.title;
   const description = meta.twitterDescription || meta.description;
   const image = meta.twitterImage || meta.image;
@@ -262,7 +266,7 @@ function TwitterPreview({ meta }: { meta: OgMeta }) {
         </div>
       )}
       <div className="px-3 py-2.5 space-y-0.5">
-        <p className="text-sm font-semibold text-foreground line-clamp-1">{title || "No title"}</p>
+        <p className="text-sm font-semibold text-foreground line-clamp-1">{title || tAdmin("ogPreview.noTitle")}</p>
         {description && (
           <p className="text-xs text-muted-foreground line-clamp-2">{description}</p>
         )}
@@ -278,6 +282,7 @@ function TwitterPreview({ meta }: { meta: OgMeta }) {
 // ─── Main Component ─────────────────────────────────────────────────
 
 export function AdminOgPreview() {
+  const { tAdmin } = useAdminTranslation();
   const [url, setUrl] = useState("");
   const [status, setStatus] = useState<CheckStatus>("idle");
   const [meta, setMeta] = useState<OgMeta | null>(null);
@@ -457,10 +462,8 @@ export function AdminOgPreview() {
     <div className="space-y-6">
       {/* ── Header ──────────────────────────────────────────────── */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight">OG Preview Checker</h1>
-        <p className="text-sm text-muted-foreground">
-          Paste a share link to inspect Open Graph meta tags and preview how it appears on social platforms.
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight">{tAdmin("ogPreview.title")}</h1>
+        <p className="text-sm text-muted-foreground">{tAdmin("ogPreview.subtitle")}</p>
       </div>
 
       {/* ── URL Input ───────────────────────────────────────────── */}
@@ -493,17 +496,17 @@ export function AdminOgPreview() {
                     ) : (
                       <EyeIcon className="h-4 w-4" />
                     )}
-                    <span className="hidden sm:inline">Check</span>
+                    <span className="hidden sm:inline">{tAdmin("ogPreview.check")}</span>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Check OG meta tags (Enter)</TooltipContent>
+                <TooltipContent>{tAdmin("ogPreview.check")}</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
 
           {/* Quick links */}
           <div className="flex flex-wrap gap-2 mt-3">
-            <span className="text-xs text-muted-foreground pt-0.5">Quick test:</span>
+            <span className="text-xs text-muted-foreground pt-0.5">{tAdmin("ogPreview.quickTest")}</span>
             {[
               { label: "Share Expense", path: "/api/share/expense?id=" },
               { label: "Share Debt", path: "/api/share/debt?counterparty_id=" },
@@ -559,7 +562,7 @@ export function AdminOgPreview() {
                               <ExternalLinkIcon className="h-3.5 w-3.5" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Open image in new tab</TooltipContent>
+                          <TooltipContent>{tAdmin("ogPreview.openImage")}</TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     </div>
@@ -575,7 +578,7 @@ export function AdminOgPreview() {
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">Meta Tags</CardTitle>
+                  <CardTitle className="text-base">{tAdmin("ogPreview.metaTags")}</CardTitle>
                   <div className="flex items-center gap-2">
                     <StatusBadge status={status} />
                     <TooltipProvider>
@@ -590,7 +593,7 @@ export function AdminOgPreview() {
                             <CopyIcon className={cn("h-3.5 w-3.5", copied && "text-[var(--status-success-foreground)]")} />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>{copied ? "Copied!" : "Copy meta tags"}</TooltipContent>
+                        <TooltipContent>{copied ? tAdmin("ogPreview.copied") : tAdmin("ogPreview.copyMeta")}</TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   </div>
@@ -644,7 +647,7 @@ export function AdminOgPreview() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-base flex items-center gap-2 font-mono">
               <span className="text-zinc-400">❯</span>
-              Console
+              {tAdmin("ogPreview.console")}
               {logs.length > 0 && (
                 <Badge variant="secondary" className="text-xs font-mono ml-1">
                   {logs.length}
@@ -666,7 +669,7 @@ export function AdminOgPreview() {
                         <RefreshCwIcon className="h-3.5 w-3.5" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Re-check</TooltipContent>
+                    <TooltipContent>{tAdmin("ogPreview.recheck")}</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               )}
@@ -683,7 +686,7 @@ export function AdminOgPreview() {
                         <TrashIcon className="h-3.5 w-3.5" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Clear logs</TooltipContent>
+                    <TooltipContent>{tAdmin("ogPreview.clearLogs")}</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               )}
@@ -695,7 +698,7 @@ export function AdminOgPreview() {
             <div className="bg-zinc-950 dark:bg-zinc-950/80 text-zinc-100 font-mono text-xs leading-relaxed p-4 min-h-full">
               {logs.length === 0 ? (
                 <div className="flex items-center justify-center h-48 text-zinc-500">
-                  <span>Paste a URL above and click Check to start…</span>
+                  <span>{tAdmin("ogPreview.pasteUrlPrompt")}</span>
                 </div>
               ) : (
                 logs.map((log) => (

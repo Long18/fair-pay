@@ -169,7 +169,7 @@ interface CreateUserFormValues {
 async function sendInviteEmails(emails: string[], inviterName?: string): Promise<InviteEmailResponse> {
   const { data, error } = await supabaseClient.auth.getSession();
   if (error || !data.session?.access_token) {
-    throw new Error("Không tìm thấy phiên đăng nhập admin");
+    throw new Error("admin-session-missing");
   }
 
   const response = await fetch("/api/admin/email/send-invite", {
@@ -220,6 +220,7 @@ function UserSingleCombobox({
   placeholder: string;
   disabled?: boolean;
 }) {
+  const { tAdmin } = useAdminTranslation();
   const [open, setOpen] = useState(false);
   const selected = users.find((u) => u.id === value);
 
@@ -241,9 +242,9 @@ function UserSingleCombobox({
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <Command>
-          <CommandInput placeholder="Tìm kiếm..." />
+          <CommandInput placeholder={tAdmin("toolbar.searchPlaceholder")} />
           <CommandList>
-            <CommandEmpty>Không tìm thấy</CommandEmpty>
+            <CommandEmpty>{tAdmin("common.noData")}</CommandEmpty>
             <CommandGroup>
               {users.map((user) => (
                 <CommandItem
@@ -287,6 +288,7 @@ function UserDetailDialog({
   onViewJourney: () => void;
   isSelf: boolean;
 }) {
+  const { tAdmin } = useAdminTranslation();
   const [groups, setGroups] = useState<Array<{ id: string; name: string; role: string }>>([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
 
@@ -309,14 +311,14 @@ function UserDetailDialog({
           setGroups(
             data.map((m: any) => ({
               id: m.groups?.id ?? "",
-              name: m.groups?.name ?? "Không rõ",
+              name: m.groups?.name ?? tAdmin("common.unknown"),
               role: m.role ?? "member",
             })),
           );
         }
         setLoadingGroups(false);
       });
-  }, [user?.id]);
+  }, [tAdmin, user]);
 
   useEffect(() => {
     if (!user || !open) {
@@ -352,22 +354,22 @@ function UserDetailDialog({
         .insert({ group_id: selectedGroupId, user_id: user.id, role: "member" });
       if (error) {
         if (error.code === "23505") {
-          toast.error("Người dùng đã là thành viên của nhóm");
+          toast.error(tAdmin("people.errors.alreadyGroupMember"));
         } else {
           throw error;
         }
       } else {
-        toast.success("Đã thêm vào nhóm");
+        toast.success(tAdmin("people.success.addedToGroup"));
         setAddGroupOpen(false);
         setSelectedGroupId("");
         fetchGroups();
       }
     } catch (err: any) {
-      toast.error(`Lỗi: ${err.message}`);
+      toast.error(tAdmin("common.errorWithMessage", { message: err.message }));
     } finally {
       setAddingToGroup(false);
     }
-  }, [user, selectedGroupId, fetchGroups]);
+  }, [user, selectedGroupId, fetchGroups, tAdmin]);
 
   const handleRemoveFromGroup = useCallback(async (groupId: string) => {
     if (!user) return;
@@ -379,14 +381,14 @@ function UserDetailDialog({
         .eq("group_id", groupId)
         .eq("user_id", user.id);
       if (error) throw error;
-      toast.success("Đã xóa khỏi nhóm");
+      toast.success(tAdmin("people.success.removedFromGroup"));
       fetchGroups();
     } catch (err: any) {
-      toast.error(`Lỗi: ${err.message}`);
+      toast.error(tAdmin("common.errorWithMessage", { message: err.message }));
     } finally {
       setRemovingGroupId(null);
     }
-  }, [user, fetchGroups]);
+  }, [user, fetchGroups, tAdmin]);
 
   if (!user) return null;
 
@@ -416,30 +418,32 @@ function UserDetailDialog({
           <div className="flex-1 overflow-hidden flex flex-col">
             <Tabs defaultValue="profile" className="flex-1 overflow-hidden flex flex-col">
               <TabsList className="w-full mx-0 rounded-none border-b">
-                <TabsTrigger value="profile" className="flex-1">Hồ sơ</TabsTrigger>
-                <TabsTrigger value="groups" className="flex-1">Nhóm ({loadingGroups ? "…" : groups.length})</TabsTrigger>
+                <TabsTrigger value="profile" className="flex-1">{tAdmin("people.profile")}</TabsTrigger>
+                <TabsTrigger value="groups" className="flex-1">
+                  {loadingGroups ? tAdmin("people.groupsLoading") : tAdmin("people.groupsWithCount", { count: groups.length })}
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="profile" className="mt-4 space-y-4 overflow-y-auto flex-1 px-6 pb-6">
                 <div className="space-y-3">
                   <DetailRow label="Email" value={user.email} />
                   <DetailRow
-                    label="Vai trò"
+                    label={tAdmin("common.role")}
                     value={
                       <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                        {user.role === "admin" ? "Admin" : "User"}
+                        {user.role === "admin" ? "Admin" : tAdmin("common.user")}
                       </Badge>
                     }
                   />
                   <DetailRow
-                    label="Theo dõi hành trình"
+                    label={tAdmin("people.journeyTracking")}
                     value={
                       <Badge variant={user.journey_tracking_ignored ? "outline" : "secondary"}>
-                        {user.journey_tracking_ignored ? "Tắt" : "Đang bật"}
+                        {user.journey_tracking_ignored ? tAdmin("status.ignored") : tAdmin("status.tracked")}
                       </Badge>
                     }
                   />
-                  <DetailRow label="Ngày tạo" value={formatDate(user.created_at)} />
+                  <DetailRow label={tAdmin("common.createdAt")} value={formatDate(user.created_at)} />
                   <DetailRow label="ID" value={<span className="text-xs font-mono">{user.id}</span>} />
                 </div>
 
@@ -447,14 +451,14 @@ function UserDetailDialog({
                 <div className="flex flex-wrap gap-2 pt-2 border-t">
                   <Button size="sm" variant="outline" onClick={onViewJourney}>
                     <ActivityIcon className="mr-2 h-4 w-4" />
-                    Xem hành trình
+                    {tAdmin("people.viewJourney")}
                   </Button>
                   <Button size="sm" variant="outline" onClick={onToggleJourneyTracking}>
-                    {user.journey_tracking_ignored ? "Tiếp tục theo dõi" : "Bỏ qua theo dõi"}
+                    {user.journey_tracking_ignored ? tAdmin("people.resumeTracking") : tAdmin("people.ignoreTracking")}
                   </Button>
                   <Button size="sm" variant="outline" onClick={onEdit}>
                     <PencilIcon className="mr-2 h-4 w-4" />
-                    Chỉnh sửa
+                    {tAdmin("common.edit")}
                   </Button>
                   <Button
                     size="sm"
@@ -462,7 +466,7 @@ function UserDetailDialog({
                     onClick={onToggleRole}
                     disabled={isSelf}
                   >
-                    {user.role === "admin" ? "Hạ cấp thành User" : "Nâng cấp thành Admin"}
+                    {user.role === "admin" ? tAdmin("people.demoteToUser") : tAdmin("people.promoteToAdmin")}
                   </Button>
                   <Button
                     size="sm"
@@ -470,17 +474,17 @@ function UserDetailDialog({
                     onClick={onDelete}
                     disabled={isSelf}
                   >
-                    Xóa người dùng
+                    {tAdmin("people.deleteUser")}
                   </Button>
                 </div>
               </TabsContent>
 
               <TabsContent value="groups" className="mt-4 overflow-y-auto flex-1 px-6 pb-6">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-muted-foreground">{groups.length} nhóm</span>
+                  <span className="text-sm text-muted-foreground">{tAdmin("people.groupsCount", { count: groups.length })}</span>
                   <Button size="sm" variant="outline" onClick={() => setAddGroupOpen(true)}>
                     <PlusIcon className="mr-2 h-4 w-4" />
-                    Thêm vào nhóm
+                    {tAdmin("people.addToGroup")}
                   </Button>
                 </div>
                 {loadingGroups ? (
@@ -489,7 +493,7 @@ function UserDetailDialog({
                   </div>
                 ) : groups.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">
-                    Chưa tham gia nhóm nào
+                    {tAdmin("people.noGroups")}
                   </p>
                 ) : (
                   <div className="space-y-2">
@@ -498,7 +502,7 @@ function UserDetailDialog({
                         <span className="text-sm font-medium">{g.name}</span>
                         <div className="flex items-center gap-2">
                           <Badge variant={g.role === "admin" ? "default" : "secondary"} className="text-xs">
-                            {g.role === "admin" ? "Admin" : "Thành viên"}
+                            {g.role === "admin" ? "Admin" : tAdmin("common.member")}
                           </Badge>
                           <Button
                             variant="ghost"
@@ -528,26 +532,26 @@ function UserDetailDialog({
       <Dialog open={addGroupOpen} onOpenChange={setAddGroupOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Thêm vào nhóm</DialogTitle>
+            <DialogTitle>{tAdmin("people.addToGroup")}</DialogTitle>
             <DialogDescription>
-              Thêm &ldquo;{user.full_name}&rdquo; vào một nhóm
+              {tAdmin("people.addToGroupDescription", { name: user.full_name })}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 mt-2">
-            <Label>Chọn nhóm</Label>
+            <Label>{tAdmin("people.selectGroup")}</Label>
             <UserSingleCombobox
               value={selectedGroupId}
               onChange={setSelectedGroupId}
               users={availableGroups.map((g) => ({ id: g.id, full_name: g.name }))}
-              placeholder={availableGroups.length === 0 ? "Không còn nhóm nào" : "Chọn nhóm..."}
+              placeholder={availableGroups.length === 0 ? tAdmin("people.noGroupsLeft") : tAdmin("people.selectGroupPlaceholder")}
               disabled={availableGroups.length === 0}
             />
           </div>
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setAddGroupOpen(false)} disabled={addingToGroup}>Hủy</Button>
+            <Button variant="outline" onClick={() => setAddGroupOpen(false)} disabled={addingToGroup}>{tAdmin("common.cancel")}</Button>
             <Button onClick={handleAddToGroup} disabled={addingToGroup || !selectedGroupId}>
               {addingToGroup ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Thêm
+              {tAdmin("common.add")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -582,6 +586,7 @@ function GroupDetailDialog({
   onDelete: () => void;
   onArchiveToggle?: () => void;
 }) {
+  const { tAdmin } = useAdminTranslation();
   const [members, setMembers] = useState<Array<{ id: string; full_name: string; avatar_url: string | null; role: string }>>([]);
   const [expenses, setExpenses] = useState<Array<{ id: string; description: string; amount: number; expense_date: string; paid_by_name: string }>>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
@@ -607,7 +612,7 @@ function GroupDetailDialog({
           setMembers(
             data.map((m: any) => ({
               id: m.profiles?.id ?? "",
-              full_name: m.profiles?.full_name ?? "Không rõ",
+              full_name: m.profiles?.full_name ?? tAdmin("common.unknown"),
               avatar_url: m.profiles?.avatar_url ?? null,
               role: m.role ?? "member",
             })),
@@ -615,7 +620,7 @@ function GroupDetailDialog({
         }
         setLoadingMembers(false);
       });
-  }, [group?.id]);
+  }, [group, tAdmin]);
 
   useEffect(() => {
     if (!group || !open) {
@@ -641,13 +646,13 @@ function GroupDetailDialog({
               description: e.description ?? "",
               amount: e.amount ?? 0,
               expense_date: e.expense_date,
-              paid_by_name: e.profiles?.full_name ?? "Không rõ",
+              paid_by_name: e.profiles?.full_name ?? tAdmin("common.unknown"),
             })),
           );
         }
         setLoadingExpenses(false);
       });
-  }, [group?.id, open, fetchMembers]);
+  }, [group, open, fetchMembers, tAdmin]);
 
   useEffect(() => {
     if (!addMemberOpen) return;
@@ -674,22 +679,22 @@ function GroupDetailDialog({
         .insert({ group_id: group.id, user_id: selectedUserId, role: "member" });
       if (error) {
         if (error.code === "23505") {
-          toast.error("Người dùng đã là thành viên của nhóm");
+          toast.error(tAdmin("people.errors.alreadyGroupMember"));
         } else {
           throw error;
         }
       } else {
-        toast.success("Đã thêm thành viên vào nhóm");
+        toast.success(tAdmin("people.success.addedMember"));
         setAddMemberOpen(false);
         setSelectedUserId("");
         fetchMembers();
       }
     } catch (err: any) {
-      toast.error(`Lỗi: ${err.message}`);
+      toast.error(tAdmin("common.errorWithMessage", { message: err.message }));
     } finally {
       setAddingMember(false);
     }
-  }, [group, selectedUserId, fetchMembers]);
+  }, [group, selectedUserId, fetchMembers, tAdmin]);
 
   const handleRemoveMember = useCallback(async (userId: string) => {
     if (!group) return;
@@ -701,14 +706,14 @@ function GroupDetailDialog({
         .eq("group_id", group.id)
         .eq("user_id", userId);
       if (error) throw error;
-      toast.success("Đã xóa thành viên khỏi nhóm");
+      toast.success(tAdmin("people.success.removedMember"));
       fetchMembers();
     } catch (err: any) {
-      toast.error(`Lỗi: ${err.message}`);
+      toast.error(tAdmin("common.errorWithMessage", { message: err.message }));
     } finally {
       setRemovingMemberId(null);
     }
-  }, [group, fetchMembers]);
+  }, [group, fetchMembers, tAdmin]);
 
   const handleToggleRole = useCallback(async (userId: string, currentRole: string) => {
     if (!group) return;
@@ -721,14 +726,14 @@ function GroupDetailDialog({
         .eq("group_id", group.id)
         .eq("user_id", userId);
       if (error) throw error;
-      toast.success(newRole === "admin" ? "Đã nâng cấp thành Admin" : "Đã hạ cấp thành Thành viên");
+      toast.success(newRole === "admin" ? tAdmin("people.success.promotedAdmin") : tAdmin("people.success.demotedMember"));
       fetchMembers();
     } catch (err: any) {
-      toast.error(`Lỗi: ${err.message}`);
+      toast.error(tAdmin("common.errorWithMessage", { message: err.message }));
     } finally {
       setTogglingRoleId(null);
     }
-  }, [group, fetchMembers]);
+  }, [group, fetchMembers, tAdmin]);
 
   if (!group) return null;
 
@@ -749,12 +754,12 @@ function GroupDetailDialog({
                   <DialogTitle className="truncate text-base font-semibold">{group.name}</DialogTitle>
                   {group.is_archived && (
                     <Badge className="bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)] text-xs shrink-0">
-                      Đã lưu trữ
+                      {tAdmin("status.archived")}
                     </Badge>
                   )}
                 </div>
                 <DialogDescription>
-                  Tạo bởi {group.creator_name} · {formatDate(group.created_at)}
+                  {tAdmin("people.createdBy", { name: group.creator_name, date: formatDate(group.created_at) })}
                 </DialogDescription>
               </div>
             </div>
@@ -762,16 +767,16 @@ function GroupDetailDialog({
 
           <Tabs defaultValue="members" className="flex-1 overflow-hidden flex flex-col">
             <TabsList className="w-full">
-              <TabsTrigger value="members" className="flex-1">Thành viên ({members.length})</TabsTrigger>
-              <TabsTrigger value="expenses" className="flex-1">Chi phí</TabsTrigger>
+              <TabsTrigger value="members" className="flex-1">{tAdmin("people.membersCount", { count: members.length })}</TabsTrigger>
+              <TabsTrigger value="expenses" className="flex-1">{tAdmin("transactions.expensesTab")}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="members" className="mt-4 overflow-y-auto flex-1">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-muted-foreground">{members.length} thành viên</span>
+                <span className="text-sm text-muted-foreground">{tAdmin("people.membersCount", { count: members.length })}</span>
                 <Button size="sm" variant="outline" onClick={() => setAddMemberOpen(true)}>
                   <UserPlusIcon className="mr-2 h-4 w-4" />
-                  Thêm
+                  {tAdmin("common.add")}
                 </Button>
               </div>
               {loadingMembers ? (
@@ -779,7 +784,7 @@ function GroupDetailDialog({
                   <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
               ) : members.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">Không có thành viên</p>
+                <p className="text-sm text-muted-foreground text-center py-8">{tAdmin("people.noMembers")}</p>
               ) : (
                 <div className="space-y-2">
                   {members.map((m) => (
@@ -792,7 +797,7 @@ function GroupDetailDialog({
                         <p className="text-sm font-medium truncate">{m.full_name}</p>
                       </div>
                       <Badge variant={m.role === "admin" ? "default" : "secondary"} className="text-xs">
-                        {m.role === "admin" ? "Admin" : "Thành viên"}
+                        {m.role === "admin" ? "Admin" : tAdmin("common.member")}
                       </Badge>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -812,7 +817,7 @@ function GroupDetailDialog({
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleToggleRole(m.id, m.role)}>
                             <StarIcon className="mr-2 h-4 w-4" />
-                            {m.role === "admin" ? "Hạ cấp thành Thành viên" : "Nâng cấp thành Admin"}
+                            {m.role === "admin" ? tAdmin("people.demoteToMember") : tAdmin("people.promoteToGroupAdmin")}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -820,7 +825,7 @@ function GroupDetailDialog({
                             className="text-destructive focus:text-destructive"
                           >
                             <UserMinusIcon className="mr-2 h-4 w-4" />
-                            Xóa khỏi nhóm
+                            {tAdmin("people.removeFromGroup")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -832,13 +837,13 @@ function GroupDetailDialog({
 
             <TabsContent value="expenses" className="mt-4 overflow-y-auto flex-1">
               <div className="space-y-3">
-                <DetailRow label="Tổng chi phí" value={formatNumber(group.total_expenses)} />
+                <DetailRow label={tAdmin("people.totalExpenses")} value={formatNumber(group.total_expenses)} />
                 {loadingExpenses ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : expenses.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">Chưa có chi phí nào</p>
+                  <p className="text-sm text-muted-foreground text-center py-8">{tAdmin("people.noExpenses")}</p>
                 ) : (
                   <div className="space-y-2">
                     {expenses.map((e) => (
@@ -860,19 +865,19 @@ function GroupDetailDialog({
           <div className="flex flex-wrap gap-2 pt-2 border-t">
             <Button size="sm" variant="outline" onClick={onEdit}>
               <PencilIcon className="mr-2 h-4 w-4" />
-              Chỉnh sửa nhóm
+              {tAdmin("people.editGroup")}
             </Button>
             {onArchiveToggle && (
               <Button size="sm" variant="outline" onClick={onArchiveToggle}>
                 {group.is_archived ? (
-                  <><ArchiveRestoreIcon className="mr-2 h-4 w-4" />Khôi phục</>
+                  <><ArchiveRestoreIcon className="mr-2 h-4 w-4" />{tAdmin("people.restore")}</>
                 ) : (
-                  <><ArchiveIcon className="mr-2 h-4 w-4" />Lưu trữ</>
+                  <><ArchiveIcon className="mr-2 h-4 w-4" />{tAdmin("people.archive")}</>
                 )}
               </Button>
             )}
             <Button size="sm" variant="destructive" onClick={onDelete}>
-              Xóa nhóm
+              {tAdmin("people.deleteGroup")}
             </Button>
           </div>
         </DialogContent>
@@ -882,24 +887,24 @@ function GroupDetailDialog({
       <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Thêm thành viên</DialogTitle>
-            <DialogDescription>Thêm người dùng vào nhóm &ldquo;{group.name}&rdquo;</DialogDescription>
+            <DialogTitle>{tAdmin("people.addMember")}</DialogTitle>
+            <DialogDescription>{tAdmin("people.addMemberDescription", { name: group.name })}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 mt-2">
-            <Label>Chọn người dùng</Label>
+            <Label>{tAdmin("people.selectUser")}</Label>
             <UserSingleCombobox
               value={selectedUserId}
               onChange={setSelectedUserId}
               users={availableProfiles}
-              placeholder={availableProfiles.length === 0 ? "Không còn người dùng nào" : "Chọn người dùng..."}
+              placeholder={availableProfiles.length === 0 ? tAdmin("people.noUsersLeft") : tAdmin("people.selectUser")}
               disabled={availableProfiles.length === 0}
             />
           </div>
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setAddMemberOpen(false)} disabled={addingMember}>Hủy</Button>
+            <Button variant="outline" onClick={() => setAddMemberOpen(false)} disabled={addingMember}>{tAdmin("common.cancel")}</Button>
             <Button onClick={handleAddMember} disabled={addingMember || !selectedUserId}>
               {addingMember ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Thêm
+              {tAdmin("common.add")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -925,6 +930,8 @@ function DeleteConfirmDialog({
   onConfirm: () => void;
   isDeleting: boolean;
 }) {
+  const { tAdmin } = useAdminTranslation();
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -936,14 +943,14 @@ function DeleteConfirmDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Hủy</AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting}>{tAdmin("common.cancel")}</AlertDialogCancel>
           <AlertDialogAction
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             onClick={(e) => { e.preventDefault(); onConfirm(); }}
             disabled={isDeleting}
           >
             {isDeleting ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Xóa
+            {tAdmin("common.delete")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -964,6 +971,7 @@ function CreateUserDialog({
   onSubmit: (data: CreateUserFormValues) => void;
   isCreating: boolean;
 }) {
+  const { tAdmin } = useAdminTranslation();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -975,7 +983,7 @@ function CreateUserDialog({
 
   const handleSubmit = () => {
     if (!fullName.trim() || !email.trim()) {
-      toast.error("Vui lòng điền đầy đủ thông tin");
+      toast.error(tAdmin("people.errors.requiredFields"));
       return;
     }
     onSubmit({ full_name: fullName.trim(), email: email.trim(), role, avatar_url: avatarUrl.trim() || undefined });
@@ -985,16 +993,16 @@ function CreateUserDialog({
     <AdminCrudSheet
       open={open}
       onOpenChange={onOpenChange}
-      title="Tạo người dùng mới"
-      description="Thêm hồ sơ người dùng mới vào hệ thống"
+      title={tAdmin("people.createUserTitle")}
+      description={tAdmin("people.createUserDescription")}
       isSubmitting={isCreating}
-      submitLabel="Tạo người dùng"
+      submitLabel={tAdmin("people.createUserSubmit")}
       onSubmit={handleSubmit}
     >
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="user-name">Họ tên</Label>
-          <Input id="user-name" placeholder="Nhập họ tên..." value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          <Label htmlFor="user-name">{tAdmin("people.fullName")}</Label>
+          <Input id="user-name" placeholder={tAdmin("people.fullNamePlaceholder")} value={fullName} onChange={(e) => setFullName(e.target.value)} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="user-email">Email</Label>
@@ -1005,11 +1013,11 @@ function CreateUserDialog({
           <Input id="user-avatar" type="url" placeholder="https://..." value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="user-role">Vai trò</Label>
+          <Label htmlFor="user-role">{tAdmin("common.role")}</Label>
           <Select value={role} onValueChange={setRole}>
             <SelectTrigger id="user-role"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="user">User</SelectItem>
+              <SelectItem value="user">{tAdmin("common.user")}</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
             </SelectContent>
           </Select>
@@ -1034,6 +1042,7 @@ function EditUserDialog({
   onSubmit: (data: { full_name: string; email: string }) => void;
   isUpdating: boolean;
 }) {
+  const { tAdmin } = useAdminTranslation();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
 
@@ -1047,15 +1056,15 @@ function EditUserDialog({
     <AdminCrudSheet
       open={open}
       onOpenChange={onOpenChange}
-      title="Chỉnh sửa hồ sơ"
-      description={`Cập nhật thông tin người dùng "${user.full_name}"`}
+      title={tAdmin("people.editUserTitle")}
+      description={tAdmin("people.editUserDescription", { name: user.full_name })}
       isSubmitting={isUpdating}
-      submitLabel="Lưu"
+      submitLabel={tAdmin("common.save")}
       onSubmit={() => onSubmit({ full_name: fullName, email })}
     >
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="edit-user-name">Họ tên</Label>
+          <Label htmlFor="edit-user-name">{tAdmin("people.fullName")}</Label>
           <Input id="edit-user-name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
         </div>
         <div className="space-y-2">
@@ -1082,6 +1091,7 @@ function EditGroupDialog({
   onConfirm: (data: { name: string; description: string }) => void;
   isUpdating: boolean;
 }) {
+  const { tAdmin } = useAdminTranslation();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
@@ -1100,20 +1110,20 @@ function EditGroupDialog({
     <AdminCrudSheet
       open={open}
       onOpenChange={onOpenChange}
-      title="Chỉnh sửa nhóm"
-      description={`Cập nhật thông tin nhóm "${group.name}"`}
+      title={tAdmin("people.editGroupTitle")}
+      description={tAdmin("people.editGroupDescription", { name: group.name })}
       isSubmitting={isUpdating}
-      submitLabel="Lưu"
+      submitLabel={tAdmin("common.save")}
       onSubmit={() => onConfirm({ name: name.trim(), description: description.trim() })}
     >
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="group-name">Tên nhóm</Label>
-          <Input id="group-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nhập tên nhóm..." />
+          <Label htmlFor="group-name">{tAdmin("people.groupName")}</Label>
+          <Input id="group-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={tAdmin("people.groupNamePlaceholder")} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="group-description">Mô tả</Label>
-          <Input id="group-description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Mô tả nhóm (tùy chọn)..." />
+          <Label htmlFor="group-description">{tAdmin("people.groupDescription")}</Label>
+          <Input id="group-description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder={tAdmin("people.groupDescriptionPlaceholder")} />
         </div>
       </div>
     </AdminCrudSheet>
@@ -1133,6 +1143,7 @@ function CreateGroupSheet({
   onCreated: () => void;
   createdBy: string;
 }) {
+  const { tAdmin } = useAdminTranslation();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -1144,7 +1155,7 @@ function CreateGroupSheet({
 
   const handleSubmit = async () => {
     if (!name.trim()) {
-      toast.error("Tên nhóm là bắt buộc");
+      toast.error(tAdmin("people.errors.groupNameRequired"));
       return;
     }
     setSubmitting(true);
@@ -1155,12 +1166,12 @@ function CreateGroupSheet({
         created_by: createdBy,
       });
       if (error) throw error;
-      toast.success("Đã tạo nhóm");
+      toast.success(tAdmin("people.success.groupCreated"));
       reset();
       onOpenChange(false);
       onCreated();
     } catch (err: any) {
-      toast.error(`Lỗi: ${err.message}`);
+      toast.error(tAdmin("common.errorWithMessage", { message: err.message }));
     } finally {
       setSubmitting(false);
     }
@@ -1170,29 +1181,29 @@ function CreateGroupSheet({
     <AdminCrudSheet
       open={open}
       onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}
-      title="Tạo nhóm mới"
-      description="Thiết lập nhóm chia sẻ chi phí mới."
+      title={tAdmin("people.createGroupTitle")}
+      description={tAdmin("people.createGroupDescription")}
       isSubmitting={submitting}
-      submitLabel="Tạo nhóm"
+      submitLabel={tAdmin("people.createGroupSubmit")}
       onSubmit={handleSubmit}
     >
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="new-group-name">Tên nhóm *</Label>
+          <Label htmlFor="new-group-name">{tAdmin("people.groupName")} *</Label>
           <Input
             id="new-group-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="VD: Chuyến đi Đà Lạt"
+            placeholder={tAdmin("people.createGroupNamePlaceholder")}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="new-group-desc">Mô tả</Label>
+          <Label htmlFor="new-group-desc">{tAdmin("people.groupDescription")}</Label>
           <Textarea
             id="new-group-desc"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Mô tả nhóm (tùy chọn)"
+            placeholder={tAdmin("people.groupDescriptionPlaceholder")}
             rows={3}
           />
         </div>
@@ -1214,6 +1225,7 @@ function CreateFriendshipSheet({
   onCreated: () => void;
   createdBy: string;
 }) {
+  const { tAdmin } = useAdminTranslation();
   const [userA, setUserA] = useState("");
   const [userB, setUserB] = useState("");
   const [status, setStatus] = useState<"pending" | "accepted" | "rejected">("accepted");
@@ -1241,11 +1253,11 @@ function CreateFriendshipSheet({
 
   const handleSubmit = async () => {
     if (!userA || !userB) {
-      toast.error("Cần chọn cả hai người dùng");
+      toast.error(tAdmin("people.errors.selectBothUsers"));
       return;
     }
     if (userA === userB) {
-      toast.error("Hai người dùng phải khác nhau");
+      toast.error(tAdmin("people.errors.usersMustDiffer"));
       return;
     }
     setSubmitting(true);
@@ -1256,7 +1268,7 @@ function CreateFriendshipSheet({
         .or(`and(user_a.eq.${userA},user_b.eq.${userB}),and(user_a.eq.${userB},user_b.eq.${userA})`);
       if (checkError) throw checkError;
       if (existing && existing.length > 0) {
-        toast.error("Tình bạn giữa hai người dùng này đã tồn tại");
+        toast.error(tAdmin("people.errors.friendshipExists"));
         return;
       }
       const { error } = await supabaseClient.from("friendships").insert({
@@ -1266,12 +1278,12 @@ function CreateFriendshipSheet({
         created_by: createdBy,
       });
       if (error) throw error;
-      toast.success("Đã tạo tình bạn");
+      toast.success(tAdmin("people.success.friendshipCreated"));
       reset();
       onOpenChange(false);
       onCreated();
     } catch (err: any) {
-      toast.error(`Lỗi: ${err.message}`);
+      toast.error(tAdmin("common.errorWithMessage", { message: err.message }));
     } finally {
       setSubmitting(false);
     }
@@ -1281,41 +1293,41 @@ function CreateFriendshipSheet({
     <AdminCrudSheet
       open={open}
       onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}
-      title="Tạo tình bạn"
-      description="Kết nối hai người dùng với nhau."
+      title={tAdmin("people.createFriendshipTitle")}
+      description={tAdmin("people.createFriendshipDescription")}
       isSubmitting={submitting}
-      submitLabel="Tạo tình bạn"
+      submitLabel={tAdmin("people.createFriendshipSubmit")}
       onSubmit={handleSubmit}
     >
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label>Người dùng A *</Label>
+          <Label>{tAdmin("people.userA")} *</Label>
           <UserSingleCombobox
             value={userA}
             onChange={setUserA}
             users={profiles ?? []}
-            placeholder="Chọn người dùng..."
+            placeholder={tAdmin("people.selectUser")}
           />
         </div>
         <div className="space-y-2">
-          <Label>Người dùng B *</Label>
+          <Label>{tAdmin("people.userB")} *</Label>
           <UserSingleCombobox
             value={userB}
             onChange={setUserB}
             users={(profiles ?? []).filter((u) => u.id !== userA)}
-            placeholder="Chọn người dùng..."
+            placeholder={tAdmin("people.selectUser")}
           />
         </div>
         <div className="space-y-2">
-          <Label>Trạng thái</Label>
+          <Label>{tAdmin("common.status")}</Label>
           <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="accepted">Đã chấp nhận</SelectItem>
-              <SelectItem value="pending">Chờ xử lý</SelectItem>
-              <SelectItem value="rejected">Từ chối</SelectItem>
+              <SelectItem value="accepted">{tAdmin("status.accepted")}</SelectItem>
+              <SelectItem value="pending">{tAdmin("status.pending")}</SelectItem>
+              <SelectItem value="rejected">{tAdmin("status.rejected")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -1337,6 +1349,7 @@ function EditFriendshipSheet({
   onOpenChange: (open: boolean) => void;
   onUpdated: () => void;
 }) {
+  const { tAdmin } = useAdminTranslation();
   const [status, setStatus] = useState<"pending" | "accepted" | "rejected">("accepted");
   const [submitting, setSubmitting] = useState(false);
 
@@ -1353,11 +1366,11 @@ function EditFriendshipSheet({
         .update({ status })
         .eq("id", friendship.id);
       if (error) throw error;
-      toast.success("Đã cập nhật tình bạn");
+      toast.success(tAdmin("people.success.friendshipUpdated"));
       onOpenChange(false);
       onUpdated();
     } catch (err: any) {
-      toast.error(`Lỗi: ${err.message}`);
+      toast.error(tAdmin("common.errorWithMessage", { message: err.message }));
     } finally {
       setSubmitting(false);
     }
@@ -1367,28 +1380,28 @@ function EditFriendshipSheet({
     <AdminCrudSheet
       open={open}
       onOpenChange={onOpenChange}
-      title="Chỉnh sửa tình bạn"
+      title={tAdmin("people.editFriendshipTitle")}
       description={friendship ? `${friendship.user_a_name} ↔ ${friendship.user_b_name}` : undefined}
       isSubmitting={submitting}
-      submitLabel="Lưu"
+      submitLabel={tAdmin("common.save")}
       onSubmit={handleSubmit}
     >
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label>Trạng thái</Label>
+          <Label>{tAdmin("common.status")}</Label>
           <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="accepted">Đã chấp nhận</SelectItem>
-              <SelectItem value="pending">Chờ xử lý</SelectItem>
-              <SelectItem value="rejected">Từ chối</SelectItem>
+              <SelectItem value="accepted">{tAdmin("status.accepted")}</SelectItem>
+              <SelectItem value="pending">{tAdmin("status.pending")}</SelectItem>
+              <SelectItem value="rejected">{tAdmin("status.rejected")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <p className="text-sm text-muted-foreground">
-          Không thể thay đổi người dùng sau khi tạo.
+          {tAdmin("people.cannotChangeUsersAfterCreate")}
         </p>
       </div>
     </AdminCrudSheet>
@@ -1398,14 +1411,15 @@ function EditFriendshipSheet({
 // ─── Friendship Status Badge ────────────────────────────────────────
 
 const FRIENDSHIP_STATUS = {
-  accepted: { label: "Đã chấp nhận", className: "bg-[var(--status-success-bg)] text-[var(--status-success-foreground)]" },
-  pending: { label: "Chờ xử lý", className: "bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)]" },
-  rejected: { label: "Từ chối", className: "bg-[var(--status-error-bg)] text-[var(--status-error-foreground)]" },
+  accepted: { labelKey: "status.accepted", className: "bg-[var(--status-success-bg)] text-[var(--status-success-foreground)]" },
+  pending: { labelKey: "status.pending", className: "bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)]" },
+  rejected: { labelKey: "status.rejected", className: "bg-[var(--status-error-bg)] text-[var(--status-error-foreground)]" },
 } as const;
 
 function FriendshipStatusBadge({ status }: { status: keyof typeof FRIENDSHIP_STATUS }) {
+  const { tAdmin } = useAdminTranslation();
   const config = FRIENDSHIP_STATUS[status];
-  return <Badge className={config.className}>{config.label}</Badge>;
+  return <Badge className={config.className}>{tAdmin(config.labelKey)}</Badge>;
 }
 
 // ─── New Registration Card ──────────────────────────────────────────
@@ -1417,6 +1431,7 @@ function NewRegistrationCard({
   user: AdminUserRow;
   onViewDetail: () => void;
 }) {
+  const { tAdmin } = useAdminTranslation();
   const daysSinceRegistration = Math.floor(
     (Date.now() - new Date(user.created_at).getTime()) / (1000 * 60 * 60 * 24),
   );
@@ -1450,10 +1465,10 @@ function NewRegistrationCard({
           }
         >
           {daysSinceRegistration === 0
-            ? "Hôm nay"
+            ? tAdmin("common.today")
             : daysSinceRegistration === 1
-              ? "Hôm qua"
-              : `${daysSinceRegistration} ngày trước`}
+              ? tAdmin("common.yesterday")
+              : tAdmin("overview.relative.daysAgo", { count: daysSinceRegistration })}
         </Badge>
       </div>
     </div>
@@ -1465,6 +1480,7 @@ function InviteUsersCard({
 }: {
   inviterName?: string | null;
 }) {
+  const { tAdmin } = useAdminTranslation();
   const { tap, success, warning } = useHaptics();
   const [emailInput, setEmailInput] = useState("");
   const [isSendingInvite, setIsSendingInvite] = useState(false);
@@ -1487,7 +1503,7 @@ function InviteUsersCard({
   const handleSendInvite = useCallback(async () => {
     if (!inviteEmails.length) {
       warning();
-      toast.error("Nhập ít nhất một email hợp lệ");
+      toast.error(tAdmin("people.errors.validEmailRequired"));
       return;
     }
 
@@ -1496,11 +1512,14 @@ function InviteUsersCard({
     try {
       const result = await sendInviteEmails(inviteEmails, inviterName || undefined);
       success();
-      toast.success(result.message || `Đã gửi ${result.sent ?? inviteEmails.length} email mời`);
+      toast.success(result.message || tAdmin("people.success.inviteSent", { count: result.sent ?? inviteEmails.length }));
       setEmailInput("");
     } catch (error) {
       warning();
-      toast.error(error instanceof Error ? error.message : "Không gửi được email mời");
+      const message = error instanceof Error && error.message === "admin-session-missing"
+        ? tAdmin("people.errors.adminSessionMissing")
+        : error instanceof Error ? error.message : tAdmin("people.errors.inviteFailed");
+      toast.error(message);
     } finally {
       setIsSendingInvite(false);
     }
@@ -1513,21 +1532,21 @@ function InviteUsersCard({
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <MailIcon className="h-4 w-4 text-primary" />
-              <CardTitle>Mời người dùng qua email</CardTitle>
+            <CardTitle>{tAdmin("people.inviteTitle")}</CardTitle>
             </div>
             <CardDescription>
-              Nhập email để preview và gửi lời mời bằng hệ thống email hiện có của FairPay.
+              {tAdmin("people.inviteDescription")}
             </CardDescription>
           </div>
           <Badge variant="secondary" className="w-fit">
-            Xem trước kiểu Gmail
+            {tAdmin("common.preview")}
           </Badge>
         </div>
       </CardHeader>
       <CardContent className="grid gap-0 p-0 lg:grid-cols-[360px_minmax(0,1fr)]">
         <div className="space-y-4 border-b p-4 lg:border-b-0 lg:border-r">
           <div className="space-y-2">
-            <Label htmlFor="invite-emails">Email người nhận</Label>
+            <Label htmlFor="invite-emails">{tAdmin("people.inviteRecipients")}</Label>
             <Textarea
               id="invite-emails"
               value={emailInput}
@@ -1536,7 +1555,7 @@ function InviteUsersCard({
               className="min-h-28 resize-none"
             />
             <p className="text-xs text-muted-foreground">
-              Có thể nhập nhiều email, phân tách bằng dấu phẩy, khoảng trắng hoặc xuống dòng.
+              {tAdmin("people.inviteHelp")}
             </p>
           </div>
 
@@ -1549,14 +1568,14 @@ function InviteUsersCard({
               ))
             ) : (
               <Badge variant="outline" className="font-normal text-muted-foreground">
-                Chưa có email hợp lệ
+                {tAdmin("people.noValidEmails")}
               </Badge>
             )}
           </div>
 
           {invalidEmailCount > 0 && (
             <p className="text-xs text-[var(--status-warning-foreground)]">
-              Bỏ qua {invalidEmailCount} email chưa đúng định dạng.
+              {tAdmin("people.invalidEmailCount", { count: invalidEmailCount })}
             </p>
           )}
 
@@ -1566,7 +1585,7 @@ function InviteUsersCard({
             disabled={isSendingInvite || inviteEmails.length === 0}
           >
             {isSendingInvite ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : <SendIcon className="mr-2 h-4 w-4" />}
-            Gửi lời mời
+            {tAdmin("people.sendInvites")}
           </Button>
         </div>
 
@@ -1577,13 +1596,13 @@ function InviteUsersCard({
               <p className="truncate text-xs text-muted-foreground">{invitePreview.previewText}</p>
             </div>
             <Badge variant="outline" className="shrink-0">
-              Xem trước
+              {tAdmin("common.preview")}
             </Badge>
           </div>
           <div className="grid gap-3 border-b px-4 py-3 text-sm sm:grid-cols-[72px_minmax(0,1fr)]">
-            <span className="text-muted-foreground">Từ</span>
-            <span className="truncate">FairPay &lt;email hiện có&gt;</span>
-            <span className="text-muted-foreground">Đến</span>
+            <span className="text-muted-foreground">{tAdmin("common.from")}</span>
+            <span className="truncate">{tAdmin("people.emailSender")}</span>
+            <span className="text-muted-foreground">{tAdmin("common.to")}</span>
             <span className="truncate">{inviteEmails.length ? inviteEmails.join(", ") : "email@example.com"}</span>
           </div>
           <div className="h-[420px] bg-muted/30 p-3">
@@ -1606,6 +1625,7 @@ function InviteUsersCard({
 // ═══════════════════════════════════════════════════════════════════
 
 function UsersTab() {
+  const { tAdmin } = useAdminTranslation();
   const { tap, warning } = useHaptics();
   const { data: identity } = useGetIdentity<Profile>();
   const go = useGo();
@@ -1682,8 +1702,8 @@ function UsersTab() {
 
       toast.success(
         nextIgnored
-          ? `Đã ignore tracking cho ${user.full_name}`
-          : `Đã bật lại tracking cho ${user.full_name}`,
+          ? tAdmin("people.success.trackingIgnored", { name: user.full_name })
+          : tAdmin("people.success.trackingResumed", { name: user.full_name }),
       );
 
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
@@ -1693,9 +1713,9 @@ function UsersTab() {
         setSelectedUser({ ...user, journey_tracking_ignored: nextIgnored });
       }
     } catch (error) {
-      toast.error(`Lỗi: ${error instanceof Error ? error.message : "Không thể cập nhật journey tracking"}`);
+      toast.error(tAdmin("common.errorWithMessage", { message: error instanceof Error ? error.message : tAdmin("people.errors.updateTrackingFailed") }));
     }
-  }, [queryClient, selectedUser]);
+  }, [queryClient, selectedUser, tAdmin]);
 
   // Columns
   const columns = useMemo<ColumnDef<AdminUserRow>[]>(() => [
@@ -1712,7 +1732,7 @@ function UsersTab() {
       ),
     },
     {
-      id: "full_name", header: "Tên", accessorKey: "full_name", size: 220,
+      id: "full_name", header: tAdmin("people.fullName"), accessorKey: "full_name", size: 220,
       cell: ({ row }) => (
         <div className="flex items-center gap-2 min-w-0">
           <span className="truncate">{row.original.full_name}</span>
@@ -1720,25 +1740,25 @@ function UsersTab() {
         </div>
       ),
     },
-    { id: "email", header: "Email", accessorKey: "email", size: 220 },
+    { id: "email", header: tAdmin("common.email"), accessorKey: "email", size: 220 },
     {
-      id: "role", header: "Vai trò", accessorFn: (row) => row.role, size: 100,
+      id: "role", header: tAdmin("common.role"), accessorFn: (row) => row.role, size: 100,
       cell: ({ row }) => (
         <Badge variant={row.original.role === "admin" ? "default" : "secondary"}>
-          {row.original.role === "admin" ? "Admin" : "User"}
+          {row.original.role === "admin" ? "Admin" : tAdmin("common.user")}
         </Badge>
       ),
     },
     {
-      id: "journey_tracking_ignored", header: "Journey", accessorFn: (row) => row.journey_tracking_ignored, size: 120,
+      id: "journey_tracking_ignored", header: tAdmin("people.journeyTracking"), accessorFn: (row) => row.journey_tracking_ignored, size: 120,
       cell: ({ row }) => (
         <Badge variant={row.original.journey_tracking_ignored ? "outline" : "secondary"}>
-          {row.original.journey_tracking_ignored ? "Tắt" : "Đang bật"}
+          {row.original.journey_tracking_ignored ? tAdmin("status.ignored") : tAdmin("status.tracked")}
         </Badge>
       ),
     },
     {
-      id: "created_at", header: "Ngày tạo", accessorKey: "created_at", size: 160,
+      id: "created_at", header: tAdmin("common.createdAt"), accessorKey: "created_at", size: 160,
       cell: ({ getValue }) => {
         const dateStr = getValue() as string;
         const daysSince = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
@@ -1755,7 +1775,7 @@ function UsersTab() {
                     : "bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] text-[10px] leading-none px-1.5 py-0.5"
                 }
               >
-                {daysSince === 0 ? "Hôm nay" : daysSince === 1 ? "Hôm qua" : "Mới"}
+                {daysSince === 0 ? tAdmin("common.today") : daysSince === 1 ? tAdmin("common.yesterday") : tAdmin("common.recent")}
               </Badge>
             )}
           </div>
@@ -1773,28 +1793,28 @@ function UsersTab() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => { tap(); setSelectedUser(row.original); setDetailOpen(true); }}>
-              Xem chi tiết
+              {tAdmin("common.details")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => { tap(); go({ to: `/admin/people/${row.original.id}/journey` }); }}>
               <ActivityIcon className="mr-2 h-4 w-4" />
-              Xem hành trình
+              {tAdmin("people.viewJourney")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => { tap(); void handleToggleJourneyTracking(row.original); }}>
-              {row.original.journey_tracking_ignored ? "Tiếp tục theo dõi" : "Bỏ qua theo dõi"}
+              {row.original.journey_tracking_ignored ? tAdmin("people.resumeTracking") : tAdmin("people.ignoreTracking")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => { tap(); setEditUser(row.original); setEditDialogOpen(true); }}>
               <PencilIcon className="mr-2 h-4 w-4" />
-              Chỉnh sửa
+              {tAdmin("common.edit")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => { warning(); setDeleteUser(row.original); setDeleteDialogOpen(true); }} disabled={identity?.id === row.original.id} className="text-destructive">
-              {identity?.id === row.original.id ? "Không thể xóa chính mình" : "Xóa người dùng"}
+              {identity?.id === row.original.id ? tAdmin("people.cannotDeleteSelf") : tAdmin("people.deleteUser")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
     },
-  ], [go, identity?.id, tap, warning, handleToggleJourneyTracking]);
+  ], [go, identity?.id, tap, warning, handleToggleJourneyTracking, tAdmin]);
 
   const [sorting, setSorting] = useState<SortingState>([{ id: "created_at", desc: true }]);
 
@@ -1812,7 +1832,7 @@ function UsersTab() {
 
   // Handlers
   const handleToggleRole = useCallback((user: AdminUserRow) => {
-    if (identity?.id === user.id) { toast.warning("Không thể thay đổi vai trò của chính mình"); return; }
+    if (identity?.id === user.id) { toast.warning(tAdmin("people.errors.selfRoleChange")); return; }
     const newRole = user.role === "admin" ? "user" : "admin";
     (async () => {
       try {
@@ -1821,13 +1841,16 @@ function UsersTab() {
           p_new_role: newRole,
         });
         if (error) throw error;
-        toast.success(`Đã ${newRole === "admin" ? "nâng cấp" : "hạ cấp"} vai trò của ${user.full_name}`);
+        toast.success(tAdmin("people.success.roleChanged", {
+          action: newRole === "admin" ? tAdmin("people.rolePromotedAction") : tAdmin("people.roleDemotedAction"),
+          name: user.full_name,
+        }));
         queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       } catch (error) {
-        toast.error(`Lỗi: ${error instanceof Error ? error.message : "Không thể thay đổi vai trò"}`);
+        toast.error(tAdmin("common.errorWithMessage", { message: error instanceof Error ? error.message : tAdmin("people.errors.changeRoleFailed") }));
       }
     })();
-  }, [identity?.id, queryClient]);
+  }, [identity?.id, queryClient, tAdmin]);
 
   const handleDeleteUser = useCallback(async () => {
     if (!deleteUser) return;
@@ -1835,13 +1858,13 @@ function UsersTab() {
     try {
       const { error } = await supabaseClient.from("profiles").delete().eq("id", deleteUser.id);
       if (error) throw error;
-      toast.success(`Đã xóa người dùng "${deleteUser.full_name}"`);
+      toast.success(tAdmin("people.success.userDeleted", { name: deleteUser.full_name }));
       setDeleteDialogOpen(false); setDeleteUser(null);
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
     } catch (err: any) {
-      toast.error(`Lỗi: ${err.message ?? "Không thể xóa người dùng"}`);
+      toast.error(tAdmin("common.errorWithMessage", { message: err.message ?? tAdmin("people.errors.deleteUserFailed") }));
     } finally { setIsDeleting(false); }
-  }, [deleteUser, queryClient]);
+  }, [deleteUser, queryClient, tAdmin]);
 
   const handleCreateUser = useCallback(async (data: CreateUserFormValues) => {
     setIsCreating(true);
@@ -1853,13 +1876,13 @@ function UsersTab() {
         p_avatar_url: data.avatar_url ?? null,
       });
       if (error) throw error;
-      toast.success(`Đã tạo người dùng "${data.full_name}"`);
+      toast.success(tAdmin("people.success.userCreated", { name: data.full_name }));
       setCreateDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
     } catch (err: any) {
-      toast.error(`Lỗi: ${err.message ?? "Không thể tạo người dùng"}`);
+      toast.error(tAdmin("common.errorWithMessage", { message: err.message ?? tAdmin("people.errors.createUserFailed") }));
     } finally { setIsCreating(false); }
-  }, [queryClient]);
+  }, [queryClient, tAdmin]);
 
   const handleEditUser = useCallback(async (data: { full_name: string; email: string }) => {
     if (!editUser) return;
@@ -1867,13 +1890,13 @@ function UsersTab() {
     try {
       const { error } = await supabaseClient.from("profiles").update({ full_name: data.full_name, email: data.email }).eq("id", editUser.id);
       if (error) throw error;
-      toast.success(`Đã cập nhật hồ sơ "${data.full_name}"`);
+      toast.success(tAdmin("people.success.userUpdated", { name: data.full_name }));
       setEditDialogOpen(false); setEditUser(null);
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
     } catch (err: any) {
-      toast.error(`Lỗi: ${err.message ?? "Không thể cập nhật hồ sơ"}`);
+      toast.error(tAdmin("common.errorWithMessage", { message: err.message ?? tAdmin("people.errors.updateUserFailed") }));
     } finally { setIsUpdating(false); }
-  }, [editUser, queryClient]);
+  }, [editUser, queryClient, tAdmin]);
 
   const clearFilters = useCallback(() => { setSearch(""); setRoleFilter("all"); }, []);
   const hasActiveFilters = search !== "" || roleFilter !== "all";
@@ -1890,14 +1913,14 @@ function UsersTab() {
                 <CollapsibleTrigger className="flex w-full items-center justify-between [&[data-state=open]>svg]:rotate-180">
                   <div className="flex items-center gap-2">
                     <UserPlusIcon className="h-4 w-4 text-[var(--status-success-foreground)]" />
-                    <CardTitle className="text-base">Đăng ký mới</CardTitle>
+                    <CardTitle className="text-base">{tAdmin("people.newRegistrationsTitle")}</CardTitle>
                     <Badge variant="secondary" className="bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] text-xs">
                       {newRegistrations.length}
                     </Badge>
                   </div>
                   <ChevronDownIcon className="h-4 w-4 text-muted-foreground transition-transform duration-200" />
                 </CollapsibleTrigger>
-                <CardDescription>Người dùng đăng ký trong {NEW_REG_DAYS} ngày qua</CardDescription>
+                <CardDescription>{tAdmin("people.newRegistrationsDescription", { days: NEW_REG_DAYS })}</CardDescription>
               </CardHeader>
               <CollapsibleContent>
                 <CardContent className="pt-0">
@@ -1925,28 +1948,28 @@ function UsersTab() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <div>
-              <CardTitle>Quản lý người dùng</CardTitle>
-              <CardDescription>Xem và quản lý tất cả người dùng trong hệ thống</CardDescription>
+              <CardTitle>{tAdmin("people.usersCardTitle")}</CardTitle>
+              <CardDescription>{tAdmin("people.usersCardDescription")}</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <AdminPageToolbar
               search={search}
               onSearchChange={setSearch}
-              searchPlaceholder="Tìm kiếm theo tên hoặc email..."
+              searchPlaceholder={tAdmin("people.userSearchPlaceholder")}
               filterCount={roleFilter !== "all" ? 1 : 0}
               onFilterToggle={() => {}}
               actions={
                 <Button size="sm" onClick={() => { tap(); setCreateDialogOpen(true); }}>
                   <PlusIcon className="mr-2 h-4 w-4" />
-                  Tạo người dùng
+                  {tAdmin("people.createUserSubmit")}
                 </Button>
               }
             />
             <AdminFilterChips
               filters={[
                 ...(roleFilter !== "all"
-                  ? [{ key: "role", label: `Vai trò: ${roleFilter === "admin" ? "Admin" : "User"}`, onRemove: () => { tap(); setRoleFilter("all"); } }]
+                  ? [{ key: "role", label: tAdmin("people.roleFilter", { role: roleFilter === "admin" ? "Admin" : tAdmin("common.user") }), onRemove: () => { tap(); setRoleFilter("all"); } }]
                   : []),
               ]}
               onClearAll={() => { tap(); clearFilters(); }}
@@ -1957,9 +1980,9 @@ function UsersTab() {
             ) : isEmptyResult && hasActiveFilters ? (
               <AdminEmptyState
                 icon={<UsersIcon className="h-8 w-8" />}
-                title="Không tìm thấy người dùng"
-                description="Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
-                action={{ label: "Xóa bộ lọc", onClick: clearFilters }}
+                title={tAdmin("people.noUsersTitle")}
+                description={tAdmin("people.noUsersDescription")}
+                action={{ label: tAdmin("common.clearFilters"), onClick: clearFilters }}
               />
             ) : (
               <div className="rounded-md border overflow-x-auto">
@@ -1987,7 +2010,7 @@ function UsersTab() {
                         </TableRow>
                       ))
                     ) : (
-                      <TableRow><TableCell colSpan={columns.length} className="h-24 text-center">Không có dữ liệu</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={columns.length} className="h-24 text-center">{tAdmin("common.noData")}</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -1996,10 +2019,10 @@ function UsersTab() {
 
             {!isLoading && reactTable.getRowModel().rows.length > 0 && (
               <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Trang {reactTable.getState().pagination.pageIndex + 1} / {reactTable.getPageCount()}</p>
+                <p className="text-sm text-muted-foreground">{tAdmin("common.pageCount", { page: reactTable.getState().pagination.pageIndex + 1, total: reactTable.getPageCount() })}</p>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => reactTable.previousPage()} disabled={!reactTable.getCanPreviousPage()}>Trước</Button>
-                  <Button variant="outline" size="sm" onClick={() => reactTable.nextPage()} disabled={!reactTable.getCanNextPage()}>Sau</Button>
+                  <Button variant="outline" size="sm" onClick={() => reactTable.previousPage()} disabled={!reactTable.getCanPreviousPage()}>{tAdmin("common.previous")}</Button>
+                  <Button variant="outline" size="sm" onClick={() => reactTable.nextPage()} disabled={!reactTable.getCanNextPage()}>{tAdmin("common.next")}</Button>
                 </div>
               </div>
             )}
@@ -2027,8 +2050,8 @@ function UsersTab() {
         isSelf={identity?.id === selectedUser?.id}
       />
       <DeleteConfirmDialog
-        title="Xác nhận xóa người dùng"
-        description={`Bạn có chắc chắn muốn xóa người dùng "${deleteUser?.full_name ?? ""}" (${deleteUser?.email ?? ""})? Tất cả dữ liệu liên quan sẽ bị xóa theo. Hành động này không thể hoàn tác.`}
+        title={tAdmin("people.deleteUserTitle")}
+        description={tAdmin("people.deleteUserDescription", { name: deleteUser?.full_name ?? "", email: deleteUser?.email ?? "" })}
         open={deleteDialogOpen}
         onOpenChange={(o) => { if (!o && !isDeleting) { setDeleteDialogOpen(false); setDeleteUser(null); } }}
         onConfirm={handleDeleteUser}
@@ -2045,6 +2068,7 @@ function UsersTab() {
 // ═══════════════════════════════════════════════════════════════════
 
 function GroupsTab() {
+  const { tAdmin } = useAdminTranslation();
   const { tap, warning } = useHaptics();
   const { data: identity } = useGetIdentity<Profile>();
   const deleteMutation = useInstantDelete();
@@ -2081,7 +2105,7 @@ function GroupsTab() {
 
   const columns = useMemo<ColumnDef<GroupRow>[]>(() => [
     {
-      id: "name", header: "Tên nhóm", accessorKey: "name", size: 220,
+      id: "name", header: tAdmin("people.groupName"), accessorKey: "name", size: 220,
       cell: ({ row }) => (
         <div className="flex items-center gap-2.5">
           <Avatar className="h-8 w-8 shrink-0">
@@ -2095,7 +2119,7 @@ function GroupsTab() {
               <span className="text-sm font-medium truncate">{row.original.name}</span>
               {row.original.is_archived && (
                 <Badge className="bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)] text-[10px] px-1.5 py-0">
-                  Archived
+                  {tAdmin("status.archived")}
                 </Badge>
               )}
             </div>
@@ -2107,7 +2131,7 @@ function GroupsTab() {
       ),
     },
     {
-      id: "creator", header: "Người tạo", accessorKey: "creator_name", size: 160, enableSorting: false,
+      id: "creator", header: tAdmin("people.creator"), accessorKey: "creator_name", size: 160, enableSorting: false,
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
           <Avatar className="h-7 w-7">
@@ -2119,15 +2143,15 @@ function GroupsTab() {
       ),
     },
     {
-      id: "member_count", header: "Thành viên", accessorKey: "member_count", size: 90,
+      id: "member_count", header: tAdmin("common.members"), accessorKey: "member_count", size: 90,
       cell: ({ getValue }) => <Badge variant="secondary">{getValue() as number}</Badge>,
     },
     {
-      id: "total_expenses", header: () => <div className="text-right">Tổng chi phí</div>, accessorKey: "total_expenses", size: 130,
+      id: "total_expenses", header: () => <div className="text-right">{tAdmin("people.totalExpenses")}</div>, accessorKey: "total_expenses", size: 130,
       cell: ({ getValue }) => <div className="text-right font-mono tabular-nums">{formatNumber(getValue() as number)}</div>,
     },
     {
-      id: "created_at", header: "Ngày tạo", accessorKey: "created_at", size: 110,
+      id: "created_at", header: tAdmin("common.createdAt"), accessorKey: "created_at", size: 110,
       cell: ({ getValue }) => formatDate(getValue() as string),
     },
     {
@@ -2138,24 +2162,24 @@ function GroupsTab() {
             <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontalIcon className="h-4 w-4" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => { tap(); setSelectedGroup(row.original); setDetailOpen(true); }}>Xem chi tiết</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { tap(); setSelectedGroup(row.original); setDetailOpen(true); }}>{tAdmin("common.details")}</DropdownMenuItem>
             <DropdownMenuItem onClick={() => { tap(); setEditGroup(row.original); setEditDialogOpen(true); }}>
-              <PencilIcon className="mr-2 h-4 w-4" />Chỉnh sửa nhóm
+              <PencilIcon className="mr-2 h-4 w-4" />{tAdmin("people.editGroup")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleArchiveToggle(row.original)}>
               {row.original.is_archived ? (
-                <><ArchiveRestoreIcon className="mr-2 h-4 w-4" />Khôi phục</>
+                <><ArchiveRestoreIcon className="mr-2 h-4 w-4" />{tAdmin("people.restore")}</>
               ) : (
-                <><ArchiveIcon className="mr-2 h-4 w-4" />Lưu trữ</>
+                <><ArchiveIcon className="mr-2 h-4 w-4" />{tAdmin("people.archive")}</>
               )}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => { warning(); setDeleteGroup(row.original); setDeleteDialogOpen(true); }} className="text-destructive">Xóa nhóm</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { warning(); setDeleteGroup(row.original); setDeleteDialogOpen(true); }} className="text-destructive">{tAdmin("people.deleteGroup")}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
     },
-  ], []);
+  ], [tAdmin, tap, warning]);
 
   const table = useTable<GroupRow>({
     columns,
@@ -2174,7 +2198,7 @@ function GroupsTab() {
             description: group.description ?? null,
             avatar_url: group.avatar_url ?? null,
             created_by: group.created_by ?? "",
-            creator_name: group.profiles?.full_name ?? "Không rõ",
+            creator_name: group.profiles?.full_name ?? tAdmin("common.unknown"),
             creator_avatar: group.profiles?.avatar_url ?? null,
             member_count: group.group_members?.[0]?.count ?? 0,
             total_expenses: group.total_expenses ?? 0,
@@ -2192,11 +2216,11 @@ function GroupsTab() {
     deleteMutation.mutate(
       { resource: "groups", id: deleteGroup.id },
       {
-        onSuccess: () => { toast.success(`Đã xóa nhóm "${deleteGroup.name}"`); setDeleteDialogOpen(false); setDeleteGroup(null); setIsDeleting(false); table.refineCore.tableQuery.refetch(); },
-        onError: (error) => { toast.error(`Lỗi: ${error.message}`); setIsDeleting(false); },
+        onSuccess: () => { toast.success(tAdmin("people.success.groupDeleted", { name: deleteGroup.name })); setDeleteDialogOpen(false); setDeleteGroup(null); setIsDeleting(false); table.refineCore.tableQuery.refetch(); },
+        onError: (error) => { toast.error(tAdmin("common.errorWithMessage", { message: error.message })); setIsDeleting(false); },
       },
     );
-  }, [deleteGroup, deleteMutation, table.refineCore.tableQuery]);
+  }, [deleteGroup, deleteMutation, table.refineCore.tableQuery, tAdmin]);
 
   const handleEdit = useCallback((data: { name: string; description: string }) => {
     if (!editGroup || !data.name) return;
@@ -2204,11 +2228,11 @@ function GroupsTab() {
     updateMutation.mutate(
       { resource: "groups", id: editGroup.id, values: { name: data.name, description: data.description || null } },
       {
-        onSuccess: () => { toast.success(`Đã cập nhật nhóm "${data.name}"`); setEditDialogOpen(false); setEditGroup(null); setIsUpdating(false); table.refineCore.tableQuery.refetch(); },
-        onError: (error) => { toast.error(`Lỗi: ${error.message}`); setIsUpdating(false); },
+        onSuccess: () => { toast.success(tAdmin("people.success.groupUpdated", { name: data.name })); setEditDialogOpen(false); setEditGroup(null); setIsUpdating(false); table.refineCore.tableQuery.refetch(); },
+        onError: (error) => { toast.error(tAdmin("common.errorWithMessage", { message: error.message })); setIsUpdating(false); },
       },
     );
-  }, [editGroup, updateMutation, table.refineCore.tableQuery]);
+  }, [editGroup, updateMutation, table.refineCore.tableQuery, tAdmin]);
 
   const handleArchiveToggle = useCallback((group: GroupRow) => {
     setIsArchiving(true);
@@ -2225,7 +2249,9 @@ function GroupsTab() {
       },
       {
         onSuccess: () => {
-          toast.success(newArchived ? `Đã lưu trữ nhóm "${group.name}"` : `Đã khôi phục nhóm "${group.name}"`);
+          toast.success(newArchived
+            ? tAdmin("people.success.groupArchived", { name: group.name })
+            : tAdmin("people.success.groupRestored", { name: group.name }));
           setIsArchiving(false);
           table.refineCore.tableQuery.refetch();
           // Also refresh detail dialog if open
@@ -2233,10 +2259,10 @@ function GroupsTab() {
             setSelectedGroup({ ...group, is_archived: newArchived });
           }
         },
-        onError: (error) => { toast.error(`Lỗi: ${error.message}`); setIsArchiving(false); },
+        onError: (error) => { toast.error(tAdmin("common.errorWithMessage", { message: error.message })); setIsArchiving(false); },
       },
     );
-  }, [updateMutation, table.refineCore.tableQuery, detailOpen, selectedGroup]);
+  }, [updateMutation, table.refineCore.tableQuery, detailOpen, selectedGroup, tAdmin]);
 
   const clearFilters = useCallback(() => setSearch(""), []);
   const hasActiveFilters = search !== "";
@@ -2249,28 +2275,28 @@ function GroupsTab() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div>
-            <CardTitle>Quản lý nhóm</CardTitle>
-            <CardDescription>Xem và quản lý tất cả nhóm trong hệ thống</CardDescription>
+            <CardTitle>{tAdmin("people.groupsCardTitle")}</CardTitle>
+            <CardDescription>{tAdmin("people.groupsCardDescription")}</CardDescription>
           </div>
           <Button size="sm" onClick={() => { tap(); setCreateGroupOpen(true); }}>
             <PlusIcon className="mr-2 h-4 w-4" />
-            Tạo nhóm
+            {tAdmin("people.createGroupSubmit")}
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           <AdminPageToolbar
             search={search}
             onSearchChange={setSearch}
-            searchPlaceholder="Tìm kiếm theo tên nhóm..."
+            searchPlaceholder={tAdmin("people.groupSearchPlaceholder")}
           />
           {table.refineCore.tableQuery.isLoading ? (
             <AdminTableSkeleton rows={7} columns={6} />
           ) : isEmptyResult && hasActiveFilters ? (
             <AdminEmptyState
               icon={<GroupIcon className="h-8 w-8" />}
-              title="Không tìm thấy nhóm"
-              description="Thử thay đổi từ khóa tìm kiếm"
-              action={{ label: "Xóa bộ lọc", onClick: clearFilters }}
+              title={tAdmin("people.noGroupsTitle")}
+              description={tAdmin("people.noGroupsDescription")}
+              action={{ label: tAdmin("common.clearFilters"), onClick: clearFilters }}
             />
           ) : (
             <DataTable table={table} />
@@ -2287,8 +2313,8 @@ function GroupsTab() {
         onArchiveToggle={() => { if (selectedGroup) handleArchiveToggle(selectedGroup); }}
       />
       <DeleteConfirmDialog
-        title="Xác nhận xóa nhóm"
-        description={`Bạn có chắc chắn muốn xóa nhóm "${deleteGroup?.name ?? ""}"? Hành động này không thể hoàn tác.`}
+        title={tAdmin("people.deleteGroupTitle")}
+        description={tAdmin("people.deleteGroupDescription", { name: deleteGroup?.name ?? "" })}
         open={deleteDialogOpen}
         onOpenChange={(o) => { if (!o && !isDeleting) { setDeleteDialogOpen(false); setDeleteGroup(null); } }}
         onConfirm={handleDelete}
@@ -2310,6 +2336,7 @@ function GroupsTab() {
 // ═══════════════════════════════════════════════════════════════════
 
 function FriendshipsTab() {
+  const { tAdmin } = useAdminTranslation();
   const { tap, warning } = useHaptics();
   const { data: identity } = useGetIdentity<Profile>();
   const deleteMutation = useInstantDelete();
@@ -2332,7 +2359,7 @@ function FriendshipsTab() {
 
   const columns = useMemo<ColumnDef<FriendshipRow>[]>(() => [
     {
-      id: "user_a", header: "Người dùng A", accessorKey: "user_a_name", size: 200, enableSorting: false,
+      id: "user_a", header: tAdmin("people.userA"), accessorKey: "user_a_name", size: 200, enableSorting: false,
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
           <Avatar className="h-7 w-7">
@@ -2344,7 +2371,7 @@ function FriendshipsTab() {
       ),
     },
     {
-      id: "user_b", header: "Người dùng B", accessorKey: "user_b_name", size: 200, enableSorting: false,
+      id: "user_b", header: tAdmin("people.userB"), accessorKey: "user_b_name", size: 200, enableSorting: false,
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
           <Avatar className="h-7 w-7">
@@ -2356,11 +2383,11 @@ function FriendshipsTab() {
       ),
     },
     {
-      id: "status", header: "Trạng thái", accessorKey: "status", size: 140,
+      id: "status", header: tAdmin("common.status"), accessorKey: "status", size: 140,
       cell: ({ getValue }) => <FriendshipStatusBadge status={getValue() as keyof typeof FRIENDSHIP_STATUS} />,
     },
     {
-      id: "created_at", header: "Ngày tạo", accessorKey: "created_at", size: 120,
+      id: "created_at", header: tAdmin("common.createdAt"), accessorKey: "created_at", size: 120,
       cell: ({ getValue }) => formatDate(getValue() as string),
     },
     {
@@ -2372,19 +2399,19 @@ function FriendshipsTab() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             {row.original.status === "pending" && (
-              <DropdownMenuItem onClick={() => { tap(); handleAccept(row.original); }}>Chấp nhận kết bạn</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { tap(); handleAccept(row.original); }}>{tAdmin("people.acceptFriendship")}</DropdownMenuItem>
             )}
             <DropdownMenuItem onClick={() => { tap(); setEditFriendship(row.original); }}>
               <PencilIcon className="mr-2 h-4 w-4" />
-              Chỉnh sửa
+              {tAdmin("common.edit")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => { warning(); setDeleteFriendship(row.original); setDeleteDialogOpen(true); }} className="text-destructive">Xóa tình bạn</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { warning(); setDeleteFriendship(row.original); setDeleteDialogOpen(true); }} className="text-destructive">{tAdmin("people.deleteFriendship")}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
     },
-  ], []);
+  ], [tAdmin, tap, warning]);
 
   const table = useTable<FriendshipRow>({
     columns,
@@ -2400,10 +2427,10 @@ function FriendshipsTab() {
           data: data.data.map((f: any) => ({
             id: f.id,
             user_a_id: f.user_a,
-            user_a_name: f.user_a_profile?.full_name ?? "Không rõ",
+            user_a_name: f.user_a_profile?.full_name ?? tAdmin("common.unknown"),
             user_a_avatar: f.user_a_profile?.avatar_url ?? null,
             user_b_id: f.user_b,
-            user_b_name: f.user_b_profile?.full_name ?? "Không rõ",
+            user_b_name: f.user_b_profile?.full_name ?? tAdmin("common.unknown"),
             user_b_avatar: f.user_b_profile?.avatar_url ?? null,
             status: f.status,
             created_at: f.created_at,
@@ -2419,22 +2446,22 @@ function FriendshipsTab() {
     deleteMutation.mutate(
       { resource: "friendships", id: deleteFriendship.id },
       {
-        onSuccess: () => { toast.success(`Đã xóa tình bạn giữa "${deleteFriendship.user_a_name}" và "${deleteFriendship.user_b_name}"`); setDeleteDialogOpen(false); setDeleteFriendship(null); setIsDeleting(false); table.refineCore.tableQuery.refetch(); },
-        onError: (error) => { toast.error(`Lỗi: ${error.message}`); setIsDeleting(false); },
+        onSuccess: () => { toast.success(tAdmin("people.success.friendshipDeleted", { userA: deleteFriendship.user_a_name, userB: deleteFriendship.user_b_name })); setDeleteDialogOpen(false); setDeleteFriendship(null); setIsDeleting(false); table.refineCore.tableQuery.refetch(); },
+        onError: (error) => { toast.error(tAdmin("common.errorWithMessage", { message: error.message })); setIsDeleting(false); },
       },
     );
-  }, [deleteFriendship, deleteMutation, table.refineCore.tableQuery]);
+  }, [deleteFriendship, deleteMutation, table.refineCore.tableQuery, tAdmin]);
 
   const handleAccept = useCallback(async (friendship: FriendshipRow) => {
     try {
       const { error } = await supabaseClient.rpc("admin_accept_friendship", { p_friendship_id: friendship.id });
       if (error) throw error;
-      toast.success(`Đã chấp nhận kết bạn giữa "${friendship.user_a_name}" và "${friendship.user_b_name}"`);
+      toast.success(tAdmin("people.success.friendshipAccepted", { userA: friendship.user_a_name, userB: friendship.user_b_name }));
       table.refineCore.tableQuery.refetch();
     } catch (err: any) {
-      toast.error(`Lỗi: ${err.message ?? "Không thể chấp nhận kết bạn"}`);
+      toast.error(tAdmin("common.errorWithMessage", { message: err.message ?? tAdmin("people.errors.acceptFriendshipFailed") }));
     }
-  }, [table.refineCore.tableQuery]);
+  }, [table.refineCore.tableQuery, tAdmin]);
 
   const clearFilters = useCallback(() => { setSearch(""); setStatusFilter("all"); }, []);
   const hasActiveFilters = search !== "" || statusFilter !== "all";
@@ -2447,25 +2474,25 @@ function FriendshipsTab() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div>
-            <CardTitle>Quản lý tình bạn</CardTitle>
-            <CardDescription>Xem và quản lý tất cả kết nối bạn bè trong hệ thống</CardDescription>
+            <CardTitle>{tAdmin("people.friendshipsCardTitle")}</CardTitle>
+            <CardDescription>{tAdmin("people.friendshipsCardDescription")}</CardDescription>
           </div>
           <Button size="sm" onClick={() => { tap(); setCreateFriendshipOpen(true); }}>
             <PlusIcon className="mr-2 h-4 w-4" />
-            Tạo tình bạn
+            {tAdmin("people.createFriendshipSubmit")}
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           <AdminPageToolbar
             search={search}
             onSearchChange={setSearch}
-            searchPlaceholder="Tìm kiếm theo tên người dùng..."
+            searchPlaceholder={tAdmin("people.friendshipSearchPlaceholder")}
             filterCount={statusFilter !== "all" ? 1 : 0}
           />
           <AdminFilterChips
             filters={[
               ...(statusFilter !== "all"
-                ? [{ key: "status", label: `Trạng thái: ${statusFilter}`, onRemove: () => { tap(); setStatusFilter("all"); } }]
+                ? [{ key: "status", label: tAdmin("people.statusFilter", { status: tAdmin(`status.${statusFilter}`) }), onRemove: () => { tap(); setStatusFilter("all"); } }]
                 : []),
             ]}
             onClearAll={() => { tap(); clearFilters(); }}
@@ -2475,9 +2502,9 @@ function FriendshipsTab() {
           ) : isEmptyResult && hasActiveFilters ? (
             <AdminEmptyState
               icon={<HeartHandshakeIcon className="h-8 w-8" />}
-              title="Không tìm thấy tình bạn"
-              description="Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
-              action={{ label: "Xóa bộ lọc", onClick: clearFilters }}
+              title={tAdmin("people.noFriendshipsTitle")}
+              description={tAdmin("people.noFriendshipsDescription")}
+              action={{ label: tAdmin("common.clearFilters"), onClick: clearFilters }}
             />
           ) : (
             <DataTable table={table} />
@@ -2486,8 +2513,8 @@ function FriendshipsTab() {
       </Card>
 
       <DeleteConfirmDialog
-        title="Xác nhận xóa tình bạn"
-        description={`Bạn có chắc chắn muốn xóa tình bạn giữa "${deleteFriendship?.user_a_name ?? ""}" và "${deleteFriendship?.user_b_name ?? ""}"? Hành động này không thể hoàn tác.`}
+        title={tAdmin("people.deleteFriendshipTitle")}
+        description={tAdmin("people.deleteFriendshipDescription", { userA: deleteFriendship?.user_a_name ?? "", userB: deleteFriendship?.user_b_name ?? "" })}
         open={deleteDialogOpen}
         onOpenChange={(o) => { if (!o && !isDeleting) { setDeleteDialogOpen(false); setDeleteFriendship(null); } }}
         onConfirm={handleDelete}

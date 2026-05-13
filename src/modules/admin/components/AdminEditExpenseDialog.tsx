@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Loader2Icon } from "@/components/ui/icons";
+import { useAdminTranslation } from "../i18n";
 
 interface MemberOption {
   id: string;
@@ -38,6 +39,7 @@ export function AdminEditExpenseDialog({
   onOpenChange,
   onSuccess,
 }: AdminEditExpenseDialogProps) {
+  const { tAdmin } = useAdminTranslation();
   const { data: identity } = useGetIdentity<Profile>();
 
   const [expense, setExpense] = useState<any>(null);
@@ -70,7 +72,7 @@ export function AdminEditExpenseDialog({
       .single()
       .then(async ({ data: expenseData, error: expenseError }) => {
         if (expenseError || !expenseData) {
-          toast.error("Không thể tải chi phí");
+          toast.error(tAdmin("transactions.expenses.loadFailed"));
           setLoading(false);
           return;
         }
@@ -144,12 +146,12 @@ export function AdminEditExpenseDialog({
           const friendMembers = [
             {
               id: friendship.user_a_profile?.id ?? friendship.user_a,
-              full_name: friendship.user_a_profile?.full_name ?? "User A",
+              full_name: friendship.user_a_profile?.full_name ?? tAdmin("people.userA"),
               avatar_url: friendship.user_a_profile?.avatar_url || null,
             },
             {
               id: friendship.user_b_profile?.id ?? friendship.user_b,
-              full_name: friendship.user_b_profile?.full_name ?? "User B",
+              full_name: friendship.user_b_profile?.full_name ?? tAdmin("people.userB"),
               avatar_url: friendship.user_b_profile?.avatar_url || null,
             },
           ];
@@ -158,7 +160,7 @@ export function AdminEditExpenseDialog({
 
         setLoading(false);
       });
-  }, [expenseId, open]);
+  }, [expenseId, open, tAdmin]);
 
   const handleSubmit = useCallback(
     async (values: ExpenseFormValues) => {
@@ -242,11 +244,11 @@ export function AdminEditExpenseDialog({
           await uploadAttachments(files, expenseId, identity.id);
         }
 
-        toast.success("Đã cập nhật chi phí thành công");
+        toast.success(tAdmin("transactions.expenses.updated"));
         onOpenChange(false);
         onSuccess();
       } catch (err: any) {
-        toast.error(`Lỗi: ${err.message ?? "Không thể cập nhật chi phí"}`);
+        toast.error(tAdmin("common.errorWithMessage", { message: err.message ?? tAdmin("transactions.expenses.updated") }));
       } finally {
         setIsSubmitting(false);
       }
@@ -259,6 +261,7 @@ export function AdminEditExpenseDialog({
       uploadAttachments,
       onOpenChange,
       onSuccess,
+      tAdmin,
     ]
   );
 
@@ -307,9 +310,9 @@ export function AdminEditExpenseDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[680px] max-h-[90vh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
-          <DialogTitle>Chỉnh sửa chi phí (Admin)</DialogTitle>
+          <DialogTitle>{tAdmin("transactions.expenses.editAdminTitle")}</DialogTitle>
           <DialogDescription>
-            Cập nhật chi phí với đầy đủ tính năng như phía Client
+            {tAdmin("transactions.expenses.editAdminDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -326,7 +329,7 @@ export function AdminEditExpenseDialog({
                   Admin
                 </Badge>
                 <span className="text-sm text-muted-foreground">
-                  {expense.context_type === "group" ? "Nhóm" : "Bạn bè"}
+                  {expense.context_type === "group" ? tAdmin("context.group") : tAdmin("context.friends")}
                 </span>
               </div>
 
@@ -346,7 +349,7 @@ export function AdminEditExpenseDialog({
               {existingAttachments.length > 0 && (
                 <div className="space-y-2 -mt-2">
                   <h3 className="text-sm font-semibold">
-                    Tệp đính kèm hiện có ({existingAttachments.length})
+                    {tAdmin("transactions.expenses.attachments")} ({existingAttachments.length})
                   </h3>
                   <AttachmentList
                     attachments={existingAttachments}
@@ -362,7 +365,7 @@ export function AdminEditExpenseDialog({
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground text-sm">
-              Không thể tải dữ liệu chi phí
+              {tAdmin("transactions.expenses.loadFailed")}
             </div>
           )}
         </div>
