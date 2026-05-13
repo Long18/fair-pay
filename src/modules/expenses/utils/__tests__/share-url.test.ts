@@ -12,9 +12,7 @@ describe("buildExpenseShareUrl", () => {
       "https://long-pay.vercel.app/expenses/show/ignored",
     );
 
-    expect(result).toBe(
-      "https://long-pay.vercel.app/api/share/expense?id=expense-123&v=1776774600",
-    );
+    expect(result).toBe("https://long-pay.vercel.app/share/expenses/expense-123");
   });
 
   it("falls back to the route expense id when the object does not include one", () => {
@@ -25,12 +23,10 @@ describe("buildExpenseShareUrl", () => {
       "https://long-pay.vercel.app/expenses/show/expense-456",
     );
 
-    expect(result).toBe(
-      "https://long-pay.vercel.app/api/share/expense?id=expense-456&v=1776729600",
-    );
+    expect(result).toBe("https://long-pay.vercel.app/share/expenses/expense-456");
   });
 
-  it("adds UTM parameters when tracking context is provided", () => {
+  it("adds a compact ref when tracking context is provided", () => {
     const result = buildExpenseShareUrl(
       {
         id: "expense-123",
@@ -44,8 +40,14 @@ describe("buildExpenseShareUrl", () => {
       },
     );
 
-    expect(result).toBe(
-      "https://long-pay.vercel.app/api/share/expense?id=expense-123&v=1776774600&utm_source=native_share&utm_medium=social_share&utm_campaign=expense_share&utm_content=expense_detail_share_button",
+    const url = new URL(result);
+    expect(url.pathname).toBe("/share/expenses/expense-123");
+    expect(url.searchParams.has("utm_source")).toBe(false);
+    expect(url.searchParams.has("utm_medium")).toBe(false);
+    expect(url.searchParams.has("utm_campaign")).toBe(false);
+    expect(url.searchParams.has("utm_content")).toBe(false);
+    expect(url.searchParams.get("ref")).toBe(
+      "fp1_native_share~social_share~expense_share~expense_detail_share_button",
     );
   });
 });

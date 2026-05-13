@@ -27,6 +27,7 @@ const ALLOWED_EVENT_NAMES = new Set([
 ])
 
 const ALLOWED_QUERY_PARAMS = new Set([
+  'ref',
   'utm_source',
   'utm_medium',
   'utm_campaign',
@@ -34,8 +35,10 @@ const ALLOWED_QUERY_PARAMS = new Set([
   'utm_term',
   'gclid',
   'fbclid',
-  'ref',
 ])
+
+const SHARE_REF_PREFIX = 'fp1_'
+const SHARE_REF_SEPARATOR = '~'
 
 const BLOCKED_PROPERTY_KEYS = new Set([
   'access_token',
@@ -173,13 +176,20 @@ function sanitizeReferrer(input: NullableString): string | null {
 
 function extractAttribution(entryLink: string) {
   const parsed = new URL(entryLink, 'https://journey-tracker.local')
+  const ref = normalizeString(parsed.searchParams.get('ref'))
+  const shareRef = parseShareRef(ref)
+
   return {
     utm_source: normalizeString(parsed.searchParams.get('utm_source')),
     utm_medium: normalizeString(parsed.searchParams.get('utm_medium')),
     utm_campaign: normalizeString(parsed.searchParams.get('utm_campaign')),
     utm_content: normalizeString(parsed.searchParams.get('utm_content')),
     utm_term: normalizeString(parsed.searchParams.get('utm_term')),
-    ref: normalizeString(parsed.searchParams.get('ref')),
+    ref,
+    share_ref_source: shareRef?.source ?? null,
+    share_ref_medium: shareRef?.medium ?? null,
+    share_ref_campaign: shareRef?.campaign ?? null,
+    share_ref_content: shareRef?.content ?? null,
   }
 }
 
@@ -190,6 +200,27 @@ function sanitizeUtmValue(value: string): string | null {
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '')
   return normalized ? normalized.slice(0, 255) : null
+}
+
+function parseShareRef(ref: string | null): {
+  source: string
+  medium: string
+  campaign: string
+  content: string
+} | null {
+  if (!ref?.startsWith(SHARE_REF_PREFIX)) return null
+
+  const parts = ref.slice(SHARE_REF_PREFIX.length).split(SHARE_REF_SEPARATOR).map((value) => sanitizeUtmValue(value))
+  if (parts.length !== 4) return null
+  const [source, medium, campaign, content] = parts
+  if (!source || !medium || !campaign || !content) return null
+
+  return {
+    source,
+    medium,
+    campaign,
+    content,
+  }
 }
 
 function mapReferrerSource(referrer: string | null): string | null {
@@ -207,6 +238,7 @@ function mapReferrerSource(referrer: string | null): string | null {
 
 function deriveLandingSource(entryLink: string, referrer: string | null, attribution: ReturnType<typeof extractAttribution>) {
   if (attribution.utm_source) return attribution.utm_source
+  if (attribution.share_ref_source) return attribution.share_ref_source
   if (attribution.ref) return attribution.ref
   const referrerSource = mapReferrerSource(referrer)
   if (referrerSource) return referrerSource
@@ -246,10 +278,10 @@ function fallbackAttributionTouch(
   seenAt: string,
 ) {
   return {
-    utm_source: attribution.utm_source ?? deriveLandingSource(entryLink, landingReferrer, attribution),
-    utm_medium: attribution.utm_medium ?? (landingReferrer && !attribution.utm_source ? 'referral' : 'none'),
-    utm_campaign: attribution.utm_campaign,
-    utm_content: attribution.utm_content,
+    utm_source: attribution.utm_source ?? attribution.share_ref_source ?? deriveLandingSource(entryLink, landingReferrer, attribution),
+    utm_medium: attribution.utm_medium ?? attribution.share_ref_medium ?? (landingReferrer && !attribution.utm_source ? 'referral' : 'none'),
+    utm_campaign: attribution.utm_campaign ?? attribution.share_ref_campaign,
+    utm_content: attribution.utm_content ?? attribution.share_ref_content,
     utm_term: attribution.utm_term,
     referrer: landingReferrer,
     landing_url: entryLink,
@@ -421,10 +453,10 @@ Deno.serve(async (req: Request) => {
       landing_path: landingPath,
       landing_referrer: landingReferrer,
       landing_source: deriveLandingSource(entryLink, landingReferrer, attribution),
-      utm_source: attribution.utm_source,
-      utm_medium: attribution.utm_medium,
-      utm_campaign: attribution.utm_campaign,
-      utm_content: attribution.utm_content,
+      utm_source: attribution.utm_source ?? attribution.share_ref_source,
+      utm_medium: attribution.utm_medium ?? attribution.share_ref_medium,
+      utm_campaign: attribution.utm_campaign ?? attribution.share_ref_campaign,
+      utm_content: attribution.utm_content ?? attribution.share_ref_content,
       utm_term: attribution.utm_term,
       entry_link: entryLink,
       device_type: normalizeString(session.device_type),

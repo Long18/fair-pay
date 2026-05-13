@@ -166,7 +166,7 @@ async function handleExpenseShare(req: Request): Promise<Response> {
     url,
   )
   const shareUrl = appendTrackingParams(
-    `${base}/api/share/expense?id=${encodeURIComponent(id)}&v=${encodeURIComponent(version)}`,
+    `${base}/share/expenses/${encodeURIComponent(id)}`,
     url,
   )
   const ogImageUrl = `${base}/api/og/expense?id=${encodeURIComponent(id)}&v=${encodeURIComponent(version)}`

@@ -1,5 +1,4 @@
-import { toVersionToken } from "@/lib/share-url";
-import { buildTrackedUrl } from "@/lib/utm";
+import { appendShareRef } from "@/lib/share-ref";
 
 type DebtShareVersionSource = {
   viewerId?: string | null;
@@ -67,22 +66,16 @@ export function buildDebtShareUrl(
       return currentUrl;
     }
 
-    const url = new URL("/api/share/debt", current.origin);
-    const versionSource = debt.latestActivityAt || new Date().toISOString();
-
     const token = encodeDebtToken(viewerId, counterpartyId);
-    url.searchParams.set("t", token);
-    url.searchParams.set("v", toVersionToken(versionSource));
+    const url = new URL(`/share/debts/${encodeURIComponent(token)}`, current.origin);
 
     if (!tracking) return url.toString();
 
-    return buildTrackedUrl({
-      baseUrl: url.toString(),
+    return appendShareRef(url.toString(), {
       source: tracking.source,
       medium: tracking.medium,
       campaign: tracking.campaign ?? "debt_share",
       content: tracking.content,
-      term: tracking.term,
     });
   } catch {
     return currentUrl;

@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 const NO_CACHE = 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0'
 const TRACKING_QUERY_PARAMS = new Set([
+  'ref',
   'utm_source',
   'utm_medium',
   'utm_campaign',

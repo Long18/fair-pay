@@ -1,5 +1,4 @@
-import { toVersionToken } from "@/lib/share-url";
-import { buildTrackedUrl } from "@/lib/utm";
+import { appendShareRef } from "@/lib/share-ref";
 
 type ShareVersionSource = {
   id?: string | null
@@ -34,26 +33,15 @@ export function buildExpenseShareUrl(
     const expenseId = expense.id || extractExpenseIdFromUrl(current)
     if (!expenseId) return currentUrl
 
-    const url = new URL("/api/share/expense", current.origin)
-    const versionSource =
-      expense.updated_at ||
-      expense.created_at ||
-      expense.expense_date ||
-      expenseId ||
-      "0"
-
-    url.searchParams.set("id", expenseId)
-    url.searchParams.set("v", toVersionToken(versionSource))
+    const url = new URL(`/share/expenses/${encodeURIComponent(expenseId)}`, current.origin)
 
     if (!tracking) return url.toString()
 
-    return buildTrackedUrl({
-      baseUrl: url.toString(),
+    return appendShareRef(url.toString(), {
       source: tracking.source,
       medium: tracking.medium,
       campaign: tracking.campaign ?? "expense_share",
       content: tracking.content,
-      term: tracking.term,
     })
   } catch {
     return currentUrl

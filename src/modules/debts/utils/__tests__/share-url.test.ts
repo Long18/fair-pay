@@ -18,12 +18,12 @@ describe("buildDebtShareUrl", () => {
 
     const url = new URL(result);
     expect(url.origin).toBe("https://long-pay.vercel.app");
-    expect(url.pathname).toBe("/api/share/debt");
+    expect(url.pathname.startsWith("/share/debts/")).toBe(true);
     // Token param should exist and be much shorter than two full UUIDs
-    const token = url.searchParams.get("t");
+    const token = url.pathname.split("/").pop();
     expect(token).toBeTruthy();
     expect(token!.length).toBeLessThan(50);
-    expect(url.searchParams.get("v")).toBe("1776774600");
+    expect(url.searchParams.has("v")).toBe(false);
     // Should NOT have the old verbose params
     expect(url.searchParams.has("viewer_id")).toBe(false);
     expect(url.searchParams.has("counterparty_id")).toBe(false);
@@ -39,9 +39,9 @@ describe("buildDebtShareUrl", () => {
     );
 
     const url = new URL(result);
-    expect(url.pathname).toBe("/api/share/debt");
-    expect(url.searchParams.get("t")).toBeTruthy();
-    expect(url.searchParams.get("v")).toBe("1776729600");
+    expect(url.pathname.startsWith("/share/debts/")).toBe(true);
+    expect(url.pathname.split("/").pop()).toBeTruthy();
+    expect(url.searchParams.has("v")).toBe(false);
   });
 
   it("returns the current url when the viewer id is missing", () => {
@@ -62,7 +62,7 @@ describe("buildDebtShareUrl", () => {
     expect(url1).toBe(url2);
   });
 
-  it("adds UTM parameters when tracking context is provided", () => {
+  it("adds a compact ref when tracking context is provided", () => {
     const result = buildDebtShareUrl(
       {
         viewerId,
@@ -78,10 +78,13 @@ describe("buildDebtShareUrl", () => {
     );
 
     const url = new URL(result);
-    expect(url.pathname).toBe("/api/share/debt");
-    expect(url.searchParams.get("utm_source")).toBe("native_share");
-    expect(url.searchParams.get("utm_medium")).toBe("social_share");
-    expect(url.searchParams.get("utm_campaign")).toBe("debt_share");
-    expect(url.searchParams.get("utm_content")).toBe("debt_detail_share_button");
+    expect(url.pathname.startsWith("/share/debts/")).toBe(true);
+    expect(url.searchParams.has("utm_source")).toBe(false);
+    expect(url.searchParams.has("utm_medium")).toBe(false);
+    expect(url.searchParams.has("utm_campaign")).toBe(false);
+    expect(url.searchParams.has("utm_content")).toBe(false);
+    expect(url.searchParams.get("ref")).toBe(
+      "fp1_native_share~social_share~debt_share~debt_detail_share_button",
+    );
   });
 });

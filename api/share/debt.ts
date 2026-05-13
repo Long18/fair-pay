@@ -139,7 +139,7 @@ async function handleDebtShare(req: Request): Promise<Response> {
     const queryVersion = url.searchParams.get('v')
     const token = encodeDebtToken(viewerId, counterpartyId)
     const shortUrl = appendTrackingParams(
-      `${base}/api/share/debt?t=${encodeURIComponent(token)}${queryVersion ? `&v=${encodeURIComponent(queryVersion)}` : ''}`,
+      `${base}/share/debts/${encodeURIComponent(token)}${queryVersion ? `?v=${encodeURIComponent(queryVersion)}` : ''}`,
       url,
     )
     return new Response(null, {
@@ -191,7 +191,7 @@ async function handleDebtShare(req: Request): Promise<Response> {
     url,
   )
   const shareUrl = appendTrackingParams(
-    `${base}/api/share/debt?t=${encodeURIComponent(token)}&v=${encodeURIComponent(version)}`,
+    `${base}/share/debts/${encodeURIComponent(token)}`,
     url,
   )
   const ogImageUrl = `${base}/api/og/debt?viewer_id=${encodeURIComponent(viewerId)}&counterparty_id=${encodeURIComponent(counterpartyId)}&v=${encodeURIComponent(version)}`

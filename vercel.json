@@ -118,6 +118,14 @@
     ],
     "rewrites": [
         {
+            "source": "/share/expenses/:id",
+            "destination": "/api/share/expense?id=:id"
+        },
+        {
+            "source": "/share/debts/:token",
+            "destination": "/api/share/debt?t=:token"
+        },
+        {
             "source": "/api/(.*)",
             "destination": "/api/$1"
         },
