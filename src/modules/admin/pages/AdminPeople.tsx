@@ -50,13 +50,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -323,9 +316,9 @@ function UserDetailDialog({
 
   return (
     <>
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="right" className="w-full sm:max-w-[540px] flex flex-col p-0 gap-0">
-          <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[540px] max-h-[90vh] flex flex-col p-0 gap-0">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
             <div className="flex items-center gap-3">
               <UserAvatar
                 user={{
@@ -335,14 +328,14 @@ function UserDetailDialog({
                 size="lg"
               />
               <div className="flex-1 min-w-0">
-                <SheetTitle className="flex items-center gap-2 text-base font-semibold">
+                <DialogTitle className="flex items-center gap-2 text-base font-semibold">
                   <span>{user.full_name}</span>
                   <UserGroupStack userId={user.id} size="xs" />
-                </SheetTitle>
-                <SheetDescription>{user.email}</SheetDescription>
+                </DialogTitle>
+                <DialogDescription>{user.email}</DialogDescription>
               </div>
             </div>
-          </SheetHeader>
+          </DialogHeader>
 
           <div className="flex-1 overflow-hidden flex flex-col">
             <Tabs defaultValue="profile" className="flex-1 overflow-hidden flex flex-col">
@@ -452,8 +445,8 @@ function UserDetailDialog({
               </TabsContent>
             </Tabs>
           </div>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
 
       {/* Add to Group Dialog */}
       <Dialog open={addGroupOpen} onOpenChange={setAddGroupOpen}>

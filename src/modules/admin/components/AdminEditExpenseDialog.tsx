@@ -10,12 +10,12 @@ import { type AttachmentFile } from "@/modules/expenses/components/attachment-up
 import { useAttachments } from "@/modules/expenses/hooks/use-attachments";
 import { Profile } from "@/modules/profile/types";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Loader2Icon } from "@/components/ui/icons";
 
@@ -304,16 +304,16 @@ export function AdminEditExpenseDialog({
   const isReady = expense && members.length > 0 && existingSplits.length > 0 && defaultValues;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-[680px] flex flex-col p-0 gap-0 overflow-y-auto">
-        <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
-          <SheetTitle>Chỉnh sửa chi phí (Admin)</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[680px] max-h-[90vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+          <DialogTitle>Chỉnh sửa chi phí (Admin)</DialogTitle>
+          <DialogDescription>
             Cập nhật chi phí với đầy đủ tính năng như phía Client
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
-        <div className="flex-1 px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -366,7 +366,7 @@ export function AdminEditExpenseDialog({
             </div>
           )}
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -10,12 +10,12 @@ import { useAttachments } from "@/modules/expenses/hooks/use-attachments";
 import { useCreateRecurringExpense } from "@/modules/expenses/hooks/use-recurring-expenses";
 import { Profile } from "@/modules/profile/types";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -258,16 +258,16 @@ export function AdminCreateExpenseDialog({
   );
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-[680px] flex flex-col p-0 gap-0 overflow-y-auto">
-        <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
-          <SheetTitle>Tạo chi phí mới (Admin)</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[680px] max-h-[90vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+          <DialogTitle>Tạo chi phí mới (Admin)</DialogTitle>
+          <DialogDescription>
             Tạo chi phí với đầy đủ tính năng như phía Client
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
-        <div className="flex-1 px-6 py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {/* Context Selection - Admin-only: pick group or friendship */}
           <div className="space-y-3 rounded-lg border p-4 bg-muted/30">
             <div className="flex items-center gap-2 mb-2">
@@ -378,7 +378,7 @@ export function AdminCreateExpenseDialog({
             )
           )}
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
