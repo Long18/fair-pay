@@ -53,6 +53,7 @@ import {
   UserIcon,
 } from "@/components/ui/icons";
 import { JourneyCanvasView } from "../components/journey-canvas";
+import { useAdminTranslation } from "../i18n";
 import type {
   AdminUserRow,
   DeleteTrackingResponse,
@@ -63,25 +64,25 @@ import type {
 } from "../types";
 
 const EVENT_FILTER_OPTIONS = [
-  { value: "all", label: "Tất cả event" },
-  { value: "page_view", label: "Page view" },
-  { value: "nav_click", label: "Navigation click" },
-  { value: "cta_click", label: "CTA click" },
-  { value: "form_step_view", label: "Form step view" },
-  { value: "form_submit", label: "Form submit" },
-  { value: "form_success", label: "Form success" },
-  { value: "form_error", label: "Form error" },
-  { value: "auth_login", label: "Auth login" },
-  { value: "auth_register", label: "Auth register" },
+  { value: "all", labelKey: "journey.eventOptions.allEvents" },
+  { value: "page_view", labelKey: "journey.eventOptions.pageView" },
+  { value: "nav_click", labelKey: "journey.eventOptions.navClick" },
+  { value: "cta_click", labelKey: "journey.eventOptions.ctaClick" },
+  { value: "form_step_view", labelKey: "journey.eventOptions.formStepView" },
+  { value: "form_submit", labelKey: "journey.eventOptions.formSubmit" },
+  { value: "form_success", labelKey: "journey.eventOptions.formSuccess" },
+  { value: "form_error", labelKey: "journey.eventOptions.formError" },
+  { value: "auth_login", labelKey: "journey.eventOptions.authLogin" },
+  { value: "auth_register", labelKey: "journey.eventOptions.authRegister" },
 ] as const;
 
 const DELETE_TIME_RANGE_OPTIONS = [
-  { value: "1h", label: "1 giờ gần nhất" },
-  { value: "24h", label: "24 giờ gần nhất" },
-  { value: "7d", label: "7 ngày gần nhất" },
-  { value: "30d", label: "30 ngày gần nhất" },
-  { value: "1y", label: "1 năm gần nhất" },
-  { value: "all", label: "Tất cả" },
+  { value: "1h", labelKey: "journey.ranges.last1h" },
+  { value: "24h", labelKey: "journey.ranges.last24h" },
+  { value: "7d", labelKey: "journey.ranges.last7d" },
+  { value: "30d", labelKey: "journey.ranges.last30d" },
+  { value: "1y", labelKey: "journey.ranges.last1y" },
+  { value: "all", labelKey: "journey.ranges.all" },
 ] as const;
 
 function toDateInput(value: Date) {
@@ -96,9 +97,9 @@ function toIsoRangeEnd(value: string) {
   return value ? new Date(`${value}T23:59:59`).toISOString() : null;
 }
 
-function formatDateTime(value: string | null | undefined) {
+function formatDateTime(value: string | null | undefined, locale: string) {
   if (!value) return "—";
-  return new Date(value).toLocaleString("vi-VN", {
+  return new Date(value).toLocaleString(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   });
@@ -129,6 +130,7 @@ function EventBadge({ eventName }: { eventName: string }) {
 }
 
 export function AdminUserJourney() {
+  const { tAdmin, locale } = useAdminTranslation();
   const { id: userId } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -224,7 +226,10 @@ export function AdminUserJourney() {
     },
     onSuccess: (result) => {
       toast.success(
-        `Đã xoá ${result.deleted_events} event và ${result.deleted_sessions} session`,
+        tAdmin("journey.deleted", {
+          events: result.deleted_events,
+          sessions: result.deleted_sessions,
+        }),
       );
       queryClient.invalidateQueries({ queryKey: ["admin", "tracking-overview", userId] });
       queryClient.invalidateQueries({ queryKey: ["admin", "tracking-sessions", userId] });
@@ -233,7 +238,7 @@ export function AdminUserJourney() {
       setDeleteDialogOpen(false);
     },
     onError: (error) => {
-      toast.error(`Lỗi khi xoá dữ liệu: ${error.message}`);
+      toast.error(tAdmin("journey.deleteError", { message: error.message }));
     },
   });
 
@@ -264,7 +269,7 @@ export function AdminUserJourney() {
             <Button asChild variant="ghost" className="w-fit px-0 text-muted-foreground hover:text-foreground">
               <Link to="/admin/people">
                 <ArrowLeftIcon className="mr-2 h-4 w-4" />
-                Quay lại People
+                {tAdmin("journey.backToPeople")}
               </Link>
             </Button>
             <div className="flex items-center gap-3">
@@ -274,14 +279,14 @@ export function AdminUserJourney() {
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-2xl font-semibold tracking-tight">
-                    Journey của {user?.full_name ?? "người dùng"}
+                    {tAdmin("journey.titleForUser", { name: user?.full_name ?? tAdmin("common.user") })}
                   </h1>
                   {user?.journey_tracking_ignored ? (
-                    <Badge variant="outline">Tracking ignored</Badge>
+                    <Badge variant="outline">{tAdmin("status.ignored")}</Badge>
                   ) : null}
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {user?.email ?? "Đang tải thông tin người dùng..."}
+                  {user?.email ?? tAdmin("journey.loadingUser")}
                 </p>
               </div>
             </div>
@@ -292,12 +297,12 @@ export function AdminUserJourney() {
             <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-full sm:w-[160px]" />
             <Select value={eventFilter} onValueChange={setEventFilter}>
               <SelectTrigger className="w-full sm:w-[190px]">
-                <SelectValue placeholder="Lọc event" />
+                <SelectValue placeholder={tAdmin("journey.eventFilterPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {EVENT_FILTER_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                    {tAdmin(option.labelKey)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -309,7 +314,7 @@ export function AdminUserJourney() {
               className="shrink-0"
             >
               <Trash2Icon className="mr-2 h-4 w-4" />
-              Xoá dữ liệu
+              {tAdmin("journey.deleteData")}
             </Button>
           </div>
         </div>
@@ -318,38 +323,38 @@ export function AdminUserJourney() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription>Tổng session</CardDescription>
+              <CardDescription>{tAdmin("journey.totalSessions")}</CardDescription>
               <CardTitle className="text-3xl">{overview?.total_sessions ?? 0}</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
-              First seen: {formatDateTime(overview?.first_seen_at)}
+              {tAdmin("journey.firstSeen", { value: formatDateTime(overview?.first_seen_at, locale) })}
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription>Tổng event</CardDescription>
+              <CardDescription>{tAdmin("journey.totalEvents")}</CardDescription>
               <CardTitle className="text-3xl">{overview?.total_events ?? 0}</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
-              Unique pages: {overview?.unique_pages ?? 0}
+              {tAdmin("journey.uniquePages", { count: overview?.unique_pages ?? 0 })}
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription>Nguồn vào gần nhất</CardDescription>
+              <CardDescription>{tAdmin("journey.latestSource")}</CardDescription>
               <CardTitle className="text-xl">{overview?.top_sources?.[0]?.name ?? "direct"}</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
-              Last seen: {formatDateTime(overview?.last_seen_at)}
+              {tAdmin("journey.lastSeen", { value: formatDateTime(overview?.last_seen_at, locale) })}
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription>Entry link gần nhất</CardDescription>
+              <CardDescription>{tAdmin("journey.latestEntryLink")}</CardDescription>
               <CardTitle className="text-base break-all">{overview?.latest_entry_link ?? "—"}</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
-              Sources: {formatAggregateLabel(overview?.top_sources ?? [])}
+              {tAdmin("journey.sources", { value: formatAggregateLabel(overview?.top_sources ?? []) })}
             </CardContent>
           </Card>
         </div>
@@ -381,17 +386,17 @@ export function AdminUserJourney() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <ActivityIcon className="h-4 w-4" />
-                    Sessions
+                    {tAdmin("journey.sessionsTitle")}
                   </CardTitle>
                   <CardDescription>
-                    Chọn session để xem timeline chi tiết.
+                    {tAdmin("journey.selectSessionHint")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {isLoading && !sessions ? (
                     <div className="flex items-center justify-center py-12 text-muted-foreground">
                       <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                      Đang tải session...
+                      {tAdmin("journey.loadingSessions")}
                     </div>
                   ) : sessions?.data?.length ? (
                     <ScrollArea className="h-[520px] pr-3">
@@ -402,7 +407,7 @@ export function AdminUserJourney() {
                           className="w-full justify-start"
                           onClick={() => setSelectedSessionId("all")}
                         >
-                          Tất cả sessions ({sessions.total})
+                          {tAdmin("journey.allSessions", { count: sessions.total })}
                         </Button>
                         {sessions.data.map((session) => (
                           <button
@@ -424,10 +429,10 @@ export function AdminUserJourney() {
                             </div>
                             <Separator className="my-3" />
                             <div className="space-y-1 text-xs text-muted-foreground">
-                              <p>Start: {formatDateTime(session.started_at)}</p>
-                              <p>Last seen: {formatDateTime(session.last_seen_at)}</p>
+                              <p>Start: {formatDateTime(session.started_at, locale)}</p>
+                              <p>{tAdmin("journey.lastSeen", { value: formatDateTime(session.last_seen_at, locale) })}</p>
                               <p className="truncate">Entry: {session.entry_link}</p>
-                              {session.landing_referrer ? <p className="truncate">Referrer: {session.landing_referrer}</p> : null}
+                              {session.landing_referrer ? <p className="truncate">{tAdmin("journey.referrer", { value: session.landing_referrer })}</p> : null}
                             </div>
                           </button>
                         ))}
@@ -439,8 +444,8 @@ export function AdminUserJourney() {
                         <ActivityIcon className="h-6 w-6" />
                       </EmptyMedia>
                       <EmptyHeader>
-                        <EmptyTitle>Chưa có session</EmptyTitle>
-                        <EmptyDescription>Không tìm thấy dữ liệu journey trong khoảng thời gian đã chọn.</EmptyDescription>
+                        <EmptyTitle>{tAdmin("journey.noSessionsTitle")}</EmptyTitle>
+                        <EmptyDescription>{tAdmin("journey.noSessionsDescription")}</EmptyDescription>
                       </EmptyHeader>
                       <EmptyContent />
                     </Empty>
@@ -529,7 +534,7 @@ export function AdminUserJourney() {
                                     <p className="truncate text-sm font-medium">{event.page_path}</p>
                                     <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
                                       <span>Session: {event.session_id.slice(0, 8)}</span>
-                                      <span>Occurred: {formatDateTime(event.occurred_at)}</span>
+                                      <span>Occurred: {formatDateTime(event.occurred_at, locale)}</span>
                                       {event.referrer_path ? <span>Referrer: {event.referrer_path}</span> : null}
                                       {event.target_type ? <span>Type: {event.target_type}</span> : null}
                                     </div>
@@ -581,7 +586,7 @@ export function AdminUserJourney() {
           <DialogHeader>
             <DialogTitle>Raw metadata</DialogTitle>
             <DialogDescription>
-              {rawEvent?.event_name} tại {formatDateTime(rawEvent?.occurred_at)}
+              {rawEvent?.event_name} tại {formatDateTime(rawEvent?.occurred_at, locale)}
             </DialogDescription>
           </DialogHeader>
           <pre className="max-h-[60vh] overflow-auto rounded-lg bg-muted p-4 text-xs">
@@ -607,7 +612,7 @@ export function AdminUserJourney() {
               <SelectContent>
                 {DELETE_TIME_RANGE_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                    {tAdmin(option.labelKey)}
                   </SelectItem>
                 ))}
               </SelectContent>
