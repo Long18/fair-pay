@@ -45,6 +45,7 @@ import { useStaggerAnimation } from "@/hooks/ui/use-stagger-animation";
 import { formatNumber } from "@/lib/locale-utils";
 import { getCategoryMeta } from "@/modules/expenses";
 import { themeIntentTones, type ThemeIntent } from "@/lib/theme-intents";
+import { useAdminTranslation } from "../i18n";
 
 // ─── Latest Tracked Users ────────────────────────────────────────────
 
@@ -61,15 +62,15 @@ interface LatestTrackedUser {
   session_count: number;
 }
 
-function formatRelativeTime(value: string): string {
+function formatRelativeTime(value: string, tAdmin: ReturnType<typeof useAdminTranslation>["tAdmin"]): string {
   const diff = Date.now() - new Date(value).getTime();
   const minutes = Math.floor(diff / 60_000);
-  if (minutes < 1) return "vừa xong";
-  if (minutes < 60) return `${minutes} phút trước`;
+  if (minutes < 1) return tAdmin("overview.relative.justNow");
+  if (minutes < 60) return tAdmin("overview.relative.minutesAgo", { count: minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} giờ trước`;
+  if (hours < 24) return tAdmin("overview.relative.hoursAgo", { count: hours });
   const days = Math.floor(hours / 24);
-  return `${days} ngày trước`;
+  return tAdmin("overview.relative.daysAgo", { count: days });
 }
 
 function useLatestTrackedUsers() {
@@ -166,11 +167,11 @@ function StatCardSkeleton() {
 // ─── Stat Card Config ───────────────────────────────────────────────
 
 const STAT_CARDS = [
-  { key: "totalUsers", label: "Tổng người dùng", icon: UsersIcon, tone: "brand" },
-  { key: "totalGroups", label: "Tổng nhóm", icon: GroupIcon, tone: "chart2" },
-  { key: "totalExpenses", label: "Tổng chi phí", icon: ReceiptIcon, tone: "accent" },
-  { key: "totalPayments", label: "Tổng thanh toán", icon: CreditCardIcon, tone: "success" },
-  { key: "activeUsersLast7Days", label: "Hoạt động 7 ngày", icon: ActivityIcon, tone: "chart5" },
+  { key: "totalUsers", labelKey: "overview.totalUsers", icon: UsersIcon, tone: "brand" },
+  { key: "totalGroups", labelKey: "overview.totalGroups", icon: GroupIcon, tone: "chart2" },
+  { key: "totalExpenses", labelKey: "overview.totalExpenses", icon: ReceiptIcon, tone: "accent" },
+  { key: "totalPayments", labelKey: "overview.totalPayments", icon: CreditCardIcon, tone: "success" },
+  { key: "activeUsersLast7Days", labelKey: "overview.activeUsers7d", icon: ActivityIcon, tone: "chart5" },
 ] as const;
 
 // ─── Data Hooks ─────────────────────────────────────────────────────
@@ -201,9 +202,9 @@ function useAdminStats() {
   });
 }
 
-function useExpenseTrend() {
+function useExpenseTrend(locale: string) {
   return useQuery({
-    queryKey: ["admin", "expense-trend-30d"],
+    queryKey: ["admin", "expense-trend-30d", locale],
     queryFn: async () => {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -225,7 +226,7 @@ function useExpenseTrend() {
 
       return Object.entries(grouped).map(([date, total]) => ({
         date,
-        label: new Date(date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }),
+        label: new Date(date).toLocaleDateString(locale, { day: "2-digit", month: "2-digit" }),
         total,
       }));
     },
@@ -233,9 +234,9 @@ function useExpenseTrend() {
   });
 }
 
-function useRegistrationTrend() {
+function useRegistrationTrend(locale: string) {
   return useQuery({
-    queryKey: ["admin", "registration-trend-12w"],
+    queryKey: ["admin", "registration-trend-12w", locale],
     queryFn: async () => {
       const twelveWeeksAgo = new Date();
       twelveWeeksAgo.setDate(twelveWeeksAgo.getDate() - 84);
@@ -263,7 +264,7 @@ function useRegistrationTrend() {
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([week, count]) => ({
           week,
-          label: new Date(week).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }),
+          label: new Date(week).toLocaleDateString(locale, { day: "2-digit", month: "2-digit" }),
           count,
         }));
     },
@@ -301,26 +302,11 @@ function useCategoryBreakdown() {
 
 // ─── Chart Configs ──────────────────────────────────────────────────
 
-const expenseChartConfig = {
-  total: {
-    label: "Chi phí",
-    color: "var(--chart-1)",
-  },
-} satisfies ChartConfig;
-
-const registrationChartConfig = {
-  count: {
-    label: "Đăng ký mới",
-    color: "var(--chart-positive)",
-  },
-} satisfies ChartConfig;
-
-// ─── Main Component ─────────────────────────────────────────────────
-
 export function AdminOverview() {
+  const { tAdmin, locale } = useAdminTranslation();
   const { data: stats, isLoading: statsLoading } = useAdminStats();
-  const { data: expenseTrend, isLoading: trendLoading } = useExpenseTrend();
-  const { data: registrations, isLoading: regLoading } = useRegistrationTrend();
+  const { data: expenseTrend, isLoading: trendLoading } = useExpenseTrend(locale);
+  const { data: registrations, isLoading: regLoading } = useRegistrationTrend(locale);
   const { data: categories, isLoading: catLoading } = useCategoryBreakdown();
   const { data: latestUsers, isLoading: latestLoading } = useLatestTrackedUsers();
 
@@ -352,16 +338,30 @@ export function AdminOverview() {
     fill: item.fill,
   }));
 
+  const expenseChartConfig = useMemo(() => ({
+    total: {
+      label: tAdmin("overview.expenseChartLabel"),
+      color: "var(--chart-1)",
+    },
+  }) satisfies ChartConfig, [tAdmin]);
+
+  const registrationChartConfig = useMemo(() => ({
+    count: {
+      label: tAdmin("overview.registrationChartLabel"),
+      color: "var(--chart-positive)",
+    },
+  }) satisfies ChartConfig, [tAdmin]);
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Tổng quan</h1>
-        <p className="text-sm text-muted-foreground mt-1">Thống kê và hoạt động hệ thống</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{tAdmin("overview.title")}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{tAdmin("overview.subtitle")}</p>
       </div>
 
       {/* ── Stat Cards ─────────────────────────────────────────── */}
       <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Key Metrics</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{tAdmin("overview.keyMetrics")}</p>
         <motion.div
           className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 viewport-transition-grid"
           variants={statVariants}
@@ -410,7 +410,7 @@ export function AdminOverview() {
                             <Icon className="h-5 w-5" />
                           </div>
                           <div className="flex flex-col gap-1 min-w-0">
-                            <span className="text-xs text-muted-foreground truncate">{card.label}</span>
+                            <span className="text-xs text-muted-foreground truncate">{tAdmin(card.labelKey)}</span>
                             <span className="text-2xl font-semibold tabular-nums">{formatNumber(value)}</span>
                             <TrendIndicator value={Math.abs(trendPercent)} isPositive={trendPercent >= 0} />
                           </div>
@@ -430,15 +430,15 @@ export function AdminOverview() {
 
       {/* ── Trends ──────────────────────────────────────────────── */}
       <div className="space-y-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Trends</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{tAdmin("overview.trends")}</p>
         <Card>
           <CardHeader>
-            <CardTitle>Xu hướng chi phí</CardTitle>
-            <CardDescription>30 ngày gần nhất</CardDescription>
+            <CardTitle>{tAdmin("overview.expenseTrend")}</CardTitle>
+            <CardDescription>{tAdmin("overview.last30Days")}</CardDescription>
           </CardHeader>
           <CardContent>
             {trendLoading ? (
-              <LoadingBeam text="Đang tải biểu đồ..." className="py-8" />
+              <LoadingBeam text={tAdmin("overview.loadingChart")} className="py-8" />
             ) : (
               <ChartContainer config={expenseChartConfig} className="h-[300px] w-full">
                 <AreaChart
@@ -488,7 +488,7 @@ export function AdminOverview() {
           </CardContent>
           <CardFooter className="border-t pt-3 pb-3">
             <Link to="/admin/transactions" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Xem chi tiết giao dịch <ArrowRightIcon className="h-3 w-3" />
+              {tAdmin("overview.viewTransactionDetails")} <ArrowRightIcon className="h-3 w-3" />
             </Link>
           </CardFooter>
         </Card>
@@ -497,12 +497,12 @@ export function AdminOverview() {
         {/* Bar Chart: New Registrations 12 weeks */}
         <Card>
           <CardHeader>
-            <CardTitle>Đăng ký mới</CardTitle>
-            <CardDescription>12 tuần gần nhất</CardDescription>
+            <CardTitle>{tAdmin("overview.newRegistrations")}</CardTitle>
+            <CardDescription>{tAdmin("overview.last12Weeks")}</CardDescription>
           </CardHeader>
           <CardContent>
             {regLoading ? (
-              <LoadingBeam text="Đang tải..." className="py-6" />
+              <LoadingBeam text={tAdmin("common.loading")} className="py-6" />
             ) : (
               <ChartContainer config={registrationChartConfig} className="h-[280px] w-full">
                 <RechartsBarChart
@@ -527,7 +527,7 @@ export function AdminOverview() {
                     content={
                       <ChartTooltipContent
                         formatter={(value) => (
-                          <span className="font-medium">{Number(value)} người dùng</span>
+                          <span className="font-medium">{tAdmin("overview.usersCount", { count: Number(value) })}</span>
                         )}
                       />
                     }
@@ -546,12 +546,12 @@ export function AdminOverview() {
         {/* Pie Chart: Category Breakdown */}
         <Card>
           <CardHeader>
-            <CardTitle>Phân bổ danh mục</CardTitle>
-            <CardDescription>Tất cả chi phí theo danh mục</CardDescription>
+            <CardTitle>{tAdmin("overview.categoryBreakdown")}</CardTitle>
+            <CardDescription>{tAdmin("overview.allExpensesByCategory")}</CardDescription>
           </CardHeader>
           <CardContent>
             {catLoading ? (
-              <LoadingBeam text="Đang tải..." className="py-6" />
+              <LoadingBeam text={tAdmin("common.loading")} className="py-6" />
             ) : (
               <ChartContainer config={categoryChartConfig} className="h-[280px] w-full">
                 <PieChart>
@@ -589,11 +589,11 @@ export function AdminOverview() {
 
       {/* ── Recent Activity ──────────────────────────────────────── */}
       <div className="space-y-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Recent Activity</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{tAdmin("overview.recentActivity")}</p>
         <Card>
         <CardHeader>
-          <CardTitle>Người dùng truy cập gần đây</CardTitle>
-          <CardDescription>Người dùng được theo dõi gần nhất</CardDescription>
+          <CardTitle>{tAdmin("overview.latestTrackedUsers")}</CardTitle>
+          <CardDescription>{tAdmin("overview.latestTrackedUsersDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           {latestLoading ? (
@@ -611,7 +611,7 @@ export function AdminOverview() {
             </div>
           ) : !latestUsers?.length ? (
             <p className="px-6 py-8 text-center text-sm text-muted-foreground">
-              Chưa có dữ liệu theo dõi
+              {tAdmin("overview.noTrackingData")}
             </p>
           ) : (
             <AnimatedList items={latestUsers} className="divide-y">
@@ -645,10 +645,10 @@ export function AdminOverview() {
                           </Badge>
                         )}
                         <Badge variant="outline" className="text-xs">
-                          {user.session_count} phiên
+                          {tAdmin("overview.sessions", { count: user.session_count })}
                         </Badge>
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {formatRelativeTime(user.last_seen_at)}
+                          {formatRelativeTime(user.last_seen_at, tAdmin)}
                         </span>
                       </div>
                     </Link>
@@ -660,7 +660,7 @@ export function AdminOverview() {
         </CardContent>
         <CardFooter className="border-t pt-3 pb-3">
           <Link to="/admin/people" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            Xem tất cả người dùng <ArrowRightIcon className="h-3 w-3" />
+            {tAdmin("overview.viewAllUsers")} <ArrowRightIcon className="h-3 w-3" />
           </Link>
         </CardFooter>
       </Card>

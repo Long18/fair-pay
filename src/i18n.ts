@@ -4,6 +4,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 
 import en from './locales/en.json';
 import vi from './locales/vi.json';
+import { adminTranslations } from './modules/admin/i18n';
 
 const normalizeLanguage = (language?: string) => language?.startsWith('vi') ? 'vi' : 'en';
 
@@ -31,8 +32,8 @@ i18n
   .use(initReactI18next)
   .init({
     resources: {
-      en: { translation: en },
-      vi: { translation: vi },
+      en: { translation: { ...en, ...adminTranslations.en } },
+      vi: { translation: { ...vi, ...adminTranslations.vi } },
     },
     fallbackLng: 'en',
     interpolation: {
