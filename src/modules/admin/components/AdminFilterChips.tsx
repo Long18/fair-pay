@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { XIcon } from "@/components/ui/icons";
+import { useAdminTranslation } from "../i18n";
 
 interface FilterChip {
   key: string;
@@ -14,6 +15,8 @@ interface AdminFilterChipsProps {
 }
 
 export function AdminFilterChips({ filters, onClearAll }: AdminFilterChipsProps) {
+  const { tAdmin } = useAdminTranslation();
+
   if (filters.length === 0) return null;
   return (
     <div className="flex flex-wrap items-center gap-1.5 pb-3">
@@ -30,7 +33,7 @@ export function AdminFilterChips({ filters, onClearAll }: AdminFilterChipsProps)
       ))}
       {filters.length > 1 && onClearAll && (
         <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-muted-foreground" onClick={onClearAll}>
-          Xóa tất cả
+          {tAdmin("common.clearAll")}
         </Button>
       )}
     </div>

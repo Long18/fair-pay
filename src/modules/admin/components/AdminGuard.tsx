@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { Profile } from "@/modules/profile/types";
 import { useIsAdmin } from "../hooks/use-is-admin";
 import { Loader2Icon } from "@/components/ui/icons";
+import { useAdminTranslation } from "../i18n";
 
 interface AdminGuardProps {
   children: React.ReactNode;
@@ -21,6 +22,7 @@ export function AdminGuard({ children, fallback }: AdminGuardProps) {
   const { data: identity, isLoading: identityLoading } =
     useGetIdentity<Profile>();
   const { isAdmin, isLoading: adminLoading } = useIsAdmin();
+  const { tAdmin } = useAdminTranslation();
   const toastShownRef = useRef(false);
 
   const isLoading = identityLoading || adminLoading;
@@ -29,9 +31,9 @@ export function AdminGuard({ children, fallback }: AdminGuardProps) {
   useEffect(() => {
     if (!isLoading && identity && !isAdmin && !toastShownRef.current) {
       toastShownRef.current = true;
-      toast.error("Bạn không có quyền truy cập trang quản trị");
+      toast.error(tAdmin("guard.accessDenied"));
     }
-  }, [isLoading, identity, isAdmin]);
+  }, [isLoading, identity, isAdmin, tAdmin]);
 
   if (isLoading) {
     return fallback ?? (

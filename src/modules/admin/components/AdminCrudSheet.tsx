@@ -9,6 +9,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useAdminTranslation } from "../i18n";
 
 interface AdminCrudSheetProps {
   open: boolean;
@@ -31,6 +32,8 @@ export function AdminCrudSheet({
   onSubmit,
   children,
 }: AdminCrudSheetProps) {
+  const { tAdmin } = useAdminTranslation();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px] max-h-[90vh] flex flex-col p-0 gap-0">
@@ -51,7 +54,7 @@ export function AdminCrudSheet({
             onClick={() => onOpenChange(false)}
             disabled={isSubmitting}
           >
-            Cancel
+            {tAdmin("common.cancel")}
           </Button>
           <Button onClick={onSubmit} disabled={isSubmitting}>
             {isSubmitting && (

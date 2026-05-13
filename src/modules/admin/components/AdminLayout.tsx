@@ -34,16 +34,17 @@ import {
   SettingsIcon,
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
+import { useAdminTranslation } from "../i18n";
 
 // ─── Nav Items Config ───────────────────────────────────────────────
 
 const NAV_ITEMS = [
-  { key: "overview", label: "Overview", icon: LayoutDashboardIcon, path: "/admin" },
-  { key: "people", label: "People", icon: UsersIcon, path: "/admin/people" },
-  { key: "transactions", label: "Transactions", icon: ReceiptIcon, path: "/admin/transactions" },
-  { key: "audit-logs", label: "Audit Logs", icon: ScrollTextIcon, path: "/admin/audit-logs" },
-  { key: "reactions", label: "Reactions", icon: SmilePlusIcon, path: "/admin/reactions" },
-  { key: "devtool", label: "DevTool", icon: SettingsIcon, path: "/admin/devtool" },
+  { key: "overview", labelKey: "nav.overview", icon: LayoutDashboardIcon, path: "/admin" },
+  { key: "people", labelKey: "nav.people", icon: UsersIcon, path: "/admin/people" },
+  { key: "transactions", labelKey: "nav.transactions", icon: ReceiptIcon, path: "/admin/transactions" },
+  { key: "audit-logs", labelKey: "nav.auditLogs", icon: ScrollTextIcon, path: "/admin/audit-logs" },
+  { key: "reactions", labelKey: "nav.reactions", icon: SmilePlusIcon, path: "/admin/reactions" },
+  { key: "devtool", labelKey: "nav.devtool", icon: SettingsIcon, path: "/admin/devtool" },
 ] as const;
 
 // ─── Helpers ────────────────────────────────────────────────────────
@@ -101,6 +102,7 @@ export function AdminLayout() {
 
 function AdminNavBar({ isMobile }: { isMobile: boolean }) {
   const scrolled = useScrolled(10);
+  const { tAdmin } = useAdminTranslation();
 
   return (
     <nav
@@ -152,7 +154,7 @@ function AdminNavBar({ isMobile }: { isMobile: boolean }) {
             ]
       )}
       role="navigation"
-      aria-label="Admin navigation"
+      aria-label={tAdmin("nav.ariaLabel")}
     >
       {/* Left: Mobile menu + Logo */}
       <div className="flex items-center gap-2">
@@ -172,6 +174,8 @@ function AdminNavBar({ isMobile }: { isMobile: boolean }) {
 // ─── Logo ───────────────────────────────────────────────────────────
 
 function AdminLogo() {
+  const { tAdmin } = useAdminTranslation();
+
   return (
     <Link
       to="/admin"
@@ -187,7 +191,7 @@ function AdminLogo() {
       )}
     >
       <FairPayIcon className="w-10 h-10" />
-      <span className="text-sm font-semibold hidden lg:inline">Admin</span>
+      <span className="text-sm font-semibold hidden lg:inline">{tAdmin("common.admin")}</span>
     </Link>
   );
 }
@@ -197,6 +201,7 @@ function AdminLogo() {
 function DesktopAdminNav({ scrolled }: { scrolled: boolean }) {
   const { pathname } = useLocation();
   const isMobile = useIsMobile();
+  const { tAdmin } = useAdminTranslation();
 
   if (isMobile) return null;
 
@@ -206,6 +211,7 @@ function DesktopAdminNav({ scrolled }: { scrolled: boolean }) {
         {NAV_ITEMS.map((item) => {
           const active = isActive(item.path, pathname);
           const Icon = item.icon;
+          const label = tAdmin(item.labelKey);
           // Show label when: item is active, OR navbar is in full (not scrolled) state
           const showLabel = active || !scrolled;
           return (
@@ -239,13 +245,13 @@ function DesktopAdminNav({ scrolled }: { scrolled: boolean }) {
                         : "grid-cols-[0fr] opacity-0"
                     )}
                   >
-                    <span className="min-w-0 overflow-hidden">{item.label}</span>
+                    <span className="min-w-0 overflow-hidden">{label}</span>
                   </span>
                 </Link>
               </TooltipTrigger>
               {!showLabel && (
                 <TooltipContent side="bottom">
-                  <span className="text-xs font-medium">{item.label}</span>
+                  <span className="text-xs font-medium">{label}</span>
                 </TooltipContent>
               )}
             </Tooltip>
@@ -260,6 +266,7 @@ function DesktopAdminNav({ scrolled }: { scrolled: boolean }) {
 
 function AdminActions() {
   const { data: identity } = useGetIdentity<Profile>();
+  const { tAdmin } = useAdminTranslation();
 
   return (
     <div className="flex items-center gap-1 md:gap-2">
@@ -289,7 +296,7 @@ function AdminActions() {
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          <span className="text-xs">Quay về FairPay</span>
+          <span className="text-xs">{tAdmin("common.backToFairPay")}</span>
         </TooltipContent>
       </Tooltip>
     </div>
@@ -302,6 +309,7 @@ function MobileAdminMenu() {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
   const { tap } = useHaptics();
+  const { tAdmin } = useAdminTranslation();
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -320,7 +328,7 @@ function MobileAdminMenu() {
           variant="ghost"
           size="icon"
           className="flex md:hidden h-10 w-10 rounded-lg hover:bg-accent"
-          aria-label="Open admin menu"
+          aria-label={tAdmin("common.openAdminMenu")}
           aria-expanded={open}
           onClick={() => tap()}
         >
@@ -339,6 +347,7 @@ function MobileAdminMenu() {
           {NAV_ITEMS.map((item) => {
             const active = isActive(item.path, pathname);
             const Icon = item.icon;
+            const label = tAdmin(item.labelKey);
             return (
               <Link
                 key={item.key}
@@ -354,7 +363,7 @@ function MobileAdminMenu() {
                 onClick={handleItemClick}
               >
                 <Icon className={cn("w-5 h-5 shrink-0", active ? "text-primary" : "text-muted-foreground")} />
-                <span>{item.label}</span>
+                <span>{label}</span>
               </Link>
             );
           })}
@@ -364,7 +373,7 @@ function MobileAdminMenu() {
           <Button variant="outline" className="w-full" asChild>
             <Link to="/">
               <ArrowLeftIcon className="h-4 w-4 mr-2" />
-              Quay về FairPay
+              {tAdmin("common.backToFairPay")}
             </Link>
           </Button>
         </div>
