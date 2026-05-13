@@ -1,3 +1,5 @@
+import { SHARE_REF_PARAM, getShareRefPropertiesFromUrl, parseShareRef } from "@/lib/share-ref";
+
 export const UTM_PARAM_KEYS = [
   "utm_source",
   "utm_medium",
@@ -65,7 +67,7 @@ export const ATTRIBUTION_STORAGE_KEYS = {
 const DEFAULT_ORIGIN = "https://long-pay.vercel.app";
 const MAX_COOKIE_AGE_SECONDS = 60 * 60 * 24 * 180;
 const TRACKING_DISPLAY_PARAM_PREFIXES = ["utm_"];
-const TRACKING_DISPLAY_PARAMS = new Set(["gclid", "fbclid"]);
+const TRACKING_DISPLAY_PARAMS = new Set(["gclid", "fbclid", SHARE_REF_PARAM]);
 const TRACKED_REFERRERS: Array<[RegExp, string]> = [
   [/(\.|^)facebook\.com$/i, "facebook"],
   [/(\.|^)fb\.com$/i, "facebook"],
@@ -345,16 +347,17 @@ function buildTouchFromUrl(href: string, referrer: string | null, now: string): 
   const url = new URL(href, getWindowOrigin());
   const normalizedReferrer = normalizeReferrer(referrer);
   const utmPresent = hasUtm(url);
+  const shareRef = utmPresent ? null : parseShareRef(url.searchParams.get(SHARE_REF_PARAM));
   const referrerSource = utmPresent ? null : mapReferrerSource(normalizedReferrer, url.origin);
-  const source = normalizeOptionalValue(url.searchParams.get("utm_source")) ?? referrerSource ?? "direct";
-  const medium = normalizeOptionalValue(url.searchParams.get("utm_medium")) ?? (referrerSource ? "referral" : "none");
+  const source = normalizeOptionalValue(url.searchParams.get("utm_source")) ?? shareRef?.source ?? referrerSource ?? "direct";
+  const medium = normalizeOptionalValue(url.searchParams.get("utm_medium")) ?? shareRef?.medium ?? (referrerSource ? "referral" : "none");
 
   return {
     schema_version: 1,
     utm_source: source,
     utm_medium: medium,
-    utm_campaign: normalizeOptionalValue(url.searchParams.get("utm_campaign")),
-    utm_content: normalizeOptionalValue(url.searchParams.get("utm_content")),
+    utm_campaign: normalizeOptionalValue(url.searchParams.get("utm_campaign")) ?? shareRef?.campaign ?? null,
+    utm_content: normalizeOptionalValue(url.searchParams.get("utm_content")) ?? shareRef?.content ?? null,
     utm_term: normalizeOptionalValue(url.searchParams.get("utm_term")),
     referrer: normalizedReferrer,
     landing_url: sanitizeLandingUrl(url.toString()),
@@ -446,7 +449,9 @@ export function getAttributionEventProperties(context = getCurrentAttributionCon
 export function getUtmPropertiesFromUrl(input: string) {
   try {
     const url = new URL(input, getWindowOrigin());
-    const properties: Record<string, string> = {};
+    const properties: Record<string, string> = {
+      ...getShareRefPropertiesFromUrl(input),
+    };
     for (const key of UTM_PARAM_KEYS) {
       const value = url.searchParams.get(key);
       if (value) properties[key] = value;

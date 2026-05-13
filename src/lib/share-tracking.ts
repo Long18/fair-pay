@@ -1,11 +1,11 @@
 import { journeyTracking } from "@/lib/journey-tracking";
 import {
-  buildTrackedUrl,
   getCanonicalDestinationPath,
   getCanonicalDestinationUrl,
   getUtmPropertiesFromUrl,
   stableUrlHash,
 } from "@/lib/utm";
+import { appendShareRef } from "@/lib/share-ref";
 import {
   DEFAULT_UTM_PLATFORMS,
   findUtmPlatform,
@@ -91,14 +91,11 @@ function buildTrackedShareUrl(
     medium: string;
   },
 ) {
-  return buildTrackedUrl({
-    baseUrl: getShareUrl(options),
+  return appendShareRef(getShareUrl(options), {
     source: options.source,
     medium: options.medium,
     campaign: options.campaign,
     content: options.content,
-    term: options.term,
-    extraParams: options.extraParams,
   });
 }
 
@@ -178,7 +175,7 @@ export function trackShareEvent(options: ShareEventOptions) {
 export async function copyShareLinkWithTracking(options: CopyShareWithTrackingOptions): Promise<ShareTrackingResult> {
   const trackedUrl = buildTrackedShareUrl({
     ...options,
-    source: "unknown",
+    source: "copy_link",
     medium: "copy_link",
   });
   const clipboardWrite = options.clipboardWrite ?? ((value: string) => navigator.clipboard.writeText(value));

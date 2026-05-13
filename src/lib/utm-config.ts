@@ -132,7 +132,7 @@ export const DEFAULT_UTM_PLATFORMS: UtmPlatform[] = [
   {
     platform_key: "copy_link",
     label: "Copy link",
-    source: "unknown",
+    source: "copy_link",
     medium: "copy_link",
     method: "copy_link",
     intent_url_template: null,
@@ -143,7 +143,7 @@ export const DEFAULT_UTM_PLATFORMS: UtmPlatform[] = [
   {
     platform_key: "native_share",
     label: "Native share",
-    source: "unknown",
+    source: "native_share",
     medium: "social_share",
     method: "native_share",
     intent_url_template: null,

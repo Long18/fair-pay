@@ -1,4 +1,5 @@
 const ALLOWED_QUERY_PARAMS = new Set([
+  "ref",
   "utm_source",
   "utm_medium",
   "utm_campaign",
