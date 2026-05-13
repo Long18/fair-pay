@@ -16,14 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { AdminCrudSheet } from "../components/AdminCrudSheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -238,111 +231,102 @@ function ReactionFormDialog({
   }, [form, editItem, isValid, isSaving, onSave]);
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{editItem ? "Chỉnh sửa Reaction" : "Thêm Reaction mới"}</DialogTitle>
-          <DialogDescription>
-            {editItem ? "Cập nhật thông tin reaction type" : "Tạo một reaction type mới cho hệ thống"}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4 py-2">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="code">Code (unique)</Label>
-              <Input
-                id="code"
-                value={form.code}
-                onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
-                placeholder="thumbs_up"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="label">Label</Label>
-              <Input
-                id="label"
-                value={form.label}
-                onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
-                placeholder="Thumbs Up"
-              />
-            </div>
-          </div>
-
+    <AdminCrudSheet
+      open={open}
+      onOpenChange={handleOpenChange}
+      title={editItem ? "Chỉnh sửa Reaction" : "Thêm Reaction mới"}
+      description={editItem ? "Cập nhật thông tin reaction type" : "Tạo một reaction type mới cho hệ thống"}
+      isSubmitting={isSaving}
+      submitLabel={editItem ? "Cập nhật" : "Tạo mới"}
+      onSubmit={() => { tap(); handleSubmit(); }}
+    >
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Loại media</Label>
-            <Select
-              value={form.media_type}
-              onValueChange={(v) => { tap(); setForm((f) => ({ ...f, media_type: v as ReactionFormData["media_type"] })); }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="emoji">Emoji</SelectItem>
-                <SelectItem value="image">Image</SelectItem>
-                <SelectItem value="gif">GIF</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {form.media_type === "emoji" ? (
-            <div className="space-y-2">
-              <Label htmlFor="emoji">Emoji</Label>
-              <Input
-                id="emoji"
-                value={form.emoji}
-                onChange={(e) => setForm((f) => ({ ...f, emoji: e.target.value }))}
-                placeholder="👍"
-              />
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Label htmlFor="image_url">URL ({form.media_type === "gif" ? "GIF" : "Image"})</Label>
-              <Input
-                id="image_url"
-                value={form.image_url}
-                onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value }))}
-                placeholder="https://..."
-              />
-              {form.image_url && (
-                <img src={form.image_url} alt="Preview" className="h-10 w-10 object-contain rounded border" />
-              )}
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="emoji_mart_id">Emoji Mart ID</Label>
+            <Label htmlFor="code">Code (unique)</Label>
             <Input
-              id="emoji_mart_id"
-              value={form.emoji_mart_id}
-              onChange={(e) => setForm((f) => ({ ...f, emoji_mart_id: e.target.value }))}
-              placeholder="+1, joy, fire..."
+              id="code"
+              value={form.code}
+              onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
+              placeholder="thumbs_up"
             />
-            <p className="text-[11px] text-muted-foreground">
-              ID trong emoji-mart để matching khi chọn từ picker
-            </p>
           </div>
-
-          <div className="flex items-center gap-2">
-            <Switch
-              id="is_active"
-              checked={form.is_active}
-              onCheckedChange={(v) => { tap(); setForm((f) => ({ ...f, is_active: v })); }}
+          <div className="space-y-2">
+            <Label htmlFor="label">Label</Label>
+            <Input
+              id="label"
+              value={form.label}
+              onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
+              placeholder="Thumbs Up"
             />
-            <Label htmlFor="is_active">Kích hoạt</Label>
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => { tap(); onOpenChange(false); }}>Hủy</Button>
-          <Button onClick={() => { tap(); handleSubmit(); }} disabled={!isValid || isSaving}>
-            {isSaving && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
-            {editItem ? "Cập nhật" : "Tạo mới"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <div className="space-y-2">
+          <Label>Loại media</Label>
+          <Select
+            value={form.media_type}
+            onValueChange={(v) => { tap(); setForm((f) => ({ ...f, media_type: v as ReactionFormData["media_type"] })); }}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="emoji">Emoji</SelectItem>
+              <SelectItem value="image">Image</SelectItem>
+              <SelectItem value="gif">GIF</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {form.media_type === "emoji" ? (
+          <div className="space-y-2">
+            <Label htmlFor="emoji">Emoji</Label>
+            <Input
+              id="emoji"
+              value={form.emoji}
+              onChange={(e) => setForm((f) => ({ ...f, emoji: e.target.value }))}
+              placeholder="👍"
+            />
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <Label htmlFor="image_url">URL ({form.media_type === "gif" ? "GIF" : "Image"})</Label>
+            <Input
+              id="image_url"
+              value={form.image_url}
+              onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value }))}
+              placeholder="https://..."
+            />
+            {form.image_url && (
+              <img src={form.image_url} alt="Preview" className="h-10 w-10 object-contain rounded border" />
+            )}
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <Label htmlFor="emoji_mart_id">Emoji Mart ID</Label>
+          <Input
+            id="emoji_mart_id"
+            value={form.emoji_mart_id}
+            onChange={(e) => setForm((f) => ({ ...f, emoji_mart_id: e.target.value }))}
+            placeholder="+1, joy, fire..."
+          />
+          <p className="text-[11px] text-muted-foreground">
+            ID trong emoji-mart để matching khi chọn từ picker
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Switch
+            id="is_active"
+            checked={form.is_active}
+            onCheckedChange={(v) => { tap(); setForm((f) => ({ ...f, is_active: v })); }}
+          />
+          <Label htmlFor="is_active">Kích hoạt</Label>
+        </div>
+      </div>
+    </AdminCrudSheet>
   );
 }
 
