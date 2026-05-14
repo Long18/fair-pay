@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { useTable } from "@refinedev/react-table";
-import { useList } from "@refinedev/core";
+import { useGetIdentity, useList, type CrudFilters } from "@refinedev/core";
 import { useInstantCreate, useInstantUpdate, useInstantDelete } from "@/hooks/use-instant-mutation";
 import type { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
@@ -51,7 +51,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -104,9 +103,15 @@ import { getCategoryMeta } from "@/modules/expenses/lib/categories";
 import { MarkdownComment } from "@/modules/expenses/components/markdown-comment";
 import { AttachmentList } from "@/modules/expenses/components/attachment-list";
 import { Attachment } from "@/modules/expenses/types";
+import type { Profile } from "@/modules/profile/types";
 import { AdminCreateExpenseDialog } from "../components/AdminCreateExpenseDialog";
 import { AdminEditExpenseDialog } from "../components/AdminEditExpenseDialog";
-import { AdminCrudSheet } from "../components/AdminCrudSheet";
+import { AdminCrudDialog } from "../components/AdminCrudSheet";
+import {
+  AdminMobileCard,
+  AdminMobileCards,
+  AdminMobilePagination,
+} from "../components/AdminMobileCards";
 import { useIsMobile } from "@/hooks/ui/use-mobile";
 import {
   applySplitSettlementChangeTyped,
@@ -156,9 +161,86 @@ interface PaymentRow {
   context_type: string;
   group_id: string | null;
   group_name: string | null;
+  friendship_id: string | null;
+  friendship_name: string | null;
   payment_date: string;
   note: string | null;
   created_at: string;
+}
+
+interface FriendshipOption {
+  id: string;
+  user_a: string;
+  user_b: string;
+  user_a_name: string;
+  user_b_name: string;
+}
+
+interface PaymentFormPayload {
+  context_type: "group" | "friend";
+  group_id: string | null;
+  friendship_id: string | null;
+  from_user: string;
+  to_user: string;
+  amount: number;
+  currency: string;
+  payment_date: string;
+  note: string;
+}
+
+type GroupOption = { id: string; name: string };
+type ProfileOption = { id: string; full_name: string };
+
+type FriendshipOptionRecord = {
+  id: string;
+  user_a: string;
+  user_b: string;
+  user_a_profile?: RelationOne<{ full_name: string | null }>;
+  user_b_profile?: RelationOne<{ full_name: string | null }>;
+};
+
+type ExpenseRecord = {
+  id: string;
+  description: string | null;
+  amount: number | null;
+  currency: string | null;
+  category: string | null;
+  expense_date: string;
+  context_type: string;
+  group_id: string | null;
+  paid_by_user_id: string;
+  created_at: string;
+  groups?: { name: string | null } | null;
+  profiles?: { full_name: string | null; avatar_url: string | null } | null;
+  expense_splits?: Array<{ is_settled: boolean | null }> | null;
+};
+
+type PaymentRecord = {
+  id: string;
+  from_user: string;
+  to_user: string;
+  amount: number | null;
+  currency: string | null;
+  context_type: string;
+  group_id: string | null;
+  friendship_id: string | null;
+  payment_date: string;
+  note: string | null;
+  created_at: string;
+  from?: { full_name: string | null; avatar_url: string | null } | null;
+  to?: { full_name: string | null; avatar_url: string | null } | null;
+  groups?: { name: string | null } | null;
+  friendships?: RelationOne<FriendshipOptionRecord>;
+};
+
+type RelationOne<T> = T | T[] | null | undefined;
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
+function relationOne<T>(value: RelationOne<T>): T | null {
+  return Array.isArray(value) ? value[0] ?? null : value ?? null;
 }
 
 // ─── Debounce Hook ──────────────────────────────────────────────────
@@ -221,6 +303,10 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
   );
 }
 
+function formatFriendshipName(friendship: FriendshipOption): string {
+  return `${friendship.user_a_name} - ${friendship.user_b_name}`;
+}
+
 // ─── Expense Detail Dialog ──────────────────────────────────────────
 
 function ExpenseDetailDialog({
@@ -276,7 +362,8 @@ function ExpenseDetailDialog({
   }, [expense, onSettlementChange, splits, tAdmin]);
 
   useEffect(() => {
-    if (!expenseId || !open) { setSplits([]); setComment(null); setAttachments([]); return; }
+    if (!expenseId || !open) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoadingSplits(true);
     type ExpenseSplitResponse = {
       id: string;
@@ -337,6 +424,7 @@ function ExpenseDetailDialog({
             <DetailItem label={tAdmin("common.amount")} value={`${formatNumber(expense.amount)} ${expense.currency}`} />
             <DetailItem label={tAdmin("transactions.expenses.payer")} value={expense.paid_by_name} />
             <DetailItem label={tAdmin("common.group")} value={expense.group_name ?? tAdmin("context.friends")} />
+            <DetailItem label={tAdmin("transactions.expenses.context")} value={expense.context_type === "group" ? tAdmin("context.group") : tAdmin("context.friends")} />
             <DetailItem label={tAdmin("transactions.expenses.category")} value={
               (() => {
                 const cat = getCategoryMeta(expense.category);
@@ -356,6 +444,8 @@ function ExpenseDetailDialog({
                 ? <Badge className="gap-1"><CheckCircle2Icon className="size-3" aria-hidden="true" />{tAdmin("transactions.expenses.settled")}</Badge>
                 : <Badge variant="outline" className="gap-1"><ClockIcon className="size-3" aria-hidden="true" />{tAdmin("transactions.expenses.pending")}</Badge>
             } />
+            <DetailItem label={tAdmin("common.createdAt")} value={formatDate(expense.created_at)} />
+            <DetailItem label="ID" value={<span className="font-mono text-xs">{expense.id}</span>} />
           </div>
 
           {/* Comment section - parity with Client show page */}
@@ -487,7 +577,7 @@ function PaymentDetailDialog({
           </div>
           <div className="space-y-3">
             <DetailRow label={tAdmin("common.amount")} value={<span className="font-mono tabular-nums font-medium">{formatNumber(payment.amount)} {payment.currency}</span>} />
-            <DetailRow label={tAdmin("transactions.expenses.context")} value={payment.group_name ?? tAdmin("context.friends")} />
+            <DetailRow label={tAdmin("transactions.expenses.context")} value={payment.group_name ?? payment.friendship_name ?? tAdmin("context.friends")} />
             <DetailRow label={tAdmin("transactions.payments.method")} value={
               <Badge className={payment.context_type === "group"
                 ? "bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] border-[var(--status-info-border)]"
@@ -495,6 +585,9 @@ function PaymentDetailDialog({
               }>{payment.context_type === "group" ? tAdmin("context.group") : tAdmin("context.friends")}</Badge>
             } />
             <DetailRow label={tAdmin("transactions.payments.paymentDate")} value={formatDate(payment.payment_date)} />
+            <DetailRow label={tAdmin("transactions.payments.currency")} value={payment.currency} />
+            <DetailRow label={tAdmin("common.createdAt")} value={formatDate(payment.created_at)} />
+            <DetailRow label="ID" value={<span className="font-mono text-xs">{payment.id}</span>} />
             {payment.note && <DetailRow label={tAdmin("transactions.payments.note")} value={payment.note} />}
           </div>
         </div>
@@ -579,19 +672,22 @@ function CreatePaymentDialog({
   open, onOpenChange, onSubmit, isCreating,
 }: {
   open: boolean; onOpenChange: (open: boolean) => void;
-  onSubmit: (data: { from_user: string; to_user: string; amount: number; currency: string; payment_date: string; group_id: string | null; note: string }) => void;
+  onSubmit: (data: PaymentFormPayload) => void;
   isCreating: boolean;
 }) {
   const { tAdmin } = useAdminTranslation();
+  const [contextType, setContextType] = useState<"group" | "friend">("group");
   const [fromUser, setFromUser] = useState("");
   const [toUser, setToUser] = useState("");
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("VND");
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split("T")[0]);
-  const [groupId, setGroupId] = useState<string>("none");
+  const [groupId, setGroupId] = useState<string>("");
+  const [friendshipId, setFriendshipId] = useState<string>("");
   const [note, setNote] = useState("");
   const [profilesList, setProfilesList] = useState<Array<{ id: string; full_name: string }>>([]);
   const [groupsList, setGroupsList] = useState<Array<{ id: string; name: string }>>([]);
+  const [friendshipsList, setFriendshipsList] = useState<FriendshipOption[]>([]);
   const { tap } = useHaptics();
 
   useEffect(() => {
@@ -599,18 +695,30 @@ function CreatePaymentDialog({
     Promise.all([
       supabaseClient.from("profiles").select("id, full_name").order("full_name"),
       supabaseClient.from("groups").select("id, name").order("name"),
-    ]).then(([profilesRes, groupsRes]) => {
+      supabaseClient
+        .from("friendships")
+        .select("id, user_a, user_b, user_a_profile:profiles!user_a(full_name), user_b_profile:profiles!user_b(full_name)")
+        .eq("status", "accepted")
+        .order("created_at", { ascending: false }),
+    ]).then(([profilesRes, groupsRes, friendshipsRes]) => {
       if (profilesRes.data) setProfilesList(profilesRes.data);
       if (groupsRes.data) setGroupsList(groupsRes.data);
+      if (friendshipsRes.data) {
+        const friendshipRows = friendshipsRes.data as unknown as FriendshipOptionRecord[];
+        setFriendshipsList(friendshipRows.map((friendship) => ({
+          id: friendship.id,
+          user_a: friendship.user_a,
+          user_b: friendship.user_b,
+          user_a_name: relationOne(friendship.user_a_profile)?.full_name ?? tAdmin("people.userA"),
+          user_b_name: relationOne(friendship.user_b_profile)?.full_name ?? tAdmin("people.userB"),
+        })));
+      }
     });
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) { setFromUser(""); setToUser(""); setAmount(""); setCurrency("VND"); setPaymentDate(new Date().toISOString().split("T")[0]); setGroupId("none"); setNote(""); }
-  }, [open]);
+  }, [open, tAdmin]);
 
   const handleSubmit = () => {
-    if (!fromUser || !toUser || !amount || !paymentDate) {
+    const missingContext = contextType === "group" ? !groupId : !friendshipId;
+    if (!fromUser || !toUser || !amount || !paymentDate || missingContext) {
       toast.error(tAdmin("transactions.payments.requiredFields"));
       return;
     }
@@ -620,18 +728,20 @@ function CreatePaymentDialog({
     }
     tap();
     onSubmit({
+      context_type: contextType,
       from_user: fromUser,
       to_user: toUser,
       amount: Number(amount),
       currency,
       payment_date: paymentDate,
-      group_id: groupId === "none" ? null : groupId,
+      group_id: contextType === "group" ? groupId : null,
+      friendship_id: contextType === "friend" ? friendshipId : null,
       note,
     });
   };
 
   return (
-    <AdminCrudSheet
+    <AdminCrudDialog
       open={open}
       onOpenChange={onOpenChange}
       title={tAdmin("transactions.payments.createTitle")}
@@ -639,27 +749,77 @@ function CreatePaymentDialog({
       isSubmitting={isCreating}
       submitLabel={tAdmin("transactions.payments.create")}
       onSubmit={handleSubmit}
+      contentClassName="sm:max-w-[640px]"
     >
       <div className="space-y-4">
-        <div className="space-y-2">
-          <Label>{tAdmin("transactions.payments.fromUser")}</Label>
-          <UserSingleCombobox
-            value={fromUser}
-            onChange={(v) => { tap(); setFromUser(v); }}
-            users={profilesList}
-            placeholder={tAdmin("transactions.payments.selectSender")}
-          />
+        <div className="grid grid-cols-2 gap-3 rounded-lg border bg-muted/30 p-3">
+          <button
+            type="button"
+            onClick={() => { tap(); setContextType("group"); setFriendshipId(""); }}
+            className={cn(
+              "flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors",
+              contextType === "group" ? "border-primary bg-primary/10 text-primary" : "hover:bg-accent",
+            )}
+          >
+            {tAdmin("context.group")}
+          </button>
+          <button
+            type="button"
+            onClick={() => { tap(); setContextType("friend"); setGroupId(""); }}
+            className={cn(
+              "flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors",
+              contextType === "friend" ? "border-primary bg-primary/10 text-primary" : "hover:bg-accent",
+            )}
+          >
+            {tAdmin("context.friends")}
+          </button>
         </div>
-        <div className="space-y-2">
-          <Label>{tAdmin("transactions.payments.toUser")}</Label>
-          <UserSingleCombobox
-            value={toUser}
-            onChange={(v) => { tap(); setToUser(v); }}
-            users={profilesList}
-            placeholder={tAdmin("transactions.payments.selectReceiver")}
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label>{contextType === "group" ? tAdmin("common.group") : tAdmin("common.friendship")}</Label>
+            {contextType === "group" ? (
+              <Select value={groupId} onValueChange={(v) => { tap(); setGroupId(v); }}>
+                <SelectTrigger><SelectValue placeholder={tAdmin("transactions.expenses.allGroups")} /></SelectTrigger>
+                <SelectContent>
+                  {groupsList.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Select value={friendshipId} onValueChange={(v) => { tap(); setFriendshipId(v); }}>
+                <SelectTrigger><SelectValue placeholder={tAdmin("people.selectUser")} /></SelectTrigger>
+                <SelectContent>
+                  {friendshipsList.map((friendship) => (
+                    <SelectItem key={friendship.id} value={friendship.id}>
+                      {formatFriendshipName(friendship)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label>{tAdmin("transactions.payments.paymentDate")}</Label>
+            <Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>{tAdmin("transactions.payments.fromUser")}</Label>
+            <UserSingleCombobox
+              value={fromUser}
+              onChange={(v) => { tap(); setFromUser(v); }}
+              users={profilesList}
+              placeholder={tAdmin("transactions.payments.selectSender")}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>{tAdmin("transactions.payments.toUser")}</Label>
+            <UserSingleCombobox
+              value={toUser}
+              onChange={(v) => { tap(); setToUser(v); }}
+              users={profilesList}
+              placeholder={tAdmin("transactions.payments.selectReceiver")}
+            />
+          </div>
           <div className="space-y-2"><Label>{tAdmin("common.amount")}</Label><Input type="number" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
           <div className="space-y-2">
             <Label>{tAdmin("transactions.payments.currency")}</Label>
@@ -668,21 +828,10 @@ function CreatePaymentDialog({
               <SelectContent><SelectItem value="VND">VND</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent>
             </Select>
           </div>
+          <div className="space-y-2 sm:col-span-2"><Label>{tAdmin("transactions.payments.noteOptional")}</Label><Input placeholder={tAdmin("transactions.payments.notePlaceholder")} value={note} onChange={(e) => setNote(e.target.value)} /></div>
         </div>
-        <div className="space-y-2"><Label>{tAdmin("transactions.payments.paymentDate")}</Label><Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} /></div>
-        <div className="space-y-2">
-          <Label>{tAdmin("transactions.payments.groupOptional")}</Label>
-          <Select value={groupId} onValueChange={(v) => { tap(); setGroupId(v); }}>
-            <SelectTrigger><SelectValue placeholder={tAdmin("transactions.payments.noGroup")} /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">{tAdmin("transactions.payments.noGroupFriends")}</SelectItem>
-              {groupsList.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2"><Label>{tAdmin("transactions.payments.noteOptional")}</Label><Input placeholder={tAdmin("transactions.payments.notePlaceholder")} value={note} onChange={(e) => setNote(e.target.value)} /></div>
       </div>
-    </AdminCrudSheet>
+    </AdminCrudDialog>
   );
 }
 
@@ -692,23 +841,79 @@ function EditPaymentDialog({
   payment, open, onOpenChange, onSubmit, isUpdating,
 }: {
   payment: PaymentRow | null; open: boolean; onOpenChange: (open: boolean) => void;
-  onSubmit: (data: { amount: number; payment_date: string; note: string }) => void;
+  onSubmit: (data: PaymentFormPayload) => void;
   isUpdating: boolean;
 }) {
   const { tAdmin } = useAdminTranslation();
-  const [amount, setAmount] = useState("");
-  const [paymentDate, setPaymentDate] = useState("");
-  const [note, setNote] = useState("");
+  const initialContextType = payment?.context_type === "friend" ? "friend" : "group";
+  const [contextType, setContextType] = useState<"group" | "friend">(initialContextType);
+  const [fromUser, setFromUser] = useState(payment?.from_user_id ?? "");
+  const [toUser, setToUser] = useState(payment?.to_user_id ?? "");
+  const [amount, setAmount] = useState(payment ? String(payment.amount) : "");
+  const [currency, setCurrency] = useState(payment?.currency || "VND");
+  const [paymentDate, setPaymentDate] = useState(payment?.payment_date?.split("T")[0] ?? "");
+  const [groupId, setGroupId] = useState(payment?.group_id ?? "");
+  const [friendshipId, setFriendshipId] = useState(payment?.friendship_id ?? "");
+  const [note, setNote] = useState(payment?.note ?? "");
+  const [profilesList, setProfilesList] = useState<Array<{ id: string; full_name: string }>>([]);
+  const [groupsList, setGroupsList] = useState<Array<{ id: string; name: string }>>([]);
+  const [friendshipsList, setFriendshipsList] = useState<FriendshipOption[]>([]);
   const { tap } = useHaptics();
 
   useEffect(() => {
-    if (payment && open) { setAmount(String(payment.amount)); setPaymentDate(payment.payment_date?.split("T")[0] ?? ""); setNote(payment.note ?? ""); }
-  }, [payment, open]);
+    if (!open) return;
+    Promise.all([
+      supabaseClient.from("profiles").select("id, full_name").order("full_name"),
+      supabaseClient.from("groups").select("id, name").order("name"),
+      supabaseClient
+        .from("friendships")
+        .select("id, user_a, user_b, user_a_profile:profiles!user_a(full_name), user_b_profile:profiles!user_b(full_name)")
+        .eq("status", "accepted")
+        .order("created_at", { ascending: false }),
+    ]).then(([profilesRes, groupsRes, friendshipsRes]) => {
+      if (profilesRes.data) setProfilesList(profilesRes.data);
+      if (groupsRes.data) setGroupsList(groupsRes.data);
+      if (friendshipsRes.data) {
+        const friendshipRows = friendshipsRes.data as unknown as FriendshipOptionRecord[];
+        setFriendshipsList(friendshipRows.map((friendship) => ({
+          id: friendship.id,
+          user_a: friendship.user_a,
+          user_b: friendship.user_b,
+          user_a_name: relationOne(friendship.user_a_profile)?.full_name ?? tAdmin("people.userA"),
+          user_b_name: relationOne(friendship.user_b_profile)?.full_name ?? tAdmin("people.userB"),
+        })));
+      }
+    });
+  }, [open, tAdmin]);
 
   if (!payment) return null;
 
+  const handleSubmit = () => {
+    const missingContext = contextType === "group" ? !groupId : !friendshipId;
+    if (!fromUser || !toUser || !amount || !paymentDate || missingContext) {
+      toast.error(tAdmin("transactions.payments.requiredFields"));
+      return;
+    }
+    if (fromUser === toUser) {
+      toast.error(tAdmin("transactions.payments.sameUserError"));
+      return;
+    }
+    tap();
+    onSubmit({
+      context_type: contextType,
+      from_user: fromUser,
+      to_user: toUser,
+      amount: Number(amount),
+      currency,
+      payment_date: paymentDate,
+      group_id: contextType === "group" ? groupId : null,
+      friendship_id: contextType === "friend" ? friendshipId : null,
+      note,
+    });
+  };
+
   return (
-    <AdminCrudSheet
+    <AdminCrudDialog
       open={open}
       onOpenChange={onOpenChange}
       title={tAdmin("transactions.payments.editTitle")}
@@ -718,14 +923,81 @@ function EditPaymentDialog({
       })}
       isSubmitting={isUpdating}
       submitLabel={tAdmin("common.save")}
-      onSubmit={() => { tap(); onSubmit({ amount: Number(amount), payment_date: paymentDate, note }); }}
+      contentClassName="sm:max-w-[640px]"
+      onSubmit={handleSubmit}
     >
       <div className="space-y-4">
-        <div className="space-y-2"><Label>{tAdmin("common.amount")}</Label><Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
-        <div className="space-y-2"><Label>{tAdmin("transactions.payments.paymentDate")}</Label><Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} /></div>
-        <div className="space-y-2"><Label>{tAdmin("transactions.payments.note")}</Label><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder={tAdmin("transactions.payments.notePlaceholder")} /></div>
+        <div className="grid grid-cols-2 gap-3 rounded-lg border bg-muted/30 p-3">
+          <button
+            type="button"
+            onClick={() => { tap(); setContextType("group"); setFriendshipId(""); }}
+            className={cn(
+              "flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors",
+              contextType === "group" ? "border-primary bg-primary/10 text-primary" : "hover:bg-accent",
+            )}
+          >
+            {tAdmin("context.group")}
+          </button>
+          <button
+            type="button"
+            onClick={() => { tap(); setContextType("friend"); setGroupId(""); }}
+            className={cn(
+              "flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors",
+              contextType === "friend" ? "border-primary bg-primary/10 text-primary" : "hover:bg-accent",
+            )}
+          >
+            {tAdmin("context.friends")}
+          </button>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label>{contextType === "group" ? tAdmin("common.group") : tAdmin("common.friendship")}</Label>
+            {contextType === "group" ? (
+              <Select value={groupId} onValueChange={(v) => { tap(); setGroupId(v); }}>
+                <SelectTrigger><SelectValue placeholder={tAdmin("transactions.expenses.allGroups")} /></SelectTrigger>
+                <SelectContent>
+                  {groupsList.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Select value={friendshipId} onValueChange={(v) => { tap(); setFriendshipId(v); }}>
+                <SelectTrigger><SelectValue placeholder={tAdmin("common.friendship")} /></SelectTrigger>
+                <SelectContent>
+                  {friendshipsList.map((friendship) => (
+                    <SelectItem key={friendship.id} value={friendship.id}>
+                      {formatFriendshipName(friendship)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+          <div className="space-y-2"><Label>{tAdmin("transactions.payments.paymentDate")}</Label><Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} /></div>
+          <div className="space-y-2">
+            <Label>{tAdmin("transactions.payments.fromUser")}</Label>
+            <UserSingleCombobox value={fromUser} onChange={(v) => { tap(); setFromUser(v); }} users={profilesList} placeholder={tAdmin("transactions.payments.selectSender")} />
+          </div>
+          <div className="space-y-2">
+            <Label>{tAdmin("transactions.payments.toUser")}</Label>
+            <UserSingleCombobox value={toUser} onChange={(v) => { tap(); setToUser(v); }} users={profilesList} placeholder={tAdmin("transactions.payments.selectReceiver")} />
+          </div>
+          <div className="space-y-2"><Label>{tAdmin("common.amount")}</Label><Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
+          <div className="space-y-2">
+            <Label>{tAdmin("transactions.payments.currency")}</Label>
+            <Select value={currency} onValueChange={(v) => { tap(); setCurrency(v); }}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="VND">VND</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2 sm:col-span-2"><Label>{tAdmin("transactions.payments.note")}</Label><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder={tAdmin("transactions.payments.notePlaceholder")} /></div>
+        </div>
+        <div className="grid gap-3 rounded-lg border bg-muted/20 p-3 text-sm sm:grid-cols-2">
+          <DetailItem label="ID" value={<span className="font-mono text-xs">{payment.id}</span>} />
+          <DetailItem label={tAdmin("common.createdAt")} value={formatDate(payment.created_at)} />
+        </div>
       </div>
-    </AdminCrudSheet>
+    </AdminCrudDialog>
   );
 }
 
@@ -756,10 +1028,10 @@ function ExpensesTab() {
   const { tap, warning } = useHaptics();
 
   const { query: groupsQuery } = useList({ resource: "groups", pagination: { pageSize: 200 }, meta: { select: "id, name" } });
-  const groups = groupsQuery.data?.data ?? [];
+  const groups = (groupsQuery.data?.data ?? []) as GroupOption[];
 
-  const filters = useMemo(() => {
-    const f: Array<{ field: string; operator: string; value: unknown }> = [];
+  const filters = useMemo<CrudFilters>(() => {
+    const f: CrudFilters = [];
     f.push({ field: "is_payment", operator: "eq", value: false });
     if (debouncedSearch) f.push({ field: "description", operator: "contains", value: debouncedSearch });
     if (groupFilter !== "all") f.push({ field: "group_id", operator: "eq", value: groupFilter });
@@ -840,14 +1112,14 @@ function ExpensesTab() {
       resource: "expenses",
       meta: { select: "*, profiles!expenses_paid_by_user_id_fkey(full_name, avatar_url), groups(name), expense_splits(is_settled)" },
       pagination: { pageSize: 10 },
-      filters: { permanent: filters as any },
+      filters: { permanent: filters },
       sorters: { initial: [{ field: "expense_date", order: "desc" }] },
       syncWithLocation: false,
       queryOptions: {
         select: (data) => {
-          const transformed = data.data.map((expense: any) => {
+          const transformed = (data.data as ExpenseRecord[]).map((expense) => {
             const splits = expense.expense_splits ?? [];
-            const allSettled = splits.length > 0 && splits.every((s: any) => s.is_settled);
+            const allSettled = splits.length > 0 && splits.every((s) => s.is_settled);
             return {
               id: expense.id, description: expense.description ?? "", amount: expense.amount ?? 0,
               currency: expense.currency ?? "VND", category: expense.category ?? null,
@@ -875,7 +1147,7 @@ function ExpensesTab() {
       if (error) throw error;
       toast.success(tAdmin("transactions.expenses.deleted", { description: deleteExpense.description }));
       setDeleteDialogOpen(false); setDeleteExpense(null); table.refineCore.tableQuery.refetch();
-    } catch (err: any) { toast.error(tAdmin("common.errorWithMessage", { message: err.message ?? tAdmin("transactions.expenses.deleteTitle") })); }
+    } catch (err: unknown) { toast.error(tAdmin("common.errorWithMessage", { message: getErrorMessage(err, tAdmin("transactions.expenses.deleteTitle")) })); }
     finally { setIsDeleting(false); }
   }, [deleteExpense, table.refineCore.tableQuery, tAdmin, warning]);
 
@@ -896,6 +1168,7 @@ function ExpensesTab() {
   const clearFilters = useCallback(() => { tap(); setSearch(""); setGroupFilter("all"); setStatusFilter("all"); setDateFrom(""); setDateTo(""); setAmountMin(""); setAmountMax(""); }, [tap]);
   const hasActiveFilters = search !== "" || groupFilter !== "all" || statusFilter !== "all" || dateFrom !== "" || dateTo !== "" || amountMin !== "" || amountMax !== "";
   const isEmptyResult = !table.refineCore.tableQuery.isLoading && table.reactTable.getRowModel().rows.length === 0;
+  const visibleExpenses = table.reactTable.getRowModel().rows.map((row) => row.original);
 
   return (
     <>
@@ -919,7 +1192,7 @@ function ExpensesTab() {
           />
           <AdminFilterChips
             filters={[
-              ...(groupFilter !== "all" ? [{ key: "group", label: tAdmin("transactions.filterChips.group", { value: groups.find((g: any) => g.id === groupFilter)?.name ?? groupFilter }), onRemove: () => { tap(); setGroupFilter("all"); } }] : []),
+              ...(groupFilter !== "all" ? [{ key: "group", label: tAdmin("transactions.filterChips.group", { value: groups.find((g) => g.id === groupFilter)?.name ?? groupFilter }), onRemove: () => { tap(); setGroupFilter("all"); } }] : []),
               ...(statusFilter !== "all" ? [{ key: "status", label: tAdmin("transactions.filterChips.status", { value: statusFilter === "settled" ? tAdmin("transactions.expenses.settled") : tAdmin("transactions.expenses.pending") }), onRemove: () => { tap(); setStatusFilter("all"); } }] : []),
               ...(dateFrom !== "" ? [{ key: "dateFrom", label: tAdmin("transactions.filterChips.dateFrom", { value: dateFrom }), onRemove: () => setDateFrom("") }] : []),
               ...(dateTo !== "" ? [{ key: "dateTo", label: tAdmin("transactions.filterChips.dateTo", { value: dateTo }), onRemove: () => setDateTo("") }] : []),
@@ -935,7 +1208,7 @@ function ExpensesTab() {
                 <div className="space-y-1"><Label className="text-xs text-muted-foreground">{tAdmin("common.toDate")}</Label><Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" /></div>
                 <div className="space-y-1"><Label className="text-xs text-muted-foreground">{tAdmin("common.group")}</Label>
                   <Select value={groupFilter} onValueChange={(v) => { tap(); setGroupFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder={tAdmin("transactions.expenses.allGroups")} /></SelectTrigger>
-                    <SelectContent><SelectItem value="all">{tAdmin("transactions.expenses.allGroups")}</SelectItem>{groups.map((g: any) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
+                    <SelectContent><SelectItem value="all">{tAdmin("transactions.expenses.allGroups")}</SelectItem>{groups.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1">
@@ -955,12 +1228,70 @@ function ExpensesTab() {
           {isEmptyResult && hasActiveFilters ? (
             <Empty className="min-h-[400px]"><EmptyMedia variant="icon"><ReceiptIcon className="h-6 w-6" /></EmptyMedia><EmptyHeader><EmptyTitle>{tAdmin("transactions.expenses.noResultsTitle")}</EmptyTitle><EmptyDescription>{tAdmin("transactions.expenses.noResultsDescription")}</EmptyDescription></EmptyHeader><EmptyContent><Button variant="outline" onClick={clearFilters}>{tAdmin("common.clearFilters")}</Button></EmptyContent></Empty>
           ) : (
-            <DataTable table={table} />
+            <>
+              <div className="hidden md:block">
+                <DataTable table={table} />
+              </div>
+              <div className="space-y-3 md:hidden">
+                <AdminMobileCards
+                  items={visibleExpenses}
+                  getKey={(expense) => expense.id}
+                  renderItem={(expense) => {
+                    const cat = getCategoryMeta(expense.category);
+                    const CatIcon = cat.icon;
+                    return (
+                      <AdminMobileCard
+                        title={expense.description}
+                        description={`${expense.paid_by_name} · ${formatDate(expense.expense_date)}`}
+                        leading={
+                          <span className={`inline-flex h-10 w-10 items-center justify-center rounded-md ${cat.bgColor}`}>
+                            <CatIcon size={18} className={cat.color} />
+                          </span>
+                        }
+                        badges={expense.is_settled
+                          ? <Badge className="gap-1"><CheckCircle2Icon className="size-3" aria-hidden="true" />{tAdmin("transactions.expenses.settled")}</Badge>
+                          : <Badge variant="outline" className="gap-1"><ClockIcon className="size-3" aria-hidden="true" />{tAdmin("transactions.expenses.pending")}</Badge>}
+                        meta={[
+                          { label: tAdmin("common.amount"), value: <span className="font-mono tabular-nums">{formatNumber(expense.amount)} {expense.currency}</span> },
+                          { label: tAdmin("common.group"), value: expense.group_name ?? tAdmin("context.friends") },
+                          { label: tAdmin("transactions.expenses.category"), value: cat.name },
+                          { label: "ID", value: <span className="font-mono text-xs">{expense.id.slice(0, 8)}</span> },
+                        ]}
+                        actions={
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-9 w-9 cursor-pointer"><MoreHorizontalIcon className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => { tap(); setSelectedExpense(expense); setDetailOpen(true); }}>{tAdmin("common.details")}</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => { tap(); setEditExpenseId(expense.id); setEditDialogOpen(true); }}><PencilIcon className="mr-2 h-4 w-4" />{tAdmin("common.edit")}</DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => { warning(); setDeleteExpense(expense); setDeleteDialogOpen(true); }} className="text-destructive">{tAdmin("common.delete")}</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        }
+                        onClick={() => { tap(); setSelectedExpense(expense); setDetailOpen(true); }}
+                        ariaLabel={expense.description}
+                      />
+                    );
+                  }}
+                />
+                {visibleExpenses.length > 0 && (
+                  <AdminMobilePagination
+                    summary={tAdmin("common.pageCount", { page: table.refineCore.currentPage, total: table.refineCore.pageCount })}
+                    previousLabel={tAdmin("common.previous")}
+                    nextLabel={tAdmin("common.next")}
+                    canPrevious={table.refineCore.currentPage > 1}
+                    canNext={table.refineCore.currentPage < table.refineCore.pageCount}
+                    onPrevious={() => table.refineCore.setCurrentPage(table.refineCore.currentPage - 1)}
+                    onNext={() => table.refineCore.setCurrentPage(table.refineCore.currentPage + 1)}
+                  />
+                )}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
 
-      <ExpenseDetailDialog expense={selectedExpense} open={detailOpen} onOpenChange={setDetailOpen}
+      <ExpenseDetailDialog key={selectedExpense?.id ?? "expense-detail-empty"} expense={selectedExpense} open={detailOpen} onOpenChange={setDetailOpen}
         onSettlementChange={handleSettlementChange}
         onEdit={() => { setDetailOpen(false); setEditExpenseId(selectedExpense?.id ?? null); setEditDialogOpen(true); }}
         onDelete={() => { setDetailOpen(false); setDeleteExpense(selectedExpense); setDeleteDialogOpen(true); }}
@@ -981,6 +1312,7 @@ function ExpensesTab() {
 
 function PaymentsTab() {
   const { tAdmin } = useAdminTranslation();
+  const { data: identity } = useGetIdentity<Profile>();
   const deleteMutation = useInstantDelete();
   const createMutation = useInstantCreate();
   const updateMutation = useInstantUpdate();
@@ -1007,13 +1339,13 @@ function PaymentsTab() {
   const { tap, success, warning } = useHaptics();
 
   const { query: groupsQuery } = useList({ resource: "groups", pagination: { pageSize: 200 }, meta: { select: "id, name" } });
-  const groups = groupsQuery.data?.data ?? [];
+  const groups = (groupsQuery.data?.data ?? []) as GroupOption[];
 
   const { query: profilesQuery } = useList({ resource: "profiles", pagination: { pageSize: 200 }, meta: { select: "id, full_name" } });
-  const profiles = profilesQuery.data?.data ?? [];
+  const profiles = (profilesQuery.data?.data ?? []) as ProfileOption[];
 
-  const filters = useMemo(() => {
-    const f: Array<{ field: string; operator: string; value: unknown }> = [];
+  const filters = useMemo<CrudFilters>(() => {
+    const f: CrudFilters = [];
     if (debouncedSearch) f.push({ field: "note", operator: "contains", value: debouncedSearch });
     if (groupFilter !== "all") f.push({ field: "group_id", operator: "eq", value: groupFilter });
     if (senderFilter !== "all") f.push({ field: "from_user", operator: "eq", value: senderFilter });
@@ -1054,7 +1386,7 @@ function PaymentsTab() {
     },
     {
       id: "group", header: tAdmin("transactions.expenses.context"), accessorKey: "group_name", size: 140, enableSorting: false,
-      cell: ({ row }) => <span className="text-sm">{row.original.group_name ?? tAdmin("context.friends")}</span>,
+      cell: ({ row }) => <span className="text-sm">{row.original.group_name ?? row.original.friendship_name ?? tAdmin("context.friends")}</span>,
     },
     {
       id: "payment_date", header: tAdmin("common.date"), accessorKey: "payment_date", size: 110,
@@ -1090,30 +1422,41 @@ function PaymentsTab() {
     columns,
     refineCoreProps: {
       resource: "payments",
-      meta: { select: "*, from:profiles!payments_from_user_fkey(full_name, avatar_url), to:profiles!payments_to_user_fkey(full_name, avatar_url), groups(name)" },
+      meta: {
+        select: "*, from:profiles!payments_from_user_fkey(full_name, avatar_url), to:profiles!payments_to_user_fkey(full_name, avatar_url), groups(name), friendships(id, user_a, user_b, user_a_profile:profiles!user_a(full_name), user_b_profile:profiles!user_b(full_name))",
+      },
       pagination: { pageSize: 10 },
-      filters: { permanent: filters as any },
+      filters: { permanent: filters },
       sorters: { initial: [{ field: "payment_date", order: "desc" }] },
       syncWithLocation: false,
       queryOptions: {
         select: (data) => {
-          const transformed = data.data.map((payment: any) => ({
-            id: payment.id,
-            from_user_id: payment.from_user,
-            from_user_name: payment.from?.full_name ?? tAdmin("common.unknown"),
-            from_user_avatar: payment.from?.avatar_url ?? null,
-            to_user_id: payment.to_user,
-            to_user_name: payment.to?.full_name ?? tAdmin("common.unknown"),
-            to_user_avatar: payment.to?.avatar_url ?? null,
-            amount: payment.amount ?? 0,
-            currency: payment.currency ?? "VND",
-            context_type: payment.context_type,
-            group_id: payment.group_id,
-            group_name: payment.groups?.name ?? null,
-            payment_date: payment.payment_date,
-            note: payment.note,
-            created_at: payment.created_at,
-          }));
+          const transformed = (data.data as unknown as PaymentRecord[]).map((payment) => {
+            const friendship = relationOne(payment.friendships);
+            const friendshipUserA = relationOne(friendship?.user_a_profile);
+            const friendshipUserB = relationOne(friendship?.user_b_profile);
+            return {
+              id: payment.id,
+              from_user_id: payment.from_user,
+              from_user_name: payment.from?.full_name ?? tAdmin("common.unknown"),
+              from_user_avatar: payment.from?.avatar_url ?? null,
+              to_user_id: payment.to_user,
+              to_user_name: payment.to?.full_name ?? tAdmin("common.unknown"),
+              to_user_avatar: payment.to?.avatar_url ?? null,
+              amount: payment.amount ?? 0,
+              currency: payment.currency ?? "VND",
+              context_type: payment.context_type,
+              group_id: payment.group_id,
+              group_name: payment.groups?.name ?? null,
+              friendship_id: payment.friendship_id ?? null,
+              friendship_name: friendship
+                ? `${friendshipUserA?.full_name ?? tAdmin("people.userA")} - ${friendshipUserB?.full_name ?? tAdmin("people.userB")}`
+                : null,
+              payment_date: payment.payment_date,
+              note: payment.note,
+              created_at: payment.created_at,
+            };
+          });
           return { ...data, data: transformed };
         },
       },
@@ -1133,22 +1476,54 @@ function PaymentsTab() {
     );
   }, [deletePayment, deleteMutation, table.refineCore.tableQuery, tAdmin, warning]);
 
-  const handleCreate = useCallback((data: { from_user: string; to_user: string; amount: number; currency: string; payment_date: string; group_id: string | null; note: string }) => {
+  const handleCreate = useCallback((data: PaymentFormPayload) => {
+    if (!identity?.id) {
+      toast.error(tAdmin("common.errorWithMessage", { message: "Missing admin identity" }));
+      return;
+    }
     setIsCreating(true);
     createMutation.mutate(
-      { resource: "payments", values: { from_user: data.from_user, to_user: data.to_user, amount: data.amount, currency: data.currency, payment_date: data.payment_date, group_id: data.group_id, context_type: data.group_id ? "group" : "friend", note: data.note || null } },
+      {
+        resource: "payments",
+        values: {
+          context_type: data.context_type,
+          group_id: data.group_id,
+          friendship_id: data.friendship_id,
+          from_user: data.from_user,
+          to_user: data.to_user,
+          amount: data.amount,
+          currency: data.currency,
+          payment_date: data.payment_date,
+          note: data.note || null,
+          created_by: identity.id,
+        },
+      },
       {
         onSuccess: () => { success(); toast.success(tAdmin("transactions.payments.created")); setCreateDialogOpen(false); setIsCreating(false); table.refineCore.tableQuery.refetch(); },
         onError: (error) => { toast.error(tAdmin("common.errorWithMessage", { message: error.message })); setIsCreating(false); },
       },
     );
-  }, [createMutation, table.refineCore.tableQuery, success, tAdmin]);
+  }, [createMutation, identity, table.refineCore.tableQuery, success, tAdmin]);
 
-  const handleEdit = useCallback((data: { amount: number; payment_date: string; note: string }) => {
+  const handleEdit = useCallback((data: PaymentFormPayload) => {
     if (!editPayment) return;
     setIsUpdating(true);
     updateMutation.mutate(
-      { resource: "payments", id: editPayment.id, values: { amount: data.amount, payment_date: data.payment_date, note: data.note || null } },
+      {
+        resource: "payments",
+        id: editPayment.id,
+        values: {
+          context_type: data.context_type,
+          group_id: data.group_id,
+          friendship_id: data.friendship_id,
+          from_user: data.from_user,
+          to_user: data.to_user,
+          amount: data.amount,
+          currency: data.currency,
+          payment_date: data.payment_date,
+          note: data.note || null,
+        },
+      },
       {
         onSuccess: () => { success(); toast.success(tAdmin("transactions.payments.updated")); setEditDialogOpen(false); setEditPayment(null); setIsUpdating(false); table.refineCore.tableQuery.refetch(); },
         onError: (error) => { toast.error(tAdmin("common.errorWithMessage", { message: error.message })); setIsUpdating(false); },
@@ -1159,6 +1534,7 @@ function PaymentsTab() {
   const clearFilters = useCallback(() => { tap(); setSearch(""); setGroupFilter("all"); setSenderFilter("all"); setReceiverFilter("all"); setDateFrom(""); setDateTo(""); }, [tap]);
   const hasActiveFilters = search !== "" || groupFilter !== "all" || senderFilter !== "all" || receiverFilter !== "all" || dateFrom !== "" || dateTo !== "";
   const isEmptyResult = !table.refineCore.tableQuery.isLoading && table.reactTable.getRowModel().rows.length === 0;
+  const visiblePayments = table.reactTable.getRowModel().rows.map((row) => row.original);
 
   return (
     <>
@@ -1182,9 +1558,9 @@ function PaymentsTab() {
           />
           <AdminFilterChips
             filters={[
-              ...(groupFilter !== "all" ? [{ key: "group", label: tAdmin("transactions.filterChips.group", { value: groups.find((g: any) => g.id === groupFilter)?.name ?? groupFilter }), onRemove: () => { tap(); setGroupFilter("all"); } }] : []),
-              ...(senderFilter !== "all" ? [{ key: "sender", label: tAdmin("transactions.filterChips.sender", { value: profiles.find((p: any) => p.id === senderFilter)?.full_name ?? senderFilter }), onRemove: () => { tap(); setSenderFilter("all"); } }] : []),
-              ...(receiverFilter !== "all" ? [{ key: "receiver", label: tAdmin("transactions.filterChips.receiver", { value: profiles.find((p: any) => p.id === receiverFilter)?.full_name ?? receiverFilter }), onRemove: () => { tap(); setReceiverFilter("all"); } }] : []),
+              ...(groupFilter !== "all" ? [{ key: "group", label: tAdmin("transactions.filterChips.group", { value: groups.find((g) => g.id === groupFilter)?.name ?? groupFilter }), onRemove: () => { tap(); setGroupFilter("all"); } }] : []),
+              ...(senderFilter !== "all" ? [{ key: "sender", label: tAdmin("transactions.filterChips.sender", { value: profiles.find((p) => p.id === senderFilter)?.full_name ?? senderFilter }), onRemove: () => { tap(); setSenderFilter("all"); } }] : []),
+              ...(receiverFilter !== "all" ? [{ key: "receiver", label: tAdmin("transactions.filterChips.receiver", { value: profiles.find((p) => p.id === receiverFilter)?.full_name ?? receiverFilter }), onRemove: () => { tap(); setReceiverFilter("all"); } }] : []),
               ...(dateFrom !== "" ? [{ key: "dateFrom", label: tAdmin("transactions.filterChips.dateFrom", { value: dateFrom }), onRemove: () => setDateFrom("") }] : []),
               ...(dateTo !== "" ? [{ key: "dateTo", label: tAdmin("transactions.filterChips.dateTo", { value: dateTo }), onRemove: () => setDateTo("") }] : []),
             ]}
@@ -1197,17 +1573,17 @@ function PaymentsTab() {
                 <div className="space-y-1"><Label className="text-xs text-muted-foreground">{tAdmin("common.toDate")}</Label><Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" /></div>
                 <div className="space-y-1"><Label className="text-xs text-muted-foreground">{tAdmin("common.group")}</Label>
                   <Select value={groupFilter} onValueChange={(v) => { tap(); setGroupFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder={tAdmin("transactions.expenses.allGroups")} /></SelectTrigger>
-                    <SelectContent><SelectItem value="all">{tAdmin("transactions.expenses.allGroups")}</SelectItem>{groups.map((g: any) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
+                    <SelectContent><SelectItem value="all">{tAdmin("transactions.expenses.allGroups")}</SelectItem>{groups.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1"><Label className="text-xs text-muted-foreground">{tAdmin("transactions.payments.sender")}</Label>
                   <Select value={senderFilter} onValueChange={(v) => { tap(); setSenderFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder={tAdmin("common.all")} /></SelectTrigger>
-                    <SelectContent><SelectItem value="all">{tAdmin("common.all")}</SelectItem>{profiles.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
+                    <SelectContent><SelectItem value="all">{tAdmin("common.all")}</SelectItem>{profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1"><Label className="text-xs text-muted-foreground">{tAdmin("transactions.payments.receiver")}</Label>
                   <Select value={receiverFilter} onValueChange={(v) => { tap(); setReceiverFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder={tAdmin("common.all")} /></SelectTrigger>
-                    <SelectContent><SelectItem value="all">{tAdmin("common.all")}</SelectItem>{profiles.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
+                    <SelectContent><SelectItem value="all">{tAdmin("common.all")}</SelectItem>{profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               </div>
@@ -1216,7 +1592,62 @@ function PaymentsTab() {
           {isEmptyResult && hasActiveFilters ? (
             <Empty className="min-h-[400px]"><EmptyMedia variant="icon"><CreditCardIcon className="h-6 w-6" /></EmptyMedia><EmptyHeader><EmptyTitle>{tAdmin("transactions.payments.noResultsTitle")}</EmptyTitle><EmptyDescription>{tAdmin("transactions.payments.noResultsDescription")}</EmptyDescription></EmptyHeader><EmptyContent><Button variant="outline" onClick={clearFilters}>{tAdmin("common.clearFilters")}</Button></EmptyContent></Empty>
           ) : (
-            <DataTable table={table} />
+            <>
+              <div className="hidden md:block">
+                <DataTable table={table} />
+              </div>
+              <div className="space-y-3 md:hidden">
+                <AdminMobileCards
+                  items={visiblePayments}
+                  getKey={(payment) => payment.id}
+                  renderItem={(payment) => (
+                    <AdminMobileCard
+                      title={`${payment.from_user_name} -> ${payment.to_user_name}`}
+                      description={formatDate(payment.payment_date)}
+                      leading={<CreditCardIcon className="mt-1 h-5 w-5 text-primary" />}
+                      badges={
+                        <Badge className={payment.context_type === "group"
+                          ? "bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] border-[var(--status-info-border)]"
+                          : "bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] border-[var(--status-success-border)]"
+                        }>
+                          {payment.context_type === "group" ? tAdmin("context.group") : tAdmin("context.friends")}
+                        </Badge>
+                      }
+                      meta={[
+                        { label: tAdmin("common.amount"), value: <span className="font-mono tabular-nums">{formatNumber(payment.amount)} {payment.currency}</span> },
+                        { label: tAdmin("transactions.expenses.context"), value: payment.group_name ?? payment.friendship_name ?? tAdmin("context.friends") },
+                        { label: tAdmin("transactions.payments.note"), value: payment.note || "—" },
+                        { label: "ID", value: <span className="font-mono text-xs">{payment.id.slice(0, 8)}</span> },
+                      ]}
+                      actions={
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-9 w-9 cursor-pointer"><MoreHorizontalIcon className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => { tap(); setSelectedPayment(payment); setDetailOpen(true); }}>{tAdmin("common.details")}</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { tap(); setEditPayment(payment); setEditDialogOpen(true); }}><PencilIcon className="mr-2 h-4 w-4" />{tAdmin("common.edit")}</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => { warning(); setDeletePayment(payment); setDeleteDialogOpen(true); }} className="text-destructive">{tAdmin("common.delete")}</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      }
+                      onClick={() => { tap(); setSelectedPayment(payment); setDetailOpen(true); }}
+                      ariaLabel={`${payment.from_user_name} ${payment.to_user_name}`}
+                    />
+                  )}
+                />
+                {visiblePayments.length > 0 && (
+                  <AdminMobilePagination
+                    summary={tAdmin("common.pageCount", { page: table.refineCore.currentPage, total: table.refineCore.pageCount })}
+                    previousLabel={tAdmin("common.previous")}
+                    nextLabel={tAdmin("common.next")}
+                    canPrevious={table.refineCore.currentPage > 1}
+                    canNext={table.refineCore.currentPage < table.refineCore.pageCount}
+                    onPrevious={() => table.refineCore.setCurrentPage(table.refineCore.currentPage - 1)}
+                    onNext={() => table.refineCore.setCurrentPage(table.refineCore.currentPage + 1)}
+                  />
+                )}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -1228,8 +1659,8 @@ function PaymentsTab() {
       <DeleteConfirmDialog title={tAdmin("transactions.payments.deleteTitle")} description={tAdmin("transactions.payments.deleteDescription", { amount: formatNumber(deletePayment?.amount ?? 0), currency: deletePayment?.currency ?? "VND", from: deletePayment?.from_user_name ?? "", to: deletePayment?.to_user_name ?? "" })}
         open={deleteDialogOpen} onOpenChange={(o) => { if (!o && !isDeleting) { setDeleteDialogOpen(false); setDeletePayment(null); } }} onConfirm={handleDelete} isDeleting={isDeleting}
       />
-      <CreatePaymentDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} onSubmit={handleCreate} isCreating={isCreating} />
-      <EditPaymentDialog payment={editPayment} open={editDialogOpen} onOpenChange={(o) => { if (!o && !isUpdating) { setEditDialogOpen(false); setEditPayment(null); } }} onSubmit={handleEdit} isUpdating={isUpdating} />
+      <CreatePaymentDialog key={createDialogOpen ? "create-payment-open" : "create-payment-closed"} open={createDialogOpen} onOpenChange={setCreateDialogOpen} onSubmit={handleCreate} isCreating={isCreating} />
+      <EditPaymentDialog key={editPayment?.id ?? "edit-payment-empty"} payment={editPayment} open={editDialogOpen} onOpenChange={(o) => { if (!o && !isUpdating) { setEditDialogOpen(false); setEditPayment(null); } }} onSubmit={handleEdit} isUpdating={isUpdating} />
     </>
   );
 }

@@ -39,7 +39,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
@@ -67,6 +66,11 @@ import {
 import { AdminPageToolbar } from "@/modules/admin/components/AdminPageToolbar";
 import { AdminSection, AdminSectionHeader } from "@/modules/admin/components/AdminSection";
 import { AdminFilterChips } from "@/modules/admin/components/AdminFilterChips";
+import {
+  AdminMobileCard,
+  AdminMobileCards,
+  AdminMobilePagination,
+} from "@/modules/admin/components/AdminMobileCards";
 import { useAdminTranslation } from "../i18n";
 import { formatDate } from "@/lib/locale-utils";
 import type { AuditLogEntry, AuditLogsResponse, AuditStats, AuditFilterOptions } from "../types";
@@ -292,6 +296,7 @@ function AuditDetailDialog({
               <DetailItem label={tAdmin("auditLogs.actionType")} value={entry.action_type} />
               <DetailItem label={tAdmin("auditLogs.tableEntity")} value={entry.table_name ?? entry.entity_type ?? "—"} />
               <DetailItem label={tAdmin("auditLogs.entityId")} value={<span className="font-mono text-xs">{entry.entity_id || "—"}</span>} />
+              <DetailItem label="Audit ID" value={<span className="font-mono text-xs">{entry.id}</span>} />
               <DetailItem label={tAdmin("auditLogs.timestamp")} value={formatDate(entry.timestamp)} />
               <DetailItem label={tAdmin("auditLogs.sourceLabel")} value={
                 <Badge variant="outline" className="text-xs">
@@ -483,11 +488,6 @@ export function AdminAuditLogs() {
   const revertMutation = useRevertAuditEntry();
   const { tap, warning } = useHaptics();
 
-  // Reset page when filters change
-  useEffect(() => {
-    setPage(0);
-  }, [debouncedSearch, actionFilter, tableFilter, actorFilter, dateFrom, dateTo]);
-
   // ─── Data fetching ──────────────────────────────────────────────
 
   const [isExporting, setIsExporting] = useState(false);
@@ -521,6 +521,7 @@ export function AdminAuditLogs() {
     setActorFilter("all");
     setDateFrom("");
     setDateTo("");
+    setPage(0);
   }, [tap]);
 
   const hasActiveFilters =
@@ -643,7 +644,7 @@ export function AdminAuditLogs() {
           <div className="px-6">
             <AdminPageToolbar
               search={search}
-              onSearchChange={setSearch}
+              onSearchChange={(nextSearch) => { setSearch(nextSearch); setPage(0); }}
               searchPlaceholder={tAdmin("auditLogs.searchPlaceholder")}
               filterCount={[actionFilter !== "all", tableFilter !== "all", actorFilter !== "all", dateFrom !== "", dateTo !== ""].filter(Boolean).length}
               onFilterToggle={() => setShowFilters((v) => !v)}
@@ -676,11 +677,11 @@ export function AdminAuditLogs() {
             />
             <AdminFilterChips
               filters={[
-                ...(actionFilter !== "all" ? [{ key: "action", label: tAdmin("auditLogs.filters.action", { value: actionFilter }), onRemove: () => { tap(); setActionFilter("all"); } }] : []),
-                ...(tableFilter !== "all" ? [{ key: "table", label: tAdmin("auditLogs.filters.table", { value: tableFilter }), onRemove: () => { tap(); setTableFilter("all"); } }] : []),
-                ...(actorFilter !== "all" ? [{ key: "actor", label: tAdmin("auditLogs.filters.actor", { value: filterOptions?.actors?.find((a: any) => a.id === actorFilter)?.name ?? actorFilter }), onRemove: () => { tap(); setActorFilter("all"); } }] : []),
-                ...(dateFrom !== "" ? [{ key: "dateFrom", label: tAdmin("transactions.filterChips.dateFrom", { value: dateFrom }), onRemove: () => setDateFrom("") }] : []),
-                ...(dateTo !== "" ? [{ key: "dateTo", label: tAdmin("transactions.filterChips.dateTo", { value: dateTo }), onRemove: () => setDateTo("") }] : []),
+                ...(actionFilter !== "all" ? [{ key: "action", label: tAdmin("auditLogs.filters.action", { value: actionFilter }), onRemove: () => { tap(); setActionFilter("all"); setPage(0); } }] : []),
+                ...(tableFilter !== "all" ? [{ key: "table", label: tAdmin("auditLogs.filters.table", { value: tableFilter }), onRemove: () => { tap(); setTableFilter("all"); setPage(0); } }] : []),
+                ...(actorFilter !== "all" ? [{ key: "actor", label: tAdmin("auditLogs.filters.actor", { value: filterOptions?.actors?.find((actor) => actor.id === actorFilter)?.name ?? actorFilter }), onRemove: () => { tap(); setActorFilter("all"); setPage(0); } }] : []),
+                ...(dateFrom !== "" ? [{ key: "dateFrom", label: tAdmin("transactions.filterChips.dateFrom", { value: dateFrom }), onRemove: () => { setDateFrom(""); setPage(0); } }] : []),
+                ...(dateTo !== "" ? [{ key: "dateTo", label: tAdmin("transactions.filterChips.dateTo", { value: dateTo }), onRemove: () => { setDateTo(""); setPage(0); } }] : []),
               ]}
               onClearAll={clearFilters}
             />
@@ -691,16 +692,16 @@ export function AdminAuditLogs() {
               <div className="flex items-end gap-3 flex-wrap pb-4 px-6">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">{tAdmin("common.fromDate")}</Label>
-                  <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" />
+                  <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(0); }} className="w-[150px]" />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">{tAdmin("common.toDate")}</Label>
-                  <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" />
+                  <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(0); }} className="w-[150px]" />
                 </div>
 
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">{tAdmin("auditLogs.actionType")}</Label>
-                  <Select value={actionFilter} onValueChange={(v) => { tap(); setActionFilter(v); }}>
+                  <Select value={actionFilter} onValueChange={(v) => { tap(); setActionFilter(v); setPage(0); }}>
                     <SelectTrigger className="w-[160px]">
                       <SelectValue placeholder={tAdmin("common.all")} />
                     </SelectTrigger>
@@ -715,7 +716,7 @@ export function AdminAuditLogs() {
 
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">{tAdmin("auditLogs.tableEntity")}</Label>
-                  <Select value={tableFilter} onValueChange={(v) => { tap(); setTableFilter(v); }}>
+                  <Select value={tableFilter} onValueChange={(v) => { tap(); setTableFilter(v); setPage(0); }}>
                     <SelectTrigger className="w-[160px]">
                       <SelectValue placeholder={tAdmin("common.all")} />
                     </SelectTrigger>
@@ -730,7 +731,7 @@ export function AdminAuditLogs() {
 
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">{tAdmin("auditLogs.actor")}</Label>
-                  <Select value={actorFilter} onValueChange={(v) => { tap(); setActorFilter(v); }}>
+                  <Select value={actorFilter} onValueChange={(v) => { tap(); setActorFilter(v); setPage(0); }}>
                     <SelectTrigger className="w-[160px]">
                       <SelectValue placeholder={tAdmin("common.all")} />
                     </SelectTrigger>
@@ -779,7 +780,7 @@ export function AdminAuditLogs() {
           {/* Data Table */}
           {!isLoading && entries.length > 0 && (
             <>
-              <div className="rounded-md border">
+              <div className="hidden overflow-x-auto rounded-md border lg:block">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
@@ -877,8 +878,63 @@ export function AdminAuditLogs() {
                 </Table>
               </div>
 
+              <div className="space-y-3 lg:hidden">
+                <AdminMobileCards
+                  items={entries}
+                  getKey={(entry) => entry.id}
+                  renderItem={(entry) => (
+                    <AdminMobileCard
+                      title={entry.table_name ?? entry.entity_type ?? "—"}
+                      description={`${entry.actor_name || entry.actor_email || tAdmin("common.system")} · ${formatDate(entry.timestamp)}`}
+                      leading={<ScrollTextIcon className="mt-1 h-5 w-5 text-primary" />}
+                      badges={
+                        <>
+                          {(() => {
+                            const action = entry.action_type;
+                            if (action === "DELETE") return <Badge variant="destructive" className="gap-1 text-xs"><Trash2Icon className="size-3" aria-hidden="true" />DELETE</Badge>;
+                            if (action === "INSERT") return <Badge className="gap-1 text-xs"><PlusIcon className="size-3" aria-hidden="true" />INSERT</Badge>;
+                            if (action === "UPDATE") return <Badge variant="secondary" className="gap-1 text-xs"><PencilIcon className="size-3" aria-hidden="true" />UPDATE</Badge>;
+                            return <Badge variant="outline" className="gap-1 text-xs">{action}</Badge>;
+                          })()}
+                          <Badge variant={entry.source === "audit_logs" ? "secondary" : "outline"} className="text-xs font-mono">
+                            {entry.source === "audit_logs" ? "DB" : "Trail"}
+                          </Badge>
+                        </>
+                      }
+                      meta={[
+                        { label: tAdmin("auditLogs.actor"), value: entry.actor_name || entry.actor_email || tAdmin("common.system") },
+                        { label: tAdmin("auditLogs.entityId"), value: <span className="font-mono text-xs">{entry.entity_id?.slice(0, 8) || "—"}</span> },
+                        { label: tAdmin("common.details"), value: getDetailSummary(entry, tAdmin) },
+                        { label: "Audit ID", value: <span className="font-mono text-xs">{entry.id.slice(0, 8)}</span> },
+                      ]}
+                      actions={canRevertEntry(entry) ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 cursor-pointer text-muted-foreground hover:text-[var(--status-warning-foreground)]"
+                          aria-label={tAdmin("auditLogs.revertAria")}
+                          onClick={() => {
+                            warning();
+                            setRevertEntry(entry);
+                            setRevertDialogOpen(true);
+                          }}
+                        >
+                          <Undo2Icon className="h-4 w-4" />
+                        </Button>
+                      ) : undefined}
+                      onClick={() => {
+                        tap();
+                        setSelectedEntry(entry);
+                        setDetailOpen(true);
+                      }}
+                      ariaLabel={entry.table_name ?? entry.entity_type ?? entry.id}
+                    />
+                  )}
+                />
+              </div>
+
               {/* Pagination */}
-              <div className="flex items-center justify-between pt-2">
+              <div className="hidden items-center justify-between pt-2 lg:flex">
                 <span className="text-sm text-muted-foreground">
                   {tAdmin("auditLogs.showingResults", {
                     from: page * PAGE_SIZE + 1,
@@ -908,6 +964,36 @@ export function AdminAuditLogs() {
                     {tAdmin("common.next")}
                   </Button>
                 </div>
+              </div>
+              <div className="lg:hidden">
+                <AdminMobilePagination
+                  summary={tAdmin("auditLogs.showingResults", {
+                    from: page * PAGE_SIZE + 1,
+                    to: Math.min((page + 1) * PAGE_SIZE, total),
+                    total: total.toLocaleString(),
+                  })}
+                  previousLabel={tAdmin("common.previous")}
+                  nextLabel={tAdmin("common.next")}
+                  canPrevious={page > 0}
+                  canNext={page < totalPages - 1}
+                  onPrevious={() => { tap(); setPage((p) => p - 1); }}
+                  onNext={() => { tap(); setPage((p) => p + 1); }}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={totalPages}
+                      value={page + 1}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        if (v >= 1 && v <= totalPages) { tap(); setPage(v - 1); }
+                      }}
+                      className="h-8 w-14 text-center tabular-nums"
+                    />
+                    <span className="text-sm text-muted-foreground">/ {totalPages}</span>
+                  </div>
+                </AdminMobilePagination>
               </div>
             </>
           )}

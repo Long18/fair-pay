@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
-import { useGetIdentity, useGo } from "@refinedev/core";
+import { useGetIdentity, useGo, type CrudFilters } from "@refinedev/core";
 import { useInstantUpdate, useInstantDelete } from "@/hooks/use-instant-mutation";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useTable } from "@refinedev/react-table";
@@ -26,7 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { UserAvatar, UserGroupStack, getInitials } from "@/components/user-display";
+import { UserAvatar, UserGroupStack } from "@/components/user-display";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -71,12 +71,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  SearchIcon,
   UsersIcon,
   GroupIcon,
   HeartHandshakeIcon,
   MoreHorizontalIcon,
-  FilterIcon,
   AlertTriangleIcon,
   Loader2Icon,
   ActivityIcon,
@@ -84,15 +82,12 @@ import {
   UserMinusIcon,
   PencilIcon,
   PlusIcon,
-  XIcon,
   ChevronDownIcon,
   ArchiveIcon,
   ArchiveRestoreIcon,
   StarIcon,
   MailIcon,
   SendIcon,
-  LayersIcon,
-  HeartIcon,
   ChevronsUpDownIcon,
   CheckIcon,
 } from "@/components/ui/icons";
@@ -118,7 +113,12 @@ import { AdminPageToolbar } from "../components/AdminPageToolbar";
 import { AdminFilterChips } from "../components/AdminFilterChips";
 import { AdminTableSkeleton } from "../components/AdminTableSkeleton";
 import { AdminEmptyState } from "../components/AdminEmptyState";
-import { AdminCrudSheet } from "../components/AdminCrudSheet";
+import { AdminCrudDialog } from "../components/AdminCrudSheet";
+import {
+  AdminMobileCard,
+  AdminMobileCards,
+  AdminMobilePagination,
+} from "../components/AdminMobileCards";
 import { useIsMobile } from "@/hooks/ui/use-mobile";
 import { useAdminTranslation } from "../i18n";
 
@@ -164,6 +164,59 @@ interface CreateUserFormValues {
   email: string;
   role: string;
   avatar_url?: string;
+}
+
+type GroupMemberWithGroup = {
+  role: string | null;
+  groups?: RelationOne<{ id: string | null; name: string | null }>;
+};
+
+type GroupMemberWithProfile = {
+  role: string | null;
+  profiles?: RelationOne<{ id: string | null; full_name: string | null; avatar_url: string | null }>;
+};
+
+type GroupExpensePreview = {
+  id: string;
+  description: string | null;
+  amount: number | null;
+  expense_date: string;
+  profiles?: RelationOne<{ full_name: string | null }>;
+};
+
+type GroupListRecord = {
+  id: string;
+  name: string | null;
+  description: string | null;
+  avatar_url: string | null;
+  created_by: string | null;
+  total_expenses: number | null;
+  is_archived: boolean | null;
+  created_at: string;
+  profiles?: { full_name: string | null; avatar_url: string | null } | null;
+  group_members?: Array<{ count: number | null }> | null;
+};
+
+type FriendshipListRecord = {
+  id: string;
+  user_a: string;
+  user_b: string;
+  status: "pending" | "accepted" | "rejected";
+  created_at: string;
+  user_a_profile?: RelationOne<{ full_name: string | null; avatar_url: string | null }>;
+  user_b_profile?: RelationOne<{ full_name: string | null; avatar_url: string | null }>;
+};
+
+type RelationOne<T> = T | T[] | null | undefined;
+
+const ADMIN_PEOPLE_RENDER_TIME = Date.now();
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
+function relationOne<T>(value: RelationOne<T>): T | null {
+  return Array.isArray(value) ? value[0] ?? null : value ?? null;
 }
 
 async function sendInviteEmails(emails: string[], inviterName?: string): Promise<InviteEmailResponse> {
@@ -309,11 +362,14 @@ function UserDetailDialog({
       .then(({ data, error }) => {
         if (!error && data) {
           setGroups(
-            data.map((m: any) => ({
-              id: m.groups?.id ?? "",
-              name: m.groups?.name ?? tAdmin("common.unknown"),
-              role: m.role ?? "member",
-            })),
+            (data as unknown as GroupMemberWithGroup[]).map((m) => {
+              const group = relationOne(m.groups);
+              return {
+                id: group?.id ?? "",
+                name: group?.name ?? tAdmin("common.unknown"),
+                role: m.role ?? "member",
+              };
+            }),
           );
         }
         setLoadingGroups(false);
@@ -321,12 +377,10 @@ function UserDetailDialog({
   }, [tAdmin, user]);
 
   useEffect(() => {
-    if (!user || !open) {
-      setGroups([]);
-      return;
-    }
+    if (!user || !open) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchGroups();
-  }, [user?.id, open, fetchGroups]);
+  }, [user, open, fetchGroups]);
 
   // Fetch all groups when add dialog opens
   useEffect(() => {
@@ -364,8 +418,8 @@ function UserDetailDialog({
         setSelectedGroupId("");
         fetchGroups();
       }
-    } catch (err: any) {
-      toast.error(tAdmin("common.errorWithMessage", { message: err.message }));
+    } catch (err: unknown) {
+      toast.error(tAdmin("common.errorWithMessage", { message: getErrorMessage(err, tAdmin("people.errors.updateUserFailed")) }));
     } finally {
       setAddingToGroup(false);
     }
@@ -383,8 +437,8 @@ function UserDetailDialog({
       if (error) throw error;
       toast.success(tAdmin("people.success.removedFromGroup"));
       fetchGroups();
-    } catch (err: any) {
-      toast.error(tAdmin("common.errorWithMessage", { message: err.message }));
+    } catch (err: unknown) {
+      toast.error(tAdmin("common.errorWithMessage", { message: getErrorMessage(err, tAdmin("people.errors.updateUserFailed")) }));
     } finally {
       setRemovingGroupId(null);
     }
@@ -569,6 +623,15 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
   );
 }
 
+function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="min-w-0 space-y-1">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="min-w-0 truncate text-sm font-medium">{value}</div>
+    </div>
+  );
+}
+
 // ─── Group Detail Dialog (replaces Sheet) ───────────────────────────
 
 function GroupDetailDialog({
@@ -610,12 +673,15 @@ function GroupDetailDialog({
       .then(({ data, error }) => {
         if (!error && data) {
           setMembers(
-            data.map((m: any) => ({
-              id: m.profiles?.id ?? "",
-              full_name: m.profiles?.full_name ?? tAdmin("common.unknown"),
-              avatar_url: m.profiles?.avatar_url ?? null,
-              role: m.role ?? "member",
-            })),
+            (data as unknown as GroupMemberWithProfile[]).map((m) => {
+              const profile = relationOne(m.profiles);
+              return {
+                id: profile?.id ?? "",
+                full_name: profile?.full_name ?? tAdmin("common.unknown"),
+                avatar_url: profile?.avatar_url ?? null,
+                role: m.role ?? "member",
+              };
+            }),
           );
         }
         setLoadingMembers(false);
@@ -623,12 +689,9 @@ function GroupDetailDialog({
   }, [group, tAdmin]);
 
   useEffect(() => {
-    if (!group || !open) {
-      setMembers([]);
-      setExpenses([]);
-      return;
-    }
+    if (!group || !open) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchMembers();
 
     setLoadingExpenses(true);
@@ -641,13 +704,16 @@ function GroupDetailDialog({
       .then(({ data, error }) => {
         if (!error && data) {
           setExpenses(
-            data.map((e: any) => ({
-              id: e.id,
-              description: e.description ?? "",
-              amount: e.amount ?? 0,
-              expense_date: e.expense_date,
-              paid_by_name: e.profiles?.full_name ?? tAdmin("common.unknown"),
-            })),
+            (data as unknown as GroupExpensePreview[]).map((e) => {
+              const profile = relationOne(e.profiles);
+              return {
+                id: e.id,
+                description: e.description ?? "",
+                amount: e.amount ?? 0,
+                expense_date: e.expense_date,
+                paid_by_name: profile?.full_name ?? tAdmin("common.unknown"),
+              };
+            }),
           );
         }
         setLoadingExpenses(false);
@@ -689,8 +755,8 @@ function GroupDetailDialog({
         setSelectedUserId("");
         fetchMembers();
       }
-    } catch (err: any) {
-      toast.error(tAdmin("common.errorWithMessage", { message: err.message }));
+    } catch (err: unknown) {
+      toast.error(tAdmin("common.errorWithMessage", { message: getErrorMessage(err, tAdmin("people.errors.updateUserFailed")) }));
     } finally {
       setAddingMember(false);
     }
@@ -708,8 +774,8 @@ function GroupDetailDialog({
       if (error) throw error;
       toast.success(tAdmin("people.success.removedMember"));
       fetchMembers();
-    } catch (err: any) {
-      toast.error(tAdmin("common.errorWithMessage", { message: err.message }));
+    } catch (err: unknown) {
+      toast.error(tAdmin("common.errorWithMessage", { message: getErrorMessage(err, tAdmin("people.errors.updateUserFailed")) }));
     } finally {
       setRemovingMemberId(null);
     }
@@ -728,8 +794,8 @@ function GroupDetailDialog({
       if (error) throw error;
       toast.success(newRole === "admin" ? tAdmin("people.success.promotedAdmin") : tAdmin("people.success.demotedMember"));
       fetchMembers();
-    } catch (err: any) {
-      toast.error(tAdmin("common.errorWithMessage", { message: err.message }));
+    } catch (err: unknown) {
+      toast.error(tAdmin("common.errorWithMessage", { message: getErrorMessage(err, tAdmin("people.errors.updateUserFailed")) }));
     } finally {
       setTogglingRoleId(null);
     }
@@ -977,10 +1043,6 @@ function CreateUserDialog({
   const [avatarUrl, setAvatarUrl] = useState("");
   const [role, setRole] = useState("user");
 
-  useEffect(() => {
-    if (!open) { setFullName(""); setEmail(""); setAvatarUrl(""); setRole("user"); }
-  }, [open]);
-
   const handleSubmit = () => {
     if (!fullName.trim() || !email.trim()) {
       toast.error(tAdmin("people.errors.requiredFields"));
@@ -990,7 +1052,7 @@ function CreateUserDialog({
   };
 
   return (
-    <AdminCrudSheet
+    <AdminCrudDialog
       open={open}
       onOpenChange={onOpenChange}
       title={tAdmin("people.createUserTitle")}
@@ -1023,7 +1085,7 @@ function CreateUserDialog({
           </Select>
         </div>
       </div>
-    </AdminCrudSheet>
+    </AdminCrudDialog>
   );
 }
 
@@ -1035,44 +1097,94 @@ function EditUserDialog({
   onOpenChange,
   onSubmit,
   isUpdating,
+  isSelf,
 }: {
   user: AdminUserRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: { full_name: string; email: string }) => void;
+  onSubmit: (data: {
+    full_name: string;
+    email: string;
+    avatar_url: string | null;
+    role: "admin" | "user";
+    journey_tracking_ignored: boolean;
+  }) => void;
   isUpdating: boolean;
+  isSelf: boolean;
 }) {
   const { tAdmin } = useAdminTranslation();
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-
-  useEffect(() => {
-    if (user && open) { setFullName(user.full_name); setEmail(user.email); }
-  }, [user, open]);
+  const [fullName, setFullName] = useState(user?.full_name ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url ?? "");
+  const [role, setRole] = useState<"admin" | "user">(user?.role ?? "user");
+  const [journeyTracking, setJourneyTracking] = useState<"tracked" | "ignored">(
+    user?.journey_tracking_ignored ? "ignored" : "tracked",
+  );
 
   if (!user) return null;
 
   return (
-    <AdminCrudSheet
+    <AdminCrudDialog
       open={open}
       onOpenChange={onOpenChange}
       title={tAdmin("people.editUserTitle")}
       description={tAdmin("people.editUserDescription", { name: user.full_name })}
       isSubmitting={isUpdating}
       submitLabel={tAdmin("common.save")}
-      onSubmit={() => onSubmit({ full_name: fullName, email })}
+      contentClassName="sm:max-w-[640px]"
+      onSubmit={() => onSubmit({
+        full_name: fullName.trim(),
+        email: email.trim(),
+        avatar_url: avatarUrl.trim() || null,
+        role,
+        journey_tracking_ignored: journeyTracking === "ignored",
+      })}
     >
       <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="edit-user-name">{tAdmin("people.fullName")}</Label>
-          <Input id="edit-user-name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="edit-user-name">{tAdmin("people.fullName")}</Label>
+            <Input id="edit-user-name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-user-email">Email</Label>
+            <Input id="edit-user-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="edit-user-avatar">Avatar URL</Label>
+            <Input id="edit-user-avatar" type="url" placeholder="https://..." value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-user-role">{tAdmin("common.role")}</Label>
+            <Select value={role} onValueChange={(v) => setRole(v as typeof role)} disabled={isSelf}>
+              <SelectTrigger id="edit-user-role">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="user">{tAdmin("common.user")}</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-user-journey">{tAdmin("people.journeyTracking")}</Label>
+            <Select value={journeyTracking} onValueChange={(v) => setJourneyTracking(v as typeof journeyTracking)}>
+              <SelectTrigger id="edit-user-journey">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="tracked">{tAdmin("status.tracked")}</SelectItem>
+                <SelectItem value="ignored">{tAdmin("status.ignored")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="edit-user-email">Email</Label>
-          <Input id="edit-user-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <div className="grid gap-3 rounded-lg border bg-muted/20 p-3 text-sm sm:grid-cols-2">
+          <DetailItem label="ID" value={<span className="font-mono text-xs">{user.id}</span>} />
+          <DetailItem label={tAdmin("common.createdAt")} value={formatDate(user.created_at)} />
         </div>
       </div>
-    </AdminCrudSheet>
+    </AdminCrudDialog>
   );
 }
 
@@ -1088,45 +1200,52 @@ function EditGroupDialog({
   group: GroupRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (data: { name: string; description: string }) => void;
+  onConfirm: (data: { name: string; description: string; avatar_url: string | null }) => void;
   isUpdating: boolean;
 }) {
   const { tAdmin } = useAdminTranslation();
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-
-  useEffect(() => {
-    if (group && open) {
-      setName(group.name);
-      setDescription(group.description ?? "");
-    }
-  }, [group, open]);
+  const [name, setName] = useState(group?.name ?? "");
+  const [description, setDescription] = useState(group?.description ?? "");
+  const [avatarUrl, setAvatarUrl] = useState(group?.avatar_url ?? "");
 
   if (!group) return null;
 
-  const hasChanges = name.trim() !== group.name || description.trim() !== (group.description ?? "");
-
   return (
-    <AdminCrudSheet
+    <AdminCrudDialog
       open={open}
       onOpenChange={onOpenChange}
       title={tAdmin("people.editGroupTitle")}
       description={tAdmin("people.editGroupDescription", { name: group.name })}
       isSubmitting={isUpdating}
       submitLabel={tAdmin("common.save")}
-      onSubmit={() => onConfirm({ name: name.trim(), description: description.trim() })}
+      contentClassName="sm:max-w-[640px]"
+      onSubmit={() => onConfirm({
+        name: name.trim(),
+        description: description.trim(),
+        avatar_url: avatarUrl.trim() || null,
+      })}
     >
       <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="group-name">{tAdmin("people.groupName")}</Label>
-          <Input id="group-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={tAdmin("people.groupNamePlaceholder")} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="group-name">{tAdmin("people.groupName")}</Label>
+            <Input id="group-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={tAdmin("people.groupNamePlaceholder")} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="group-avatar">Avatar URL</Label>
+            <Input id="group-avatar" type="url" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} placeholder="https://..." />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="group-description">{tAdmin("people.groupDescription")}</Label>
+            <Textarea id="group-description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder={tAdmin("people.groupDescriptionPlaceholder")} rows={3} />
+          </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="group-description">{tAdmin("people.groupDescription")}</Label>
-          <Input id="group-description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder={tAdmin("people.groupDescriptionPlaceholder")} />
+        <div className="grid gap-3 rounded-lg border bg-muted/20 p-3 text-sm sm:grid-cols-2">
+          <DetailItem label="ID" value={<span className="font-mono text-xs">{group.id}</span>} />
+          <DetailItem label={tAdmin("common.createdAt")} value={formatDate(group.created_at)} />
         </div>
       </div>
-    </AdminCrudSheet>
+    </AdminCrudDialog>
   );
 }
 
@@ -1146,11 +1265,13 @@ function CreateGroupSheet({
   const { tAdmin } = useAdminTranslation();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const reset = () => {
     setName("");
     setDescription("");
+    setAvatarUrl("");
   };
 
   const handleSubmit = async () => {
@@ -1163,6 +1284,7 @@ function CreateGroupSheet({
       const { error } = await supabaseClient.from("groups").insert({
         name: name.trim(),
         description: description.trim() || null,
+        avatar_url: avatarUrl.trim() || null,
         created_by: createdBy,
       });
       if (error) throw error;
@@ -1170,15 +1292,15 @@ function CreateGroupSheet({
       reset();
       onOpenChange(false);
       onCreated();
-    } catch (err: any) {
-      toast.error(tAdmin("common.errorWithMessage", { message: err.message }));
+    } catch (err: unknown) {
+      toast.error(tAdmin("common.errorWithMessage", { message: getErrorMessage(err, tAdmin("people.errors.groupNameRequired")) }));
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <AdminCrudSheet
+    <AdminCrudDialog
       open={open}
       onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}
       title={tAdmin("people.createGroupTitle")}
@@ -1186,29 +1308,42 @@ function CreateGroupSheet({
       isSubmitting={submitting}
       submitLabel={tAdmin("people.createGroupSubmit")}
       onSubmit={handleSubmit}
+      contentClassName="sm:max-w-[640px]"
     >
       <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="new-group-name">{tAdmin("people.groupName")} *</Label>
-          <Input
-            id="new-group-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder={tAdmin("people.createGroupNamePlaceholder")}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="new-group-desc">{tAdmin("people.groupDescription")}</Label>
-          <Textarea
-            id="new-group-desc"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder={tAdmin("people.groupDescriptionPlaceholder")}
-            rows={3}
-          />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="new-group-name">{tAdmin("people.groupName")} *</Label>
+            <Input
+              id="new-group-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={tAdmin("people.createGroupNamePlaceholder")}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="new-group-avatar">Avatar URL</Label>
+            <Input
+              id="new-group-avatar"
+              type="url"
+              value={avatarUrl}
+              onChange={(e) => setAvatarUrl(e.target.value)}
+              placeholder="https://..."
+            />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="new-group-desc">{tAdmin("people.groupDescription")}</Label>
+            <Textarea
+              id="new-group-desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={tAdmin("people.groupDescriptionPlaceholder")}
+              rows={3}
+            />
+          </div>
         </div>
       </div>
-    </AdminCrudSheet>
+    </AdminCrudDialog>
   );
 }
 
@@ -1282,15 +1417,15 @@ function CreateFriendshipSheet({
       reset();
       onOpenChange(false);
       onCreated();
-    } catch (err: any) {
-      toast.error(tAdmin("common.errorWithMessage", { message: err.message }));
+    } catch (err: unknown) {
+      toast.error(tAdmin("common.errorWithMessage", { message: getErrorMessage(err, tAdmin("people.errors.friendshipExists")) }));
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <AdminCrudSheet
+    <AdminCrudDialog
       open={open}
       onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}
       title={tAdmin("people.createFriendshipTitle")}
@@ -1332,7 +1467,7 @@ function CreateFriendshipSheet({
           </Select>
         </div>
       </div>
-    </AdminCrudSheet>
+    </AdminCrudDialog>
   );
 }
 
@@ -1350,12 +1485,8 @@ function EditFriendshipSheet({
   onUpdated: () => void;
 }) {
   const { tAdmin } = useAdminTranslation();
-  const [status, setStatus] = useState<"pending" | "accepted" | "rejected">("accepted");
+  const [status, setStatus] = useState<"pending" | "accepted" | "rejected">(friendship?.status ?? "accepted");
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (friendship) setStatus(friendship.status);
-  }, [friendship]);
 
   const handleSubmit = async () => {
     if (!friendship) return;
@@ -1369,15 +1500,15 @@ function EditFriendshipSheet({
       toast.success(tAdmin("people.success.friendshipUpdated"));
       onOpenChange(false);
       onUpdated();
-    } catch (err: any) {
-      toast.error(tAdmin("common.errorWithMessage", { message: err.message }));
+    } catch (err: unknown) {
+      toast.error(tAdmin("common.errorWithMessage", { message: getErrorMessage(err, tAdmin("people.errors.acceptFriendshipFailed")) }));
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <AdminCrudSheet
+    <AdminCrudDialog
       open={open}
       onOpenChange={onOpenChange}
       title={tAdmin("people.editFriendshipTitle")}
@@ -1404,7 +1535,7 @@ function EditFriendshipSheet({
           {tAdmin("people.cannotChangeUsersAfterCreate")}
         </p>
       </div>
-    </AdminCrudSheet>
+    </AdminCrudDialog>
   );
 }
 
@@ -1433,7 +1564,7 @@ function NewRegistrationCard({
 }) {
   const { tAdmin } = useAdminTranslation();
   const daysSinceRegistration = Math.floor(
-    (Date.now() - new Date(user.created_at).getTime()) / (1000 * 60 * 60 * 24),
+    (ADMIN_PEOPLE_RENDER_TIME - new Date(user.created_at).getTime()) / (1000 * 60 * 60 * 24),
   );
 
   return (
@@ -1523,7 +1654,7 @@ function InviteUsersCard({
     } finally {
       setIsSendingInvite(false);
     }
-  }, [inviteEmails, inviterName, success, tap, warning]);
+  }, [inviteEmails, inviterName, success, tAdmin, tap, warning]);
 
   return (
     <Card className="overflow-hidden">
@@ -1836,7 +1967,7 @@ function UsersTab() {
     const newRole = user.role === "admin" ? "user" : "admin";
     (async () => {
       try {
-        const { data, error } = await supabaseClient.rpc("admin_update_user_role", {
+        const { error } = await supabaseClient.rpc("admin_update_user_role", {
           p_user_id: user.id,
           p_new_role: newRole,
         });
@@ -1861,8 +1992,8 @@ function UsersTab() {
       toast.success(tAdmin("people.success.userDeleted", { name: deleteUser.full_name }));
       setDeleteDialogOpen(false); setDeleteUser(null);
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
-    } catch (err: any) {
-      toast.error(tAdmin("common.errorWithMessage", { message: err.message ?? tAdmin("people.errors.deleteUserFailed") }));
+    } catch (err: unknown) {
+      toast.error(tAdmin("common.errorWithMessage", { message: getErrorMessage(err, tAdmin("people.errors.deleteUserFailed")) }));
     } finally { setIsDeleting(false); }
   }, [deleteUser, queryClient, tAdmin]);
 
@@ -1879,28 +2010,60 @@ function UsersTab() {
       toast.success(tAdmin("people.success.userCreated", { name: data.full_name }));
       setCreateDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
-    } catch (err: any) {
-      toast.error(tAdmin("common.errorWithMessage", { message: err.message ?? tAdmin("people.errors.createUserFailed") }));
+    } catch (err: unknown) {
+      toast.error(tAdmin("common.errorWithMessage", { message: getErrorMessage(err, tAdmin("people.errors.createUserFailed")) }));
     } finally { setIsCreating(false); }
   }, [queryClient, tAdmin]);
 
-  const handleEditUser = useCallback(async (data: { full_name: string; email: string }) => {
+  const handleEditUser = useCallback(async (data: {
+    full_name: string;
+    email: string;
+    avatar_url: string | null;
+    role: "admin" | "user";
+    journey_tracking_ignored: boolean;
+  }) => {
     if (!editUser) return;
     setIsUpdating(true);
     try {
-      const { error } = await supabaseClient.from("profiles").update({ full_name: data.full_name, email: data.email }).eq("id", editUser.id);
+      const { error } = await supabaseClient
+        .from("profiles")
+        .update({
+          full_name: data.full_name,
+          email: data.email,
+          avatar_url: data.avatar_url,
+        })
+        .eq("id", editUser.id);
       if (error) throw error;
+
+      if (identity?.id !== editUser.id && data.role !== editUser.role) {
+        const { error: roleError } = await supabaseClient.rpc("admin_update_user_role", {
+          p_user_id: editUser.id,
+          p_new_role: data.role,
+        });
+        if (roleError) throw roleError;
+      }
+
+      if (data.journey_tracking_ignored !== editUser.journey_tracking_ignored) {
+        const { error: trackingError } = await supabaseClient.rpc("admin_set_user_tracking_ignore", {
+          p_user_id: editUser.id,
+          p_ignore: data.journey_tracking_ignored,
+          p_reason: data.journey_tracking_ignored ? "Ignored by admin from Admin People edit dialog" : null,
+        });
+        if (trackingError) throw trackingError;
+      }
+
       toast.success(tAdmin("people.success.userUpdated", { name: data.full_name }));
       setEditDialogOpen(false); setEditUser(null);
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
-    } catch (err: any) {
-      toast.error(tAdmin("common.errorWithMessage", { message: err.message ?? tAdmin("people.errors.updateUserFailed") }));
+    } catch (err: unknown) {
+      toast.error(tAdmin("common.errorWithMessage", { message: getErrorMessage(err, tAdmin("people.errors.updateUserFailed")) }));
     } finally { setIsUpdating(false); }
-  }, [editUser, queryClient, tAdmin]);
+  }, [editUser, identity?.id, queryClient, tAdmin]);
 
   const clearFilters = useCallback(() => { setSearch(""); setRoleFilter("all"); }, []);
   const hasActiveFilters = search !== "" || roleFilter !== "all";
   const isEmptyResult = !isLoading && reactTable.getRowModel().rows.length === 0;
+  const visibleUsers = reactTable.getRowModel().rows.map((row) => row.original);
 
   return (
     <>
@@ -1985,45 +2148,128 @@ function UsersTab() {
                 action={{ label: tAdmin("common.clearFilters"), onClick: clearFilters }}
               />
             ) : (
-              <div className="rounded-md border overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    {reactTable.getHeaderGroups().map((headerGroup) => (
-                      <TableRow key={headerGroup.id}>
-                        {headerGroup.headers.map((header) => (
-                          <TableHead key={header.id} style={{ width: header.getSize() }}>
-                            {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                          </TableHead>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableHeader>
-                  <TableBody>
-                    {reactTable.getRowModel().rows.length ? (
-                      reactTable.getRowModel().rows.map((row) => (
-                        <TableRow key={row.original?.id ?? row.id}>
-                          {row.getVisibleCells().map((cell) => (
-                            <TableCell key={cell.id} style={{ width: cell.column.getSize() }}>
-                              <div className="truncate">{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>
-                            </TableCell>
+              <>
+                <div className="hidden overflow-x-auto rounded-md border md:block">
+                  <Table>
+                    <TableHeader>
+                      {reactTable.getHeaderGroups().map((headerGroup) => (
+                        <TableRow key={headerGroup.id}>
+                          {headerGroup.headers.map((header) => (
+                            <TableHead key={header.id} style={{ width: header.getSize() }}>
+                              {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                            </TableHead>
                           ))}
                         </TableRow>
-                      ))
-                    ) : (
-                      <TableRow><TableCell colSpan={columns.length} className="h-24 text-center">{tAdmin("common.noData")}</TableCell></TableRow>
+                      ))}
+                    </TableHeader>
+                    <TableBody>
+                      {reactTable.getRowModel().rows.length ? (
+                        reactTable.getRowModel().rows.map((row) => (
+                          <TableRow key={row.original?.id ?? row.id}>
+                            {row.getVisibleCells().map((cell) => (
+                              <TableCell key={cell.id} style={{ width: cell.column.getSize() }}>
+                                <div className="truncate">{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow><TableCell colSpan={columns.length} className="h-24 text-center">{tAdmin("common.noData")}</TableCell></TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                <div className="md:hidden">
+                  <AdminMobileCards
+                    items={visibleUsers}
+                    getKey={(user) => user.id}
+                    renderItem={(user) => (
+                      <AdminMobileCard
+                        title={user.full_name}
+                        description={user.email}
+                        leading={
+                          <UserAvatar
+                            user={{ full_name: user.full_name, avatar_url: user.avatar_url }}
+                            size="md"
+                          />
+                        }
+                        badges={
+                          <>
+                            <Badge variant={user.role === "admin" ? "default" : "secondary"}>
+                              {user.role === "admin" ? "Admin" : tAdmin("common.user")}
+                            </Badge>
+                            <Badge variant={user.journey_tracking_ignored ? "outline" : "secondary"}>
+                              {user.journey_tracking_ignored ? tAdmin("status.ignored") : tAdmin("status.tracked")}
+                            </Badge>
+                          </>
+                        }
+                        meta={[
+                          { label: tAdmin("common.createdAt"), value: formatDate(user.created_at) },
+                          { label: "ID", value: <span className="font-mono text-xs">{user.id.slice(0, 8)}</span> },
+                        ]}
+                        actions={
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-9 w-9 cursor-pointer">
+                                <MoreHorizontalIcon className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => { tap(); setSelectedUser(user); setDetailOpen(true); }}>
+                                {tAdmin("common.details")}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => { tap(); go({ to: `/admin/people/${user.id}/journey` }); }}>
+                                <ActivityIcon className="mr-2 h-4 w-4" />
+                                {tAdmin("people.viewJourney")}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => { tap(); void handleToggleJourneyTracking(user); }}>
+                                {user.journey_tracking_ignored ? tAdmin("people.resumeTracking") : tAdmin("people.ignoreTracking")}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => { tap(); setEditUser(user); setEditDialogOpen(true); }}>
+                                <PencilIcon className="mr-2 h-4 w-4" />
+                                {tAdmin("common.edit")}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => { warning(); setDeleteUser(user); setDeleteDialogOpen(true); }}
+                                disabled={identity?.id === user.id}
+                                className="text-destructive"
+                              >
+                                {identity?.id === user.id ? tAdmin("people.cannotDeleteSelf") : tAdmin("people.deleteUser")}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        }
+                        onClick={() => { tap(); setSelectedUser(user); setDetailOpen(true); }}
+                        ariaLabel={user.full_name}
+                      />
                     )}
-                  </TableBody>
-                </Table>
-              </div>
+                  />
+                </div>
+              </>
             )}
 
             {!isLoading && reactTable.getRowModel().rows.length > 0 && (
-              <div className="flex items-center justify-between">
+              <div className="hidden items-center justify-between md:flex">
                 <p className="text-sm text-muted-foreground">{tAdmin("common.pageCount", { page: reactTable.getState().pagination.pageIndex + 1, total: reactTable.getPageCount() })}</p>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" onClick={() => reactTable.previousPage()} disabled={!reactTable.getCanPreviousPage()}>{tAdmin("common.previous")}</Button>
                   <Button variant="outline" size="sm" onClick={() => reactTable.nextPage()} disabled={!reactTable.getCanNextPage()}>{tAdmin("common.next")}</Button>
                 </div>
+              </div>
+            )}
+            {!isLoading && reactTable.getRowModel().rows.length > 0 && (
+              <div className="md:hidden">
+                <AdminMobilePagination
+                  summary={tAdmin("common.pageCount", { page: reactTable.getState().pagination.pageIndex + 1, total: reactTable.getPageCount() })}
+                  previousLabel={tAdmin("common.previous")}
+                  nextLabel={tAdmin("common.next")}
+                  canPrevious={reactTable.getCanPreviousPage()}
+                  canNext={reactTable.getCanNextPage()}
+                  onPrevious={() => reactTable.previousPage()}
+                  onNext={() => reactTable.nextPage()}
+                />
               </div>
             )}
           </CardContent>
@@ -2057,8 +2303,16 @@ function UsersTab() {
         onConfirm={handleDeleteUser}
         isDeleting={isDeleting}
       />
-      <CreateUserDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} onSubmit={handleCreateUser} isCreating={isCreating} />
-      <EditUserDialog user={editUser} open={editDialogOpen} onOpenChange={(o) => { if (!o && !isUpdating) { setEditDialogOpen(false); setEditUser(null); } }} onSubmit={handleEditUser} isUpdating={isUpdating} />
+      <CreateUserDialog key={createDialogOpen ? "create-user-open" : "create-user-closed"} open={createDialogOpen} onOpenChange={setCreateDialogOpen} onSubmit={handleCreateUser} isCreating={isCreating} />
+      <EditUserDialog
+        key={editUser?.id ?? "edit-user-empty"}
+        user={editUser}
+        open={editDialogOpen}
+        onOpenChange={(o) => { if (!o && !isUpdating) { setEditDialogOpen(false); setEditUser(null); } }}
+        onSubmit={handleEditUser}
+        isUpdating={isUpdating}
+        isSelf={identity?.id === editUser?.id}
+      />
     </>
   );
 }
@@ -2097,8 +2351,8 @@ function GroupsTab() {
   // Archive
   const [isArchiving, setIsArchiving] = useState(false);
 
-  const filters = useMemo(() => {
-    const f: Array<{ field: string; operator: string; value: unknown }> = [];
+  const filters = useMemo<CrudFilters>(() => {
+    const f: CrudFilters = [];
     if (debouncedSearch) f.push({ field: "name", operator: "contains", value: debouncedSearch });
     return f;
   }, [debouncedSearch]);
@@ -2166,7 +2420,7 @@ function GroupsTab() {
             <DropdownMenuItem onClick={() => { tap(); setEditGroup(row.original); setEditDialogOpen(true); }}>
               <PencilIcon className="mr-2 h-4 w-4" />{tAdmin("people.editGroup")}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleArchiveToggle(row.original)}>
+            <DropdownMenuItem onClick={() => handleArchiveToggle(row.original)} disabled={isArchiving}>
               {row.original.is_archived ? (
                 <><ArchiveRestoreIcon className="mr-2 h-4 w-4" />{tAdmin("people.restore")}</>
               ) : (
@@ -2179,7 +2433,7 @@ function GroupsTab() {
         </DropdownMenu>
       ),
     },
-  ], [tAdmin, tap, warning]);
+  ], [isArchiving, tAdmin, tap, warning]);
 
   const table = useTable<GroupRow>({
     columns,
@@ -2187,12 +2441,12 @@ function GroupsTab() {
       resource: "groups",
       meta: { select: "*, profiles!groups_created_by_fkey(full_name, avatar_url), group_members(count)" },
       pagination: { pageSize: 10 },
-      filters: { permanent: filters as any },
+      filters: { permanent: filters },
       sorters: { initial: [{ field: "created_at", order: "desc" }] },
       queryOptions: {
         select: (data) => ({
           ...data,
-          data: data.data.map((group: any) => ({
+          data: (data.data as GroupListRecord[]).map((group) => ({
             id: group.id,
             name: group.name ?? "",
             description: group.description ?? null,
@@ -2222,11 +2476,19 @@ function GroupsTab() {
     );
   }, [deleteGroup, deleteMutation, table.refineCore.tableQuery, tAdmin]);
 
-  const handleEdit = useCallback((data: { name: string; description: string }) => {
+  const handleEdit = useCallback((data: { name: string; description: string; avatar_url: string | null }) => {
     if (!editGroup || !data.name) return;
     setIsUpdating(true);
     updateMutation.mutate(
-      { resource: "groups", id: editGroup.id, values: { name: data.name, description: data.description || null } },
+      {
+        resource: "groups",
+        id: editGroup.id,
+        values: {
+          name: data.name,
+          description: data.description || null,
+          avatar_url: data.avatar_url,
+        },
+      },
       {
         onSuccess: () => { toast.success(tAdmin("people.success.groupUpdated", { name: data.name })); setEditDialogOpen(false); setEditGroup(null); setIsUpdating(false); table.refineCore.tableQuery.refetch(); },
         onError: (error) => { toast.error(tAdmin("common.errorWithMessage", { message: error.message })); setIsUpdating(false); },
@@ -2267,6 +2529,7 @@ function GroupsTab() {
   const clearFilters = useCallback(() => setSearch(""), []);
   const hasActiveFilters = search !== "";
   const isEmptyResult = !table.refineCore.tableQuery.isLoading && table.reactTable.getRowModel().rows.length === 0;
+  const visibleGroups = table.reactTable.getRowModel().rows.map((row) => row.original);
 
   return (
     <>
@@ -2299,7 +2562,79 @@ function GroupsTab() {
               action={{ label: tAdmin("common.clearFilters"), onClick: clearFilters }}
             />
           ) : (
-            <DataTable table={table} />
+            <>
+              <div className="hidden md:block">
+                <DataTable table={table} />
+              </div>
+              <div className="space-y-3 md:hidden">
+                <AdminMobileCards
+                  items={visibleGroups}
+                  getKey={(group) => group.id}
+                  renderItem={(group) => (
+                    <AdminMobileCard
+                      title={group.name}
+                      description={group.description || tAdmin("people.createdBy", { name: group.creator_name, date: formatDate(group.created_at) })}
+                      leading={
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={group.avatar_url ?? undefined} alt={group.name} />
+                          <AvatarFallback className="text-sm bg-primary/10 text-primary">
+                            {group.name?.[0]?.toUpperCase() ?? "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                      }
+                      badges={group.is_archived ? (
+                        <Badge className="bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)] text-xs">
+                          {tAdmin("status.archived")}
+                        </Badge>
+                      ) : undefined}
+                      meta={[
+                        { label: tAdmin("common.members"), value: group.member_count },
+                        { label: tAdmin("people.totalExpenses"), value: <span className="font-mono tabular-nums">{formatNumber(group.total_expenses)}</span> },
+                        { label: tAdmin("people.creator"), value: group.creator_name },
+                        { label: tAdmin("common.createdAt"), value: formatDate(group.created_at) },
+                      ]}
+                      actions={
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-9 w-9 cursor-pointer">
+                              <MoreHorizontalIcon className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => { tap(); setSelectedGroup(group); setDetailOpen(true); }}>{tAdmin("common.details")}</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { tap(); setEditGroup(group); setEditDialogOpen(true); }}>
+                              <PencilIcon className="mr-2 h-4 w-4" />{tAdmin("people.editGroup")}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleArchiveToggle(group)}>
+                              {group.is_archived ? (
+                                <><ArchiveRestoreIcon className="mr-2 h-4 w-4" />{tAdmin("people.restore")}</>
+                              ) : (
+                                <><ArchiveIcon className="mr-2 h-4 w-4" />{tAdmin("people.archive")}</>
+                              )}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => { warning(); setDeleteGroup(group); setDeleteDialogOpen(true); }} className="text-destructive">{tAdmin("people.deleteGroup")}</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      }
+                      onClick={() => { tap(); setSelectedGroup(group); setDetailOpen(true); }}
+                      ariaLabel={group.name}
+                    />
+                  )}
+                />
+                {visibleGroups.length > 0 && (
+                  <AdminMobilePagination
+                    summary={tAdmin("common.pageCount", { page: table.refineCore.currentPage, total: table.refineCore.pageCount })}
+                    previousLabel={tAdmin("common.previous")}
+                    nextLabel={tAdmin("common.next")}
+                    canPrevious={table.refineCore.currentPage > 1}
+                    canNext={table.refineCore.currentPage < table.refineCore.pageCount}
+                    onPrevious={() => table.refineCore.setCurrentPage(table.refineCore.currentPage - 1)}
+                    onNext={() => table.refineCore.setCurrentPage(table.refineCore.currentPage + 1)}
+                  />
+                )}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -2320,7 +2655,7 @@ function GroupsTab() {
         onConfirm={handleDelete}
         isDeleting={isDeleting}
       />
-      <EditGroupDialog group={editGroup} open={editDialogOpen} onOpenChange={(o) => { if (!o && !isUpdating) { setEditDialogOpen(false); setEditGroup(null); } }} onConfirm={handleEdit} isUpdating={isUpdating} />
+      <EditGroupDialog key={editGroup?.id ?? "edit-group-empty"} group={editGroup} open={editDialogOpen} onOpenChange={(o) => { if (!o && !isUpdating) { setEditDialogOpen(false); setEditGroup(null); } }} onConfirm={handleEdit} isUpdating={isUpdating} />
       <CreateGroupSheet
         open={createGroupOpen}
         onOpenChange={setCreateGroupOpen}
@@ -2351,8 +2686,8 @@ function FriendshipsTab() {
   const [createFriendshipOpen, setCreateFriendshipOpen] = useState(false);
   const [editFriendship, setEditFriendship] = useState<FriendshipRow | null>(null);
 
-  const filters = useMemo(() => {
-    const f: Array<{ field: string; operator: string; value: unknown }> = [];
+  const filters = useMemo<CrudFilters>(() => {
+    const f: CrudFilters = [];
     if (statusFilter !== "all") f.push({ field: "status", operator: "eq", value: statusFilter });
     return f;
   }, [statusFilter]);
@@ -2419,23 +2754,35 @@ function FriendshipsTab() {
       resource: "friendships",
       meta: { select: "*, user_a_profile:profiles!friendships_user_a_fkey(full_name, avatar_url), user_b_profile:profiles!friendships_user_b_fkey(full_name, avatar_url)" },
       pagination: { pageSize: 10 },
-      filters: { permanent: filters as any },
+      filters: { permanent: filters },
       sorters: { initial: [{ field: "created_at", order: "desc" }] },
       queryOptions: {
-        select: (data) => ({
-          ...data,
-          data: data.data.map((f: any) => ({
-            id: f.id,
-            user_a_id: f.user_a,
-            user_a_name: f.user_a_profile?.full_name ?? tAdmin("common.unknown"),
-            user_a_avatar: f.user_a_profile?.avatar_url ?? null,
-            user_b_id: f.user_b,
-            user_b_name: f.user_b_profile?.full_name ?? tAdmin("common.unknown"),
-            user_b_avatar: f.user_b_profile?.avatar_url ?? null,
-            status: f.status,
-            created_at: f.created_at,
-          })),
-        }),
+        select: (data) => {
+          const searchTerm = debouncedSearch.trim().toLowerCase();
+          const transformed = (data.data as unknown as FriendshipListRecord[]).map((f) => {
+            const userA = relationOne(f.user_a_profile);
+            const userB = relationOne(f.user_b_profile);
+            return {
+              id: f.id,
+              user_a_id: f.user_a,
+              user_a_name: userA?.full_name ?? tAdmin("common.unknown"),
+              user_a_avatar: userA?.avatar_url ?? null,
+              user_b_id: f.user_b,
+              user_b_name: userB?.full_name ?? tAdmin("common.unknown"),
+              user_b_avatar: userB?.avatar_url ?? null,
+              status: f.status,
+              created_at: f.created_at,
+            };
+          });
+          const filtered = searchTerm
+            ? transformed.filter((friendship) => (
+                friendship.id.toLowerCase().includes(searchTerm) ||
+                friendship.user_a_name.toLowerCase().includes(searchTerm) ||
+                friendship.user_b_name.toLowerCase().includes(searchTerm)
+              ))
+            : transformed;
+          return { ...data, data: filtered, total: searchTerm ? filtered.length : data.total };
+        },
       },
     },
   });
@@ -2458,14 +2805,15 @@ function FriendshipsTab() {
       if (error) throw error;
       toast.success(tAdmin("people.success.friendshipAccepted", { userA: friendship.user_a_name, userB: friendship.user_b_name }));
       table.refineCore.tableQuery.refetch();
-    } catch (err: any) {
-      toast.error(tAdmin("common.errorWithMessage", { message: err.message ?? tAdmin("people.errors.acceptFriendshipFailed") }));
+    } catch (err: unknown) {
+      toast.error(tAdmin("common.errorWithMessage", { message: getErrorMessage(err, tAdmin("people.errors.acceptFriendshipFailed")) }));
     }
   }, [table.refineCore.tableQuery, tAdmin]);
 
   const clearFilters = useCallback(() => { setSearch(""); setStatusFilter("all"); }, []);
   const hasActiveFilters = search !== "" || statusFilter !== "all";
   const isEmptyResult = !table.refineCore.tableQuery.isLoading && table.reactTable.getRowModel().rows.length === 0;
+  const visibleFriendships = table.reactTable.getRowModel().rows.map((row) => row.original);
 
   return (
     <>
@@ -2507,7 +2855,62 @@ function FriendshipsTab() {
               action={{ label: tAdmin("common.clearFilters"), onClick: clearFilters }}
             />
           ) : (
-            <DataTable table={table} />
+            <>
+              <div className="hidden md:block">
+                <DataTable table={table} />
+              </div>
+              <div className="space-y-3 md:hidden">
+                <AdminMobileCards
+                  items={visibleFriendships}
+                  getKey={(friendship) => friendship.id}
+                  renderItem={(friendship) => (
+                    <AdminMobileCard
+                      title={`${friendship.user_a_name} - ${friendship.user_b_name}`}
+                      description={<span className="font-mono text-xs">{friendship.id.slice(0, 8)}</span>}
+                      leading={<HeartHandshakeIcon className="mt-1 h-5 w-5 text-primary" />}
+                      badges={<FriendshipStatusBadge status={friendship.status} />}
+                      meta={[
+                        { label: tAdmin("people.userA"), value: friendship.user_a_name },
+                        { label: tAdmin("people.userB"), value: friendship.user_b_name },
+                        { label: tAdmin("common.status"), value: tAdmin(`status.${friendship.status}`) },
+                        { label: tAdmin("common.createdAt"), value: formatDate(friendship.created_at) },
+                      ]}
+                      actions={
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-9 w-9 cursor-pointer">
+                              <MoreHorizontalIcon className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {friendship.status === "pending" && (
+                              <DropdownMenuItem onClick={() => { tap(); handleAccept(friendship); }}>{tAdmin("people.acceptFriendship")}</DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem onClick={() => { tap(); setEditFriendship(friendship); }}>
+                              <PencilIcon className="mr-2 h-4 w-4" />
+                              {tAdmin("common.edit")}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => { warning(); setDeleteFriendship(friendship); setDeleteDialogOpen(true); }} className="text-destructive">{tAdmin("people.deleteFriendship")}</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      }
+                    />
+                  )}
+                />
+                {visibleFriendships.length > 0 && (
+                  <AdminMobilePagination
+                    summary={tAdmin("common.pageCount", { page: table.refineCore.currentPage, total: table.refineCore.pageCount })}
+                    previousLabel={tAdmin("common.previous")}
+                    nextLabel={tAdmin("common.next")}
+                    canPrevious={table.refineCore.currentPage > 1}
+                    canNext={table.refineCore.currentPage < table.refineCore.pageCount}
+                    onPrevious={() => table.refineCore.setCurrentPage(table.refineCore.currentPage - 1)}
+                    onNext={() => table.refineCore.setCurrentPage(table.refineCore.currentPage + 1)}
+                  />
+                )}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -2527,6 +2930,7 @@ function FriendshipsTab() {
         createdBy={identity?.id ?? ""}
       />
       <EditFriendshipSheet
+        key={editFriendship?.id ?? "edit-friendship-empty"}
         friendship={editFriendship}
         open={!!editFriendship}
         onOpenChange={(v) => { if (!v) setEditFriendship(null); }}

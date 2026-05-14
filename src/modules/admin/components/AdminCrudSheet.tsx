@@ -9,9 +9,10 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import { useAdminTranslation } from "../i18n";
 
-interface AdminCrudSheetProps {
+interface AdminCrudDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
@@ -20,9 +21,10 @@ interface AdminCrudSheetProps {
   submitLabel?: string;
   onSubmit: () => void;
   children: ReactNode;
+  contentClassName?: string;
 }
 
-export function AdminCrudSheet({
+export function AdminCrudDialog({
   open,
   onOpenChange,
   title,
@@ -31,12 +33,18 @@ export function AdminCrudSheet({
   submitLabel = "Save",
   onSubmit,
   children,
-}: AdminCrudSheetProps) {
+  contentClassName,
+}: AdminCrudDialogProps) {
   const { tAdmin } = useAdminTranslation();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px] max-h-[90vh] flex flex-col p-0 gap-0">
+      <DialogContent
+        className={cn(
+          "flex max-h-[90vh] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col gap-0 p-0 sm:max-w-[560px]",
+          contentClassName,
+        )}
+      >
         <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
           <DialogTitle>{title}</DialogTitle>
           {description && (
@@ -51,12 +59,13 @@ export function AdminCrudSheet({
         <DialogFooter className="px-6 py-4 border-t shrink-0 flex-row gap-2 justify-end">
           <Button
             variant="outline"
+            className="cursor-pointer"
             onClick={() => onOpenChange(false)}
             disabled={isSubmitting}
           >
             {tAdmin("common.cancel")}
           </Button>
-          <Button onClick={onSubmit} disabled={isSubmitting}>
+          <Button className="cursor-pointer" onClick={onSubmit} disabled={isSubmitting}>
             {isSubmitting && (
               <Loader2Icon className="h-4 w-4 mr-2 animate-spin" />
             )}
@@ -67,3 +76,5 @@ export function AdminCrudSheet({
     </Dialog>
   );
 }
+
+export const AdminCrudSheet = AdminCrudDialog;
