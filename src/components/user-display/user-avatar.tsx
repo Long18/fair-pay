@@ -39,22 +39,54 @@ interface UserAvatarProps {
   className?: string;
 }
 
+type ImgState = "loading" | "loaded" | "error";
+
 export function UserAvatar({ user, size = "md", className }: UserAvatarProps) {
+  const [imgState, setImgState] = React.useState<ImgState>(
+    user.avatar_url ? "loading" : "error"
+  );
+
+  // Reset when the avatar URL changes (e.g. after upload)
+  React.useEffect(() => {
+    setImgState(user.avatar_url ? "loading" : "error");
+  }, [user.avatar_url]);
+
   const initials = getInitials(user.full_name);
   const altName = user.full_name ?? "User";
 
   return (
     <Avatar className={cn(sizeClass[size], "shrink-0", className)}>
       {user.avatar_url ? (
-        <AvatarImage src={user.avatar_url} alt={altName} />
+        <AvatarImage
+          src={user.avatar_url}
+          alt={altName}
+          loading="lazy"
+          onLoad={() => setImgState("loaded")}
+          onError={() => setImgState("error")}
+          className={cn(
+            "transition-opacity duration-300",
+            imgState === "loaded" ? "opacity-100" : "opacity-0"
+          )}
+        />
       ) : null}
+
+      {/* Radix shows AvatarFallback while image is loading or errored */}
       <AvatarFallback
+        delayMs={0}
         className={cn(
           "bg-primary/10 text-primary font-medium",
           fallbackTextClass[size]
         )}
       >
-        {initials}
+        {imgState === "loading" ? (
+          // Pulse skeleton while image fetches
+          <span
+            className="absolute inset-0 rounded-full bg-accent animate-pulse"
+            aria-hidden="true"
+          />
+        ) : (
+          initials
+        )}
       </AvatarFallback>
     </Avatar>
   );

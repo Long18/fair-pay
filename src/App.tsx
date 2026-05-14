@@ -39,6 +39,7 @@ import { useNotificationProvider } from "./components/refine-ui/notification/use
 import { ThemeProvider } from "./components/refine-ui/theme/theme-provider";
 import { ErrorBoundary } from "./components/error-boundary";
 import { BuildVersionMonitor } from "./components/system/build-version-monitor";
+import { PageSkeleton, AdminPageSkeleton } from "./components/skeletons/PageSkeleton";
 
 // Auth pages (critical for initial load)
 import { Login } from "./pages/login";
@@ -106,7 +107,6 @@ const AdminAuditLogs = lazy(() => import("./modules/admin/pages/AdminAuditLogs")
 const AdminReactions = lazy(() => import("./modules/admin/pages/AdminReactions").then(m => ({ default: m.AdminReactions })));
 const AdminDevTool = lazy(() => import("./modules/admin/pages/AdminDevTool").then(m => ({ default: m.AdminDevTool })));
 
-// Optimized loading fallback component
 // Profile Edit Redirect Component
 const ProfileEditRedirect = () => {
   const { data: identity } = useGetIdentity();
@@ -117,14 +117,8 @@ const ProfileEditRedirect = () => {
     }
   }, [identity]);
 
-  return <PageLoader />;
+  return <PageSkeleton />;
 };
-
-const PageLoader = memo(() => (
-  <div className="flex items-center justify-center min-h-screen" role="status" aria-live="polite">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" aria-label="Loading..."></div>
-  </div>
-));
 
 const isVercelAnalyticsEnabled =
   import.meta.env.PROD && import.meta.env.VITE_ENABLE_VERCEL_ANALYTICS === "true";
@@ -329,29 +323,29 @@ function App() {
 
                     {/* Public legal pages */}
                     <Route path="/privacy" element={
-                      <Suspense fallback={<PageLoader />}>
+                      <Suspense fallback={<PageSkeleton />}>
                         <PrivacyPage />
                       </Suspense>
                     } />
                     <Route path="/terms" element={
-                      <Suspense fallback={<PageLoader />}>
+                      <Suspense fallback={<PageSkeleton />}>
                         <TermsPage />
                       </Suspense>
                     } />
                     <Route path="/about" element={
-                      <Suspense fallback={<PageLoader />}>
+                      <Suspense fallback={<PageSkeleton />}>
                         <AboutPage />
                       </Suspense>
                     } />
                     <Route path="/contact" element={
-                      <Suspense fallback={<PageLoader />}>
+                      <Suspense fallback={<PageSkeleton />}>
                         <ContactPage />
                       </Suspense>
                     } />
 
                     {/* Public profile view */}
                     <Route path="/profile/:id" element={
-                      <Suspense fallback={<PageLoader />}>
+                      <Suspense fallback={<PageSkeleton />}>
                         <ErrorBoundary context="Profile Details">
                           <ProfileShowUnified />
                         </ErrorBoundary>
@@ -382,7 +376,7 @@ function App() {
 
                     {/* Expense detail view */}
                     <Route path="/expenses/show/:id" element={
-                      <Suspense fallback={<PageLoader />}>
+                      <Suspense fallback={<PageSkeleton />}>
                         <ErrorBoundary context="Expense Details">
                           <ExpenseShow />
                         </ErrorBoundary>
@@ -391,7 +385,7 @@ function App() {
 
                     {/* Payment detail view */}
                     <Route path="/payments/show/:id" element={
-                      <Suspense fallback={<PageLoader />}>
+                      <Suspense fallback={<PageSkeleton />}>
                         <ErrorBoundary context="Payment Details">
                           <PaymentShow />
                         </ErrorBoundary>
@@ -407,7 +401,7 @@ function App() {
                         key="authenticated-admin"
                         fallback={<CatchAllNavigate to="/login" />}
                       >
-                        <Suspense fallback={<PageLoader />}>
+                        <Suspense fallback={<AdminPageSkeleton />}>
                           <AdminGuard>
                             <AdminLayout />
                           </AdminGuard>
@@ -415,14 +409,14 @@ function App() {
                       </Authenticated>
                     }
                   >
-                    <Route index element={<Suspense fallback={<PageLoader />}><AdminOverview /></Suspense>} />
-                    <Route path="people" element={<Suspense fallback={<PageLoader />}><AdminPeople /></Suspense>} />
-                    <Route path="people/:id/journey" element={<Suspense fallback={<PageLoader />}><AdminUserJourney /></Suspense>} />
-                    <Route path="transactions" element={<Suspense fallback={<PageLoader />}><AdminTransactions /></Suspense>} />
-                    <Route path="audit-logs" element={<Suspense fallback={<PageLoader />}><AdminAuditLogs /></Suspense>} />
-                    <Route path="reactions" element={<Suspense fallback={<PageLoader />}><AdminReactions /></Suspense>} />
+                    <Route index element={<Suspense fallback={<AdminPageSkeleton />}><AdminOverview /></Suspense>} />
+                    <Route path="people" element={<Suspense fallback={<AdminPageSkeleton />}><AdminPeople /></Suspense>} />
+                    <Route path="people/:id/journey" element={<Suspense fallback={<AdminPageSkeleton />}><AdminUserJourney /></Suspense>} />
+                    <Route path="transactions" element={<Suspense fallback={<AdminPageSkeleton />}><AdminTransactions /></Suspense>} />
+                    <Route path="audit-logs" element={<Suspense fallback={<AdminPageSkeleton />}><AdminAuditLogs /></Suspense>} />
+                    <Route path="reactions" element={<Suspense fallback={<AdminPageSkeleton />}><AdminReactions /></Suspense>} />
                     <Route path="utm" element={<Navigate to="/admin/devtool?tab=utm" replace />} />
-                    <Route path="devtool" element={<Suspense fallback={<PageLoader />}><AdminDevTool /></Suspense>} />
+                    <Route path="devtool" element={<Suspense fallback={<AdminPageSkeleton />}><AdminDevTool /></Suspense>} />
                     <Route path="og-preview" element={<Navigate to="/admin/devtool" replace />} />
                   </Route>
 
@@ -442,7 +436,7 @@ function App() {
                     }
                   >
                     <Route path="/connections" element={
-                      <Suspense fallback={<PageLoader />}>
+                      <Suspense fallback={<PageSkeleton />}>
                         <ErrorBoundary context="Connections">
                           <ConnectionsPage />
                         </ErrorBoundary>
@@ -453,29 +447,29 @@ function App() {
                         <Navigate to="/connections?tab=groups" replace />
                       } />
                       <Route path="create" element={
-                        <Suspense fallback={<PageLoader />}>
+                        <Suspense fallback={<PageSkeleton />}>
                           <GroupCreate />
                         </Suspense>
                       } />
                       <Route path="edit/:id" element={
-                        <Suspense fallback={<PageLoader />}>
+                        <Suspense fallback={<PageSkeleton />}>
                           <GroupEdit />
                         </Suspense>
                       } />
                       <Route path="show/:id" element={
-                        <Suspense fallback={<PageLoader />}>
+                        <Suspense fallback={<PageSkeleton />}>
                           <ErrorBoundary context="Group Details">
                             <GroupShow />
                           </ErrorBoundary>
                         </Suspense>
                       } />
                       <Route path=":groupId/expenses/create" element={
-                        <Suspense fallback={<PageLoader />}>
+                        <Suspense fallback={<PageSkeleton />}>
                           <ExpenseCreate />
                         </Suspense>
                       } />
                       <Route path=":groupId/payments/create" element={
-                        <Suspense fallback={<PageLoader />}>
+                        <Suspense fallback={<PageSkeleton />}>
                           <PaymentCreate />
                         </Suspense>
                       } />
@@ -487,67 +481,67 @@ function App() {
                       } />
                       {/* Canonical Friend Detail - Accepts both friendship ID and user ID */}
                       <Route path=":id" element={
-                        <Suspense fallback={<PageLoader />}>
+                        <Suspense fallback={<PageSkeleton />}>
                           <ErrorBoundary context="Friend Show">
                             <FriendShow />
                           </ErrorBoundary>
                         </Suspense>
                       } />
                       <Route path=":friendshipId/expenses/create" element={
-                        <Suspense fallback={<PageLoader />}>
+                        <Suspense fallback={<PageSkeleton />}>
                           <ExpenseCreate />
                         </Suspense>
                       } />
                       <Route path=":friendshipId/payments/create" element={
-                        <Suspense fallback={<PageLoader />}>
+                        <Suspense fallback={<PageSkeleton />}>
                           <PaymentCreate />
                         </Suspense>
                       } />
                     </Route>
                     <Route path="/expenses">
                       <Route path="create" element={
-                        <Suspense fallback={<PageLoader />}>
+                        <Suspense fallback={<PageSkeleton />}>
                           <ExpenseContextSelector />
                         </Suspense>
                       } />
                       <Route path="edit/:id" element={
-                        <Suspense fallback={<PageLoader />}>
+                        <Suspense fallback={<PageSkeleton />}>
                           <ExpenseEdit />
                         </Suspense>
                       } />
                     </Route>
                     <Route path="/payments">
                       <Route path="create" element={
-                        <Suspense fallback={<PageLoader />}>
+                        <Suspense fallback={<PageSkeleton />}>
                           <PaymentCreate />
                         </Suspense>
                       } />
                     </Route>
                     <Route path="/reports" element={<Navigate to="/balances" replace />} />
                     <Route path="/balances" element={
-                      <Suspense fallback={<PageLoader />}>
+                      <Suspense fallback={<PageSkeleton />}>
                         <ErrorBoundary context="Balances Page">
                           <BalancesPage />
                         </ErrorBoundary>
                       </Suspense>
                     } />
                     <Route path="/settings" element={
-                      <Suspense fallback={<PageLoader />}>
+                      <Suspense fallback={<PageSkeleton />}>
                         <SettingsPage />
                       </Suspense>
                     } />
                     <Route path="/settings/donation" element={
-                      <Suspense fallback={<PageLoader />}>
+                      <Suspense fallback={<PageSkeleton />}>
                         <DonationSettings />
                       </Suspense>
                     } />
                     <Route path="/settings/bank" element={
-                      <Suspense fallback={<PageLoader />}>
+                      <Suspense fallback={<PageSkeleton />}>
                         <BankSettings />
                       </Suspense>
                     } />
                     <Route path="/settings/sepay" element={
-                      <Suspense fallback={<PageLoader />}>
+                      <Suspense fallback={<PageSkeleton />}>
                         <SepaySettings />
                       </Suspense>
                     } />
