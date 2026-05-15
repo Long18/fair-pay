@@ -19,7 +19,7 @@ export interface AdminUserRow {
   full_name: string;
   email: string;
   avatar_url: string | null;
-  role: 'admin' | 'user';
+  role: 'admin' | 'moderator' | 'user';
   created_at: string;
   journey_tracking_ignored: boolean;
 }

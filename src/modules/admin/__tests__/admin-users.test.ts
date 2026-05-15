@@ -15,7 +15,7 @@ import fc from "fast-check";
 // Types
 // ============================================================
 
-type UserRole = "admin" | "user";
+type UserRole = "admin" | "moderator" | "user";
 
 interface UserRow {
   id: string;
@@ -104,7 +104,7 @@ const arbEmail = fc
   .map(([local, domain]) => `${local}@${domain}.com`);
 
 /** Generate a user role */
-const arbRole = fc.constantFrom<UserRole>("admin", "user");
+const arbRole = fc.constantFrom<UserRole>("admin", "moderator", "user");
 
 /** Generate a UserRow */
 const arbUserRow: fc.Arbitrary<UserRow> = fc

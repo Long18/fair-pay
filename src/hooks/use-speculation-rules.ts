@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useGetIdentity } from "@refinedev/core";
 import { useLocation } from "react-router";
-import { useIsAdmin } from "../modules/admin/hooks/use-is-admin";
+import { useAdminAccess } from "../modules/admin/hooks/use-admin-access";
 
 interface SpeculationRule {
   urls: string[];
@@ -15,7 +15,7 @@ interface SpeculationRulesConfig {
 export function useSpeculationRules(): string | null {
   const { data: identity } = useGetIdentity();
   const { pathname } = useLocation();
-  const { isAdmin } = useIsAdmin();
+  const { isStaff, canViewPeople, canViewTransactions } = useAdminAccess();
 
   return useMemo(() => {
     // Check browser support
@@ -59,15 +59,19 @@ export function useSpeculationRules(): string | null {
         }
       }
 
-      // Admin routes — uses useIsAdmin which calls is_admin() RPC
-      if (isAdmin) {
+      // Staff routes — capability-filtered so moderators only prefetch what they can open.
+      if (isStaff) {
         rules.prefetch.push({
-          urls: ["/admin", "/admin/people", "/admin/transactions"],
+          urls: [
+            "/admin",
+            ...(canViewPeople ? ["/admin/people"] : []),
+            ...(canViewTransactions ? ["/admin/transactions"] : []),
+          ],
           eagerness: "moderate",
         });
       }
     }
 
     return JSON.stringify(rules);
-  }, [pathname, identity, isAdmin]);
+  }, [pathname, identity, isStaff, canViewPeople, canViewTransactions]);
 }

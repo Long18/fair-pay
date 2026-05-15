@@ -32,7 +32,7 @@ export const SignInForm = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [devSignInRole, setDevSignInRole] = useState<"admin" | "user" | null>(null);
+  const [devSignInRole, setDevSignInRole] = useState<"admin" | "moderator" | "user" | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
@@ -185,7 +185,7 @@ export const SignInForm = () => {
     );
   };
 
-  const handleDevSignIn = (role: "admin" | "user") => {
+  const handleDevSignIn = (role: "admin" | "moderator" | "user") => {
     const email = role === "admin"
       ? import.meta.env.VITE_DEV_ADMIN_EMAIL
       : import.meta.env.VITE_DEV_USER_EMAIL;

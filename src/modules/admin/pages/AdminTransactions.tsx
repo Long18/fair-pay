@@ -118,6 +118,7 @@ import {
   getExpenseSettlementStatus,
 } from "./admin-transactions.utils";
 import { useHaptics } from "@/hooks/use-haptics";
+import { useAdminAccess } from "../hooks/use-admin-access";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -310,7 +311,7 @@ function formatFriendshipName(friendship: FriendshipOption): string {
 // ─── Expense Detail Dialog ──────────────────────────────────────────
 
 function ExpenseDetailDialog({
-  expense, open, onOpenChange, onEdit, onDelete, onSettlementChange,
+  expense, open, onOpenChange, onEdit, onDelete, onSettlementChange, canDelete, canManageSplits,
 }: {
   expense: ExpenseRow | null;
   open: boolean;
@@ -318,6 +319,8 @@ function ExpenseDetailDialog({
   onEdit: () => void;
   onDelete: () => void;
   onSettlementChange: (expenseId: string, nextIsSettled: boolean) => void;
+  canDelete: boolean;
+  canManageSplits: boolean;
 }) {
   const { tAdmin } = useAdminTranslation();
   const [splits, setSplits] = useState<ExpenseSplit[]>([]);
@@ -474,7 +477,7 @@ function ExpenseDetailDialog({
                       <TableHead>{tAdmin("transactions.expenses.splitMethod")}</TableHead>
                       <TableHead className="text-right">{tAdmin("common.amount")}</TableHead>
                       <TableHead>{tAdmin("common.status")}</TableHead>
-                      <TableHead className="text-right">{tAdmin("transactions.expenses.splitUpdate")}</TableHead>
+                      {canManageSplits ? <TableHead className="text-right">{tAdmin("transactions.expenses.splitUpdate")}</TableHead> : null}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -488,7 +491,7 @@ function ExpenseDetailDialog({
                             ? <Badge className="gap-1"><CheckCircle2Icon className="size-3" aria-hidden="true" />{tAdmin("transactions.expenses.splitPaid")}</Badge>
                             : <Badge variant="outline" className="gap-1"><ClockIcon className="size-3" aria-hidden="true" />{tAdmin("transactions.expenses.splitUnpaid")}</Badge>}
                         </TableCell>
-                        <TableCell className="text-right">
+                        {canManageSplits ? <TableCell className="text-right">
                           <Button
                             size="sm"
                             variant={split.is_settled ? "outline" : "default"}
@@ -498,7 +501,7 @@ function ExpenseDetailDialog({
                             {updatingSplitId === split.id ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
                             {split.is_settled ? tAdmin("transactions.expenses.markUnpaid") : tAdmin("transactions.expenses.markPaid")}
                           </Button>
-                        </TableCell>
+                        </TableCell> : null}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -517,7 +520,7 @@ function ExpenseDetailDialog({
         </div>
         <div className="flex gap-2 pt-2 border-t">
           <Button size="sm" variant="outline" onClick={onEdit}><PencilIcon className="mr-2 h-4 w-4" />{tAdmin("common.edit")}</Button>
-          <Button size="sm" variant="destructive" onClick={onDelete}>{tAdmin("common.delete")}</Button>
+          {canDelete ? <Button size="sm" variant="destructive" onClick={onDelete}>{tAdmin("common.delete")}</Button> : null}
         </div>
       </DialogContent>
     </Dialog>
@@ -527,9 +530,9 @@ function ExpenseDetailDialog({
 // ─── Payment Detail Dialog (replaces Sheet) ─────────────────────────
 
 function PaymentDetailDialog({
-  payment, open, onOpenChange, onEdit, onDelete,
+  payment, open, onOpenChange, onEdit, onDelete, canDelete,
 }: {
-  payment: PaymentRow | null; open: boolean; onOpenChange: (open: boolean) => void; onEdit: () => void; onDelete: () => void;
+  payment: PaymentRow | null; open: boolean; onOpenChange: (open: boolean) => void; onEdit: () => void; onDelete: () => void; canDelete: boolean;
 }) {
   const { tAdmin } = useAdminTranslation();
 
@@ -593,7 +596,7 @@ function PaymentDetailDialog({
         </div>
         <div className="flex gap-2 pt-2 border-t">
           <Button size="sm" variant="outline" onClick={onEdit}><PencilIcon className="mr-2 h-4 w-4" />{tAdmin("common.edit")}</Button>
-          <Button size="sm" variant="destructive" onClick={onDelete}>{tAdmin("common.delete")}</Button>
+          {canDelete ? <Button size="sm" variant="destructive" onClick={onDelete}>{tAdmin("common.delete")}</Button> : null}
         </div>
       </DialogContent>
     </Dialog>
@@ -1005,8 +1008,9 @@ function EditPaymentDialog({
 // ─── EXPENSES TAB ───────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════
 
-function ExpensesTab() {
+function ExpensesTab({ moderatorMode }: { moderatorMode: boolean }) {
   const { tAdmin } = useAdminTranslation();
+  const { data: identity } = useGetIdentity<Profile>();
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
   const [showFilters, setShowFilters] = useState(false);
@@ -1033,6 +1037,7 @@ function ExpensesTab() {
   const filters = useMemo<CrudFilters>(() => {
     const f: CrudFilters = [];
     f.push({ field: "is_payment", operator: "eq", value: false });
+    if (moderatorMode && identity?.id) f.push({ field: "created_by", operator: "eq", value: identity.id });
     if (debouncedSearch) f.push({ field: "description", operator: "contains", value: debouncedSearch });
     if (groupFilter !== "all") f.push({ field: "group_id", operator: "eq", value: groupFilter });
     if (dateFrom) f.push({ field: "expense_date", operator: "gte", value: dateFrom });
@@ -1040,7 +1045,7 @@ function ExpensesTab() {
     if (amountMin) f.push({ field: "amount", operator: "gte", value: Number(amountMin) });
     if (amountMax) f.push({ field: "amount", operator: "lte", value: Number(amountMax) });
     return f;
-  }, [debouncedSearch, groupFilter, dateFrom, dateTo, amountMin, amountMax]);
+  }, [debouncedSearch, groupFilter, dateFrom, dateTo, amountMin, amountMax, identity?.id, moderatorMode]);
 
   const columns = useMemo<ColumnDef<ExpenseRow>[]>(() => [
     { id: "description", header: tAdmin("transactions.expenses.description"), accessorKey: "description", size: 200 },
@@ -1098,13 +1103,17 @@ function ExpensesTab() {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => { tap(); setSelectedExpense(row.original); setDetailOpen(true); }}>{tAdmin("common.details")}</DropdownMenuItem>
             <DropdownMenuItem onClick={() => { tap(); setEditExpenseId(row.original.id); setEditDialogOpen(true); }}><PencilIcon className="mr-2 h-4 w-4" />{tAdmin("common.edit")}</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => { warning(); setDeleteExpense(row.original); setDeleteDialogOpen(true); }} className="text-destructive">{tAdmin("common.delete")}</DropdownMenuItem>
+            {!moderatorMode ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => { warning(); setDeleteExpense(row.original); setDeleteDialogOpen(true); }} className="text-destructive">{tAdmin("common.delete")}</DropdownMenuItem>
+              </>
+            ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
       ),
     },
-  ], [tap, tAdmin, warning]);
+  ], [moderatorMode, tap, tAdmin, warning]);
 
   const table = useTable<ExpenseRow>({
     columns,
@@ -1263,8 +1272,12 @@ function ExpensesTab() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => { tap(); setSelectedExpense(expense); setDetailOpen(true); }}>{tAdmin("common.details")}</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => { tap(); setEditExpenseId(expense.id); setEditDialogOpen(true); }}><PencilIcon className="mr-2 h-4 w-4" />{tAdmin("common.edit")}</DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => { warning(); setDeleteExpense(expense); setDeleteDialogOpen(true); }} className="text-destructive">{tAdmin("common.delete")}</DropdownMenuItem>
+                              {!moderatorMode ? (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => { warning(); setDeleteExpense(expense); setDeleteDialogOpen(true); }} className="text-destructive">{tAdmin("common.delete")}</DropdownMenuItem>
+                                </>
+                              ) : null}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         }
@@ -1295,10 +1308,12 @@ function ExpensesTab() {
         onSettlementChange={handleSettlementChange}
         onEdit={() => { setDetailOpen(false); setEditExpenseId(selectedExpense?.id ?? null); setEditDialogOpen(true); }}
         onDelete={() => { setDetailOpen(false); setDeleteExpense(selectedExpense); setDeleteDialogOpen(true); }}
+        canDelete={!moderatorMode}
+        canManageSplits={!moderatorMode}
       />
-      <DeleteConfirmDialog title={tAdmin("transactions.expenses.deleteTitle")} description={tAdmin("transactions.expenses.deleteDescription", { description: deleteExpense?.description ?? "", amount: formatNumber(deleteExpense?.amount ?? 0) })}
+      {!moderatorMode ? <DeleteConfirmDialog title={tAdmin("transactions.expenses.deleteTitle")} description={tAdmin("transactions.expenses.deleteDescription", { description: deleteExpense?.description ?? "", amount: formatNumber(deleteExpense?.amount ?? 0) })}
         open={deleteDialogOpen} onOpenChange={(o) => { if (!o && !isDeleting) { setDeleteDialogOpen(false); setDeleteExpense(null); } }} onConfirm={handleDelete} isDeleting={isDeleting}
-      />
+      /> : null}
       <AdminCreateExpenseDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} onSuccess={handleRefetch} />
       <AdminEditExpenseDialog expenseId={editExpenseId} open={editDialogOpen} onOpenChange={(o) => { if (!o) { setEditDialogOpen(false); setEditExpenseId(null); } }} onSuccess={handleRefetch} />
     </>
@@ -1310,7 +1325,7 @@ function ExpensesTab() {
 // ─── PAYMENTS TAB ───────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════
 
-function PaymentsTab() {
+function PaymentsTab({ moderatorMode }: { moderatorMode: boolean }) {
   const { tAdmin } = useAdminTranslation();
   const { data: identity } = useGetIdentity<Profile>();
   const deleteMutation = useInstantDelete();
@@ -1346,6 +1361,7 @@ function PaymentsTab() {
 
   const filters = useMemo<CrudFilters>(() => {
     const f: CrudFilters = [];
+    if (moderatorMode && identity?.id) f.push({ field: "created_by", operator: "eq", value: identity.id });
     if (debouncedSearch) f.push({ field: "note", operator: "contains", value: debouncedSearch });
     if (groupFilter !== "all") f.push({ field: "group_id", operator: "eq", value: groupFilter });
     if (senderFilter !== "all") f.push({ field: "from_user", operator: "eq", value: senderFilter });
@@ -1353,7 +1369,7 @@ function PaymentsTab() {
     if (dateFrom) f.push({ field: "payment_date", operator: "gte", value: dateFrom });
     if (dateTo) f.push({ field: "payment_date", operator: "lte", value: dateTo });
     return f;
-  }, [debouncedSearch, groupFilter, senderFilter, receiverFilter, dateFrom, dateTo]);
+  }, [debouncedSearch, groupFilter, senderFilter, receiverFilter, dateFrom, dateTo, identity?.id, moderatorMode]);
 
   const columns = useMemo<ColumnDef<PaymentRow>[]>(() => [
     {
@@ -1410,13 +1426,17 @@ function PaymentsTab() {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => { tap(); setSelectedPayment(row.original); setDetailOpen(true); }}>{tAdmin("common.details")}</DropdownMenuItem>
             <DropdownMenuItem onClick={() => { tap(); setEditPayment(row.original); setEditDialogOpen(true); }}><PencilIcon className="mr-2 h-4 w-4" />{tAdmin("common.edit")}</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => { warning(); setDeletePayment(row.original); setDeleteDialogOpen(true); }} className="text-destructive">{tAdmin("common.delete")}</DropdownMenuItem>
+            {!moderatorMode ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => { warning(); setDeletePayment(row.original); setDeleteDialogOpen(true); }} className="text-destructive">{tAdmin("common.delete")}</DropdownMenuItem>
+              </>
+            ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
       ),
     },
-  ], [tap, tAdmin, warning]);
+  ], [moderatorMode, tap, tAdmin, warning]);
 
   const table = useTable<PaymentRow>({
     columns,
@@ -1625,8 +1645,12 @@ function PaymentsTab() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => { tap(); setSelectedPayment(payment); setDetailOpen(true); }}>{tAdmin("common.details")}</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => { tap(); setEditPayment(payment); setEditDialogOpen(true); }}><PencilIcon className="mr-2 h-4 w-4" />{tAdmin("common.edit")}</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => { warning(); setDeletePayment(payment); setDeleteDialogOpen(true); }} className="text-destructive">{tAdmin("common.delete")}</DropdownMenuItem>
+                            {!moderatorMode ? (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => { warning(); setDeletePayment(payment); setDeleteDialogOpen(true); }} className="text-destructive">{tAdmin("common.delete")}</DropdownMenuItem>
+                              </>
+                            ) : null}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       }
@@ -1655,10 +1679,11 @@ function PaymentsTab() {
       <PaymentDetailDialog payment={selectedPayment} open={detailOpen} onOpenChange={setDetailOpen}
         onEdit={() => { setDetailOpen(false); setEditPayment(selectedPayment); setEditDialogOpen(true); }}
         onDelete={() => { setDetailOpen(false); setDeletePayment(selectedPayment); setDeleteDialogOpen(true); }}
+        canDelete={!moderatorMode}
       />
-      <DeleteConfirmDialog title={tAdmin("transactions.payments.deleteTitle")} description={tAdmin("transactions.payments.deleteDescription", { amount: formatNumber(deletePayment?.amount ?? 0), currency: deletePayment?.currency ?? "VND", from: deletePayment?.from_user_name ?? "", to: deletePayment?.to_user_name ?? "" })}
+      {!moderatorMode ? <DeleteConfirmDialog title={tAdmin("transactions.payments.deleteTitle")} description={tAdmin("transactions.payments.deleteDescription", { amount: formatNumber(deletePayment?.amount ?? 0), currency: deletePayment?.currency ?? "VND", from: deletePayment?.from_user_name ?? "", to: deletePayment?.to_user_name ?? "" })}
         open={deleteDialogOpen} onOpenChange={(o) => { if (!o && !isDeleting) { setDeleteDialogOpen(false); setDeletePayment(null); } }} onConfirm={handleDelete} isDeleting={isDeleting}
-      />
+      /> : null}
       <CreatePaymentDialog key={createDialogOpen ? "create-payment-open" : "create-payment-closed"} open={createDialogOpen} onOpenChange={setCreateDialogOpen} onSubmit={handleCreate} isCreating={isCreating} />
       <EditPaymentDialog key={editPayment?.id ?? "edit-payment-empty"} payment={editPayment} open={editDialogOpen} onOpenChange={(o) => { if (!o && !isUpdating) { setEditDialogOpen(false); setEditPayment(null); } }} onSubmit={handleEdit} isUpdating={isUpdating} />
     </>
@@ -1672,6 +1697,7 @@ function PaymentsTab() {
 export function AdminTransactions() {
   const isMobile = useIsMobile();
   const { tAdmin } = useAdminTranslation();
+  const { isModerator } = useAdminAccess();
   const [activeTab, setActiveTab] = useState<"expenses" | "payments" | "notifications">("expenses");
 
   return (
@@ -1689,7 +1715,7 @@ export function AdminTransactions() {
             <SelectContent>
               <SelectItem value="expenses">{tAdmin("transactions.expensesTab")}</SelectItem>
               <SelectItem value="payments">{tAdmin("transactions.paymentsTab")}</SelectItem>
-              <SelectItem value="notifications">{tAdmin("transactions.notificationsTab")}</SelectItem>
+              {!isModerator ? <SelectItem value="notifications">{tAdmin("transactions.notificationsTab")}</SelectItem> : null}
             </SelectContent>
           </Select>
         ) : (
@@ -1702,21 +1728,21 @@ export function AdminTransactions() {
               <CreditCardIcon className="h-4 w-4" />
               {tAdmin("transactions.paymentsTab")}
             </TabsTrigger>
-            <TabsTrigger value="notifications" className="gap-2">
+            {!isModerator ? <TabsTrigger value="notifications" className="gap-2">
               <BellIcon className="h-4 w-4" />
               {tAdmin("transactions.notificationsTab")}
-            </TabsTrigger>
+            </TabsTrigger> : null}
           </TabsList>
         )}
         <TabsContent value="expenses" className="mt-4">
-          <ExpensesTab />
+          <ExpensesTab moderatorMode={isModerator} />
         </TabsContent>
         <TabsContent value="payments" className="mt-4">
-          <PaymentsTab />
+          <PaymentsTab moderatorMode={isModerator} />
         </TabsContent>
-        <TabsContent value="notifications" className="mt-4">
+        {!isModerator ? <TabsContent value="notifications" className="mt-4">
           <AdminNotifications />
-        </TabsContent>
+        </TabsContent> : null}
       </Tabs>
     </div>
   );

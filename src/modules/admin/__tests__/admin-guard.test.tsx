@@ -66,13 +66,13 @@ import { AdminGuard } from "../components/AdminGuard";
 function setupMocks(opts: {
   identity?: { id: string; full_name: string; avatar_url: null; created_at: string; updated_at: string } | null;
   identityLoading?: boolean;
-  isAdmin?: boolean;
+  role?: "admin" | "moderator" | "user";
   roleLoading?: boolean;
 }) {
   const {
     identity = null,
     identityLoading = false,
-    isAdmin = false,
+    role = "user",
     roleLoading = false,
   } = opts;
 
@@ -82,7 +82,7 @@ function setupMocks(opts: {
   });
 
   mockUseQuery.mockImplementation(() => ({
-    data: identity ? isAdmin : undefined,
+    data: identity ? role : undefined,
     isLoading: identity ? roleLoading : false,
   }));
 }
@@ -135,7 +135,7 @@ describe("AdminGuard", () => {
    * WHEN a non-admin user accesses /admin/*, redirect to / with toast
    */
   it("redirects non-admin users to / and shows toast", () => {
-    setupMocks({ identity: NON_ADMIN_IDENTITY, isAdmin: false });
+    setupMocks({ identity: NON_ADMIN_IDENTITY, role: "user" });
 
     render(
       <AdminGuard>
@@ -156,7 +156,7 @@ describe("AdminGuard", () => {
    * WHEN an admin user accesses /admin/*, render children
    */
   it("renders children for admin users", () => {
-    setupMocks({ identity: ADMIN_IDENTITY, isAdmin: true });
+    setupMocks({ identity: ADMIN_IDENTITY, role: "admin" });
 
     render(
       <AdminGuard>
@@ -200,6 +200,19 @@ describe("AdminGuard", () => {
     expect(screen.getByTestId("custom-fallback")).toBeInTheDocument();
     expect(screen.queryByTestId("admin-content")).not.toBeInTheDocument();
   });
+
+  it("renders children for moderator users", () => {
+    setupMocks({ identity: NON_ADMIN_IDENTITY, role: "moderator" });
+
+    render(
+      <AdminGuard>
+        <div data-testid="admin-content">Admin Content</div>
+      </AdminGuard>
+    );
+
+    expect(screen.getByTestId("admin-content")).toBeInTheDocument();
+    expect(screen.queryByTestId("navigate")).not.toBeInTheDocument();
+  });
 });
 
 // ============================================================
@@ -213,7 +226,7 @@ describe("useIsAdmin logic", () => {
 
   it("returns isAdmin=false when user has no admin role", () => {
     // Simulate useQuery returning false (non-admin)
-    setupMocks({ identity: NON_ADMIN_IDENTITY, isAdmin: false });
+    setupMocks({ identity: NON_ADMIN_IDENTITY, role: "user" });
 
     render(
       <AdminGuard>
@@ -226,7 +239,7 @@ describe("useIsAdmin logic", () => {
   });
 
   it("returns isAdmin=true when user has admin role", () => {
-    setupMocks({ identity: ADMIN_IDENTITY, isAdmin: true });
+    setupMocks({ identity: ADMIN_IDENTITY, role: "admin" });
 
     render(
       <AdminGuard>
@@ -256,7 +269,7 @@ describe("useIsAdmin logic", () => {
  * **Validates: Requirements 1.1, 1.2, 1.3, 4.4**
  */
 
-type UserRole = "admin" | "user";
+type UserRole = "admin" | "moderator" | "user";
 
 interface RoleChangeRequest {
   currentAdminId: string;

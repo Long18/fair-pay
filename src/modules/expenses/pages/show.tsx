@@ -128,6 +128,25 @@ export const ExpenseShow = () => {
     staleTime: 2 * 60 * 1000,
   });
 
+  const { data: payoutRecipient } = useQuery({
+    queryKey: ["expense", "payout-recipient", id],
+    queryFn: async () => {
+      const { data, error } = await supabaseClient.rpc("get_expense_payout_recipient", {
+        p_expense_id: id!,
+      });
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row) return null;
+      return {
+        userId: row.user_id as string,
+        fullName: row.full_name as string,
+        usesModeratorPayout: row.uses_moderator_payout === true,
+      };
+    },
+    enabled: !!id,
+    staleTime: 60_000,
+  });
+
   const { query: expenseQuery } = useOne<Expense>({
     resource: "expenses",
     id: id!,
@@ -601,6 +620,7 @@ export const ExpenseShow = () => {
                       <ExpenseSplitCard
                         split={split}
                         expense={expense}
+                        payoutRecipient={payoutRecipient}
                         isCurrentUser={isCurrentUserSplit}
                         isPayer={isPayer}
                         canSettle={canSettle}

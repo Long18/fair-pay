@@ -37,6 +37,8 @@ interface PaymentMethodDropdownProps {
     };
   };
   payeeId: string;
+  payeeName?: string;
+  allowSepay?: boolean;
   className?: string;
   disabled?: boolean;
   onPaymentComplete?: () => void;
@@ -45,6 +47,8 @@ interface PaymentMethodDropdownProps {
 export function PaymentMethodDropdown({
   split,
   payeeId,
+  payeeName,
+  allowSepay = true,
   className,
   disabled = false,
   onPaymentComplete,
@@ -73,7 +77,7 @@ export function PaymentMethodDropdown({
     }});
   }
 
-  if (isSepayConfigured) {
+  if (allowSepay && isSepayConfigured) {
     methods.push({ id: 'sepay', handler: () => {
       tap();
       setSepayDialogOpen(true);
@@ -107,7 +111,7 @@ export function PaymentMethodDropdown({
       open={vietqrDialogOpen}
       onOpenChange={handleVietQRDialogClose}
       payeeId={payeeId}
-      payeeName={split.profiles?.full_name || 'recipient'}
+      payeeName={payeeName || split.profiles?.full_name || 'recipient'}
       amount={remainingAmount}
       description={`FairPay: ${split.expense_id?.slice(0, 8)}`}
       onPaymentComplete={handleVietQRPaymentComplete}
@@ -119,7 +123,7 @@ export function PaymentMethodDropdown({
       open={sepayDialogOpen}
       onOpenChange={handleSepayDialogClose}
       payeeId={payeeId}
-      payeeName={split.profiles?.full_name || 'recipient'}
+      payeeName={payeeName || split.profiles?.full_name || 'recipient'}
       amount={remainingAmount}
       sourceType="EXPENSE"
       sourceId={split.expense_id || split.id}

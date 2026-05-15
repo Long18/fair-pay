@@ -3,7 +3,7 @@ import { Navigate } from "react-router";
 import { toast } from "sonner";
 import { useEffect, useRef } from "react";
 import { Profile } from "@/modules/profile/types";
-import { useIsAdmin } from "../hooks/use-is-admin";
+import { useAdminAccess } from "../hooks/use-admin-access";
 import { Loader2Icon } from "@/components/ui/icons";
 import { useAdminTranslation } from "../i18n";
 
@@ -13,27 +13,27 @@ interface AdminGuardProps {
 }
 
 /**
- * Route guard that restricts access to admin-only routes.
+ * Route guard that restricts access to the staff admin surface.
  * - Unauthenticated users → redirect to /login
- * - Non-admin users → redirect to / with toast
- * - Admin users → render children
+ * - Non-staff users → redirect to / with toast
+ * - Admin/moderator users → render children
  */
 export function AdminGuard({ children, fallback }: AdminGuardProps) {
   const { data: identity, isLoading: identityLoading } =
     useGetIdentity<Profile>();
-  const { isAdmin, isLoading: adminLoading } = useIsAdmin();
+  const { isStaff, isLoading: adminLoading } = useAdminAccess();
   const { tAdmin } = useAdminTranslation();
   const toastShownRef = useRef(false);
 
   const isLoading = identityLoading || adminLoading;
 
-  // Show toast once when non-admin is detected
+  // Show toast once when non-staff is detected
   useEffect(() => {
-    if (!isLoading && identity && !isAdmin && !toastShownRef.current) {
+    if (!isLoading && identity && !isStaff && !toastShownRef.current) {
       toastShownRef.current = true;
       toast.error(tAdmin("guard.accessDenied"));
     }
-  }, [isLoading, identity, isAdmin, tAdmin]);
+  }, [isLoading, identity, isStaff, tAdmin]);
 
   if (isLoading) {
     return fallback ?? (
@@ -52,8 +52,8 @@ export function AdminGuard({ children, fallback }: AdminGuardProps) {
     return <Navigate to="/login" replace />;
   }
 
-  // Non-admin → /
-  if (!isAdmin) {
+  // Non-staff → /
+  if (!isStaff) {
     return <Navigate to="/" replace />;
   }
 

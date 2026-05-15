@@ -46,6 +46,7 @@ import { formatNumber } from "@/lib/locale-utils";
 import { getCategoryMeta } from "@/modules/expenses";
 import { themeIntentTones, type ThemeIntent } from "@/lib/theme-intents";
 import { useAdminTranslation } from "../i18n";
+import { useAdminAccess } from "../hooks/use-admin-access";
 
 // ─── Latest Tracked Users ────────────────────────────────────────────
 
@@ -73,7 +74,7 @@ function formatRelativeTime(value: string, tAdmin: ReturnType<typeof useAdminTra
   return tAdmin("overview.relative.daysAgo", { count: days });
 }
 
-function useLatestTrackedUsers() {
+function useLatestTrackedUsers(enabled: boolean) {
   return useQuery({
     queryKey: ["admin", "latest-tracked-users"],
     queryFn: async () => {
@@ -81,6 +82,7 @@ function useLatestTrackedUsers() {
       if (error) throw error;
       return (data ?? []) as LatestTrackedUser[];
     },
+    enabled,
     staleTime: 30_000,
   });
 }
@@ -202,7 +204,7 @@ function useAdminStats() {
   });
 }
 
-function useExpenseTrend(locale: string) {
+function useExpenseTrend(locale: string, enabled: boolean) {
   return useQuery({
     queryKey: ["admin", "expense-trend-30d", locale],
     queryFn: async () => {
@@ -230,11 +232,12 @@ function useExpenseTrend(locale: string) {
         total,
       }));
     },
+    enabled,
     staleTime: 60_000,
   });
 }
 
-function useRegistrationTrend(locale: string) {
+function useRegistrationTrend(locale: string, enabled: boolean) {
   return useQuery({
     queryKey: ["admin", "registration-trend-12w", locale],
     queryFn: async () => {
@@ -268,11 +271,12 @@ function useRegistrationTrend(locale: string) {
           count,
         }));
     },
+    enabled,
     staleTime: 60_000,
   });
 }
 
-function useCategoryBreakdown() {
+function useCategoryBreakdown(enabled: boolean) {
   return useQuery({
     queryKey: ["admin", "category-breakdown"],
     queryFn: async () => {
@@ -296,6 +300,7 @@ function useCategoryBreakdown() {
         }))
         .sort((a, b) => b.amount - a.amount);
     },
+    enabled,
     staleTime: 60_000,
   });
 }
@@ -304,11 +309,13 @@ function useCategoryBreakdown() {
 
 export function AdminOverview() {
   const { tAdmin, locale } = useAdminTranslation();
+  const { isModerator } = useAdminAccess();
+  const showAdminOnlyWidgets = !isModerator;
   const { data: stats, isLoading: statsLoading } = useAdminStats();
-  const { data: expenseTrend, isLoading: trendLoading } = useExpenseTrend(locale);
-  const { data: registrations, isLoading: regLoading } = useRegistrationTrend(locale);
-  const { data: categories, isLoading: catLoading } = useCategoryBreakdown();
-  const { data: latestUsers, isLoading: latestLoading } = useLatestTrackedUsers();
+  const { data: expenseTrend, isLoading: trendLoading } = useExpenseTrend(locale, showAdminOnlyWidgets);
+  const { data: registrations, isLoading: regLoading } = useRegistrationTrend(locale, showAdminOnlyWidgets);
+  const { data: categories, isLoading: catLoading } = useCategoryBreakdown(showAdminOnlyWidgets);
+  const { data: latestUsers, isLoading: latestLoading } = useLatestTrackedUsers(showAdminOnlyWidgets);
 
   const { containerVariants: statVariants, rowVariants: statRowVariants, animationKey: statKey } = useStaggerAnimation([...STAT_CARDS]);
 
@@ -428,6 +435,8 @@ export function AdminOverview() {
         </motion.div>
       </div>
 
+      {showAdminOnlyWidgets && (
+        <>
       {/* ── Trends ──────────────────────────────────────────────── */}
       <div className="space-y-4">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{tAdmin("overview.trends")}</p>
@@ -665,6 +674,8 @@ export function AdminOverview() {
         </CardFooter>
       </Card>
       </div>
+        </>
+      )}
 
     </div>
   );

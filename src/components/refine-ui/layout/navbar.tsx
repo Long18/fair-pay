@@ -43,7 +43,7 @@ import { LanguageToggle } from "@/components/ui/language-toggle";
 import { NotificationPanel } from "@/modules/notifications";
 import { SearchModal, useSearchShortcut } from "@/components/global-search";
 import { Profile } from "@/modules/profile/types";
-import { useIsAdmin } from "@/modules/admin/hooks/use-is-admin";
+import { useAdminAccess } from "@/modules/admin/hooks/use-admin-access";
 import { useHaptics } from "@/hooks/use-haptics";
 
 import {
@@ -440,8 +440,7 @@ function UserDropdown() {
   const isMobile = useIsMobile();
   const { tap, warning } = useHaptics();
 
-  // Check if user is admin
-  const { isAdmin } = useIsAdmin();
+  const { isAdmin, isStaff } = useAdminAccess();
 
   if (!authProvider?.getIdentity) {
     return null;
@@ -523,7 +522,7 @@ function UserDropdown() {
           <span>{t("settings.title")}</span>
         </DropdownMenuItem>
 
-        {isAdmin && (
+        {isStaff && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -536,6 +535,10 @@ function UserDropdown() {
               <LayoutDashboardIcon className="h-4 w-4" />
               <span>Admin Dashboard</span>
             </DropdownMenuItem>
+          </>
+        )}
+        {isAdmin && (
+          <>
             <DropdownMenuItem
               onClick={() => { tap(); go({ to: "/settings/donation" }); }}
               data-track-id="menu:donation-settings"

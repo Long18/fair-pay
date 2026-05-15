@@ -30,6 +30,11 @@ interface ExpenseSplitCardProps {
     currency: string;
     paid_by_user_id: string;
   };
+  payoutRecipient?: {
+    userId: string;
+    fullName: string;
+    usesModeratorPayout: boolean;
+  } | null;
   isCurrentUser: boolean;
   isPayer: boolean;
   canSettle: boolean;
@@ -42,6 +47,7 @@ interface ExpenseSplitCardProps {
 export const ExpenseSplitCard = ({
   split,
   expense,
+  payoutRecipient,
   isCurrentUser,
   isPayer,
   canSettle,
@@ -58,6 +64,9 @@ export const ExpenseSplitCard = ({
   const settledAmount = split.settled_amount ?? 0;
   const isPartiallySettled = split.is_settled && settledAmount < split.computed_amount;
   const remainingAmount = split.computed_amount - settledAmount;
+  const paymentRecipientId = payoutRecipient?.userId ?? expense.paid_by_user_id;
+  const paymentRecipientName = payoutRecipient?.fullName;
+  const allowSepay = !payoutRecipient?.usesModeratorPayout;
 
   // Calculate partial percentage for badge
   const partialPercentage = isPartiallySettled
@@ -258,7 +267,9 @@ export const ExpenseSplitCard = ({
                   <div>
                     <PaymentMethodDropdown
                       split={split}
-                      payeeId={expense.paid_by_user_id}
+                      payeeId={paymentRecipientId}
+                      payeeName={paymentRecipientName}
+                      allowSepay={allowSepay}
                       onPaymentComplete={onPaymentComplete}
                     />
                   </div>
@@ -337,7 +348,9 @@ export const ExpenseSplitCard = ({
                 {isCurrentUser && !isSplitSettled && !isPayer && split.user_id && (
                   <PaymentMethodDropdown
                     split={split}
-                    payeeId={expense.paid_by_user_id}
+                    payeeId={paymentRecipientId}
+                    payeeName={paymentRecipientName}
+                    allowSepay={allowSepay}
                     onPaymentComplete={onPaymentComplete}
                     className="flex-1 min-h-[44px]"
                   />

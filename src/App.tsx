@@ -98,6 +98,7 @@ const ContactPage = lazy(() => import("./pages/contact").then(m => ({ default: m
 
 // Admin module - lazy loaded
 const AdminGuard = lazy(() => import("./modules/admin/components/AdminGuard").then(m => ({ default: m.AdminGuard })));
+const AdminCapabilityGuard = lazy(() => import("./modules/admin/components/AdminCapabilityGuard").then(m => ({ default: m.AdminCapabilityGuard })));
 const AdminLayout = lazy(() => import("./modules/admin/components/AdminLayout").then(m => ({ default: m.AdminLayout })));
 const AdminOverview = lazy(() => import("./modules/admin/pages/AdminOverview").then(m => ({ default: m.AdminOverview })));
 const AdminPeople = lazy(() => import("./modules/admin/pages/AdminPeople").then(m => ({ default: m.AdminPeople })));
@@ -411,13 +412,13 @@ function App() {
                   >
                     <Route index element={<Suspense fallback={<AdminPageSkeleton />}><AdminOverview /></Suspense>} />
                     <Route path="people" element={<Suspense fallback={<AdminPageSkeleton />}><AdminPeople /></Suspense>} />
-                    <Route path="people/:id/journey" element={<Suspense fallback={<AdminPageSkeleton />}><AdminUserJourney /></Suspense>} />
+                    <Route path="people/:id/journey" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canViewTracking"><AdminUserJourney /></AdminCapabilityGuard></Suspense>} />
                     <Route path="transactions" element={<Suspense fallback={<AdminPageSkeleton />}><AdminTransactions /></Suspense>} />
-                    <Route path="audit-logs" element={<Suspense fallback={<AdminPageSkeleton />}><AdminAuditLogs /></Suspense>} />
+                    <Route path="audit-logs" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canViewAuditLogs"><AdminAuditLogs /></AdminCapabilityGuard></Suspense>} />
                     <Route path="reactions" element={<Suspense fallback={<AdminPageSkeleton />}><AdminReactions /></Suspense>} />
-                    <Route path="utm" element={<Navigate to="/admin/devtool?tab=utm" replace />} />
-                    <Route path="devtool" element={<Suspense fallback={<AdminPageSkeleton />}><AdminDevTool /></Suspense>} />
-                    <Route path="og-preview" element={<Navigate to="/admin/devtool" replace />} />
+                    <Route path="utm" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canUseDevtool"><Navigate to="/admin/devtool?tab=utm" replace /></AdminCapabilityGuard></Suspense>} />
+                    <Route path="devtool" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canUseDevtool"><AdminDevTool /></AdminCapabilityGuard></Suspense>} />
+                    <Route path="og-preview" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canUseDevtool"><Navigate to="/admin/devtool" replace /></AdminCapabilityGuard></Suspense>} />
                   </Route>
 
                   {/* Authenticated routes - require login */}

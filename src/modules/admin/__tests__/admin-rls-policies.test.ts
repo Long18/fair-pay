@@ -18,7 +18,7 @@ import fc from 'fast-check';
 // Simulate the database-level admin check logic
 // ============================================================
 
-type UserRole = 'admin' | 'user';
+type UserRole = 'admin' | 'moderator' | 'user';
 
 interface User {
   id: string;
@@ -113,6 +113,11 @@ const arbNonAdminUser: fc.Arbitrary<User> = arbUserId.map((id) => ({
   role: 'user' as const,
 }));
 
+const arbModeratorUser: fc.Arbitrary<User> = arbUserId.map((id) => ({
+  id,
+  role: 'moderator' as const,
+}));
+
 /** Generate a random admin-readable table name */
 const arbAdminTable: fc.Arbitrary<AdminTable> = fc.constantFrom(...ADMIN_READABLE_TABLES);
 const arbProfileWriteAction: fc.Arbitrary<ProfileWriteAction> = fc.constantFrom('insert', 'update', 'delete');
@@ -179,6 +184,26 @@ describe('Feature: admin-dashboard - Admin RLS Policies', () => {
       fc.assert(
         fc.property(arbNonAdminUser, arbProfileWriteAction, (user, action) => {
           expect(adminProfileWritePolicy(user, action)).toBe('denied');
+        }),
+        { numRuns: 100 },
+      );
+    });
+  });
+
+  describe('Moderator constraints', () => {
+    it('moderators are not treated as admins by admin-only policies', () => {
+      fc.assert(
+        fc.property(arbModeratorUser, arbAdminTable, (moderator, table) => {
+          expect(adminRlsSelectPolicy(moderator, table)).toBe('filtered');
+        }),
+        { numRuns: 100 },
+      );
+    });
+
+    it('moderators cannot use admin-only profile write policies', () => {
+      fc.assert(
+        fc.property(arbModeratorUser, arbProfileWriteAction, (moderator, action) => {
+          expect(adminProfileWritePolicy(moderator, action)).toBe('denied');
         }),
         { numRuns: 100 },
       );

@@ -35,16 +35,17 @@ import {
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useAdminTranslation } from "../i18n";
+import { useAdminAccess } from "../hooks/use-admin-access";
 
 // ─── Nav Items Config ───────────────────────────────────────────────
 
 const NAV_ITEMS = [
-  { key: "overview", labelKey: "nav.overview", icon: LayoutDashboardIcon, path: "/admin" },
-  { key: "people", labelKey: "nav.people", icon: UsersIcon, path: "/admin/people" },
-  { key: "transactions", labelKey: "nav.transactions", icon: ReceiptIcon, path: "/admin/transactions" },
-  { key: "audit-logs", labelKey: "nav.auditLogs", icon: ScrollTextIcon, path: "/admin/audit-logs" },
-  { key: "reactions", labelKey: "nav.reactions", icon: SmilePlusIcon, path: "/admin/reactions" },
-  { key: "devtool", labelKey: "nav.devtool", icon: SettingsIcon, path: "/admin/devtool" },
+  { key: "overview", labelKey: "nav.overview", icon: LayoutDashboardIcon, path: "/admin", capability: "canViewOverview" },
+  { key: "people", labelKey: "nav.people", icon: UsersIcon, path: "/admin/people", capability: "canViewPeople" },
+  { key: "transactions", labelKey: "nav.transactions", icon: ReceiptIcon, path: "/admin/transactions", capability: "canViewTransactions" },
+  { key: "audit-logs", labelKey: "nav.auditLogs", icon: ScrollTextIcon, path: "/admin/audit-logs", capability: "canViewAuditLogs" },
+  { key: "reactions", labelKey: "nav.reactions", icon: SmilePlusIcon, path: "/admin/reactions", capability: "canManageReactions" },
+  { key: "devtool", labelKey: "nav.devtool", icon: SettingsIcon, path: "/admin/devtool", capability: "canUseDevtool" },
 ] as const;
 
 // ─── Helpers ────────────────────────────────────────────────────────
@@ -202,13 +203,15 @@ function DesktopAdminNav({ scrolled }: { scrolled: boolean }) {
   const { pathname } = useLocation();
   const isMobile = useIsMobile();
   const { tAdmin } = useAdminTranslation();
+  const access = useAdminAccess();
+  const visibleItems = NAV_ITEMS.filter((item) => access[item.capability]);
 
   if (isMobile) return null;
 
   return (
     <TooltipProvider delayDuration={0}>
       <div className="hidden md:flex items-center gap-0.5 lg:gap-1 overflow-x-auto scrollbar-none">
-        {NAV_ITEMS.map((item) => {
+        {visibleItems.map((item) => {
           const active = isActive(item.path, pathname);
           const Icon = item.icon;
           const label = tAdmin(item.labelKey);
@@ -310,6 +313,8 @@ function MobileAdminMenu() {
   const { pathname } = useLocation();
   const { tap } = useHaptics();
   const { tAdmin } = useAdminTranslation();
+  const access = useAdminAccess();
+  const visibleItems = NAV_ITEMS.filter((item) => access[item.capability]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -344,7 +349,7 @@ function MobileAdminMenu() {
         </SheetHeader>
 
         <nav className="flex flex-col p-4 gap-1" role="navigation">
-          {NAV_ITEMS.map((item) => {
+          {visibleItems.map((item) => {
             const active = isActive(item.path, pathname);
             const Icon = item.icon;
             const label = tAdmin(item.labelKey);

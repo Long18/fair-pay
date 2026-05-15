@@ -57,7 +57,7 @@ CREATE TABLE profiles (
 -- 3.2 User Roles (RBAC)
 CREATE TABLE user_roles (
   user_id UUID PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
-  role TEXT NOT NULL CHECK (role IN ('admin', 'user')) DEFAULT 'user',
+  role TEXT NOT NULL CHECK (role IN ('admin', 'moderator', 'user')) DEFAULT 'user',
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
@@ -653,7 +653,7 @@ HAVING SUM(es.computed_amount) > 0;
 
 -- 7.1 Authentication & Authorization
 
-CREATE OR REPLACE FUNCTION is_admin()
+CREATE OR REPLACE FUNCTION user_has_role(p_user_id UUID, p_role TEXT)
 RETURNS BOOLEAN
 SECURITY DEFINER
 SET search_path = public, pg_temp
@@ -662,8 +662,52 @@ AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1 FROM user_roles
-    WHERE user_id = auth.uid() AND role = 'admin'
+    WHERE user_id = p_user_id AND role = p_role
   );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION has_role(p_role TEXT)
+RETURNS BOOLEAN
+SECURITY DEFINER
+SET search_path = public, pg_temp
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN user_has_role(auth.uid(), p_role);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION is_admin()
+RETURNS BOOLEAN
+SECURITY DEFINER
+SET search_path = public, pg_temp
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN has_role('admin');
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION is_moderator()
+RETURNS BOOLEAN
+SECURITY DEFINER
+SET search_path = public, pg_temp
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN has_role('moderator');
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION is_staff()
+RETURNS BOOLEAN
+SECURITY DEFINER
+SET search_path = public, pg_temp
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN is_admin() OR is_moderator();
 END;
 $$;
 
@@ -1862,7 +1906,7 @@ GRANT EXECUTE ON FUNCTION get_leaderboard_data(INTEGER, INTEGER) TO anon;
 -- ========================================
 
 COMMENT ON TABLE profiles IS 'User profiles extending auth.users';
-COMMENT ON TABLE user_roles IS 'RBAC role assignments (admin/user)';
+COMMENT ON TABLE user_roles IS 'RBAC role assignments (admin/moderator/user)';
 COMMENT ON TABLE groups IS 'Expense groups for organizing shared expenses';
 COMMENT ON TABLE group_members IS 'Many-to-many relationship between groups and users';
 COMMENT ON TABLE friendships IS '1-on-1 friend connections between users';

@@ -121,6 +121,8 @@ import {
 } from "../components/AdminMobileCards";
 import { useIsMobile } from "@/hooks/ui/use-mobile";
 import { useAdminTranslation } from "../i18n";
+import { useAdminAccess } from "../hooks/use-admin-access";
+import { ModeratorPeople } from "./ModeratorPeople";
 
 // ─── Shared Types ───────────────────────────────────────────────────
 
@@ -162,8 +164,14 @@ interface InviteEmailResponse {
 interface CreateUserFormValues {
   full_name: string;
   email: string;
-  role: string;
+  role: "admin" | "moderator" | "user";
   avatar_url?: string;
+}
+
+function formatSystemRole(role: "admin" | "moderator" | "user", userLabel: string) {
+  if (role === "admin") return "Admin";
+  if (role === "moderator") return "Moderator";
+  return userLabel;
 }
 
 type GroupMemberWithGroup = {
@@ -485,7 +493,7 @@ function UserDetailDialog({
                     label={tAdmin("common.role")}
                     value={
                       <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                        {user.role === "admin" ? "Admin" : tAdmin("common.user")}
+                        {formatSystemRole(user.role, tAdmin("common.user"))}
                       </Badge>
                     }
                   />
@@ -1041,7 +1049,7 @@ function CreateUserDialog({
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
-  const [role, setRole] = useState("user");
+  const [role, setRole] = useState<"admin" | "moderator" | "user">("user");
 
   const handleSubmit = () => {
     if (!fullName.trim() || !email.trim()) {
@@ -1076,10 +1084,11 @@ function CreateUserDialog({
         </div>
         <div className="space-y-2">
           <Label htmlFor="user-role">{tAdmin("common.role")}</Label>
-          <Select value={role} onValueChange={setRole}>
+          <Select value={role} onValueChange={(value) => setRole(value as typeof role)}>
             <SelectTrigger id="user-role"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="user">{tAdmin("common.user")}</SelectItem>
+              <SelectItem value="moderator">Moderator</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
             </SelectContent>
           </Select>
@@ -1106,7 +1115,7 @@ function EditUserDialog({
     full_name: string;
     email: string;
     avatar_url: string | null;
-    role: "admin" | "user";
+    role: "admin" | "moderator" | "user";
     journey_tracking_ignored: boolean;
   }) => void;
   isUpdating: boolean;
@@ -1116,7 +1125,7 @@ function EditUserDialog({
   const [fullName, setFullName] = useState(user?.full_name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url ?? "");
-  const [role, setRole] = useState<"admin" | "user">(user?.role ?? "user");
+  const [role, setRole] = useState<"admin" | "moderator" | "user">(user?.role ?? "user");
   const [journeyTracking, setJourneyTracking] = useState<"tracked" | "ignored">(
     user?.journey_tracking_ignored ? "ignored" : "tracked",
   );
@@ -1162,6 +1171,7 @@ function EditUserDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="user">{tAdmin("common.user")}</SelectItem>
+                <SelectItem value="moderator">Moderator</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
             </Select>
@@ -1876,7 +1886,7 @@ function UsersTab() {
       id: "role", header: tAdmin("common.role"), accessorFn: (row) => row.role, size: 100,
       cell: ({ row }) => (
         <Badge variant={row.original.role === "admin" ? "default" : "secondary"}>
-          {row.original.role === "admin" ? "Admin" : tAdmin("common.user")}
+          {formatSystemRole(row.original.role, tAdmin("common.user"))}
         </Badge>
       ),
     },
@@ -2019,7 +2029,7 @@ function UsersTab() {
     full_name: string;
     email: string;
     avatar_url: string | null;
-    role: "admin" | "user";
+    role: "admin" | "moderator" | "user";
     journey_tracking_ignored: boolean;
   }) => {
     if (!editUser) return;
@@ -2132,7 +2142,7 @@ function UsersTab() {
             <AdminFilterChips
               filters={[
                 ...(roleFilter !== "all"
-                  ? [{ key: "role", label: tAdmin("people.roleFilter", { role: roleFilter === "admin" ? "Admin" : tAdmin("common.user") }), onRemove: () => { tap(); setRoleFilter("all"); } }]
+                  ? [{ key: "role", label: tAdmin("people.roleFilter", { role: formatSystemRole(roleFilter as "admin" | "moderator" | "user", tAdmin("common.user")) }), onRemove: () => { tap(); setRoleFilter("all"); } }]
                   : []),
               ]}
               onClearAll={() => { tap(); clearFilters(); }}
@@ -2197,7 +2207,7 @@ function UsersTab() {
                         badges={
                           <>
                             <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                              {user.role === "admin" ? "Admin" : tAdmin("common.user")}
+                              {formatSystemRole(user.role, tAdmin("common.user"))}
                             </Badge>
                             <Badge variant={user.journey_tracking_ignored ? "outline" : "secondary"}>
                               {user.journey_tracking_ignored ? tAdmin("status.ignored") : tAdmin("status.tracked")}
@@ -2506,7 +2516,7 @@ function GroupsTab() {
         values: {
           is_archived: newArchived,
           archived_at: newArchived ? new Date().toISOString() : null,
-          archived_by: null,
+          archived_by: newArchived ? identity?.id ?? null : null,
         },
       },
       {
@@ -2524,7 +2534,7 @@ function GroupsTab() {
         onError: (error) => { toast.error(tAdmin("common.errorWithMessage", { message: error.message })); setIsArchiving(false); },
       },
     );
-  }, [updateMutation, table.refineCore.tableQuery, detailOpen, selectedGroup, tAdmin]);
+  }, [detailOpen, identity?.id, selectedGroup, table.refineCore.tableQuery, tAdmin, updateMutation]);
 
   const clearFilters = useCallback(() => setSearch(""), []);
   const hasActiveFilters = search !== "";
@@ -2953,8 +2963,13 @@ function InviteFriendsTab() {
 export function AdminPeople() {
   const { tap } = useHaptics();
   const { tAdmin } = useAdminTranslation();
+  const { isModerator } = useAdminAccess();
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<"users" | "groups" | "friendships" | "invite">("users");
+
+  if (isModerator) {
+    return <ModeratorPeople />;
+  }
 
   const handleTabChange = (value: string) => {
     tap();
