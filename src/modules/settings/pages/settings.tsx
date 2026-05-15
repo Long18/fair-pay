@@ -4,7 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useUserSettings } from '../hooks/use-user-settings';
 import { DisplaySettingsForm, NotificationSettingsForm, PrivacySettingsForm } from '../components';
-import { SettingsIcon, BellIcon, AlertCircleIcon, RotateCcwIcon } from "@/components/ui/icons";
+import { SettingsIcon, BellIcon, LockIcon, RotateCcwIcon } from "@/components/ui/icons";
 import { useTranslation } from 'react-i18next';
 import { ReminderSettingsComponent } from '@/components/settings/reminder-settings';
 import { useOnboarding } from '@/modules/onboarding';
@@ -45,7 +45,7 @@ export function SettingsPage() {
             <span className="hidden sm:inline">{t('settings.notifications')}</span>
           </TabsTrigger>
           <TabsTrigger value="privacy" className="flex items-center gap-1.5 text-xs sm:text-sm sm:gap-2">
-            <AlertCircleIcon className="h-4 w-4 shrink-0" />
+            <LockIcon className="h-4 w-4 shrink-0" />
             <span className="hidden sm:inline">{t('settings.privacy')}</span>
           </TabsTrigger>
         </TabsList>

@@ -127,6 +127,9 @@ import {
   SlidersHorizontal,
   Layers,
   BookOpen,
+  Shield,
+  ShieldOff,
+  ShieldCheck,
 } from "lucide-react";
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -980,4 +983,16 @@ export const LayersIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
 
 export const BookOpenIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
   <BookOpen size={size} {...props} />
+);
+
+export const ShieldIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Shield size={size} fill="currentColor" {...props} />
+);
+
+export const ShieldOffIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <ShieldOff size={size} fill="currentColor" {...props} />
+);
+
+export const ShieldCheckIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <ShieldCheck size={size} fill="currentColor" {...props} />
 );

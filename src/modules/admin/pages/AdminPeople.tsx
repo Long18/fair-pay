@@ -90,6 +90,11 @@ import {
   SendIcon,
   ChevronsUpDownIcon,
   CheckIcon,
+  Trash2Icon,
+  EyeIcon,
+  EyeOffIcon,
+  ShieldIcon,
+  ShieldOffIcon,
 } from "@/components/ui/icons";
 import {
   Command,
@@ -516,7 +521,9 @@ function UserDetailDialog({
                     {tAdmin("people.viewJourney")}
                   </Button>
                   <Button size="sm" variant="outline" onClick={onToggleJourneyTracking}>
-                    {user.journey_tracking_ignored ? tAdmin("people.resumeTracking") : tAdmin("people.ignoreTracking")}
+                    {user.journey_tracking_ignored
+                      ? <><EyeIcon className="mr-2 h-4 w-4" />{tAdmin("people.resumeTracking")}</>
+                      : <><EyeOffIcon className="mr-2 h-4 w-4" />{tAdmin("people.ignoreTracking")}</>}
                   </Button>
                   <Button size="sm" variant="outline" onClick={onEdit}>
                     <PencilIcon className="mr-2 h-4 w-4" />
@@ -528,7 +535,9 @@ function UserDetailDialog({
                     onClick={onToggleRole}
                     disabled={isSelf}
                   >
-                    {user.role === "admin" ? tAdmin("people.demoteToUser") : tAdmin("people.promoteToAdmin")}
+                    {user.role === "admin"
+                      ? <><ShieldOffIcon className="mr-2 h-4 w-4" />{tAdmin("people.demoteToUser")}</>
+                      : <><ShieldIcon className="mr-2 h-4 w-4" />{tAdmin("people.promoteToAdmin")}</>}
                   </Button>
                   <Button
                     size="sm"
@@ -536,6 +545,7 @@ function UserDetailDialog({
                     onClick={onDelete}
                     disabled={isSelf}
                   >
+                    <Trash2Icon className="mr-2 h-4 w-4" />
                     {tAdmin("people.deleteUser")}
                   </Button>
                 </div>
@@ -951,6 +961,7 @@ function GroupDetailDialog({
               </Button>
             )}
             <Button size="sm" variant="destructive" onClick={onDelete}>
+              <Trash2Icon className="mr-2 h-4 w-4" />
               {tAdmin("people.deleteGroup")}
             </Button>
           </div>
@@ -1934,6 +1945,7 @@ function UsersTab() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => { tap(); setSelectedUser(row.original); setDetailOpen(true); }}>
+              <EyeIcon className="mr-2 h-4 w-4" />
               {tAdmin("common.details")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => { tap(); go({ to: `/admin/people/${row.original.id}/journey` }); }}>
@@ -1941,7 +1953,9 @@ function UsersTab() {
               {tAdmin("people.viewJourney")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => { tap(); void handleToggleJourneyTracking(row.original); }}>
-              {row.original.journey_tracking_ignored ? tAdmin("people.resumeTracking") : tAdmin("people.ignoreTracking")}
+              {row.original.journey_tracking_ignored
+                ? <><EyeIcon className="mr-2 h-4 w-4" />{tAdmin("people.resumeTracking")}</>
+                : <><EyeOffIcon className="mr-2 h-4 w-4" />{tAdmin("people.ignoreTracking")}</>}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => { tap(); setEditUser(row.original); setEditDialogOpen(true); }}>
               <PencilIcon className="mr-2 h-4 w-4" />
@@ -1949,6 +1963,7 @@ function UsersTab() {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => { warning(); setDeleteUser(row.original); setDeleteDialogOpen(true); }} disabled={identity?.id === row.original.id} className="text-destructive">
+              <Trash2Icon className="mr-2 h-4 w-4" />
               {identity?.id === row.original.id ? tAdmin("people.cannotDeleteSelf") : tAdmin("people.deleteUser")}
             </DropdownMenuItem>
           </DropdownMenuContent>
