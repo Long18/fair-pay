@@ -52,6 +52,7 @@ import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
 import { EnhancedActivityList } from "@/components/dashboard/activity/enhanced-activity-list";
 import { SharePlatformPicker } from "@/components/share/share-platform-picker";
 import { journeyTracking } from "@/lib/journey-tracking";
+import { useTrackEvent } from "@/hooks/use-track-event";
 
 // Import new components
 import { ProfileHeader } from "../components/profile-header";
@@ -86,6 +87,7 @@ export const ProfileShowUnified = () => {
   const { tap, success, warning } = useHaptics();
   const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
+  const { track } = useTrackEvent();
 
   // State management
   const [debts, setDebts] = useState<DebtSummary[]>([]);
@@ -167,6 +169,12 @@ export const ProfileShowUnified = () => {
       },
     });
   }, [profileId, searchParams, trackingQuery]);
+
+  useEffect(() => {
+    if (profileId) {
+      track({ eventName: 'profile_opened', properties: { profileId } });
+    }
+  }, [profileId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Check admin status
   useEffect(() => {
@@ -408,12 +416,14 @@ export const ProfileShowUnified = () => {
       if (error) throw error;
 
       success();
+      track('profile_update_success');
       toast.success(t('profile.profileUpdated', 'Profile updated successfully'));
       setHasUnsavedChanges(false);
       setEditMode(false);
       profileQuery.refetch();
     } catch (error: any) {
       console.error('Error updating profile:', error);
+      track('profile_update_failed');
       toast.error(t('profile.profileUpdateError', 'Failed to update profile'));
     } finally {
       setIsSaving(false);
@@ -574,7 +584,7 @@ export const ProfileShowUnified = () => {
 
               {isOwnProfile && !isEditMode && (
                 <Button
-                  onClick={() => { tap(); setEditMode(true); }}
+                  onClick={() => { tap(); track('profile_edit_clicked'); setEditMode(true); }}
                   variant="outline"
                   size="sm"
                   className="rounded-lg"
@@ -638,8 +648,8 @@ export const ProfileShowUnified = () => {
                     <ProfileHeader
                       profile={profile}
                       isOwnProfile={isOwnProfile}
-                      onEditClick={() => setEditMode(true)}
-                      onAvatarClick={() => document.getElementById('avatar-input')?.click()}
+                      onEditClick={() => { track('profile_edit_clicked'); setEditMode(true); }}
+                      onAvatarClick={() => { track('profile_avatar_clicked'); document.getElementById('avatar-input')?.click(); }}
                       onShareClick={handleShareProfile}
                       isUploadingAvatar={isUploadingAvatar}
                     />
@@ -819,7 +829,7 @@ export const ProfileShowUnified = () => {
       {!isEditMode && (
         <ProfileMobileNavigation
           isOwnProfile={isOwnProfile}
-          onEditClick={() => { tap(); setEditMode(true); }}
+          onEditClick={() => { tap(); track('profile_edit_clicked'); setEditMode(true); }}
           onShareClick={handleShareProfile}
           onSettleClick={() => { tap(); setSettleDialogOpen(true); }}
           showSettle={netBalance !== 0 && !isOwnProfile && (netBalance > 0 || isUserAdmin)}

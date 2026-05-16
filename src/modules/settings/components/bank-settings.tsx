@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { CheckIcon, AlertCircleIcon, QrCodeIcon, TrashIcon } from '@/components/ui/icons';
 import { useBankSettings } from '@/hooks/payment/use-bank-settings';
 import { useHaptics } from '@/hooks/use-haptics';
+import { useTrackEvent } from '@/hooks/use-track-event';
 import { getPopularBanks, generateVietQRUrl, getBankByCode, createVietQRConfig } from '@/lib/vietqr';
 import { BankInfo } from '@/types/user-settings';
 
@@ -31,6 +32,7 @@ export function BankSettings() {
   const { t } = useTranslation();
   const { success, warning } = useHaptics();
   const { bankInfo, isLoading, isSaving, saveBankInfo, clearBankInfo, isConfigured } = useBankSettings();
+  const { track } = useTrackEvent();
 
   const [formData, setFormData] = useState<BankInfo>({
     bank: '',
@@ -60,8 +62,10 @@ export function BankSettings() {
     try {
       await saveBankInfo(formData);
       success();
+      track('settings_bank_save_success');
       toast.success(t('settings.bank.saved', 'Bank settings saved successfully'));
     } catch {
+      track('settings_bank_save_failed');
       toast.error(t('settings.bank.saveError', 'Failed to save bank settings'));
     }
   };

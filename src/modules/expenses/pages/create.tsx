@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { ExpenseTracker, ErrorTracker } from "@/lib/analytics/index";
 import { journeyTracking } from "@/lib/journey-tracking";
+import { useTrackEvent } from "@/hooks/use-track-event";
 
 export const ExpenseCreate = () => {
   const { groupId, friendshipId } = useParams<{ groupId?: string; friendshipId?: string }>();
@@ -24,6 +25,7 @@ export const ExpenseCreate = () => {
   const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
   const { uploadAttachments } = useAttachments();
   const { createRecurring } = useCreateRecurringExpense();
+  const { track } = useTrackEvent();
 
   const isGroupContext = !!groupId;
   const isFriendContext = !!friendshipId;
@@ -132,6 +134,7 @@ export const ExpenseCreate = () => {
 
   const handleSubmit = async (values: ExpenseFormValues) => {
     const { splits, is_recurring, recurring, split_method, is_loan, ...expenseData } = values;
+    track({ eventName: 'expense_form_submitted' });
     journeyTracking.trackEvent({
       event_name: "form_submit",
       event_category: "expense",
@@ -238,6 +241,7 @@ export const ExpenseCreate = () => {
           }
 
           // Track expense creation
+          track({ eventName: 'expense_create_success', resultStatus: 'success' });
           ExpenseTracker.created({
             amount: values.amount,
             currency: values.currency,
@@ -304,6 +308,7 @@ export const ExpenseCreate = () => {
           go({ to: `/expenses/show/${expenseId}` });
         },
         onError: (error) => {
+          track({ eventName: 'expense_create_failed', resultStatus: 'failed' });
           ErrorTracker.apiError({
             endpoint: 'expenses',
             errorMessage: error.message,

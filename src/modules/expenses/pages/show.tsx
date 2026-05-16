@@ -54,6 +54,7 @@ import { useQuery } from "@tanstack/react-query";
 import { RecurringExpense } from "../types/recurring";
 import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/use-haptics";
+import { useTrackEvent } from "@/hooks/use-track-event";
 
 // Helper to transform split data from RPC response
 const transformSplitData = (data: any[]) =>
@@ -81,6 +82,7 @@ export const ExpenseShow = () => {
   const go = useGo();
   const { t } = useTranslation();
   const { tap, success } = useHaptics();
+  const { track } = useTrackEvent();
   const { data: identity } = useGetIdentity<Profile>();
   const [splits, setSplits] = useState<any[]>([]);
   const [isLoadingSplits, setIsLoadingSplits] = useState(true);
@@ -241,6 +243,7 @@ export const ExpenseShow = () => {
   // Handle settle entire expense
   const handleSettleExpense = async () => {
     if (!expense?.id) return;
+    track({ eventName: 'expense_settle_all_button_clicked', expenseId: expense?.id });
     setSettlingExpense(true);
     try {
       const { data, error } = await supabaseClient.rpc("settle_all_splits", {
@@ -256,6 +259,7 @@ export const ExpenseShow = () => {
           defaultValue: `Settled ${splitsUpdated} of ${splitsUpdated + alreadyPaid} splits. ${alreadyPaid} already paid.`,
         })
       );
+      track({ eventName: 'expense_settle_success', expenseId: expense?.id, resultStatus: 'success' });
       success();
       refetchExpense();
       await fetchSplits();
@@ -266,6 +270,7 @@ export const ExpenseShow = () => {
       toast.error(
         t("expenses.settleError", { defaultValue: `Failed to settle: ${error.message}` })
       );
+      track({ eventName: 'expense_settle_failed', expenseId: expense?.id, resultStatus: 'failed', errorCode: error.message });
     } finally {
       setSettlingExpense(false);
     }
@@ -311,6 +316,7 @@ export const ExpenseShow = () => {
 
   const openSettleDialog = (split: any) => {
     tap();
+    track({ eventName: 'expense_settle_button_clicked', expenseId: expense?.id });
     setSelectedSplit(split);
     setSettleSplitDialogOpen(true);
   };
@@ -328,16 +334,25 @@ export const ExpenseShow = () => {
     }
   }, [isLoadingExpense, isLoadingSplits]);
 
+  // Track expense detail view
+  useEffect(() => {
+    if (!loading && expense?.id) {
+      track({ eventName: 'expense_detail_opened', expenseId: expense.id, properties: { context: expense.group_id ? 'group' : 'friend' } });
+    }
+  }, [loading, expense?.id]);
+
   const handleAttachmentDelete = (attachmentId: string) => {
     setDisplayAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
   };
 
   const handleDelete = () => {
     if (!expense?.id) return;
+    track({ eventName: 'expense_delete_button_clicked', expenseId: expense?.id });
     deleteMutation.mutate(
       { resource: "expenses", id: expense.id },
       {
         onSuccess: () => {
+          track({ eventName: 'expense_delete_success', expenseId: expense?.id, resultStatus: 'success' });
           toast.success("Expense deleted successfully");
           if (expense.group_id) {
             go({ to: `/groups/show/${expense.group_id}` });
@@ -348,6 +363,7 @@ export const ExpenseShow = () => {
           }
         },
         onError: (error) => {
+          track({ eventName: 'expense_delete_failed', expenseId: expense?.id, resultStatus: 'failed', errorCode: error.message });
           toast.error(`Failed to delete expense: ${error.message}`);
         },
       }
@@ -700,7 +716,7 @@ export const ExpenseShow = () => {
             <button
               type="button"
               className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed text-sm text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-accent/20 transition-colors"
-              onClick={() => { tap(); go({ to: `/expenses/edit/${expense.id}` }); }}
+              onClick={() => { tap(); track({ eventName: 'expense_edit_button_clicked', expenseId: expense?.id }); go({ to: `/expenses/edit/${expense.id}` }); }}
             >
               <FileTextIcon className="h-4 w-4" />
               {t("expenses.addDocuments", "Add Documents")}
@@ -752,7 +768,7 @@ export const ExpenseShow = () => {
               variant="ghost"
               size="sm"
               className="flex flex-col gap-1 h-auto py-2"
-              onClick={() => { tap(); go({ to: `/expenses/edit/${expense.id}` }); }}
+              onClick={() => { tap(); track({ eventName: 'expense_edit_button_clicked', expenseId: expense?.id }); go({ to: `/expenses/edit/${expense.id}` }); }}
             >
               <PencilIcon className="h-5 w-5" />
               <span className="text-xs">{t("common.edit", "Edit")}</span>

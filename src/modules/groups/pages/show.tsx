@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useOne, useList, useGo, useGetIdentity } from "@refinedev/core";
 import { useInstantCreate, useInstantUpdate, useInstantDelete } from "@/hooks/use-instant-mutation";
+import { useTrackEvent } from "@/hooks/use-track-event";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useParams, useSearchParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,6 +75,7 @@ export const GroupShow = () => {
   const go = useGo();
   const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
+  const { track } = useTrackEvent();
   const [searchParams, setSearchParams] = useSearchParams();
   const [, setIsRefreshing] = useState(false);
   const [addMemberModalOpen, setAddMemberModalOpen] = useState(false);
@@ -231,6 +233,12 @@ export const GroupShow = () => {
 
     go({ to: `/connections?${params.toString()}`, type: "replace" });
   }, [go, id, shouldRedirectNonMember, warning]);
+
+  useEffect(() => {
+    if (group?.id) {
+      track({ eventName: 'group_detail_opened', groupId: group.id });
+    }
+  }, [group?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const memberStats = useMemo(() => {
     const stats: Record<string, { expense_count: number; total_paid: number }> = {};
@@ -412,6 +420,7 @@ export const GroupShow = () => {
 
   const handleShare = () => {
     tap();
+    track({ eventName: 'group_share_clicked', groupId: id });
   };
 
   // Loading state
@@ -600,13 +609,13 @@ export const GroupShow = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           {isAdmin && (
-                            <DropdownMenuItem onClick={() => { tap(); go({ to: `/groups/edit/${group.id}` }); }}>
+                            <DropdownMenuItem onClick={() => { tap(); track({ eventName: 'group_edit_clicked', groupId: group.id }); go({ to: `/groups/edit/${group.id}` }); }}>
                               <PencilIcon className="mr-2 h-4 w-4" />
                               {t('groups.editGroup', 'Edit Group')}
                             </DropdownMenuItem>
                           )}
                           {isAdmin && (!isArchived || canManage) && (
-                            <DropdownMenuItem onClick={() => { tap(); setAddMemberModalOpen(true); }}>
+                            <DropdownMenuItem onClick={() => { tap(); track({ eventName: 'group_member_invite_clicked', groupId: id }); setAddMemberModalOpen(true); }}>
                               <PlusIcon className="mr-2 h-4 w-4" />
                               {t('groups.addMember', 'Add Member')}
                             </DropdownMenuItem>
@@ -839,7 +848,7 @@ export const GroupShow = () => {
                             variant="outline"
                             size="sm"
                             className="rounded-lg"
-                            onClick={() => { tap(); setAddMemberModalOpen(true); }}
+                            onClick={() => { tap(); track({ eventName: 'group_member_invite_clicked', groupId: id }); setAddMemberModalOpen(true); }}
                           >
                             <PlusIcon size={16} className="mr-2" />
                             {t('groups.addMember', 'Add Member')}
@@ -890,6 +899,7 @@ export const GroupShow = () => {
           open={addMemberModalOpen}
           onOpenChange={setAddMemberModalOpen}
           onSuccess={() => {
+            track({ eventName: 'group_member_invite_success', groupId: group.id });
             membersQuery.refetch();
             setAddMemberModalOpen(false);
           }}

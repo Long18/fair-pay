@@ -16,6 +16,7 @@ import { Friendship } from "@/modules/friends/types";
 import { toast } from "sonner";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { Separator } from "@/components/ui/separator";
+import { useTrackEvent } from "@/hooks/use-track-event";
 
 export const ExpenseEdit = () => {
   const { id } = useParams<{ id: string }>();
@@ -168,6 +169,7 @@ export const ExpenseEdit = () => {
   });
 
   const updateMutation = useInstantUpdate();
+  const { track } = useTrackEvent();
 
   // Determine members based on context (group members or friendship participants)
   const members = useMemo(() => {
@@ -257,6 +259,7 @@ export const ExpenseEdit = () => {
   const handleSubmit = async (values: ExpenseFormValues) => {
     const { splits, is_recurring, recurring, split_method, context_type, group_id, friendship_id, is_loan, ...expenseData } = values;
 
+    track({ eventName: 'expense_edit_submitted', expenseId: id });
     updateMutation.mutate(
       {
         resource: "expenses",
@@ -348,12 +351,14 @@ export const ExpenseEdit = () => {
             toast.error("Expense updated but failed to update recurring schedule");
           }
 
+          track({ eventName: 'expense_edit_success', expenseId: id, resultStatus: 'success' });
           toast.success("Expense updated successfully");
 
           // Navigate back to expense detail
           go({ to: `/expenses/show/${id}` });
         },
         onError: (error) => {
+          track({ eventName: 'expense_edit_failed', expenseId: id, resultStatus: 'failed' });
           toast.error(`Failed to update expense: ${error.message}`);
         },
       }

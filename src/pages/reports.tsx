@@ -1,6 +1,7 @@
 import { useState, useRef, useMemo } from "react";
 import { useList } from "@refinedev/core";
 import { useHaptics } from "@/hooks/use-haptics";
+import { useTrackEvent } from "@/hooks/use-track-event";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -48,6 +49,7 @@ import { LoadingBeam } from "@/components/ui/loading-beam";
 
 export function ReportsPage() {
   const { tap } = useHaptics();
+  const { track } = useTrackEvent();
   const [preset, setPreset] = useState<DateRangePreset>("this_month");
   const [customRange, setCustomRange] = useState<DateRange>();
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>();
@@ -126,10 +128,12 @@ export function ReportsPage() {
     if (value !== "custom") {
       setCustomRange(undefined);
     }
+    track({ eventName: 'report_generated', properties: { preset: value } });
   };
 
   const handleExportCSV = () => {
     tap();
+    track({ eventName: 'report_exported', properties: { format: 'csv' } });
     exportEnhancedReportToCSV(
       {
         summary: [
@@ -160,6 +164,7 @@ export function ReportsPage() {
 
   const handleExportPDF = async () => {
     tap();
+    track({ eventName: 'report_exported', properties: { format: 'pdf' } });
     const chartElements: HTMLElement[] = [];
     if (chartsRef.current) {
       const charts = chartsRef.current.querySelectorAll("[data-chart]");

@@ -1,3 +1,6 @@
+import type { UserDisplayMetadata } from './user-display';
+export type { UserDisplayMetadata };
+
 export interface AnalyticsProvider {
     init(): void;
     track(eventName: string, properties?: Record<string, any>): void;
@@ -23,13 +26,24 @@ export type EventCategory =
     | 'Settings'
     | 'Report'
     | 'Error'
-    | 'Feature';
+    | 'Feature'
+    | 'UI';
 
 export interface BaseEventProperties {
     category: EventCategory;
     timestamp?: number;
     userId?: string;
     sessionId?: string;
+    user_display_name?: string;
+    user_avatar_url?: string | null;
+    user_role?: string;
+    user_role_badge?: string;
+    user_role_label?: string;
+    page_path?: string;
+    page_name?: string;
+    action_source?: string;
+    device_type?: string;
+    platform?: string;
 }
 
 export interface AuthEvent extends BaseEventProperties {
@@ -115,6 +129,15 @@ export interface FeatureEvent extends BaseEventProperties {
     value?: any;
 }
 
+export interface UIEvent extends BaseEventProperties {
+    category: 'UI';
+    action: 'button_clicked' | 'tab_changed' | 'modal_opened' | 'modal_closed' | 'sheet_opened' | 'sheet_closed' | 'dropdown_selected' | 'filter_applied' | 'sort_applied' | 'search_used' | 'pagination_changed' | 'link_clicked';
+    element?: string;
+    element_label?: string;
+    page_name?: string;
+    context?: string;
+}
+
 export type AnalyticsEvent =
     | AuthEvent
     | ExpenseEvent
@@ -125,4 +148,5 @@ export type AnalyticsEvent =
     | SettingsEvent
     | ReportEvent
     | ErrorEvent
-    | FeatureEvent;
+    | FeatureEvent
+    | UIEvent;

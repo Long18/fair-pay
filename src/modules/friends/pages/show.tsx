@@ -10,7 +10,8 @@ import { Profile } from "@/modules/profile/types";
 import { Friendship } from "../types";
 import { RecurringExpenseList } from "@/modules/expenses";
 import { SimplifiedBalanceView, PaymentList, useBalanceCalculation } from "@/modules/payments";
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
+import { useTrackEvent } from "@/hooks/use-track-event";
 import { formatDateShort } from "@/lib/locale-utils";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -40,6 +41,7 @@ export const FriendShow = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { tap } = useHaptics();
+  const { track } = useTrackEvent();
 
   // Get tab from URL, default to 'activity'
   const activeTab = searchParams.get('tab') || 'activity';
@@ -191,6 +193,12 @@ export const FriendShow = () => {
     }
   }, [friendshipQuery, expensesQuery, paymentsQuery, t]);
 
+  useEffect(() => {
+    if (friendship?.id) {
+      track({ eventName: 'friend_detail_opened', properties: { friendshipId: friendship.id } });
+    }
+  }, [friendship?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleAddExpense = () => {
     if (!friendship?.id) return;
     tap();
@@ -211,6 +219,7 @@ export const FriendShow = () => {
 
   const handleShare = () => {
     tap();
+    track({ eventName: 'friend_share_clicked', properties: { friendshipId: friendship?.id } });
   };
 
   if (isLoadingFriendship) {

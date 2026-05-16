@@ -1,5 +1,6 @@
 import { currentBuildInfo } from "../build-info";
 import { getAttributionEventProperties } from "../utm";
+import { getUserDisplay } from './user-display';
 import type { AnalyticsProvider, AnalyticsConfig, AnalyticsEvent } from './types';
 
 export class AnalyticsManager {
@@ -135,6 +136,7 @@ export class AnalyticsManager {
     }
 
     private enrichEvent(event: AnalyticsEvent): Record<string, any> {
+        const userDisplay = getUserDisplay();
         return {
             ...event,
             ...getAttributionEventProperties(),
@@ -145,6 +147,15 @@ export class AnalyticsManager {
             app_version: currentBuildInfo.version,
             app_channel: currentBuildInfo.channel,
             commit_sha: currentBuildInfo.commitSha,
+            page_path: typeof window !== 'undefined' ? window.location.pathname : undefined,
+            device_type: typeof window !== 'undefined' ? (window.innerWidth < 768 ? 'mobile' : 'desktop') : undefined,
+            ...(userDisplay ? {
+                user_display_name: userDisplay.user_display_name,
+                user_avatar_url: userDisplay.user_avatar_url,
+                user_role: userDisplay.user_role,
+                user_role_badge: userDisplay.user_role_badge,
+                user_role_label: userDisplay.user_role_label,
+            } : {}),
         };
     }
 

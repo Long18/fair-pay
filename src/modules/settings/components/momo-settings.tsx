@@ -14,12 +14,14 @@ import { AlertCircleIcon, CheckIcon, SettingsIcon } from '@/components/ui/icons'
 import { useMomoSettings } from '@/hooks/payment/use-momo-settings';
 import { momoAPI } from '@/lib/momo/api';
 import { useHaptics } from '@/hooks/use-haptics';
+import { useTrackEvent } from '@/hooks/use-track-event';
 
 export function MomoSettings() {
   const { t } = useTranslation();
   const { success } = useHaptics();
   const { data: identity } = useGetIdentity<Profile>();
   const { settings, isLoading, updateSettings, isAdmin } = useMomoSettings();
+  const { track } = useTrackEvent();
   const [formData, setFormData] = useState({
     receiver_phone: '',
     receiver_name: '',
@@ -48,9 +50,11 @@ export function MomoSettings() {
     try {
       await updateSettings(formData);
       success();
+      track('settings_payment_save_success');
       toast.success(t('settings.momo.saved', 'MoMo settings saved successfully'));
     } catch (error) {
       console.error('Error saving MoMo settings:', error);
+      track('settings_payment_save_failed');
       toast.error(t('settings.momo.saveError', 'Failed to save MoMo settings'));
     } finally {
       setIsSaving(false);
