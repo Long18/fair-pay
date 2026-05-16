@@ -7,6 +7,8 @@ import { DashboardLoadingBeam } from "@/components/dashboard/core/DashboardLoadi
 import { BalanceTable } from "@/components/dashboard/balance/BalanceTable";
 import { SettledHistoryList } from "@/components/dashboard/activity/SettledHistoryList";
 import { EnhancedActivityList } from "@/components/dashboard/activity/enhanced-activity";
+import { HistoryLedgerList } from "@/components/dashboard/activity/history-ledger-list";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageContent } from "@/components/ui/page-content";
 import { useAggregatedDebts } from "@/hooks/balance/use-aggregated-debts";
@@ -27,6 +29,10 @@ export const Dashboard = () => {
   const { t } = useTranslation();
   const { tap } = useHaptics();
   const [activeTab, setActiveTab] = usePersistedState<"balances" | "activity" | "history">("dashboard-tab", "balances");
+  const [historyView, setHistoryView] = usePersistedState<"transactions" | "people">(
+    "dashboard-history-view",
+    "transactions"
+  );
 
   const tabOrder = ["balances", "activity", "history"] as const;
   const currentIndex = tabOrder.indexOf(activeTab);
@@ -52,6 +58,10 @@ export const Dashboard = () => {
     activities,
     isLoading: activitiesLoading
   } = useEnhancedActivity({ limit: 50, enabled: activeTab === "activity" });
+  const {
+    activities: historyActivities,
+    isLoading: historyActivitiesLoading,
+  } = useEnhancedActivity({ limit: "all", enabled: activeTab === "history" });
 
   const [loading, setLoading] = useState(true);
   const visibilityDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -168,7 +178,7 @@ export const Dashboard = () => {
                 {([
                   { key: "balances" as const, label: t('balances.title', 'Balances'), icon: WalletIcon, count: balances.length },
                   { key: "activity" as const, label: t('dashboard.recentActivity', 'Activity'), icon: ActivityIcon, count: activities.length },
-                  { key: "history" as const, label: t('history.title', 'History'), icon: HistoryIcon, count: historyDebts.length },
+                  { key: "history" as const, label: t('history.title', 'History'), icon: HistoryIcon, count: historyActivities.length },
                 ]).map((tab) => {
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.key;
@@ -262,12 +272,40 @@ export const Dashboard = () => {
                   )}
 
                   {activeTab === "history" && (
-                    <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
-                      <SettledHistoryList
-                        debts={historyDebts}
-                        isLoading={historyLoading}
-                      />
-                    </div>
+                    <Tabs
+                      value={historyView}
+                      onValueChange={(value) => setHistoryView(value as "transactions" | "people")}
+                      className="space-y-4"
+                    >
+                      <TabsList className="grid w-full grid-cols-2 rounded-lg md:w-fit md:min-w-[320px]">
+                        <TabsTrigger value="transactions" className="rounded-md">
+                          {t("history.transactions", "Giao dịch")}
+                        </TabsTrigger>
+                        <TabsTrigger value="people" className="rounded-md">
+                          {t("history.byPerson", "Theo người")}
+                        </TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="transactions" className="mt-0">
+                        <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
+                          <HistoryLedgerList
+                            activities={historyActivities}
+                            currentUserId={identity?.id || ""}
+                            isLoading={historyActivitiesLoading}
+                            pageSize={10}
+                          />
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="people" className="mt-0">
+                        <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
+                          <SettledHistoryList
+                            debts={historyDebts}
+                            isLoading={historyLoading}
+                          />
+                        </div>
+                      </TabsContent>
+                    </Tabs>
                   )}
                 </motion.div>
               </AnimatePresence>

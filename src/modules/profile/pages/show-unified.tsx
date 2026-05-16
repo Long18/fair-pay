@@ -271,30 +271,18 @@ export const ProfileShowUnified = () => {
 
     setIsLoadingDebts(true);
     try {
-      // Fetch debts based on authentication
+      // Debt cards on a product profile are always viewer-scoped.
+      // Looking at someone else's profile shows only the relationship shared with the viewer.
       if (!identity?.id) {
-        // For unauthenticated users, use public endpoint
-        const { data, error } = await supabaseClient
-          .rpc("get_user_debts_public");
-
-        if (error) throw error;
-
-        const publicDebts = (data || []).map((debt: any) => ({
-          ...debt,
-          currency: debt.currency || "VND",
-          // Use remaining_amount if available, otherwise use amount
-          amount: debt.remaining_amount !== undefined ? debt.remaining_amount : debt.amount
-        }));
-
-        setDebts(publicDebts);
+        setDebts([]);
       } else {
-        // For authenticated users
         const functionName = includeHistory
           ? "get_user_debts_history"
           : "get_user_debts_aggregated";
+        const requestedUserId = identity.id;
 
         const { data, error } = await supabaseClient
-          .rpc(functionName, { p_user_id: profileId });
+          .rpc(functionName, { p_user_id: requestedUserId });
 
         if (error) throw error;
 
@@ -314,7 +302,11 @@ export const ProfileShowUnified = () => {
           };
         });
 
-        setDebts(debtsWithCurrency);
+        setDebts(
+          isOwnProfile
+            ? debtsWithCurrency
+            : debtsWithCurrency.filter((debt: DebtSummary) => debt.counterparty_id === profileId)
+        );
       }
     } catch (error) {
       console.error("Error fetching debts:", error);
@@ -322,7 +314,7 @@ export const ProfileShowUnified = () => {
     } finally {
       setIsLoadingDebts(false);
     }
-  }, [profileId, isUserAdmin, isOwnProfile, identity?.id, t]);
+  }, [profileId, isOwnProfile, identity?.id, t]);
 
   // Use enhanced activity hook for transaction-centric activity list
   const {

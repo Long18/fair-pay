@@ -77,6 +77,27 @@ function getDashboardNarrative(
   currentUserId: string,
   t: TFunction
 ) {
+  if (activity.type === "payment") {
+    const payment = activity.originalPayment;
+    const isViewerSender = payment?.from_user === currentUserId;
+    const actor = isViewerSender
+      ? t("common.you", "You")
+      : payment?.from_profile?.full_name || t("common.someone", "Someone");
+    const counterpartName = isViewerSender
+      ? payment?.to_profile?.full_name
+      : payment?.from_profile?.full_name;
+
+    return {
+      actor,
+      action: isViewerSender
+        ? t("dashboard.activityFeed.paid", "paid")
+        : t("dashboard.activityFeed.sentYou", "sent you"),
+      description: isViewerSender
+        ? counterpartName || activity.description
+        : payment?.note || t("dashboard.activityFeed.aPayment", "a payment"),
+    };
+  }
+
   const latestPaymentEvent = activity.paymentEvents[0];
 
   if (latestPaymentEvent) {
@@ -106,11 +127,16 @@ function getDashboardNarrative(
 
 function getDefaultDisplayAmount(activity: EnhancedActivityItem) {
   return {
-    label: `${new Intl.NumberFormat("en-US", {
+    totalLabel: `${new Intl.NumberFormat("en-US", {
       style: "decimal",
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
-    }).format(activity.amount)} ${activity.currency}`,
+    }).format(activity.totalAmount)} ${activity.currency}`,
+    userLabel: `${new Intl.NumberFormat("en-US", {
+      style: "decimal",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(activity.userAmount)} ${activity.currency}`,
     className:
       activity.oweStatus.direction === "owe"
         ? "text-semantic-negative"
@@ -121,6 +147,16 @@ function getDefaultDisplayAmount(activity: EnhancedActivityItem) {
 }
 
 function getDashboardDisplayAmount(activity: EnhancedActivityItem, currentUserId: string) {
+  if (activity.type === "payment") {
+    const isViewerSender = activity.originalPayment?.from_user === currentUserId;
+
+    return {
+      prefix: isViewerSender ? "-" : "+",
+      label: formatCurrency(activity.userAmount, activity.currency),
+      className: isViewerSender ? "text-semantic-negative" : "text-semantic-positive",
+    };
+  }
+
   const latestPaymentEvent = activity.paymentEvents[0];
 
   if (latestPaymentEvent) {
@@ -178,10 +214,10 @@ function getProgressFillClass(paymentState: EnhancedActivityItem["paymentState"]
 }
 
 function ActivityDetailLink({
-  activityId,
+  activity,
   className,
 }: {
-  activityId: string;
+  activity: EnhancedActivityItem;
   className?: string;
 }) {
   const go = useGo();
@@ -196,10 +232,19 @@ function ActivityDetailLink({
       onClick={(event) => {
         event.stopPropagation();
         tap();
-        go({ to: `/expenses/show/${activityId}` });
+        go({
+          to:
+            activity.type === "payment"
+              ? `/payments/show/${activity.id}`
+              : `/expenses/show/${activity.id}`,
+        });
       }}
     >
-      <span>{t("dashboard.openExpenseDetail", "Open expense detail")}</span>
+      <span>
+        {activity.type === "payment"
+          ? t("dashboard.openPaymentDetail", "Open payment detail")
+          : t("dashboard.openExpenseDetail", "Open expense detail")}
+      </span>
       <ArrowRightIcon className="h-4 w-4" />
     </Button>
   );
@@ -353,6 +398,11 @@ const DefaultActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRowP
     const { t } = useTranslation();
     const { tap } = useHaptics();
 
+    const detailRoute =
+      activity.type === "payment"
+        ? `/payments/show/${activity.id}`
+        : `/expenses/show/${activity.id}`;
+
     const handleRowClick = (event: React.MouseEvent) => {
       if (
         (event.target as HTMLElement).closest("[data-expand-control]") ||
@@ -362,7 +412,7 @@ const DefaultActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRowP
       }
 
       tap();
-      go({ to: `/expenses/show/${activity.id}` });
+      go({ to: detailRoute });
     };
 
     const handleExpandClick = (event: React.MouseEvent) => {
@@ -374,7 +424,7 @@ const DefaultActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRowP
     const handleQuickView = (event: React.MouseEvent) => {
       event.stopPropagation();
       tap();
-      go({ to: `/expenses/show/${activity.id}` });
+      go({ to: detailRoute });
     };
 
     const handleBulkSettlement = (event: React.MouseEvent) => {
@@ -383,8 +433,8 @@ const DefaultActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRowP
       go({ to: `/expenses/show/${activity.id}?action=settle` });
     };
 
-    const hasPaymentEvents = activity.paymentEvents.length > 0;
-    const showBulkSettlement = activity.paymentState !== "paid";
+    const hasPaymentEvents = activity.type === "expense" && activity.paymentEvents.length > 0;
+    const showBulkSettlement = activity.type === "expense" && activity.paymentState !== "paid";
     const isSettled = activity.paymentState === "paid";
     const displayAmount = getDefaultDisplayAmount(activity);
 
@@ -550,8 +600,17 @@ const DefaultActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRowP
 
           <div className="flex flex-shrink-0 items-center gap-2">
             <div className="text-right">
-              <p className={cn("text-lg font-bold", displayAmount.className)}>
-                {displayAmount.label}
+              <p className="text-xs font-medium text-muted-foreground">
+                {t("dashboard.activityFeed.total", "Total")}
+              </p>
+              <p className="text-sm font-semibold tabular-nums text-foreground">
+                {displayAmount.totalLabel}
+              </p>
+              <p className="mt-1 text-xs font-medium text-muted-foreground">
+                {t("dashboard.activityFeed.myShare", "My share")}
+              </p>
+              <p className={cn("text-lg font-bold tabular-nums", displayAmount.className)}>
+                {displayAmount.userLabel}
               </p>
             </div>
 
@@ -627,12 +686,13 @@ const DashboardActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRo
     },
     ref
   ) => {
+    const go = useGo();
     const { t } = useTranslation();
     const { tap } = useHaptics();
     const narrative = getDashboardNarrative(activity, currentUserId, t);
     const displayAmount = getDashboardDisplayAmount(activity, currentUserId);
     const latestPaymentEvent = activity.paymentEvents[0];
-    const hasPaymentEvents = activity.paymentEvents.length > 0;
+    const hasPaymentEvents = activity.type === "expense" && activity.paymentEvents.length > 0;
     const activityTimestamp = activity.activityDate || activity.date;
 
     return (
@@ -643,6 +703,12 @@ const DashboardActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRo
         <button
           type="button"
           onClick={() => {
+            if (activity.type !== "expense") {
+              tap();
+              go({ to: `/payments/show/${activity.id}` });
+              return;
+            }
+
             tap();
             onToggleExpand();
           }}
@@ -650,7 +716,7 @@ const DashboardActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRo
             "group w-full text-left transition-colors hover:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             activity.paymentState === "paid" && "bg-status-success-bg/10"
           )}
-          aria-expanded={isExpanded}
+          aria-expanded={activity.type === "expense" ? isExpanded : undefined}
         >
           <div className="flex flex-col gap-4 px-4 py-4 md:flex-row md:items-start md:gap-3">
             <div className="flex items-center gap-2 md:pt-0.5">
@@ -704,18 +770,24 @@ const DashboardActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRo
                 {displayAmount.prefix}
                 {displayAmount.label}
               </p>
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                <span>
-                  {isExpanded
-                    ? t("dashboard.activityFeed.hideTrail", "Hide trail")
-                    : t("dashboard.activityFeed.tapRow", "Tap row")}
+              {activity.type === "expense" ? (
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                  <span>
+                    {isExpanded
+                      ? t("dashboard.activityFeed.hideTrail", "Hide trail")
+                      : t("dashboard.activityFeed.tapRow", "Tap row")}
+                  </span>
+                  {isExpanded ? (
+                    <ChevronDownIcon className="h-4 w-4" />
+                  ) : (
+                    <ChevronRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  )}
                 </span>
-                {isExpanded ? (
-                  <ChevronDownIcon className="h-4 w-4" />
-                ) : (
-                  <ChevronRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                )}
-              </span>
+              ) : (
+                <span className="text-xs font-medium text-muted-foreground">
+                  {t("dashboard.activityFeed.directPayment", "Direct payment")}
+                </span>
+              )}
             </div>
           </div>
 
@@ -728,7 +800,7 @@ const DashboardActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRo
         </button>
 
         <AnimatePresence initial={false}>
-          {isExpanded && (
+          {activity.type === "expense" && isExpanded && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
@@ -751,7 +823,7 @@ const DashboardActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRo
                   </div>
                 )}
 
-                <ActivityDetailLink activityId={activity.id} className="w-full md:ml-auto md:w-auto" />
+                <ActivityDetailLink activity={activity} className="w-full md:ml-auto md:w-auto" />
               </div>
             </motion.div>
           )}

@@ -1465,15 +1465,13 @@ CREATE POLICY "Participants can view expenses"
   ON expenses FOR SELECT
   TO authenticated
   USING (
-    (context_type = 'group' AND group_id IN (
-      SELECT group_id FROM group_members WHERE user_id = auth.uid()
-    ))
-    OR
-    (context_type = 'friend' AND friendship_id IN (
-      SELECT id FROM friendships
-      WHERE (user_a = auth.uid() OR user_b = auth.uid())
-        AND status = 'accepted'
-    ))
+    paid_by_user_id = auth.uid()
+    OR EXISTS (
+      SELECT 1 FROM expense_splits
+      WHERE expense_splits.expense_id = expenses.id
+        AND expense_splits.user_id = auth.uid()
+    )
+    OR is_admin()
   );
 
 CREATE POLICY "Group members or friends can create expenses"
@@ -1522,24 +1520,8 @@ CREATE POLICY "Can view splits for accessible expenses"
   USING (
     expense_id IN (
       SELECT id FROM expenses
-      WHERE
-        (context_type = 'group' AND group_id IN (
-          SELECT group_id FROM group_members WHERE user_id = auth.uid()
-        ))
-        OR
-        (context_type = 'friend' AND friendship_id IN (
-          SELECT id FROM friendships
-          WHERE (user_a = auth.uid() OR user_b = auth.uid())
-            AND status = 'accepted'
-        ))
     )
   );
-
--- From migration 016 - public read for expense splits
-CREATE POLICY "Anonymous users can view expense splits"
-  ON expense_splits FOR SELECT
-  TO anon
-  USING (true);
 
 CREATE POLICY "Expense creator can add splits"
   ON expense_splits FOR INSERT
@@ -1577,16 +1559,7 @@ CREATE POLICY "Involved parties can view payments"
   TO authenticated
   USING (
     (from_user = auth.uid() OR to_user = auth.uid())
-    OR
-    (context_type = 'group' AND group_id IN (
-      SELECT group_id FROM group_members WHERE user_id = auth.uid()
-    ))
-    OR
-    (context_type = 'friend' AND friendship_id IN (
-      SELECT id FROM friendships
-      WHERE (user_a = auth.uid() OR user_b = auth.uid())
-        AND status = 'accepted'
-    ))
+    OR is_admin()
   );
 
 CREATE POLICY "Users can record payments they make"

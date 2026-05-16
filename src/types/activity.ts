@@ -33,11 +33,13 @@ export interface PayingParticipant {
 // =============================================
 
 export interface EnhancedActivityItem {
-  // Parent row (expense)
+  // Parent row
   id: string;
-  type: "expense";
+  type: "expense" | "payment";
   description: string;
   amount: number;
+  totalAmount: number;
+  userAmount: number;
   currency: SupportedCurrency;
   date: string;
   activityDate: string;
@@ -55,8 +57,9 @@ export interface EnhancedActivityItem {
   // Child rows (payment events grouped by expenseId)
   paymentEvents: PaymentEvent[];
   
-  // Original expense data
-  originalExpense: any; // Full expense object from database
+  // Original source data
+  originalExpense?: any; // Full expense object from database
+  originalPayment?: any; // Full payment object from database
   
   // Context for disambiguation
   needsContext?: boolean;

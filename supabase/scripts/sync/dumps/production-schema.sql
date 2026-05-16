@@ -4468,12 +4468,7 @@ CREATE POLICY "Authenticated users can update donation settings" ON "public"."do
 
 
 CREATE POLICY "Can view splits for accessible expenses" ON "public"."expense_splits" FOR SELECT TO "authenticated" USING (("expense_id" IN ( SELECT "expenses"."id"
-   FROM "public"."expenses"
-  WHERE ((("expenses"."context_type" = 'group'::"text") AND ("expenses"."group_id" IN ( SELECT "group_members"."group_id"
-           FROM "public"."group_members"
-          WHERE ("group_members"."user_id" = "auth"."uid"())))) OR (("expenses"."context_type" = 'friend'::"text") AND ("expenses"."friendship_id" IN ( SELECT "friendships"."id"
-           FROM "public"."friendships"
-          WHERE ((("friendships"."user_a" = "auth"."uid"()) OR ("friendships"."user_b" = "auth"."uid"())) AND ("friendships"."status" = 'accepted'::"text")))))))));
+   FROM "public"."expenses")));
 
 
 
@@ -4547,7 +4542,9 @@ CREATE POLICY "Payment creator can delete" ON "public"."payments" FOR DELETE TO 
 
 
 
-CREATE POLICY "Public can view all expenses" ON "public"."expenses" FOR SELECT USING (true);
+CREATE POLICY "Participants can view expenses" ON "public"."expenses" FOR SELECT TO "authenticated" USING ((("paid_by_user_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."expense_splits" "es"
+  WHERE (("es"."expense_id" = "expenses"."id") AND ("es"."user_id" = "auth"."uid"())))) OR "public"."is_admin"()));
 
 
 
@@ -4555,7 +4552,7 @@ CREATE POLICY "Public can view all groups" ON "public"."groups" FOR SELECT USING
 
 
 
-CREATE POLICY "Public can view all payments" ON "public"."payments" FOR SELECT USING (true);
+CREATE POLICY "Involved parties can view payments" ON "public"."payments" FOR SELECT TO "authenticated" USING ((("from_user" = "auth"."uid"()) OR ("to_user" = "auth"."uid"()) OR "public"."is_admin"()));
 
 
 
@@ -5351,8 +5348,6 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "anon";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "authenticated";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
-
-
 
 
 
