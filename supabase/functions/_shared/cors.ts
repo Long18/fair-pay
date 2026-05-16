@@ -2,7 +2,7 @@
 // Uses APP_URL env var (NOT VITE_APP_URL — Vite prefix has no meaning in Deno)
 
 export function getCorsHeaders(): Record<string, string> {
-  const origin = Deno.env.get('APP_URL')
+  const origin = Deno.env.get('APP_URL')?.replace(/\/$/, '')
   if (!origin) {
     // Fail closed: no CORS header
     return { 'Content-Type': 'application/json' }
