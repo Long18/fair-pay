@@ -15,7 +15,7 @@ export const journeyPalette = {
   danger: "var(--chart-negative)",
   neutral: "var(--muted-foreground)",
   minimapMask: "color-mix(in oklch, var(--foreground) 72%, transparent)",
-  softShadow: "0 12px 32px color-mix(in oklch, var(--foreground) 14%, transparent)",
+  softShadow: "0 4px 20px color-mix(in oklch, var(--foreground) 8%, transparent), 0 1px 4px color-mix(in oklch, var(--foreground) 6%, transparent)",
   highlightShadow: "0 0 24px color-mix(in oklch, var(--primary) 24%, transparent)",
 } as const;
 

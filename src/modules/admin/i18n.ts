@@ -601,6 +601,7 @@ export const adminTranslations = {
           minsAgo: "{{count}}m ago",
           hoursAgo: "{{count}}h ago",
           daysAgo: "{{count}}d ago",
+          pageType: "Page",
         },
       },
       devtool: {
@@ -1338,6 +1339,7 @@ export const adminTranslations = {
           minsAgo: "{{count}}p trước",
           hoursAgo: "{{count}}g trước",
           daysAgo: "{{count}} ngày trước",
+          pageType: "Trang",
         },
       },
       devtool: {
