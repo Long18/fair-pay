@@ -41,6 +41,9 @@ describe("admin reminder email helpers", () => {
     expect(preview.html).toContain("Bún bò cuối tuần");
     expect(preview.html).toContain("Cà phê nhóm");
     expect(preview.html).toContain("https://long-pay.vercel.app/dashboard");
+    expect(preview.html).toContain("@media only screen and (max-width: 640px)");
+    expect(preview.html).toContain('class="email-body"');
+    expect(preview.html).toContain('class="cta-link"');
     expect(preview.text).toContain("You owe Lê A");
     expect(preview.text).toContain("Bún bò cuối tuần");
   });
@@ -110,6 +113,8 @@ describe("admin reminder email helpers", () => {
     expect(preview.html).toContain('alt="iCloud"');
     expect(preview.html).toContain("YouTube Premium");
     expect(preview.html).toContain("YP");
+    expect(preview.html).toContain('class="group-header-table"');
+    expect(preview.html).toContain('class="group-header-amount"');
     expect(preview.html).toContain("Tổng cần trả sau bù trừ");
     expect(preview.html).toContain("subtotal có thể khác tổng chính thức sau bù trừ");
     expect(preview.text).toContain("iCloud");

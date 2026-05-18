@@ -187,17 +187,17 @@ function buildGroupSections(groupBreakdown: ReminderGroupBreakdownItem[]): strin
     const safeSubtotal = escapeHtml(formatCurrency(group.subtotalAmount, group.currency || "VND"));
     const counterpartyRows = buildCounterpartyRows(group.counterparties, { compact: true });
 
-    return `<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:14px;border:1px solid #e2e8f0;border-radius:14px;background:#ffffff;padding:0 16px;">
+    return `<table class="group-card" width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:14px;border:1px solid #e2e8f0;border-radius:14px;background:#ffffff;padding:0 16px;">
       <tr>
         <td style="padding:16px 0 12px;">
-          <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+          <table class="group-header-table" width="100%" cellpadding="0" cellspacing="0" role="presentation">
             <tr>
-              <td width="58" valign="top">${buildGroupAvatarHtml(group)}</td>
+              <td class="group-header-avatar" width="58" valign="top">${buildGroupAvatarHtml(group)}</td>
               <td valign="middle">
                 <div style="font-size:12px;line-height:1.5;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Group</div>
                 <div style="font-size:17px;line-height:1.4;font-weight:800;color:#0f172a;">${safeGroupName}</div>
               </td>
-              <td align="right" valign="middle" style="white-space:nowrap;">
+              <td class="group-header-amount" align="right" valign="middle" style="white-space:nowrap;">
                 <div style="font-size:11px;line-height:1.5;color:#64748b;">Chưa settle / Outstanding</div>
                 <div style="font-size:18px;line-height:1.3;font-weight:900;color:#dc2626;">${safeSubtotal}</div>
               </td>
@@ -266,12 +266,62 @@ export function buildReminderEmailPreview(input: ReminderEmailPreviewInput): Rem
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>FairPay Notifications</title>
+  <style>
+    @media only screen and (max-width: 640px) {
+      .email-shell {
+        padding: 16px 8px !important;
+      }
+
+      .email-card {
+        border-radius: 14px !important;
+      }
+
+      .email-brand {
+        padding: 20px 18px !important;
+      }
+
+      .email-body {
+        padding: 22px 18px !important;
+      }
+
+      .debt-summary {
+        padding: 0 14px !important;
+      }
+
+      .group-card {
+        padding: 0 14px !important;
+      }
+
+      .group-header-table,
+      .group-header-table tbody,
+      .group-header-table tr,
+      .group-header-table td {
+        display: block !important;
+        width: 100% !important;
+      }
+
+      .group-header-avatar {
+        padding-bottom: 10px !important;
+      }
+
+      .group-header-amount {
+        padding-top: 10px !important;
+        text-align: left !important;
+      }
+
+      .cta-link {
+        box-sizing: border-box !important;
+        display: block !important;
+        width: 100% !important;
+      }
+    }
+  </style>
 </head>
 <body style="margin:0;padding:0;background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f5f5f7;padding:32px 16px;">
+  <table class="email-shell" width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f5f5f7;padding:32px 16px;">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" role="presentation"
+        <table class="email-card" width="600" cellpadding="0" cellspacing="0" role="presentation"
                style="max-width:600px;width:100%;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
           <tr>
             <td style="background:#111827;">
@@ -279,7 +329,7 @@ export function buildReminderEmailPreview(input: ReminderEmailPreviewInput): Rem
             </td>
           </tr>
           <tr>
-            <td style="background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);padding:24px 32px;text-align:center;">
+            <td class="email-brand" style="background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);padding:24px 32px;text-align:center;">
               <div style="font-size:26px;font-weight:700;color:#fff;letter-spacing:-0.5px;">FairPay</div>
               <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:4px;">
                 Chia sẻ chi phí thông minh &bull; Smart expense splitting
@@ -287,7 +337,7 @@ export function buildReminderEmailPreview(input: ReminderEmailPreviewInput): Rem
             </td>
           </tr>
           <tr>
-            <td style="background:#fff;padding:32px;">
+            <td class="email-body" style="background:#fff;padding:32px;">
               <p style="margin:0 0 6px;font-size:16px;color:#1a1a1a;">
                 Xin chào / Hello, <strong>${safeUser}</strong>
               </p>
@@ -314,7 +364,7 @@ export function buildReminderEmailPreview(input: ReminderEmailPreviewInput): Rem
                 </tr>
               </table>
               ${(groupSections || legacyDebtRows) ? `
-              <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:20px;border:1px solid #dbeafe;border-radius:16px;padding:0 16px;background:#f8fafc;">
+              <table class="debt-summary" width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:20px;border:1px solid #dbeafe;border-radius:16px;padding:0 16px;background:#f8fafc;">
                 <tr>
                   <td style="padding:16px 0 8px;">
                     <div style="font-size:12px;color:#4f46e5;text-transform:uppercase;letter-spacing:0.08em;font-weight:800;">Chi tiết công nợ / Debt breakdown</div>
@@ -333,6 +383,7 @@ export function buildReminderEmailPreview(input: ReminderEmailPreviewInput): Rem
               </table>`}` : ""}
               <div style="text-align:center;margin-top:32px;">
                 <a href="${safeCtaHref}"
+                   class="cta-link"
                    style="display:inline-block;background:#6366f1;color:#fff;padding:13px 28px;
                           border-radius:999px;text-decoration:none;font-size:15px;font-weight:700;">
                   ${ctaLabel}

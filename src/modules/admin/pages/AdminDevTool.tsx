@@ -8,6 +8,7 @@ import { supabaseClient } from "@/utility/supabaseClient";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -52,8 +53,10 @@ import {
   BookOpenIcon,
   CheckCircle2Icon,
   EyeIcon,
+  ListFilterIcon,
   Loader2Icon,
   MailIcon,
+  MonitorIcon,
   PieChartIcon,
   RefreshCwIcon,
   SendIcon,
@@ -97,6 +100,7 @@ interface DebtReminderRow {
   user_id: string;
   full_name: string;
   email: string | null;
+  avatar_url: string | null;
   has_auth_account: boolean;
   total_i_owe: number;
   net_balance: number;
@@ -128,6 +132,8 @@ interface SendReminderResponse {
   error?: string;
 }
 
+type PreviewViewport = "desktop" | "mobile";
+
 function formatCurrency(value: number, currency = "VND"): string {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -137,6 +143,16 @@ function formatCurrency(value: number, currency = "VND"): string {
 }
 
 type AdminT = ReturnType<typeof useAdminTranslation>["tAdmin"];
+
+function getInitials(value: string): string {
+  const words = value.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return "?";
+
+  return words
+    .slice(0, 2)
+    .map((word) => word.charAt(0).toUpperCase())
+    .join("");
+}
 
 function buildReminderMessage(row: DebtReminderRow, tAdmin: AdminT): string {
   const summarySource = row.group_breakdown.length
@@ -357,6 +373,7 @@ function normalizeDebtRows(rows: unknown[], tAdmin: AdminT): DebtReminderRow[] {
         user_id: String(value.user_id || ""),
         full_name: String(value.full_name || tAdmin("common.unknown")),
         email: value.email ? String(value.email) : null,
+        avatar_url: value.avatar_url ? String(value.avatar_url) : null,
         has_auth_account: value.has_auth_account !== false,
         total_i_owe: Number(value.total_i_owe || 0),
         net_balance: Number(value.net_balance || 0),
@@ -392,6 +409,129 @@ function toReminderGroupBreakdown(items: GroupBreakdownRow[]): ReminderGroupBrea
     currency: group.currency,
     counterparties: toReminderDebtBreakdown(group.counterparties),
   }));
+}
+
+function RecipientIdentity({
+  row,
+  compact = false,
+  showEmail = true,
+  placeholderLabel,
+}: {
+  row: DebtReminderRow;
+  compact?: boolean;
+  showEmail?: boolean;
+  placeholderLabel: string;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      <Avatar className={compact ? "size-8" : "size-10"}>
+        <AvatarImage src={row.avatar_url ?? undefined} alt={row.full_name} />
+        <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+          {getInitials(row.full_name)}
+        </AvatarFallback>
+      </Avatar>
+      <div className="min-w-0">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <span className="truncate font-medium">{row.full_name}</span>
+          {!row.has_auth_account ? (
+            <Badge variant="secondary">{placeholderLabel}</Badge>
+          ) : null}
+        </div>
+        {showEmail ? (
+          <p className="truncate text-xs text-muted-foreground" translate="no">
+            {row.email}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function GroupIdentity({
+  group,
+}: {
+  group: GroupBreakdownRow;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-2.5">
+      <Avatar className="size-8">
+        <AvatarImage src={group.group_avatar_url ?? undefined} alt={group.group_name} />
+        <AvatarFallback className="bg-indigo-100 text-[11px] font-semibold text-indigo-700">
+          {getInitials(group.group_name)}
+        </AvatarFallback>
+      </Avatar>
+      <p className="min-w-0 truncate text-sm font-medium leading-5">
+        {group.group_name}
+      </p>
+    </div>
+  );
+}
+
+function EmailPreviewViewportToggle({
+  value,
+  onChange,
+  tAdmin,
+}: {
+  value: PreviewViewport;
+  onChange: (value: PreviewViewport) => void;
+  tAdmin: AdminT;
+}) {
+  return (
+    <div className="inline-flex rounded-lg border bg-background p-1 shadow-xs">
+      <Button
+        type="button"
+        size="sm"
+        variant={value === "desktop" ? "secondary" : "ghost"}
+        className="h-8"
+        onClick={() => onChange("desktop")}
+      >
+        <MonitorIcon className="mr-1.5 h-4 w-4" aria-hidden="true" />
+        {tAdmin("devtool.desktopPreview")}
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant={value === "mobile" ? "secondary" : "ghost"}
+        className="h-8"
+        onClick={() => onChange("mobile")}
+      >
+        {tAdmin("devtool.mobilePreview")}
+      </Button>
+    </div>
+  );
+}
+
+function EmailPreviewFrame({
+  html,
+  title,
+  viewport,
+  tall = false,
+}: {
+  html: string;
+  title: string;
+  viewport: PreviewViewport;
+  tall?: boolean;
+}) {
+  return (
+    <div className="flex min-h-0 flex-1 overflow-auto rounded-2xl border bg-muted/35 p-3 shadow-inner sm:p-5">
+      <div
+        className={cn(
+          "mx-auto w-full overflow-hidden rounded-2xl border bg-white shadow-sm transition-[max-width] duration-200",
+          viewport === "desktop" ? "max-w-[640px]" : "max-w-[390px]"
+        )}
+      >
+        <iframe
+          title={title}
+          srcDoc={html}
+          sandbox=""
+          className={cn(
+            "block w-full bg-white",
+            tall ? "h-[min(68dvh,760px)] min-h-[420px]" : "h-[min(58dvh,640px)] min-h-[320px]"
+          )}
+        />
+      </div>
+    </div>
+  );
 }
 
 function DebtTableSkeletonRows() {
@@ -474,9 +614,12 @@ function AdminEmailDevTools() {
   const [isLoading, setIsLoading] = useState(true);
   const [sendingUserId, setSendingUserId] = useState<string | null>(null);
   const [previewRow, setPreviewRow] = useState<DebtReminderRow | null>(null);
+  const [previewViewport, setPreviewViewport] = useState<PreviewViewport>("desktop");
   const [bulkPreviewOpen, setBulkPreviewOpen] = useState(false);
   const [bulkPreviewFocusUserId, setBulkPreviewFocusUserId] = useState<string | null>(null);
+  const [bulkPreviewViewport, setBulkPreviewViewport] = useState<PreviewViewport>("desktop");
   const [confirmBulkOpen, setConfirmBulkOpen] = useState(false);
+  const [groupFilter, setGroupFilter] = useState("all");
 
   const previewEmail = useMemo(() => {
     if (!previewRow) return null;
@@ -493,14 +636,36 @@ function AdminEmailDevTools() {
     });
   }, [previewRow, tAdmin]);
 
+  const groupOptions = useMemo(() => {
+    const options = new Map<string, string>();
+    for (const row of debtors) {
+      for (const group of row.group_breakdown) {
+        const key = group.group_id ?? "__direct__";
+        if (!options.has(key)) {
+          options.set(key, group.group_name);
+        }
+      }
+    }
+    return Array.from(options, ([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [debtors]);
+
+  const visibleDebtors = useMemo(() => {
+    if (groupFilter === "all") return debtors;
+
+    return debtors.filter((row) => row.group_breakdown.some((group) => (
+      (group.group_id ?? "__direct__") === groupFilter
+    )));
+  }, [debtors, groupFilter]);
+
   const bulkFocusRow = useMemo(() => {
     if (!bulkPreviewFocusUserId) return null;
-    return debtors.find((d) => d.user_id === bulkPreviewFocusUserId) ?? null;
-  }, [debtors, bulkPreviewFocusUserId]);
+    return visibleDebtors.find((d) => d.user_id === bulkPreviewFocusUserId) ?? null;
+  }, [visibleDebtors, bulkPreviewFocusUserId]);
 
   const selectedRows = useMemo(
-    () => debtors.filter((d) => selectedUserIds.includes(d.user_id)),
-    [debtors, selectedUserIds]
+    () => visibleDebtors.filter((d) => selectedUserIds.includes(d.user_id)),
+    [visibleDebtors, selectedUserIds]
   );
 
   const effectiveBulkFocusRow = bulkFocusRow ?? selectedRows[0] ?? null;
@@ -520,7 +685,7 @@ function AdminEmailDevTools() {
     });
   }, [effectiveBulkFocusRow, tAdmin]);
 
-  const allSelected = debtors.length > 0 && selectedRows.length === debtors.length;
+  const allSelected = visibleDebtors.length > 0 && selectedRows.length === visibleDebtors.length;
   const someSelected = selectedRows.length > 0 && !allSelected;
   const isBusy = sendingUserId !== null;
 
@@ -687,10 +852,37 @@ function AdminEmailDevTools() {
             </div>
           </div>
           {debtors.length > 0 && !isLoading ? (
-            <div className="flex min-w-0 flex-col gap-3 rounded-lg border bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
+            <div className="flex min-w-0 flex-col gap-3 rounded-lg border bg-muted/30 p-3 xl:flex-row xl:items-center xl:justify-between">
+              <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                <div className="flex items-center gap-2">
+                  <ListFilterIcon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  <Label htmlFor="group-filter" className="sr-only">
+                    {tAdmin("devtool.groupFilter")}
+                  </Label>
+                  <Select
+                    value={groupFilter}
+                    onValueChange={(value) => {
+                      tap();
+                      setGroupFilter(value);
+                      setSelectedUserIds([]);
+                    }}
+                  >
+                    <SelectTrigger id="group-filter" className="w-full sm:w-[220px]">
+                      <SelectValue placeholder={tAdmin("devtool.groupFilter")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{tAdmin("devtool.allGroups")}</SelectItem>
+                      {groupOptions.map((group) => (
+                        <SelectItem key={group.value} value={group.value}>
+                          {group.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
                 <span className="font-medium text-foreground tabular-nums">
-                  {tAdmin("devtool.selectedCount", { selected: selectedRows.length, total: debtors.length })}
+                  {tAdmin("devtool.selectedCount", { selected: selectedRows.length, total: visibleDebtors.length })}
                   {selectedRows.length ? ` · ${formatCurrency(totalDebtSelected)}` : ""}
                 </span>
                 <Separator orientation="vertical" className="hidden h-4 sm:block" />
@@ -700,7 +892,7 @@ function AdminEmailDevTools() {
                   className="h-auto min-h-0 p-0"
                   onClick={() => {
                     tap();
-                    setSelectedUserIds(debtors.map((d) => d.user_id));
+                    setSelectedUserIds(visibleDebtors.map((d) => d.user_id));
                   }}
                 >
                   {tAdmin("common.all")}
@@ -717,6 +909,7 @@ function AdminEmailDevTools() {
                 >
                   {tAdmin("devtool.clearSelection")}
                 </Button>
+                </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -758,12 +951,12 @@ function AdminEmailDevTools() {
                       checked={allSelected ? true : someSelected ? "indeterminate" : false}
                       onCheckedChange={(checked) => {
                         if (checked === true) {
-                          setSelectedUserIds(debtors.map((d) => d.user_id));
+                          setSelectedUserIds(visibleDebtors.map((d) => d.user_id));
                         } else {
                           setSelectedUserIds([]);
                         }
                       }}
-                      disabled={!debtors.length || isLoading}
+                      disabled={!visibleDebtors.length || isLoading}
                       aria-label={tAdmin("devtool.selectAllDebtors")}
                     />
                     <Label htmlFor="select-all-debtors" className="sr-only">
@@ -781,8 +974,8 @@ function AdminEmailDevTools() {
             <TableBody>
               {isLoading ? (
                 <DebtTableSkeletonRows />
-              ) : debtors.length ? (
-                debtors.map((row) => {
+              ) : visibleDebtors.length ? (
+                visibleDebtors.map((row) => {
                   const topGroup = row.group_breakdown[0];
                   const topDebt = row.debt_breakdown[0];
                   const rowSelected = selectedUserIds.includes(row.user_id);
@@ -808,18 +1001,18 @@ function AdminEmailDevTools() {
                         </div>
                       </TableCell>
                       <TableCell className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-medium">{row.full_name}</span>
-                          {!row.has_auth_account ? (
-                            <Badge variant="secondary">{tAdmin("devtool.placeholderRecipient")}</Badge>
-                          ) : null}
-                        </div>
+                        <RecipientIdentity
+                          row={row}
+                          compact
+                          showEmail={false}
+                          placeholderLabel={tAdmin("devtool.placeholderRecipient")}
+                        />
                         {topGroup ? (
-                          <div className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                          <div className="mt-1 pl-11 text-xs text-muted-foreground line-clamp-2">
                             {tAdmin("devtool.topGroup", { name: topGroup.group_name, amount: formatCurrency(topGroup.subtotal_amount, topGroup.currency) })}
                           </div>
                         ) : topDebt ? (
-                          <div className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                          <div className="mt-1 pl-11 text-xs text-muted-foreground line-clamp-2">
                             {tAdmin("devtool.debtTo", { name: topDebt.counterparty_name, amount: formatCurrency(topDebt.amount, topDebt.currency) })}
                           </div>
                         ) : null}
@@ -873,7 +1066,7 @@ function AdminEmailDevTools() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                    {tAdmin("devtool.noDebtors")}
+                    {groupFilter === "all" ? tAdmin("devtool.noDebtors") : tAdmin("devtool.noDebtorsInGroup")}
                   </TableCell>
                 </TableRow>
               )}
@@ -890,7 +1083,7 @@ function AdminEmailDevTools() {
           }
         }}
       >
-        <DialogContent className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-5xl flex-col gap-0 overflow-hidden p-0 sm:w-[calc(100vw-2rem)]">
+        <DialogContent className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden p-0 sm:w-[calc(100vw-2rem)] sm:max-w-6xl">
           <DialogHeader className="border-b px-4 py-4 sm:px-6">
             <DialogTitle>{tAdmin("devtool.previewEmailTitle")}</DialogTitle>
             <DialogDescription>
@@ -904,69 +1097,83 @@ function AdminEmailDevTools() {
               ) : null}
             </DialogDescription>
           </DialogHeader>
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
+          <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[minmax(280px,340px)_minmax(0,1fr)]">
             {previewEmail && previewRow ? (
-              <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
-                <div className="rounded-lg border bg-muted/30 px-3 py-2 text-sm">
-                  <p className="max-w-full truncate font-medium" translate="no">
-                    {previewEmail.subject}
-                  </p>
-                  <p className="line-clamp-2 text-xs text-muted-foreground">{previewEmail.previewText}</p>
-                </div>
-                {previewRow.group_breakdown.length ? (
-                  <div className="rounded-xl border bg-card p-3 shadow-sm">
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      {tAdmin("devtool.groupSummary")}
+              <>
+                <aside className="min-h-0 space-y-4 overflow-y-auto border-b bg-muted/15 px-4 py-4 lg:border-r lg:border-b-0 sm:px-6">
+                  <RecipientIdentity
+                    row={previewRow}
+                    placeholderLabel={tAdmin("devtool.placeholderRecipient")}
+                  />
+                  <div className="rounded-xl border bg-background p-3 text-sm shadow-xs">
+                    <p className="font-medium" translate="no">
+                      {previewEmail.subject}
                     </p>
-                    <div className="mt-2 grid max-h-40 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-                      {previewRow.group_breakdown.slice(0, 6).map((group) => (
-                        <div
-                          key={`${group.group_id || group.group_name}-${group.currency}`}
-                          className="rounded-lg bg-muted/40 p-3"
-                        >
-                          <p className="line-clamp-2 text-sm font-medium">
-                            {tAdmin("devtool.groupSummaryLine", { group: group.group_name })}
-                          </p>
-                          <p className="mt-1 text-sm font-semibold text-destructive tabular-nums">
-                            {formatCurrency(group.subtotal_amount, group.currency)}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : previewRow.debt_breakdown.length ? (
-                  <div className="rounded-xl border bg-card p-3 shadow-sm">
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      {tAdmin("devtool.debtSummary")}
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      {previewEmail.previewText}
                     </p>
-                    <div className="mt-2 grid max-h-40 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-                      {previewRow.debt_breakdown.slice(0, 6).map((item) => (
-                        <div
-                          key={`${item.counterparty_key}-${item.currency}`}
-                          className="rounded-lg bg-muted/40 p-3"
-                        >
-                          <p className="line-clamp-2 text-sm font-medium">
-                            {tAdmin("devtool.debtSummaryLine", { user: previewRow.full_name, counterparty: item.counterparty_name })}
-                          </p>
-                          <p className="mt-1 text-sm font-semibold text-destructive tabular-nums">
-                            {formatCurrency(item.amount, item.currency)}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
                   </div>
-                ) : null}
-                <div className="rounded-xl border bg-muted/40 p-2 shadow-sm sm:p-4">
-                  <div className="mx-auto h-[min(62dvh,680px)] min-h-[360px] w-full overflow-hidden rounded-lg border bg-white shadow-sm sm:w-[640px]">
-                    <iframe
-                      title="Reminder email preview"
-                      srcDoc={previewEmail.html}
-                      sandbox=""
-                      className="h-full w-full"
+                  {previewRow.group_breakdown.length ? (
+                    <div className="rounded-xl border bg-background p-3 shadow-xs">
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        {tAdmin("devtool.groupSummary")}
+                      </p>
+                      <div className="mt-3 space-y-2">
+                        {previewRow.group_breakdown.slice(0, 6).map((group) => (
+                          <div
+                            key={`${group.group_id || group.group_name}-${group.currency}`}
+                            className="flex items-start justify-between gap-3 rounded-lg bg-muted/40 p-2.5"
+                          >
+                            <GroupIdentity group={group} />
+                            <p className="shrink-0 text-sm font-semibold text-destructive tabular-nums">
+                              {formatCurrency(group.subtotal_amount, group.currency)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : previewRow.debt_breakdown.length ? (
+                    <div className="rounded-xl border bg-background p-3 shadow-xs">
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        {tAdmin("devtool.debtSummary")}
+                      </p>
+                      <div className="mt-3 space-y-2">
+                        {previewRow.debt_breakdown.slice(0, 6).map((item) => (
+                          <div
+                            key={`${item.counterparty_key}-${item.currency}`}
+                            className="flex items-start justify-between gap-3 rounded-lg bg-muted/40 p-2.5"
+                          >
+                            <p className="min-w-0 text-sm font-medium leading-5">
+                              {item.counterparty_name}
+                            </p>
+                            <p className="shrink-0 text-sm font-semibold text-destructive tabular-nums">
+                              {formatCurrency(item.amount, item.currency)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </aside>
+                <section className="flex min-h-0 flex-col gap-3 px-4 py-4 sm:px-6">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {tAdmin("devtool.previewViewport")}
+                    </p>
+                    <EmailPreviewViewportToggle
+                      value={previewViewport}
+                      onChange={setPreviewViewport}
+                      tAdmin={tAdmin}
                     />
                   </div>
-                </div>
-              </div>
+                  <EmailPreviewFrame
+                    html={previewEmail.html}
+                    title="Reminder email preview"
+                    viewport={previewViewport}
+                    tall
+                  />
+                </section>
+              </>
             ) : null}
           </div>
           <DialogFooter className="border-t bg-background/95 px-4 py-3 sm:px-6">
@@ -1000,58 +1207,73 @@ function AdminEmailDevTools() {
       </Dialog>
 
       <Dialog open={bulkPreviewOpen} onOpenChange={setBulkPreviewOpen}>
-        <DialogContent className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-5xl flex-col gap-0 overflow-hidden p-0 sm:w-[calc(100vw-2rem)]">
+        <DialogContent className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden p-0 sm:w-[calc(100vw-2rem)] sm:max-w-6xl">
           <DialogHeader className="border-b px-4 py-4 sm:px-6">
             <DialogTitle>{tAdmin("devtool.bulkPreviewTitle")}</DialogTitle>
             <DialogDescription>
               {tAdmin("devtool.bulkPreviewDescription")}
             </DialogDescription>
           </DialogHeader>
-          <div className="min-h-0 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
-            {selectedRows.length > 0 ? (
-              <div className="space-y-2">
-                <Label htmlFor="bulk-preview-user">{tAdmin("devtool.previewRecipient")}</Label>
-                <Select
-                  value={bulkPreviewFocusUserId || selectedRows[0]?.user_id}
-                  onValueChange={setBulkPreviewFocusUserId}
-                >
-                  <SelectTrigger id="bulk-preview-user" className="w-full max-w-md">
-                    <SelectValue placeholder={tAdmin("devtool.previewRecipient")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {selectedRows.map((r) => (
-                      <SelectItem key={r.user_id} value={r.user_id}>
-                        {r.full_name} ({r.email})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {tAdmin("devtool.bulkPreviewHint", { count: selectedRows.length })}
-                </p>
-              </div>
-            ) : null}
-            {bulkPreviewEmail && effectiveBulkFocusRow ? (
-              <div className="mx-auto flex w-full max-w-4xl flex-col gap-3">
-                <div className="rounded-lg border bg-muted/30 px-3 py-2 text-sm">
-                  <p className="max-w-full truncate font-medium" translate="no">
+          <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[minmax(280px,340px)_minmax(0,1fr)]">
+            <aside className="min-h-0 space-y-4 overflow-y-auto border-b bg-muted/15 px-4 py-4 lg:border-r lg:border-b-0 sm:px-6">
+              {selectedRows.length > 0 ? (
+                <div className="space-y-2">
+                  <Label htmlFor="bulk-preview-user">{tAdmin("devtool.previewRecipient")}</Label>
+                  <Select
+                    value={effectiveBulkFocusRow?.user_id}
+                    onValueChange={setBulkPreviewFocusUserId}
+                  >
+                    <SelectTrigger id="bulk-preview-user" className="w-full">
+                      <SelectValue placeholder={tAdmin("devtool.previewRecipient")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {selectedRows.map((r) => (
+                        <SelectItem key={r.user_id} value={r.user_id}>
+                          {r.full_name} ({r.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs leading-5 text-muted-foreground">
+                    {tAdmin("devtool.bulkPreviewHint", { count: selectedRows.length })}
+                  </p>
+                </div>
+              ) : null}
+              {effectiveBulkFocusRow ? (
+                <RecipientIdentity
+                  row={effectiveBulkFocusRow}
+                  placeholderLabel={tAdmin("devtool.placeholderRecipient")}
+                />
+              ) : null}
+              {bulkPreviewEmail ? (
+                <div className="rounded-xl border bg-background p-3 text-sm shadow-xs">
+                  <p className="font-medium" translate="no">
                     {bulkPreviewEmail.subject}
                   </p>
-                  <p className="line-clamp-2 text-xs text-muted-foreground">
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
                     {bulkPreviewEmail.previewText}
                   </p>
                 </div>
-                <div className="rounded-xl border bg-muted/40 p-2 shadow-sm sm:p-4">
-                  <div className="mx-auto h-[min(50dvh,560px)] min-h-[280px] w-full overflow-hidden rounded-lg border bg-white shadow-sm sm:w-[640px]">
-                    <iframe
-                      title="Bulk reminder email preview"
-                      srcDoc={bulkPreviewEmail.html}
-                      sandbox=""
-                      className="h-full w-full"
-                    />
-                  </div>
+              ) : null}
+            </aside>
+            {bulkPreviewEmail && effectiveBulkFocusRow ? (
+              <section className="flex min-h-0 flex-col gap-3 px-4 py-4 sm:px-6">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {tAdmin("devtool.previewViewport")}
+                  </p>
+                  <EmailPreviewViewportToggle
+                    value={bulkPreviewViewport}
+                    onChange={setBulkPreviewViewport}
+                    tAdmin={tAdmin}
+                  />
                 </div>
-              </div>
+                <EmailPreviewFrame
+                  html={bulkPreviewEmail.html}
+                  title="Bulk reminder email preview"
+                  viewport={bulkPreviewViewport}
+                />
+              </section>
             ) : null}
           </div>
           <DialogFooter className="border-t px-4 py-3 sm:px-6">
