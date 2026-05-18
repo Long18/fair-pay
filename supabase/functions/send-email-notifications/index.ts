@@ -40,6 +40,7 @@ interface QueueRow {
   user_id: string
   user_email: string
   user_name: string
+  has_auth_account: boolean
   notification_type: string
   title: string
   message: string
@@ -66,9 +67,19 @@ interface DebtBreakdownItem {
   transactions: DebtTransaction[]
 }
 
+interface GroupBreakdownItem {
+  group_id: string | null
+  group_name: string
+  group_avatar_url: string | null
+  subtotal_amount: number
+  currency: string
+  counterparties: DebtBreakdownItem[]
+}
+
 interface ReminderEmailContext {
   total_amount: number
   debt_breakdown: DebtBreakdownItem[]
+  group_breakdown: GroupBreakdownItem[]
 }
 
 interface ProcessingResult {
@@ -223,47 +234,76 @@ function formatDate(value: string | null): string {
   }).format(date)
 }
 
+function normalizeDebtTransactions(value: unknown, fallbackCurrency: string): DebtTransaction[] {
+  if (!Array.isArray(value)) return []
+
+  return value.map((transaction) => {
+    const tx = transaction as Record<string, unknown>
+    return {
+      expense_id: String(tx.expense_id || ''),
+      description: String(tx.description || 'Chi phí'),
+      amount: Number(tx.amount || 0),
+      currency: String(tx.currency || fallbackCurrency),
+      expense_date: tx.expense_date ? String(tx.expense_date) : null,
+    }
+  }).filter((transaction) => transaction.expense_id && transaction.amount > 0)
+}
+
+function normalizeDebtBreakdownItems(value: unknown): DebtBreakdownItem[] {
+  if (!Array.isArray(value)) return []
+
+  return value.map((item) => {
+    const debt = item as Record<string, unknown>
+    const currency = String(debt.currency || 'VND')
+
+    return {
+      counterparty_key: String(debt.counterparty_key || ''),
+      counterparty_name: String(debt.counterparty_name || 'Không rõ'),
+      counterparty_email: debt.counterparty_email ? String(debt.counterparty_email) : null,
+      amount: Number(debt.amount || 0),
+      currency,
+      direction: 'user_owes_counterparty' as const,
+      transactions: normalizeDebtTransactions(debt.transactions, currency),
+    }
+  }).filter((item) => item.counterparty_key && item.amount > 0)
+}
+
+function normalizeGroupBreakdownItems(value: unknown): GroupBreakdownItem[] {
+  if (!Array.isArray(value)) return []
+
+  return value.map((item) => {
+    const group = item as Record<string, unknown>
+    const currency = String(group.currency || 'VND')
+
+    return {
+      group_id: group.group_id ? String(group.group_id) : null,
+      group_name: String(group.group_name || 'Direct / Ngoài group'),
+      group_avatar_url: group.group_avatar_url ? String(group.group_avatar_url) : null,
+      subtotal_amount: Number(group.subtotal_amount || 0),
+      currency,
+      counterparties: normalizeDebtBreakdownItems(group.counterparties),
+    }
+  }).filter((item) => item.subtotal_amount > 0 && item.counterparties.length > 0)
+}
+
 function normalizeReminderEmailContext(value: unknown): ReminderEmailContext | null {
   if (!value || typeof value !== 'object') return null
 
   const raw = value as Record<string, unknown>
-  const debtBreakdown = Array.isArray(raw.debt_breakdown)
-    ? raw.debt_breakdown.map((item) => {
-        const debt = item as Record<string, unknown>
-        const currency = String(debt.currency || 'VND')
-        const transactions = Array.isArray(debt.transactions)
-          ? debt.transactions.map((transaction) => {
-              const tx = transaction as Record<string, unknown>
-              return {
-                expense_id: String(tx.expense_id || ''),
-                description: String(tx.description || 'Chi phí'),
-                amount: Number(tx.amount || 0),
-                currency: String(tx.currency || currency),
-                expense_date: tx.expense_date ? String(tx.expense_date) : null,
-              }
-            }).filter((transaction) => transaction.expense_id && transaction.amount > 0)
-          : []
+  const debtBreakdown = normalizeDebtBreakdownItems(raw.debt_breakdown)
+  const groupBreakdown = normalizeGroupBreakdownItems(raw.group_breakdown)
 
-        return {
-          counterparty_key: String(debt.counterparty_key || ''),
-          counterparty_name: String(debt.counterparty_name || 'Không rõ'),
-          counterparty_email: debt.counterparty_email ? String(debt.counterparty_email) : null,
-          amount: Number(debt.amount || 0),
-          currency,
-          direction: 'user_owes_counterparty' as const,
-          transactions,
-        }
-      }).filter((item) => item.counterparty_key && item.amount > 0)
-    : []
-
-  if (!debtBreakdown.length) return null
+  if (!debtBreakdown.length && !groupBreakdown.length) return null
 
   const totalAmount = Number(raw.total_amount || 0)
   return {
     total_amount: totalAmount > 0
       ? totalAmount
-      : debtBreakdown.reduce((sum, item) => sum + item.amount, 0),
+      : debtBreakdown.length
+        ? debtBreakdown.reduce((sum, item) => sum + item.amount, 0)
+        : groupBreakdown.reduce((sum, item) => sum + item.subtotal_amount, 0),
     debt_breakdown: debtBreakdown,
+    group_breakdown: groupBreakdown,
   }
 }
 
@@ -278,6 +318,8 @@ function buildSubject(count: number, notifications: QueueRow[]): string {
 }
 
 function buildEmailText(userName: string, notifications: QueueRow[], appUrl: string): string {
+  const hasAuthAccount = notifications[0]?.has_auth_account !== false
+  const ctaUrl = joinAppUrl(appUrl, hasAuthAccount ? '/dashboard' : '/register')
   const lines: string[] = [
     `Xin chào ${userName},`,
     '',
@@ -293,10 +335,12 @@ function buildEmailText(userName: string, notifications: QueueRow[], appUrl: str
       ? normalizeReminderEmailContext(n.email_context)
       : null
     lines.push(...buildDebtTextLines(reminderContext))
-    if (n.link) lines.push(`Xem chi tiết / View: ${joinAppUrl(appUrl, n.link)}`)
+    if (n.link) {
+      lines.push(`${hasAuthAccount ? 'Xem chi tiết / View' : 'Tạo tài khoản để xem / Create account to view'}: ${hasAuthAccount ? joinAppUrl(appUrl, n.link) : ctaUrl}`)
+    }
     lines.push('')
   }
-  lines.push(`Mở FairPay / Open FairPay: ${appUrl}`)
+  lines.push(`${hasAuthAccount ? 'Mở FairPay / Open FairPay' : 'Tạo tài khoản FairPay / Create your FairPay account'}: ${ctaUrl}`)
   return lines.join('\n')
 }
 
@@ -351,8 +395,22 @@ function buildDebtTextLines(context: ReminderEmailContext | null): string[] {
   if (!context) return []
 
   const lines = [
-    `Tổng cần trả / Total due: ${formatCurrency(context.total_amount)}`,
+    `Tổng cần trả sau bù trừ / Total due after netting: ${formatCurrency(context.total_amount)}`,
   ]
+
+  if (context.group_breakdown.length) {
+    for (const group of context.group_breakdown) {
+      lines.push(`- ${group.group_name}: ${formatCurrency(group.subtotal_amount, group.currency)} chưa settle / outstanding`)
+      for (const debt of group.counterparties) {
+        lines.push(`  • Bạn cần trả ${debt.counterparty_name}: ${formatCurrency(debt.amount, debt.currency)}`)
+        for (const transaction of debt.transactions.slice(0, 6)) {
+          lines.push(`    - ${transaction.description}: ${formatCurrency(transaction.amount, transaction.currency)}`)
+        }
+      }
+    }
+    lines.push('Lưu ý / Note: Subtotal theo group là các khoản chưa settle và có thể khác tổng chính thức sau bù trừ.')
+    return lines
+  }
 
   for (const debt of context.debt_breakdown) {
     lines.push(`- Bạn cần trả ${debt.counterparty_name}: ${formatCurrency(debt.amount, debt.currency)}`)
@@ -383,11 +441,18 @@ function buildDebtTransactionRows(transactions: DebtTransaction[], fallbackCurre
   }).join('')
 }
 
-function buildDebtBreakdownHtml(context: ReminderEmailContext | null): string {
-  if (!context) return ''
+function getInitials(value: string): string {
+  const words = value.trim().split(/\s+/).filter(Boolean)
+  if (!words.length) return 'FP'
 
-  const safeTotal = escapeHtml(formatCurrency(context.total_amount))
-  const rows = context.debt_breakdown.map((item) => {
+  return words
+    .slice(0, 2)
+    .map((word) => word.charAt(0).toUpperCase())
+    .join('')
+}
+
+function buildCounterpartyRows(items: DebtBreakdownItem[]): string {
+  return items.map((item) => {
     const safeName = escapeHtml(item.counterparty_name || 'Không rõ')
     const safeEmail = item.counterparty_email ? escapeHtml(item.counterparty_email) : ''
     const safeAmount = escapeHtml(formatCurrency(item.amount, item.currency))
@@ -395,12 +460,12 @@ function buildDebtBreakdownHtml(context: ReminderEmailContext | null): string {
 
     return `
       <tr>
-        <td style="padding:14px 0 10px;border-top:1px solid #e2e8f0;">
+        <td style="padding:12px 0 10px;border-top:1px solid #e2e8f0;">
           <div style="font-size:12px;line-height:1.5;color:#64748b;">Bạn cần trả / You owe</div>
           <div style="font-size:16px;line-height:1.45;font-weight:800;color:#0f172a;">${safeName}</div>
           ${safeEmail ? `<div style="font-size:12px;line-height:1.45;color:#94a3b8;">${safeEmail}</div>` : ''}
         </td>
-        <td align="right" style="padding:14px 0 10px;border-top:1px solid #e2e8f0;white-space:nowrap;">
+        <td align="right" style="padding:12px 0 10px;border-top:1px solid #e2e8f0;white-space:nowrap;">
           <div style="font-size:17px;line-height:1.45;font-weight:900;color:#dc2626;">${safeAmount}</div>
         </td>
       </tr>
@@ -412,25 +477,90 @@ function buildDebtBreakdownHtml(context: ReminderEmailContext | null): string {
         </td>
       </tr>` : ''}`
   }).join('')
+}
+
+function buildGroupAvatarHtml(group: GroupBreakdownItem): string {
+  const safeGroupName = escapeHtml(group.group_name || 'Group')
+
+  if (group.group_avatar_url) {
+    return `<img src="${escapeHtml(group.group_avatar_url)}" width="48" height="48" alt="${safeGroupName}" style="display:block;width:48px;height:48px;border-radius:999px;object-fit:cover;border:1px solid #e2e8f0;">`
+  }
+
+  return `<div aria-label="${safeGroupName}" style="width:48px;height:48px;border-radius:999px;background:#e0e7ff;color:#4338ca;font-size:16px;line-height:48px;font-weight:800;text-align:center;">
+    ${escapeHtml(getInitials(group.group_name || 'FairPay'))}
+  </div>`
+}
+
+function buildGroupSections(groups: GroupBreakdownItem[]): string {
+  return groups.map((group) => {
+    const safeGroupName = escapeHtml(group.group_name || 'Direct / Ngoài group')
+    const safeSubtotal = escapeHtml(formatCurrency(group.subtotal_amount, group.currency))
+
+    return `
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:14px;border:1px solid #e2e8f0;border-radius:14px;background:#ffffff;padding:0 16px;">
+        <tr>
+          <td style="padding:16px 0 12px;">
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+              <tr>
+                <td width="58" valign="top">${buildGroupAvatarHtml(group)}</td>
+                <td valign="middle">
+                  <div style="font-size:12px;line-height:1.5;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Group</div>
+                  <div style="font-size:17px;line-height:1.4;font-weight:800;color:#0f172a;">${safeGroupName}</div>
+                </td>
+                <td align="right" valign="middle" style="white-space:nowrap;">
+                  <div style="font-size:11px;line-height:1.5;color:#64748b;">Chưa settle / Outstanding</div>
+                  <div style="font-size:18px;line-height:1.3;font-weight:900;color:#dc2626;">${safeSubtotal}</div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+              ${buildCounterpartyRows(group.counterparties)}
+            </table>
+          </td>
+        </tr>
+      </table>`
+  }).join('')
+}
+
+function buildDebtBreakdownHtml(context: ReminderEmailContext | null): string {
+  if (!context) return ''
+
+  const safeTotal = escapeHtml(formatCurrency(context.total_amount))
+  const groupSections = buildGroupSections(context.group_breakdown)
+  const legacyRows = buildCounterpartyRows(context.debt_breakdown)
 
   return `
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:22px;border:1px solid #dbeafe;border-radius:16px;background:#f8fafc;padding:0 18px;">
       <tr>
         <td colspan="2" style="padding:18px 0 14px;">
           <div style="font-size:12px;color:#4f46e5;text-transform:uppercase;letter-spacing:0.08em;font-weight:800;">Chi tiết công nợ / Debt breakdown</div>
-          <div style="margin-top:6px;font-size:24px;line-height:1.2;font-weight:900;color:#0f172a;">Tổng cần trả: ${safeTotal}</div>
-          <div style="margin-top:6px;font-size:13px;line-height:1.6;color:#64748b;">Các khoản bên dưới được nhóm theo người bạn cần thanh toán.</div>
+          <div style="margin-top:6px;font-size:24px;line-height:1.2;font-weight:900;color:#0f172a;">Tổng cần trả sau bù trừ: ${safeTotal}</div>
+          <div style="margin-top:6px;font-size:13px;line-height:1.6;color:#64748b;">
+            ${context.group_breakdown.length
+              ? 'Các section bên dưới là các khoản chưa settle theo group; subtotal có thể khác tổng chính thức sau bù trừ.'
+              : 'Các khoản bên dưới được nhóm theo người bạn cần thanh toán.'}
+          </div>
         </td>
       </tr>
-      ${rows}
-    </table>`
+    </table>
+    ${groupSections || `
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:14px;border:1px solid #e2e8f0;border-radius:12px;background:#ffffff;padding:0 18px;">
+      ${legacyRows}
+    </table>`}`
 }
 
 function buildNotifRows(notifications: QueueRow[], appUrl: string): string {
+  const hasAuthAccount = notifications[0]?.has_auth_account !== false
+  const placeholderHref = joinAppUrl(appUrl, '/register')
+
   return notifications.map(n => {
     const label = NOTIF_LABELS[n.notification_type]
     const badge = label ? `${label.vi} / ${label.en}` : n.notification_type
-    const href = n.link ? joinAppUrl(appUrl, n.link) : appUrl
+    const href = hasAuthAccount && n.link ? joinAppUrl(appUrl, n.link) : placeholderHref
     const reminderContext = n.notification_type === 'settlement_reminder'
       ? normalizeReminderEmailContext(n.email_context)
       : null
@@ -450,7 +580,7 @@ function buildNotifRows(notifications: QueueRow[], appUrl: string): string {
           ${n.link ? `
           <a href="${escapeHtml(href)}"
              style="display:inline-block;margin-top:6px;font-size:12px;color:#6366f1;text-decoration:none;">
-            Xem chi tiết / View &rarr;
+            ${hasAuthAccount ? 'Xem chi tiết / View' : 'Tạo tài khoản để xem / Create account to view'} &rarr;
           </a>` : ''}
           ${buildDebtBreakdownHtml(reminderContext)}
         </td>
@@ -463,6 +593,13 @@ function buildEmailHtml(
   notifications: QueueRow[],
   appUrl: string
 ): string {
+  const hasAuthAccount = notifications[0]?.has_auth_account !== false
+  const hasReminder = notifications.some((notification) => notification.notification_type === 'settlement_reminder')
+  const ctaHref = joinAppUrl(appUrl, hasAuthAccount ? '/dashboard' : '/register')
+  const ctaLabel = hasAuthAccount
+    ? 'Mở FairPay / Open FairPay'
+    : 'Tạo tài khoản để xem chi tiết / Create account to view'
+  const heroUrl = joinAppUrl(appUrl, '/assets/email/debt-reminder-hero.jpg')
   const count = notifications.length
   const countLabel = count === 1
     ? '1 thông báo mới / 1 new notification'
@@ -481,6 +618,13 @@ function buildEmailHtml(
       <td align="center">
         <table width="600" cellpadding="0" cellspacing="0"
                style="max-width:600px;width:100%;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+
+          ${hasReminder ? `
+          <tr>
+            <td style="background:#111827;">
+              <img src="${escapeHtml(heroUrl)}" width="600" alt="FairPay debt reminder overview" style="display:block;width:100%;max-width:600px;height:auto;">
+            </td>
+          </tr>` : ''}
 
           <!-- Header -->
           <tr>
@@ -509,10 +653,10 @@ function buildEmailHtml(
 
               <!-- CTA -->
               <div style="text-align:center;margin-top:32px;">
-                <a href="${escapeHtml(appUrl)}"
+                <a href="${escapeHtml(ctaHref)}"
                    style="display:inline-block;background:#6366f1;color:#fff;padding:13px 36px;
                           border-radius:8px;text-decoration:none;font-size:15px;font-weight:600;">
-                  Mở FairPay / Open FairPay
+                  ${ctaLabel}
                 </a>
               </div>
 

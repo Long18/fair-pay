@@ -60,7 +60,10 @@ import {
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { buildReminderEmailPreview } from "@/modules/admin/email/reminder-email";
-import type { ReminderDebtBreakdownItem } from "@/modules/admin/email/reminder-email";
+import type {
+  ReminderDebtBreakdownItem,
+  ReminderGroupBreakdownItem,
+} from "@/modules/admin/email/reminder-email";
 import { useAdminTranslation } from "../i18n";
 
 interface DebtTransactionRow {
@@ -81,14 +84,25 @@ interface DebtBreakdownRow {
   transactions: DebtTransactionRow[];
 }
 
+interface GroupBreakdownRow {
+  group_id: string | null;
+  group_name: string;
+  group_avatar_url: string | null;
+  subtotal_amount: number;
+  currency: string;
+  counterparties: DebtBreakdownRow[];
+}
+
 interface DebtReminderRow {
   user_id: string;
   full_name: string;
   email: string | null;
+  has_auth_account: boolean;
   total_i_owe: number;
   net_balance: number;
   active_debt_relationships: number;
   debt_breakdown: DebtBreakdownRow[];
+  group_breakdown: GroupBreakdownRow[];
 }
 
 interface EmailSendResult {
@@ -125,9 +139,20 @@ function formatCurrency(value: number, currency = "VND"): string {
 type AdminT = ReturnType<typeof useAdminTranslation>["tAdmin"];
 
 function buildReminderMessage(row: DebtReminderRow, tAdmin: AdminT): string {
-  const breakdown = row.debt_breakdown
+  const summarySource = row.group_breakdown.length
+    ? row.group_breakdown.map((group) => ({
+        label: group.group_name,
+        amount: group.subtotal_amount,
+        currency: group.currency,
+      }))
+    : row.debt_breakdown.map((item) => ({
+        label: item.counterparty_name,
+        amount: item.amount,
+        currency: item.currency,
+      }));
+  const breakdown = summarySource
     .slice(0, 5)
-    .map((item) => `${item.counterparty_name}: ${formatCurrency(item.amount, item.currency)}`)
+    .map((item) => `${item.label}: ${formatCurrency(item.amount, item.currency)}`)
     .join("; ");
   const detail = breakdown ? ` ${tAdmin("devtool.debtDetailPrefix", { details: breakdown })}` : "";
 
@@ -216,7 +241,7 @@ async function createReminderNotifications(rows: DebtReminderRow[], tAdmin: Admi
         user_id: row.user_id,
         title: tAdmin("devtool.messageTitle"),
         message: buildReminderMessage(row, tAdmin),
-        link: "/dashboard",
+        link: row.has_auth_account ? "/dashboard" : "/register",
         email_context: {
           total_amount: row.total_i_owe,
           debt_breakdown: row.debt_breakdown.map((item) => ({
@@ -227,6 +252,22 @@ async function createReminderNotifications(rows: DebtReminderRow[], tAdmin: Admi
             currency: item.currency,
             direction: item.direction,
             transactions: item.transactions,
+          })),
+          group_breakdown: row.group_breakdown.map((group) => ({
+            group_id: group.group_id,
+            group_name: group.group_name,
+            group_avatar_url: group.group_avatar_url,
+            subtotal_amount: group.subtotal_amount,
+            currency: group.currency,
+            counterparties: group.counterparties.map((item) => ({
+              counterparty_key: item.counterparty_key,
+              counterparty_name: item.counterparty_name,
+              counterparty_email: item.counterparty_email,
+              amount: item.amount,
+              currency: item.currency,
+              direction: item.direction,
+              transactions: item.transactions,
+            })),
           })),
         },
       })),
@@ -269,15 +310,59 @@ function normalizeDebtRows(rows: unknown[], tAdmin: AdminT): DebtReminderRow[] {
             };
           }).filter((item) => item.counterparty_key && item.amount > 0)
         : [];
+      const groupBreakdown = Array.isArray(value.group_breakdown)
+        ? value.group_breakdown.map((item) => {
+            const group = item as Record<string, unknown>;
+            const currency = String(group.currency || "VND");
+            const counterparties = Array.isArray(group.counterparties)
+              ? group.counterparties.map((counterparty) => {
+                  const debt = counterparty as Record<string, unknown>;
+                  const transactions = Array.isArray(debt.transactions)
+                    ? debt.transactions.map((transaction) => {
+                        const tx = transaction as Record<string, unknown>;
+                        return {
+                          expense_id: String(tx.expense_id || ""),
+                          description: String(tx.description || tAdmin("devtool.fallbackExpense")),
+                          amount: Number(tx.amount || 0),
+                          currency: String(tx.currency || debt.currency || currency),
+                          expense_date: tx.expense_date ? String(tx.expense_date) : null,
+                        };
+                      }).filter((transaction) => transaction.expense_id && transaction.amount > 0)
+                    : [];
+
+                  return {
+                    counterparty_key: String(debt.counterparty_key || ""),
+                    counterparty_name: String(debt.counterparty_name || tAdmin("common.unknown")),
+                    counterparty_email: debt.counterparty_email ? String(debt.counterparty_email) : null,
+                    amount: Number(debt.amount || 0),
+                    currency: String(debt.currency || currency),
+                    direction: "user_owes_counterparty" as const,
+                    transactions,
+                  };
+                }).filter((counterparty) => counterparty.counterparty_key && counterparty.amount > 0)
+              : [];
+
+            return {
+              group_id: group.group_id ? String(group.group_id) : null,
+              group_name: String(group.group_name || tAdmin("devtool.directGroup")),
+              group_avatar_url: group.group_avatar_url ? String(group.group_avatar_url) : null,
+              subtotal_amount: Number(group.subtotal_amount || 0),
+              currency,
+              counterparties,
+            };
+          }).filter((group) => group.subtotal_amount > 0 && group.counterparties.length > 0)
+        : [];
 
       return {
         user_id: String(value.user_id || ""),
         full_name: String(value.full_name || tAdmin("common.unknown")),
         email: value.email ? String(value.email) : null,
+        has_auth_account: value.has_auth_account !== false,
         total_i_owe: Number(value.total_i_owe || 0),
         net_balance: Number(value.net_balance || 0),
         active_debt_relationships: Number(value.active_debt_relationships || 0),
         debt_breakdown: debtBreakdown,
+        group_breakdown: groupBreakdown,
       };
     })
     .filter((row) => row.user_id && row.email && row.total_i_owe > 0);
@@ -295,6 +380,17 @@ function toReminderDebtBreakdown(items: DebtBreakdownRow[]): ReminderDebtBreakdo
       currency: transaction.currency,
       expenseDate: transaction.expense_date,
     })),
+  }));
+}
+
+function toReminderGroupBreakdown(items: GroupBreakdownRow[]): ReminderGroupBreakdownItem[] {
+  return items.map((group) => ({
+    groupId: group.group_id,
+    groupName: group.group_name,
+    groupAvatarUrl: group.group_avatar_url,
+    subtotalAmount: group.subtotal_amount,
+    currency: group.currency,
+    counterparties: toReminderDebtBreakdown(group.counterparties),
   }));
 }
 
@@ -389,9 +485,11 @@ function AdminEmailDevTools() {
       title: tAdmin("devtool.messageTitle"),
       message: buildReminderMessage(previewRow, tAdmin),
       debtBreakdown: toReminderDebtBreakdown(previewRow.debt_breakdown),
+      groupBreakdown: toReminderGroupBreakdown(previewRow.group_breakdown),
       totalAmount: previewRow.total_i_owe,
+      hasAuthAccount: previewRow.has_auth_account,
       appUrl: typeof window !== "undefined" ? window.location.origin : undefined,
-      link: "/dashboard",
+      link: previewRow.has_auth_account ? "/dashboard" : "/register",
     });
   }, [previewRow, tAdmin]);
 
@@ -400,26 +498,30 @@ function AdminEmailDevTools() {
     return debtors.find((d) => d.user_id === bulkPreviewFocusUserId) ?? null;
   }, [debtors, bulkPreviewFocusUserId]);
 
-  const bulkPreviewEmail = useMemo(() => {
-    if (!bulkFocusRow) return null;
-    return buildReminderEmailPreview({
-      userName: bulkFocusRow.full_name,
-      title: tAdmin("devtool.messageTitle"),
-      message: buildReminderMessage(bulkFocusRow, tAdmin),
-      debtBreakdown: toReminderDebtBreakdown(bulkFocusRow.debt_breakdown),
-      totalAmount: bulkFocusRow.total_i_owe,
-      appUrl: typeof window !== "undefined" ? window.location.origin : undefined,
-      link: "/dashboard",
-    });
-  }, [bulkFocusRow, tAdmin]);
-
   const selectedRows = useMemo(
     () => debtors.filter((d) => selectedUserIds.includes(d.user_id)),
     [debtors, selectedUserIds]
   );
 
-  const allSelected = debtors.length > 0 && selectedUserIds.length === debtors.length;
-  const someSelected = selectedUserIds.length > 0 && !allSelected;
+  const effectiveBulkFocusRow = bulkFocusRow ?? selectedRows[0] ?? null;
+
+  const bulkPreviewEmail = useMemo(() => {
+    if (!effectiveBulkFocusRow) return null;
+    return buildReminderEmailPreview({
+      userName: effectiveBulkFocusRow.full_name,
+      title: tAdmin("devtool.messageTitle"),
+      message: buildReminderMessage(effectiveBulkFocusRow, tAdmin),
+      debtBreakdown: toReminderDebtBreakdown(effectiveBulkFocusRow.debt_breakdown),
+      groupBreakdown: toReminderGroupBreakdown(effectiveBulkFocusRow.group_breakdown),
+      totalAmount: effectiveBulkFocusRow.total_i_owe,
+      hasAuthAccount: effectiveBulkFocusRow.has_auth_account,
+      appUrl: typeof window !== "undefined" ? window.location.origin : undefined,
+      link: effectiveBulkFocusRow.has_auth_account ? "/dashboard" : "/register",
+    });
+  }, [effectiveBulkFocusRow, tAdmin]);
+
+  const allSelected = debtors.length > 0 && selectedRows.length === debtors.length;
+  const someSelected = selectedRows.length > 0 && !allSelected;
   const isBusy = sendingUserId !== null;
 
   const totalDebtAll = useMemo(() => debtors.reduce((sum, row) => sum + row.total_i_owe, 0), [debtors]);
@@ -452,10 +554,6 @@ function AdminEmailDevTools() {
     }, 0);
     return () => window.clearTimeout(timeout);
   }, [refresh]);
-
-  useEffect(() => {
-    setSelectedUserIds((prev) => prev.filter((id) => debtors.some((d) => d.user_id === id)));
-  }, [debtors]);
 
   const handleRemindOne = useCallback(
     async (row: DebtReminderRow) => {
@@ -519,14 +617,6 @@ function AdminEmailDevTools() {
     setBulkPreviewOpen(true);
     tap();
   }, [selectedRows, tap]);
-
-  useEffect(() => {
-    if (!bulkPreviewOpen) return;
-    if (bulkFocusRow) return;
-    if (selectedRows.length) {
-      setBulkPreviewFocusUserId(selectedRows[0].user_id);
-    }
-  }, [bulkPreviewOpen, bulkFocusRow, selectedRows]);
 
   return (
     <div className="space-y-6">
@@ -600,7 +690,7 @@ function AdminEmailDevTools() {
             <div className="flex min-w-0 flex-col gap-3 rounded-lg border bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
                 <span className="font-medium text-foreground tabular-nums">
-                  {tAdmin("devtool.selectedCount", { selected: selectedUserIds.length, total: debtors.length })}
+                  {tAdmin("devtool.selectedCount", { selected: selectedRows.length, total: debtors.length })}
                   {selectedRows.length ? ` · ${formatCurrency(totalDebtSelected)}` : ""}
                 </span>
                 <Separator orientation="vertical" className="hidden h-4 sm:block" />
@@ -623,7 +713,7 @@ function AdminEmailDevTools() {
                     tap();
                     setSelectedUserIds([]);
                   }}
-                  disabled={!selectedUserIds.length}
+                  disabled={!selectedRows.length}
                 >
                   {tAdmin("devtool.clearSelection")}
                 </Button>
@@ -636,7 +726,7 @@ function AdminEmailDevTools() {
                   disabled={!selectedRows.length || isBusy}
                 >
                   <EyeIcon className="mr-2 h-4 w-4" aria-hidden="true" />
-                  {tAdmin("devtool.previewCount", { count: selectedUserIds.length })}
+                  {tAdmin("devtool.previewCount", { count: selectedRows.length })}
                 </Button>
                 <Button
                   type="button"
@@ -693,6 +783,7 @@ function AdminEmailDevTools() {
                 <DebtTableSkeletonRows />
               ) : debtors.length ? (
                 debtors.map((row) => {
+                  const topGroup = row.group_breakdown[0];
                   const topDebt = row.debt_breakdown[0];
                   const rowSelected = selectedUserIds.includes(row.user_id);
                   return (
@@ -717,8 +808,17 @@ function AdminEmailDevTools() {
                         </div>
                       </TableCell>
                       <TableCell className="min-w-0">
-                        <div className="font-medium">{row.full_name}</div>
-                        {topDebt ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium">{row.full_name}</span>
+                          {!row.has_auth_account ? (
+                            <Badge variant="secondary">{tAdmin("devtool.placeholderRecipient")}</Badge>
+                          ) : null}
+                        </div>
+                        {topGroup ? (
+                          <div className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                            {tAdmin("devtool.topGroup", { name: topGroup.group_name, amount: formatCurrency(topGroup.subtotal_amount, topGroup.currency) })}
+                          </div>
+                        ) : topDebt ? (
                           <div className="mt-1 text-xs text-muted-foreground line-clamp-2">
                             {tAdmin("devtool.debtTo", { name: topDebt.counterparty_name, amount: formatCurrency(topDebt.amount, topDebt.currency) })}
                           </div>
@@ -794,7 +894,14 @@ function AdminEmailDevTools() {
           <DialogHeader className="border-b px-4 py-4 sm:px-6">
             <DialogTitle>{tAdmin("devtool.previewEmailTitle")}</DialogTitle>
             <DialogDescription>
-              {previewRow ? tAdmin("devtool.sendTo", { name: previewRow.full_name, email: previewRow.email }) : null}
+              {previewRow ? (
+                <span className="inline-flex flex-wrap items-center gap-2">
+                  <span>{tAdmin("devtool.sendTo", { name: previewRow.full_name, email: previewRow.email })}</span>
+                  {!previewRow.has_auth_account ? (
+                    <Badge variant="secondary">{tAdmin("devtool.placeholderRecipient")}</Badge>
+                  ) : null}
+                </span>
+              ) : null}
             </DialogDescription>
           </DialogHeader>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
@@ -806,7 +913,28 @@ function AdminEmailDevTools() {
                   </p>
                   <p className="line-clamp-2 text-xs text-muted-foreground">{previewEmail.previewText}</p>
                 </div>
-                {previewRow.debt_breakdown.length ? (
+                {previewRow.group_breakdown.length ? (
+                  <div className="rounded-xl border bg-card p-3 shadow-sm">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      {tAdmin("devtool.groupSummary")}
+                    </p>
+                    <div className="mt-2 grid max-h-40 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+                      {previewRow.group_breakdown.slice(0, 6).map((group) => (
+                        <div
+                          key={`${group.group_id || group.group_name}-${group.currency}`}
+                          className="rounded-lg bg-muted/40 p-3"
+                        >
+                          <p className="line-clamp-2 text-sm font-medium">
+                            {tAdmin("devtool.groupSummaryLine", { group: group.group_name })}
+                          </p>
+                          <p className="mt-1 text-sm font-semibold text-destructive tabular-nums">
+                            {formatCurrency(group.subtotal_amount, group.currency)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : previewRow.debt_breakdown.length ? (
                   <div className="rounded-xl border bg-card p-3 shadow-sm">
                     <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       {tAdmin("devtool.debtSummary")}
@@ -903,7 +1031,7 @@ function AdminEmailDevTools() {
                 </p>
               </div>
             ) : null}
-            {bulkPreviewEmail && bulkFocusRow ? (
+            {bulkPreviewEmail && effectiveBulkFocusRow ? (
               <div className="mx-auto flex w-full max-w-4xl flex-col gap-3">
                 <div className="rounded-lg border bg-muted/30 px-3 py-2 text-sm">
                   <p className="max-w-full truncate font-medium" translate="no">

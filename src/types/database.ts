@@ -2640,6 +2640,7 @@ export type Database = {
         Returns: {
           created_at: string
           email_context: Json
+          has_auth_account: boolean
           link: string
           message: string
           notification_id: string
