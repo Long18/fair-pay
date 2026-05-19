@@ -108,6 +108,8 @@ const AdminTransactions = lazy(() => import("./modules/admin/pages/AdminTransact
 const AdminAuditLogs = lazy(() => import("./modules/admin/pages/AdminAuditLogs").then(m => ({ default: m.AdminAuditLogs })));
 const AdminReactions = lazy(() => import("./modules/admin/pages/AdminReactions").then(m => ({ default: m.AdminReactions })));
 const AdminDevTool = lazy(() => import("./modules/admin/pages/AdminDevTool").then(m => ({ default: m.AdminDevTool })));
+const AdminGrowth = lazy(() => import("./modules/admin/pages/AdminGrowth").then(m => ({ default: m.AdminGrowth })));
+const AdminRetention = lazy(() => import("./modules/admin/pages/AdminRetention").then(m => ({ default: m.AdminRetention })));
 
 // Profile Edit Redirect Component
 const ProfileEditRedirect = () => {
@@ -420,6 +422,8 @@ function App() {
                     <Route path="utm" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canUseDevtool"><Navigate to="/admin/devtool?tab=utm" replace /></AdminCapabilityGuard></Suspense>} />
                     <Route path="devtool" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canUseDevtool"><AdminDevTool /></AdminCapabilityGuard></Suspense>} />
                     <Route path="og-preview" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canUseDevtool"><Navigate to="/admin/devtool" replace /></AdminCapabilityGuard></Suspense>} />
+                    <Route path="growth" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canViewGrowth"><AdminGrowth /></AdminCapabilityGuard></Suspense>} />
+                    <Route path="retention" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canViewRetention"><AdminRetention /></AdminCapabilityGuard></Suspense>} />
                   </Route>
 
                   {/* Authenticated routes - require login */}
