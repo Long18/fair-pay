@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useGo, useGetIdentity, useList, useOne } from "@refinedev/core";
 import { useInstantCreate } from "@/hooks/use-instant-mutation";
 import { useParams, useSearchParams } from "react-router";
@@ -10,6 +10,7 @@ import { Profile } from "@/modules/profile/types";
 import { Friendship, FriendshipWithProfiles } from "@/modules/friends/types";
 import { Group } from "@/modules/groups/types";
 import { toast } from "sonner";
+import { SettlementCelebration } from "@/components/share/SettlementCelebration";
 import { PaymentTracker, ErrorTracker } from "@/lib/analytics/index";
 import { journeyTracking } from "@/lib/journey-tracking";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,8 @@ export const PaymentCreate = () => {
   const go = useGo();
   const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
+  const [celebrationOpen, setCelebrationOpen] = useState(false);
+  const [celebrationData, setCelebrationData] = useState<{ amount: number; currency: string; debtorName: string } | null>(null);
 
   const createMutation = useInstantCreate();
 
@@ -195,11 +198,13 @@ export const PaymentCreate = () => {
             },
           });
 
-          if (isGroupContext) {
-            go({ to: `/groups/show/${groupId}` });
-          } else if (isFriendContext) {
-            go({ to: `/friends/show/${friendshipId}` });
-          }
+          const recipientMember = members.find((m) => m.id === values.to_user);
+          setCelebrationData({
+            amount: values.amount,
+            currency: values.currency,
+            debtorName: recipientMember?.full_name ?? "",
+          });
+          setCelebrationOpen(true);
         },
         onError: (error) => {
           ErrorTracker.apiError({
@@ -359,22 +364,43 @@ export const PaymentCreate = () => {
     );
   }
 
+  const handleCelebrationClose = () => {
+    setCelebrationOpen(false);
+    if (isGroupContext) {
+      go({ to: `/groups/show/${groupId}` });
+    } else if (isFriendContext) {
+      go({ to: `/friends/show/${friendshipId}` });
+    }
+  };
+
   return (
-    <ResponsiveDialog
-      open={true}
-      onOpenChange={handleClose}
-      title="Record Payment"
-      className="max-w-md"
-    >
-      <PaymentForm
-        fromUserId={identity.id}
-        fromUserName={identity.full_name}
-        members={members}
-        suggestedAmount={suggestedAmount}
-        suggestedToUserId={suggestedToUserId}
-        onSubmit={handleSubmit}
-        isLoading={false}
-      />
-    </ResponsiveDialog>
+    <>
+      <ResponsiveDialog
+        open={true}
+        onOpenChange={handleClose}
+        title="Record Payment"
+        className="max-w-md"
+      >
+        <PaymentForm
+          fromUserId={identity.id}
+          fromUserName={identity.full_name}
+          members={members}
+          suggestedAmount={suggestedAmount}
+          suggestedToUserId={suggestedToUserId}
+          onSubmit={handleSubmit}
+          isLoading={false}
+        />
+      </ResponsiveDialog>
+
+      {celebrationData ? (
+        <SettlementCelebration
+          open={celebrationOpen}
+          onClose={handleCelebrationClose}
+          debtorName={celebrationData.debtorName}
+          amount={celebrationData.amount}
+          currency={celebrationData.currency}
+        />
+      ) : null}
+    </>
   );
 };

@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { ReminderSettingsComponent } from '@/components/settings/reminder-settings';
 import { useOnboarding } from '@/modules/onboarding';
 import { useHaptics } from '@/hooks/use-haptics';
+import { ReferralCard, ReferralStats } from '@/modules/referrals';
 
 export function SettingsPage() {
   const { settings, isLoading, isUpdating, saveSettings } = useUserSettings();
@@ -127,6 +128,14 @@ export function SettingsPage() {
           </Button>
         </CardContent>
       </Card>
+
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold">{t("referrals.title", "Mời bạn bè")}</h2>
+        </div>
+        <ReferralCard />
+        <ReferralStats />
+      </div>
     </div>
   );
 }

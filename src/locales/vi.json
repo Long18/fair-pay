@@ -587,7 +587,37 @@
     "notifications": {
         "title": "Thông báo",
         "markAllRead": "Đánh dấu tất cả đã đọc",
-        "noNotifications": "Không có thông báo"
+        "noNotifications": "Không có thông báo",
+        "debtAging": {
+            "message": "Bạn có {{count}} khoản nợ chưa thanh toán quá 7 ngày",
+            "viewDebts": "Xem công nợ",
+            "remindThem": "Nhắc họ"
+        }
+    },
+    "activity": {
+        "streak": "{{count}} ngày liên tiếp"
+    },
+    "lifecycle": {
+        "welcome": {
+            "subject": "Chào mừng đến với FairPay!",
+            "preview": "Bắt đầu chia tiền nhóm thông minh với FairPay!"
+        },
+        "noExpense": {
+            "subject": "Thêm chi phí đầu tiên của bạn",
+            "preview": "Ghi lại chi phí đầu tiên của bạn trên FairPay!"
+        },
+        "noGroup": {
+            "subject": "Tạo nhóm với bạn bè",
+            "preview": "Quản lý chi phí chung dễ dàng hơn với tính năng nhóm!"
+        },
+        "weeklySummary": {
+            "subject": "Tóm tắt công nợ tuần này",
+            "preview": "Xem tóm tắt công nợ của bạn trong tuần này."
+        },
+        "winback": {
+            "subject": "Chúng tôi nhớ bạn!",
+            "preview": "Quay lại FairPay — bạn bè đang chờ bạn!"
+        }
     },
     "header": {
         "search": "Tìm kiếm...",
@@ -1051,5 +1081,76 @@
             "status": "Bước {{current}} / {{total}}",
             "stepProgress": "Bước {{current}} / {{total}}"
         }
+    },
+    "referrals": {
+        "title": "Mời bạn bè",
+        "yourCode": "Mã giới thiệu của bạn",
+        "shareMessage": "Cùng dùng FairPay với mình — cách chia tiền dễ nhất!",
+        "copyLink": "Sao chép liên kết",
+        "copied": "Đã sao chép liên kết!",
+        "stats": {
+            "invited": "Bạn đã mời",
+            "signedUp": "Đã đăng ký",
+            "active": "Đang hoạt động"
+        }
+    },
+    "onboarding": {
+        "checklist": {
+            "title": "Bắt đầu với FairPay",
+            "progress": "{{completed}} / {{total}} bước hoàn thành",
+            "skip": "Bỏ qua"
+        },
+        "steps": {
+            "profile": "Hoàn thiện hồ sơ",
+            "profileDesc": "Thêm tên và ảnh để bạn bè nhận ra bạn",
+            "friend": "Thêm người bạn đầu tiên",
+            "friendDesc": "Mời người cùng chia sẻ chi phí với bạn",
+            "group": "Tạo hoặc tham gia nhóm",
+            "groupDesc": "Quản lý chi phí cho chuyến đi, nhà ở hoặc sự kiện",
+            "expense": "Ghi chi phí đầu tiên",
+            "expenseDesc": "Ghi lại khoản chi chung và chia hợp lý",
+            "settle": "Thanh toán một khoản nợ",
+            "settleDesc": "Trả nợ hoặc nhận lại tiền của bạn"
+        }
+    },
+    "emptyState": {
+        "dashboard": {
+            "title": "Bắt đầu chia sẻ chi phí",
+            "description": "Theo dõi chi phí chung và thanh toán nợ với bạn bè.",
+            "cta": "Thêm chi phí đầu tiên"
+        },
+        "groups": {
+            "title": "Chưa có nhóm nào",
+            "description": "Tạo nhóm để chia sẻ chi phí với bạn bè, người ở chung hoặc đồng nghiệp.",
+            "cta": "Tạo nhóm đầu tiên"
+        },
+        "friends": {
+            "title": "Chưa thêm bạn bè nào",
+            "description": "Thêm bạn bè để bắt đầu chia sẻ chi phí cùng nhau.",
+            "cta": "Thêm bạn bè"
+        }
+    },
+    "share": {
+        "title": "Chia sẻ",
+        "zalo": "Chia sẻ qua Zalo",
+        "facebook": "Chia sẻ lên Facebook",
+        "copyLink": "Sao chép liên kết",
+        "copied": "Đã sao chép!",
+        "downloadImage": "Tải ảnh về"
+    },
+    "celebration": {
+        "title": "Đã thanh toán xong! 🎉",
+        "subtitle": "Đã thanh toán {{amount}} với {{name}}",
+        "share": "Chia sẻ tin vui",
+        "shareMessage": "Mình vừa thanh toán xong một khoản nợ trên FairPay! 🎉"
+    },
+    "groupSummary": {
+        "members": "{{count}} thành viên",
+        "total": "Tổng cộng",
+        "share": "Chia sẻ"
+    },
+    "joinBanner": {
+        "text": "Chia sẻ chi phí dễ dàng cùng bạn bè",
+        "cta": "Dùng FairPay miễn phí"
     }
 }

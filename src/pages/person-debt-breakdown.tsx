@@ -7,6 +7,7 @@ import { DebtBreakdownHeader } from "@/components/debts/debt-breakdown-header";
 import { DebtFilterTabs } from "@/components/debts/debt-filter-tabs";
 import { DebtMonthGroup } from "@/components/debts/debt-month-group";
 import { ExpenseBreakdownItemSelectable } from "@/components/debts/expense-breakdown-item-selectable";
+import { SettlementCelebration } from "@/components/share/SettlementCelebration";
 import {
   Empty,
   EmptyDescription,
@@ -48,6 +49,8 @@ export const PersonDebtBreakdown = () => {
   const [selectedSplitIds, setSelectedSplitIds] = useState<Set<string>>(new Set());
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<DebtFilterTab>("unsettled");
+  const [celebrationOpen, setCelebrationOpen] = useState(false);
+  const [celebrationAmount, setCelebrationAmount] = useState(0);
 
   useEffect(() => {
     isAdmin().then(setUserIsAdmin);
@@ -205,13 +208,16 @@ export const PersonDebtBreakdown = () => {
   }, []);
 
   const handleSettle = useCallback(async () => {
+    const amount = selectedAmount;
     const result = await settle(Array.from(selectedSplitIds), refetch);
 
     if (result.success) {
       success();
+      setCelebrationAmount(amount);
+      setCelebrationOpen(true);
       setSelectedSplitIds(new Set());
     }
-  }, [selectedSplitIds, settle, refetch, success]);
+  }, [selectedSplitIds, selectedAmount, settle, refetch, success]);
 
   const handleSettleAll = useCallback(async () => {
     const allSettleable = selectableExpenses.map((expense) => expense.id);
@@ -496,6 +502,14 @@ export const PersonDebtBreakdown = () => {
         onConfirm={handleDelete}
         selectedCount={selectedSplitIds.size}
         isLoading={isDeleting}
+      />
+
+      <SettlementCelebration
+        open={celebrationOpen}
+        onClose={() => setCelebrationOpen(false)}
+        debtorName={counterparty?.data?.full_name ?? ""}
+        amount={celebrationAmount}
+        currency={summary?.currency}
       />
     </PageContainer>
   );

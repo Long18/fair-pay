@@ -588,7 +588,37 @@
     "notifications": {
         "title": "Notifications",
         "markAllRead": "Mark All as Read",
-        "noNotifications": "No notifications"
+        "noNotifications": "No notifications",
+        "debtAging": {
+            "message": "You have {{count}} debt(s) pending for over 7 days",
+            "viewDebts": "View debts",
+            "remindThem": "Remind them"
+        }
+    },
+    "activity": {
+        "streak": "{{count}} day streak"
+    },
+    "lifecycle": {
+        "welcome": {
+            "subject": "Welcome to FairPay!",
+            "preview": "Start splitting expenses with friends smartly!"
+        },
+        "noExpense": {
+            "subject": "Add your first expense",
+            "preview": "Record your first shared expense on FairPay!"
+        },
+        "noGroup": {
+            "subject": "Create a group with friends",
+            "preview": "Manage shared expenses more easily with groups!"
+        },
+        "weeklySummary": {
+            "subject": "Your weekly debt summary",
+            "preview": "Check your outstanding debts for this week."
+        },
+        "winback": {
+            "subject": "We miss you!",
+            "preview": "Come back to FairPay — your friends are waiting!"
+        }
     },
     "header": {
         "search": "Search...",
@@ -1052,5 +1082,76 @@
             "status": "Step {{current}} of {{total}}",
             "stepProgress": "Step {{current}} of {{total}}"
         }
+    },
+    "referrals": {
+        "title": "Invite Friends",
+        "yourCode": "Your referral code",
+        "shareMessage": "Join me on FairPay — the easiest way to split expenses!",
+        "copyLink": "Copy link",
+        "copied": "Link copied!",
+        "stats": {
+            "invited": "Friends invited",
+            "signedUp": "Signed up",
+            "active": "Active"
+        }
+    },
+    "onboarding": {
+        "checklist": {
+            "title": "Get started with FairPay",
+            "progress": "{{completed}} of {{total}} steps complete",
+            "skip": "Skip for now"
+        },
+        "steps": {
+            "profile": "Complete your profile",
+            "profileDesc": "Add your name and photo so friends recognise you",
+            "friend": "Add your first friend",
+            "friendDesc": "Invite someone you split costs with",
+            "group": "Create or join a group",
+            "groupDesc": "Organise expenses for trips, households, or events",
+            "expense": "Record your first expense",
+            "expenseDesc": "Log a shared cost and split it fairly",
+            "settle": "Settle a debt",
+            "settleDesc": "Pay back what you owe or get paid"
+        }
+    },
+    "emptyState": {
+        "dashboard": {
+            "title": "Start splitting expenses",
+            "description": "Track shared expenses and settle debts with friends.",
+            "cta": "Add your first expense"
+        },
+        "groups": {
+            "title": "No groups yet",
+            "description": "Create a group to split expenses with friends, housemates, or colleagues.",
+            "cta": "Create your first group"
+        },
+        "friends": {
+            "title": "No friends added yet",
+            "description": "Add friends to start splitting expenses together.",
+            "cta": "Add a friend"
+        }
+    },
+    "share": {
+        "title": "Share",
+        "zalo": "Share on Zalo",
+        "facebook": "Share on Facebook",
+        "copyLink": "Copy link",
+        "copied": "Copied!",
+        "downloadImage": "Download image"
+    },
+    "celebration": {
+        "title": "Debt settled! 🎉",
+        "subtitle": "{{amount}} settled with {{name}}",
+        "share": "Share the good news",
+        "shareMessage": "I just settled a debt on FairPay! 🎉"
+    },
+    "groupSummary": {
+        "members": "{{count}} members",
+        "total": "Total",
+        "share": "Share"
+    },
+    "joinBanner": {
+        "text": "Split expenses with friends",
+        "cta": "Try FairPay free"
     }
 }

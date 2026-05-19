@@ -124,9 +124,9 @@ export const DEFAULT_UTM_PLATFORMS: UtmPlatform[] = [
     source: "zalo",
     medium: "social_share",
     method: "platform",
-    intent_url_template: null,
+    intent_url_template: "https://zalo.me/app/social/story/index.html?url={url}",
     icon_key: "zalo",
-    enabled: false,
+    enabled: true,
     display_order: 80,
   },
   {

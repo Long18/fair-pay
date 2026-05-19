@@ -12,3 +12,8 @@ export type { OnboardingOrchestratorProps } from "./components/onboarding-orches
 export { FloatingStepPanel } from "./components/floating-step-panel";
 export type { FloatingStepPanelProps } from "./components/floating-step-panel";
 export { OnboardingProvider, useOnboarding } from "./components/onboarding-provider";
+export { OnboardingChecklist } from "./components/OnboardingChecklist";
+export { OnboardingChecklistItem } from "./components/OnboardingChecklistItem";
+export type { OnboardingChecklistItemProps } from "./components/OnboardingChecklistItem";
+export { useOnboardingProgress } from "./hooks/use-onboarding-progress";
+export type { UseOnboardingProgressReturn } from "./hooks/use-onboarding-progress";
