@@ -89,6 +89,7 @@ const ChatFAB = lazy(() => import("./modules/ai-chat").then(m => ({ default: m.C
 
 // Onboarding module - lazy loaded (only needed on first visit)
 const OnboardingProvider = lazy(() => import("./modules/onboarding").then(m => ({ default: m.OnboardingProvider })));
+const OnboardingChecklistFAB = lazy(() => import("./modules/onboarding/components/OnboardingChecklist").then(m => ({ default: m.OnboardingChecklist })));
 
 // Legal pages
 const PrivacyPage = lazy(() => import("./pages/privacy").then(m => ({ default: m.PrivacyPage })));
@@ -585,6 +586,11 @@ function App() {
                 <Authenticated key="chat-fab" fallback={null}>
                   <Suspense fallback={null}>
                     <ChatFAB />
+                  </Suspense>
+                </Authenticated>
+                <Authenticated key="onboarding-checklist" fallback={null}>
+                  <Suspense fallback={null}>
+                    <OnboardingChecklistFAB />
                   </Suspense>
                 </Authenticated>
                 <SmoothScrollInit />

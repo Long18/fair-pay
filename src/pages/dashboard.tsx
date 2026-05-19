@@ -23,8 +23,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { FloatingDecoration } from "@/components/ui/floating-decoration";
 import { CoinShape, ChartLineShape, CircleShape, HexagonShape, WalletShape } from "@/components/ui/decorative-shapes";
-import { OnboardingChecklist } from "@/modules/onboarding/components/OnboardingChecklist";
-import { useOnboardingProgress } from "@/modules/onboarding/hooks/use-onboarding-progress";
+
 
 export const Dashboard = () => {
   const { data: identity } = useGetIdentity<Profile>();
@@ -128,7 +127,6 @@ export const Dashboard = () => {
   }, [debtsLoading, identity?.id, debts.length]);
 
   const isAuthenticated = !!identity;
-  const { isCompleted: onboardingCompleted } = useOnboardingProgress();
 
   // Process debts for balance table (active only)
   const balances = useMemo(() => {
@@ -173,11 +171,6 @@ export const Dashboard = () => {
                 <WalletShape size={44} className="text-primary" />
               </FloatingDecoration>
             </div>
-
-            {/* Onboarding Checklist */}
-            {isAuthenticated && !onboardingCompleted && (
-              <OnboardingChecklist />
-            )}
 
             {/* Tab Switcher */}
             <ScrollReveal direction="up">

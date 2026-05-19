@@ -1098,7 +1098,8 @@
         "checklist": {
             "title": "Bắt đầu với FairPay",
             "progress": "{{completed}} / {{total}} bước hoàn thành",
-            "skip": "Bỏ qua"
+            "skip": "Bỏ qua",
+            "replayTutorial": "Xem lại hướng dẫn"
         },
         "steps": {
             "profile": "Hoàn thiện hồ sơ",

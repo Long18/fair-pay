@@ -1099,7 +1099,8 @@
         "checklist": {
             "title": "Get started with FairPay",
             "progress": "{{completed}} of {{total}} steps complete",
-            "skip": "Skip for now"
+            "skip": "Skip for now",
+            "replayTutorial": "Replay tutorial"
         },
         "steps": {
             "profile": "Complete your profile",
