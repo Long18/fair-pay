@@ -48,8 +48,7 @@ const NAV_ITEMS = [
   { key: "audit-logs", labelKey: "nav.auditLogs", icon: ScrollTextIcon, path: "/admin/audit-logs", capability: "canViewAuditLogs" },
   { key: "reactions", labelKey: "nav.reactions", icon: SmilePlusIcon, path: "/admin/reactions", capability: "canManageReactions" },
   { key: "devtool", labelKey: "nav.devtool", icon: SettingsIcon, path: "/admin/devtool", capability: "canUseDevtool" },
-  { key: "growth", labelKey: "nav.growth", icon: TrendingUpIcon, path: "/admin/growth", capability: "canViewGrowth" },
-  { key: "retention", labelKey: "nav.retention", icon: RepeatIcon, path: "/admin/retention", capability: "canViewRetention" },
+  { key: "marketing", labelKey: "nav.marketing", icon: TrendingUpIcon, path: "/admin/marketing", capability: "canViewGrowth" },
 ] as const;
 
 // ─── Helpers ────────────────────────────────────────────────────────
