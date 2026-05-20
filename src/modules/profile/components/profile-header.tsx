@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useOnboarding } from "@/modules/onboarding";
+import { usePlan } from "@/modules/billing";
 
 interface ProfileHeaderProps {
   profile: Profile;
@@ -33,6 +34,7 @@ export const ProfileHeader = ({
   const { t } = useTranslation();
   const { tap } = useHaptics();
   const { restart } = useOnboarding();
+  const { isPro } = usePlan();
 
   return (
     <motion.div
@@ -86,6 +88,11 @@ export const ProfileHeader = ({
         <div className="flex-1 text-center sm:text-left">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-4 mb-2">
             <h1 className="text-2xl sm:text-3xl font-bold">{profile.full_name}</h1>
+            {isOwnProfile && isPro && (
+              <Badge className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0 text-xs font-semibold">
+                ✨ Pro
+              </Badge>
+            )}
             <Badge variant="secondary" className="rounded-full">
               {t('profile.memberSince', {
                 date: formatDateShort(profile.created_at),

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useGo, useList, useGetIdentity } from '@refinedev/core';
+import { usePlan } from '@/modules/billing';
 import { useHaptics } from '@/hooks/use-haptics';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +38,12 @@ type SortType = 'recent' | 'oldest' | 'name' | 'balance';
 export const GroupListContent = () => {
   const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
+  const { isPro } = usePlan();
+  const threeMonthsAgo = useMemo(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 3);
+    return d.toISOString();
+  }, []);
   const { tap } = useHaptics();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,10 +73,11 @@ export const GroupListContent = () => {
     },
   });
 
-  // Fetch all expenses for balance calculation
+  // Fetch all expenses for balance calculation (free tier: last 3 months only)
   const { query: expensesQuery } = useList({
     resource: 'expenses',
     pagination: { mode: 'off' },
+    filters: isPro ? [] : [{ field: 'created_at', operator: 'gte', value: threeMonthsAgo }],
     meta: {
       select: 'id, group_id, amount, paid_by_user_id, expense_splits(*)',
     },
