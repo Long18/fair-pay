@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -34,6 +34,7 @@ import { useAdminAccess } from "../hooks/use-admin-access";
 import { formatNumber } from "@/lib/locale-utils";
 import { useStaggerAnimation } from "@/hooks/ui/use-stagger-animation";
 import { themeIntentTones } from "@/lib/theme-intents";
+import { cn } from "@/lib/utils";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -110,6 +111,26 @@ interface SentEmail {
   email_sent_at: string;
   full_name: string | null;
   avatar_url: string | null;
+}
+
+interface UserEmailGroup {
+  user_id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  emails: SentEmail[];
+  lastSent: string;
+}
+
+interface TypeEmailGroup {
+  type: string;
+  count: number;
+  lastSent: string;
+}
+
+interface DayEmailPoint {
+  date: string;
+  label: string;
+  count: number;
 }
 
 // ─── Growth Data Hooks ────────────────────────────────────────────────
@@ -445,6 +466,7 @@ interface Experiment {
 
 interface ExperimentAssignment {
   experiment_key: string;
+  variant: string;
 }
 
 function useExperiments(enabled: boolean) {
@@ -470,7 +492,7 @@ function useExperimentAssignments(enabled: boolean) {
     queryFn: async () => {
       const { data, error } = await supabaseClient
         .from("experiment_assignments")
-        .select("experiment_key");
+        .select("experiment_key, variant");
 
       if (error) throw error;
       return (data ?? []) as ExperimentAssignment[];
@@ -979,8 +1001,13 @@ function RetentionTab({ enabled }: { enabled: boolean }) {
 
 // ─── Tab: Emails ──────────────────────────────────────────────────────
 
+type EmailViewMode = "users" | "types" | "timeline";
+
 function EmailsTab({ enabled }: { enabled: boolean }) {
   const { tAdmin } = useAdminTranslation();
+  const [viewMode, setViewMode] = useState<EmailViewMode>("users");
+  const [selectedUser, setSelectedUser] = useState<UserEmailGroup | null>(null);
+  const [selectedType, setSelectedType] = useState<string | null>(null);
 
   const { data: emailStats, isLoading: statsLoading } = useEmailStats(enabled);
   const { data: sentEmails, isLoading: emailsLoading } = useSentEmails(enabled);
@@ -988,116 +1015,283 @@ function EmailsTab({ enabled }: { enabled: boolean }) {
   const statItems = useMemo(() => [0, 1, 2], []);
   const { containerVariants, rowVariants, animationKey } = useStaggerAnimation(statItems);
 
-  return (
-    <div className="space-y-6">
-      {/* ── Email Stat Cards ─────────────────────────────────────── */}
-      <motion.div
-        className="grid grid-cols-1 sm:grid-cols-3 gap-4"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        key={animationKey}
-      >
-        <motion.div variants={rowVariants} custom={0}>
-          <SimpleStatCard
-            icon={MailIcon}
-            label={tAdmin("marketing.emailsSent")}
-            value={formatNumber(emailStats?.totalSent ?? 0)}
-            loading={statsLoading}
-          />
-        </motion.div>
-        <motion.div variants={rowVariants} custom={1}>
-          <SimpleStatCard
-            icon={ActivityIcon}
-            label={tAdmin("marketing.emailsSentRecently")}
-            value={formatNumber(emailStats?.sentLast7Days ?? 0)}
-            loading={statsLoading}
-          />
-        </motion.div>
-        <motion.div variants={rowVariants} custom={2}>
-          <SimpleStatCard
-            icon={RepeatIcon}
-            label={tAdmin("marketing.emailsPending")}
-            value={formatNumber(emailStats?.pending ?? 0)}
-            loading={statsLoading}
-          />
-        </motion.div>
-      </motion.div>
+  const groupedByUser = useMemo((): UserEmailGroup[] => {
+    if (!sentEmails) return [];
+    const map = new Map<string, UserEmailGroup>();
+    for (const email of sentEmails) {
+      if (!map.has(email.user_id)) {
+        map.set(email.user_id, { user_id: email.user_id, full_name: email.full_name, avatar_url: email.avatar_url, emails: [], lastSent: email.email_sent_at });
+      }
+      const g = map.get(email.user_id)!;
+      g.emails.push(email);
+      if (email.email_sent_at > g.lastSent) g.lastSent = email.email_sent_at;
+    }
+    return Array.from(map.values()).sort((a, b) => b.emails.length - a.emails.length);
+  }, [sentEmails]);
 
-      {/* ── Sent Emails Table ────────────────────────────────────── */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{tAdmin("marketing.recentEmailsTitle")}</CardTitle>
-          <CardDescription>Last 50 sent emails</CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          {emailsLoading ? (
+  const groupedByType = useMemo((): TypeEmailGroup[] => {
+    if (!sentEmails) return [];
+    const map = new Map<string, TypeEmailGroup>();
+    for (const email of sentEmails) {
+      if (!map.has(email.type)) map.set(email.type, { type: email.type, count: 0, lastSent: email.email_sent_at });
+      const g = map.get(email.type)!;
+      g.count++;
+      if (email.email_sent_at > g.lastSent) g.lastSent = email.email_sent_at;
+    }
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }, [sentEmails]);
+
+  const timelineData = useMemo((): DayEmailPoint[] => {
+    if (!sentEmails) return [];
+    const map: Record<string, number> = {};
+    for (const email of sentEmails) {
+      const day = email.email_sent_at.slice(0, 10);
+      map[day] = (map[day] ?? 0) + 1;
+    }
+    return Object.entries(map)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, count]) => ({
+        date,
+        label: new Date(date).toLocaleDateString(undefined, { day: "2-digit", month: "2-digit" }),
+        count,
+      }));
+  }, [sentEmails]);
+
+  const timelineChartConfig = useMemo(() => ({
+    count: { label: "Emails sent", color: "var(--chart-1)" },
+  }) satisfies ChartConfig, []);
+
+  // ── User detail view ──
+  if (selectedUser) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          <button onClick={() => setSelectedUser(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            ← Back
+          </button>
+          <span className="text-muted-foreground">/</span>
+          <Avatar className="h-5 w-5">
+            {selectedUser.avatar_url && <AvatarImage src={selectedUser.avatar_url} />}
+            <AvatarFallback className="text-xs">{(selectedUser.full_name ?? "?").charAt(0)}</AvatarFallback>
+          </Avatar>
+          <span className="text-sm font-medium">{selectedUser.full_name ?? selectedUser.user_id}</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <SimpleStatCard icon={MailIcon} label="Total emails" value={selectedUser.emails.length} loading={false} />
+          <SimpleStatCard icon={ActivityIcon} label="Last sent" value={new Date(selectedUser.lastSent).toLocaleDateString()} loading={false} />
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Email History</CardTitle>
+            <CardDescription>All emails sent to {selectedUser.full_name ?? selectedUser.user_id}</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
             <div className="divide-y">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3 px-6 py-3">
-                  <div className="h-8 w-8 rounded-full bg-muted animate-pulse shrink-0" />
-                  <div className="flex-1 flex flex-col gap-1.5">
-                    <div className="h-3 w-32 bg-muted rounded animate-pulse" />
-                    <div className="h-3 w-20 bg-muted rounded animate-pulse" />
-                  </div>
-                  <div className="h-3 w-24 bg-muted rounded animate-pulse" />
-                </div>
+              {selectedUser.emails.map((email, i) => (
+                <motion.div key={email.id} initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }} className="flex items-center gap-3 px-6 py-3">
+                  <Badge variant="secondary" className="text-xs font-mono shrink-0">{email.type}</Badge>
+                  <div className="flex-1" />
+                  <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                    {new Date(email.email_sent_at).toLocaleString(undefined, { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </motion.div>
               ))}
             </div>
-          ) : !sentEmails?.length ? (
-            <p className="px-6 py-8 text-center text-sm text-muted-foreground">
-              {tAdmin("marketing.noEmailsSent")}
-            </p>
-          ) : (
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // ── Type detail view ──
+  if (selectedType) {
+    const typeEmails = sentEmails?.filter((e) => e.type === selectedType) ?? [];
+    const typeCount = groupedByType.find((g) => g.type === selectedType)?.count ?? 0;
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          <button onClick={() => setSelectedType(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            ← Back
+          </button>
+          <span className="text-muted-foreground">/</span>
+          <Badge variant="secondary" className="font-mono">{selectedType}</Badge>
+        </div>
+        <SimpleStatCard icon={MailIcon} label="Total sent" value={formatNumber(typeCount)} loading={false} />
+        <Card>
+          <CardHeader>
+            <CardTitle>Recipients</CardTitle>
+            <CardDescription>{typeCount} emails of type <span className="font-mono">{selectedType}</span></CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
             <div className="divide-y">
-              {/* Header row */}
-              <div className="flex items-center gap-3 px-6 py-2 text-xs font-medium text-muted-foreground">
-                <div className="h-8 w-8 shrink-0" />
-                <div className="flex-1">{tAdmin("marketing.recipient")}</div>
-                <div className="w-36 text-left">{tAdmin("marketing.notificationType")}</div>
-                <div className="w-36 text-right">{tAdmin("marketing.sentAt")}</div>
-              </div>
-              {sentEmails.map((email, index) => {
+              {typeEmails.map((email, i) => {
                 const initials = (email.full_name ?? email.user_id).charAt(0).toUpperCase();
-                const sentDate = new Date(email.email_sent_at).toLocaleDateString(undefined, {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                });
                 return (
-                  <motion.div
-                    key={email.id}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.03, duration: 0.2 }}
-                    className="flex items-center gap-3 px-6 py-3"
-                  >
-                    <Avatar className="h-8 w-8 shrink-0">
-                      {email.avatar_url && (
-                        <AvatarImage src={email.avatar_url} alt={email.full_name ?? email.user_id} />
-                      )}
+                  <motion.div key={email.id} initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }} className="flex items-center gap-3 px-6 py-3">
+                    <Avatar className="h-7 w-7 shrink-0">
+                      {email.avatar_url && <AvatarImage src={email.avatar_url} />}
                       <AvatarFallback className="text-xs">{initials}</AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium leading-none truncate">
-                        {email.full_name ?? email.user_id}
-                      </p>
-                    </div>
-                    <div className="w-36">
-                      <Badge variant="secondary" className="text-xs">
-                        {email.type}
-                      </Badge>
-                    </div>
-                    <div className="w-36 text-right tabular-nums text-sm text-muted-foreground">
-                      {sentDate}
-                    </div>
+                    <p className="flex-1 text-sm font-medium truncate">{email.full_name ?? email.user_id}</p>
+                    <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                      {new Date(email.email_sent_at).toLocaleDateString(undefined, { day: "2-digit", month: "2-digit", year: "numeric" })}
+                    </span>
                   </motion.div>
                 );
               })}
             </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // ── Main list view ──
+  return (
+    <div className="space-y-6">
+      {/* Stat cards */}
+      <motion.div className="grid grid-cols-1 sm:grid-cols-3 gap-4" variants={containerVariants} initial="hidden" animate="visible" key={animationKey}>
+        <motion.div variants={rowVariants} custom={0}>
+          <SimpleStatCard icon={MailIcon} label={tAdmin("marketing.emailsSent")} value={formatNumber(emailStats?.totalSent ?? 0)} loading={statsLoading} />
+        </motion.div>
+        <motion.div variants={rowVariants} custom={1}>
+          <SimpleStatCard icon={ActivityIcon} label={tAdmin("marketing.emailsSentRecently")} value={formatNumber(emailStats?.sentLast7Days ?? 0)} loading={statsLoading} />
+        </motion.div>
+        <motion.div variants={rowVariants} custom={2}>
+          <SimpleStatCard icon={RepeatIcon} label={tAdmin("marketing.emailsPending")} value={formatNumber(emailStats?.pending ?? 0)} loading={statsLoading} />
+        </motion.div>
+      </motion.div>
+
+      {/* View switcher */}
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold">{tAdmin("marketing.recentEmailsTitle")}</h3>
+        <div className="flex rounded-lg border bg-muted/40 p-0.5 gap-0.5">
+          {(["users", "types", "timeline"] as const).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setViewMode(mode)}
+              className={cn(
+                "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                viewMode === mode ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {mode === "users" ? "By User" : mode === "types" ? "By Type" : "Timeline"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* By User */}
+      {viewMode === "users" && (
+        <Card>
+          <CardContent className="p-0">
+            {emailsLoading ? (
+              <div className="divide-y">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 px-6 py-3">
+                    <div className="h-8 w-8 rounded-full bg-muted animate-pulse shrink-0" />
+                    <div className="flex-1 space-y-1.5"><div className="h-3 w-32 bg-muted rounded animate-pulse" /></div>
+                    <div className="h-6 w-16 bg-muted rounded animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            ) : !groupedByUser.length ? (
+              <p className="px-6 py-8 text-center text-sm text-muted-foreground">{tAdmin("marketing.noEmailsSent")}</p>
+            ) : (
+              <div className="divide-y">
+                {groupedByUser.map((group, i) => {
+                  const initials = (group.full_name ?? group.user_id).charAt(0).toUpperCase();
+                  return (
+                    <motion.button
+                      key={group.user_id}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.03 }}
+                      onClick={() => setSelectedUser(group)}
+                      className="w-full flex items-center gap-3 px-6 py-3 hover:bg-muted/50 transition-colors text-left group"
+                    >
+                      <Avatar className="h-8 w-8 shrink-0">
+                        {group.avatar_url && <AvatarImage src={group.avatar_url} />}
+                        <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{group.full_name ?? group.user_id}</p>
+                        <p className="text-xs text-muted-foreground">Last: {new Date(group.lastSent).toLocaleDateString()}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="tabular-nums">{group.emails.length}</Badge>
+                        <span className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity text-sm">→</span>
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* By Type */}
+      {viewMode === "types" && (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {emailsLoading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i} className="p-5 space-y-3">
+                <div className="h-4 w-28 bg-muted rounded animate-pulse" />
+                <div className="h-8 w-14 bg-muted rounded animate-pulse" />
+              </Card>
+            ))
+          ) : !groupedByType.length ? (
+            <Card className="col-span-3">
+              <CardContent className="py-8 text-center">
+                <p className="text-sm text-muted-foreground">{tAdmin("marketing.noEmailsSent")}</p>
+              </CardContent>
+            </Card>
+          ) : (
+            groupedByType.map((group, i) => (
+              <motion.div key={group.type} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+                <Card className="cursor-pointer hover:border-primary/50 hover:shadow-sm transition-all group" onClick={() => setSelectedType(group.type)}>
+                  <CardContent className="p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <Badge variant="secondary" className="font-mono text-xs">{group.type}</Badge>
+                      <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                    </div>
+                    <p className="text-2xl font-semibold tabular-nums">{formatNumber(group.count)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Last: {new Date(group.lastSent).toLocaleDateString()}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))
           )}
-        </CardContent>
-      </Card>
+        </div>
+      )}
+
+      {/* Timeline */}
+      {viewMode === "timeline" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Email Timeline</CardTitle>
+            <CardDescription>Daily send volume (last 50 emails)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {emailsLoading ? (
+              <LoadingBeam className="py-8" />
+            ) : !timelineData.length ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">{tAdmin("marketing.noEmailsSent")}</p>
+            ) : (
+              <ChartContainer config={timelineChartConfig} className="h-[280px] w-full">
+                <RechartsBarChart data={timelineData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                  <CartesianGrid vertical={false} />
+                  <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={6} interval="preserveStartEnd" />
+                  <YAxis tickLine={false} axisLine={false} tickMargin={4} width={30} allowDecimals={false} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="count" fill="var(--color-count)" radius={[4, 4, 0, 0]} />
+                </RechartsBarChart>
+              </ChartContainer>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
@@ -1106,6 +1300,7 @@ function EmailsTab({ enabled }: { enabled: boolean }) {
 
 function ExperimentsTab({ enabled }: { enabled: boolean }) {
   const { tAdmin } = useAdminTranslation();
+  const [selectedExp, setSelectedExp] = useState<Experiment | null>(null);
 
   const { data: experiments, isLoading: experimentsLoading } = useExperiments(enabled);
   const { data: assignments, isLoading: assignmentsLoading } = useExperimentAssignments(enabled);
@@ -1118,70 +1313,227 @@ function ExperimentsTab({ enabled }: { enabled: boolean }) {
     return counts;
   }, [assignments]);
 
+  const variantSummary = useMemo(() => {
+    const result: Record<string, Array<{ variant: string; count: number; pct: number }>> = {};
+    const perExp: Record<string, Record<string, number>> = {};
+    for (const a of assignments ?? []) {
+      if (!perExp[a.experiment_key]) perExp[a.experiment_key] = {};
+      perExp[a.experiment_key][a.variant] = (perExp[a.experiment_key][a.variant] ?? 0) + 1;
+    }
+    for (const [expKey, varCounts] of Object.entries(perExp)) {
+      const total = Object.values(varCounts).reduce((s, c) => s + c, 0);
+      result[expKey] = Object.entries(varCounts).map(([variant, count]) => ({
+        variant,
+        count,
+        pct: total > 0 ? Math.round((count / total) * 100) : 0,
+      }));
+    }
+    return result;
+  }, [assignments]);
+
   const isLoading = experimentsLoading || assignmentsLoading;
 
+  // ── Detail view ──
+  if (selectedExp) {
+    const variants = variantSummary[selectedExp.key] ?? [];
+    const totalAssignments = assignmentCounts[selectedExp.key] ?? 0;
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setSelectedExp(null)}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            ← {tAdmin("common.back") ?? "Back"}
+          </button>
+          <span className="text-muted-foreground">/</span>
+          <span className="text-sm font-mono font-medium">{selectedExp.key}</span>
+          <Badge variant={selectedExp.is_active ? "default" : "outline"} className="text-xs ml-1">
+            {selectedExp.is_active ? tAdmin("status.active") : tAdmin("status.inactive")}
+          </Badge>
+        </div>
+
+        <div className="grid sm:grid-cols-3 gap-4">
+          <SimpleStatCard icon={ActivityIcon} label={tAdmin("marketing.experimentAssignments")} value={formatNumber(totalAssignments)} loading={isLoading} />
+          <SimpleStatCard icon={UsersIcon} label={tAdmin("marketing.experimentVariants")} value={selectedExp.variants.length} loading={false} />
+          <Card className="p-5">
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs text-muted-foreground">{tAdmin("marketing.experimentKey")}</span>
+              <span className="font-mono text-sm font-semibold break-all">{selectedExp.key}</span>
+              <span className="text-xs text-muted-foreground mt-1">
+                {new Date(selectedExp.created_at).toLocaleDateString()}
+              </span>
+            </div>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Variant Distribution</CardTitle>
+            <CardDescription>
+              {selectedExp.description ?? selectedExp.key} · {formatNumber(totalAssignments)} users assigned
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {variants.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">No assignments yet — experiment awaiting users</p>
+            ) : (
+              <div className="space-y-5">
+                {variants.map((v) => (
+                  <div key={v.variant} className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="font-mono text-xs px-2">{v.variant}</Badge>
+                      </div>
+                      <div className="flex items-center gap-3 text-right">
+                        <span className="text-muted-foreground tabular-nums">{formatNumber(v.count)} users</span>
+                        <span className="font-bold tabular-nums w-10 text-right">{v.pct}%</span>
+                      </div>
+                    </div>
+                    <div className="h-3 w-full rounded-full bg-muted overflow-hidden">
+                      <motion.div
+                        className="h-full rounded-full bg-primary"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${v.pct}%` }}
+                        transition={{ duration: 0.6, ease: "easeOut" }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Experiment Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Description</p>
+                <p>{selectedExp.description ?? "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Created</p>
+                <p>{new Date(selectedExp.created_at).toLocaleDateString()}</p>
+              </div>
+              <div className="col-span-2">
+                <p className="text-xs text-muted-foreground mb-1">All variants</p>
+                <div className="flex flex-wrap gap-1">
+                  {selectedExp.variants.map((v) => (
+                    <Badge key={v} variant="secondary" className="font-mono text-xs">{v}</Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // ── List view ──
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{tAdmin("marketing.experimentsTitle")}</CardTitle>
-          <CardDescription>{tAdmin("marketing.experimentsSubtitle")}</CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <LoadingBeam className="py-8" />
-          ) : !experiments?.length ? (
-            <p className="px-6 py-8 text-center text-sm text-muted-foreground">
-              {tAdmin("marketing.noExperiments")}
-            </p>
-          ) : (
-            <div className="divide-y">
-              <div className="flex items-center gap-3 px-6 py-2 text-xs font-medium text-muted-foreground">
-                <div className="flex-1">{tAdmin("marketing.experimentKey")}</div>
-                <div className="flex-1">{tAdmin("marketing.experimentDescription")}</div>
-                <div className="w-36">{tAdmin("marketing.experimentVariants")}</div>
-                <div className="w-20 text-center">{tAdmin("marketing.experimentActive")}</div>
-                <div className="w-24 text-right">{tAdmin("marketing.experimentAssignments")}</div>
-              </div>
-              {experiments.map((exp, index) => (
-                <motion.div
-                  key={exp.id}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.04, duration: 0.2 }}
-                  className="flex items-center gap-3 px-6 py-3"
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold">{tAdmin("marketing.experimentsTitle")}</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">{tAdmin("marketing.experimentsSubtitle")}</p>
+        </div>
+        <Badge variant="secondary">{experiments?.length ?? 0} experiments</Badge>
+      </div>
+
+      {isLoading ? (
+        <div className="grid sm:grid-cols-2 gap-4">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <Card key={i} className="p-5 space-y-3">
+              <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+              <div className="h-3 w-48 bg-muted rounded animate-pulse" />
+              <div className="h-2 w-full bg-muted rounded animate-pulse mt-4" />
+            </Card>
+          ))}
+        </div>
+      ) : !experiments?.length ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-muted-foreground text-sm">{tAdmin("marketing.noExperiments")}</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid sm:grid-cols-2 gap-4">
+          {experiments.map((exp, index) => {
+            const total = assignmentCounts[exp.key] ?? 0;
+            const variants = variantSummary[exp.key] ?? [];
+            return (
+              <motion.div
+                key={exp.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.06, duration: 0.25 }}
+              >
+                <Card
+                  className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all duration-200 group"
+                  onClick={() => setSelectedExp(exp)}
                 >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-mono font-medium truncate">{exp.key}</p>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-muted-foreground truncate">
-                      {exp.description ?? "—"}
-                    </p>
-                  </div>
-                  <div className="w-36 flex flex-wrap gap-1">
-                    {(Array.isArray(exp.variants) ? exp.variants : []).map((v) => (
-                      <Badge key={v} variant="secondary" className="text-xs">
-                        {v}
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-mono text-sm font-semibold truncate">{exp.key}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                          {exp.description ?? "No description"}
+                        </p>
+                      </div>
+                      <Badge variant={exp.is_active ? "default" : "outline"} className="shrink-0 text-xs">
+                        {exp.is_active ? tAdmin("status.active") : tAdmin("status.inactive")}
                       </Badge>
-                    ))}
-                  </div>
-                  <div className="w-20 text-center">
-                    <Badge variant={exp.is_active ? "default" : "outline"} className="text-xs">
-                      {exp.is_active
-                        ? tAdmin("status.active")
-                        : tAdmin("status.inactive")}
-                    </Badge>
-                  </div>
-                  <div className="w-24 text-right tabular-nums text-sm">
-                    {formatNumber(assignmentCounts[exp.key] ?? 0)}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0 space-y-3">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{formatNumber(total)} users assigned</span>
+                      <span>{exp.variants.length} variants</span>
+                    </div>
+                    {variants.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {variants.map((v) => (
+                          <div key={v.variant} className="flex items-center gap-2">
+                            <span className="text-xs font-mono w-16 shrink-0 text-muted-foreground truncate">{v.variant}</span>
+                            <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                              <motion.div
+                                className="h-full bg-primary rounded-full"
+                                initial={{ width: 0 }}
+                                animate={{ width: `${v.pct}%` }}
+                                transition={{ duration: 0.5, delay: index * 0.06 + 0.2 }}
+                              />
+                            </div>
+                            <span className="text-xs tabular-nums text-muted-foreground w-8 text-right">{v.pct}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {exp.variants.map((v) => (
+                          <Badge key={v} variant="outline" className="text-xs font-mono">{v}</Badge>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(exp.created_at).toLocaleDateString()}
+                      </span>
+                      <span className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                        View details →
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
