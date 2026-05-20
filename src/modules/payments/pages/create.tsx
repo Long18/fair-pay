@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useGo, useGetIdentity, useList, useOne } from "@refinedev/core";
+import { markOnboardingStep } from "@/modules/onboarding/utils/mark-step";
 import { useInstantCreate } from "@/hooks/use-instant-mutation";
 import { useParams, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
@@ -161,6 +162,7 @@ export const PaymentCreate = () => {
       },
       {
         onSuccess: () => {
+          markOnboardingStep(identity?.id, 'settle');
           toast.success("Payment recorded successfully");
 
           // Track payment creation

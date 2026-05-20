@@ -1,4 +1,5 @@
 import { useOne, useGo, useGetIdentity, useList } from "@refinedev/core";
+import { markOnboardingStep } from "@/modules/onboarding/utils/mark-step";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useParams, useSearchParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -415,6 +416,7 @@ export const ProfileShowUnified = () => {
 
       if (error) throw error;
 
+      markOnboardingStep(profile.id, 'profile');
       success();
       track('profile_update_success');
       toast.success(t('profile.profileUpdated', 'Profile updated successfully'));

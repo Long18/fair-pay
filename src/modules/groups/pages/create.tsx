@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { markOnboardingStep } from "@/modules/onboarding/utils/mark-step";
 import { useGo, useGetIdentity, useList } from "@refinedev/core";
 import { useInstantCreate } from "@/hooks/use-instant-mutation";
 import { ResponsiveDialog } from "@/components/refine-ui/responsive-dialog";
@@ -89,6 +90,7 @@ export const GroupCreate = () => {
       },
       {
         onSuccess: async (data) => {
+          markOnboardingStep(identity?.id, 'group');
           const groupId = data.data.id as string;
 
           // Create group members (creator is automatically added as admin by trigger)

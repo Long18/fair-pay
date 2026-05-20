@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useGo, useList, useGetIdentity, useOne } from "@refinedev/core";
+import { markOnboardingStep } from "@/modules/onboarding/utils/mark-step";
 import { useInstantCreate } from "@/hooks/use-instant-mutation";
 import { useParams } from "react-router";
 import { ResponsiveDialog } from "@/components/refine-ui/responsive-dialog";
@@ -170,6 +171,7 @@ export const ExpenseCreate = () => {
       },
       {
         onSuccess: async (data) => {
+          markOnboardingStep(identity?.id, 'expense');
           const expenseId = data.data.id as string;
 
           // Create splits using Supabase client

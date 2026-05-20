@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { markOnboardingStep } from "@/modules/onboarding/utils/mark-step";
 import type { ReactNode } from "react";
 import { useList, useGetIdentity } from "@refinedev/core";
 import { useInstantCreate } from "@/hooks/use-instant-mutation";
@@ -161,6 +162,7 @@ export const AddFriendModal = ({ trigger }: AddFriendModalProps) => {
       },
       {
         onSuccess: () => {
+          markOnboardingStep(identity?.id, 'friend');
           success();
           toast.success(`Friend request sent to ${targetUser.full_name}`);
           setOpen(false);
