@@ -52,6 +52,8 @@ scripts/verification/*-output.txt
 .serena/
 .shared/ui-ux-pro-max/
 .gitnexus
+data/state_store.db/
+data/stream_store/
 
 # Local-only docs and planning files
 AGENTS.md

@@ -1,0 +1,18 @@
+
+## 2026-05-20 — Expense Context Selector: Avatars + Per-Section Recents
+
+### Files created
+- `src/components/ui/item.tsx` — shadcn/ui v4 Item primitive (Item, ItemGroup, ItemMedia, ItemContent, ItemTitle, ItemDescription, ItemActions, ItemSeparator). Uses @radix-ui/react-slot (NOT radix-ui). CVA variants: default/outline/muted + default/sm sizes.
+- `src/modules/expenses/hooks/use-recent-expense-contexts.ts` — Per-user recents hook. Key: fairpay_recent_expense_contexts_v1_{userId}. Max 3 displayed, 10 stored per type. Deduplicates by id+type.
+- `src/modules/expenses/components/context-item-row.tsx` — Avatar row using Item asChild pattern. 7-color deterministic palette for groups (hash of name). getInitials handles single/multi-word names.
+
+### Files modified
+- `src/modules/expenses/pages/context-selector.tsx` — Added avatar_url to friendship query; handleGroupSelect/handleFriendSelect with addRecent; per-section Recent subsection (Clock icon + ItemGroup + Separator, hidden while searching); addRecent called on both full-list AND recent-item clicks.
+
+### Patterns learned
+- Project uses @radix-ui/react-slot not radix-ui (check badge.tsx as reference)
+- Icons: lucide-react directly for new icons not in @/components/ui/icons
+- usePersistedState at @/hooks/settings/use-persisted-state handles localStorage with try/catch
+- Build: pnpm build (runs node scripts/build-with-version.mjs + vite + tsc)
+
+### Build result: exit 0, zero TypeScript errors

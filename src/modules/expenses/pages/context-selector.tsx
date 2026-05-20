@@ -6,14 +6,19 @@ import { Input } from "@/components/ui/input";
 import { PaginationControls, PaginationMetadata } from "@/components/ui/pagination-controls";
 import { Profile } from "@/modules/profile/types";
 import { Friendship } from "@/modules/friends/types";
-import { toast } from "sonner";
-
-import { UsersIcon, UserPlusIcon, PlusCircleIcon } from "@/components/ui/icons";
+import { UsersIcon, UserPlusIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
+import { useRecentExpenseContexts } from "@/modules/expenses/hooks/use-recent-expense-contexts";
+import { ContextItemRow } from "@/modules/expenses/components/context-item-row";
+import { ItemGroup } from "@/components/ui/item";
+import { Separator } from "@/components/ui/separator";
+import { Clock } from "lucide-react";
+
 export const ExpenseContextSelector = () => {
   const go = useGo();
   const { tap } = useHaptics();
   const { data: identity } = useGetIdentity<Profile>();
+  const { recentGroups, recentFriends, addRecent } = useRecentExpenseContexts(identity?.id);
   const [groupSearch, setGroupSearch] = useState("");
   const [friendSearch, setFriendSearch] = useState("");
   const [groupPage, setGroupPage] = useState(1);
@@ -49,7 +54,7 @@ export const ExpenseContextSelector = () => {
       },
     ],
     meta: {
-      select: "*, user_a_profile:profiles!user_a(id, full_name), user_b_profile:profiles!user_b(id, full_name)",
+      select: "*, user_a_profile:profiles!user_a(id, full_name, avatar_url), user_b_profile:profiles!user_b(id, full_name, avatar_url)",
     },
     queryOptions: {
       enabled: !!identity?.id,
@@ -84,7 +89,6 @@ export const ExpenseContextSelector = () => {
     if (!normalizedFriendSearch) return friendships;
     return friendships.filter((friendship: any) => {
       const userAId = friendship.user_a || friendship.user_a_id;
-      const userBId = friendship.user_b || friendship.user_b_id;
       const isUserA = userAId === identity?.id;
       const friendProfile = isUserA ? friendship.user_b_profile : friendship.user_a_profile;
       const friendName = friendProfile?.full_name || "Friend";
@@ -162,6 +166,23 @@ export const ExpenseContextSelector = () => {
     go({ to: "/friends" });
   };
 
+  const handleGroupSelect = (group: any) => {
+    tap();
+    addRecent({ id: group.id, type: "group", name: group.name });
+    go({ to: `/groups/${group.id}/expenses/create` });
+  };
+
+  const handleFriendSelect = (friendship: any, friendProfile: any) => {
+    tap();
+    addRecent({
+      id: friendship.id,
+      type: "friend",
+      name: friendProfile?.full_name ?? "Friend",
+      avatarUrl: friendProfile?.avatar_url,
+    });
+    go({ to: `/friends/${friendship.id}/expenses/create` });
+  };
+
   if (!identity || loadingGroups || loadingFriendships) {
     return (
       <ResponsiveDialog
@@ -229,28 +250,57 @@ export const ExpenseContextSelector = () => {
       <div className="space-y-2 pt-4">
         {groups.length > 0 && (
           <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground px-1">Groups</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground px-1">
+              Groups
+            </p>
             <Input
               value={groupSearch}
               onChange={(event) => setGroupSearch(event.target.value)}
-              placeholder="Search groups"
+              placeholder="Search groups..."
             />
-            {pagedGroups.length === 0 ? (
-              <p className="text-sm text-muted-foreground px-1">No groups match your search.</p>
-            ) : (
-              pagedGroups.map((group: any) => (
-                <Button
-                  key={group.id}
-                  onClick={() => { tap(); go({ to: `/groups/${group.id}/expenses/create` }); }}
-                  variant="outline"
-                  className="w-full justify-start h-auto py-3"
-                  size="lg"
-                >
-                  <UsersIcon className="mr-3 h-5 w-5 flex-shrink-0" />
-                  <span className="truncate">{group.name}</span>
-                </Button>
-              ))
+
+            {!normalizedGroupSearch && recentGroups.length > 0 && (
+              <>
+                <div className="flex items-center gap-1.5 px-1 pt-0.5 text-xs text-muted-foreground/70">
+                  <Clock className="size-3" />
+                  <span>Recent</span>
+                </div>
+                <ItemGroup>
+                  {recentGroups.map((r) => (
+                    <ContextItemRow
+                      key={r.id}
+                      name={r.name}
+                      type="group"
+                      avatarUrl={r.avatarUrl}
+                      onClick={() => {
+                        tap();
+                        addRecent({ id: r.id, type: "group", name: r.name, avatarUrl: r.avatarUrl });
+                        go({ to: `/groups/${r.id}/expenses/create` });
+                      }}
+                    />
+                  ))}
+                </ItemGroup>
+                <Separator className="my-1" />
+              </>
             )}
+
+            {pagedGroups.length === 0 ? (
+              <p className="text-sm text-muted-foreground px-1">
+                No groups match your search.
+              </p>
+            ) : (
+              <ItemGroup>
+                {pagedGroups.map((group: any) => (
+                  <ContextItemRow
+                    key={group.id}
+                    name={group.name}
+                    type="group"
+                    onClick={() => handleGroupSelect(group)}
+                  />
+                ))}
+              </ItemGroup>
+            )}
+
             {filteredGroups.length > pageSize && (
               <PaginationControls
                 metadata={groupPaginationMetadata}
@@ -262,34 +312,65 @@ export const ExpenseContextSelector = () => {
         )}
         {friendships.length > 0 && (
           <div className="space-y-2 mt-4">
-            <p className="text-sm font-medium text-muted-foreground px-1">Friends</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground px-1">
+              Friends
+            </p>
             <Input
               value={friendSearch}
               onChange={(event) => setFriendSearch(event.target.value)}
-              placeholder="Search friends"
+              placeholder="Search friends..."
             />
-            {pagedFriendships.length === 0 ? (
-              <p className="text-sm text-muted-foreground px-1">No friends match your search.</p>
-            ) : (
-              pagedFriendships.map((friendship: any) => {
-                const userAId = friendship.user_a || friendship.user_a_id;
-                const userBId = friendship.user_b || friendship.user_b_id;
-                const isUserA = userAId === identity?.id;
-                const friendProfile = isUserA ? friendship.user_b_profile : friendship.user_a_profile;
-                return (
-                  <Button
-                    key={friendship.id}
-                    onClick={() => { tap(); go({ to: `/friends/${friendship.id}/expenses/create` }); }}
-                    variant="outline"
-                    className="w-full justify-start h-auto py-3"
-                    size="lg"
-                  >
-                    <UserPlusIcon className="mr-3 h-5 w-5 flex-shrink-0" />
-                    <span className="truncate">{friendProfile?.full_name || "Friend"}</span>
-                  </Button>
-                );
-              })
+
+            {!normalizedFriendSearch && recentFriends.length > 0 && (
+              <>
+                <div className="flex items-center gap-1.5 px-1 pt-0.5 text-xs text-muted-foreground/70">
+                  <Clock className="size-3" />
+                  <span>Recent</span>
+                </div>
+                <ItemGroup>
+                  {recentFriends.map((r) => (
+                    <ContextItemRow
+                      key={r.id}
+                      name={r.name}
+                      type="friend"
+                      avatarUrl={r.avatarUrl}
+                      onClick={() => {
+                        tap();
+                        addRecent({ id: r.id, type: "friend", name: r.name, avatarUrl: r.avatarUrl });
+                        go({ to: `/friends/${r.id}/expenses/create` });
+                      }}
+                    />
+                  ))}
+                </ItemGroup>
+                <Separator className="my-1" />
+              </>
             )}
+
+            {pagedFriendships.length === 0 ? (
+              <p className="text-sm text-muted-foreground px-1">
+                No friends match your search.
+              </p>
+            ) : (
+              <ItemGroup>
+                {pagedFriendships.map((friendship: any) => {
+                  const userAId = friendship.user_a || friendship.user_a_id;
+                  const isUserA = userAId === identity?.id;
+                  const friendProfile = isUserA
+                    ? friendship.user_b_profile
+                    : friendship.user_a_profile;
+                  return (
+                    <ContextItemRow
+                      key={friendship.id}
+                      name={friendProfile?.full_name ?? "Friend"}
+                      type="friend"
+                      avatarUrl={friendProfile?.avatar_url}
+                      onClick={() => handleFriendSelect(friendship, friendProfile)}
+                    />
+                  );
+                })}
+              </ItemGroup>
+            )}
+
             {filteredFriendships.length > pageSize && (
               <PaginationControls
                 metadata={friendPaginationMetadata}

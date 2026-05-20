@@ -132,6 +132,9 @@
     "scripts": {
         "dev": "refine dev",
         "dev:port": "refine dev -- --port",
+        "agentmemory:start": "mkdir -p ~/.agentmemory && cd ~/.agentmemory && AGENTMEMORY_SLOTS=true AGENTMEMORY_REFLECT=true GRAPH_EXTRACTION_ENABLED=true CONSOLIDATION_ENABLED=true AGENTMEMORY_INJECT_CONTEXT=true npx -y @agentmemory/agentmemory@latest",
+        "agentmemory:status": "npx -y @agentmemory/agentmemory@latest status",
+        "agentmemory:doctor": "npx -y @agentmemory/agentmemory@latest doctor --dry-run",
         "build": "node scripts/build-with-version.mjs",
         "gitnexus:group": "node scripts/gitnexus-group.mjs",
         "start": "refine start",
