@@ -10,16 +10,35 @@ import { Friendship } from "@/modules/friends/types";
 import { toast } from "sonner";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { journeyTracking } from "@/lib/journey-tracking";
+import { usePlan, PaywallGate } from "@/modules/billing";
 
 export const GroupCreate = () => {
   const go = useGo();
   const createMutation = useInstantCreate();
   const { data: identity } = useGetIdentity<Profile>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { isPro } = usePlan();
 
   useEffect(() => {
     journeyTracking.trackFormView("group-create", "details");
   }, []);
+
+  // Count groups created by this user
+  const { query: groupsCountQuery } = useList({
+    resource: "groups",
+    filters: [
+      {
+        field: "created_by",
+        operator: "eq",
+        value: identity?.id,
+      },
+    ],
+    pagination: { mode: "off" },
+    queryOptions: { enabled: !!identity?.id },
+  });
+
+  const groupCount = groupsCountQuery.data?.total ?? 0;
+  const isBlocked = !isPro && groupCount >= 5;
 
   // Fetch all user's friends
   const { query: allFriendsQuery } = useList<Friendship>({
@@ -169,21 +188,23 @@ export const GroupCreate = () => {
   };
 
   return (
-    <ResponsiveDialog
-      open={true}
-      onOpenChange={handleClose}
-      title="Create New Group"
-      description="Create a group to share expenses with friends"
-      className="sm:max-w-2xl max-h-[90vh] overflow-y-auto"
-    >
-      <div className="space-y-6 py-4">
-        <GroupForm
-          onSubmit={handleSubmit}
-          isLoading={isSubmitting}
-          availableMembers={availableMembers}
-          currentUserId={identity?.id}
-        />
-      </div>
-    </ResponsiveDialog>
+    <PaywallGate feature="unlimited_groups" blocked={isBlocked}>
+      <ResponsiveDialog
+        open={true}
+        onOpenChange={handleClose}
+        title="Create New Group"
+        description="Create a group to share expenses with friends"
+        className="sm:max-w-2xl max-h-[90vh] overflow-y-auto"
+      >
+        <div className="space-y-6 py-4">
+          <GroupForm
+            onSubmit={handleSubmit}
+            isLoading={isSubmitting}
+            availableMembers={availableMembers}
+            currentUserId={identity?.id}
+          />
+        </div>
+      </ResponsiveDialog>
+    </PaywallGate>
   );
 };

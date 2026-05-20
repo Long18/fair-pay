@@ -404,6 +404,82 @@ function useDebtAging(enabled: boolean) {
   });
 }
 
+// ─── Subscriptions Data Hook ──────────────────────────────────────────
+
+interface SubscriptionStats {
+  freeUsers: number;
+  proUsers: number;
+}
+
+function useSubscriptionStats(enabled: boolean) {
+  return useQuery({
+    queryKey: ["admin", "subscription-stats"],
+    queryFn: async () => {
+      const { data, error } = await supabaseClient
+        .from("subscriptions")
+        .select("plan");
+
+      if (error) throw error;
+
+      const rows = data ?? [];
+      const proUsers = rows.filter((r) => r.plan === "pro").length;
+      const freeUsers = rows.filter((r) => r.plan === "free").length;
+
+      return { freeUsers, proUsers } satisfies SubscriptionStats;
+    },
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
+// ─── Experiments Data Hooks ───────────────────────────────────────────
+
+interface Experiment {
+  id: string;
+  key: string;
+  description: string | null;
+  variants: string[];
+  is_active: boolean;
+  created_at: string;
+}
+
+interface ExperimentAssignment {
+  experiment_key: string;
+}
+
+function useExperiments(enabled: boolean) {
+  return useQuery({
+    queryKey: ["admin", "experiments"],
+    queryFn: async () => {
+      const { data, error } = await supabaseClient
+        .from("experiments")
+        .select("id, key, description, variants, is_active, created_at")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return (data ?? []) as Experiment[];
+    },
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
+function useExperimentAssignments(enabled: boolean) {
+  return useQuery({
+    queryKey: ["admin", "experiment-assignments"],
+    queryFn: async () => {
+      const { data, error } = await supabaseClient
+        .from("experiment_assignments")
+        .select("experiment_key");
+
+      if (error) throw error;
+      return (data ?? []) as ExperimentAssignment[];
+    },
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
 // ─── Emails Data Hooks ────────────────────────────────────────────────
 
 function useEmailStats(enabled: boolean) {
@@ -554,6 +630,7 @@ function GrowthTab({ enabled, locale }: { enabled: boolean; locale: string }) {
   const { data: referralStats, isLoading: referralLoading } = useReferralStats(enabled);
   const { data: shareData, isLoading: shareLoading } = useShareActivity(locale, enabled);
   const { data: topReferrers, isLoading: referrersLoading } = useTopReferrers(enabled);
+  const { data: subscriptionStats, isLoading: subscriptionLoading } = useSubscriptionStats(enabled);
 
   const { containerVariants, rowVariants, animationKey } = useStaggerAnimation([...FUNNEL_CARDS]);
   const shareChartConfig = useMemo(() => SHARE_CHART_CONFIG, []);
@@ -645,6 +722,27 @@ function GrowthTab({ enabled, locale }: { enabled: boolean; locale: string }) {
             )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* ── Subscriptions Stats ─────────────────────────────────── */}
+      <div className="space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          {tAdmin("marketing.subscriptions")}
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <SimpleStatCard
+            icon={UsersIcon}
+            label={tAdmin("marketing.freeUsers")}
+            value={formatNumber(subscriptionStats?.freeUsers ?? 0)}
+            loading={subscriptionLoading}
+          />
+          <SimpleStatCard
+            icon={ActivityIcon}
+            label={tAdmin("marketing.proUsers")}
+            value={formatNumber(subscriptionStats?.proUsers ?? 0)}
+            loading={subscriptionLoading}
+          />
+        </div>
       </div>
 
       {/* ── Top Referrers Table ─────────────────────────────────── */}
@@ -1004,6 +1102,90 @@ function EmailsTab({ enabled }: { enabled: boolean }) {
   );
 }
 
+// ─── Tab: Experiments ─────────────────────────────────────────────────
+
+function ExperimentsTab({ enabled }: { enabled: boolean }) {
+  const { tAdmin } = useAdminTranslation();
+
+  const { data: experiments, isLoading: experimentsLoading } = useExperiments(enabled);
+  const { data: assignments, isLoading: assignmentsLoading } = useExperimentAssignments(enabled);
+
+  const assignmentCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const a of assignments ?? []) {
+      counts[a.experiment_key] = (counts[a.experiment_key] ?? 0) + 1;
+    }
+    return counts;
+  }, [assignments]);
+
+  const isLoading = experimentsLoading || assignmentsLoading;
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>{tAdmin("marketing.experimentsTitle")}</CardTitle>
+          <CardDescription>{tAdmin("marketing.experimentsSubtitle")}</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <LoadingBeam className="py-8" />
+          ) : !experiments?.length ? (
+            <p className="px-6 py-8 text-center text-sm text-muted-foreground">
+              {tAdmin("marketing.noExperiments")}
+            </p>
+          ) : (
+            <div className="divide-y">
+              <div className="flex items-center gap-3 px-6 py-2 text-xs font-medium text-muted-foreground">
+                <div className="flex-1">{tAdmin("marketing.experimentKey")}</div>
+                <div className="flex-1">{tAdmin("marketing.experimentDescription")}</div>
+                <div className="w-36">{tAdmin("marketing.experimentVariants")}</div>
+                <div className="w-20 text-center">{tAdmin("marketing.experimentActive")}</div>
+                <div className="w-24 text-right">{tAdmin("marketing.experimentAssignments")}</div>
+              </div>
+              {experiments.map((exp, index) => (
+                <motion.div
+                  key={exp.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.04, duration: 0.2 }}
+                  className="flex items-center gap-3 px-6 py-3"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-mono font-medium truncate">{exp.key}</p>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-muted-foreground truncate">
+                      {exp.description ?? "—"}
+                    </p>
+                  </div>
+                  <div className="w-36 flex flex-wrap gap-1">
+                    {(Array.isArray(exp.variants) ? exp.variants : []).map((v) => (
+                      <Badge key={v} variant="secondary" className="text-xs">
+                        {v}
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="w-20 text-center">
+                    <Badge variant={exp.is_active ? "default" : "outline"} className="text-xs">
+                      {exp.is_active
+                        ? tAdmin("status.active")
+                        : tAdmin("status.inactive")}
+                    </Badge>
+                  </div>
+                  <div className="w-24 text-right tabular-nums text-sm">
+                    {formatNumber(assignmentCounts[exp.key] ?? 0)}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ─── AdminMarketing Page ──────────────────────────────────────────────
 
 export function AdminMarketing() {
@@ -1039,6 +1221,7 @@ export function AdminMarketing() {
           <TabsTrigger value="growth">{tAdmin("marketing.tabGrowth")}</TabsTrigger>
           <TabsTrigger value="retention">{tAdmin("marketing.tabRetention")}</TabsTrigger>
           <TabsTrigger value="emails">{tAdmin("marketing.tabEmails")}</TabsTrigger>
+          <TabsTrigger value="experiments">{tAdmin("marketing.tabExperiments")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="growth" className="mt-6">
@@ -1051,6 +1234,10 @@ export function AdminMarketing() {
 
         <TabsContent value="emails" className="mt-6">
           <EmailsTab enabled={canViewGrowth && activeTab === "emails"} />
+        </TabsContent>
+
+        <TabsContent value="experiments" className="mt-6">
+          <ExperimentsTab enabled={canViewGrowth && activeTab === "experiments"} />
         </TabsContent>
       </Tabs>
     </div>

@@ -91,6 +91,12 @@ const ChatFAB = lazy(() => import("./modules/ai-chat").then(m => ({ default: m.C
 const OnboardingProvider = lazy(() => import("./modules/onboarding").then(m => ({ default: m.OnboardingProvider })));
 const OnboardingChecklistFAB = lazy(() => import("./modules/onboarding/components/OnboardingChecklist").then(m => ({ default: m.OnboardingChecklist })));
 
+// Tools pages
+const ExpenseCalculator = lazy(() => import("./pages/tools/expense-calculator"));
+
+// Pricing page
+const PricingPage = lazy(() => import("./pages/pricing"));
+
 // Legal pages
 const PrivacyPage = lazy(() => import("./pages/privacy").then(m => ({ default: m.PrivacyPage })));
 const TermsPage = lazy(() => import("./pages/terms").then(m => ({ default: m.TermsPage })));
@@ -343,6 +349,20 @@ function App() {
                     <Route path="/contact" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <ContactPage />
+                      </Suspense>
+                    } />
+
+                    {/* Public tools - no auth required */}
+                    <Route path="/tools/expense-calculator" element={
+                      <Suspense fallback={null}>
+                        <ExpenseCalculator />
+                      </Suspense>
+                    } />
+
+                    {/* Pricing page - public */}
+                    <Route path="/pricing" element={
+                      <Suspense fallback={null}>
+                        <PricingPage />
                       </Suspense>
                     } />
 

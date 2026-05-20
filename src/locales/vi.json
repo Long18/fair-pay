@@ -1032,69 +1032,6 @@
         "button": "Hoàn tác"
     },
     "onboarding": {
-        "welcome": {
-            "title": "Chào mừng đến FairPay",
-            "description": "Hãy để chúng tôi hướng dẫn bạn! Tour nhanh này sẽ giúp bạn tận dụng tối đa FairPay."
-        },
-        "dashboard": {
-            "title": "Bảng điều khiển",
-            "description": "Đây là trang chính của bạn. Xem số dư, hoạt động gần đây và lịch sử thanh toán tại đây."
-        },
-        "addExpense": {
-            "title": "Thêm chi phí",
-            "description": "Nhấn nút + bất cứ lúc nào để thêm chi phí chia sẻ mới."
-        },
-        "connections": {
-            "title": "Nhóm & Bạn bè",
-            "description": "Quản lý nhóm và bạn bè tại đây. Tạo nhóm cho chuyến đi, bạn cùng phòng hoặc chi phí chung."
-        },
-        "theme": {
-            "title": "Tùy chỉnh giao diện",
-            "description": "Chọn từ 8+ bảng màu và chuyển đổi giữa chế độ sáng, tối hoặc hệ thống."
-        },
-        "payments": {
-            "title": "Phương thức thanh toán",
-            "description": "FairPay hỗ trợ MoMo, SePay, VietQR và chuyển khoản ngân hàng để thanh toán dễ dàng."
-        },
-        "notifications": {
-            "title": "Cập nhật thông báo",
-            "description": "Nhận thông báo khi có chi phí mới, thanh toán hoặc lời mời kết bạn."
-        },
-        "language": {
-            "title": "Chuyển ngôn ngữ",
-            "description": "FairPay có sẵn bằng tiếng Anh và tiếng Việt. Chuyển đổi bất cứ lúc nào từ đây."
-        },
-        "completion": {
-            "title": "Bạn đã sẵn sàng!",
-            "description": "Bạn đã sẵn sàng chia sẻ chi phí công bằng. Chúc bạn sử dụng FairPay vui vẻ!"
-        },
-        "actions": {
-            "next": "Tiếp theo",
-            "back": "Quay lại",
-            "skip": "Bỏ qua",
-            "restart": "Khởi động lại hướng dẫn",
-            "done": "Hoàn tất",
-            "tryIt": "Thử ngay",
-            "continue": "Tiếp tục"
-        },
-        "interactionMode": {
-            "status": "Bước {{current}} / {{total}}",
-            "stepProgress": "Bước {{current}} / {{total}}"
-        }
-    },
-    "referrals": {
-        "title": "Mời bạn bè",
-        "yourCode": "Mã giới thiệu của bạn",
-        "shareMessage": "Cùng dùng FairPay với mình — cách chia tiền dễ nhất!",
-        "copyLink": "Sao chép liên kết",
-        "copied": "Đã sao chép liên kết!",
-        "stats": {
-            "invited": "Bạn đã mời",
-            "signedUp": "Đã đăng ký",
-            "active": "Đang hoạt động"
-        }
-    },
-    "onboarding": {
         "checklist": {
             "title": "Bắt đầu với FairPay",
             "progress": "{{completed}} / {{total}} bước hoàn thành",
@@ -1112,6 +1049,18 @@
             "expenseDesc": "Ghi lại khoản chi chung và chia hợp lý",
             "settle": "Thanh toán một khoản nợ",
             "settleDesc": "Trả nợ hoặc nhận lại tiền của bạn"
+        }
+    },
+    "referrals": {
+        "title": "Mời bạn bè",
+        "yourCode": "Mã giới thiệu của bạn",
+        "shareMessage": "Cùng dùng FairPay với mình — cách chia tiền dễ nhất!",
+        "copyLink": "Sao chép liên kết",
+        "copied": "Đã sao chép liên kết!",
+        "stats": {
+            "invited": "Bạn đã mời",
+            "signedUp": "Đã đăng ký",
+            "active": "Đang hoạt động"
         }
     },
     "emptyState": {
@@ -1153,5 +1102,66 @@
     "joinBanner": {
         "text": "Chia sẻ chi phí dễ dàng cùng bạn bè",
         "cta": "Dùng FairPay miễn phí"
+    },
+    "experiments": {
+        "tabLabel": "Thử nghiệm",
+        "title": "Thử nghiệm A/B",
+        "subtitle": "Các thử nghiệm đang chạy và phân bổ biến thể",
+        "key": "Mã thử nghiệm",
+        "description": "Mô tả",
+        "variants": "Biến thể",
+        "active": "Đang hoạt động",
+        "assignments": "Lượt phân bổ",
+        "noExperiments": "Chưa có thử nghiệm nào",
+        "inviteCopyControl": "Mời bạn bè",
+        "inviteCopyTreatment": "Chia tiền cùng bạn ngay"
+    },
+    "tools": {
+        "calculator": {
+            "seoTitle": "FairPay — Chia tiền miễn phí",
+            "seoDescription": "Tính toán chia tiền nhanh chóng và dễ dàng với FairPay. Không cần đăng nhập.",
+            "title": "Chia tiền miễn phí",
+            "subtitle": "Tính toán chia tiền tức thì — không cần đăng nhập",
+            "inputTitle": "Nhập thông tin",
+            "totalAmount": "Tổng tiền",
+            "numberOfPeople": "Số người",
+            "splitByRatio": "Chia theo tỉ lệ",
+            "ratios": "Tỉ lệ từng người",
+            "result": "Kết quả",
+            "totalLabel": "Tổng",
+            "enterAmount": "Nhập số tiền để xem kết quả",
+            "saveCta": "Lưu và theo dõi khoản chia tiền này với FairPay",
+            "saveButton": "Lưu vào FairPay — Miễn phí",
+            "signIn": "Đăng nhập"
+        }
+    },
+    "billing": {
+        "pricingTitle": "Chọn gói phù hợp",
+        "pricingSubtitle": "Bắt đầu miễn phí, nâng cấp khi cần",
+        "freePlan": "Miễn phí",
+        "month": "tháng",
+        "currentPlan": "Gói hiện tại",
+        "switchToFree": "Dùng gói Free",
+        "upgradeToPro": "Nâng cấp lên Pro",
+        "alreadyPro": "Đang dùng Pro",
+        "backToApp": "← Về trang chính",
+        "paywallTitle": "Nâng cấp lên Pro",
+        "paywallDescription": "Bạn đã đạt giới hạn của gói Free. Nâng cấp để tiếp tục sử dụng tính năng này.",
+        "paywallDismiss": "Để sau",
+        "paywallUpgrade": "Xem gói Pro",
+        "mockPayment": "Tính năng thanh toán đang được phát triển. Vui lòng liên hệ admin.",
+        "freeFeature1": "Tối đa 5 nhóm",
+        "freeFeature2": "Lịch sử 3 tháng",
+        "freeFeature3": "Chia tiền cơ bản",
+        "freeFeature4": "Thanh toán ngang hàng",
+        "proFeature1": "Nhóm không giới hạn",
+        "proFeature2": "Lịch sử không giới hạn",
+        "proFeature3": "Chia theo tỉ lệ nâng cao",
+        "proFeature4": "Xuất dữ liệu CSV/PDF",
+        "proFeature5": "Thông báo đẩy ưu tiên",
+        "proFeature6": "Hỗ trợ ưu tiên",
+        "subscriptionStats": "Đăng ký",
+        "freeUsers": "Người dùng Free",
+        "proUsers": "Người dùng Pro"
     }
 }

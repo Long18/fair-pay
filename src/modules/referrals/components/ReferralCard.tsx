@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CopyIcon, ShareIcon } from "@/components/ui/icons";
 import { useMyReferralCode } from "../hooks/use-referral";
+import { useExperiment } from "@/modules/experiments";
 
 export function ReferralCard() {
   const { t } = useTranslation();
   const { data: code, isLoading } = useMyReferralCode();
   const [copying, setCopying] = useState(false);
+  const variant = useExperiment("onboarding_invite_copy");
 
   const referralLink = code
     ? `${window.location.origin}/register?ref=${code}`
@@ -52,7 +54,9 @@ export function ReferralCard() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ShareIcon className="h-4 w-4 text-muted-foreground" />
-          {t("referrals.title", "Invite Friends")}
+          {variant === "treatment"
+            ? t("experiments.inviteCopyTreatment", "Chia tiền cùng bạn ngay")
+            : t("referrals.title", "Invite Friends")}
         </CardTitle>
         <CardDescription>
           {t("referrals.shareMessage", "Join me on FairPay — the easiest way to split expenses!")}

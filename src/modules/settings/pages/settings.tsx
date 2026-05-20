@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { useUserSettings } from '../hooks/use-user-settings';
 import { DisplaySettingsForm, NotificationSettingsForm, PrivacySettingsForm } from '../components';
 import { SettingsIcon, BellIcon, LockIcon, RotateCcwIcon } from "@/components/ui/icons";
@@ -10,12 +11,14 @@ import { ReminderSettingsComponent } from '@/components/settings/reminder-settin
 import { useOnboarding } from '@/modules/onboarding';
 import { useHaptics } from '@/hooks/use-haptics';
 import { ReferralCard, ReferralStats } from '@/modules/referrals';
+import { usePushNotification } from '@/modules/notifications/hooks/use-push-notification';
 
 export function SettingsPage() {
   const { settings, isLoading, isUpdating, saveSettings } = useUserSettings();
   const { t } = useTranslation();
   const { restart } = useOnboarding();
   const { tap } = useHaptics();
+  const { state: pushState, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotification();
 
   if (isLoading) {
     return (
@@ -87,6 +90,40 @@ export function SettingsPage() {
           </Card>
 
           <ReminderSettingsComponent />
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('notifications.push.title')}</CardTitle>
+              <CardDescription>{t('notifications.push.description')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm text-muted-foreground">
+                  {pushState === 'subscribed'
+                    ? t('notifications.push.enabled')
+                    : pushState === 'denied'
+                    ? t('notifications.push.denied')
+                    : pushState === 'unsupported'
+                    ? t('notifications.push.unsupported')
+                    : t('notifications.push.enable')}
+                </span>
+                {pushState !== 'unsupported' && pushState !== 'denied' && (
+                  <Switch
+                    checked={pushState === 'subscribed'}
+                    disabled={pushState === 'requesting'}
+                    onCheckedChange={(checked) => {
+                      tap();
+                      if (checked) {
+                        pushSubscribe();
+                      } else {
+                        pushUnsubscribe();
+                      }
+                    }}
+                  />
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="privacy">

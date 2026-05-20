@@ -1033,69 +1033,6 @@
         "button": "Undo"
     },
     "onboarding": {
-        "welcome": {
-            "title": "Welcome to FairPay",
-            "description": "Let us show you around! This quick tour will help you get the most out of FairPay."
-        },
-        "dashboard": {
-            "title": "Your Dashboard",
-            "description": "This is your home base. View balances, recent activity, and settled history all in one place."
-        },
-        "addExpense": {
-            "title": "Add an Expense",
-            "description": "Tap the + button anytime to quickly add a new shared expense."
-        },
-        "connections": {
-            "title": "Groups & Friends",
-            "description": "Manage your groups and friends here. Create groups for trips, roommates, or any shared expenses."
-        },
-        "theme": {
-            "title": "Customize Your Theme",
-            "description": "Choose from 8+ color themes and switch between light, dark, or system mode."
-        },
-        "payments": {
-            "title": "Payment Methods",
-            "description": "FairPay supports MoMo, SePay, VietQR, and bank transfers for easy settlements."
-        },
-        "notifications": {
-            "title": "Stay Updated",
-            "description": "Get notified when expenses are added, payments are received, or friends send requests."
-        },
-        "language": {
-            "title": "Switch Language",
-            "description": "FairPay is available in English and Vietnamese. Switch anytime from here."
-        },
-        "completion": {
-            "title": "You're All Set!",
-            "description": "You're ready to start splitting expenses fairly. Have fun using FairPay!"
-        },
-        "actions": {
-            "next": "Next",
-            "back": "Back",
-            "skip": "Skip",
-            "restart": "Restart Tutorial",
-            "done": "Done",
-            "tryIt": "Try it",
-            "continue": "Continue"
-        },
-        "interactionMode": {
-            "status": "Step {{current}} of {{total}}",
-            "stepProgress": "Step {{current}} of {{total}}"
-        }
-    },
-    "referrals": {
-        "title": "Invite Friends",
-        "yourCode": "Your referral code",
-        "shareMessage": "Join me on FairPay — the easiest way to split expenses!",
-        "copyLink": "Copy link",
-        "copied": "Link copied!",
-        "stats": {
-            "invited": "Friends invited",
-            "signedUp": "Signed up",
-            "active": "Active"
-        }
-    },
-    "onboarding": {
         "checklist": {
             "title": "Get started with FairPay",
             "progress": "{{completed}} of {{total}} steps complete",
@@ -1113,6 +1050,18 @@
             "expenseDesc": "Log a shared cost and split it fairly",
             "settle": "Settle a debt",
             "settleDesc": "Pay back what you owe or get paid"
+        }
+    },
+    "referrals": {
+        "title": "Invite Friends",
+        "yourCode": "Your referral code",
+        "shareMessage": "Join me on FairPay — the easiest way to split expenses!",
+        "copyLink": "Copy link",
+        "copied": "Link copied!",
+        "stats": {
+            "invited": "Friends invited",
+            "signedUp": "Signed up",
+            "active": "Active"
         }
     },
     "emptyState": {
@@ -1154,5 +1103,66 @@
     "joinBanner": {
         "text": "Split expenses with friends",
         "cta": "Try FairPay free"
+    },
+    "experiments": {
+        "tabLabel": "Experiments",
+        "title": "A/B Experiments",
+        "subtitle": "Active experiments and variant assignments",
+        "key": "Experiment Key",
+        "description": "Description",
+        "variants": "Variants",
+        "active": "Active",
+        "assignments": "Assignments",
+        "noExperiments": "No experiments found",
+        "inviteCopyControl": "Mời bạn bè",
+        "inviteCopyTreatment": "Chia tiền cùng bạn ngay"
+    },
+    "tools": {
+        "calculator": {
+            "seoTitle": "FairPay — Free Expense Splitter",
+            "seoDescription": "Split expenses quickly and easily with FairPay. No login required.",
+            "title": "Free Expense Splitter",
+            "subtitle": "Calculate expense splits instantly — no login required",
+            "inputTitle": "Enter details",
+            "totalAmount": "Total amount",
+            "numberOfPeople": "Number of people",
+            "splitByRatio": "Split by custom ratio",
+            "ratios": "Ratios per person",
+            "result": "Result",
+            "totalLabel": "Total",
+            "enterAmount": "Enter an amount to see results",
+            "saveCta": "Save and track this expense split with FairPay",
+            "saveButton": "Save to FairPay — Free",
+            "signIn": "Sign in"
+        }
+    },
+    "billing": {
+        "pricingTitle": "Choose your plan",
+        "pricingSubtitle": "Start for free, upgrade when you need",
+        "freePlan": "Free",
+        "month": "month",
+        "currentPlan": "Current plan",
+        "switchToFree": "Use Free plan",
+        "upgradeToPro": "Upgrade to Pro",
+        "alreadyPro": "Already on Pro",
+        "backToApp": "← Back to app",
+        "paywallTitle": "Upgrade to Pro",
+        "paywallDescription": "You've reached the free plan limit. Upgrade to continue using this feature.",
+        "paywallDismiss": "Maybe later",
+        "paywallUpgrade": "View Pro plan",
+        "mockPayment": "Payment feature is coming soon. Please contact admin.",
+        "freeFeature1": "Up to 5 groups",
+        "freeFeature2": "3 months history",
+        "freeFeature3": "Basic expense splitting",
+        "freeFeature4": "Peer-to-peer payments",
+        "proFeature1": "Unlimited groups",
+        "proFeature2": "Unlimited history",
+        "proFeature3": "Advanced ratio splitting",
+        "proFeature4": "Export CSV/PDF",
+        "proFeature5": "Priority push notifications",
+        "proFeature6": "Priority support",
+        "subscriptionStats": "Subscriptions",
+        "freeUsers": "Free users",
+        "proUsers": "Pro users"
     }
 }
