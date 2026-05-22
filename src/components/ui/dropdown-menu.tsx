@@ -1,6 +1,6 @@
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import * as React from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 
 import { useHaptics } from "@/hooks/use-haptics";
 import { useReducedMotion } from "@/hooks/ui/use-reduced-motion";
@@ -9,8 +9,6 @@ import { cn } from "@/lib/utils";
 
 import { CheckIcon, ChevronRightIcon, CircleIcon } from "@/components/ui/icons";
 
-const DropdownMenuOpenContext = React.createContext(false);
-
 function DropdownMenu({
   onOpenChange,
   open: openProp,
@@ -18,9 +16,6 @@ function DropdownMenu({
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
   const { dropdownOpen, dropdownClose } = useHaptics();
-  const [internalOpen, setInternalOpen] = React.useState(defaultOpen ?? false);
-  const isControlled = openProp !== undefined;
-  const open = isControlled ? openProp : internalOpen;
 
   const handleOpenChange = React.useCallback(
     (next: boolean) => {
@@ -29,21 +24,19 @@ function DropdownMenu({
       } else {
         dropdownClose();
       }
-      if (!isControlled) setInternalOpen(next);
       onOpenChange?.(next);
     },
-    [dropdownClose, dropdownOpen, isControlled, onOpenChange]
+    [dropdownClose, dropdownOpen, onOpenChange]
   );
 
   return (
-    <DropdownMenuOpenContext.Provider value={open}>
-      <DropdownMenuPrimitive.Root
-        data-slot="dropdown-menu"
-        open={open}
-        onOpenChange={handleOpenChange}
-        {...props}
-      />
-    </DropdownMenuOpenContext.Provider>
+    <DropdownMenuPrimitive.Root
+      data-slot="dropdown-menu"
+      {...(openProp !== undefined ? { open: openProp } : {})}
+      {...(defaultOpen !== undefined ? { defaultOpen } : {})}
+      onOpenChange={handleOpenChange}
+      {...props}
+    />
   );
 }
 
@@ -72,7 +65,6 @@ function DropdownMenuContent({
   children,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
-  const open = React.useContext(DropdownMenuOpenContext);
   const reducedMotion = useReducedMotion();
 
   return (
@@ -80,27 +72,20 @@ function DropdownMenuContent({
       <DropdownMenuPrimitive.Content
         data-slot="dropdown-menu-content"
         sideOffset={sideOffset}
-        forceMount
         className={cn(
           "bg-popover text-popover-foreground z-50 max-h-(--radix-dropdown-menu-content-available-height) min-w-[8rem] origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border p-1 shadow-md",
           className
         )}
         {...props}
       >
-        <AnimatePresence>
-          {open && (
-            <motion.div
-              key="dropdown-content"
-              initial={reducedMotion ? false : { opacity: 0, scale: 0.96, y: -4 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={reducedMotion ? {} : { opacity: 0, scale: 0.96, y: -4 }}
-              transition={SPRING_DEFAULT}
-              style={{ display: "contents" }}
-            >
-              {children}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <motion.div
+          initial={reducedMotion ? false : { opacity: 0, scale: 0.96, y: -4 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={SPRING_DEFAULT}
+          style={{ display: "contents" }}
+        >
+          {children}
+        </motion.div>
       </DropdownMenuPrimitive.Content>
     </DropdownMenuPrimitive.Portal>
   );

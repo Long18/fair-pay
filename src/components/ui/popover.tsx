@@ -2,13 +2,11 @@
 
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import * as React from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 
 import { useReducedMotion } from "@/hooks/ui/use-reduced-motion";
 import { SPRING_DEFAULT } from "@/lib/animation";
 import { cn } from "@/lib/utils";
-
-const PopoverOpenContext = React.createContext(false);
 
 function Popover({
   open: openProp,
@@ -16,27 +14,14 @@ function Popover({
   onOpenChange,
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Root>) {
-  const [internalOpen, setInternalOpen] = React.useState(defaultOpen ?? false);
-  const isControlled = openProp !== undefined;
-  const open = isControlled ? openProp : internalOpen;
-
-  const handleOpenChange = React.useCallback(
-    (next: boolean) => {
-      if (!isControlled) setInternalOpen(next);
-      onOpenChange?.(next);
-    },
-    [isControlled, onOpenChange]
-  );
-
   return (
-    <PopoverOpenContext.Provider value={open}>
-      <PopoverPrimitive.Root
-        data-slot="popover"
-        open={open}
-        onOpenChange={handleOpenChange}
-        {...props}
-      />
-    </PopoverOpenContext.Provider>
+    <PopoverPrimitive.Root
+      data-slot="popover"
+      {...(openProp !== undefined ? { open: openProp } : {})}
+      {...(defaultOpen !== undefined ? { defaultOpen } : {})}
+      onOpenChange={onOpenChange}
+      {...props}
+    />
   );
 }
 
@@ -53,7 +38,6 @@ function PopoverContent({
   children,
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Content>) {
-  const open = React.useContext(PopoverOpenContext);
   const reducedMotion = useReducedMotion();
 
   return (
@@ -62,27 +46,20 @@ function PopoverContent({
         data-slot="popover-content"
         align={align}
         sideOffset={sideOffset}
-        forceMount
         className={cn(
           "bg-popover text-popover-foreground z-50 w-72 origin-(--radix-popover-content-transform-origin) rounded-md border p-4 shadow-md outline-hidden",
           className
         )}
         {...props}
       >
-        <AnimatePresence>
-          {open && (
-            <motion.div
-              key="popover-content"
-              initial={reducedMotion ? false : { opacity: 0, scale: 0.96, y: -4 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={reducedMotion ? {} : { opacity: 0, scale: 0.96, y: -4 }}
-              transition={SPRING_DEFAULT}
-              style={{ display: "contents" }}
-            >
-              {children}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <motion.div
+          initial={reducedMotion ? false : { opacity: 0, scale: 0.96, y: -4 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={SPRING_DEFAULT}
+          style={{ display: "contents" }}
+        >
+          {children}
+        </motion.div>
       </PopoverPrimitive.Content>
     </PopoverPrimitive.Portal>
   );
