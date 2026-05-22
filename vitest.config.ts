@@ -8,6 +8,12 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom', // Enable for frontend tests
     setupFiles: ['./tests/frontend-setup.ts'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/.claude/worktrees/**',
+      '**/.git/**',
+    ],
     testTimeout: 30000,
     hookTimeout: 30000,
     fileParallelism: false,

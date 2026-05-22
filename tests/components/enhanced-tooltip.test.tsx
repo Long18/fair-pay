@@ -1,5 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -34,8 +33,6 @@ describe('Enhanced Tooltip Component', () => {
     });
 
     it('should show tooltip on hover with 300ms delay', async () => {
-      const user = userEvent.setup({ delay: null });
-      
       render(
         <Tooltip>
           <TooltipTrigger asChild>
@@ -46,20 +43,22 @@ describe('Enhanced Tooltip Component', () => {
       );
 
       const trigger = screen.getByRole('button', { name: 'Hover me' });
-      
-      // Hover over trigger
-      await user.hover(trigger);
-      
+
+      act(() => {
+        fireEvent.pointerMove(trigger);
+        fireEvent.pointerEnter(trigger);
+        fireEvent.mouseEnter(trigger);
+      });
+
       // Should not show immediately
       expect(screen.queryByText('Helpful information')).not.toBeInTheDocument();
-      
+
       // Advance timers by 300ms
-      vi.advanceTimersByTime(300);
-      
-      // Should show after delay
-      await waitFor(() => {
-        expect(screen.getByText('Helpful information')).toBeInTheDocument();
+      act(() => {
+        vi.advanceTimersByTime(300);
       });
+
+      expect(screen.getAllByText('Helpful information').length).toBeGreaterThan(0);
     });
 
     it('should support different positioning sides', async () => {
@@ -76,7 +75,7 @@ describe('Enhanced Tooltip Component', () => {
 
       // Test different sides
       const sides: Array<'top' | 'right' | 'bottom' | 'left'> = ['top', 'right', 'bottom', 'left'];
-      
+
       for (const side of sides) {
         rerender(
           <Tooltip>
@@ -127,9 +126,7 @@ describe('Enhanced Tooltip Component', () => {
       // Mock mobile environment for this test
       const { useIsMobile } = await import('@/hooks/ui/use-mobile');
       vi.mocked(useIsMobile).mockReturnValue(true);
-      
-      const user = userEvent.setup({ delay: null });
-      
+
       render(
         <Tooltip>
           <TooltipTrigger asChild>
@@ -141,21 +138,17 @@ describe('Enhanced Tooltip Component', () => {
 
       const trigger = screen.getByRole('button', { name: 'Tap me' });
       
-      // Tap trigger
-      await user.click(trigger);
-      
-      // Should show immediately on mobile (no delay)
-      await waitFor(() => {
-        expect(screen.getByText('Mobile tooltip')).toBeInTheDocument();
+      act(() => {
+        fireEvent.click(trigger);
       });
+
+      expect(screen.getAllByText('Mobile tooltip').length).toBeGreaterThan(0);
     });
 
     it('should auto-dismiss after 5 seconds on mobile', async () => {
       // Mock mobile environment for this test
       const { useIsMobile } = await import('@/hooks/ui/use-mobile');
       vi.mocked(useIsMobile).mockReturnValue(true);
-      
-      const user = userEvent.setup({ delay: null });
       
       render(
         <Tooltip>
@@ -168,28 +161,24 @@ describe('Enhanced Tooltip Component', () => {
 
       const trigger = screen.getByRole('button', { name: 'Tap me' });
       
-      // Tap to show tooltip
-      await user.click(trigger);
-      
-      await waitFor(() => {
-        expect(screen.getByText('Auto-dismiss tooltip')).toBeInTheDocument();
+      act(() => {
+        fireEvent.click(trigger);
       });
-      
+
+      expect(screen.getAllByText('Auto-dismiss tooltip').length).toBeGreaterThan(0);
+
       // Advance time by 5 seconds
-      vi.advanceTimersByTime(5000);
-      
-      // Should be dismissed
-      await waitFor(() => {
-        expect(screen.queryByText('Auto-dismiss tooltip')).not.toBeInTheDocument();
+      act(() => {
+        vi.advanceTimersByTime(5000);
       });
+
+      expect(screen.queryByText('Auto-dismiss tooltip')).not.toBeInTheDocument();
     });
 
     it('should dismiss on tap outside', async () => {
       // Mock mobile environment for this test
       const { useIsMobile } = await import('@/hooks/ui/use-mobile');
       vi.mocked(useIsMobile).mockReturnValue(true);
-      
-      const user = userEvent.setup({ delay: null });
       
       render(
         <div>
@@ -206,20 +195,17 @@ describe('Enhanced Tooltip Component', () => {
       const trigger = screen.getByRole('button', { name: 'Tap me' });
       const outsideButton = screen.getByRole('button', { name: 'Outside button' });
       
-      // Tap to show tooltip
-      await user.click(trigger);
-      
-      await waitFor(() => {
-        expect(screen.getByText('Dismissible tooltip')).toBeInTheDocument();
+      act(() => {
+        fireEvent.click(trigger);
       });
-      
-      // Tap outside
-      await user.click(outsideButton);
-      
-      // Should be dismissed
-      await waitFor(() => {
-        expect(screen.queryByText('Dismissible tooltip')).not.toBeInTheDocument();
+
+      expect(screen.getAllByText('Dismissible tooltip').length).toBeGreaterThan(0);
+
+      act(() => {
+        fireEvent.click(outsideButton);
       });
+
+      expect(screen.queryByText('Dismissible tooltip')).not.toBeInTheDocument();
     });
   });
 
@@ -260,8 +246,6 @@ describe('Enhanced Tooltip Component', () => {
 
   describe('Backward Compatibility', () => {
     it('should support explicit delayDuration override', async () => {
-      const user = userEvent.setup({ delay: null });
-      
       render(
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
@@ -273,13 +257,14 @@ describe('Enhanced Tooltip Component', () => {
 
       const trigger = screen.getByRole('button', { name: 'Instant tooltip' });
       
-      // Hover over trigger
-      await user.hover(trigger);
-      
-      // Should show immediately with 0ms delay
-      await waitFor(() => {
-        expect(screen.getByText('Shows instantly')).toBeInTheDocument();
+      act(() => {
+        fireEvent.pointerMove(trigger);
+        fireEvent.pointerEnter(trigger);
+        fireEvent.mouseEnter(trigger);
+        vi.advanceTimersByTime(0);
       });
+
+      expect(screen.getAllByText('Shows instantly').length).toBeGreaterThan(0);
     });
 
     it('should work with existing TooltipProvider usage', () => {
