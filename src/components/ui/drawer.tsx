@@ -2,44 +2,13 @@
 
 import * as React from "react";
 import { Drawer as DrawerPrimitive } from "vaul";
-import { AnimatePresence, motion } from "framer-motion";
 
-import { SPRING_OVERLAY } from "@/lib/animation";
-import { useReducedMotion } from "@/hooks/ui/use-reduced-motion";
 import { cn } from "@/lib/utils";
 
-// Internal context to pass drawer open state down to DrawerContent
-const DrawerOpenContext = React.createContext(false);
-
 function Drawer({
-  open,
-  onOpenChange,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
-  const [isOpen, setIsOpen] = React.useState(open ?? false);
-
-  React.useEffect(() => {
-    if (open !== undefined) setIsOpen(open);
-  }, [open]);
-
-  const handleOpenChange = React.useCallback(
-    (val: boolean) => {
-      if (open === undefined) setIsOpen(val);
-      onOpenChange?.(val);
-    },
-    [open, onOpenChange]
-  );
-
-  return (
-    <DrawerOpenContext.Provider value={isOpen}>
-      <DrawerPrimitive.Root
-        data-slot="drawer"
-        open={open}
-        onOpenChange={handleOpenChange}
-        {...props}
-      />
-    </DrawerOpenContext.Provider>
-  );
+  return <DrawerPrimitive.Root data-slot="drawer" {...props} />;
 }
 
 function DrawerTrigger({
@@ -67,7 +36,10 @@ function DrawerOverlay({
   return (
     <DrawerPrimitive.Overlay
       data-slot="drawer-overlay"
-      className={cn("fixed inset-0 z-50 bg-black/50", className)}
+      className={cn(
+        "fixed inset-0 z-50 bg-black/50 transition-opacity duration-200 data-[state=closed]:opacity-0 data-[state=open]:opacity-100",
+        className
+      )}
       {...props}
     />
   );
@@ -78,23 +50,9 @@ function DrawerContent({
   children,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Content>) {
-  const isOpen = React.useContext(DrawerOpenContext);
-  const reducedMotion = useReducedMotion();
-  const transition = reducedMotion ? { duration: 0 } : SPRING_OVERLAY;
-
   return (
     <DrawerPortal data-slot="drawer-portal">
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            className="fixed inset-0 z-50 bg-black/50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={transition}
-          />
-        )}
-      </AnimatePresence>
+      <DrawerOverlay />
       <DrawerPrimitive.Content
         data-slot="drawer-content"
         className={cn(

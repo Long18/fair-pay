@@ -33,7 +33,6 @@ import {
   ArrowLeftIcon,
   SettingsIcon,
   TrendingUpIcon,
-  RepeatIcon,
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useAdminTranslation } from "../i18n";

@@ -92,12 +92,6 @@ function RippleEffect({
 // Button
 // ---------------------------------------------------------------------------
 
-// Created once at module scope. Calling motion.create() inside render produces a
-// brand-new component type on every render, which forces React to remount the
-// subtree each time; framer-motion's mount effect then schedules a state update,
-// re-rendering and remounting again — an infinite loop (React error #185).
-const MotionSlot = motion.create(Slot);
-
 type ButtonProps = React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
@@ -143,25 +137,14 @@ function Button({
   );
 
   if (asChild) {
-    // When asChild, Slot uses React.Children.only — ripple cannot be added as
-    // a sibling child, so we use a plain Slot with motion wrapping only scale.
-    const motionProps = prefersReducedMotion
-      ? {}
-      : {
-          whileHover: disableHoverScale ? undefined : { scale: HOVER_SCALE },
-          whileTap: { scale: TAP_SCALE },
-          transition: SPRING_DEFAULT,
-        };
-
     return (
-      <MotionSlot
+      <Slot
         data-slot="button"
         className={cn(buttonVariants({ variant, size, className }))}
-        {...(motionProps as object)}
-        {...(props as object)}
+        {...props}
       >
         {children}
-      </MotionSlot>
+      </Slot>
     );
   }
 

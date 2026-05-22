@@ -1,11 +1,16 @@
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
-import { AnimatePresence, motion } from "framer-motion";
 import * as React from "react";
 
-import { SPRING_TOOLTIP } from "@/lib/animation";
-import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/ui/use-mobile";
+
+const TooltipMobileContext = React.createContext<{
+  isMobile: boolean;
+  onTriggerClick: () => void;
+}>({
+  isMobile: false,
+  onTriggerClick: () => {},
+});
 
 /**
  * TooltipProvider - Wraps tooltip components and provides global configuration
@@ -53,29 +58,45 @@ interface TooltipProps extends React.ComponentProps<typeof TooltipPrimitive.Root
 function Tooltip({
   children,
   delayDuration = 300,
+  open: openProp,
+  onOpenChange,
   ...props
 }: TooltipProps) {
   const isMobile = useIsMobile();
-  const [open, setOpen] = React.useState(false);
+  const [mobileOpen, setMobileOpen] = React.useState(false);
   const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isControlled = openProp !== undefined;
+  const resolvedOpen = isControlled ? openProp : mobileOpen;
 
-  // Handle mobile tap behavior
   React.useEffect(() => {
-    if (isMobile && open) {
-      // Auto-dismiss after 5 seconds on mobile
+    if (isMobile && resolvedOpen && !isControlled) {
       timeoutRef.current = setTimeout(() => {
-        setOpen(false);
+        setMobileOpen(false);
       }, 5000);
+
+      const handleDocumentClick = (event: MouseEvent) => {
+        const target = event.target instanceof HTMLElement ? event.target : null;
+        if (
+          target?.closest("[data-slot='tooltip-trigger']") ||
+          target?.closest("[data-slot='tooltip-content']")
+        ) {
+          return;
+        }
+
+        setMobileOpen(false);
+      };
+
+      document.addEventListener("click", handleDocumentClick);
 
       return () => {
         if (timeoutRef.current) {
           clearTimeout(timeoutRef.current);
         }
+        document.removeEventListener("click", handleDocumentClick);
       };
     }
-  }, [isMobile, open]);
+  }, [isControlled, isMobile, resolvedOpen]);
 
-  // Clean up timeout on unmount
   React.useEffect(() => {
     return () => {
       if (timeoutRef.current) {
@@ -84,17 +105,38 @@ function Tooltip({
     };
   }, []);
 
+  const handleOpenChange = React.useCallback(
+    (nextOpen: boolean) => {
+      if (isMobile && !isControlled) {
+        setMobileOpen(nextOpen);
+      }
+
+      onOpenChange?.(nextOpen);
+    },
+    [isControlled, isMobile, onOpenChange]
+  );
+
+  const mobileContext = React.useMemo(
+    () => ({
+      isMobile,
+      onTriggerClick: () => handleOpenChange(!resolvedOpen),
+    }),
+    [handleOpenChange, isMobile, resolvedOpen]
+  );
+
   return (
     <TooltipProvider delayDuration={delayDuration}>
-      <TooltipPrimitive.Root
-        data-slot="tooltip"
-        open={open}
-        onOpenChange={setOpen}
-        delayDuration={isMobile ? 0 : delayDuration}
-        {...props}
-      >
-        {children}
-      </TooltipPrimitive.Root>
+      <TooltipMobileContext.Provider value={mobileContext}>
+        <TooltipPrimitive.Root
+          data-slot="tooltip"
+          {...(isMobile || isControlled ? { open: resolvedOpen } : {})}
+          onOpenChange={handleOpenChange}
+          delayDuration={isMobile ? 0 : delayDuration}
+          {...props}
+        >
+          {children}
+        </TooltipPrimitive.Root>
+      </TooltipMobileContext.Provider>
     </TooltipProvider>
   );
 }
@@ -110,9 +152,29 @@ function Tooltip({
  * ```
  */
 function TooltipTrigger({
+  onClick,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
+  const { isMobile, onTriggerClick } = React.useContext(TooltipMobileContext);
+
+  const handleClick = React.useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      if (isMobile) {
+        onTriggerClick();
+      }
+
+      onClick?.(event);
+    },
+    [isMobile, onClick, onTriggerClick]
+  );
+
+  return (
+    <TooltipPrimitive.Trigger
+      data-slot="tooltip-trigger"
+      onClick={handleClick}
+      {...props}
+    />
+  );
 }
 
 interface TooltipContentProps extends React.ComponentProps<typeof TooltipPrimitive.Content> {
@@ -160,37 +222,25 @@ function TooltipContent({
   children,
   ...props
 }: TooltipContentProps) {
-  const reducedMotion = useReducedMotion();
-  const transition = reducedMotion ? { duration: 0 } : SPRING_TOOLTIP;
-
   return (
     <TooltipPrimitive.Portal>
-      <AnimatePresence>
-        <TooltipPrimitive.Content
-          data-slot="tooltip-content"
-          side={side}
-          sideOffset={sideOffset}
-          avoidCollisions={true}
-          collisionPadding={8}
-          className={cn(
-            "bg-primary text-primary-foreground z-50 w-fit origin-(--radix-tooltip-content-transform-origin) rounded-lg px-3 py-1.5 text-sm text-balance",
-            maxWidth && `max-w-[${maxWidth}]`,
-            className
-          )}
-          style={maxWidth ? { maxWidth } : undefined}
-          {...props}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.92 }}
-            transition={transition}
-          >
-            {children}
-            <TooltipPrimitive.Arrow className="bg-primary fill-primary z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px]" />
-          </motion.div>
-        </TooltipPrimitive.Content>
-      </AnimatePresence>
+      <TooltipPrimitive.Content
+        data-slot="tooltip-content"
+        side={side}
+        sideOffset={sideOffset}
+        avoidCollisions={true}
+        collisionPadding={8}
+        className={cn(
+          "bg-primary text-primary-foreground data-[state=delayed-open]:animate-in data-[state=instant-open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=delayed-open]:fade-in-0 data-[state=instant-open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=delayed-open]:zoom-in-95 data-[state=instant-open]:zoom-in-95 z-50 w-fit origin-(--radix-tooltip-content-transform-origin) rounded-lg px-3 py-1.5 text-sm text-balance",
+          maxWidth && `max-w-[${maxWidth}]`,
+          className
+        )}
+        style={maxWidth ? { maxWidth } : undefined}
+        {...props}
+      >
+        {children}
+        <TooltipPrimitive.Arrow className="bg-primary fill-primary z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px]" />
+      </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   );
 }

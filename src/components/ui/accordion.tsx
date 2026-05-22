@@ -1,12 +1,8 @@
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
 import { ChevronDownIcon } from "@/components/ui/icons";
 import * as React from "react";
-import { AnimatePresence, motion } from "framer-motion";
 
-import { useReducedMotion } from "@/hooks/ui/use-reduced-motion";
 import { cn } from "@/lib/utils";
-
-const AccordionItemOpenContext = React.createContext(false);
 
 function Accordion({
   ...props
@@ -18,29 +14,12 @@ function AccordionItem({
   className,
   ...props
 }: React.ComponentProps<typeof AccordionPrimitive.Item>) {
-  const [open, setOpen] = React.useState(false);
-  const itemRef = React.useRef<HTMLDivElement | null>(null);
-
-  React.useEffect(() => {
-    const el = itemRef.current;
-    if (!el) return;
-    setOpen(el.getAttribute("data-state") === "open");
-    const observer = new MutationObserver(() => {
-      setOpen(el.getAttribute("data-state") === "open");
-    });
-    observer.observe(el, { attributes: true, attributeFilter: ["data-state"] });
-    return () => observer.disconnect();
-  }, []);
-
   return (
-    <AccordionItemOpenContext.Provider value={open}>
-      <AccordionPrimitive.Item
-        ref={itemRef}
-        data-slot="accordion-item"
-        className={cn("border-b last:border-b-0", className)}
-        {...props}
-      />
-    </AccordionItemOpenContext.Provider>
+    <AccordionPrimitive.Item
+      data-slot="accordion-item"
+      className={cn("border-b last:border-b-0", className)}
+      {...props}
+    />
   );
 }
 
@@ -71,34 +50,13 @@ function AccordionContent({
   children,
   ...props
 }: React.ComponentProps<typeof AccordionPrimitive.Content>) {
-  const open = React.useContext(AccordionItemOpenContext);
-  const reducedMotion = useReducedMotion();
-
   return (
     <AccordionPrimitive.Content
       data-slot="accordion-content"
-      forceMount
-      className="text-sm"
+      className="data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 overflow-hidden text-sm"
       {...props}
     >
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            key="accordion-content"
-            initial={reducedMotion ? false : { height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={reducedMotion ? {} : { height: 0, opacity: 0 }}
-            transition={
-              reducedMotion
-                ? { duration: 0 }
-                : { type: "spring", stiffness: 280, damping: 26 }
-            }
-            style={{ overflow: "hidden" }}
-          >
-            <div className={cn("pt-0 pb-4", className)}>{children}</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div className={cn("pt-0 pb-4", className)}>{children}</div>
     </AccordionPrimitive.Content>
   );
 }
