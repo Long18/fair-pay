@@ -7,6 +7,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { motion } from "framer-motion";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { SPRING_GENTLE } from "@/lib/animation";
 
 interface WelcomeHeaderProps {
   userName: string;
@@ -24,8 +27,14 @@ export const WelcomeHeader = ({
   onCreditorChange,
 }: WelcomeHeaderProps) => {
   const { tap } = useHaptics();
+  const reducedMotion = useReducedMotion();
   return (
-    <div className="flex items-start justify-between">
+    <motion.div
+      className="flex items-start justify-between"
+      initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={reducedMotion ? undefined : { ...SPRING_GENTLE, delay: 0.1 }}
+    >
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Hi {userName},</h1>
         <p className="text-3xl font-bold text-gray-900 mt-1">{message}</p>
@@ -57,6 +66,6 @@ export const WelcomeHeader = ({
           </DropdownMenu>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };

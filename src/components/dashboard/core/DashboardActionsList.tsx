@@ -8,6 +8,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { motion } from "framer-motion";
+import { useReducedMotion } from "@/hooks/ui/use-reduced-motion";
+import { SPRING_GENTLE, ENTRANCE_Y, STAGGER_DELAY } from "@/lib/animation";
 
 interface DashboardActionsListProps {
   disabled?: boolean;
@@ -17,6 +20,7 @@ export function DashboardActionsList({ disabled = false }: DashboardActionsListP
   const go = useGo();
   const { t } = useTranslation();
   const { tap } = useHaptics();
+  const reducedMotion = useReducedMotion();
 
   const actions = [
     { icon: PlusCircleIcon, title: t('dashboard.addExpense'), desc: t('dashboard.recordNewExpense'), path: "/expenses/create" },
@@ -42,9 +46,12 @@ export function DashboardActionsList({ disabled = false }: DashboardActionsListP
           {actions.map((action, i) => (
             <Tooltip key={i}>
               <TooltipTrigger asChild>
-                <button
+                <motion.button
                   onClick={() => handleClick(action.path)}
                   disabled={disabled}
+                  initial={reducedMotion ? false : { opacity: 0, y: ENTRANCE_Y }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={reducedMotion ? undefined : { ...SPRING_GENTLE, delay: i * STAGGER_DELAY }}
                   className="group flex items-center justify-between p-4 rounded-xl border bg-card hover:bg-accent/50 hover:border-primary/50 transition-all duration-200 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-card disabled:hover:border-border"
                 >
                   <div className="flex items-center gap-4">
@@ -57,7 +64,7 @@ export function DashboardActionsList({ disabled = false }: DashboardActionsListP
                     </div>
                   </div>
                   <ChevronRightIcon className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-transform group-hover:translate-x-1" />
-                </button>
+                </motion.button>
               </TooltipTrigger>
               {disabled && (
                 <TooltipContent side="right" className="font-medium text-xs">

@@ -8,6 +8,9 @@ import { formatCurrency as formatCurrencyUtil } from "@/lib/locale-utils";
 
 import { UsersIcon, TrendingDownIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
+import { motion } from "framer-motion";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { SPRING_GENTLE } from "@/lib/animation";
 
 interface GroupBalanceCardProps {
   group: GroupBalance;
@@ -18,6 +21,7 @@ export const GroupBalanceCard = ({ group, currency = "VND" }: GroupBalanceCardPr
   const { t } = useTranslation();
   const go = useGo();
   const { tap } = useHaptics();
+  const reducedMotion = useReducedMotion();
 
   const formatCurrency = (amount: number) => {
     return formatCurrencyUtil(amount, currency);
@@ -36,6 +40,10 @@ export const GroupBalanceCard = ({ group, currency = "VND" }: GroupBalanceCardPr
   };
 
   return (
+    <motion.div
+      whileHover={reducedMotion ? undefined : { y: -2 }}
+      transition={SPRING_GENTLE}
+    >
     <DataCard
       className="cursor-pointer"
       onClick={() => { tap(); go({ to: `/groups/show/${group.group_id}` }); }}
@@ -98,5 +106,6 @@ export const GroupBalanceCard = ({ group, currency = "VND" }: GroupBalanceCardPr
         )}
       </DataCard.Content>
     </DataCard>
+    </motion.div>
   );
 };

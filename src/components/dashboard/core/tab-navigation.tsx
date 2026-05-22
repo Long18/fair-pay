@@ -1,5 +1,7 @@
 import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/use-haptics";
+import { motion } from "framer-motion";
+import { useReducedMotion } from "@/hooks/ui/use-reduced-motion";
 
 interface Tab {
   id: string;
@@ -14,6 +16,7 @@ interface TabNavigationProps {
 
 export const TabNavigation = ({ tabs, activeTab, onTabChange }: TabNavigationProps) => {
   const { tap } = useHaptics();
+  const reducedMotion = useReducedMotion();
   return (
     <div className="border-b border-gray-200">
       <nav className="flex gap-8">
@@ -30,7 +33,15 @@ export const TabNavigation = ({ tabs, activeTab, onTabChange }: TabNavigationPro
           >
             {tab.label}
             {activeTab === tab.id && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-green-500 rounded-t-full" />
+              reducedMotion ? (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-green-500 rounded-t-full" />
+              ) : (
+                <motion.div
+                  layoutId="dashboard-nav-indicator"
+                  className="absolute bottom-0 left-0 right-0 h-1 bg-green-500 rounded-t-full"
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                />
+              )
             )}
           </button>
         ))}

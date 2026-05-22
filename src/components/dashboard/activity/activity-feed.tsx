@@ -7,14 +7,20 @@ import { formatNumber } from "@/lib/locale-utils";
 
 import { ReceiptIcon, HandCoinsIcon, ActivityIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
+import { motion, AnimatePresence } from "framer-motion";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { SPRING_GENTLE, STAGGER_DELAY } from "@/lib/animation";
 interface ActivityFeedProps {
   items: ActivityItem[];
   isLoading: boolean;
 }
 
+
+
 export const ActivityFeed = ({ items, isLoading }: ActivityFeedProps) => {
   const go = useGo();
   const { tap } = useHaptics();
+  const reducedMotion = useReducedMotion();
 
   const formatCurrency = (amount: number, currency: string) => {
     return `${formatNumber(amount)} ${currency}`;
@@ -81,10 +87,16 @@ export const ActivityFeed = ({ items, isLoading }: ActivityFeedProps) => {
         </CardTitle>
       </CardHeader>
       <CardContent>
+        <AnimatePresence mode="popLayout">
         <div className="space-y-2">
-          {items.map((item) => (
-            <div
+          {items.map((item, i) => (
+            <motion.div
               key={`${item.type}-${item.id}`}
+              layout
+              initial={reducedMotion ? false : { opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={reducedMotion ? undefined : { opacity: 0, x: -8 }}
+              transition={reducedMotion ? undefined : { ...SPRING_GENTLE, delay: i * STAGGER_DELAY }}
               onClick={() => handleActivityClick(item)}
               className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
             >
@@ -124,9 +136,10 @@ export const ActivityFeed = ({ items, isLoading }: ActivityFeedProps) => {
                   <span className="text-xs text-muted-foreground">by you</span>
                 )}
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
+        </AnimatePresence>
       </CardContent>
     </Card>
   );

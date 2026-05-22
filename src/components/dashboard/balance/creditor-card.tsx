@@ -2,6 +2,9 @@ import { DataCard } from "@/components/ui/data-card";
 import { Button } from "@/components/ui/button";
 import { AlertCircleIcon, MoreVerticalIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
+import { motion } from "framer-motion";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { SPRING_GENTLE } from "@/lib/animation";
 interface CreditorCardProps {
   name: string;
   logo?: string;
@@ -30,7 +33,13 @@ export const CreditorCard = ({
     return new Intl.NumberFormat('vi-VN').format(value);
   };
 
+  const reducedMotion = useReducedMotion();
+
   return (
+    <motion.div
+      whileHover={reducedMotion ? undefined : { y: -2 }}
+      transition={SPRING_GENTLE}
+    >
     <DataCard className="border-border">
       <DataCard.Header
         title={
@@ -151,5 +160,6 @@ export const CreditorCard = ({
         </div>
       </DataCard.Content>
     </DataCard>
+    </motion.div>
   );
 };

@@ -10,6 +10,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { useReducedMotion } from "@/hooks/ui/use-reduced-motion";
+import { SPRING_DEFAULT } from "@/lib/animation";
 
 import { PlusCircleIcon, BanknoteIcon, UsersIcon, UserPlusIcon, PlusIcon, XIcon } from "@/components/ui/icons";
 interface FloatingActionButtonProps {
@@ -21,6 +24,7 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
   const go = useGo();
   const { t } = useTranslation();
   const { tap } = useHaptics();
+  const reducedMotion = useReducedMotion();
 
   // Keyboard accessibility: Close on Escape key
   useEffect(() => {
@@ -95,7 +99,12 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
       )}
 
       {/* FAB Container */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col-reverse items-end gap-3">
+      <motion.div
+        className="fixed bottom-6 right-6 z-50 flex flex-col-reverse items-end gap-3"
+        initial={reducedMotion ? false : { scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={reducedMotion ? undefined : { ...SPRING_DEFAULT, delay: 0.3 }}
+      >
         <TooltipProvider delayDuration={300}>
           {/* Speed Dial Actions with staggered animation */}
           {isOpen && (
@@ -204,7 +213,7 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-      </div>
+      </motion.div>
     </>
   );
 }

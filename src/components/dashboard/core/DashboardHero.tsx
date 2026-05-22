@@ -8,15 +8,22 @@ import {
 import { useGetIdentity } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
 import { Profile } from "@/modules/profile/types";
-import { ScrollReveal } from "@/components/ui/scroll-reveal";
+import { motion } from "framer-motion";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { SPRING_GENTLE, ENTRANCE_Y } from "@/lib/animation";
 
 export function DashboardHero() {
   const { data: identity } = useGetIdentity<Profile>();
   const { t } = useTranslation();
   const firstName = identity?.full_name?.split(" ")[0] || "there";
+  const reducedMotion = useReducedMotion();
 
   return (
-    <ScrollReveal direction="up" delay={0.1}>
+    <motion.div
+      initial={reducedMotion ? false : { opacity: 0, y: ENTRANCE_Y * 3 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={reducedMotion ? undefined : { ...SPRING_GENTLE, delay: 0.1 }}
+    >
     <div className="grid gap-4 py-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,420px)] lg:items-center">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
@@ -62,6 +69,6 @@ export function DashboardHero() {
         />
       </picture>
     </div>
-    </ScrollReveal>
+    </motion.div>
   );
 }
