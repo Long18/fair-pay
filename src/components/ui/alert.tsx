@@ -1,6 +1,9 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
+import { motion } from "framer-motion";
 
+import { useReducedMotion } from "@/hooks/ui/use-reduced-motion";
+import { ENTRANCE_Y, SPRING_GENTLE } from "@/lib/animation";
 import { cn } from "@/lib/utils";
 
 const alertVariants = cva(
@@ -24,12 +27,17 @@ function Alert({
   variant,
   ...props
 }: React.ComponentProps<"div"> & VariantProps<typeof alertVariants>) {
+  const reducedMotion = useReducedMotion();
+
   return (
-    <div
+    <motion.div
       data-slot="alert"
       role="alert"
       className={cn(alertVariants({ variant }), className)}
-      {...props}
+      initial={reducedMotion ? false : { opacity: 0, y: ENTRANCE_Y }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={SPRING_GENTLE}
+      {...(props as React.ComponentProps<typeof motion.div>)}
     />
   );
 }

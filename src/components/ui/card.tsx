@@ -1,15 +1,33 @@
+import { type HTMLMotionProps, motion } from "framer-motion";
 import * as React from "react";
 
+import { SPRING_GENTLE } from "@/lib/animation";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { cn } from "@/lib/utils";
 
-function Card({ className, ...props }: React.ComponentProps<"div">) {
+interface CardProps extends HTMLMotionProps<"div"> {
+  interactive?: boolean;
+}
+
+function Card({ className, interactive = false, ...props }: CardProps) {
+  const reducedMotion = useReducedMotion();
+
+  const motionProps =
+    interactive && !reducedMotion
+      ? {
+          whileHover: { y: -2, boxShadow: "0 8px 24px rgba(0,0,0,0.12)" },
+          transition: SPRING_GENTLE,
+        }
+      : {};
+
   return (
-    <div
+    <motion.div
       data-slot="card"
       className={cn(
         "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm transition-shadow hover:shadow-md",
         className
       )}
+      {...motionProps}
       {...props}
     />
   );

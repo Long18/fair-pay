@@ -1,6 +1,9 @@
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
+import { AnimatePresence, motion } from "framer-motion";
 import * as React from "react";
 
+import { SPRING_TOOLTIP } from "@/lib/animation";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/ui/use-mobile";
 
@@ -157,25 +160,37 @@ function TooltipContent({
   children,
   ...props
 }: TooltipContentProps) {
+  const reducedMotion = useReducedMotion();
+  const transition = reducedMotion ? { duration: 0 } : SPRING_TOOLTIP;
+
   return (
     <TooltipPrimitive.Portal>
-      <TooltipPrimitive.Content
-        data-slot="tooltip-content"
-        side={side}
-        sideOffset={sideOffset}
-        avoidCollisions={true}
-        collisionPadding={8}
-        className={cn(
-          "bg-primary text-primary-foreground animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-fit origin-(--radix-tooltip-content-transform-origin) rounded-lg px-3 py-1.5 text-sm text-balance",
-          maxWidth && `max-w-[${maxWidth}]`,
-          className
-        )}
-        style={maxWidth ? { maxWidth } : undefined}
-        {...props}
-      >
-        {children}
-        <TooltipPrimitive.Arrow className="bg-primary fill-primary z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px]" />
-      </TooltipPrimitive.Content>
+      <AnimatePresence>
+        <TooltipPrimitive.Content
+          data-slot="tooltip-content"
+          side={side}
+          sideOffset={sideOffset}
+          avoidCollisions={true}
+          collisionPadding={8}
+          className={cn(
+            "bg-primary text-primary-foreground z-50 w-fit origin-(--radix-tooltip-content-transform-origin) rounded-lg px-3 py-1.5 text-sm text-balance",
+            maxWidth && `max-w-[${maxWidth}]`,
+            className
+          )}
+          style={maxWidth ? { maxWidth } : undefined}
+          {...props}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.92 }}
+            transition={transition}
+          >
+            {children}
+            <TooltipPrimitive.Arrow className="bg-primary fill-primary z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px]" />
+          </motion.div>
+        </TooltipPrimitive.Content>
+      </AnimatePresence>
     </TooltipPrimitive.Portal>
   );
 }
