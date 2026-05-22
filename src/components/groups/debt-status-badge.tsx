@@ -2,6 +2,9 @@ import { Badge } from '@/components/ui/badge';
 import { DEBT_STATUS_COLORS } from '@/lib/status-colors';
 import { formatNumber } from '@/lib/locale-utils';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
+import { useReducedMotion } from '@/hooks/ui/use-reduced-motion';
+import { SPRING_DEFAULT } from '@/lib/animation';
 
 interface DebtStatusBadgeProps {
   status: 'owe' | 'owed' | 'settled' | 'pending';
@@ -16,6 +19,7 @@ export function DebtStatusBadge({
   currency,
   size = 'md',
 }: DebtStatusBadgeProps) {
+  const reducedMotion = useReducedMotion();
   const colors = DEBT_STATUS_COLORS[status];
   const labels = {
     owe: 'YOU OWE',
@@ -25,20 +29,27 @@ export function DebtStatusBadge({
   };
 
   return (
-    <Badge
-      className={cn(
-        colors.badge,
-        size === 'sm' && 'text-xs px-2 py-0.5',
-        size === 'md' && 'text-sm px-3 py-1',
-        size === 'lg' && 'text-base px-4 py-1.5'
-      )}
+    <motion.div
+      initial={reducedMotion ? false : { scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={SPRING_DEFAULT}
+      style={{ display: 'inline-flex' }}
     >
-      {labels[status]}
-      {amount !== undefined && currency && (
-        <span className="ml-1 font-bold">
-          {formatNumber(Math.abs(amount))} {currency}
-        </span>
-      )}
-    </Badge>
+      <Badge
+        className={cn(
+          colors.badge,
+          size === 'sm' && 'text-xs px-2 py-0.5',
+          size === 'md' && 'text-sm px-3 py-1',
+          size === 'lg' && 'text-base px-4 py-1.5'
+        )}
+      >
+        {labels[status]}
+        {amount !== undefined && currency && (
+          <span className="ml-1 font-bold">
+            {formatNumber(Math.abs(amount))} {currency}
+          </span>
+        )}
+      </Badge>
+    </motion.div>
   );
 }

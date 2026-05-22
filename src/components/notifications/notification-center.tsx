@@ -16,6 +16,9 @@ import { RepeatIcon, BellIcon, CheckCircle2Icon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { format } from "date-fns";
 import { vi, enUS } from "date-fns/locale";
+import { motion, AnimatePresence } from "framer-motion";
+import { useReducedMotion } from "@/hooks/ui/use-reduced-motion";
+import { SPRING_DEFAULT, STAGGER_DELAY, ENTRANCE_Y } from "@/lib/animation";
 
 interface NotificationCenterProps {
   open: boolean;
@@ -26,6 +29,7 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
   const { t, i18n } = useTranslation();
   const go = useGo();
   const { tap } = useHaptics();
+  const reducedMotion = useReducedMotion();
   const { active } = useRecurringExpenses({});
   const dateLocale = i18n.language === "vi" ? vi : enUS;
 
@@ -95,12 +99,18 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
                       {overdueExpenses.length}
                     </Badge>
                   </div>
+                  <AnimatePresence mode="popLayout">
                   <div className="space-y-2">
-                    {overdueExpenses.map((expense) => {
+                    {overdueExpenses.map((expense, index) => {
                       const template = expense.template_expense || expense.expenses;
                       return (
-                        <div
+                        <motion.div
                           key={expense.id}
+                          initial={reducedMotion ? false : { opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          transition={{ ...SPRING_DEFAULT, delay: index * STAGGER_DELAY }}
+                          whileHover={reducedMotion ? undefined : { scale: 1.01 }}
                           className="p-3 rounded-lg border border-destructive/20 bg-destructive/5 cursor-pointer hover:bg-destructive/10 transition-colors"
                           onClick={handleNotificationClick}
                         >
@@ -123,10 +133,11 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
                               }).format(template?.amount || 0)}
                             </span>
                           </div>
-                        </div>
+                        </motion.div>
                       );
                     })}
                   </div>
+                  </AnimatePresence>
                 </div>
               )}
 
@@ -141,12 +152,18 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
                       {upcomingExpenses.length}
                     </Badge>
                   </div>
+                  <AnimatePresence mode="popLayout">
                   <div className="space-y-2">
-                    {upcomingExpenses.map((expense) => {
+                    {upcomingExpenses.map((expense, index) => {
                       const template = expense.template_expense || expense.expenses;
                       return (
-                        <div
+                        <motion.div
                           key={expense.id}
+                          initial={reducedMotion ? false : { opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          transition={{ ...SPRING_DEFAULT, delay: index * STAGGER_DELAY }}
+                          whileHover={reducedMotion ? undefined : { scale: 1.01 }}
                           className="p-3 rounded-lg border hover:bg-accent cursor-pointer transition-colors"
                           onClick={handleNotificationClick}
                         >
@@ -169,10 +186,11 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
                               }).format(template?.amount || 0)}
                             </span>
                           </div>
-                        </div>
+                        </motion.div>
                       );
                     })}
                   </div>
+                  </AnimatePresence>
                 </div>
               )}
             </div>

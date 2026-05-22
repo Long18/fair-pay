@@ -2,6 +2,9 @@ import { getCategoryMeta } from '@/modules/expenses';
 import { formatNumber } from '@/lib/locale-utils';
 import { cn } from '@/lib/utils';
 import { PieChartIcon } from '@/components/ui/icons';
+import { motion } from 'framer-motion';
+import { useReducedMotion } from '@/hooks/ui/use-reduced-motion';
+import { SPRING_GENTLE, ENTRANCE_Y, STAGGER_DELAY } from '@/lib/animation';
 
 interface CategoryBreakdownItem {
   category: string;
@@ -22,6 +25,8 @@ export function CategoryBreakdown({
   totalAmount,
   currency = '₫',
 }: CategoryBreakdownProps) {
+  const reducedMotion = useReducedMotion();
+
   if (breakdown.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -33,13 +38,16 @@ export function CategoryBreakdown({
 
   return (
     <div className="space-y-3">
-      {breakdown.map((item) => {
+      {breakdown.map((item, index) => {
         const categoryMeta = getCategoryMeta(item.category);
         const Icon = categoryMeta.icon;
 
         return (
-          <div
+          <motion.div
             key={item.category}
+            initial={reducedMotion ? false : { opacity: 0, y: ENTRANCE_Y }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...SPRING_GENTLE, delay: index * STAGGER_DELAY }}
             className="flex items-center justify-between p-3 rounded-lg border bg-card"
           >
             <div className="flex items-center gap-3">
@@ -61,7 +69,7 @@ export function CategoryBreakdown({
                 {item.percentage.toFixed(1)}%
               </p>
             </div>
-          </div>
+          </motion.div>
         );
       })}
 

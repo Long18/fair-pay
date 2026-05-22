@@ -8,6 +8,9 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useHaptics } from '@/hooks/use-haptics';
 import { PriorityLevel, getPriorityLabel, getPriorityColors } from '@/lib/priority-calculator';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useReducedMotion } from '@/hooks/ui/use-reduced-motion';
+import { SPRING_GENTLE, SPRING_DEFAULT, ENTRANCE_Y } from '@/lib/animation';
 
 interface BalanceCardProps {
   amount: number;
@@ -49,6 +52,7 @@ export function BalanceCard({
 }: BalanceCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { tap } = useHaptics();
+  const reducedMotion = useReducedMotion();
   const colors = DEBT_STATUS_COLORS[status];
   const priorityColors = priority ? getPriorityColors(priority) : null;
 
@@ -74,72 +78,89 @@ export function BalanceCard({
   };
 
   return (
-    <Card
-      className={cn(
-        'transition-all duration-200',
-        colors.bg,
-        colors.border,
-        colors.hover,
-        isExpandable && 'cursor-pointer'
-      )}
-      onClick={handleClick}
+    <motion.div
+      initial={reducedMotion ? false : { opacity: 0, y: ENTRANCE_Y }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={SPRING_GENTLE}
+      whileHover={reducedMotion ? undefined : { y: -2, transition: SPRING_GENTLE }}
     >
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {userAvatar && (
-              <Avatar>
-                <AvatarImage src={userAvatar} />
-                <AvatarFallback>{userName[0]}</AvatarFallback>
-              </Avatar>
-            )}
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="font-medium">{userName}</p>
-                {priority && (
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      'text-xs px-1.5 py-0.5',
-                      priorityColors?.border,
-                      priorityColors?.text
-                    )}
-                  >
-                    <PriorityIcon priority={priority} />
-                    <span className="ml-1">{getPriorityLabel(priority)}</span>
-                  </Badge>
+      <Card
+        className={cn(
+          'transition-all duration-200',
+          colors.bg,
+          colors.border,
+          colors.hover,
+          isExpandable && 'cursor-pointer'
+        )}
+        onClick={handleClick}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {userAvatar && (
+                <Avatar>
+                  <AvatarImage src={userAvatar} />
+                  <AvatarFallback>{userName[0]}</AvatarFallback>
+                </Avatar>
+              )}
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium">{userName}</p>
+                  {priority && (
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        'text-xs px-1.5 py-0.5',
+                        priorityColors?.border,
+                        priorityColors?.text
+                      )}
+                    >
+                      <PriorityIcon priority={priority} />
+                      <span className="ml-1">{getPriorityLabel(priority)}</span>
+                    </Badge>
+                  )}
+                </div>
+                <p className={cn('text-sm', colors.text)}>
+                  {status === 'owe' ? 'You owe' : status === 'owed' ? 'Owes you' : 'Settled'}
+                </p>
+                {(lastActivity || expenseCount) && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {lastActivity && `Last activity: ${formatRelativeTime(lastActivity)}`}
+                    {lastActivity && expenseCount && ' • '}
+                    {expenseCount && `${expenseCount} expense(s)`}
+                  </p>
                 )}
               </div>
-              <p className={cn('text-sm', colors.text)}>
-                {status === 'owe' ? 'You owe' : status === 'owed' ? 'Owes you' : 'Settled'}
-              </p>
-              {(lastActivity || expenseCount) && (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {lastActivity && `Last activity: ${formatRelativeTime(lastActivity)}`}
-                  {lastActivity && expenseCount && ' • '}
-                  {expenseCount && `${expenseCount} expense(s)`}
-                </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={cn('text-lg font-bold', colors.text)}>
+                {formatNumber(Math.abs(amount))} {currency}
+              </span>
+              {isExpandable && (
+                <ChevronDownIcon
+                  className={cn(
+                    'h-4 w-4 transition-transform duration-200',
+                    isExpanded && 'rotate-180'
+                  )}
+                />
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className={cn('text-lg font-bold', colors.text)}>
-              {formatNumber(Math.abs(amount))} {currency}
-            </span>
-            {isExpandable && (
-              <ChevronDownIcon
-                className={cn(
-                  'h-4 w-4 transition-transform duration-200',
-                  isExpanded && 'rotate-180'
-                )}
-              />
+          <AnimatePresence>
+            {isExpanded && children && (
+              <motion.div
+                initial={reducedMotion ? false : { opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={SPRING_DEFAULT}
+                className="mt-4 pt-4 border-t overflow-hidden"
+              >
+                {children}
+              </motion.div>
             )}
-          </div>
-        </div>
-        {isExpanded && children && (
-          <div className="mt-4 pt-4 border-t">{children}</div>
-        )}
-      </CardContent>
-    </Card>
+          </AnimatePresence>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }

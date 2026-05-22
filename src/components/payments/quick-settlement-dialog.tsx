@@ -16,6 +16,9 @@ import { CheckCircle2Icon, Loader2Icon } from '@/components/ui/icons';
 import { formatNumber } from '@/lib/locale-utils';
 import { PAYMENT_METHODS, PaymentMethod } from '@/lib/payment-methods';
 import { useHaptics } from '@/hooks/use-haptics';
+import { motion } from 'framer-motion';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { SPRING_DEFAULT, SPRING_GENTLE, ENTRANCE_Y, STAGGER_DELAY } from '@/lib/animation';
 
 interface QuickSettlementDialogProps {
   open: boolean;
@@ -43,6 +46,7 @@ export function QuickSettlementDialog({
   isLoading = false,
 }: QuickSettlementDialogProps) {
   const { tap, success } = useHaptics();
+  const reduced = useReducedMotion();
   const [isPartialPayment, setIsPartialPayment] = useState(false);
   const [partialAmount, setPartialAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
@@ -125,8 +129,13 @@ export function QuickSettlementDialog({
       footer={footerButtons}
     >
       <div className="space-y-4">
-        {/* Amount Display */}
-        <div className="p-4 rounded-lg bg-accent">
+        {/* Amount Display — payment counter entrance */}
+        <motion.div
+          className="p-4 rounded-lg bg-accent"
+          initial={reduced ? false : { opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={SPRING_DEFAULT}
+        >
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">Amount to Pay</span>
             <div className="text-right">
@@ -144,10 +153,15 @@ export function QuickSettlementDialog({
               )}
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Partial Payment Option */}
-        <div className="space-y-2">
+        <motion.div
+          className="space-y-2"
+          initial={reduced ? false : { opacity: 0, y: ENTRANCE_Y }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...SPRING_GENTLE, delay: STAGGER_DELAY }}
+        >
           <div className="flex items-center gap-2 min-h-[44px]">
             <Checkbox
               id="partial"
@@ -198,10 +212,15 @@ export function QuickSettlementDialog({
               )}
             </div>
           )}
-        </div>
+        </motion.div>
 
         {/* Payment Method */}
-        <div className="space-y-2">
+        <motion.div
+          className="space-y-2"
+          initial={reduced ? false : { opacity: 0, y: ENTRANCE_Y }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...SPRING_GENTLE, delay: STAGGER_DELAY * 2 }}
+        >
           <label className="text-sm font-medium">Payment Method</label>
           <Select
             value={paymentMethod}
@@ -221,10 +240,15 @@ export function QuickSettlementDialog({
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </motion.div>
 
         {/* Payment Date */}
-        <div className="space-y-2">
+        <motion.div
+          className="space-y-2"
+          initial={reduced ? false : { opacity: 0, y: ENTRANCE_Y }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...SPRING_GENTLE, delay: STAGGER_DELAY * 3 }}
+        >
           <label className="text-sm font-medium">Payment Date</label>
           <Input
             type="date"
@@ -233,10 +257,15 @@ export function QuickSettlementDialog({
             max={new Date().toISOString().split('T')[0]}
             className="text-base min-h-[44px]"
           />
-        </div>
+        </motion.div>
 
         {/* Notes */}
-        <div className="space-y-2">
+        <motion.div
+          className="space-y-2"
+          initial={reduced ? false : { opacity: 0, y: ENTRANCE_Y }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...SPRING_GENTLE, delay: STAGGER_DELAY * 4 }}
+        >
           <label className="text-sm font-medium">Notes (optional)</label>
           <Textarea
             placeholder="Add any notes about this payment..."
@@ -245,7 +274,7 @@ export function QuickSettlementDialog({
             rows={2}
             className="text-base"
           />
-        </div>
+        </motion.div>
       </div>
     </BottomSheet>
   );

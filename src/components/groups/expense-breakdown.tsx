@@ -4,6 +4,9 @@ import { ReceiptIcon, HistoryIcon, BanknoteIcon } from '@/components/ui/icons';
 import { formatNumber, formatDate } from '@/lib/locale-utils';
 import { cn } from '@/lib/utils';
 import { useHaptics } from '@/hooks/use-haptics';
+import { motion } from 'framer-motion';
+import { useReducedMotion } from '@/hooks/ui/use-reduced-motion';
+import { SPRING_GENTLE, ENTRANCE_Y, STAGGER_DELAY } from '@/lib/animation';
 
 interface ExpenseBreakdownItem {
   id: string;
@@ -39,6 +42,7 @@ export function ExpenseBreakdown({
   userName,
 }: ExpenseBreakdownProps) {
   const { success } = useHaptics();
+  const reducedMotion = useReducedMotion();
   return (
     <div className="space-y-4">
       {/* Expense Breakdown */}
@@ -48,9 +52,12 @@ export function ExpenseBreakdown({
           Expense Breakdown
         </h4>
         <div className="space-y-2">
-          {expenses.slice(0, 5).map((expense) => (
-            <div
+          {expenses.slice(0, 5).map((expense, index) => (
+            <motion.div
               key={expense.id}
+              initial={reducedMotion ? false : { opacity: 0, y: ENTRANCE_Y }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...SPRING_GENTLE, delay: index * STAGGER_DELAY }}
               className="flex justify-between items-center p-2 rounded bg-muted/50"
             >
               <div className="flex-1 min-w-0">
@@ -71,7 +78,7 @@ export function ExpenseBreakdown({
                   of {formatNumber(expense.amount)} {currency}
                 </p>
               </div>
-            </div>
+            </motion.div>
           ))}
           {expenses.length > 5 && (
             <p className="text-xs text-muted-foreground text-center pt-1">
