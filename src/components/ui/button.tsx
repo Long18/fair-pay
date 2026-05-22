@@ -137,7 +137,8 @@ function Button({
   );
 
   if (asChild) {
-    // When asChild, wrap Slot with motion
+    // When asChild, Slot uses React.Children.only — ripple cannot be added as
+    // a sibling child, so we use a plain Slot with motion wrapping only scale.
     const MotionSlot = motion.create(Slot);
     const motionProps = prefersReducedMotion
       ? {}
@@ -150,12 +151,11 @@ function Button({
     return (
       <MotionSlot
         data-slot="button"
-        className={baseClass}
+        className={cn(buttonVariants({ variant, size, className }))}
         {...(motionProps as object)}
         {...(props as object)}
       >
         {children}
-        <RippleEffect ripples={ripples} onComplete={removeRipple} />
       </MotionSlot>
     );
   }
