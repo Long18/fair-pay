@@ -477,12 +477,12 @@ function EmailPreviewViewportToggle({
   tAdmin: AdminT;
 }) {
   return (
-    <div className="inline-flex rounded-lg border bg-background p-1 shadow-xs">
+    <div className="inline-flex rounded-xl border bg-muted/40 p-1 shadow-xs">
       <Button
         type="button"
         size="sm"
         variant={value === "desktop" ? "secondary" : "ghost"}
-        className="h-8"
+        className="h-9 cursor-pointer rounded-lg"
         onClick={() => onChange("desktop")}
       >
         <MonitorIcon className="mr-1.5 h-4 w-4" aria-hidden="true" />
@@ -492,9 +492,10 @@ function EmailPreviewViewportToggle({
         type="button"
         size="sm"
         variant={value === "mobile" ? "secondary" : "ghost"}
-        className="h-8"
+        className="h-9 cursor-pointer rounded-lg"
         onClick={() => onChange("mobile")}
       >
+        <MailIcon className="mr-1.5 h-4 w-4" aria-hidden="true" />
         {tAdmin("devtool.mobilePreview")}
       </Button>
     </div>
@@ -513,13 +514,23 @@ function EmailPreviewFrame({
   tall?: boolean;
 }) {
   return (
-    <div className="flex min-h-0 flex-1 overflow-auto rounded-2xl border bg-muted/35 p-3 shadow-inner sm:p-5">
+    <div className="flex min-h-0 flex-1 overflow-auto rounded-2xl border bg-slate-100 p-3 shadow-inner dark:bg-slate-950/40 sm:p-5">
       <div
         className={cn(
-          "mx-auto w-full overflow-hidden rounded-2xl border bg-white shadow-sm transition-[max-width] duration-200",
+          "mx-auto w-full overflow-hidden rounded-2xl border bg-white shadow-xl ring-1 ring-slate-900/5 transition-[max-width] duration-200",
           viewport === "desktop" ? "max-w-[640px]" : "max-w-[390px]"
         )}
       >
+        <div className="flex h-9 items-center justify-between border-b bg-slate-50 px-3">
+          <div className="flex items-center gap-1.5" aria-hidden="true">
+            <span className="size-2.5 rounded-full bg-red-400" />
+            <span className="size-2.5 rounded-full bg-amber-400" />
+            <span className="size-2.5 rounded-full bg-emerald-400" />
+          </div>
+          <span className="text-xs font-medium text-slate-500">
+            {viewport === "desktop" ? "Desktop" : "Mobile"}
+          </span>
+        </div>
         <iframe
           title={title}
           srcDoc={html}

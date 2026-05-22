@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
+import { buildEmailPanel, buildEmailShell } from '../_shared/email-design-system.ts'
 
 const textEncoder = new TextEncoder()
 
@@ -497,17 +498,17 @@ function buildGroupSections(groups: GroupBreakdownItem[]): string {
     const safeSubtotal = escapeHtml(formatCurrency(group.subtotal_amount, group.currency))
 
     return `
-      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:14px;border:1px solid #e2e8f0;border-radius:14px;background:#ffffff;padding:0 16px;">
+      <table class="group-card" data-email-block="group-debt-card" width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:14px;border:1px solid #e2e8f0;border-radius:16px;background:#ffffff;padding:0 16px;">
         <tr>
           <td style="padding:16px 0 12px;">
-            <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+            <table class="group-header-table" width="100%" cellpadding="0" cellspacing="0" role="presentation">
               <tr>
-                <td width="58" valign="top">${buildGroupAvatarHtml(group)}</td>
+                <td class="group-header-avatar" width="58" valign="top">${buildGroupAvatarHtml(group)}</td>
                 <td valign="middle">
-                  <div style="font-size:12px;line-height:1.5;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Group</div>
+                  <div style="font-size:12px;line-height:1.5;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;font-weight:800;">Group</div>
                   <div style="font-size:17px;line-height:1.4;font-weight:800;color:#0f172a;">${safeGroupName}</div>
                 </td>
-                <td align="right" valign="middle" style="white-space:nowrap;">
+                <td class="group-header-amount" align="right" valign="middle" style="white-space:nowrap;">
                   <div style="font-size:11px;line-height:1.5;color:#64748b;">Chưa settle / Outstanding</div>
                   <div style="font-size:18px;line-height:1.3;font-weight:900;color:#dc2626;">${safeSubtotal}</div>
                 </td>
@@ -534,21 +535,17 @@ function buildDebtBreakdownHtml(context: ReminderEmailContext | null): string {
   const legacyRows = buildCounterpartyRows(context.debt_breakdown)
 
   return `
-    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:22px;border:1px solid #dbeafe;border-radius:16px;background:#f8fafc;padding:0 18px;">
-      <tr>
-        <td colspan="2" style="padding:18px 0 14px;">
-          <div style="font-size:12px;color:#4f46e5;text-transform:uppercase;letter-spacing:0.08em;font-weight:800;">Chi tiết công nợ / Debt breakdown</div>
-          <div style="margin-top:6px;font-size:24px;line-height:1.2;font-weight:900;color:#0f172a;">Tổng cần trả sau bù trừ: ${safeTotal}</div>
-          <div style="margin-top:6px;font-size:13px;line-height:1.6;color:#64748b;">
-            ${context.group_breakdown.length
-              ? 'Các section bên dưới là các khoản chưa settle theo group; subtotal có thể khác tổng chính thức sau bù trừ.'
-              : 'Các khoản bên dưới được nhóm theo người bạn cần thanh toán.'}
-          </div>
-        </td>
-      </tr>
-    </table>
+    ${buildEmailPanel({
+      label: 'Chi tiết công nợ / Debt breakdown',
+      title: `Tổng cần trả sau bù trừ: ${safeTotal}`,
+      description: context.group_breakdown.length
+        ? 'Các section bên dưới là các khoản chưa settle theo group; subtotal có thể khác tổng chính thức sau bù trừ.'
+        : 'Các khoản bên dưới được nhóm theo người bạn cần thanh toán.',
+      tone: 'reminder',
+      marker: 'debt-summary',
+    })}
     ${groupSections || `
-    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:14px;border:1px solid #e2e8f0;border-radius:12px;background:#ffffff;padding:0 18px;">
+    <table data-email-block="legacy-debt-list" width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:14px;border:1px solid #e2e8f0;border-radius:14px;background:#ffffff;padding:0 18px;">
       ${legacyRows}
     </table>`}`
 }
@@ -565,26 +562,19 @@ function buildNotifRows(notifications: QueueRow[], appUrl: string): string {
       ? normalizeReminderEmailContext(n.email_context)
       : null
 
-    return `
-      <tr>
-        <td style="padding:14px 0;border-bottom:1px solid #f0f0f0;">
-          <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:5px;">
-            ${escapeHtml(badge)}
-          </div>
-          <div style="font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:3px;">
-            ${escapeHtml(n.title)}
-          </div>
-          <div style="font-size:13px;color:#555;line-height:1.5;">
-            ${escapeHtml(n.message)}
-          </div>
-          ${n.link ? `
-          <a href="${escapeHtml(href)}"
-             style="display:inline-block;margin-top:6px;font-size:12px;color:#6366f1;text-decoration:none;">
+    return buildEmailPanel({
+      label: badge,
+      title: n.title,
+      description: n.message,
+      tone: n.notification_type === 'settlement_reminder' ? 'reminder' : 'default',
+      marker: 'notification-card',
+      bodyHtml: `
+        ${n.link ? `
+          <a href="${escapeHtml(href)}" style="display:inline-block;margin-top:10px;font-size:13px;color:#2563eb;text-decoration:none;font-weight:700;">
             ${hasAuthAccount ? 'Xem chi tiết / View' : 'Tạo tài khoản để xem / Create account to view'} &rarr;
           </a>` : ''}
-          ${buildDebtBreakdownHtml(reminderContext)}
-        </td>
-      </tr>`
+        ${buildDebtBreakdownHtml(reminderContext)}`,
+    })
   }).join('')
 }
 
@@ -605,77 +595,33 @@ function buildEmailHtml(
     ? '1 thông báo mới / 1 new notification'
     : `${count} thông báo mới / ${count} new notifications`
 
-  return `<!DOCTYPE html>
-<html lang="vi">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>FairPay Notifications</title>
-</head>
-<body style="margin:0;padding:0;background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f7;padding:32px 16px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0"
-               style="max-width:600px;width:100%;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+  const bodyHtml = `
+    <p style="margin:0 0 6px;font-size:16px;line-height:1.7;color:#0f172a;">
+      Xin chào / Hello, <strong>${escapeHtml(userName)}</strong>
+    </p>
+    <p style="margin:0 0 8px;font-size:14px;line-height:1.7;color:#64748b;">
+      Bạn có <strong>${escapeHtml(countLabel)}</strong>.
+    </p>
+    ${buildNotifRows(notifications, appUrl)}`
 
-          ${hasReminder ? `
-          <tr>
-            <td style="background:#111827;">
-              <img src="${escapeHtml(heroUrl)}" width="600" alt="FairPay debt reminder overview" style="display:block;width:100%;max-width:600px;height:auto;">
-            </td>
-          </tr>` : ''}
-
-          <!-- Header -->
-          <tr>
-            <td style="background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);padding:28px 32px;text-align:center;">
-              <div style="font-size:26px;font-weight:700;color:#fff;letter-spacing:-0.5px;">FairPay</div>
-              <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:4px;">
-                Chia sẻ chi phí thông minh &bull; Smart expense splitting
-              </div>
-            </td>
-          </tr>
-
-          <!-- Body -->
-          <tr>
-            <td style="background:#fff;padding:32px;">
-              <p style="margin:0 0 6px;font-size:16px;color:#1a1a1a;">
-                Xin chào / Hello, <strong>${escapeHtml(userName)}</strong>
-              </p>
-              <p style="margin:0 0 24px;font-size:14px;color:#666;">
-                Bạn có <strong>${countLabel}</strong>.
-              </p>
-
-              <!-- Notification rows -->
-              <table width="100%" cellpadding="0" cellspacing="0">
-                ${buildNotifRows(notifications, appUrl)}
-              </table>
-
-              <!-- CTA -->
-              <div style="text-align:center;margin-top:32px;">
-                <a href="${escapeHtml(ctaHref)}"
-                   style="display:inline-block;background:#6366f1;color:#fff;padding:13px 36px;
-                          border-radius:8px;text-decoration:none;font-size:15px;font-weight:600;">
-                  ${ctaLabel}
-                </a>
-              </div>
-
-              <!-- Footer -->
-              <p style="margin:28px 0 0;font-size:11px;color:#aaa;text-align:center;
-                        border-top:1px solid #f0f0f0;padding-top:20px;line-height:1.8;">
-                Để tắt email thông báo, vào <strong>Cài đặt &rarr; Thông báo</strong>.<br>
-                To disable email notifications, go to <strong>Settings &rarr; Notifications</strong>.<br>
-                &copy; 2026 FairPay
-              </p>
-            </td>
-          </tr>
-
-        </table>
+  return buildEmailShell({
+    title: 'FairPay Notifications',
+    previewText: countLabel,
+    eyebrow: hasReminder ? 'FairPay Reminder' : 'FairPay Notifications',
+    heading: hasReminder ? 'Nhắc thanh toán rõ ràng' : 'Thông báo mới từ FairPay',
+    subheading: hasAuthAccount
+      ? 'Mở FairPay để xem chi tiết và xử lý khi sẵn sàng.'
+      : 'Tạo tài khoản để xem đầy đủ nội dung được gửi cho email này.',
+    bodyHtml,
+    ctaHref,
+    ctaLabel,
+    tone: hasReminder ? 'reminder' : 'default',
+    heroHtml: hasReminder ? `<tr>
+      <td data-email-block="hero-image" style="background:#111827;">
+        <img src="${escapeHtml(heroUrl)}" width="600" alt="FairPay debt reminder overview" style="display:block;width:100%;max-width:600px;height:auto;">
       </td>
-    </tr>
-  </table>
-</body>
-</html>`
+    </tr>` : '',
+  })
 }
 
 function buildInviteTitle(inviterName: string): string {
@@ -704,58 +650,31 @@ function buildInviteEmailHtml(inviterName: string, appUrl: string): string {
   const safeInviterName = escapeHtml(inviterName)
   const safeAppUrl = escapeHtml(appUrl)
 
-  return `<!DOCTYPE html>
-<html lang="vi">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>${escapeHtml(title)}</title>
-</head>
-<body style="margin:0;padding:0;background:#f6f7fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#111827;">
-  <div style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0;">
-    ${escapeHtml(previewText)}
-  </div>
-  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f6f7fb;padding:28px 12px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="width:100%;max-width:600px;background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden;box-shadow:0 18px 60px rgba(15,23,42,0.10);">
-          <tr>
-            <td style="padding:28px 32px;background:#111827;color:#ffffff;">
-              <div style="font-size:13px;letter-spacing:0.18em;text-transform:uppercase;color:#a5b4fc;font-weight:700;">FairPay Invite</div>
-              <div style="margin-top:10px;font-size:30px;line-height:1.15;font-weight:800;letter-spacing:-0.04em;">Chia tiền nhóm không còn rối</div>
-              <div style="margin-top:10px;font-size:14px;line-height:1.7;color:#d1d5db;">${safeInviterName} vừa mời bạn vào FairPay.</div>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:32px;">
-              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;color:#111827;">Xin chào,</p>
-              <p style="margin:0 0 22px;font-size:15px;line-height:1.8;color:#4b5563;">
-                FairPay giúp bạn ghi lại chi phí chung, biết chính xác ai đang nợ ai, và settle up minh bạch sau mỗi chuyến đi, bữa ăn, hoặc nhóm bạn.
-              </p>
-              <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 26px;border:1px solid #eef2ff;border-radius:14px;background:#f8fafc;">
-                <tr>
-                  <td style="padding:18px 20px;font-size:14px;line-height:1.8;color:#374151;">
-                    <strong style="color:#111827;">Bạn có thể dùng FairPay để:</strong><br>
-                    - Split bill nhanh giữa bạn bè và nhóm<br>
-                    - Theo dõi công nợ theo thời gian thực<br>
-                    - Nhận nhắc thanh toán qua email/thông báo
-                  </td>
-                </tr>
-              </table>
-              <div style="text-align:center;margin:30px 0;">
-                <a href="${safeAppUrl}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;border-radius:999px;padding:14px 28px;font-size:15px;font-weight:700;">
-                  Bắt đầu với FairPay
-                </a>
-              </div>
-              <p style="margin:0;font-size:12px;line-height:1.7;color:#9ca3af;text-align:center;">Nếu nút không hoạt động, mở liên kết này: <a href="${safeAppUrl}" style="color:#4f46e5;text-decoration:none;">${safeAppUrl}</a></p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`
+  const bodyHtml = `
+    <p style="margin:0 0 14px;font-size:16px;line-height:1.7;color:#0f172a;">Xin chào,</p>
+    <p style="margin:0;font-size:15px;line-height:1.8;color:#475569;">
+      ${safeInviterName} mời bạn vào FairPay để chia tiền nhóm, theo dõi ai nợ ai, và settle up rõ ràng sau mỗi chuyến đi, bữa ăn, hoặc nhóm bạn.
+    </p>
+    ${buildEmailPanel({
+      label: 'Invite block',
+      title: 'Bạn có thể dùng FairPay để',
+      description: 'Split bill nhanh, xem công nợ theo thời gian thực, và nhận nhắc thanh toán qua email hoặc thông báo trong app.',
+      tone: 'invite',
+      marker: 'invite-benefits',
+    })}
+    <p style="margin:18px 0 0;font-size:12px;line-height:1.7;color:#94a3b8;text-align:center;">Nếu nút không hoạt động, mở liên kết này: <a href="${safeAppUrl}" style="color:#4f46e5;text-decoration:none;">${safeAppUrl}</a></p>`
+
+  return buildEmailShell({
+    title,
+    previewText,
+    eyebrow: 'FairPay Invite',
+    heading: 'Chia tiền nhóm không còn rối',
+    subheading: `${inviterName} vừa mời bạn vào FairPay.`,
+    bodyHtml,
+    ctaHref: appUrl,
+    ctaLabel: 'Bắt đầu với FairPay',
+    tone: 'invite',
+  })
 }
 
 function buildInviteEmailParts(inviterName: string, appUrl: string): EmailParts {

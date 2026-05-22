@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
 import { UserSettings } from '../types';
-import { Loader2Icon } from "@/components/ui/icons";
+import { BellIcon, Loader2Icon, MailIcon } from "@/components/ui/icons";
 import { useTranslation } from 'react-i18next';
 import { useHaptics } from '@/hooks/use-haptics';
 
@@ -60,9 +60,10 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
           control={form.control}
           name="notifications_enabled"
           render={({ field }) => (
-            <FormItem className="flex flex-col gap-3 rounded-lg border p-3 sm:p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="space-y-0.5">
-                <FormLabel className="text-base">
+              <FormItem className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-0.5">
+                <FormLabel className="flex items-center gap-2 text-base">
+                  <BellIcon className="h-4 w-4 text-primary" aria-hidden="true" />
                   {t('settings.enableNotifications')}
                 </FormLabel>
                 <FormDescription>
@@ -84,9 +85,10 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
             control={form.control}
             name="email_notifications"
             render={({ field }) => (
-              <FormItem className="flex flex-col gap-3 rounded-lg border p-3 sm:p-4 sm:flex-row sm:items-center sm:justify-between">
+              <FormItem className="flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-0.5">
-                  <FormLabel className="text-base">
+                  <FormLabel className="flex items-center gap-2 text-base">
+                    <MailIcon className="h-4 w-4 text-primary" aria-hidden="true" />
                     {t('settings.emailNotifications')}
                   </FormLabel>
                   <FormDescription>
@@ -108,7 +110,7 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
             control={form.control}
             name="notify_on_expense_added"
             render={({ field }) => (
-              <FormItem className="flex flex-col gap-3 rounded-lg border p-3 sm:p-4 sm:flex-row sm:items-center sm:justify-between">
+              <FormItem className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-0.5">
                   <FormLabel className="text-base">
                     {t('settings.newExpenseNotifications')}
@@ -132,7 +134,7 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
             control={form.control}
             name="notify_on_payment_received"
             render={({ field }) => (
-              <FormItem className="flex flex-col gap-3 rounded-lg border p-3 sm:p-4 sm:flex-row sm:items-center sm:justify-between">
+              <FormItem className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-0.5">
                   <FormLabel className="text-base">
                     {t('settings.paymentReceivedNotifications')}
@@ -156,7 +158,7 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
             control={form.control}
             name="notify_on_friend_request"
             render={({ field }) => (
-              <FormItem className="flex flex-col gap-3 rounded-lg border p-3 sm:p-4 sm:flex-row sm:items-center sm:justify-between">
+              <FormItem className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-0.5">
                   <FormLabel className="text-base">
                     {t('settings.friendRequestNotifications')}
@@ -180,7 +182,7 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
             control={form.control}
             name="notify_on_group_invite"
             render={({ field }) => (
-              <FormItem className="flex flex-col gap-3 rounded-lg border p-3 sm:p-4 sm:flex-row sm:items-center sm:justify-between">
+              <FormItem className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-0.5">
                   <FormLabel className="text-base">
                     {t('settings.groupInviteNotifications')}
@@ -201,7 +203,7 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
           />
         </div>
 
-        <Button type="submit" disabled={isUpdating}>
+        <Button type="submit" className="cursor-pointer" disabled={isUpdating}>
           {isUpdating && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
           {t('settings.saveSettings')}
         </Button>
@@ -209,4 +211,3 @@ export function NotificationSettingsForm({ settings, onSave, isUpdating }: Notif
     </Form>
   );
 }
-

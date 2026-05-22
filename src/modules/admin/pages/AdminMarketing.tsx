@@ -26,6 +26,7 @@ import {
   TrendingUpIcon,
   UsersIcon,
   ActivityIcon,
+  ArrowLeftIcon,
   RepeatIcon,
   MailIcon,
 } from "@/components/ui/icons";
@@ -1066,8 +1067,9 @@ function EmailsTab({ enabled }: { enabled: boolean }) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-2">
-          <button onClick={() => setSelectedUser(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            ← Back
+          <button onClick={() => setSelectedUser(null)} className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <ArrowLeftIcon className="h-4 w-4" aria-hidden="true" />
+            Back
           </button>
           <span className="text-muted-foreground">/</span>
           <Avatar className="h-5 w-5">
@@ -1110,8 +1112,9 @@ function EmailsTab({ enabled }: { enabled: boolean }) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-2">
-          <button onClick={() => setSelectedType(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            ← Back
+          <button onClick={() => setSelectedType(null)} className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <ArrowLeftIcon className="h-4 w-4" aria-hidden="true" />
+            Back
           </button>
           <span className="text-muted-foreground">/</span>
           <Badge variant="secondary" className="font-mono">{selectedType}</Badge>
@@ -1163,18 +1166,20 @@ function EmailsTab({ enabled }: { enabled: boolean }) {
       </motion.div>
 
       {/* View switcher */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 rounded-xl border bg-card p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <h3 className="font-semibold">{tAdmin("marketing.recentEmailsTitle")}</h3>
-        <div className="flex rounded-lg border bg-muted/40 p-0.5 gap-0.5">
+        <div className="flex w-full rounded-xl border bg-muted/40 p-1 gap-1 sm:w-auto">
           {(["users", "types", "timeline"] as const).map((mode) => (
             <button
               key={mode}
               onClick={() => setViewMode(mode)}
+              type="button"
               className={cn(
-                "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                "inline-flex min-h-9 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:flex-none",
                 viewMode === mode ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
               )}
             >
+              {mode === "users" ? <UsersIcon className="h-3.5 w-3.5" aria-hidden="true" /> : mode === "types" ? <MailIcon className="h-3.5 w-3.5" aria-hidden="true" /> : <ActivityIcon className="h-3.5 w-3.5" aria-hidden="true" />}
               {mode === "users" ? "By User" : mode === "types" ? "By Type" : "Timeline"}
             </button>
           ))}
@@ -1208,7 +1213,7 @@ function EmailsTab({ enabled }: { enabled: boolean }) {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.03 }}
                       onClick={() => setSelectedUser(group)}
-                      className="w-full flex items-center gap-3 px-6 py-3 hover:bg-muted/50 transition-colors text-left group"
+                      className="group flex w-full cursor-pointer items-center gap-3 px-6 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <Avatar className="h-8 w-8 shrink-0">
                         {group.avatar_url && <AvatarImage src={group.avatar_url} />}
@@ -1250,7 +1255,15 @@ function EmailsTab({ enabled }: { enabled: boolean }) {
           ) : (
             groupedByType.map((group, i) => (
               <motion.div key={group.type} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <Card className="cursor-pointer hover:border-primary/50 hover:shadow-sm transition-all group" onClick={() => setSelectedType(group.type)}>
+                <Card
+                  className="group cursor-pointer rounded-lg transition-all hover:border-primary/50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  onClick={() => setSelectedType(group.type)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") setSelectedType(group.type);
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between mb-3">
                       <Badge variant="secondary" className="font-mono text-xs">{group.type}</Badge>

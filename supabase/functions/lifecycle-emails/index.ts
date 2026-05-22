@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
 import { getCorsHeaders, handleCorsPreflightIfNeeded } from '../_shared/cors.ts'
+import { buildEmailPanel, buildEmailShell } from '../_shared/email-design-system.ts'
 
 /**
  * Lifecycle Emails Edge Function
@@ -95,48 +96,23 @@ async function sendHtmlEmail(
 }
 
 function buildEmailWrapper(title: string, previewText: string, bodyHtml: string, ctaHref: string, ctaLabel: string): string {
-  return `<!DOCTYPE html>
-<html lang="vi">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>${escapeHtml(title)}</title>
-</head>
-<body style="margin:0;padding:0;background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <div style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0;">${escapeHtml(previewText)}</div>
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f7;padding:32px 16px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0"
-               style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-          <tr>
-            <td style="background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);padding:28px 32px;text-align:center;">
-              <div style="font-size:26px;font-weight:700;color:#fff;letter-spacing:-0.5px;">FairPay</div>
-              <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:4px;">Chia sẻ chi phí thông minh &bull; Smart expense splitting</div>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:32px;">
-              ${bodyHtml}
-              <div style="text-align:center;margin-top:32px;">
-                <a href="${escapeHtml(ctaHref)}"
-                   style="display:inline-block;background:#6366f1;color:#fff;padding:13px 36px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:600;">
-                  ${escapeHtml(ctaLabel)}
-                </a>
-              </div>
-              <p style="margin:28px 0 0;font-size:11px;color:#aaa;text-align:center;border-top:1px solid #f0f0f0;padding-top:20px;line-height:1.8;">
-                Để tắt email, vào <strong>Cài đặt &rarr; Thông báo</strong>.<br>
-                To unsubscribe, go to <strong>Settings &rarr; Notifications</strong>.<br>
-                &copy; 2026 FairPay
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`
+  return buildEmailShell({
+    title,
+    previewText,
+    eyebrow: 'FairPay Lifecycle',
+    heading: title,
+    subheading: 'Một gợi ý ngắn để bạn tiếp tục chia tiền rõ ràng hơn.',
+    bodyHtml,
+    ctaHref,
+    ctaLabel,
+    tone: 'lifecycle',
+    footerHtml: `
+      <p style="margin:0;font-size:11px;color:#94a3b8;text-align:center;line-height:1.8;">
+        Để tắt email, vào <strong>Cài đặt &rarr; Thông báo</strong>.<br>
+        To unsubscribe, go to <strong>Settings &rarr; Notifications</strong>.<br>
+        &copy; 2026 FairPay
+      </p>`,
+  })
 }
 
 function buildWelcomeEmail(userName: string, appUrl: string): { subject: string; text: string; html: string } {
@@ -146,17 +122,14 @@ function buildWelcomeEmail(userName: string, appUrl: string): { subject: string;
   const text = `Xin chào ${userName},\n\nChào mừng bạn đến với FairPay!\n\nFairPay giúp bạn chia tiền nhóm, theo dõi ai nợ ai, và settle up minh bạch.\n\nBắt đầu bằng cách thêm chi phí đầu tiên của bạn.\n\nMở FairPay: ${ctaHref}\n\nFairPay Team`
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;color:#1a1a1a;">Xin chào / Hello, <strong>${safeName}</strong>!</p>
-    <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#374151;">Chào mừng bạn đến với <strong>FairPay</strong> — ứng dụng chia tiền nhóm thông minh giúp bạn theo dõi chi phí chung và settle up rõ ràng.</p>
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;border:1px solid #eef2ff;border-radius:12px;background:#f8fafc;">
-      <tr>
-        <td style="padding:16px 20px;font-size:14px;line-height:1.8;color:#374151;">
-          <strong>Bạn có thể làm gì với FairPay:</strong><br>
-          ✓ Ghi lại chi phí chung với bạn bè<br>
-          ✓ Biết chính xác ai đang nợ ai<br>
-          ✓ Nhắc bạn bè thanh toán qua email
-        </td>
-      </tr>
-    </table>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#374151;">Chào mừng bạn đến với <strong>FairPay</strong> - ứng dụng chia tiền nhóm thông minh giúp bạn theo dõi chi phí chung và settle up rõ ràng.</p>
+    ${buildEmailPanel({
+      label: 'Getting started',
+      title: 'Bạn có thể làm gì với FairPay',
+      description: 'Ghi lại chi phí chung với bạn bè, biết chính xác ai đang nợ ai, và nhắc bạn bè thanh toán qua email.',
+      tone: 'lifecycle',
+      marker: 'lifecycle-benefits',
+    })}
     <p style="margin:0;font-size:14px;color:#6b7280;">Hãy bắt đầu bằng cách thêm chi phí đầu tiên của bạn!</p>`
   return {
     subject,
@@ -178,15 +151,14 @@ function buildNoExpenseNudge(userName: string, appUrl: string): { subject: strin
   const text = `Xin chào ${userName},\n\nBạn đã đăng ký FairPay nhưng chưa thêm chi phí nào.\n\nHãy thử ghi lại một chi phí gần đây với bạn bè để bắt đầu!\n\nThêm chi phí: ${ctaHref}\n\nFairPay Team`
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;color:#1a1a1a;">Xin chào / Hello, <strong>${safeName}</strong>!</p>
-    <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#374151;">Bạn đã đăng ký FairPay nhưng chưa thêm chi phí nào cả. Hãy thử ghi lại một chi phí gần đây — chỉ mất vài giây!</p>
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;border:1px solid #fef3c7;border-radius:12px;background:#fffbeb;">
-      <tr>
-        <td style="padding:16px 20px;font-size:14px;line-height:1.8;color:#92400e;">
-          <strong>💡 Gợi ý:</strong><br>
-          Ghi lại bữa ăn chung, tiền điện nước, hoặc bất kỳ chi phí nào bạn chia sẻ với bạn bè.
-        </td>
-      </tr>
-    </table>`
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#374151;">Bạn đã đăng ký FairPay nhưng chưa thêm chi phí nào cả. Hãy thử ghi lại một chi phí gần đây - chỉ mất vài giây!</p>
+    ${buildEmailPanel({
+      label: 'Gợi ý',
+      title: 'Ghi lại một khoản chi quen thuộc',
+      description: 'Bữa ăn chung, tiền điện nước, hoặc bất kỳ chi phí nào bạn chia sẻ với bạn bè đều là điểm bắt đầu tốt.',
+      tone: 'warning',
+      marker: 'expense-nudge',
+    })}`
   return {
     subject,
     text,
@@ -208,16 +180,13 @@ function buildNoGroupNudge(userName: string, appUrl: string): { subject: string;
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;color:#1a1a1a;">Xin chào / Hello, <strong>${safeName}</strong>!</p>
     <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#374151;">Bạn đã dùng FairPay được một tuần rồi! Hãy tạo một nhóm để quản lý chi phí chung với bạn bè, gia đình hoặc đồng nghiệp.</p>
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;border:1px solid #d1fae5;border-radius:12px;background:#f0fdf4;">
-      <tr>
-        <td style="padding:16px 20px;font-size:14px;line-height:1.8;color:#065f46;">
-          <strong>👥 Nhóm giúp bạn:</strong><br>
-          ✓ Theo dõi chi phí chung trong các chuyến đi, bữa ăn<br>
-          ✓ Thấy tổng kết ai nợ ai trong nhóm<br>
-          ✓ Settle up nhanh chóng khi kết thúc
-        </td>
-      </tr>
-    </table>`
+    ${buildEmailPanel({
+      label: 'Group workflow',
+      title: 'Nhóm giúp bạn quản lý chi phí chung',
+      description: 'Theo dõi chi phí trong chuyến đi, bữa ăn, thấy tổng kết ai nợ ai, và settle up nhanh chóng khi kết thúc.',
+      tone: 'lifecycle',
+      marker: 'group-nudge',
+    })}`
   return {
     subject,
     text,
@@ -270,20 +239,19 @@ function buildWinbackEmail(userName: string, appUrl: string): { subject: string;
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;color:#1a1a1a;">Xin chào / Hello, <strong>${safeName}</strong>!</p>
     <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#374151;">Bạn chưa mở FairPay trong 2 tuần qua. Bạn bè của bạn có thể đang chờ bạn settle up!</p>
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;border:1px solid #fecaca;border-radius:12px;background:#fef2f2;">
-      <tr>
-        <td style="padding:16px 20px;font-size:14px;line-height:1.8;color:#991b1b;">
-          <strong>💸 Đừng để nợ tồn đọng:</strong><br>
-          Quay lại FairPay để kiểm tra xem bạn còn nợ ai không, và thanh toán ngay hôm nay.
-        </td>
-      </tr>
-    </table>`
+    ${buildEmailPanel({
+      label: 'Winback',
+      title: 'Đừng để nợ tồn đọng',
+      description: 'Quay lại FairPay để kiểm tra xem bạn còn nợ ai không, và thanh toán ngay hôm nay.',
+      tone: 'reminder',
+      marker: 'winback-nudge',
+    })}`
   return {
     subject,
     text,
     html: buildEmailWrapper(
       'Chúng tôi nhớ bạn!',
-      'Quay lại FairPay — bạn bè đang chờ bạn settle up!',
+      'Quay lại FairPay - bạn bè đang chờ bạn settle up!',
       bodyHtml,
       ctaHref,
       'Quay lại FairPay / Come Back'

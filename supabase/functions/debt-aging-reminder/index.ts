@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
 import { getCorsHeaders, handleCorsPreflightIfNeeded } from '../_shared/cors.ts'
+import { buildEmailPanel, buildEmailShell } from '../_shared/email-design-system.ts'
 
 /**
  * Debt Aging Reminder Edge Function
@@ -136,56 +137,37 @@ function buildAgingReminderEmail(
       </td>
     </tr>`).join('')
 
-  const html = `<!DOCTYPE html>
-<html lang="vi">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Nhắc nhở công nợ / Debt Reminder</title>
-</head>
-<body style="margin:0;padding:0;background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f7;padding:32px 16px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0"
-               style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-          <tr>
-            <td style="background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);padding:28px 32px;text-align:center;">
-              <div style="font-size:26px;font-weight:700;color:#fff;letter-spacing:-0.5px;">FairPay</div>
-              <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:4px;">Nhắc nhở công nợ &bull; Debt Reminder</div>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:32px;">
-              <p style="margin:0 0 6px;font-size:16px;color:#1a1a1a;">Xin chào / Hello, <strong>${safeName}</strong></p>
-              <p style="margin:0 0 24px;font-size:14px;color:#6b7280;">Bạn có <strong>${debts.length} khoản nợ</strong> chưa thanh toán quá <strong>7 ngày</strong>.</p>
-              <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #dbeafe;border-radius:12px;background:#f8fafc;padding:0 18px;">
-                <tr>
-                  <td colspan="2" style="padding:14px 0 10px;font-size:12px;font-weight:700;color:#4f46e5;text-transform:uppercase;letter-spacing:0.08em;">
-                    Chi tiết / Details
-                  </td>
-                </tr>
-                ${debtRows}
-              </table>
-              <div style="text-align:center;margin-top:32px;">
-                <a href="${escapeHtml(ctaHref)}"
-                   style="display:inline-block;background:#6366f1;color:#fff;padding:13px 36px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:600;">
-                  Thanh toán ngay / Pay Now
-                </a>
-              </div>
-              <p style="margin:28px 0 0;font-size:11px;color:#aaa;text-align:center;border-top:1px solid #f0f0f0;padding-top:20px;line-height:1.8;">
-                Để tắt email, vào <strong>Cài đặt &rarr; Thông báo</strong>.<br>
-                To unsubscribe, go to <strong>Settings &rarr; Notifications</strong>.<br>
-                &copy; 2026 FairPay
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`
+  const bodyHtml = `
+    <p style="margin:0 0 6px;font-size:16px;line-height:1.7;color:#0f172a;">Xin chào / Hello, <strong>${safeName}</strong></p>
+    <p style="margin:0 0 8px;font-size:14px;line-height:1.7;color:#64748b;">Bạn có <strong>${debts.length} khoản nợ</strong> chưa thanh toán quá <strong>7 ngày</strong>.</p>
+    ${buildEmailPanel({
+      label: 'Chi tiết / Details',
+      title: `${debts.length} khoản cần xử lý`,
+      description: 'Các khoản dưới đây đã quá hạn hơn 7 ngày. Mở FairPay để xem và settle up.',
+      tone: 'reminder',
+      marker: 'aging-debt-summary',
+      bodyHtml: `<table data-email-block="aging-debt-list" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;border:1px solid #e2e8f0;border-radius:12px;background:#ffffff;padding:0 14px;">
+        ${debtRows}
+      </table>`,
+    })}`
+
+  const html = buildEmailShell({
+    title: 'Nhắc nhở công nợ / Debt Reminder',
+    previewText: 'Bạn có khoản nợ quá 7 ngày cần xử lý trên FairPay.',
+    eyebrow: 'FairPay Reminder',
+    heading: 'Nhắc công nợ quá hạn',
+    subheading: 'Kiểm tra các khoản đã quá 7 ngày và thanh toán khi có thể.',
+    bodyHtml,
+    ctaHref,
+    ctaLabel: 'Thanh toán ngay / Pay Now',
+    tone: 'reminder',
+    footerHtml: `
+      <p style="margin:0;font-size:11px;color:#94a3b8;text-align:center;line-height:1.8;">
+        Để tắt email, vào <strong>Cài đặt &rarr; Thông báo</strong>.<br>
+        To unsubscribe, go to <strong>Settings &rarr; Notifications</strong>.<br>
+        &copy; 2026 FairPay
+      </p>`,
+  })
 
   return { subject, text, html }
 }

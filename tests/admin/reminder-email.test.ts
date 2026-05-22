@@ -44,6 +44,9 @@ describe("admin reminder email helpers", () => {
     expect(preview.html).toContain("@media only screen and (max-width: 640px)");
     expect(preview.html).toContain('class="email-body"');
     expect(preview.html).toContain('class="cta-link"');
+    expect(preview.html).toContain('data-email-shell="maily-inspired"');
+    expect(preview.html).toContain('data-email-block="notification-card"');
+    expect(preview.html).toContain('data-email-block="debt-summary"');
     expect(preview.text).toContain("You owe Lê A");
     expect(preview.text).toContain("Bún bò cuối tuần");
   });
@@ -113,6 +116,7 @@ describe("admin reminder email helpers", () => {
     expect(preview.html).toContain('alt="iCloud"');
     expect(preview.html).toContain("YouTube Premium");
     expect(preview.html).toContain("YP");
+    expect(preview.html).toContain('data-email-block="group-debt-card"');
     expect(preview.html).toContain('class="group-header-table"');
     expect(preview.html).toContain('class="group-header-amount"');
     expect(preview.html).toContain("Tổng cần trả sau bù trừ");

@@ -90,10 +90,12 @@ export function ReminderSettingsComponent() {
   return (
     <div className="space-y-6">
       {/* Email Reminders Card */}
-      <Card>
-        <CardHeader>
+      <Card className="overflow-hidden rounded-xl border shadow-sm">
+        <CardHeader className="border-b bg-muted/30">
           <div className="flex items-center gap-2">
-            <MailIcon className="h-5 w-5 text-primary" />
+            <span className="inline-flex size-9 items-center justify-center rounded-lg border bg-background text-primary">
+              <MailIcon className="h-5 w-5" />
+            </span>
             <CardTitle>{t("settings.emailReminders", "Email Reminders")}</CardTitle>
           </div>
           <CardDescription>
@@ -105,7 +107,7 @@ export function ReminderSettingsComponent() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Enable Email Reminders */}
-          <div className="flex items-center justify-between space-x-2">
+          <div className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="email-reminders" className="text-base">
                 {t("settings.enableEmailReminders", "Enable email reminders")}
@@ -124,7 +126,7 @@ export function ReminderSettingsComponent() {
           {settings.emailReminders && (
             <>
               {/* Email Address */}
-              <div className="space-y-2">
+              <div className="space-y-2 rounded-xl border bg-muted/20 p-4">
                 <Label htmlFor="email">
                   {t("settings.emailAddress", "Email address")}
                 </Label>
@@ -138,6 +140,7 @@ export function ReminderSettingsComponent() {
                   />
                   <Button
                     variant="outline"
+                    className="cursor-pointer"
                     onClick={handleTestEmail}
                     disabled={!settings.email}
                   >
@@ -176,7 +179,7 @@ export function ReminderSettingsComponent() {
               </div>
 
               {/* Daily Digest */}
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:space-x-2">
+              <div className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:space-x-2">
                 <div className="space-y-0.5">
                   <Label htmlFor="daily-digest" className="text-sm font-medium">
                     {t("settings.dailyDigest", "Daily digest")}
@@ -193,7 +196,7 @@ export function ReminderSettingsComponent() {
               </div>
 
               {/* Weekly Digest */}
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:space-x-2">
+              <div className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:space-x-2">
                 <div className="space-y-0.5">
                   <Label htmlFor="weekly-digest" className="text-sm font-medium">
                     {t("settings.weeklyDigest", "Weekly digest")}
@@ -224,7 +227,7 @@ export function ReminderSettingsComponent() {
       </Card>
 
       {/* Calendar Sync Card */}
-      <Card>
+      <Card className="rounded-xl border shadow-sm">
         <CardHeader>
           <div className="flex items-center gap-2">
             <CalendarIcon className="h-5 w-5 text-primary" />
@@ -239,7 +242,7 @@ export function ReminderSettingsComponent() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Enable Calendar Sync */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:space-x-2">
+          <div className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:space-x-2">
             <div className="space-y-0.5">
               <Label htmlFor="calendar-sync" className="text-base">
                 {t("settings.enableCalendarSync", "Enable calendar sync")}
@@ -318,10 +321,10 @@ export function ReminderSettingsComponent() {
       {/* Save Button */}
       {hasChanges && (
         <div className="flex justify-end gap-2 sticky bottom-4">
-          <Button variant="outline" onClick={() => { tap(); window.location.reload(); }}>
+          <Button variant="outline" className="cursor-pointer" onClick={() => { tap(); window.location.reload(); }}>
             {t("common.cancel", "Cancel")}
           </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
+          <Button className="cursor-pointer" onClick={handleSave} disabled={isSaving}>
             {isSaving ? t("common.saving", "Saving...") : t("common.save", "Save Changes")}
           </Button>
         </div>
