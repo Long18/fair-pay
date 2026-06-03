@@ -479,7 +479,12 @@ function UserDetailDialog({
                   <span>{user.full_name}</span>
                   <UserGroupStack userId={user.id} size="xs" />
                 </DialogTitle>
-                <DialogDescription>{user.email}</DialogDescription>
+                <DialogDescription className="space-y-0.5">
+                  <span translate="no">{user.email}</span>
+                  {(user.emails ?? []).filter((e) => !e.is_primary).map((e) => (
+                    <span key={e.id} className="block text-xs opacity-70" translate="no">{e.email}</span>
+                  ))}
+                </DialogDescription>
               </div>
             </div>
           </DialogHeader>
@@ -495,7 +500,26 @@ function UserDetailDialog({
 
               <TabsContent value="profile" className="mt-4 space-y-4 overflow-y-auto flex-1 px-6 pb-6">
                 <div className="space-y-3">
-                  <DetailRow label="Email" value={user.email} />
+                  <DetailRow
+                    label="Email"
+                    value={
+                      <div className="space-y-1">
+                        {(user.emails && user.emails.length > 0
+                          ? user.emails
+                          : [{ id: "primary", email: user.email, is_primary: true }]
+                        ).map((e) => (
+                          <div key={e.id} className="flex items-center gap-1.5 flex-wrap">
+                            <span className="break-all text-sm" translate="no">{e.email}</span>
+                            {e.is_primary && (
+                              <Badge variant="outline" className="text-[10px] py-0 h-4 px-1.5 shrink-0">
+                                {tAdmin("people.primaryEmail")}
+                              </Badge>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    }
+                  />
                   <DetailRow
                     label={tAdmin("common.role")}
                     value={
@@ -1104,7 +1128,14 @@ function MergeUserDialog({
             />
             <DetailRow
               label={tAdmin("common.email")}
-              value={<span translate="no">{sourceUser.email}</span>}
+              value={
+                <div className="space-y-0.5">
+                  <span translate="no">{sourceUser.email}</span>
+                  {(sourceUser.emails ?? []).filter((e) => !e.is_primary).map((e) => (
+                    <p key={e.id} className="text-xs text-muted-foreground" translate="no">{e.email}</p>
+                  ))}
+                </div>
+              }
             />
           </div>
 
@@ -1700,7 +1731,12 @@ function NewRegistrationCard({
       </Avatar>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{user.full_name}</p>
-        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+        <p className="text-xs text-muted-foreground truncate" translate="no">{user.email}</p>
+        {(user.emails ?? []).filter((e) => !e.is_primary).length > 0 && (
+          <p className="text-xs text-muted-foreground/60 truncate">
+            +{(user.emails ?? []).filter((e) => !e.is_primary).length} more
+          </p>
+        )}
       </div>
       <div className="text-right shrink-0">
         <p className="text-xs text-muted-foreground">{formatDate(user.created_at)}</p>
@@ -2007,7 +2043,22 @@ function UsersTab() {
         </div>
       ),
     },
-    { id: "email", header: tAdmin("common.email"), accessorKey: "email", size: 220 },
+    {
+      id: "email", header: tAdmin("common.email"), accessorKey: "email", size: 220,
+      cell: ({ row }) => {
+        const extra = (row.original.emails ?? []).filter((e) => !e.is_primary);
+        return (
+          <div className="space-y-0.5">
+            <p className="truncate text-sm" translate="no">{row.original.email}</p>
+            {extra.length > 0 && (
+              <p className="text-xs text-muted-foreground/70 truncate" translate="no">
+                +{extra.length} {extra.length === 1 ? "more" : "more"}
+              </p>
+            )}
+          </div>
+        );
+      },
+    },
     {
       id: "role", header: tAdmin("common.role"), accessorFn: (row) => row.role, size: 100,
       cell: ({ row }) => (
