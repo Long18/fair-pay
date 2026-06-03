@@ -831,13 +831,14 @@ serve(async (req) => {
       )
     }
 
-    console.log(`Queue: ${(queue as QueueRow[]).length} notifications across users`)
+    console.log(`Queue: ${(queue as QueueRow[]).length} notification recipient rows`)
 
-    // ── 2. Group by user ──────────────────────────────────────────────────
-    const byUser = new Map<string, QueueRow[]>()
+    // ── 2. Group by recipient ─────────────────────────────────────────────
+    const byRecipient = new Map<string, QueueRow[]>()
     for (const row of queue as QueueRow[]) {
-      if (!byUser.has(row.user_id)) byUser.set(row.user_id, [])
-      byUser.get(row.user_id)!.push(row)
+      const recipientKey = `${row.user_id}:${row.user_email.toLowerCase()}`
+      if (!byRecipient.has(recipientKey)) byRecipient.set(recipientKey, [])
+      byRecipient.get(recipientKey)!.push(row)
     }
 
     // ── 3. Connect SMTP ───────────────────────────────────────────────────
@@ -852,9 +853,11 @@ serve(async (req) => {
     })
 
     const result: ProcessingResult = { sent: 0, failed: 0, skipped: 0, errors: [] }
+    const successfulNotificationIds = new Set<string>()
+    const failedNotificationIds = new Set<string>()
 
-    // ── 4. Send digest per user ───────────────────────────────────────────
-    for (const [userId, notifs] of byUser) {
+    // ── 4. Send digest per selected recipient ─────────────────────────────
+    for (const notifs of byRecipient.values()) {
       const { user_email, user_name } = notifs[0]
 
       try {
@@ -872,26 +875,31 @@ serve(async (req) => {
           tag: 'notification-digest',
         })
 
-        // ── 5. Mark as sent ───────────────────────────────────────────────
-        const ids = notifs.map(n => n.notification_id)
-        const { error: updateError } = await supabase
-          .from('notifications')
-          .update({ email_sent_at: new Date().toISOString() })
-          .in('id', ids)
-
-        if (updateError) {
-          console.error(`Mark-sent failed for ${user_email}:`, updateError.message)
-          result.errors.push(`Mark-sent failed for ${user_email}: ${updateError.message}`)
-        } else {
-          result.sent++
-          console.log(`✓ ${user_email} — ${notifs.length} notification(s)`)
-        }
+        for (const notif of notifs) successfulNotificationIds.add(notif.notification_id)
+        result.sent++
+        console.log(`✓ ${user_email} — ${notifs.length} notification(s)`)
       } catch (err) {
         const msg = `Send failed for ${user_email}: ${(err as Error).message}`
         console.error(msg)
         result.failed++
+        for (const notif of notifs) failedNotificationIds.add(notif.notification_id)
         result.errors.push(msg)
-        // Continue to next user — one failure should not block others
+        // Continue to next recipient — one failure should not block others
+      }
+    }
+
+    // ── 5. Mark notifications sent only when every selected recipient passed
+    const sentIds = Array.from(successfulNotificationIds)
+      .filter((id) => !failedNotificationIds.has(id))
+    if (sentIds.length) {
+      const { error: updateError } = await supabase
+        .from('notifications')
+        .update({ email_sent_at: new Date().toISOString() })
+        .in('id', sentIds)
+
+      if (updateError) {
+        console.error('Mark-sent failed:', updateError.message)
+        result.errors.push(`Mark-sent failed: ${updateError.message}`)
       }
     }
 

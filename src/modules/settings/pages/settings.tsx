@@ -14,7 +14,17 @@ import { ReferralCard, ReferralStats } from '@/modules/referrals';
 import { usePushNotification } from '@/modules/notifications/hooks/use-push-notification';
 
 export function SettingsPage() {
-  const { settings, isLoading, isUpdating, saveSettings } = useUserSettings();
+  const {
+    settings,
+    isLoading,
+    isUpdating,
+    saveSettings,
+    userEmails,
+    isEmailUpdating,
+    addEmail,
+    setPrimaryEmail,
+    removeEmail,
+  } = useUserSettings();
   const { t } = useTranslation();
   const { restart } = useOnboarding();
   const { tap } = useHaptics();
@@ -85,6 +95,11 @@ export function SettingsPage() {
                 settings={settings}
                 onSave={saveSettings}
                 isUpdating={isUpdating}
+                userEmails={userEmails}
+                isEmailUpdating={isEmailUpdating}
+                onAddEmail={addEmail}
+                onSetPrimaryEmail={setPrimaryEmail}
+                onRemoveEmail={removeEmail}
               />
             </CardContent>
           </Card>

@@ -341,6 +341,7 @@ function UserDetailDialog({
   onToggleRole,
   onToggleJourneyTracking,
   onDelete,
+  onMerge,
   onViewJourney,
   isSelf,
 }: {
@@ -351,6 +352,7 @@ function UserDetailDialog({
   onToggleRole: () => void;
   onToggleJourneyTracking: () => void;
   onDelete: () => void;
+  onMerge: () => void;
   onViewJourney: () => void;
   isSelf: boolean;
 }) {
@@ -538,6 +540,15 @@ function UserDetailDialog({
                     {user.role === "admin"
                       ? <><ShieldOffIcon className="mr-2 h-4 w-4" />{tAdmin("people.demoteToUser")}</>
                       : <><ShieldIcon className="mr-2 h-4 w-4" />{tAdmin("people.promoteToAdmin")}</>}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onMerge}
+                    disabled={isSelf}
+                  >
+                    <UsersIcon className="mr-2 h-4 w-4" />
+                    {tAdmin("people.mergeProfile")}
                   </Button>
                   <Button
                     size="sm"
@@ -1040,6 +1051,93 @@ function DeleteConfirmDialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+}
+
+function MergeUserDialog({
+  sourceUser,
+  users,
+  open,
+  onOpenChange,
+  onConfirm,
+  isMerging,
+}: {
+  sourceUser: AdminUserRow | null;
+  users: AdminUserRow[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: (targetUserId: string) => void;
+  isMerging: boolean;
+}) {
+  const { tAdmin } = useAdminTranslation();
+  const [targetUserId, setTargetUserId] = useState("");
+
+  useEffect(() => {
+    if (open) setTargetUserId("");
+  }, [open, sourceUser?.id]);
+
+  const targetUsers = useMemo(
+    () => users.filter((user) => user.id !== sourceUser?.id),
+    [sourceUser?.id, users],
+  );
+
+  if (!sourceUser) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[520px]">
+        <DialogHeader>
+          <DialogTitle>{tAdmin("people.mergeProfileTitle")}</DialogTitle>
+          <DialogDescription>
+            {tAdmin("people.mergeProfileDescription", {
+              name: sourceUser.full_name,
+              email: sourceUser.email,
+            })}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="rounded-lg border bg-muted/20 p-3 text-sm">
+            <DetailRow
+              label={tAdmin("people.mergeSource")}
+              value={<span className="font-medium">{sourceUser.full_name}</span>}
+            />
+            <DetailRow
+              label={tAdmin("common.email")}
+              value={<span translate="no">{sourceUser.email}</span>}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>{tAdmin("people.mergeTarget")}</Label>
+            <UserSingleCombobox
+              value={targetUserId}
+              onChange={setTargetUserId}
+              users={targetUsers}
+              placeholder={tAdmin("people.selectMergeTarget")}
+              disabled={isMerging || targetUsers.length === 0}
+            />
+          </div>
+
+          <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+            {tAdmin("people.mergeProfileWarning")}
+          </p>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isMerging}>
+            {tAdmin("common.cancel")}
+          </Button>
+          <Button
+            onClick={() => onConfirm(targetUserId)}
+            disabled={isMerging || !targetUserId}
+          >
+            {isMerging ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {tAdmin("people.mergeProfileSubmit")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -1817,6 +1915,11 @@ function UsersTab() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
+  // Merge
+  const [mergeSourceUser, setMergeSourceUser] = useState<AdminUserRow | null>(null);
+  const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+  const [isMerging, setIsMerging] = useState(false);
+
   // New registrations (7 days)
   const NEW_REG_DAYS = 7;
 
@@ -1973,6 +2076,13 @@ function UsersTab() {
               <PencilIcon className="mr-2 h-4 w-4" />
               {tAdmin("common.edit")}
             </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => { warning(); setMergeSourceUser(row.original); setMergeDialogOpen(true); }}
+              disabled={identity?.id === row.original.id}
+            >
+              <UsersIcon className="mr-2 h-4 w-4" />
+              {identity?.id === row.original.id ? tAdmin("people.cannotMergeSelf") : tAdmin("people.mergeProfile")}
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => { warning(); setDeleteUser(row.original); setDeleteDialogOpen(true); }} disabled={identity?.id === row.original.id} className="text-destructive">
               <Trash2Icon className="mr-2 h-4 w-4" />
@@ -2051,6 +2161,31 @@ function UsersTab() {
       toast.error(tAdmin("common.errorWithMessage", { message: getErrorMessage(err, tAdmin("people.errors.createUserFailed")) }));
     } finally { setIsCreating(false); }
   }, [queryClient, tAdmin]);
+
+  const handleMergeUser = useCallback(async (targetUserId: string) => {
+    if (!mergeSourceUser || !targetUserId || mergeSourceUser.id === targetUserId) return;
+    setIsMerging(true);
+    try {
+      const { error } = await supabaseClient.rpc("admin_merge_profiles", {
+        p_source_user_id: mergeSourceUser.id,
+        p_target_user_id: targetUserId,
+      });
+      if (error) throw error;
+
+      toast.success(tAdmin("people.success.userMerged", { name: mergeSourceUser.full_name }));
+      setMergeDialogOpen(false);
+      setMergeSourceUser(null);
+      if (selectedUser?.id === mergeSourceUser.id) {
+        setDetailOpen(false);
+        setSelectedUser(null);
+      }
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    } catch (err: unknown) {
+      toast.error(tAdmin("common.errorWithMessage", { message: getErrorMessage(err, tAdmin("people.errors.mergeUserFailed")) }));
+    } finally {
+      setIsMerging(false);
+    }
+  }, [mergeSourceUser, queryClient, selectedUser?.id, tAdmin]);
 
   const handleEditUser = useCallback(async (data: {
     full_name: string;
@@ -2267,6 +2402,13 @@ function UsersTab() {
                                 <PencilIcon className="mr-2 h-4 w-4" />
                                 {tAdmin("common.edit")}
                               </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => { warning(); setMergeSourceUser(user); setMergeDialogOpen(true); }}
+                                disabled={identity?.id === user.id}
+                              >
+                                <UsersIcon className="mr-2 h-4 w-4" />
+                                {identity?.id === user.id ? tAdmin("people.cannotMergeSelf") : tAdmin("people.mergeProfile")}
+                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => { warning(); setDeleteUser(user); setDeleteDialogOpen(true); }}
@@ -2329,6 +2471,13 @@ function UsersTab() {
         }}
         onEdit={() => { setDetailOpen(false); setEditUser(selectedUser); setEditDialogOpen(true); }}
         onToggleRole={() => { if (selectedUser) handleToggleRole(selectedUser); }}
+        onMerge={() => {
+          if (!selectedUser) return;
+          warning();
+          setDetailOpen(false);
+          setMergeSourceUser(selectedUser);
+          setMergeDialogOpen(true);
+        }}
         onDelete={() => { setDetailOpen(false); setDeleteUser(selectedUser); setDeleteDialogOpen(true); }}
         isSelf={identity?.id === selectedUser?.id}
       />
@@ -2349,6 +2498,19 @@ function UsersTab() {
         onSubmit={handleEditUser}
         isUpdating={isUpdating}
         isSelf={identity?.id === editUser?.id}
+      />
+      <MergeUserDialog
+        sourceUser={mergeSourceUser}
+        users={usersData ?? []}
+        open={mergeDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !isMerging) {
+            setMergeDialogOpen(false);
+            setMergeSourceUser(null);
+          }
+        }}
+        onConfirm={handleMergeUser}
+        isMerging={isMerging}
       />
     </>
   );

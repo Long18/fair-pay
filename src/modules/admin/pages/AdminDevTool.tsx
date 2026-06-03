@@ -13,6 +13,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -96,10 +103,20 @@ interface GroupBreakdownRow {
   counterparties: DebtBreakdownRow[];
 }
 
+interface UserEmailOption {
+  id: string;
+  user_id: string;
+  email: string;
+  is_primary: boolean;
+  receives_notifications: boolean;
+  is_verified: boolean;
+}
+
 interface DebtReminderRow {
   user_id: string;
   full_name: string;
   email: string | null;
+  emails: UserEmailOption[];
   avatar_url: string | null;
   has_auth_account: boolean;
   total_i_owe: number;
@@ -244,7 +261,11 @@ async function fetchEmailOverview(): Promise<EmailOverviewResponse> {
   return readApiResponse<EmailOverviewResponse>(response);
 }
 
-async function createReminderNotifications(rows: DebtReminderRow[], tAdmin: AdminT): Promise<string[]> {
+async function createReminderNotifications(
+  rows: DebtReminderRow[],
+  tAdmin: AdminT,
+  recipientResolver?: (row: DebtReminderRow) => string[]
+): Promise<string[]> {
   const token = await getAccessToken();
   const response = await fetch("/api/admin/email/send-reminder", {
     method: "POST",
@@ -258,6 +279,7 @@ async function createReminderNotifications(rows: DebtReminderRow[], tAdmin: Admi
         title: tAdmin("devtool.messageTitle"),
         message: buildReminderMessage(row, tAdmin),
         link: row.has_auth_account ? "/dashboard" : "/register",
+        recipient_emails: recipientResolver?.(row),
         email_context: {
           total_amount: row.total_i_owe,
           debt_breakdown: row.debt_breakdown.map((item) => ({
@@ -299,6 +321,31 @@ function normalizeDebtRows(rows: unknown[], tAdmin: AdminT): DebtReminderRow[] {
   return rows
     .map((row) => {
       const value = row as Record<string, unknown>;
+      const userId = String(value.user_id || "");
+      const primaryEmail = value.email ? String(value.email) : null;
+      const rawEmails = Array.isArray(value.emails) ? value.emails : [];
+      const emails = rawEmails.length
+        ? rawEmails.map((item) => {
+            const email = item as Record<string, unknown>;
+            return {
+              id: String(email.id || email.email || ""),
+              user_id: String(email.user_id || userId),
+              email: String(email.email || ""),
+              is_primary: email.is_primary === true,
+              receives_notifications: email.receives_notifications !== false,
+              is_verified: email.is_verified === true,
+            };
+          }).filter((email) => email.email)
+        : primaryEmail
+          ? [{
+              id: primaryEmail,
+              user_id: userId,
+              email: primaryEmail,
+              is_primary: true,
+              receives_notifications: true,
+              is_verified: true,
+            }]
+          : [];
       const debtBreakdown = Array.isArray(value.debt_breakdown)
         ? value.debt_breakdown.map((item) => {
             const debt = item as Record<string, unknown>;
@@ -370,9 +417,10 @@ function normalizeDebtRows(rows: unknown[], tAdmin: AdminT): DebtReminderRow[] {
         : [];
 
       return {
-        user_id: String(value.user_id || ""),
+        user_id: userId,
         full_name: String(value.full_name || tAdmin("common.unknown")),
-        email: value.email ? String(value.email) : null,
+        email: emails.find((email) => email.is_primary)?.email ?? primaryEmail ?? emails[0]?.email ?? null,
+        emails,
         avatar_url: value.avatar_url ? String(value.avatar_url) : null,
         has_auth_account: value.has_auth_account !== false,
         total_i_owe: Number(value.total_i_owe || 0),
@@ -383,6 +431,55 @@ function normalizeDebtRows(rows: unknown[], tAdmin: AdminT): DebtReminderRow[] {
       };
     })
     .filter((row) => row.user_id && row.email && row.total_i_owe > 0);
+}
+
+async function attachUserEmails(rows: DebtReminderRow[]): Promise<DebtReminderRow[]> {
+  const userIds = Array.from(new Set(rows.map((row) => row.user_id).filter(Boolean)));
+  if (!userIds.length) return rows;
+
+  const { data, error } = await supabaseClient
+    .from("user_emails")
+    .select("id, user_id, email, is_primary, receives_notifications, is_verified")
+    .in("user_id", userIds)
+    .order("is_primary", { ascending: false })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.warn("[admin/email] Failed to load user_emails", error);
+    return rows;
+  }
+
+  const byUser = new Map<string, UserEmailOption[]>();
+  for (const item of (data ?? []) as UserEmailOption[]) {
+    const current = byUser.get(item.user_id) ?? [];
+    current.push(item);
+    byUser.set(item.user_id, current);
+  }
+
+  return rows.map((row) => {
+    const emails = byUser.get(row.user_id) ?? row.emails;
+    const email = emails.find((item) => item.is_primary)?.email ?? row.email ?? emails[0]?.email ?? null;
+    return { ...row, email, emails };
+  });
+}
+
+function getSelectedRecipientEmails(
+  row: DebtReminderRow,
+  recipientSelections: Record<string, string[]>
+): string[] {
+  const validEmails = new Set(row.emails.map((email) => email.email.toLowerCase()));
+  const selected = (recipientSelections[row.user_id] ?? []).filter((email) => validEmails.has(email.toLowerCase()));
+  if (selected.length) return selected;
+
+  const fallback = row.emails.find((email) => email.is_primary)?.email ?? row.email ?? row.emails[0]?.email;
+  return fallback ? [fallback] : [];
+}
+
+function formatRecipientEmails(
+  row: DebtReminderRow,
+  recipientSelections: Record<string, string[]>
+): string {
+  return getSelectedRecipientEmails(row, recipientSelections).join(", ");
 }
 
 function toReminderDebtBreakdown(items: DebtBreakdownRow[]): ReminderDebtBreakdownItem[] {
@@ -415,11 +512,13 @@ function RecipientIdentity({
   row,
   compact = false,
   showEmail = true,
+  emailLabel,
   placeholderLabel,
 }: {
   row: DebtReminderRow;
   compact?: boolean;
   showEmail?: boolean;
+  emailLabel?: string;
   placeholderLabel: string;
 }) {
   return (
@@ -439,11 +538,76 @@ function RecipientIdentity({
         </div>
         {showEmail ? (
           <p className="truncate text-xs text-muted-foreground" translate="no">
-            {row.email}
+            {emailLabel ?? row.email}
           </p>
         ) : null}
       </div>
     </div>
+  );
+}
+
+function RecipientEmailPicker({
+  row,
+  selectedEmails,
+  onChange,
+  disabled,
+  tAdmin,
+}: {
+  row: DebtReminderRow;
+  selectedEmails: string[];
+  onChange: (emails: string[]) => void;
+  disabled: boolean;
+  tAdmin: AdminT;
+}) {
+  const selected = selectedEmails.length ? selectedEmails : getSelectedRecipientEmails(row, {});
+  const selectedLabel = selected.length === 1
+    ? selected[0]
+    : tAdmin("devtool.selectedRecipientEmails", { count: selected.length });
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="max-w-[220px] justify-start gap-2"
+          disabled={disabled}
+        >
+          <MailIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="truncate" translate="no">{selectedLabel}</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-72">
+        <DropdownMenuLabel>{tAdmin("devtool.chooseRecipientEmails")}</DropdownMenuLabel>
+        {row.emails.map((email) => {
+          const checked = selected.some((value) => value.toLowerCase() === email.email.toLowerCase());
+          return (
+            <DropdownMenuCheckboxItem
+              key={email.id}
+              checked={checked}
+              onSelect={(event) => event.preventDefault()}
+              onCheckedChange={(nextChecked) => {
+                if (nextChecked) {
+                  onChange(Array.from(new Set([...selected, email.email])));
+                  return;
+                }
+
+                const next = selected.filter((value) => value.toLowerCase() !== email.email.toLowerCase());
+                if (next.length) onChange(next);
+              }}
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm" translate="no">{email.email}</p>
+                {email.is_primary ? (
+                  <p className="text-xs text-muted-foreground">{tAdmin("devtool.primaryEmail")}</p>
+                ) : null}
+              </div>
+            </DropdownMenuCheckboxItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -631,6 +795,7 @@ function AdminEmailDevTools() {
   const [bulkPreviewViewport, setBulkPreviewViewport] = useState<PreviewViewport>("desktop");
   const [confirmBulkOpen, setConfirmBulkOpen] = useState(false);
   const [groupFilter, setGroupFilter] = useState("all");
+  const [recipientSelections, setRecipientSelections] = useState<Record<string, string[]>>({});
 
   const previewEmail = useMemo(() => {
     if (!previewRow) return null;
@@ -712,7 +877,20 @@ function AdminEmailDevTools() {
     setPendingQueueError(null);
     try {
       const overview = await fetchEmailOverview();
-      setDebtors(normalizeDebtRows(overview.debtors || [], tAdmin));
+      const rows = await attachUserEmails(normalizeDebtRows(overview.debtors || [], tAdmin));
+      setDebtors(rows);
+      setRecipientSelections((previous) => {
+        const next: Record<string, string[]> = {};
+        for (const row of rows) {
+          const validEmails = new Set(row.emails.map((email) => email.email.toLowerCase()));
+          const previousSelection = (previous[row.user_id] ?? [])
+            .filter((email) => validEmails.has(email.toLowerCase()));
+          next[row.user_id] = previousSelection.length
+            ? previousSelection
+            : getSelectedRecipientEmails(row, {});
+        }
+        return next;
+      });
       setPendingQueueCount(overview.pending_queue_count ?? 0);
     } catch (error) {
       const message = error instanceof Error && error.message === "admin-session-missing"
@@ -736,7 +914,11 @@ function AdminEmailDevTools() {
       tap();
       setSendingUserId(row.user_id);
       try {
-        const ids = await createReminderNotifications([row], tAdmin);
+        const ids = await createReminderNotifications(
+          [row],
+          tAdmin,
+          (item) => getSelectedRecipientEmails(item, recipientSelections)
+        );
         if (!ids.length) throw new Error("queue-error");
 
         const result = await sendEmailForNotificationIds(ids);
@@ -756,7 +938,7 @@ function AdminEmailDevTools() {
         setSendingUserId(null);
       }
     },
-    [refresh, success, tap, tAdmin, warning]
+    [recipientSelections, refresh, success, tap, tAdmin, warning]
   );
 
   const handleRemindSelected = useCallback(async () => {
@@ -764,7 +946,11 @@ function AdminEmailDevTools() {
     tap();
     setSendingUserId("__bulk__");
     try {
-      const ids = await createReminderNotifications(selectedRows, tAdmin);
+      const ids = await createReminderNotifications(
+        selectedRows,
+        tAdmin,
+        (row) => getSelectedRecipientEmails(row, recipientSelections)
+      );
       if (!ids.length) throw new Error("queue-error");
 
       const result = await sendEmailForNotificationIds(ids);
@@ -785,7 +971,7 @@ function AdminEmailDevTools() {
     } finally {
       setSendingUserId(null);
     }
-  }, [selectedRows, refresh, success, tap, tAdmin, warning]);
+  }, [recipientSelections, selectedRows, refresh, success, tap, tAdmin, warning]);
 
   const openBulkPreview = useCallback(() => {
     if (!selectedRows.length) return;
@@ -976,7 +1162,7 @@ function AdminEmailDevTools() {
                   </div>
                 </TableHead>
                 <TableHead>{tAdmin("devtool.userColumn")}</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead>{tAdmin("devtool.recipientEmails")}</TableHead>
                 <TableHead className="text-right">{tAdmin("devtool.debtColumn")}</TableHead>
                 <TableHead className="text-right">{tAdmin("devtool.relationshipsColumn")}</TableHead>
                 <TableHead className="w-[200px] text-right">{tAdmin("common.actions")}</TableHead>
@@ -1029,9 +1215,21 @@ function AdminEmailDevTools() {
                         ) : null}
                       </TableCell>
                       <TableCell className="min-w-0 max-w-[min(100vw,220px)]">
-                        <span className="line-clamp-2 break-words" translate="no">
-                          {row.email}
-                        </span>
+                        {row.emails.length > 1 ? (
+                          <RecipientEmailPicker
+                            row={row}
+                            selectedEmails={recipientSelections[row.user_id] ?? []}
+                            onChange={(emails) => {
+                              setRecipientSelections((previous) => ({ ...previous, [row.user_id]: emails }));
+                            }}
+                            disabled={isBusy}
+                            tAdmin={tAdmin}
+                          />
+                        ) : (
+                          <span className="line-clamp-2 break-words" translate="no">
+                            {formatRecipientEmails(row, recipientSelections)}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right font-medium tabular-nums">
                         {formatCurrency(row.total_i_owe)}
@@ -1100,7 +1298,7 @@ function AdminEmailDevTools() {
             <DialogDescription>
               {previewRow ? (
                 <span className="inline-flex flex-wrap items-center gap-2">
-                  <span>{tAdmin("devtool.sendTo", { name: previewRow.full_name, email: previewRow.email })}</span>
+                  <span>{tAdmin("devtool.sendTo", { name: previewRow.full_name, email: formatRecipientEmails(previewRow, recipientSelections) })}</span>
                   {!previewRow.has_auth_account ? (
                     <Badge variant="secondary">{tAdmin("devtool.placeholderRecipient")}</Badge>
                   ) : null}
@@ -1114,6 +1312,7 @@ function AdminEmailDevTools() {
                 <aside className="min-h-0 space-y-4 overflow-y-auto border-b bg-muted/15 px-4 py-4 lg:border-r lg:border-b-0 sm:px-6">
                   <RecipientIdentity
                     row={previewRow}
+                    emailLabel={formatRecipientEmails(previewRow, recipientSelections)}
                     placeholderLabel={tAdmin("devtool.placeholderRecipient")}
                   />
                   <div className="rounded-xl border bg-background p-3 text-sm shadow-xs">
@@ -1240,7 +1439,7 @@ function AdminEmailDevTools() {
                     <SelectContent>
                       {selectedRows.map((r) => (
                         <SelectItem key={r.user_id} value={r.user_id}>
-                          {r.full_name} ({r.email})
+                          {r.full_name} ({formatRecipientEmails(r, recipientSelections)})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1253,6 +1452,7 @@ function AdminEmailDevTools() {
               {effectiveBulkFocusRow ? (
                 <RecipientIdentity
                   row={effectiveBulkFocusRow}
+                  emailLabel={formatRecipientEmails(effectiveBulkFocusRow, recipientSelections)}
                   placeholderLabel={tAdmin("devtool.placeholderRecipient")}
                 />
               ) : null}
@@ -1316,7 +1516,7 @@ function AdminEmailDevTools() {
                   <ol className="list-inside list-decimal space-y-1 px-3 py-2 text-left text-sm">
                     {selectedRows.map((r) => (
                       <li key={r.user_id} className="min-w-0 break-words" translate="no">
-                        {r.full_name} — {r.email}
+                        {r.full_name} — {formatRecipientEmails(r, recipientSelections)}
                       </li>
                     ))}
                   </ol>

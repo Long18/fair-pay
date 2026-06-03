@@ -1149,6 +1149,7 @@ export type Database = {
           is_read: boolean | null
           link: string | null
           message: string
+          recipient_emails: string[] | null
           related_id: string | null
           title: string
           type: string
@@ -1163,6 +1164,7 @@ export type Database = {
           is_read?: boolean | null
           link?: string | null
           message: string
+          recipient_emails?: string[] | null
           related_id?: string | null
           title: string
           type: string
@@ -1177,6 +1179,7 @@ export type Database = {
           is_read?: boolean | null
           link?: string | null
           message?: string
+          recipient_emails?: string[] | null
           related_id?: string | null
           title?: string
           type?: string
@@ -1851,6 +1854,53 @@ export type Database = {
           },
         ]
       }
+      user_emails: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          is_primary: boolean
+          is_verified: boolean
+          normalized_email: string
+          receives_notifications: boolean
+          source: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          is_primary?: boolean
+          is_verified?: boolean
+          normalized_email?: never
+          receives_notifications?: boolean
+          source?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          is_primary?: boolean
+          is_verified?: boolean
+          normalized_email?: never
+          receives_notifications?: boolean
+          source?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_emails_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_settings: {
         Row: {
           allow_friend_requests: boolean | null
@@ -2285,6 +2335,14 @@ export type Database = {
         }
         Returns: Json
       }
+      add_user_email: {
+        Args: {
+          p_email: string
+          p_make_primary?: boolean
+          p_user_id?: string
+        }
+        Returns: Json
+      }
       admin_accept_friendship: {
         Args: { p_friendship_id: string }
         Returns: Json
@@ -2319,6 +2377,13 @@ export type Database = {
       }
       admin_get_latest_tracked_users: {
         Args: { p_limit?: number }
+        Returns: Json
+      }
+      admin_merge_profiles: {
+        Args: {
+          p_source_user_id: string
+          p_target_user_id: string
+        }
         Returns: Json
       }
       admin_get_user_journey_graph: {
@@ -3233,6 +3298,10 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: undefined
       }
+      remove_user_email: {
+        Args: { p_email_id: string }
+        Returns: Json
+      }
       restore_deleted_expense: {
         Args: { p_expense_id: string }
         Returns: boolean
@@ -3286,6 +3355,10 @@ export type Database = {
         Returns: Json
       }
       settle_splits_batch: { Args: { p_split_ids: string[] }; Returns: Json }
+      set_primary_user_email: {
+        Args: { p_email_id: string }
+        Returns: Json
+      }
       should_send_notification: {
         Args: { p_notification_type: string; p_user_id: string }
         Returns: boolean

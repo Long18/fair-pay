@@ -9,8 +9,21 @@ interface ReminderRequest {
     title?: string
     message?: string
     link?: string
+    recipient_emails?: unknown
     email_context?: unknown
   }>
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function normalizeRecipientEmails(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null
+  const emails = Array.from(new Set(
+    value
+      .map((item) => typeof item === 'string' ? item.trim().toLowerCase() : '')
+      .filter((item) => item && EMAIL_RE.test(item))
+  ))
+  return emails.length ? emails : null
 }
 
 function getRequestBody(req: VercelRequest): ReminderRequest {
@@ -70,6 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         title: reminder.title,
         message: reminder.message,
         link: reminder.link || '/dashboard',
+        recipient_emails: normalizeRecipientEmails(reminder.recipient_emails),
         email_context: reminder.email_context || null,
         is_read: false,
       })))

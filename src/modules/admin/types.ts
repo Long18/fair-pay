@@ -18,6 +18,14 @@ export interface AdminUserRow {
   id: string;
   full_name: string;
   email: string;
+  emails?: Array<{
+    id: string;
+    email: string;
+    is_primary: boolean;
+    receives_notifications: boolean;
+    is_verified: boolean;
+    source?: string;
+  }>;
   avatar_url: string | null;
   role: 'admin' | 'moderator' | 'user';
   created_at: string;

@@ -4,6 +4,19 @@ export type Theme = 'light' | 'dark' | 'system';
 export type DateFormat = 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
 export type ProfileVisibility = 'public' | 'friends' | 'private';
 
+export interface UserEmail {
+  id: string;
+  user_id: string;
+  email: string;
+  normalized_email: string;
+  is_primary: boolean;
+  receives_notifications: boolean;
+  is_verified: boolean;
+  source: 'auth' | 'profile' | 'admin' | 'user' | 'merge';
+  created_at: string;
+  updated_at: string;
+}
+
 export interface UserSettings {
   user_id: string;
 
