@@ -2579,7 +2579,9 @@ export type Database = {
           avatar_url: string
           created_at: string
           email: string
+          emails: Json
           full_name: string
+          has_auth_account: boolean
           id: string
           journey_tracking_ignored: boolean
           role: string
