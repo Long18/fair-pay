@@ -30,6 +30,7 @@ export interface AdminUserRow {
   role: 'admin' | 'moderator' | 'user';
   created_at: string;
   journey_tracking_ignored: boolean;
+  has_auth_account: boolean;
 }
 
 export interface AuditLogEntry {

@@ -545,7 +545,7 @@ function UserDetailDialog({
                     size="sm"
                     variant="outline"
                     onClick={onMerge}
-                    disabled={isSelf}
+                    disabled={isSelf || !!user?.has_auth_account}
                   >
                     <UsersIcon className="mr-2 h-4 w-4" />
                     {tAdmin("people.mergeProfile")}
@@ -1077,7 +1077,7 @@ function MergeUserDialog({
   }, [open, sourceUser?.id]);
 
   const targetUsers = useMemo(
-    () => users.filter((user) => user.id !== sourceUser?.id),
+    () => users.filter((user) => user.id !== sourceUser?.id && user.has_auth_account),
     [sourceUser?.id, users],
   );
 
@@ -2078,7 +2078,7 @@ function UsersTab() {
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => { warning(); setMergeSourceUser(row.original); setMergeDialogOpen(true); }}
-              disabled={identity?.id === row.original.id}
+              disabled={identity?.id === row.original.id || row.original.has_auth_account}
             >
               <UsersIcon className="mr-2 h-4 w-4" />
               {identity?.id === row.original.id ? tAdmin("people.cannotMergeSelf") : tAdmin("people.mergeProfile")}
@@ -2404,7 +2404,7 @@ function UsersTab() {
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => { warning(); setMergeSourceUser(user); setMergeDialogOpen(true); }}
-                                disabled={identity?.id === user.id}
+                                disabled={identity?.id === user.id || user.has_auth_account}
                               >
                                 <UsersIcon className="mr-2 h-4 w-4" />
                                 {identity?.id === user.id ? tAdmin("people.cannotMergeSelf") : tAdmin("people.mergeProfile")}
