@@ -49,6 +49,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -344,7 +345,11 @@ function UserDetailDialog({
   onMerge,
   onViewJourney,
   onSetPrimaryEmail,
+  onAddEmail,
+  onRemoveEmail,
+  isAddingEmail,
   settingPrimaryEmailId,
+  removingEmailId,
   isSelf,
 }: {
   user: AdminUserRow | null;
@@ -357,12 +362,19 @@ function UserDetailDialog({
   onMerge: () => void;
   onViewJourney: () => void;
   onSetPrimaryEmail: (emailId: string) => void;
+  onAddEmail: (email: string, makePrimary: boolean) => Promise<void>;
+  onRemoveEmail: (emailId: string) => void;
+  isAddingEmail: boolean;
   settingPrimaryEmailId: string | null;
+  removingEmailId: string | null;
   isSelf: boolean;
 }) {
   const { tAdmin } = useAdminTranslation();
   const [groups, setGroups] = useState<Array<{ id: string; name: string; role: string }>>([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [makePrimary, setMakePrimary] = useState(false);
+  const attachedEmailCount = user?.emails?.length ?? 0;
 
   // Add to group state
   const [addGroupOpen, setAddGroupOpen] = useState(false);
@@ -401,6 +413,12 @@ function UserDetailDialog({
     fetchGroups();
   }, [user, open, fetchGroups]);
 
+  useEffect(() => {
+    if (!user?.id) return;
+    setNewEmail("");
+    setMakePrimary(attachedEmailCount === 0);
+  }, [attachedEmailCount, user?.id]);
+
   // Fetch all groups when add dialog opens
   useEffect(() => {
     if (!addGroupOpen) return;
@@ -417,6 +435,24 @@ function UserDetailDialog({
     const memberGroupIds = new Set(groups.map((g) => g.id));
     return allGroups.filter((g) => !memberGroupIds.has(g.id));
   }, [allGroups, groups]);
+
+  const hasAttachedEmails = attachedEmailCount > 0;
+
+  const handleAddEmail = useCallback(async () => {
+    const email = newEmail.trim();
+    if (!email) {
+      toast.error(tAdmin("people.errors.validEmailRequired"));
+      return;
+    }
+
+    try {
+      await onAddEmail(email, makePrimary || !hasAttachedEmails);
+      setNewEmail("");
+      setMakePrimary(!hasAttachedEmails);
+    } catch {
+      // Parent handler owns the toast. Keep local state intact on failure.
+    }
+  }, [hasAttachedEmails, makePrimary, newEmail, onAddEmail, tAdmin]);
 
   const handleAddToGroup = useCallback(async () => {
     if (!user || !selectedGroupId) return;
@@ -512,33 +548,88 @@ function UserDetailDialog({
                   <DetailRow
                     label="Email"
                     value={
-                      <div className="space-y-1">
-                        {(user.emails && user.emails.length > 0
-                          ? user.emails
-                          : [{ id: "primary", email: user.email, is_primary: true }]
-                        ).map((e) => (
-                          <div key={e.id} className="flex items-center justify-between gap-2 rounded-md border px-2.5 py-2">
-                            <span className="break-all text-sm" translate="no">{e.email}</span>
-                            {e.is_primary && (
-                              <Badge variant="outline" className="text-[10px] py-0 h-4 px-1.5 shrink-0">
-                                {tAdmin("people.primaryEmail")}
-                              </Badge>
-                            )}
-                            {!e.is_primary && e.id !== "primary" && (
+                      <div className="space-y-3">
+                        <div className="space-y-1">
+                          {(user.emails && user.emails.length > 0
+                            ? user.emails
+                            : [{ id: "primary", email: user.email, is_primary: true }]
+                          ).map((e) => (
+                            <div key={e.id} className="flex items-center justify-between gap-2 rounded-md border px-2.5 py-2">
+                              <div className="min-w-0">
+                                <span className="block break-all text-sm" translate="no">{e.email}</span>
+                                {e.is_primary && (
+                                  <Badge variant="outline" className="mt-1 h-4 shrink-0 px-1.5 py-0 text-[10px]">
+                                    {tAdmin("people.primaryEmail")}
+                                  </Badge>
+                                )}
+                              </div>
+                              {!e.is_primary && e.id !== "primary" && (
+                                <div className="flex shrink-0 items-center gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 text-xs"
+                                    disabled={settingPrimaryEmailId !== null || removingEmailId !== null || isAddingEmail}
+                                    onClick={() => onSetPrimaryEmail(e.id)}
+                                  >
+                                    {settingPrimaryEmailId === e.id && <Loader2Icon className="mr-1.5 h-3 w-3 animate-spin" />}
+                                    {tAdmin("people.makePrimaryEmail")}
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 text-xs text-destructive hover:text-destructive"
+                                    disabled={settingPrimaryEmailId !== null || removingEmailId !== null || isAddingEmail}
+                                    onClick={() => onRemoveEmail(e.id)}
+                                  >
+                                    {removingEmailId === e.id && <Loader2Icon className="mr-1.5 h-3 w-3 animate-spin" />}
+                                    {tAdmin("people.removeEmail")}
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <div className="rounded-md border bg-muted/20 p-3">
+                          <div className="space-y-2">
+                            <Label htmlFor="admin-add-email">{tAdmin("people.addEmail")}</Label>
+                            <div className="flex gap-2">
+                              <Input
+                                id="admin-add-email"
+                                type="email"
+                                placeholder="email@example.com"
+                                value={newEmail}
+                                onChange={(event) => setNewEmail(event.target.value)}
+                                disabled={isAddingEmail}
+                              />
                               <Button
                                 type="button"
-                                variant="outline"
-                                size="sm"
-                                className="h-7 shrink-0 text-xs"
-                                disabled={settingPrimaryEmailId !== null}
-                                onClick={() => onSetPrimaryEmail(e.id)}
+                                className="shrink-0"
+                                onClick={() => void handleAddEmail()}
+                                disabled={isAddingEmail || !newEmail.trim()}
                               >
-                                {settingPrimaryEmailId === e.id && <Loader2Icon className="mr-1.5 h-3 w-3 animate-spin" />}
-                                {tAdmin("people.makePrimaryEmail")}
+                                {isAddingEmail && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
+                                {tAdmin("people.addEmail")}
                               </Button>
+                            </div>
+                            {hasAttachedEmails ? (
+                              <label className="flex items-center gap-2 text-sm">
+                                <Checkbox
+                                  checked={makePrimary}
+                                  onCheckedChange={(checked) => setMakePrimary(checked === true)}
+                                  disabled={isAddingEmail}
+                                />
+                                <span>{tAdmin("people.makePrimaryEmail")}</span>
+                              </label>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">
+                                {tAdmin("people.addFirstEmailPrimaryHint")}
+                              </p>
                             )}
                           </div>
-                        ))}
+                        </div>
                       </div>
                     }
                   />
@@ -1335,7 +1426,10 @@ function EditUserDialog({
                 </SelectContent>
               </Select>
             ) : (
-              <Input id="edit-user-email" type="email" value={user.email} disabled />
+              <div className="rounded-md border bg-muted/20 p-3 text-sm">
+                <p className="text-muted-foreground">{tAdmin("people.noEmailAddresses")}</p>
+                <p className="mt-1 break-all font-medium" translate="no">{user.email}</p>
+              </div>
             )}
           </div>
           <div className="space-y-2 sm:col-span-2">
@@ -1989,7 +2083,9 @@ function UsersTab() {
   const [editUser, setEditUser] = useState<AdminUserRow | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isAddingEmail, setIsAddingEmail] = useState(false);
   const [settingPrimaryEmailId, setSettingPrimaryEmailId] = useState<string | null>(null);
+  const [removingEmailId, setRemovingEmailId] = useState<string | null>(null);
 
   // Merge
   const [mergeSourceUser, setMergeSourceUser] = useState<AdminUserRow | null>(null);
@@ -2335,6 +2431,16 @@ function UsersTab() {
     } finally { setIsUpdating(false); }
   }, [editUser, identity?.id, queryClient, tAdmin]);
 
+  const updateAdminUserInCache = useCallback((userId: string, updater: (user: AdminUserRow) => AdminUserRow) => {
+    const applyUpdate = (user: AdminUserRow | null) => (user?.id === userId ? updater(user) : user);
+
+    setSelectedUser((current) => applyUpdate(current));
+    setEditUser((current) => applyUpdate(current));
+    queryClient.setQueryData<AdminUserRow[]>(["admin", "users"], (current) =>
+      current?.map((user) => (user.id === userId ? updater(user) : user)),
+    );
+  }, [queryClient]);
+
   const handleSetPrimaryEmail = useCallback(async (user: AdminUserRow, emailId: string) => {
     setSettingPrimaryEmailId(emailId);
     try {
@@ -2344,20 +2450,14 @@ function UsersTab() {
       if (error) throw error;
 
       const primaryEmail = user.emails?.find((email) => email.id === emailId);
-      const updatedUser: AdminUserRow = {
-        ...user,
-        email: primaryEmail?.email ?? user.email,
-        emails: user.emails?.map((email) => ({
+      updateAdminUserInCache(user.id, (current) => ({
+        ...current,
+        email: primaryEmail?.email ?? current.email,
+        emails: current.emails?.map((email) => ({
           ...email,
           is_primary: email.id === emailId,
         })),
-      };
-
-      setSelectedUser((current) => current?.id === user.id ? updatedUser : current);
-      setEditUser((current) => current?.id === user.id ? updatedUser : current);
-      queryClient.setQueryData<AdminUserRow[]>(["admin", "users"], (current) =>
-        current?.map((item) => item.id === user.id ? updatedUser : item),
-      );
+      }));
       await queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       toast.success(tAdmin("people.success.primaryEmailUpdated", { email: primaryEmail?.email ?? user.email }));
     } catch (err: unknown) {
@@ -2367,7 +2467,81 @@ function UsersTab() {
     } finally {
       setSettingPrimaryEmailId(null);
     }
-  }, [queryClient, tAdmin]);
+  }, [queryClient, tAdmin, updateAdminUserInCache]);
+
+  const handleAddEmail = useCallback(async (user: AdminUserRow, email: string, makePrimary: boolean) => {
+    setIsAddingEmail(true);
+    try {
+      const { data, error } = await supabaseClient.rpc("add_user_email", {
+        p_email: email,
+        p_user_id: user.id,
+        p_make_primary: makePrimary,
+      });
+      if (error) throw error;
+      if (!data) throw new Error("No email row returned");
+
+      const addedEmail = data as NonNullable<AdminUserRow["emails"]>[number] & { normalized_email?: string };
+      updateAdminUserInCache(user.id, (current) => {
+        const nextEmail = {
+          id: addedEmail.id,
+          email: addedEmail.email,
+          is_primary: addedEmail.is_primary || !(current.emails ?? []).some((entry) => entry.is_primary),
+          receives_notifications: addedEmail.receives_notifications,
+          is_verified: addedEmail.is_verified,
+          source: addedEmail.source ?? "user",
+        };
+        const otherEmails = (current.emails ?? []).filter((entry) => entry.id !== nextEmail.id);
+        const emails = nextEmail.is_primary
+          ? otherEmails.map((entry) => ({ ...entry, is_primary: false })).concat(nextEmail)
+          : otherEmails.concat(nextEmail);
+        const primary = emails.find((entry) => entry.is_primary) ?? nextEmail;
+        return {
+          ...current,
+          email: primary.email,
+          emails,
+        };
+      });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      toast.success(tAdmin("people.success.emailAdded", { email: addedEmail.email }));
+    } catch (err: unknown) {
+      toast.error(tAdmin("common.errorWithMessage", {
+        message: getErrorMessage(err, tAdmin("people.errors.addEmailFailed")),
+      }));
+      throw err;
+    } finally {
+      setIsAddingEmail(false);
+    }
+  }, [queryClient, tAdmin, updateAdminUserInCache]);
+
+  const handleRemoveEmail = useCallback(async (user: AdminUserRow, emailId: string) => {
+    setRemovingEmailId(emailId);
+    try {
+      const { error } = await supabaseClient.rpc("remove_user_email", {
+        p_email_id: emailId,
+      });
+      if (error) throw error;
+
+      updateAdminUserInCache(user.id, (current) => {
+        const emails = (current.emails ?? []).filter((entry) => entry.id !== emailId);
+        const primary = emails.find((entry) => entry.is_primary);
+        return {
+          ...current,
+          email: primary?.email ?? current.email,
+          emails,
+        };
+      });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      const removedEmail = user.emails?.find((entry) => entry.id === emailId);
+      toast.success(tAdmin("people.success.emailRemoved", { email: removedEmail?.email ?? tAdmin("common.unknown") }));
+    } catch (err: unknown) {
+      toast.error(tAdmin("common.errorWithMessage", {
+        message: getErrorMessage(err, tAdmin("people.errors.removeEmailFailed")),
+      }));
+      throw err;
+    } finally {
+      setRemovingEmailId(null);
+    }
+  }, [queryClient, tAdmin, updateAdminUserInCache]);
 
   const clearFilters = useCallback(() => { setSearch(""); setRoleFilter("all"); }, []);
   const hasActiveFilters = search !== "" || roleFilter !== "all";
@@ -2605,7 +2779,17 @@ function UsersTab() {
         onSetPrimaryEmail={(emailId) => {
           if (selectedUser) void handleSetPrimaryEmail(selectedUser, emailId);
         }}
+        onAddEmail={(email, makePrimary) => {
+          if (!selectedUser) return Promise.resolve();
+          return handleAddEmail(selectedUser, email, makePrimary);
+        }}
+        onRemoveEmail={(emailId) => {
+          if (!selectedUser) return;
+          void handleRemoveEmail(selectedUser, emailId);
+        }}
+        isAddingEmail={isAddingEmail}
         settingPrimaryEmailId={settingPrimaryEmailId}
+        removingEmailId={removingEmailId}
         onToggleJourneyTracking={() => {
           if (!selectedUser) return;
           void handleToggleJourneyTracking(selectedUser);
