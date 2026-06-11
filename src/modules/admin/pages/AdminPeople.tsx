@@ -343,6 +343,8 @@ function UserDetailDialog({
   onDelete,
   onMerge,
   onViewJourney,
+  onSetPrimaryEmail,
+  settingPrimaryEmailId,
   isSelf,
 }: {
   user: AdminUserRow | null;
@@ -354,6 +356,8 @@ function UserDetailDialog({
   onDelete: () => void;
   onMerge: () => void;
   onViewJourney: () => void;
+  onSetPrimaryEmail: (emailId: string) => void;
+  settingPrimaryEmailId: string | null;
   isSelf: boolean;
 }) {
   const { tAdmin } = useAdminTranslation();
@@ -480,7 +484,12 @@ function UserDetailDialog({
                   <UserGroupStack userId={user.id} size="xs" />
                 </DialogTitle>
                 <DialogDescription className="space-y-0.5">
-                  <span translate="no">{user.email}</span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span translate="no">{user.email}</span>
+                    <Badge variant="outline" className="h-4 shrink-0 px-1.5 py-0 text-[10px]">
+                      {tAdmin("people.primaryEmail")}
+                    </Badge>
+                  </span>
                   {(user.emails ?? []).filter((e) => !e.is_primary).map((e) => (
                     <span key={e.id} className="block text-xs opacity-70" translate="no">{e.email}</span>
                   ))}
@@ -508,12 +517,25 @@ function UserDetailDialog({
                           ? user.emails
                           : [{ id: "primary", email: user.email, is_primary: true }]
                         ).map((e) => (
-                          <div key={e.id} className="flex items-center gap-1.5 flex-wrap">
+                          <div key={e.id} className="flex items-center justify-between gap-2 rounded-md border px-2.5 py-2">
                             <span className="break-all text-sm" translate="no">{e.email}</span>
                             {e.is_primary && (
                               <Badge variant="outline" className="text-[10px] py-0 h-4 px-1.5 shrink-0">
                                 {tAdmin("people.primaryEmail")}
                               </Badge>
+                            )}
+                            {!e.is_primary && e.id !== "primary" && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-7 shrink-0 text-xs"
+                                disabled={settingPrimaryEmailId !== null}
+                                onClick={() => onSetPrimaryEmail(e.id)}
+                              >
+                                {settingPrimaryEmailId === e.id && <Loader2Icon className="mr-1.5 h-3 w-3 animate-spin" />}
+                                {tAdmin("people.makePrimaryEmail")}
+                              </Button>
                             )}
                           </div>
                         ))}
@@ -1253,7 +1275,7 @@ function EditUserDialog({
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: {
     full_name: string;
-    email: string;
+    primary_email_id: string | null;
     avatar_url: string | null;
     role: "admin" | "moderator" | "user";
     journey_tracking_ignored: boolean;
@@ -1263,7 +1285,9 @@ function EditUserDialog({
 }) {
   const { tAdmin } = useAdminTranslation();
   const [fullName, setFullName] = useState(user?.full_name ?? "");
-  const [email, setEmail] = useState(user?.email ?? "");
+  const [primaryEmailId, setPrimaryEmailId] = useState(
+    user?.emails?.find((email) => email.is_primary)?.id ?? null,
+  );
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url ?? "");
   const [role, setRole] = useState<"admin" | "moderator" | "user">(user?.role ?? "user");
   const [journeyTracking, setJourneyTracking] = useState<"tracked" | "ignored">(
@@ -1283,7 +1307,7 @@ function EditUserDialog({
       contentClassName="sm:max-w-[640px]"
       onSubmit={() => onSubmit({
         full_name: fullName.trim(),
-        email: email.trim(),
+        primary_email_id: primaryEmailId,
         avatar_url: avatarUrl.trim() || null,
         role,
         journey_tracking_ignored: journeyTracking === "ignored",
@@ -1296,8 +1320,23 @@ function EditUserDialog({
             <Input id="edit-user-name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-user-email">Email</Label>
-            <Input id="edit-user-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Label htmlFor="edit-user-email">{tAdmin("people.primaryEmail")}</Label>
+            {user.emails?.length ? (
+              <Select value={primaryEmailId ?? undefined} onValueChange={setPrimaryEmailId}>
+                <SelectTrigger id="edit-user-email">
+                  <SelectValue placeholder={tAdmin("people.selectPrimaryEmail")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {user.emails.map((userEmail) => (
+                    <SelectItem key={userEmail.id} value={userEmail.id}>
+                      {userEmail.email}{userEmail.is_primary ? ` (${tAdmin("people.currentPrimaryEmail")})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input id="edit-user-email" type="email" value={user.email} disabled />
+            )}
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="edit-user-avatar">Avatar URL</Label>
@@ -1950,6 +1989,7 @@ function UsersTab() {
   const [editUser, setEditUser] = useState<AdminUserRow | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [settingPrimaryEmailId, setSettingPrimaryEmailId] = useState<string | null>(null);
 
   // Merge
   const [mergeSourceUser, setMergeSourceUser] = useState<AdminUserRow | null>(null);
@@ -2049,7 +2089,12 @@ function UsersTab() {
         const extra = (row.original.emails ?? []).filter((e) => !e.is_primary);
         return (
           <div className="space-y-0.5">
-            <p className="truncate text-sm" translate="no">{row.original.email}</p>
+            <div className="flex min-w-0 items-center gap-1.5">
+              <p className="truncate text-sm" translate="no">{row.original.email}</p>
+              <Badge variant="outline" className="h-4 shrink-0 px-1.5 py-0 text-[10px]">
+                {tAdmin("people.primaryEmail")}
+              </Badge>
+            </div>
             {extra.length > 0 && (
               <p className="text-xs text-muted-foreground/70 truncate" translate="no">
                 +{extra.length} {extra.length === 1 ? "more" : "more"}
@@ -2240,7 +2285,7 @@ function UsersTab() {
 
   const handleEditUser = useCallback(async (data: {
     full_name: string;
-    email: string;
+    primary_email_id: string | null;
     avatar_url: string | null;
     role: "admin" | "moderator" | "user";
     journey_tracking_ignored: boolean;
@@ -2252,11 +2297,18 @@ function UsersTab() {
         .from("profiles")
         .update({
           full_name: data.full_name,
-          email: data.email,
           avatar_url: data.avatar_url,
         })
         .eq("id", editUser.id);
       if (error) throw error;
+
+      const currentPrimaryEmailId = editUser.emails?.find((email) => email.is_primary)?.id ?? null;
+      if (data.primary_email_id && data.primary_email_id !== currentPrimaryEmailId) {
+        const { error: primaryEmailError } = await supabaseClient.rpc("set_primary_user_email", {
+          p_email_id: data.primary_email_id,
+        });
+        if (primaryEmailError) throw primaryEmailError;
+      }
 
       if (identity?.id !== editUser.id && data.role !== editUser.role) {
         const { error: roleError } = await supabaseClient.rpc("admin_update_user_role", {
@@ -2282,6 +2334,40 @@ function UsersTab() {
       toast.error(tAdmin("common.errorWithMessage", { message: getErrorMessage(err, tAdmin("people.errors.updateUserFailed")) }));
     } finally { setIsUpdating(false); }
   }, [editUser, identity?.id, queryClient, tAdmin]);
+
+  const handleSetPrimaryEmail = useCallback(async (user: AdminUserRow, emailId: string) => {
+    setSettingPrimaryEmailId(emailId);
+    try {
+      const { error } = await supabaseClient.rpc("set_primary_user_email", {
+        p_email_id: emailId,
+      });
+      if (error) throw error;
+
+      const primaryEmail = user.emails?.find((email) => email.id === emailId);
+      const updatedUser: AdminUserRow = {
+        ...user,
+        email: primaryEmail?.email ?? user.email,
+        emails: user.emails?.map((email) => ({
+          ...email,
+          is_primary: email.id === emailId,
+        })),
+      };
+
+      setSelectedUser((current) => current?.id === user.id ? updatedUser : current);
+      setEditUser((current) => current?.id === user.id ? updatedUser : current);
+      queryClient.setQueryData<AdminUserRow[]>(["admin", "users"], (current) =>
+        current?.map((item) => item.id === user.id ? updatedUser : item),
+      );
+      await queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      toast.success(tAdmin("people.success.primaryEmailUpdated", { email: primaryEmail?.email ?? user.email }));
+    } catch (err: unknown) {
+      toast.error(tAdmin("common.errorWithMessage", {
+        message: getErrorMessage(err, tAdmin("people.errors.updatePrimaryEmailFailed")),
+      }));
+    } finally {
+      setSettingPrimaryEmailId(null);
+    }
+  }, [queryClient, tAdmin]);
 
   const clearFilters = useCallback(() => { setSearch(""); setRoleFilter("all"); }, []);
   const hasActiveFilters = search !== "" || roleFilter !== "all";
@@ -2516,6 +2602,10 @@ function UsersTab() {
           setDetailOpen(false);
           go({ to: `/admin/people/${selectedUser.id}/journey` });
         }}
+        onSetPrimaryEmail={(emailId) => {
+          if (selectedUser) void handleSetPrimaryEmail(selectedUser, emailId);
+        }}
+        settingPrimaryEmailId={settingPrimaryEmailId}
         onToggleJourneyTracking={() => {
           if (!selectedUser) return;
           void handleToggleJourneyTracking(selectedUser);
