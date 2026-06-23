@@ -115,6 +115,7 @@ const AdminAuditLogs = lazy(() => import("./modules/admin/pages/AdminAuditLogs")
 const AdminReactions = lazy(() => import("./modules/admin/pages/AdminReactions").then(m => ({ default: m.AdminReactions })));
 const AdminDevTool = lazy(() => import("./modules/admin/pages/AdminDevTool").then(m => ({ default: m.AdminDevTool })));
 const AdminMarketing = lazy(() => import("./modules/admin/pages/AdminMarketing").then(m => ({ default: m.AdminMarketing })));
+const AdminAgentOperations = lazy(() => import("./modules/admin/pages/AdminAgentOperations").then(m => ({ default: m.AdminAgentOperations })));
 
 // Profile Edit Redirect Component
 const ProfileEditRedirect = () => {
@@ -444,6 +445,7 @@ function App() {
                     <Route path="marketing" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canViewGrowth"><AdminMarketing /></AdminCapabilityGuard></Suspense>} />
                     <Route path="growth" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canViewGrowth"><Navigate to="/admin/marketing?tab=growth" replace /></AdminCapabilityGuard></Suspense>} />
                     <Route path="retention" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canViewRetention"><Navigate to="/admin/marketing?tab=retention" replace /></AdminCapabilityGuard></Suspense>} />
+                    <Route path="agent-operations" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canViewAuditLogs"><AdminAgentOperations /></AdminCapabilityGuard></Suspense>} />
                   </Route>
 
                   {/* Authenticated routes - require login */}

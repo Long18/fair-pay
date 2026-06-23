@@ -240,3 +240,73 @@ export interface UtmCanvasResponse {
   nodes: UtmCanvasNodeRow[];
   edges: UtmCanvasEdgeRow[];
 }
+
+// ─── Agent Operations ────────────────────────────────────────────────────────
+
+export type AgentOperationStatus =
+  | 'pending'
+  | 'previewed'
+  | 'confirmed'
+  | 'committed'
+  | 'failed'
+  | 'expired';
+
+/**
+ * Safe admin view of one agent operation row.
+ * Deliberately excludes: preview_hash, confirmation_id, idempotency_key,
+ * response_body, raw preview_data.
+ */
+export interface AgentOperationRow {
+  operation_id: string;
+  user_id: string;
+  user_full_name: string | null;
+  user_email: string | null;
+  status: AgentOperationStatus;
+  preview_id: string | null;
+  group_id: string | null;
+  group_name: string | null;
+  description: string | null;
+  total_amount: number | null;
+  currency: string | null;
+  category: string | null;
+  expense_date: string | null;
+  split_method: string | null;
+  splits_count: number | null;
+  payer_user_id: string | null;
+  payer_full_name: string | null;
+  // committed result field (individual whitelisted key — never the raw blob)
+  expense_id: string | null;
+  // error fields (truncated, whitelisted)
+  error_code: string | null;
+  error_message: string | null;
+  // timestamps
+  created_at: string;
+  updated_at: string;
+  // preview metadata (no hash, no preview_data)
+  preview_expires_at: string | null;
+  preview_is_consumed: boolean | null;
+  has_confirmation: boolean;
+  confirmation_used: boolean | null;
+}
+
+export interface AgentOperationMetrics {
+  total: number;
+  by_status: Partial<Record<AgentOperationStatus, number>>;
+  ops_today: number;
+  ops_last_7d: number;
+  ops_last_30d: number;
+  unique_users: number;
+  avg_commit_seconds: number | null;
+  median_commit_seconds: number | null;
+  p95_commit_seconds: number | null;
+  completion_rate: number;
+  failure_rate: number;
+  active_previews: number;
+}
+
+export interface AdminAgentOperationsResponse {
+  data: AgentOperationRow[];
+  total: number;
+  limit: number;
+  offset: number;
+}

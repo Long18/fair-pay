@@ -11,11 +11,14 @@ info:
     never to `profiles.id`. Actor identity is read from the Supabase JWT —
     `actor_user_id` is never accepted in any request body.
 
+    FairPay application: https://long-pay.vercel.app/. External OAuth, payment,
+    received-payment, and settlement write flows are not available.
+
 servers:
-  - url: https://{project}.supabase.co/functions/v1/fairpay-agent-api
+  - url: https://{project_ref}.supabase.co/functions/v1/fairpay-agent-api
     variables:
-      project:
-        default: your-project
+      project_ref:
+        default: your-project-ref
     description: Deployed Edge Function transport. Logical paths below begin with /v1/.
 
 security:
