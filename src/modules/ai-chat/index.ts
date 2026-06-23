@@ -4,8 +4,5 @@ export { useAiChat } from './hooks/use-ai-chat';
 export type {
   ChatMessage,
   ChatConversation,
-  PendingAction,
-  ActionPreview,
-  ToolExecuteRequest,
   ToolExecuteResponse,
 } from './types';
