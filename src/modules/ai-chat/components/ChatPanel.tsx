@@ -15,6 +15,7 @@ import { ChatInput } from './ChatInput';
 import { ConfirmActionCard } from './ConfirmActionCard';
 import { TypingIndicator } from './TypingIndicator';
 import { useAiChat } from '../hooks/use-ai-chat';
+import { AgentConfirmationCard } from '@/components/agent/AgentConfirmationCard';
 import type { Profile } from '@/modules/profile/types';
 import { getPuter, kickoffPuterSigninFromUserGesture, waitForPuter } from '@/lib/puter-auth';
 import { useHaptics } from '@/hooks/use-haptics';
@@ -59,6 +60,8 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
     isLoading,
     error,
     pendingAction,
+    pendingPreview,
+    clearPreview,
     sendMessage,
     confirmAction,
     rejectAction,
@@ -214,6 +217,16 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
             </div>
           </div>
         </ScrollArea>
+
+        {pendingPreview && (
+          <div className="px-3 pb-2">
+            <AgentConfirmationCard
+              preview={pendingPreview}
+              onDone={() => clearPreview()}
+              onError={() => { /* error already surfaced via card */ }}
+            />
+          </div>
+        )}
 
         {pendingAction && (
           <ConfirmActionCard

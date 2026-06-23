@@ -5,6 +5,8 @@ import type { Profile } from '@/modules/profile/types';
 import { getPuter } from '@/lib/puter-auth';
 import type { ChatMessage, PendingAction, ToolExecuteResponse } from '../types';
 import { PUTER_TOOL_DEFINITIONS } from '../types';
+import { useAgentApiClient } from '@/lib/agent-api';
+import type { AgentPreviewResponse, AgentDuplicateCheckRequest, AgentPreviewRequest } from '@/lib/agent-api';
 
 /** Puter.js global from CDN script tag */
 declare const puter: {
@@ -25,17 +27,26 @@ interface ToolCall {
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
 const SYSTEM_PROMPT = `You are FairPay Assistant, a helpful AI for managing shared expenses.
-You help users check balances, view groups, add expenses, and record payments.
+You help users check balances, view groups, and safely preview group expenses.
 Be concise and friendly. Use the available tools to fetch data or perform actions.
-When a tool requires confirmation, tell the user what will happen and wait for their approval.
 Always respond in the same language the user writes in.
 
 When users ask about their debts or balances:
 - Use get_debt_summary first to get an overview of who they owe / who owes them.
 - If they ask for details about a specific person's debt (what expenses, when, how much for each), use get_debt_details with that person's counterparty_id from the summary.
-- Present debt details clearly: expense description, date, amount remaining, and group/context.`;
+- Present debt details clearly: expense description, date, amount remaining, and group/context.
 
-const CONFIRMATION_TOOLS = new Set(['create_group', 'add_expense', 'record_payment']);
+To add a new group expense (Phase 1A — VND only):
+1. Use get_groups to find the group_id.
+2. Use agent_get_group_members to get member_id values for everyone in that group.
+3. Optionally use agent_check_duplicates to avoid creating duplicate expenses.
+4. Use agent_preview_expense to propose the expense.
+   CRITICAL: Use member_id (from agent_get_group_members), NOT user_id, for payer_member_id and all participants.
+   CRITICAL: Amount must be an integer VND — no decimals (e.g. 150000 not 150000.0).
+5. The UI will display a confirmation card — do NOT call confirm or commit. The user clicks to confirm.`;
+
+// Tools routed to fairpay-agent-api instead of the legacy ai-chat function
+const AGENT_API_TOOLS = new Set(['agent_get_group_members', 'agent_check_duplicates', 'agent_preview_expense']);
 
 interface UseAiChatReturn {
   messages: ChatMessage[];
@@ -43,6 +54,8 @@ interface UseAiChatReturn {
   error: string | null;
   conversationId: string | null;
   pendingAction: PendingAction | null;
+  pendingPreview: AgentPreviewResponse | null;
+  clearPreview: () => void;
   sendMessage: (text: string) => Promise<void>;
   confirmAction: (actionId: string) => Promise<void>;
   rejectAction: (actionId: string) => Promise<void>;
@@ -50,12 +63,14 @@ interface UseAiChatReturn {
 }
 
 export function useAiChat(): UseAiChatReturn {
+  const agentApiClient = useAgentApiClient();
   const { data: identity } = useGetIdentity<Profile>();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [pendingPreview, setPendingPreview] = useState<AgentPreviewResponse | null>(null);
   const conversationRef = useRef<Array<Record<string, unknown>>>([
     { role: 'system', content: SYSTEM_PROMPT },
   ]);
@@ -67,7 +82,7 @@ export function useAiChat(): UseAiChatReturn {
     return token;
   }, []);
 
-  /** Call the edge function tool executor */
+  /** Call the legacy edge function tool executor (read-only tools only) */
   const callToolExecutor = useCallback(async (body: Record<string, unknown>): Promise<ToolExecuteResponse> => {
     const token = await getAccessToken();
     const res = await fetch(FUNCTION_URL, {
@@ -106,33 +121,58 @@ export function useAiChat(): UseAiChatReturn {
 
   const tools = useMemo(() => PUTER_TOOL_DEFINITIONS, []);
 
-  /** Process tool calls from Puter AI — execute via edge function, loop back results */
+  /** Process tool calls from Puter AI */
   const processToolCalls = useCallback(async (
     toolCalls: ToolCall[],
   ): Promise<string> => {
-    for (const tc of toolCalls) {
+    async function processCalls(calls: ToolCall[]): Promise<string> {
+      for (const tc of calls) {
       const toolName = tc.function.name;
       const toolArgs = JSON.parse(tc.function.arguments || '{}') as Record<string, unknown>;
 
-      // If tool needs confirmation, send to edge function which creates a pending action
-      if (CONFIRMATION_TOOLS.has(toolName)) {
-        const resp = await callToolExecutor({
-          action: 'execute_tool',
-          tool_name: toolName,
-          tool_args: toolArgs,
-          conversation_id: conversationId,
-        });
-        if (resp.status === 'needs_confirmation' && resp.pending_action) {
-          setPendingAction(resp.pending_action);
-          conversationRef.current.push(
-            { role: 'assistant', content: null, tool_calls: [tc] },
-            { role: 'tool', tool_call_id: tc.id, content: JSON.stringify({ status: 'needs_confirmation', message: 'Waiting for user confirmation' }) },
-          );
-          return `I'd like to **${toolName.replace(/_/g, ' ')}** with these details:\n${Object.entries(toolArgs).map(([k, v]) => `- ${k}: ${String(v)}`).join('\n')}\n\nPlease confirm or cancel below.`;
+      // Phase 1A: route agent tools to fairpay-agent-api directly
+      if (AGENT_API_TOOLS.has(toolName)) {
+        let agentResult: unknown;
+
+        if (toolName === 'agent_get_group_members') {
+          agentResult = await agentApiClient.getGroupMembers(toolArgs.group_id as string);
+        } else if (toolName === 'agent_check_duplicates') {
+          agentResult = await agentApiClient.checkDuplicates(toolArgs as unknown as AgentDuplicateCheckRequest);
+        } else if (toolName === 'agent_preview_expense') {
+          const preview = await agentApiClient.previewExpense(toolArgs as unknown as AgentPreviewRequest);
+          // Store full preview for the UI confirmation card
+          setPendingPreview(preview);
+          // Give the AI a compact summary (not the full preview object)
+          agentResult = {
+            preview_id: preview.preview_id,
+            description: preview.preview.description,
+            total_amount: preview.preview.amount,
+            currency: 'VND',
+            payer: preview.preview.payer.full_name,
+            splits_count: preview.preview.splits.length,
+            duplicate_warnings: preview.duplicate_warnings.length,
+            status: 'preview_ready',
+            note: 'A confirmation card has been shown to the user. Do not call confirm or commit.',
+          };
         }
+
+        conversationRef.current.push(
+          { role: 'assistant', content: null, tool_calls: [tc] },
+          { role: 'tool', tool_call_id: tc.id, content: JSON.stringify(agentResult) },
+        );
+
+        const followUp = await puter.ai.chat(conversationRef.current, { tools, model: 'gpt-4o-mini' });
+
+        if (followUp.message?.tool_calls?.length) {
+          return processCalls(followUp.message.tool_calls);
+        }
+
+        const content = followUp.message?.content || followUp.text || '';
+        conversationRef.current.push({ role: 'assistant', content });
+        return content;
       }
 
-      // Read-only tool or no confirmation needed — execute directly
+      // Legacy read-only tools — route to ai-chat edge function
       const resp = await callToolExecutor({
         action: 'execute_tool',
         tool_name: toolName,
@@ -140,29 +180,29 @@ export function useAiChat(): UseAiChatReturn {
         conversation_id: conversationId,
       });
 
-      // Add the tool call + result to conversation history for AI context
       conversationRef.current.push(
         { role: 'assistant', content: null, tool_calls: [tc] },
         { role: 'tool', tool_call_id: tc.id, content: JSON.stringify(resp.result ?? resp.error ?? 'No data') },
       );
 
-      // Ask Puter AI to interpret the tool result
       const followUp = await puter.ai.chat(
         conversationRef.current,
         { tools, model: 'gpt-4o-mini' },
       );
 
-      // If AI wants more tool calls, recurse
       if (followUp.message?.tool_calls?.length) {
-        return processToolCalls(followUp.message.tool_calls);
+        return processCalls(followUp.message.tool_calls);
       }
 
       const content = followUp.message?.content || followUp.text || '';
       conversationRef.current.push({ role: 'assistant', content });
       return content;
+      }
+      return '';
     }
-    return '';
-  }, [callToolExecutor, conversationId, tools]);
+
+    return processCalls(toolCalls);
+  }, [agentApiClient, callToolExecutor, conversationId, tools]);
 
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || !identity) return;
@@ -235,7 +275,6 @@ export function useAiChat(): UseAiChatReturn {
       if (resp.error) {
         addAssistantMessage(`Action failed: ${resp.error}`, { status: 'failure' });
       } else {
-        // Feed result back to Puter AI for a natural language summary
         conversationRef.current.push({
           role: 'tool',
           tool_call_id: 'confirmed',
@@ -278,16 +317,19 @@ export function useAiChat(): UseAiChatReturn {
     }
   }, [callToolExecutor, addAssistantMessage]);
 
+  const clearPreview = useCallback(() => setPendingPreview(null), []);
+
   const clearChat = useCallback(() => {
     setMessages([]);
     setConversationId(null);
     setPendingAction(null);
+    setPendingPreview(null);
     setError(null);
     conversationRef.current = [{ role: 'system', content: SYSTEM_PROMPT }];
   }, []);
 
   return {
-    messages, isLoading, error, conversationId, pendingAction,
-    sendMessage, confirmAction, rejectAction, clearChat,
+    messages, isLoading, error, conversationId, pendingAction, pendingPreview,
+    sendMessage, confirmAction, rejectAction, clearPreview, clearChat,
   };
 }

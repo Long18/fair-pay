@@ -96,12 +96,15 @@ export const AI_TOOLS: AiTool[] = [
   { name: 'get_debt_details', description: 'Get detailed expense-level debt breakdown with a specific person', requires_confirmation: false, admin_only: false },
   { name: 'get_groups', description: 'List groups the user belongs to', requires_confirmation: false, admin_only: false },
   { name: 'get_group_details', description: 'Get details of a specific group', requires_confirmation: false, admin_only: false },
-  { name: 'create_group', description: 'Create a new expense group', requires_confirmation: true, admin_only: false },
-  { name: 'add_expense', description: 'Add a new expense to a group or friend', requires_confirmation: true, admin_only: false },
   { name: 'get_expenses', description: 'List recent expenses', requires_confirmation: false, admin_only: false },
-  { name: 'record_payment', description: 'Record a payment between users', requires_confirmation: true, admin_only: false },
+  // Phase 1A agent tools — routed to fairpay-agent-api (not ai-chat)
+  { name: 'agent_get_group_members', description: 'Get group members with member_ids for expense creation', requires_confirmation: false, admin_only: false },
+  { name: 'agent_check_duplicates', description: 'Check for potential duplicate expenses before creating', requires_confirmation: false, admin_only: false },
+  { name: 'agent_preview_expense', description: 'Preview a group expense — UI handles confirmation', requires_confirmation: false, admin_only: false },
   { name: 'admin_get_metrics', description: 'Get admin dashboard metrics', requires_confirmation: false, admin_only: true },
   { name: 'admin_query_audit_log', description: 'Query audit logs', requires_confirmation: false, admin_only: true },
+  // Disabled — legacy write tools are hard-rejected on the server (Phase 1A)
+  // create_group, add_expense, record_payment → use fairpay-agent-api flow instead
 ];
 
 /** OpenAI-format tool definitions for Puter.js AI */
@@ -132,7 +135,7 @@ export const PUTER_TOOL_DEFINITIONS = [
     type: 'function' as const,
     function: {
       name: 'get_groups',
-      description: 'List all expense groups the user belongs to',
+      description: 'List all expense groups the user belongs to. Returns group_id values needed for expense creation.',
       parameters: { type: 'object', properties: {}, required: [] as string[] },
     },
   },
@@ -163,56 +166,78 @@ export const PUTER_TOOL_DEFINITIONS = [
       },
     },
   },
+  // Phase 1A: agent expense creation tools (routed to fairpay-agent-api)
   {
     type: 'function' as const,
     function: {
-      name: 'create_group',
-      description: 'Create a new expense group. Requires user confirmation.',
+      name: 'agent_get_group_members',
+      description: 'Get the registered members of a group, including their member_id. IMPORTANT: always use member_id (not user_id) when specifying payer or participants in agent_preview_expense.',
       parameters: {
         type: 'object',
         properties: {
-          name: { type: 'string', description: 'Group name' },
-          description: { type: 'string', description: 'Optional group description' },
+          group_id: { type: 'string', description: 'Group UUID from get_groups' },
         },
-        required: ['name'],
+        required: ['group_id'],
       },
     },
   },
   {
     type: 'function' as const,
     function: {
-      name: 'add_expense',
-      description: 'Add a new expense to a group or friend. Requires user confirmation.',
+      name: 'agent_check_duplicates',
+      description: 'Check for potential duplicate expenses in a group. Call this before agent_preview_expense when in doubt.',
       parameters: {
         type: 'object',
         properties: {
+          group_id: { type: 'string', description: 'Group UUID' },
           description: { type: 'string', description: 'Expense description' },
-          amount: { type: 'number', description: 'Amount in currency' },
-          currency: { type: 'string', description: 'Currency code (default VND)' },
-          category: { type: 'string', description: 'Expense category' },
-          group_id: { type: 'string', description: 'Group ID (if group expense)' },
-          friendship_id: { type: 'string', description: 'Friendship ID (if friend expense)' },
-          split_method: { type: 'string', description: 'Split method (default equal)' },
+          amount: { type: 'integer', description: 'Amount in VND (integer, no decimals)' },
+          payer_member_id: { type: 'string', description: 'member_id of the payer' },
+          expense_date: { type: 'string', description: 'Date YYYY-MM-DD' },
         },
-        required: ['description', 'amount'],
+        required: ['group_id', 'description', 'amount', 'payer_member_id'],
       },
     },
   },
   {
     type: 'function' as const,
     function: {
-      name: 'record_payment',
-      description: 'Record a payment from current user to another user. Requires user confirmation.',
+      name: 'agent_preview_expense',
+      description: 'Preview a new group expense with split calculation. The UI will show a confirmation card for the user to approve — do NOT call confirm or commit yourself.',
       parameters: {
         type: 'object',
         properties: {
-          to_user_id: { type: 'string', description: 'User ID to pay' },
-          amount: { type: 'number', description: 'Payment amount' },
-          currency: { type: 'string', description: 'Currency code (default VND)' },
-          group_id: { type: 'string', description: 'Group ID (if group payment)' },
-          note: { type: 'string', description: 'Optional payment note' },
+          group_id: { type: 'string', description: 'Group UUID' },
+          description: { type: 'string', description: 'Expense description' },
+          amount: { type: 'integer', description: 'Total amount in VND (integer — no decimals)' },
+          payer_member_id: { type: 'string', description: 'member_id of who paid (from agent_get_group_members)' },
+          split_method: {
+            type: 'string',
+            enum: ['equal', 'exact', 'fixed_then_equal_remainder'],
+            description: 'How to split: equal=split evenly, exact=specify each amount, fixed_then_equal_remainder=some fixed + rest equal',
+          },
+          participants: {
+            type: 'array',
+            description: 'Who shares this expense. Use member_id from agent_get_group_members.',
+            items: {
+              type: 'object',
+              properties: {
+                member_id: { type: 'string', description: 'member_id from agent_get_group_members' },
+                amount: { type: 'integer', description: 'For exact split: amount this member pays (VND)' },
+                fixed_amount: { type: 'integer', description: 'For fixed_then_equal_remainder: this member fixed amount (VND)' },
+              },
+              required: ['member_id'],
+            },
+          },
+          category: {
+            type: 'string',
+            enum: ['Food & Drink', 'Transportation', 'Accommodation', 'Entertainment', 'Shopping', 'Utilities', 'Healthcare', 'Education', 'Other'],
+            description: 'Expense category (optional)',
+          },
+          expense_date: { type: 'string', description: 'Date YYYY-MM-DD (optional, defaults to today)' },
+          comment: { type: 'string', description: 'Optional comment or note' },
         },
-        required: ['to_user_id', 'amount'],
+        required: ['group_id', 'description', 'amount', 'payer_member_id', 'split_method', 'participants'],
       },
     },
   },
