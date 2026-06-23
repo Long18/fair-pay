@@ -1,0 +1,28 @@
+{
+  "name": "@fairpay/agent-sdk",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "TypeScript SDK for FairPay Agent API",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  },
+  "keywords": ["fairpay", "agent", "api", "sdk", "typescript"],
+  "author": "FairPay",
+  "license": "MIT"
+}
