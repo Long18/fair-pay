@@ -38,9 +38,12 @@ export default defineConfig({
     },
   },
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      'virtual:pwa-register/react': path.resolve(__dirname, './tests/mocks/virtual-pwa-register-react.ts'),
-    },
+    alias: [
+      // Map Deno/CDN URL imports used in Edge Function modules to local equivalents
+      // so vitest can import shared domain/contract files directly.
+      { find: /^https:\/\/esm\.sh\/zod@.*$/, replacement: 'zod' },
+      { find: '@', replacement: path.resolve(__dirname, './src') },
+      { find: 'virtual:pwa-register/react', replacement: path.resolve(__dirname, './tests/mocks/virtual-pwa-register-react.ts') },
+    ],
   },
 });

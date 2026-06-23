@@ -2,9 +2,16 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getCorsHeaders } from '../_shared/cors.ts'
 
-/** AI Chat Tool Executor — data tools only, AI via Puter.js client-side */
+/** AI Chat Tool Executor — data tools only, AI via Puter.js client-side
+ *
+ * Phase 1A: add_expense, create_group, and record_payment are hard-disabled.
+ * Group expense creation now goes through the dedicated fairpay-agent-api
+ * function with preview → confirm → commit atomicity guarantees.
+ */
 
-const CONFIRMATION_REQUIRED = new Set(['create_group', 'add_expense', 'record_payment'])
+// Legacy write tools that must not bypass the new agent write path.
+// They return a structured error so any model calling them gets a clear signal.
+const DISABLED_WRITE_TOOLS = new Set(['create_group', 'add_expense', 'record_payment'])
 
 async function executeTool(
   toolName: string, args: Record<string, unknown>,
@@ -40,54 +47,12 @@ async function executeTool(
         ])
         return g.error ? { result: null, error: g.error.message } : { result: { group: g.data, members: m.data, recent_expenses: e.data } }
       }
-      case 'create_group': {
-        const { data, error } = await supabase.from('groups')
-          .insert({ name: args.name as string, description: (args.description as string) || null, created_by: userId })
-          .select().single()
-        return error ? { result: null, error: error.message } : { result: data }
-      }
-      case 'add_expense': {
-        const ctx = args.group_id ? 'group' : 'friend'
-        const { data, error } = await supabase.from('expenses').insert({
-          description: args.description as string, amount: args.amount as number,
-          currency: (args.currency as string) || 'VND', category: (args.category as string) || 'general',
-          context_type: ctx, group_id: (args.group_id as string) || null,
-          friendship_id: (args.friendship_id as string) || null,
-          paid_by_user_id: userId, created_by: userId,
-          expense_date: new Date().toISOString().split('T')[0],
-        }).select().single()
-        if (error) return { result: null, error: error.message }
-        if (data) {
-          await supabase.from('expense_splits').insert({
-            expense_id: data.id, user_id: userId,
-            split_method: (args.split_method as string) || 'equal',
-            split_value: args.amount as number, computed_amount: args.amount as number,
-          })
-        }
-        return { result: data }
-      }
       case 'get_expenses': {
         let q = supabase.from('expenses')
           .select('id, description, amount, currency, expense_date, category, context_type, paid_by_user_id')
           .order('expense_date', { ascending: false }).limit((args.limit as number) || 10)
         if (args.group_id) q = q.eq('group_id', args.group_id as string)
         const { data, error } = await q
-        return error ? { result: null, error: error.message } : { result: data }
-      }
-      case 'record_payment': {
-        const ctx = args.group_id ? 'group' : 'friend'
-        let friendshipId = null
-        if (!args.group_id) {
-          const { data: f } = await supabase.rpc('get_friendship', { user_id_1: userId, user_id_2: args.to_user_id as string })
-          friendshipId = f
-        }
-        const { data, error } = await supabase.from('payments').insert({
-          from_user: userId, to_user: args.to_user_id as string,
-          amount: args.amount as number, currency: (args.currency as string) || 'VND',
-          context_type: ctx, group_id: (args.group_id as string) || null,
-          friendship_id: friendshipId, note: (args.note as string) || null,
-          created_by: userId, payment_date: new Date().toISOString().split('T')[0],
-        }).select().single()
         return error ? { result: null, error: error.message } : { result: data }
       }
       default:
@@ -119,18 +84,14 @@ serve(async (req) => {
     const { action, tool_name, tool_args, conversation_id, confirm_action_id, reject_action_id } = await req.json()
 
     if (action === 'execute_tool' && tool_name) {
-      if (CONFIRMATION_REQUIRED.has(tool_name)) {
-        const preview = {
-          summary: `${tool_name.replace(/_/g, ' ')}: ${JSON.stringify(tool_args)}`,
-          fields: Object.entries(tool_args || {}).map(([k, v]: [string, unknown]) => ({ label: k, value: String(v) })),
-        }
-        const { data: pa } = await sb.from('ai_chat_pending_actions').insert({
-          conversation_id: conversation_id || null, user_id: uid,
-          tool_name, tool_args: tool_args || {}, preview,
-        }).select().single()
-        return new Response(JSON.stringify({ status: 'needs_confirmation', pending_action: pa }), {
-          headers: getCorsHeaders(),
-        })
+      // Hard-reject legacy financial write tools — route through fairpay-agent-api instead.
+      if (DISABLED_WRITE_TOOLS.has(tool_name)) {
+        return new Response(JSON.stringify({
+          status: 'error',
+          error: `Tool '${tool_name}' is no longer available. Use the FairPay Agent API ` +
+            '(preview → UI confirm → commit) for group expense creation.',
+          redirect: 'fairpay-agent-api',
+        }), { status: 410, headers: getCorsHeaders() })
       }
       const result = await executeTool(tool_name, tool_args || {}, uid, sb)
       return new Response(JSON.stringify({ status: 'success', ...result }), {
@@ -144,6 +105,11 @@ serve(async (req) => {
       if (!pa) return new Response(JSON.stringify({ error: 'Action not found or expired' }), {
         status: 404, headers: getCorsHeaders(),
       })
+      if (DISABLED_WRITE_TOOLS.has(pa.tool_name)) {
+        return new Response(JSON.stringify({ error: 'Legacy financial actions cannot be confirmed' }), {
+          status: 410, headers: getCorsHeaders(),
+        })
+      }
       if (new Date(pa.expires_at) < new Date()) {
         await sb.from('ai_chat_pending_actions').update({ status: 'expired', resolved_at: new Date().toISOString() }).eq('id', pa.id)
         return new Response(JSON.stringify({ error: 'Action expired' }), {

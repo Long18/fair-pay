@@ -141,6 +141,11 @@ max_indexes = 5
 # Vector Buckets is available to Supabase Pro plan.
 # [storage.vector.buckets.documents-openai]
 
+[functions.fairpay-agent-api]
+# Phase 1A: Agent-safe group expense creation.
+# JWT verification enforced — actor identity comes from auth.getUser() only.
+verify_jwt = true
+
 [functions.track-client-event]
 verify_jwt = false
 
