@@ -146,6 +146,10 @@ max_indexes = 5
 # JWT verification enforced — actor identity comes from auth.getUser() only.
 verify_jwt = true
 
+[functions.fairpay-agent-mcp]
+# Phase 2: stateless MCP wrapper; every request uses the actor's Supabase JWT.
+verify_jwt = true
+
 [functions.track-client-event]
 verify_jwt = false
 

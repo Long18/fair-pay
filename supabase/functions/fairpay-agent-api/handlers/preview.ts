@@ -188,6 +188,9 @@ export async function handlePreview(
   }
 
   const previewHash = await hashPreview(canonicalPreview)
+  const source = req.headers.get('x-fairpay-agent-source') === 'internal_mcp'
+    ? 'internal_mcp'
+    : 'internal_fairpay_agent'
 
   const { data: previewRecord, error: previewError } = await supabase.rpc(
     'create_agent_expense_preview',
@@ -196,7 +199,7 @@ export async function handlePreview(
       p_preview_data: canonicalPreview,
       p_preview_hash: previewHash,
       p_metadata: {
-        source: 'internal_fairpay_agent',
+        source,
         api_version: 'v1',
         requested_split_method: req_data.split_method,
       },
