@@ -16,13 +16,14 @@ interface AgentConfirmationCardProps {
   preview: AgentPreviewResponse
   onDone?: (result: { expense_id: string; operation_id: string }) => void
   onError?: (err: Error) => void
+  onCancel?: () => void
 }
 
 function formatVnd(amount: number): string {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(amount)
 }
 
-export function AgentConfirmationCard({ preview, onDone, onError }: AgentConfirmationCardProps) {
+export function AgentConfirmationCard({ preview, onDone, onError, onCancel }: AgentConfirmationCardProps) {
   const { run, step, error } = useAgentConfirmFlow({ onSuccess: onDone, onError })
   const [dismissed, setDismissed] = useState(false)
 
@@ -113,7 +114,7 @@ export function AgentConfirmationCard({ preview, onDone, onError }: AgentConfirm
           <>
             <button
               type="button"
-              onClick={() => void run(preview)}
+              onClick={() => void run(preview).catch(() => undefined)}
               disabled={isLoading}
               className="flex-1 rounded bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
@@ -121,7 +122,10 @@ export function AgentConfirmationCard({ preview, onDone, onError }: AgentConfirm
             </button>
             <button
               type="button"
-              onClick={() => setDismissed(true)}
+              onClick={() => {
+                setDismissed(true)
+                onCancel?.()
+              }}
               disabled={isLoading}
               className="rounded border px-3 py-1.5 text-sm hover:bg-muted disabled:opacity-50"
             >

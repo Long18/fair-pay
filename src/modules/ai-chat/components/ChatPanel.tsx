@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button';
 import { AlertCircleIcon, ExternalLinkIcon, Loader2Icon, LogInIcon, SparklesIcon, Trash2Icon } from '@/components/ui/icons';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
-import { ConfirmActionCard } from './ConfirmActionCard';
 import { TypingIndicator } from './TypingIndicator';
 import { useAiChat } from '../hooks/use-ai-chat';
 import { AgentConfirmationCard } from '@/components/agent/AgentConfirmationCard';
@@ -59,12 +58,9 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
     messages,
     isLoading,
     error,
-    pendingAction,
     pendingPreview,
     clearPreview,
     sendMessage,
-    confirmAction,
-    rejectAction,
     clearChat,
   } = useAiChat();
   const [puterState, setPuterState] = useState<PuterConnectionState>('checking');
@@ -115,13 +111,13 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
       setPuterState('disconnected');
       setPuterConnectError(getPuterConnectErrorMessage(error));
     }
-  }, []);
+  }, [tap]);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, pendingAction, isLoading]);
+  }, [messages, pendingPreview, isLoading]);
 
   useEffect(() => {
     if (!open) return;
@@ -223,18 +219,10 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
             <AgentConfirmationCard
               preview={pendingPreview}
               onDone={() => clearPreview()}
+              onCancel={clearPreview}
               onError={() => { /* error already surfaced via card */ }}
             />
           </div>
-        )}
-
-        {pendingAction && (
-          <ConfirmActionCard
-            action={pendingAction}
-            onConfirm={confirmAction}
-            onReject={rejectAction}
-            isLoading={isLoading}
-          />
         )}
 
         {error && (
