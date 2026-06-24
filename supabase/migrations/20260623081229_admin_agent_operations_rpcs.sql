@@ -13,10 +13,10 @@
 -- The preview row is exposed only through an explicit scalar summary allowlist
 -- plus lifecycle flags — never hashes or the canonical preview_data blob.
 
-CREATE INDEX agent_operations_status_created_idx
+CREATE INDEX IF NOT EXISTS agent_operations_status_created_idx
   ON public.agent_operations (status, created_at DESC);
 
-CREATE FUNCTION public.admin_list_agent_operations(
+CREATE OR REPLACE FUNCTION public.admin_list_agent_operations(
   p_status    TEXT        DEFAULT NULL,
   p_user_id   UUID        DEFAULT NULL,
   p_date_from TIMESTAMPTZ DEFAULT NULL,
@@ -157,7 +157,7 @@ COMMENT ON FUNCTION public.admin_list_agent_operations(
 
 -- ---------------------------------------------------------------------------
 
-CREATE FUNCTION public.admin_get_agent_operation_metrics(
+CREATE OR REPLACE FUNCTION public.admin_get_agent_operation_metrics(
   p_date_from TIMESTAMPTZ DEFAULT NULL,
   p_date_to   TIMESTAMPTZ DEFAULT NULL
 )

@@ -3,6 +3,7 @@
 import { NavBar } from "@/components/refine-ui/layout/navbar";
 import { Footer } from "@/components/refine-ui/layout/footer";
 import { ThemeProvider } from "@/components/refine-ui/theme/theme-provider";
+import ExternalAgentSubmissionInbox from "@/components/agent/ExternalAgentSubmissionInbox";
 import { cn } from "@/lib/utils";
 import type { PropsWithChildren } from "react";
 
@@ -34,6 +35,7 @@ export function Layout({ children }: PropsWithChildren) {
           )}
         >
           {children}
+          <ExternalAgentSubmissionInbox />
         </div>
         <Footer />
       </div>

@@ -150,6 +150,10 @@ verify_jwt = true
 # Phase 2: stateless MCP wrapper; every request uses the actor's Supabase JWT.
 verify_jwt = true
 
+[functions.fairpay-external-agent-api]
+# No-key external agent intake. It stores proposals only; approval requires FairPay auth.
+verify_jwt = false
+
 [functions.track-client-event]
 verify_jwt = false
 
