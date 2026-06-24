@@ -4,8 +4,9 @@ import { toast } from "sonner";
 import { supabaseClient } from "@/utility/supabaseClient";
 
 // Typed shim for RPC calls not yet reflected in the generated Database schema.
+// .bind() preserves the supabaseClient `this` context that the rpc method requires.
 // Using `unknown` (not `any`) keeps downstream callers explicit about shapes.
-const rpc = supabaseClient.rpc as unknown as (
+const rpc = supabaseClient.rpc.bind(supabaseClient) as unknown as (
   fn: string,
   args?: Record<string, unknown>
 ) => PromiseLike<{ data: unknown; error: Error | null }>;
