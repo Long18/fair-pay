@@ -1,10 +1,12 @@
 // fairpay-external-agent-api — unauthenticated external agent intake.
 //
 // Routes:
-//   GET  /v1/agent-context               → machine-readable capability document
+//   GET  /v1/agent-context               → capability/discovery document
 //   POST /v1/external-agent-submissions  → store a no-key expense proposal
+//     - empty body or {} → probe mode: returns capability document
+//     - structured payload → stores proposal, returns submission + trace_id
 //
-// Proposals are queued only. Authenticated FairPay users approve them in the UI
+// Proposals are queued only. Authenticated FairPay users approve in the UI
 // before any real expense is created. Commit/confirm are never exposed here.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -28,8 +30,6 @@ function normalizeBaseUrl(raw: string): string {
 
 const SUPABASE_URL = normalizeBaseUrl(RAW_SUPABASE_URL)
 
-// Validate host reachability at startup; surface as a clear diagnostic rather
-// than mapping DNS failures to business-logic errors.
 let supabaseUrlValid = false
 let supabaseUrlError = ''
 try {
@@ -54,15 +54,25 @@ const CORS_HEADERS = {
   'Content-Type': 'application/json',
 }
 
-// -- Helpers ---------------------------------------------------------------
+// -- Response helpers ------------------------------------------------------
+// trace_id is threaded into every response envelope for end-to-end debugging.
 
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), { status, headers: CORS_HEADERS })
+function jsonRes(data: Record<string, unknown> | unknown, status = 200, traceId?: string): Response {
+  const body = traceId
+    ? { trace_id: traceId, ...(data !== null && typeof data === 'object' && !Array.isArray(data) ? data as Record<string, unknown> : { data }) }
+    : data
+  return new Response(JSON.stringify(body), { status, headers: CORS_HEADERS })
 }
 
-function err(status: number, code: string, message: string, details?: unknown): Response {
-  return json({ error: { code, message, ...(details === undefined ? {} : { details }) } }, status)
+function errRes(status: number, code: string, message: string, details?: unknown, traceId?: string): Response {
+  const errBody: Record<string, unknown> = { code, message }
+  if (details !== undefined) errBody.details = details
+  const body: Record<string, unknown> = { error: errBody }
+  if (traceId) body.trace_id = traceId
+  return new Response(JSON.stringify(body), { status, headers: CORS_HEADERS })
 }
+
+// -- Utilities -------------------------------------------------------------
 
 function clientIp(req: Request): string {
   const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
@@ -76,44 +86,46 @@ function clientIp(req: Request): string {
 
 async function sha256Hex(value: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
-  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
-async function readJson(req: Request): Promise<{ value: unknown; response?: Response }> {
-  const text = await req.text()
+// parseText reads, size-checks, and JSON-parses the body.
+// Returns { value, rawError } — rawError is a Response ready to return on failure.
+function parseText(text: string): { value: unknown; rawError?: Response } {
   if (new TextEncoder().encode(text).byteLength > MAX_REQUEST_BYTES) {
-    return { value: null, response: err(413, 'REQUEST_TOO_LARGE', 'Submission payload is too large') }
-  }
-  if (!text.trim()) {
-    return { value: null, response: err(400, 'INVALID_JSON', 'Request body is required') }
+    return { value: null, rawError: errRes(413, 'REQUEST_TOO_LARGE', 'Submission payload is too large') }
   }
   try {
     return { value: JSON.parse(text) }
   } catch {
-    return { value: null, response: err(400, 'INVALID_JSON', 'Request body is not valid JSON') }
+    return { value: null, rawError: errRes(400, 'INVALID_JSON', 'Request body is not valid JSON') }
   }
+}
+
+// isProbe returns true when the body signals "tell me what you do" rather than
+// a real submission — empty string, whitespace-only, or bare {}.
+function isProbe(rawText: string): boolean {
+  const trimmed = rawText.trim()
+  return !trimmed || trimmed === '{}'
 }
 
 // -- Route handlers --------------------------------------------------------
 
-function handleAgentContext(): Response {
-  return json(AgentContextService.build())
+function handleAgentContext(traceId: string): Response {
+  return jsonRes(AgentContextService.build() as unknown as Record<string, unknown>, 200, traceId)
 }
 
-async function handleSubmission(req: Request): Promise<Response> {
-  // Surface base-URL/DNS misconfiguration as a clear diagnostic before
-  // attempting any network call — prevents DNS failures from appearing as
-  // validation errors.
+async function handleSubmission(rawText: string, req: Request, traceId: string): Promise<Response> {
   if (!supabaseUrlValid) {
-    return err(503, 'FAIRPAY_HOST_UNRESOLVED', supabaseUrlError)
+    return errRes(503, 'FAIRPAY_HOST_UNRESOLVED', supabaseUrlError, undefined, traceId)
   }
 
-  const body = await readJson(req)
-  if (body.response) return body.response
+  const { value, rawError } = parseText(rawText)
+  if (rawError) return rawError
 
-  const parsed = ExternalAgentSubmissionRequest.safeParse(body.value)
+  const parsed = ExternalAgentSubmissionRequest.safeParse(value)
   if (!parsed.success) {
-    return err(422, 'VALIDATION_ERROR', 'Invalid request body', parsed.error.issues)
+    return errRes(422, 'VALIDATION_ERROR', 'Invalid request body', parsed.error.issues, traceId)
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -132,29 +144,36 @@ async function handleSubmission(req: Request): Promise<Response> {
 
   if (rpcErr) {
     const message = rpcErr.message ?? 'Submission failed'
-    // Classify well-known network/host errors separately from business errors
     if (
       message.includes('ENOTFOUND') ||
       message.includes('EAI_AGAIN') ||
       message.includes('ECONNREFUSED') ||
       message.includes('Could not resolve host')
     ) {
-      return err(503, 'FAIRPAY_HOST_UNRESOLVED',
+      return errRes(
+        503,
+        'FAIRPAY_HOST_UNRESOLVED',
         `Unable to resolve FairPay host: ${new URL(SUPABASE_URL).hostname}. ` +
         `Verify DNS/network access, base URL configuration, and deployment status. ` +
-        `This is a network/base URL issue, not a FairPay transaction validation error.`
+        `This is a network/base URL issue, not a FairPay transaction validation error.`,
+        undefined,
+        traceId,
       )
     }
     if (message.includes('RATE_LIMIT_EXCEEDED')) {
-      return err(429, 'RATE_LIMIT_EXCEEDED', 'Too many submissions; retry later')
+      return errRes(429, 'RATE_LIMIT_EXCEEDED', 'Too many submissions; retry later', undefined, traceId)
     }
     if (message.includes('PENDING_LIMIT_EXCEEDED')) {
-      return err(409, 'PENDING_LIMIT_EXCEEDED', 'Too many pending submissions for this target')
+      return errRes(409, 'PENDING_LIMIT_EXCEEDED', 'Too many pending submissions for this target', undefined, traceId)
     }
-    return err(422, 'SUBMISSION_FAILED', message)
+    return errRes(422, 'SUBMISSION_FAILED', message, undefined, traceId)
   }
 
-  return json({ ...data, message: 'Submission queued for FairPay approval' }, 201)
+  return jsonRes(
+    { ...data, message: 'Submission queued for FairPay approval' },
+    201,
+    traceId,
+  )
 }
 
 // -- Entry point -----------------------------------------------------------
@@ -162,18 +181,24 @@ async function handleSubmission(req: Request): Promise<Response> {
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_HEADERS })
 
+  const traceId = crypto.randomUUID()
+
   const url = new URL(req.url)
   const path = url.pathname.replace(/^\/fairpay-external-agent-api/, '')
 
-  // GET /v1/agent-context — capability discovery (no auth, no body)
+  // GET /v1/agent-context — capability discovery
   if (req.method === 'GET' && path === '/v1/agent-context') {
-    return handleAgentContext()
+    return handleAgentContext(traceId)
   }
 
   // POST /v1/external-agent-submissions — proposal intake
   if (req.method === 'POST' && path === '/v1/external-agent-submissions') {
-    return handleSubmission(req)
+    const rawText = await req.text()
+    // Probe mode: empty body or bare {} → return discovery doc so agents can
+    // self-orient without a separate GET /context call.
+    if (isProbe(rawText)) return handleAgentContext(traceId)
+    return handleSubmission(rawText, req, traceId)
   }
 
-  return err(404, 'NOT_FOUND', `No route: ${req.method} ${url.pathname}`)
+  return errRes(404, 'NOT_FOUND', `No route: ${req.method} ${url.pathname}`, undefined, traceId)
 })
