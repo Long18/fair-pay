@@ -16,10 +16,13 @@ GET https://long-pay.vercel.app/api/external-agent/context
 
 The response is a structured JSON document (`AgentContextDocument`) maintained by `AgentContextService` in `supabase/functions/fairpay-external-agent-api/agent-context.ts`. All agent-facing instructions, examples, validation rules, and DNS diagnostic guidance live there as the single source of truth.
 
+Every response from FairPay external-agent endpoints includes a top-level `trace_id` (UUID v4) for end-to-end debugging. Include it when reporting issues.
+
 Example response shape:
 
 ```json
 {
+  "trace_id": "b2f2f823-65d5-447f-972f-7f39f09ab97e",
   "service": "FairPay",
   "version": "v1",
   "base_url": "https://long-pay.vercel.app",
@@ -53,6 +56,16 @@ External agents submit proposed expenses only. FairPay resolves group members an
 ```text
 POST https://long-pay.vercel.app/api/external-agent-submissions
 Content-Type: application/json
+```
+
+### Probe / Discovery Mode
+
+If an agent sends an empty body or a bare `{}`, the API returns the full capability document (same as `GET /api/external-agent/context`) instead of a validation error. Use this to self-orient without a separate GET call:
+
+```bash
+curl -X POST https://long-pay.vercel.app/api/external-agent-submissions \
+  -H "Content-Type: application/json" -d '{}'
+# → 200 with the AgentContextDocument + trace_id
 ```
 
 ### Request Shape
@@ -191,10 +204,20 @@ Error codes returned by the API for transport-class failures:
 ## Curl Smoke Tests
 
 ```bash
-# Check capability document
-curl "https://long-pay.vercel.app/api/external-agent/context"
+# Check domain is reachable
+curl -i https://long-pay.vercel.app/api/health
+# → 200 {"status":"ok","service":"FairPay"}
 
-# Submit a proposal
+# Fetch capability document (includes trace_id)
+curl https://long-pay.vercel.app/api/external-agent/context
+# → {"trace_id":"...","service":"FairPay","version":"v1",...}
+
+# Probe mode — empty POST returns the same capability document
+curl -X POST https://long-pay.vercel.app/api/external-agent-submissions \
+  -H "Content-Type: application/json" -d '{}'
+# → {"trace_id":"...","service":"FairPay","version":"v1",...}
+
+# Submit a proposal (response includes trace_id for debugging)
 curl -X POST "https://long-pay.vercel.app/api/external-agent-submissions" \
   -H "Content-Type: application/json" \
   -d '{
@@ -211,4 +234,5 @@ curl -X POST "https://long-pay.vercel.app/api/external-agent-submissions" \
       { "display_name": "Anh Tâm" }
     ]
   }'
+# → {"trace_id":"...","status":"pending","submission_id":"...","message":"Submission queued for FairPay approval"}
 ```
