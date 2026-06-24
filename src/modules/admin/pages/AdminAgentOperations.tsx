@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { supabaseClient } from "@/utility/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -127,6 +127,8 @@ function useAgentOperations(params: ListParams) {
         offset: 0,
       }) as AdminAgentOperationsResponse;
     },
+    refetchInterval: 30_000,    // fallback poll: catches any realtime misses
+    refetchOnWindowFocus: true, // refresh when admin switches back to this tab
   });
 }
 
@@ -156,6 +158,8 @@ function useAgentMetrics(params: { dateFrom: string; dateTo: string }) {
         active_previews: 0,
       }) as AgentOperationMetrics;
     },
+    refetchInterval: 60_000,    // metrics are less time-sensitive; poll once a minute
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -605,6 +609,7 @@ function OperationDetailDialog({
 export function AdminAgentOperations() {
   const { tAdmin } = useAdminTranslation();
   const isMobile = useIsMobile();
+  const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<AgentOperationStatus | "all">("all");
@@ -612,6 +617,27 @@ export function AdminAgentOperations() {
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<AgentOperationRow | null>(null);
+
+  // Live updates: subscribe to agent_operations changes so the admin page
+  // reflects status transitions (pending → previewed → committed) immediately
+  // without requiring a manual Refresh click.
+  useEffect(() => {
+    const channel = supabaseClient
+      .channel("admin:agent-operations-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "agent_operations" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["admin", "agent-operations"] });
+          queryClient.invalidateQueries({ queryKey: ["admin", "agent-operation-metrics"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabaseClient.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const debouncedSearch = useDebounce(search, 300);
 
