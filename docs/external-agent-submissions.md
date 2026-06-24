@@ -1,20 +1,61 @@
 # External Agent Submissions
 
-Use the FairPay domain endpoint for ChatGPT and other external agents. The route is a Vercel rewrite to the existing FairPay external-agent Edge Function, so agents never need to see or store the Supabase URL.
+Use the FairPay domain endpoint for ChatGPT and other external agents. The route is a Vercel rewrite to the FairPay external-agent Edge Function, so agents never need to see or store the Supabase URL.
 
-```text
-POST https://long-pay.vercel.app/api/external-agent-submissions
-Content-Type: application/json
+No API key, Supabase key, OAuth token, or `Authorization` header is required on any of the endpoints below.
+
+---
+
+## Agent Context / Capability Discovery
+
+Before submitting, agents should fetch the machine-readable capability document to understand available APIs, the required flow, request shape, examples, and common errors:
+
+```http
+GET https://long-pay.vercel.app/api/external-agent/context
 ```
 
-No API key, Supabase key, OAuth token, or `Authorization` header is required.
+The response is a structured JSON document (`AgentContextDocument`) maintained by `AgentContextService` in `supabase/functions/fairpay-external-agent-api/agent-context.ts`. All agent-facing instructions, examples, validation rules, and DNS diagnostic guidance live there as the single source of truth.
+
+Example response shape:
+
+```json
+{
+  "service": "FairPay",
+  "version": "v1",
+  "base_url": "https://long-pay.vercel.app",
+  "purpose": "...",
+  "required_flow": ["1. GET /api/external-agent/context", "2. Identify actor ...", "..."],
+  "available_apis": {
+    "context": "GET https://long-pay.vercel.app/api/external-agent/context",
+    "health": "GET https://long-pay.vercel.app/api/health",
+    "submit_proposal": "POST https://long-pay.vercel.app/api/external-agent-submissions"
+  },
+  "request_shape": { ... },
+  "validation_rules": { ... },
+  "split_method_rules": { ... },
+  "categories": ["Food & Drink", "..."],
+  "examples": { "single_person": { ... }, "multiple_people": { ... }, "group_subset": { ... }, "exact_split": { ... } },
+  "common_errors": { ... },
+  "agent_instructions": [ "Never ask the user for an API key.", "..." ],
+  "network_diagnostics": { "expected_host": "long-pay.vercel.app", "troubleshoot": ["..."], "error_classification": { ... } }
+}
+```
+
+---
+
+## Submit a Proposal
 
 External agents submit proposed expenses only. FairPay resolves group members and creates the real expense only after a signed-in user approves the proposal in one of two queues:
 
 - **Client confirmations**: proposals submitted for the signed-in user's email.
 - **Admin approvals**: proposals for groups administered by the signed-in user.
 
-## Request Shape
+```text
+POST https://long-pay.vercel.app/api/external-agent-submissions
+Content-Type: application/json
+```
+
+### Request Shape
 
 ```json
 {
@@ -32,15 +73,9 @@ External agents submit proposed expenses only. FairPay resolves group members an
   },
   "split_method": "equal",
   "participants": [
-    {
-      "email": "user@example.com"
-    },
-    {
-      "display_name": "Anh Tâm"
-    },
-    {
-      "display_name": "Thuần"
-    }
+    { "email": "user@example.com" },
+    { "display_name": "Anh Tâm" },
+    { "display_name": "Thuần" }
   ]
 }
 ```
@@ -56,11 +91,16 @@ Rules:
 - If payer is unclear, ask who paid before submitting.
 - If group is unclear, ask for group context before submitting.
 
+---
+
 ## ChatGPT Instruction Template
 
 ```text
 You submit FairPay expense proposals by POSTing JSON to:
 https://long-pay.vercel.app/api/external-agent-submissions
+
+To understand available APIs and the required flow, first call:
+GET https://long-pay.vercel.app/api/external-agent/context
 
 The user's FairPay email is: <set target_email here>.
 
@@ -79,15 +119,11 @@ Parse Vietnamese natural language into a pending FairPay expense proposal:
 Submit only proposals. FairPay users/admins approve inside the website before any real expense is created.
 ```
 
+---
+
 ## Examples
 
-User says:
-
-```text
-Hôm nay anh Tâm mua cà phê tôi trả tiền hết 50k
-```
-
-If the group context is known from conversation or GPT instructions, submit:
+**Two-person split:**
 
 ```json
 {
@@ -98,36 +134,16 @@ If the group context is known from conversation or GPT instructions, submit:
   "amount": 50000,
   "currency": "VND",
   "category": "Food & Drink",
-  "payer": {
-    "email": "user@example.com"
-  },
+  "payer": { "email": "user@example.com" },
   "split_method": "equal",
   "participants": [
-    {
-      "email": "user@example.com"
-    },
-    {
-      "display_name": "Anh Tâm"
-    }
+    { "email": "user@example.com" },
+    { "display_name": "Anh Tâm" }
   ]
 }
 ```
 
-User says:
-
-```text
-Hôm nay nhóm Core đi ăn tối hết 600k
-```
-
-If participants are not clear, ask who joined. If the user confirms the whole group should be included, ask them to name the participants or use the authenticated in-app FairPay assistant.
-
-User says:
-
-```text
-Hôm nay nhóm Core có Anh Tâm, Tôi và Thuần đi massage hết 500k
-```
-
-Submit only those participants:
+**Specific group subset:**
 
 ```json
 {
@@ -138,27 +154,47 @@ Submit only those participants:
   "amount": 500000,
   "currency": "VND",
   "category": "Other",
-  "payer": {
-    "email": "user@example.com"
-  },
+  "payer": { "email": "user@example.com" },
   "split_method": "equal",
   "participants": [
-    {
-      "display_name": "Anh Tâm"
-    },
-    {
-      "email": "user@example.com"
-    },
-    {
-      "display_name": "Thuần"
-    }
+    { "display_name": "Anh Tâm" },
+    { "email": "user@example.com" },
+    { "display_name": "Thuần" }
   ]
 }
 ```
 
-## Curl Smoke Test
+---
+
+## DNS / Network Troubleshooting
+
+If you see `curl: (6) Could not resolve host: long-pay.vercel.app`:
+
+This is a **transport error**, not a FairPay validation error. The FairPay API is not involved — your agent's environment cannot reach the host.
+
+Diagnostic steps:
+
+1. Verify DNS: `dig long-pay.vercel.app +short` should return Vercel A records.
+2. Confirm HTTPS (port 443) outbound is allowed from your environment.
+3. Check for stray whitespace or newlines in any `FAIRPAY_BASE_URL` / `PUBLIC_APP_URL` / `VERCEL_URL` env var — normalize it to `https://long-pay.vercel.app` with no trailing slash.
+4. Test a basic HTTPS request: `curl -I https://long-pay.vercel.app/api/health`.
+
+Error codes returned by the API for transport-class failures:
+
+| Code | Meaning |
+|------|---------|
+| `FAIRPAY_HOST_UNRESOLVED` | DNS or connectivity failure reaching the Supabase backend. This is a transport error, not a validation error. |
+| `BASE_URL_INVALID` | `SUPABASE_URL` env var on the server is malformed. Redeploy with a valid URL. |
+
+---
+
+## Curl Smoke Tests
 
 ```bash
+# Check capability document
+curl "https://long-pay.vercel.app/api/external-agent/context"
+
+# Submit a proposal
 curl -X POST "https://long-pay.vercel.app/api/external-agent-submissions" \
   -H "Content-Type: application/json" \
   -d '{
@@ -168,17 +204,11 @@ curl -X POST "https://long-pay.vercel.app/api/external-agent-submissions" \
     "description": "Coffee",
     "amount": 50000,
     "currency": "VND",
-    "payer": {
-      "email": "user@example.com"
-    },
+    "payer": { "email": "user@example.com" },
     "split_method": "equal",
     "participants": [
-      {
-        "email": "user@example.com"
-      },
-      {
-        "display_name": "Anh Tâm"
-      }
+      { "email": "user@example.com" },
+      { "display_name": "Anh Tâm" }
     ]
   }'
 ```

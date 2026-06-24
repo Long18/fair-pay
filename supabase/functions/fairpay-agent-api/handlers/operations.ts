@@ -1,18 +1,18 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { okJson, errJson } from '../response.ts'
+import { okJson, errJson, requireAuth } from '../response.ts'
 
 export async function handleGetOperation(
   supabase: SupabaseClient,
   previewId: string
 ): Promise<Response> {
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) return errJson(401, 'UNAUTHENTICATED', 'Not authenticated')
+  const auth = await requireAuth(supabase)
+  if (auth.error) return auth.error
 
   const { data, error: qErr } = await supabase
     .from('agent_operations')
     .select('id, preview_id, status, result, error, created_at, updated_at')
     .eq('preview_id', previewId)
-    .eq('user_id', user.id)  // ownership enforced at query level + RLS
+    .eq('user_id', auth.user.id)  // ownership enforced at query level + RLS
     .single()
 
   if (qErr || !data) return errJson(404, 'OPERATION_NOT_FOUND', 'Operation not found')

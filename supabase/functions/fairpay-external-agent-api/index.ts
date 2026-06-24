@@ -1,20 +1,60 @@
 // fairpay-external-agent-api — unauthenticated external agent intake.
-// This function stores proposals only. Authenticated FairPay users approve later.
+//
+// Routes:
+//   GET  /v1/agent-context               → machine-readable capability document
+//   POST /v1/external-agent-submissions  → store a no-key expense proposal
+//
+// Proposals are queued only. Authenticated FairPay users approve them in the UI
+// before any real expense is created. Commit/confirm are never exposed here.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { ExternalAgentSubmissionRequest } from './contracts.ts'
+import { AgentContextService } from './agent-context.ts'
 
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+// -- Environment validation ------------------------------------------------
+// Validate SUPABASE_URL at startup so mis-configuration surfaces early with a
+// clear diagnostic rather than a cryptic DNS/network error later.
+
+const RAW_SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 const HASH_SALT = Deno.env.get('EXTERNAL_AGENT_IP_HASH_SALT') ?? 'fairpay-external-agent'
 const MAX_REQUEST_BYTES = 32_768
 
+function normalizeBaseUrl(raw: string): string {
+  const trimmed = raw.trim().replace(/\/$/, '')
+  if (!trimmed) return ''
+  return trimmed.startsWith('http') ? trimmed : `https://${trimmed}`
+}
+
+const SUPABASE_URL = normalizeBaseUrl(RAW_SUPABASE_URL)
+
+// Validate host reachability at startup; surface as a clear diagnostic rather
+// than mapping DNS failures to business-logic errors.
+let supabaseUrlValid = false
+let supabaseUrlError = ''
+try {
+  const parsed = new URL(SUPABASE_URL)
+  if (!parsed.hostname) throw new Error('Empty hostname')
+  supabaseUrlValid = true
+} catch (e) {
+  supabaseUrlError =
+    `Unable to resolve FairPay Supabase host from SUPABASE_URL: "${RAW_SUPABASE_URL}". ` +
+    `Verify DNS/network access, base URL configuration, and deployment status. ` +
+    `This is a network/base URL issue, not a FairPay transaction validation error. ` +
+    `Original error: ${e instanceof Error ? e.message : String(e)}`
+  console.error('[fairpay-external-agent-api] BASE_URL_INVALID:', supabaseUrlError)
+}
+
+// -- CORS ------------------------------------------------------------------
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Content-Type': 'application/json',
 }
+
+// -- Helpers ---------------------------------------------------------------
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), { status, headers: CORS_HEADERS })
@@ -54,13 +94,18 @@ async function readJson(req: Request): Promise<{ value: unknown; response?: Resp
   }
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_HEADERS })
+// -- Route handlers --------------------------------------------------------
 
-  const url = new URL(req.url)
-  const path = url.pathname.replace(/^\/fairpay-external-agent-api/, '')
-  if (req.method !== 'POST' || path !== '/v1/external-agent-submissions') {
-    return err(404, 'NOT_FOUND', `No route: ${req.method} ${url.pathname}`)
+function handleAgentContext(): Response {
+  return json(AgentContextService.build())
+}
+
+async function handleSubmission(req: Request): Promise<Response> {
+  // Surface base-URL/DNS misconfiguration as a clear diagnostic before
+  // attempting any network call — prevents DNS failures from appearing as
+  // validation errors.
+  if (!supabaseUrlValid) {
+    return err(503, 'FAIRPAY_HOST_UNRESOLVED', supabaseUrlError)
   }
 
   const body = await readJson(req)
@@ -79,14 +124,27 @@ serve(async (req) => {
   const ipHash = await sha256Hex(`${HASH_SALT}:${clientIp(req)}`)
   const userAgent = req.headers.get('user-agent')?.slice(0, 500) ?? null
 
-  const { data, error } = await supabase.rpc('create_external_agent_submission', {
+  const { data, error: rpcErr } = await supabase.rpc('create_external_agent_submission', {
     p_payload: parsed.data,
     p_ip_hash: ipHash,
     p_user_agent: userAgent,
   })
 
-  if (error) {
-    const message = error.message ?? 'Submission failed'
+  if (rpcErr) {
+    const message = rpcErr.message ?? 'Submission failed'
+    // Classify well-known network/host errors separately from business errors
+    if (
+      message.includes('ENOTFOUND') ||
+      message.includes('EAI_AGAIN') ||
+      message.includes('ECONNREFUSED') ||
+      message.includes('Could not resolve host')
+    ) {
+      return err(503, 'FAIRPAY_HOST_UNRESOLVED',
+        `Unable to resolve FairPay host: ${new URL(SUPABASE_URL).hostname}. ` +
+        `Verify DNS/network access, base URL configuration, and deployment status. ` +
+        `This is a network/base URL issue, not a FairPay transaction validation error.`
+      )
+    }
     if (message.includes('RATE_LIMIT_EXCEEDED')) {
       return err(429, 'RATE_LIMIT_EXCEEDED', 'Too many submissions; retry later')
     }
@@ -97,4 +155,25 @@ serve(async (req) => {
   }
 
   return json({ ...data, message: 'Submission queued for FairPay approval' }, 201)
+}
+
+// -- Entry point -----------------------------------------------------------
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_HEADERS })
+
+  const url = new URL(req.url)
+  const path = url.pathname.replace(/^\/fairpay-external-agent-api/, '')
+
+  // GET /v1/agent-context — capability discovery (no auth, no body)
+  if (req.method === 'GET' && path === '/v1/agent-context') {
+    return handleAgentContext()
+  }
+
+  // POST /v1/external-agent-submissions — proposal intake
+  if (req.method === 'POST' && path === '/v1/external-agent-submissions') {
+    return handleSubmission(req)
+  }
+
+  return err(404, 'NOT_FOUND', `No route: ${req.method} ${url.pathname}`)
 })

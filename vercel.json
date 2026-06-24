@@ -118,6 +118,10 @@
     ],
   "rewrites": [
     {
+      "source": "/api/external-agent/context",
+      "destination": "https://nowtovakbozjjkdsjmtd.supabase.co/functions/v1/fairpay-external-agent-api/v1/agent-context"
+    },
+    {
       "source": "/api/external-agent-submissions",
       "destination": "https://nowtovakbozjjkdsjmtd.supabase.co/functions/v1/fairpay-external-agent-api/v1/external-agent-submissions"
     },

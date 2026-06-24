@@ -1,5 +1,5 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { okJson, errJson, parseBody } from '../response.ts'
+import { okJson, errJson, parseBody, requireAuth } from '../response.ts'
 import { ConfirmRequest } from '../contracts.ts'
 
 // Confirm is called only by the FairPay UI click handler, never by the model.
@@ -9,8 +9,8 @@ export async function handleConfirm(
   req: Request,
   previewId: string
 ): Promise<Response> {
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) return errJson(401, 'UNAUTHENTICATED', 'Not authenticated')
+  const auth = await requireAuth(supabase)
+  if (auth.error) return auth.error
 
   const body = await parseBody(req)
   if (body.error) return body.error

@@ -19,6 +19,33 @@ export interface DuplicateMatch {
   reason: string
 }
 
+export interface EnrichedDuplicateMatch extends DuplicateMatch {
+  description: string
+  amount: number
+  expense_date: string
+  created_at: string
+}
+
+// enrichDuplicateMatches — joins findDuplicates() results back to their
+// candidate rows. Both duplicate-check.ts and preview.ts use this identical
+// enrichment pattern; keeping it here avoids duplication.
+export function enrichDuplicateMatches(
+  matches: DuplicateMatch[],
+  candidates: readonly DuplicateCandidate[]
+): EnrichedDuplicateMatch[] {
+  const candidateMap = Object.fromEntries(candidates.map((c) => [c.id, c]))
+  return matches.map((m) => {
+    const c = candidateMap[m.expense_id]
+    return {
+      ...m,
+      description: c?.description ?? '',
+      amount: c?.amount ?? 0,
+      expense_date: c?.expense_date ?? '',
+      created_at: c?.created_at ?? '',
+    }
+  })
+}
+
 const DEFAULT_WINDOW_HOURS = 24
 
 export function findDuplicates(

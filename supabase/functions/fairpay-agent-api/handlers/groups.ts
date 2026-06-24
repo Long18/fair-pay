@@ -1,5 +1,5 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { okJson, errJson } from '../response.ts'
+import { okJson, errJson, requireAuth } from '../response.ts'
 
 interface GroupMemberCountRow { count: number }
 interface GroupRow {
@@ -14,21 +14,9 @@ interface GroupMembershipRow {
   groups: GroupRow
 }
 
-interface MemberProfileRow {
-  id: string
-  full_name: string
-  email: string | null
-  avatar_url: string | null
-}
-interface MemberRow {
-  id: string
-  role: string
-  profiles: MemberProfileRow
-}
-
 export async function handleGroups(supabase: SupabaseClient): Promise<Response> {
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) return errJson(401, 'UNAUTHENTICATED', 'Not authenticated')
+  const auth = await requireAuth(supabase)
+  if (auth.error) return auth.error
 
   const { data, error: qErr } = await supabase
     .from('group_members')
@@ -39,7 +27,7 @@ export async function handleGroups(supabase: SupabaseClient): Promise<Response> 
         group_members(count)
       )
     `)
-    .eq('user_id', user.id)
+    .eq('user_id', auth.user.id)
     .eq('groups.is_archived', false)
 
   if (qErr) return errJson(500, 'QUERY_ERROR', qErr.message)
@@ -60,15 +48,15 @@ export async function handleGroupMembers(
   supabase: SupabaseClient,
   groupId: string
 ): Promise<Response> {
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) return errJson(401, 'UNAUTHENTICATED', 'Not authenticated')
+  const auth = await requireAuth(supabase)
+  if (auth.error) return auth.error
 
   // Actor must be a member
   const { data: actorMembership } = await supabase
     .from('group_members')
     .select('id')
     .eq('group_id', groupId)
-    .eq('user_id', user.id)
+    .eq('user_id', auth.user.id)
     .single()
 
   if (!actorMembership) {
@@ -85,7 +73,6 @@ export async function handleGroupMembers(
   if (!group) return errJson(404, 'GROUP_NOT_FOUND', 'Group not found')
   if (group.is_archived) return errJson(422, 'GROUP_ARCHIVED', 'Group is archived')
 
-  // Fetch members — registered users only (no pending_email in Phase 1A)
   const { data: members, error: mErr } = await supabase
     .from('group_members')
     .select(`
@@ -96,6 +83,7 @@ export async function handleGroupMembers(
 
   if (mErr) return errJson(500, 'QUERY_ERROR', mErr.message)
 
+  type MemberRow = { id: string; role: string; profiles: { id: string; full_name: string; email: string | null; avatar_url: string | null } }
   const out = ((members ?? []) as MemberRow[]).map((m) => ({
     member_id: m.id,
     user_id: m.profiles.id,

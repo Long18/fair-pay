@@ -1,14 +1,14 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { okJson, errJson } from '../response.ts'
+import { okJson, errJson, requireAuth } from '../response.ts'
 
 export async function handleMe(supabase: SupabaseClient): Promise<Response> {
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) return errJson(401, 'UNAUTHENTICATED', 'Not authenticated')
+  const auth = await requireAuth(supabase)
+  if (auth.error) return auth.error
 
   const { data: profile, error: pErr } = await supabase
     .from('profiles')
     .select('id, email, full_name, avatar_url')
-    .eq('id', user.id)
+    .eq('id', auth.user.id)
     .single()
 
   if (pErr || !profile) return errJson(404, 'PROFILE_NOT_FOUND', 'Profile not found')

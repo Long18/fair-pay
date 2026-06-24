@@ -1,5 +1,5 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { okJson, errJson, parseBody } from '../response.ts'
+import { okJson, errJson, parseBody, requireAuth } from '../response.ts'
 import { CommitRequest } from '../contracts.ts'
 import { sha256Hex } from '../domain/preview-hash.ts'
 
@@ -12,8 +12,8 @@ export async function handleCommit(
   supabase: SupabaseClient,
   req: Request
 ): Promise<Response> {
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) return errJson(401, 'UNAUTHENTICATED', 'Not authenticated')
+  const auth = await requireAuth(supabase)
+  if (auth.error) return auth.error
 
   const idempotencyKey = req.headers.get('idempotency-key')
   if (!idempotencyKey || idempotencyKey.trim().length === 0 || idempotencyKey.length > 200) {
@@ -31,7 +31,6 @@ export async function handleCommit(
   const { preview_id, preview_hash, confirmation_id } = parsed.data
   const idempotencyKeyHash = await sha256Hex(idempotencyKey.trim())
 
-  // Delegate to the atomic SECURITY DEFINER RPC
   const { data, error: rpcErr } = await supabase.rpc('commit_agent_expense', {
     p_preview_id: preview_id,
     p_preview_hash: preview_hash,
@@ -50,7 +49,6 @@ export async function handleCommit(
       })
       return errJson(status, code, msg)
     }
-    // Map well-known error strings to HTTP codes
     if (msg.includes('PREVIEW_EXPIRED')) return fail(410, 'PREVIEW_EXPIRED', 'expired')
     if (msg.includes('GROUP_NOT_ACCESSIBLE')) return fail(403, 'GROUP_NOT_ACCESSIBLE')
     if (msg.includes('DUPLICATE_EXPENSE')) return fail(409, 'DUPLICATE_DETECTED')

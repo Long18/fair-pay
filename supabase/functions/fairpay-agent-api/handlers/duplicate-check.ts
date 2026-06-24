@@ -1,14 +1,14 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { okJson, errJson, parseBody } from '../response.ts'
+import { okJson, errJson, parseBody, requireAuth } from '../response.ts'
 import { DuplicateCheckRequest } from '../contracts.ts'
-import { findDuplicates } from '../domain/duplicate.ts'
+import { findDuplicates, enrichDuplicateMatches, DuplicateCandidate } from '../domain/duplicate.ts'
 
 export async function handleDuplicateCheck(
   supabase: SupabaseClient,
   req: Request
 ): Promise<Response> {
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) return errJson(401, 'UNAUTHENTICATED', 'Not authenticated')
+  const auth = await requireAuth(supabase)
+  if (auth.error) return auth.error
 
   const body = await parseBody(req)
   if (body.error) return body.error
@@ -20,26 +20,25 @@ export async function handleDuplicateCheck(
 
   const { group_id, description, amount, payer_member_id, expense_date, window_hours } = parsed.data
 
-  // Resolve payer_member_id → payer user_id
-  const { data: payerMember } = await supabase
-    .from('group_members')
-    .select('user_id, group_id')
-    .eq('id', payer_member_id)
-    .single()
+  // Resolve payer_member_id → payer user_id and verify group membership in parallel
+  const [payerRes, actorRes] = await Promise.all([
+    supabase
+      .from('group_members')
+      .select('user_id, group_id')
+      .eq('id', payer_member_id)
+      .single(),
+    supabase
+      .from('group_members')
+      .select('id')
+      .eq('group_id', group_id)
+      .eq('user_id', auth.user.id)
+      .single(),
+  ])
 
-  if (!payerMember || payerMember.group_id !== group_id) {
+  if (!payerRes.data || payerRes.data.group_id !== group_id) {
     return errJson(422, 'INVALID_PAYER_MEMBER', 'payer_member_id is not a member of this group')
   }
-
-  // Actor must be a member
-  const { data: actorMembership } = await supabase
-    .from('group_members')
-    .select('id')
-    .eq('group_id', group_id)
-    .eq('user_id', user.id)
-    .single()
-
-  if (!actorMembership) {
+  if (!actorRes.data) {
     return errJson(403, 'NOT_GROUP_MEMBER', 'You are not a member of this group')
   }
 
@@ -57,37 +56,14 @@ export async function handleDuplicateCheck(
 
   if (qErr) return errJson(500, 'QUERY_ERROR', qErr.message)
 
-  const matches = findDuplicates(candidates ?? [], {
+  const cs = (candidates ?? []) as DuplicateCandidate[]
+  const matches = findDuplicates(cs, {
     description,
     amount,
-    payer_user_id: payerMember.user_id,
+    payer_user_id: payerRes.data.user_id,
     expense_date,
     window_hours: windowH,
   })
 
-  // Enrich matches with description/amount from candidates
-  type CandidateRow = {
-    id: string
-    description: string
-    amount: number
-    paid_by_user_id: string
-    expense_date: string
-    created_at: string
-  }
-  const cs = (candidates ?? []) as CandidateRow[]
-  const candidateMap = Object.fromEntries(cs.map((c) => [c.id, c]))
-  const enriched = matches.map((m) => {
-    const c = candidateMap[m.expense_id] ?? {}
-    return {
-      expense_id: m.expense_id,
-      match_type: m.match_type,
-      reason: m.reason,
-      description: c.description ?? '',
-      amount: c.amount ?? 0,
-      expense_date: c.expense_date ?? '',
-      created_at: c.created_at ?? '',
-    }
-  })
-
-  return okJson({ matches: enriched })
+  return okJson({ matches: enrichDuplicateMatches(matches, cs) })
 }

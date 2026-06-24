@@ -1,42 +1,23 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { okJson, errJson, parseBody } from '../response.ts'
+import { okJson, errJson, parseBody, requireAuth } from '../response.ts'
 import { PreviewRequest } from '../contracts.ts'
 import {
   allocateEqual, allocateExact, allocateFixedThenEqualRemainder,
   ExactParticipantInput,
   SplitError,
 } from '../domain/split.ts'
-import { assertGroupActive, assertVnd, assertPayerIsCurrentMember, assertAllParticipantsAreCurrentMembers, PolicyViolation } from '../domain/policy.ts'
+import { assertVnd, assertPayerIsCurrentMember, assertAllParticipantsAreCurrentMembers, PolicyViolation } from '../domain/policy.ts'
 import { hashPreview } from '../domain/preview-hash.ts'
-import { findDuplicates } from '../domain/duplicate.ts'
-
-interface PreviewMemberProfile {
-  id: string
-  full_name: string
-  email: string | null
-  avatar_url: string | null
-}
-interface PreviewMemberRow {
-  id: string
-  role: string
-  user_id: string
-  profiles: PreviewMemberProfile
-}
-interface PreviewCandidateRow {
-  id: string
-  description: string
-  amount: number
-  paid_by_user_id: string
-  expense_date: string
-  created_at: string
-}
+import { findDuplicates, enrichDuplicateMatches, DuplicateCandidate } from '../domain/duplicate.ts'
+import { resolveGroup } from '../services/group-resolver.ts'
+import { loadGroupMembers, indexById } from '../services/member-resolver.ts'
 
 export async function handlePreview(
   supabase: SupabaseClient,
   req: Request
 ): Promise<Response> {
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) return errJson(401, 'UNAUTHENTICATED', 'Not authenticated')
+  const auth = await requireAuth(supabase)
+  if (auth.error) return auth.error
 
   const body = await parseBody(req)
   if (body.error) return body.error
@@ -55,47 +36,34 @@ export async function handlePreview(
     throw e
   }
 
-  // Load group + members in parallel
-  const [groupRes, membersRes] = await Promise.all([
-    supabase.from('groups').select('id, name, is_archived').eq('id', req_data.group_id).single(),
-    supabase
-      .from('group_members')
-      .select('id, role, user_id, profiles!inner(id, full_name, email, avatar_url)')
-      .eq('group_id', req_data.group_id),
+  // Load group and members in parallel via shared services
+  const [groupResult, membersResult] = await Promise.all([
+    resolveGroup(supabase, req_data.group_id),
+    loadGroupMembers(supabase, req_data.group_id, auth.user.id),
   ])
 
-  if (groupRes.error || !groupRes.data) return errJson(404, 'GROUP_NOT_FOUND', 'Group not found')
+  if (groupResult.error) return groupResult.error
+  if (membersResult.error) return membersResult.error
+
+  const group = groupResult.group
+  const members = membersResult.members
+  const memberById = indexById(members)
+
+  // Build the raw member shape the policy assertions expect
+  const policyMembers = members.map((m) => ({ id: m.member_id, user_id: m.user_id }))
 
   try {
-    assertGroupActive(groupRes.data)
-  } catch (e) {
-    if (e instanceof PolicyViolation) return errJson(422, e.code, e.message)
-    throw e
-  }
-
-  const members = (membersRes.data ?? []) as PreviewMemberRow[]
-
-  // Actor must be in the group
-  if (!members.some((m) => m.user_id === user.id)) {
-    return errJson(403, 'NOT_GROUP_MEMBER', 'You are not a member of this group')
-  }
-
-  try {
-    assertPayerIsCurrentMember(req_data.payer_member_id, members)
+    assertPayerIsCurrentMember(req_data.payer_member_id, policyMembers)
     assertAllParticipantsAreCurrentMembers(
       req_data.participants.map((p) => p.member_id),
-      members
+      policyMembers
     )
   } catch (e) {
     if (e instanceof PolicyViolation) return errJson(422, e.code, e.message)
     throw e
   }
 
-  // Build member lookup: member_id → {user_id, full_name}
-  const memberById: Record<string, { user_id: string; full_name: string; email: string | null; avatar_url: string | null }> = Object.fromEntries(
-    members.map((m) => [m.id, { user_id: m.user_id, full_name: m.profiles.full_name, email: m.profiles.email, avatar_url: m.profiles.avatar_url }])
-  )
-  const payerUser = memberById[req_data.payer_member_id]
+  const payerMember = memberById[req_data.payer_member_id]
 
   // Compute splits (domain logic)
   let allocations: Array<{ member_id: string; user_id: string; amount: number }>
@@ -140,7 +108,7 @@ export async function handlePreview(
   const totalCheck = splits.reduce((s, x) => s + x.amount, 0)
   const expenseDate = req_data.expense_date ?? new Date().toISOString().split('T')[0]
 
-  // Duplicate check (inline, non-blocking)
+  // Inline duplicate check (non-blocking; uses shared enrichment helper)
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
   const { data: candidates } = await supabase
     .from('expenses')
@@ -151,38 +119,28 @@ export async function handlePreview(
     .order('created_at', { ascending: false })
     .limit(50)
 
-  const cs = (candidates ?? []) as PreviewCandidateRow[]
+  const cs = (candidates ?? []) as DuplicateCandidate[]
   const rawMatches = findDuplicates(cs, {
     description: req_data.description,
     amount: req_data.amount,
-    payer_user_id: payerUser.user_id,
+    payer_user_id: payerMember.user_id,
     expense_date: expenseDate,
   })
-  const candidateMap: Record<string, PreviewCandidateRow> = Object.fromEntries(cs.map((c) => [c.id, c]))
-  const duplicateWarnings = rawMatches.map((m) => {
-    const c = candidateMap[m.expense_id]
-    return {
-      ...m,
-      description: c?.description ?? '',
-      amount: c?.amount ?? 0,
-      expense_date: c?.expense_date ?? '',
-      created_at: c?.created_at ?? '',
-    }
-  })
+  const duplicateWarnings = enrichDuplicateMatches(rawMatches, cs)
 
-  // Build canonical preview object to be stored server-side
+  // Build canonical preview object
   const canonicalPreview = {
     group_id: req_data.group_id,
-    group_name: groupRes.data.name,
+    group_name: group.name,
     description: req_data.description,
     total_amount: req_data.amount,
     currency: 'VND',
     category: req_data.category ?? null,
     expense_date: expenseDate,
     comment: req_data.comment ?? null,
-    payer_user_id: payerUser.user_id,
+    payer_user_id: payerMember.user_id,
     payer_member_id: req_data.payer_member_id,
-    actor_user_id: user.id,
+    actor_user_id: auth.user.id,
     requested_split_method: req_data.split_method,
     splits: splits.map((s) => ({ member_id: s.member_id, user_id: s.user_id, amount: s.amount })),
   }
@@ -219,7 +177,7 @@ export async function handlePreview(
     expires_at: previewRecord.expires_at,
     preview: {
       group_id: req_data.group_id,
-      group_name: groupRes.data.name,
+      group_name: group.name,
       description: req_data.description,
       amount: req_data.amount,
       currency: 'VND',
@@ -228,8 +186,8 @@ export async function handlePreview(
       comment: req_data.comment ?? null,
       payer: {
         member_id: req_data.payer_member_id,
-        user_id: payerUser.user_id,
-        full_name: payerUser.full_name,
+        user_id: payerMember.user_id,
+        full_name: payerMember.full_name,
       },
       requested_split_method: req_data.split_method,
       splits,

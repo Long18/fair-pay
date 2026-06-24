@@ -1,4 +1,20 @@
+import { SupabaseClient, User } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getAgentApiCorsHeaders } from './_cors.ts'
+
+// requireAuth — shared auth guard used by all handlers.
+// Returns either { user, error: null } or { user: null, error: Response }.
+// Call at the top of every handler, return error immediately on failure.
+export type AuthResult =
+  | { user: User; error: null }
+  | { user: null; error: Response }
+
+export async function requireAuth(supabase: SupabaseClient): Promise<AuthResult> {
+  const { data: { user }, error } = await supabase.auth.getUser()
+  if (error || !user) {
+    return { user: null, error: errJson(401, 'UNAUTHENTICATED', 'Not authenticated') }
+  }
+  return { user, error: null }
+}
 
 export function okJson(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
