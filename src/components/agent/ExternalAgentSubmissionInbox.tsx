@@ -1,7 +1,14 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabaseClient } from "@/utility/supabaseClient";
+
+// Typed shim for RPC calls not yet reflected in the generated Database schema.
+// Using `unknown` (not `any`) keeps downstream callers explicit about shapes.
+const rpc = supabaseClient.rpc as unknown as (
+  fn: string,
+  args?: Record<string, unknown>
+) => PromiseLike<{ data: unknown; error: Error | null }>;
 import {
   Dialog,
   DialogContent,
@@ -54,13 +61,13 @@ const formatVnd = (amount: number) =>
   }).format(amount);
 
 async function listSubmissions(): Promise<ExternalAgentSubmission[]> {
-  const { data, error } = await (supabaseClient.rpc as any)("list_external_agent_submissions");
+  const { data, error } = await rpc("list_external_agent_submissions");
   if (error) throw error;
   return (data ?? []) as ExternalAgentSubmission[];
 }
 
 async function approveSubmission(submissionId: string) {
-  const { data, error } = await (supabaseClient.rpc as any)("approve_external_agent_submission", {
+  const { data, error } = await rpc("approve_external_agent_submission", {
     p_submission_id: submissionId,
   });
   if (error) throw error;
@@ -68,7 +75,7 @@ async function approveSubmission(submissionId: string) {
 }
 
 async function rejectSubmission(submissionId: string, reason?: string) {
-  const { data, error } = await (supabaseClient.rpc as any)("reject_external_agent_submission", {
+  const { data, error } = await rpc("reject_external_agent_submission", {
     p_submission_id: submissionId,
     p_reason: reason ?? "Rejected in FairPay",
   });
@@ -117,10 +124,29 @@ export function ExternalAgentSubmissionInbox() {
   const [dismissed, setDismissed] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
 
+  // Live updates: subscribe to new external agent submissions so the inbox
+  // appears without requiring the user to refocus the tab or manually refresh.
+  useEffect(() => {
+    const channel = supabaseClient
+      .channel("inbox:external-agent-submissions-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "external_agent_submissions" },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["external-agent-submissions"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabaseClient.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   const { data = [], isLoading } = useQuery({
     queryKey: ["external-agent-submissions"],
     queryFn: listSubmissions,
-    staleTime: 60_000,
+    refetchInterval: 30_000,    // fallback poll for realtime misses
     refetchOnWindowFocus: true,
   });
 
