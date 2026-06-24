@@ -1,6 +1,6 @@
 # External Agent Submissions
 
-Use the FairPay domain endpoint for ChatGPT and other external agents:
+Use the FairPay domain endpoint for ChatGPT and other external agents. The route is a Vercel rewrite to the existing FairPay external-agent Edge Function, so agents never need to see or store the Supabase URL.
 
 ```text
 POST https://long-pay.vercel.app/api/external-agent-submissions

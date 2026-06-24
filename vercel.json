@@ -116,11 +116,15 @@
             ]
         }
     ],
-    "rewrites": [
-        {
-            "source": "/share/expenses/:id",
-            "destination": "/api/share/expense?id=:id"
-        },
+  "rewrites": [
+    {
+      "source": "/api/external-agent-submissions",
+      "destination": "https://nowtovakbozjjkdsjmtd.supabase.co/functions/v1/fairpay-external-agent-api/v1/external-agent-submissions"
+    },
+    {
+      "source": "/share/expenses/:id",
+      "destination": "/api/share/expense?id=:id"
+    },
         {
             "source": "/share/debts/:token",
             "destination": "/api/share/debt?t=:token"
