@@ -80,6 +80,38 @@ function actorLabel(actor: { email?: string; display_name?: string }) {
   return actor.display_name || actor.email || "Unresolved";
 }
 
+const approvalErrorMessages: Record<string, string> = {
+  GROUP_UNRESOLVED: "FairPay could not find that group for the target email.",
+  GROUP_AMBIGUOUS: "More than one matching group was found. Use a more specific group.",
+  GROUP_NOT_ACCESSIBLE: "You do not have access to approve submissions for that group.",
+  SUBMISSION_NOT_ACCESSIBLE: "This submission is not visible to your FairPay account.",
+  SUBMISSION_NOT_FOUND: "This submission no longer exists.",
+  SUBMISSION_NOT_PENDING: "This submission was already handled.",
+  SUBMISSION_EXPIRED: "This submission expired. Ask the agent to submit it again.",
+  PAYER_UNRESOLVED: "FairPay could not match the payer to a group member.",
+  PAYER_AMBIGUOUS: "More than one group member matches the payer name.",
+  PARTICIPANT_UNRESOLVED: "FairPay could not match one participant to a group member.",
+  PARTICIPANT_AMBIGUOUS: "More than one group member matches a participant name.",
+  NO_PARTICIPANTS: "No valid participants were found for this submission.",
+  DUPLICATE_PARTICIPANT: "The same participant appears more than once.",
+  SPLIT_SUM_MISMATCH: "The participant split amounts do not add up to the expense amount.",
+  DUPLICATE_EXPENSE: "FairPay found a likely duplicate expense.",
+};
+
+function submissionErrorMessage(error: unknown, fallback: string) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" &&
+        error !== null &&
+        "message" in error &&
+        typeof error.message === "string"
+      ? error.message
+      : String(error || fallback);
+
+  return approvalErrorMessages[message] ?? message;
+}
+
 export function ExternalAgentSubmissionInbox() {
   const queryClient = useQueryClient();
   const [dismissed, setDismissed] = useState(false);
@@ -114,8 +146,7 @@ export function ExternalAgentSubmissionInbox() {
       void queryClient.invalidateQueries({ queryKey: ["groups"] });
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : "Failed to approve submission";
-      toast.error(message);
+      toast.error(submissionErrorMessage(error, "Failed to approve submission"));
     },
     onSettled: () => setActiveId(null),
   });
@@ -127,17 +158,34 @@ export function ExternalAgentSubmissionInbox() {
       void queryClient.invalidateQueries({ queryKey: ["external-agent-submissions"] });
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : "Failed to reject submission";
-      toast.error(message);
+      toast.error(submissionErrorMessage(error, "Failed to reject submission"));
     },
     onSettled: () => setActiveId(null),
   });
 
-  const open = !dismissed && !isLoading && submissions.length > 0;
+  const pendingCount = submissions.length;
+  const open = !dismissed && !isLoading && pendingCount > 0;
+  const showLauncher = dismissed && !isLoading && pendingCount > 0;
 
   return (
-    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && setDismissed(true)}>
-      <DialogContent className="sm:max-w-2xl">
+    <>
+      {showLauncher && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <Button
+            type="button"
+            className="shadow-lg"
+            onClick={() => setDismissed(false)}
+            aria-label={`Review ${pendingCount} pending agent submissions`}
+          >
+            <InboxIcon size={16} />
+            Agent submissions
+            <Badge variant="secondary">{pendingCount}</Badge>
+          </Button>
+        </div>
+      )}
+
+      <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && setDismissed(true)}>
+        <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <InboxIcon size={18} />
@@ -289,8 +337,9 @@ export function ExternalAgentSubmissionInbox() {
             View later
           </Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

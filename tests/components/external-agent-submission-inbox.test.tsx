@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import ExternalAgentSubmissionInbox from "@/components/agent/ExternalAgentSubmissionInbox";
 import { supabaseClient } from "@/utility/supabaseClient";
@@ -82,5 +83,25 @@ describe("ExternalAgentSubmissionInbox", () => {
     expect(screen.getByText("Group admin")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /approve/i })).toHaveLength(2);
     expect(screen.getAllByRole("button", { name: /reject/i })).toHaveLength(2);
+  });
+
+  it("can reopen pending agent submissions after viewing later", async () => {
+    vi.mocked(supabaseClient.rpc).mockResolvedValueOnce({ data: submissions, error: null });
+    const user = userEvent.setup();
+
+    renderInbox();
+
+    expect(await screen.findByText("Agent submissions pending approval")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /view later/i }));
+
+    const launcher = await screen.findByRole("button", {
+      name: /review 2 pending agent submissions/i,
+    });
+    expect(launcher).toBeInTheDocument();
+
+    await user.click(launcher);
+
+    expect(await screen.findByText("Agent submissions pending approval")).toBeInTheDocument();
   });
 });
