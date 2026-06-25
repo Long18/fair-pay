@@ -1,6 +1,7 @@
 import type { AssistantChatCompletion, AssistantChatFn } from "@/modules/ai-chat/orchestrator";
 import {
   DEFAULT_WEB_LLM_MODEL,
+  WEB_LLM_COMPAT_MODEL,
   type LocalLlmChatRequest,
   type LocalLlmStatus,
   type LocalLlmStatusListener,
@@ -118,6 +119,11 @@ function postRequest<T>(request: LocalLlmRequestWithoutId): Promise<T> {
   });
 }
 
+function isStorageBufferLimitError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /maxStorageBuffersPerShaderStage/i.test(message);
+}
+
 export function getLocalLlmStatus(): LocalLlmStatus {
   if (status.state === "unsupported") return status;
 
@@ -143,7 +149,21 @@ export async function loadModel(model = DEFAULT_WEB_LLM_MODEL): Promise<LocalLlm
   if (current.state === "loading" && current.model === model) return current;
 
   setStatus({ state: "loading", model, progress: 0, message: "Starting local model..." });
-  return postRequest<LocalLlmStatus>({ type: "load", model });
+  try {
+    return await postRequest<LocalLlmStatus>({ type: "load", model });
+  } catch (error) {
+    if (model !== WEB_LLM_COMPAT_MODEL && isStorageBufferLimitError(error)) {
+      setStatus({
+        state: "loading",
+        model: WEB_LLM_COMPAT_MODEL,
+        progress: 0,
+        message: "Device WebGPU limits are low. Loading a smaller local model...",
+      });
+      return postRequest<LocalLlmStatus>({ type: "load", model: WEB_LLM_COMPAT_MODEL });
+    }
+
+    throw error;
+  }
 }
 
 export const chat: AssistantChatFn = async (messages, options): Promise<AssistantChatCompletion> => {

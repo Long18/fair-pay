@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useGetIdentity } from "@refinedev/core";
 import { chat as localLlmChat, loadModel, subscribeLocalLlmStatus } from "@/lib/local-llm/client";
-import type { LocalLlmStatus } from "@/lib/local-llm/types";
+import { DEFAULT_WEB_LLM_MODEL, type LocalLlmStatus } from "@/lib/local-llm/types";
 import { supabaseClient } from "@/utility/supabaseClient";
 import type { Profile } from "@/modules/profile/types";
 import type { AgentPreviewResponse } from "@/lib/agent-api/types";
@@ -20,7 +20,6 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) ?? "";
 const MCP_ENDPOINT_URL = `${SUPABASE_URL}/functions/v1/fairpay-agent-mcp`;
 const LEGACY_AI_CHAT_URL = `${SUPABASE_URL}/functions/v1/ai-chat`;
-const DEFAULT_MODEL = "Hermes-3-Llama-3.2-3B-q4f16_1-MLC";
 
 interface UseAiChatReturn {
   messages: ChatMessage[];
@@ -56,7 +55,7 @@ export function useAiChat(): UseAiChatReturn {
   const [pendingPreview, setPendingPreview] = useState<AgentPreviewResponse | null>(null);
   const [localLlmStatus, setLocalLlmStatus] = useState<LocalLlmStatus>(() => ({
     state: "idle",
-    model: DEFAULT_MODEL,
+    model: DEFAULT_WEB_LLM_MODEL,
   }));
 
   const historyRef = useRef<ConversationMessage[]>([

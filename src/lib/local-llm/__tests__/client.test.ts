@@ -93,4 +93,28 @@ describe("local LLM client", () => {
     await expect(loading).rejects.toThrow("Hugging Face");
     expect(client.getLocalLlmStatus()).toMatchObject({ state: "error", message: expect.stringContaining("connect-src") });
   });
+
+  it("falls back to a smaller model when WebGPU storage-buffer limits are too low", async () => {
+    Object.defineProperty(navigator, "gpu", { configurable: true, value: {} });
+    vi.stubGlobal("Worker", MockWorker);
+    const client = await importClient();
+
+    const loading = client.loadModel();
+    const worker = MockWorker.instances[0];
+    const firstRequest = worker.posted[0] as { id: number; model: string };
+    worker.emit({
+      id: firstRequest.id,
+      type: "error",
+      model: firstRequest.model,
+      message:
+        "Cannot initialize runtime because of requested maxStorageBuffersPerShaderStage exceeds limit. requested=10, limit=8.",
+    });
+    await Promise.resolve();
+
+    const secondRequest = worker.posted[1] as { id: number; model: string };
+    expect(secondRequest.model).toBe("TinyLlama-1.1B-Chat-v1.0-q4f16_1-MLC-1k");
+
+    worker.emit({ id: secondRequest.id, type: "ready", model: secondRequest.model });
+    await expect(loading).resolves.toMatchObject({ state: "ready", model: secondRequest.model });
+  });
 });
