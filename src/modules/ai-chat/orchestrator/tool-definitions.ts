@@ -1,19 +1,20 @@
-// Phase 3 — Puter tool definitions given to the AI model.
-//
-// Phase 2 MCP tools (fairpay_*) are routed to the MCP endpoint.
-// Legacy read tools are routed to the ai-chat edge function.
-//
-// confirm and commit are intentionally absent — they are never offered
-// to the model. The FairPay UI confirmation flow calls them exclusively.
-
 const UUID_SCHEMA = { type: 'string', format: 'uuid' } as const
 const VND_SCHEMA = { type: 'integer', minimum: 1, maximum: 9_999_999_999 } as const
 
-/** The set of tools routed to the Phase 2 MCP endpoint. */
+const ACTOR_REF_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    email: { type: 'string', format: 'email' },
+    display_name: { type: 'string', minLength: 1, maxLength: 200 },
+  },
+} as const
+
 export const MCP_TOOL_NAMES: ReadonlySet<string> = new Set([
   'fairpay_get_me',
   'fairpay_list_groups',
   'fairpay_list_group_members',
+  'fairpay_resolve_expense_context',
   'fairpay_check_expense_duplicates',
   'fairpay_preview_expense',
   'fairpay_get_operation',
@@ -26,15 +27,13 @@ export const LEGACY_TOOL_NAMES: ReadonlySet<string> = new Set([
   'get_expenses',
 ])
 
-/** OpenAI-format tool definitions sent to Puter AI. */
-export const PHASE3_TOOL_DEFINITIONS: ReadonlyArray<{ type: 'function'; function: Record<string, unknown> }> = [
-  // ── Phase 2 MCP tools ─────────────────────────────────────────────────
+export const PHASE3_TOOL_DEFINITIONS = [
   {
     type: 'function',
     function: {
       name: 'fairpay_get_me',
       description:
-        'Return the FairPay actor identity (user_id, email, full_name) derived from the current Supabase JWT. Call this when you need the actor\'s own member info.',
+        'Return the FairPay actor identity (user_id, email, full_name) derived from the current Supabase JWT.',
       parameters: { type: 'object', properties: {}, required: [] },
     },
   },
@@ -42,8 +41,7 @@ export const PHASE3_TOOL_DEFINITIONS: ReadonlyArray<{ type: 'function'; function
     type: 'function',
     function: {
       name: 'fairpay_list_groups',
-      description:
-        'List non-archived groups the authenticated user belongs to. Returns group_id values needed for expense creation.',
+      description: 'List non-archived groups the authenticated user belongs to.',
       parameters: { type: 'object', properties: {}, required: [] },
     },
   },
@@ -52,10 +50,12 @@ export const PHASE3_TOOL_DEFINITIONS: ReadonlyArray<{ type: 'function'; function
     function: {
       name: 'fairpay_list_group_members',
       description:
-        'List registered members of a group. Returns member_id (group_members.id), user_id, full_name, and email. Always call this before creating an expense — use member_id (not user_id) for payer_member_id and participants.',
+        'List registered members of a group. Returns member_id (group_members.id), user_id, full_name, and email.',
       parameters: {
         type: 'object',
-        properties: { group_id: { ...UUID_SCHEMA, description: 'Group UUID from fairpay_list_groups' } },
+        properties: {
+          group_id: { ...UUID_SCHEMA, description: 'Group UUID from fairpay_list_groups' },
+        },
         required: ['group_id'],
       },
     },
@@ -63,16 +63,46 @@ export const PHASE3_TOOL_DEFINITIONS: ReadonlyArray<{ type: 'function'; function
   {
     type: 'function',
     function: {
-      name: 'fairpay_check_expense_duplicates',
+      name: 'fairpay_resolve_expense_context',
       description:
-        'Check for likely duplicate expenses in a group before calling fairpay_preview_expense.',
+        'Read-only preflight for an expense request. Use before fairpay_preview_expense to confirm actor identity, group-vs-personal scope, group, payer, and participants.',
+      parameters: {
+        type: 'object',
+        properties: {
+          actor_confirmed: {
+            type: 'boolean',
+            description: 'True only after the user confirms their FairPay name/email.',
+          },
+          transaction_type: {
+            type: 'string',
+            enum: ['group', 'personal'],
+            description: 'Ask the user whether this is a group or personal transaction.',
+          },
+          group_id: UUID_SCHEMA,
+          group_name: { type: 'string', minLength: 1, maxLength: 200 },
+          payer: ACTOR_REF_SCHEMA,
+          participants: {
+            type: 'array',
+            maxItems: 100,
+            items: ACTOR_REF_SCHEMA,
+          },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'fairpay_check_expense_duplicates',
+      description: 'Check for likely duplicate expenses in a group before calling fairpay_preview_expense.',
       parameters: {
         type: 'object',
         properties: {
           group_id: UUID_SCHEMA,
           description: { type: 'string', minLength: 1, maxLength: 200 },
           amount: { ...VND_SCHEMA, description: 'Integer VND amount' },
-          payer_member_id: { ...UUID_SCHEMA, description: 'group_members.id of the payer' },
+          payer_member_id: { ...UUID_SCHEMA, description: 'group_members.id of payer' },
           expense_date: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
           window_hours: { type: 'integer', minimum: 1, maximum: 168 },
         },
@@ -85,10 +115,19 @@ export const PHASE3_TOOL_DEFINITIONS: ReadonlyArray<{ type: 'function'; function
     function: {
       name: 'fairpay_preview_expense',
       description:
-        'Validate and store an immutable VND group-expense preview. The FairPay UI shows a confirmation card — do NOT call confirm or commit yourself. The user must click the card.',
+        'Validate and store an immutable VND group-expense preview. The FairPay UI shows a confirmation card. Do not call confirm or commit.',
       parameters: {
         type: 'object',
         properties: {
+          actor_confirmed: {
+            type: 'boolean',
+            description: 'Workflow-only. Must be true after the user confirms their FairPay name/email.',
+          },
+          transaction_type: {
+            type: 'string',
+            enum: ['group', 'personal'],
+            description: 'Workflow-only. Must be group; personal is not supported by agent preview.',
+          },
           group_id: UUID_SCHEMA,
           description: { type: 'string', minLength: 1, maxLength: 200 },
           amount: { ...VND_SCHEMA, description: 'Total in VND (integer, no decimals)' },
@@ -96,41 +135,53 @@ export const PHASE3_TOOL_DEFINITIONS: ReadonlyArray<{ type: 'function'; function
           category: {
             type: 'string',
             enum: [
-              'Food & Drink', 'Transportation', 'Accommodation', 'Entertainment',
-              'Shopping', 'Utilities', 'Healthcare', 'Education', 'Other',
+              'Food & Drink',
+              'Transportation',
+              'Accommodation',
+              'Entertainment',
+              'Shopping',
+              'Utilities',
+              'Healthcare',
+              'Education',
+              'Other',
             ],
           },
           expense_date: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
           comment: { type: ['string', 'null'], maxLength: 1000 },
-          payer_member_id: { ...UUID_SCHEMA, description: 'group_members.id of who paid' },
-          split_method: {
-            type: 'string',
-            enum: ['equal', 'exact', 'fixed_then_equal_remainder'],
-            description: 'equal=even split; exact=specify each amount; fixed_then_equal_remainder=fixed for some + remainder split equally',
-          },
+          payer_member_id: { ...UUID_SCHEMA, description: 'group_members.id of payer' },
+          split_method: { type: 'string', enum: ['equal', 'exact', 'fixed_then_equal_remainder'] },
           participants: {
             type: 'array',
             minItems: 1,
             maxItems: 100,
             items: {
               type: 'object',
-              properties: {
-                member_id: { ...UUID_SCHEMA, description: 'group_members.id' },
-                amount: { ...VND_SCHEMA, description: 'For exact split: this member\'s share (VND)' },
-                fixed_amount: { ...VND_SCHEMA, description: 'For fixed_then_equal_remainder: this member\'s fixed portion (VND)' },
-              },
-              required: ['member_id'],
               additionalProperties: false,
+              required: ['member_id'],
+              properties: {
+                member_id: UUID_SCHEMA,
+                amount: VND_SCHEMA,
+                fixed_amount: VND_SCHEMA,
+              },
             },
           },
           confirmed_ambiguous_member_ids: {
             type: 'array',
             items: UUID_SCHEMA,
-            description: 'Workflow-only. Include an ambiguous member_id only after the user explicitly selected that candidate by member_id/email.',
+            description:
+              'Workflow-only. Include an ambiguous member_id only after the user explicitly selected that candidate by member_id/email.',
           },
         },
-        required: ['group_id', 'description', 'amount', 'payer_member_id', 'split_method', 'participants'],
-        additionalProperties: false,
+        required: [
+          'actor_confirmed',
+          'transaction_type',
+          'group_id',
+          'description',
+          'amount',
+          'payer_member_id',
+          'split_method',
+          'participants',
+        ],
       },
     },
   },
@@ -148,13 +199,12 @@ export const PHASE3_TOOL_DEFINITIONS: ReadonlyArray<{ type: 'function'; function
       },
     },
   },
-  // ── Legacy read tools (routed to ai-chat edge function) ────────────────
   {
     type: 'function',
     function: {
       name: 'get_debt_summary',
       description:
-        'Get a debt overview showing who owes whom for the current user. Returns aggregated totals per counterparty. For expense-level detail, use get_debt_details with a counterparty_id from this result.',
+        'Get a debt overview showing who owes whom for the current user. Returns aggregated totals per counterparty.',
       parameters: { type: 'object', properties: {}, required: [] },
     },
   },
@@ -163,7 +213,7 @@ export const PHASE3_TOOL_DEFINITIONS: ReadonlyArray<{ type: 'function'; function
     function: {
       name: 'get_debt_details',
       description:
-        'Get detailed expense-level debt breakdown with a specific counterparty. Returns each expense: description, date, amount owed, settlement status, and group context.',
+        'Get detailed expense-level debt breakdown with a specific counterparty. Returns description, date, owed amount, settlement status, and group context.',
       parameters: {
         type: 'object',
         properties: {
@@ -180,7 +230,9 @@ export const PHASE3_TOOL_DEFINITIONS: ReadonlyArray<{ type: 'function'; function
       description: 'Get details of a specific group including members and recent expenses.',
       parameters: {
         type: 'object',
-        properties: { group_id: { type: 'string', description: 'Group UUID' } },
+        properties: {
+          group_id: { type: 'string', description: 'Group UUID' },
+        },
         required: ['group_id'],
       },
     },
@@ -200,4 +252,4 @@ export const PHASE3_TOOL_DEFINITIONS: ReadonlyArray<{ type: 'function'; function
       },
     },
   },
-]
+] as const

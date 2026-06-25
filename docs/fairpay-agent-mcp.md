@@ -24,6 +24,7 @@ Available tools:
 - `fairpay_get_me`
 - `fairpay_list_groups`
 - `fairpay_list_group_members`
+- `fairpay_resolve_expense_context`
 - `fairpay_check_expense_duplicates`
 - `fairpay_preview_expense`
 - `fairpay_get_operation`
@@ -32,6 +33,10 @@ There are intentionally no tools for confirmation, commit, payment, received pay
 settlement, raw SQL, or table access. `fairpay_preview_expense` only creates an immutable
 preview. A user must open FairPay and confirm the server-rendered preview before the REST
 API can commit it.
+
+`fairpay_resolve_expense_context` is read-only. Use it before previewing to confirm the
+actor, group-vs-personal scope, target group, payer, and participants. Personal/1-on-1
+agent-created transactions remain unsupported in this tool set.
 
 `member_id` always means `group_members.id`, never `profiles.id`.
 
