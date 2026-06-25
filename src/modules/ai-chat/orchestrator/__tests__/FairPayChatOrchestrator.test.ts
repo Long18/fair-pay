@@ -59,12 +59,52 @@ describe("FairPayChatOrchestrator manual JSON protocol", () => {
     expect(result.text).toBe("You have one open balance.");
   });
 
-  it("does not execute tools for invalid JSON", async () => {
+  it("treats plain text model output as a final response", async () => {
     const mcpClient: McpClientInterface = { callTool: vi.fn() };
     const legacyExecutor = vi.fn<LegacyToolExecutor>();
 
     const result = await orchestrator(async () => completion("not json"), { mcpClient, legacyExecutor })
       .processTurn("hello", baseHistory(), null);
+
+    expect(mcpClient.callTool).not.toHaveBeenCalled();
+    expect(legacyExecutor).not.toHaveBeenCalled();
+    expect(result.text).toBe("not json");
+  });
+
+  it("does not execute tools for malformed structured JSON", async () => {
+    const mcpClient: McpClientInterface = { callTool: vi.fn() };
+    const legacyExecutor = vi.fn<LegacyToolExecutor>();
+
+    const result = await orchestrator(async () => completion('{"type":"tool_call","name":"get_debt_summary"'), { mcpClient, legacyExecutor })
+      .processTurn("hello", baseHistory(), null);
+
+    expect(mcpClient.callTool).not.toHaveBeenCalled();
+    expect(legacyExecutor).not.toHaveBeenCalled();
+    expect(result.text).toContain("could not parse");
+  });
+
+  it("accepts common JSON text fields as final responses", async () => {
+    const mcpClient: McpClientInterface = { callTool: vi.fn() };
+    const legacyExecutor = vi.fn<LegacyToolExecutor>();
+
+    const result = await orchestrator(async () => completion(JSON.stringify({ answer: "I can help with that." })), {
+      mcpClient,
+      legacyExecutor,
+    }).processTurn("hello", baseHistory(), null);
+
+    expect(mcpClient.callTool).not.toHaveBeenCalled();
+    expect(legacyExecutor).not.toHaveBeenCalled();
+    expect(result.text).toBe("I can help with that.");
+  });
+
+  it("does not treat invalid tool-call JSON as a final response", async () => {
+    const mcpClient: McpClientInterface = { callTool: vi.fn() };
+    const legacyExecutor = vi.fn<LegacyToolExecutor>();
+
+    const result = await orchestrator(
+      async () => completion(JSON.stringify({ type: "tool_call", name: "get_debt_summary" })),
+      { mcpClient, legacyExecutor },
+    ).processTurn("hello", baseHistory(), null);
 
     expect(mcpClient.callTool).not.toHaveBeenCalled();
     expect(legacyExecutor).not.toHaveBeenCalled();

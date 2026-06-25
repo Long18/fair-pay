@@ -46,6 +46,11 @@ function stripCodeFence(value: string): string {
     .trim()
 }
 
+function looksStructured(value: string): boolean {
+  const trimmed = value.trim()
+  return trimmed.startsWith('{') || trimmed.startsWith('[') || /^```(?:json)?\s*/i.test(trimmed)
+}
+
 function parseAssistantDirective(raw: string): AssistantDirective | null {
   if (!raw.trim()) return { type: 'final', content: '' }
 
@@ -56,6 +61,15 @@ function parseAssistantDirective(raw: string): AssistantDirective | null {
     const candidate = parsed as Record<string, unknown>
     if (candidate.type === 'final' && typeof candidate.content === 'string') {
       return { type: 'final', content: candidate.content }
+    }
+
+    if (!('type' in candidate)) {
+      for (const key of ['content', 'answer', 'message', 'text']) {
+        const value = candidate[key]
+        if (typeof value === 'string') {
+          return { type: 'final', content: value }
+        }
+      }
     }
 
     if (
@@ -72,6 +86,10 @@ function parseAssistantDirective(raw: string): AssistantDirective | null {
       }
     }
   } catch {
+    if (!looksStructured(raw)) {
+      return { type: 'final', content: raw.trim() }
+    }
+
     return null
   }
 
