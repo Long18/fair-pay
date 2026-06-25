@@ -26,11 +26,11 @@
                 },
                 {
                     "key": "Permissions-Policy",
-                    "value": "camera=(), microphone=(), geolocation=()"
+                    "value": "camera=(), microphone=(), geolocation=(), webgpu=(self)"
                 },
                 {
                     "key": "Content-Security-Policy",
-                    "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://js.puter.com; style-src 'self' 'unsafe-inline'; img-src * data: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://va.vercel-scripts.com https://api.puter.com https://js.puter.com wss://api.puter.com; frame-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+                    "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://va.vercel-scripts.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src * data: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://va.vercel-scripts.com https://huggingface.co https://*.huggingface.co https://cdn-lfs.huggingface.co https://*.hf.co https://*.xethub.hf.co https://raw.githubusercontent.com https://github.com https://objects.githubusercontent.com; frame-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
                 }
             ]
         },

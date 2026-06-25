@@ -73,4 +73,24 @@ describe("local LLM client", () => {
     await expect(loading).rejects.toThrow("No memory");
     expect(client.getLocalLlmStatus()).toMatchObject({ state: "error", message: "No memory" });
   });
+
+  it("surfaces deployment guidance for blocked model downloads", async () => {
+    Object.defineProperty(navigator, "gpu", { configurable: true, value: {} });
+    vi.stubGlobal("Worker", MockWorker);
+    const client = await importClient();
+
+    const loading = client.loadModel();
+    const worker = MockWorker.instances[0];
+    const request = worker.posted[0] as { id: number; model: string };
+    worker.emit({
+      id: request.id,
+      type: "error",
+      model: request.model,
+      message:
+        "Local AI could not download WebLLM model files. Check that this deployment allows Hugging Face and raw.githubusercontent.com in Content-Security-Policy connect-src.",
+    });
+
+    await expect(loading).rejects.toThrow("Hugging Face");
+    expect(client.getLocalLlmStatus()).toMatchObject({ state: "error", message: expect.stringContaining("connect-src") });
+  });
 });

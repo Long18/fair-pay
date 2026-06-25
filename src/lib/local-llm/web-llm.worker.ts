@@ -13,7 +13,11 @@ function post(message: LocalLlmWorkerResponse): void {
 }
 
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Local AI failed unexpectedly.";
+  const message = error instanceof Error ? error.message : "Local AI failed unexpectedly.";
+  if (/networkerror|failed to fetch|load failed/i.test(message)) {
+    return "Local AI could not download WebLLM model files. Check that this deployment allows Hugging Face and raw.githubusercontent.com in Content-Security-Policy connect-src.";
+  }
+  return message;
 }
 
 function normalizeMessages({ messages }: LocalLlmChatRequest) {

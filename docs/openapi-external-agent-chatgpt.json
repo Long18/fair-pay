@@ -1,0 +1,859 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "FairPay External Agent API",
+    "description": "Submit shared expense proposals to FairPay via external agents (ChatGPT, Claude, etc.).\nNo API key required. Proposals are queued for FairPay user approval before any real expense is created.\n\n**Primary use:** ChatGPT and other agents generate group expense proposals from natural language.\nExpenses are created only after the target FairPay user reviews and confirms in FairPay UI.\n",
+    "version": "1.0.0",
+    "contact": {
+      "name": "FairPay Team",
+      "url": "https://long-pay.vercel.app"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://long-pay.vercel.app",
+      "description": "FairPay production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Discovery",
+      "description": "Health check and agent context"
+    },
+    {
+      "name": "Submissions",
+      "description": "Submit group expense proposals"
+    }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "Health check",
+        "description": "Verify FairPay is reachable. Use before calling other endpoints.",
+        "operationId": "getFairPayHealth",
+        "responses": {
+          "200": {
+            "description": "FairPay is reachable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                },
+                "examples": {
+                  "healthy": {
+                    "value": {
+                      "status": "ok",
+                      "service": "FairPay",
+                      "version": "v1"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/api/external-agent/context": {
+      "get": {
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "Agent capability document",
+        "description": "Fetch the canonical agent instructions, validation rules, available APIs, and examples.\nCall this first to orient yourself on the submission flow, split methods, and error handling.\n",
+        "operationId": "getFairPayAgentContext",
+        "responses": {
+          "200": {
+            "description": "Agent context document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentContextResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/api/external-agent-submissions": {
+      "post": {
+        "tags": [
+          "Submissions"
+        ],
+        "summary": "Submit a group expense proposal",
+        "description": "Submit a group expense proposal for FairPay user approval. Expense is created only after the target user approves in FairPay UI. Flow: confirm identity → confirm group → submit with actor_confirmed=true → user approves. Send {} as probe to get context.",
+        "operationId": "submitFairPayExpenseProposal",
+        "x-openai-isConsequential": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpenseProposal"
+              },
+              "examples": {
+                "two_person_equal": {
+                  "summary": "Two people, equal split",
+                  "value": {
+                    "target_email": "long.lnt@amanotes.com",
+                    "target_name": "Thành Long",
+                    "actor_confirmed": true,
+                    "transaction_type": "group",
+                    "group_name": "Core",
+                    "source": "chatgpt",
+                    "description": "Trà sữa",
+                    "amount": 50000,
+                    "currency": "VND",
+                    "category": "Food & Drink",
+                    "expense_date": "2026-06-25",
+                    "payer": {
+                      "email": "long.lnt@amanotes.com"
+                    },
+                    "split_method": "equal",
+                    "participants": [
+                      {
+                        "email": "long.lnt@amanotes.com"
+                      },
+                      {
+                        "display_name": "Anh Tâm"
+                      }
+                    ]
+                  }
+                },
+                "group_equal_split": {
+                  "summary": "Group dinner, equal split",
+                  "value": {
+                    "target_email": "user@example.com",
+                    "actor_confirmed": true,
+                    "transaction_type": "group",
+                    "group_name": "Core",
+                    "source": "chatgpt",
+                    "description": "Ăn tối",
+                    "amount": 600000,
+                    "currency": "VND",
+                    "category": "Food & Drink",
+                    "expense_date": "2026-06-25",
+                    "payer": {
+                      "email": "user@example.com"
+                    },
+                    "split_method": "equal",
+                    "participants": [
+                      {
+                        "email": "user@example.com"
+                      },
+                      {
+                        "display_name": "Anh Tâm"
+                      },
+                      {
+                        "display_name": "Thuần"
+                      }
+                    ]
+                  }
+                },
+                "exact_split": {
+                  "summary": "Exact split (each person has specific amount)",
+                  "value": {
+                    "target_email": "user@example.com",
+                    "actor_confirmed": true,
+                    "transaction_type": "group",
+                    "group_name": "Core",
+                    "source": "chatgpt",
+                    "description": "Ăn trưa chia lẻ",
+                    "amount": 300000,
+                    "currency": "VND",
+                    "category": "Food & Drink",
+                    "expense_date": "2026-06-25",
+                    "payer": {
+                      "email": "user@example.com"
+                    },
+                    "split_method": "exact",
+                    "participants": [
+                      {
+                        "email": "user@example.com",
+                        "amount": 100000
+                      },
+                      {
+                        "display_name": "Anh Tâm",
+                        "amount": 200000
+                      }
+                    ]
+                  }
+                },
+                "fixed_then_equal": {
+                  "summary": "Fixed amounts + equal split remainder",
+                  "value": {
+                    "target_email": "user@example.com",
+                    "actor_confirmed": true,
+                    "transaction_type": "group",
+                    "group_name": "Core",
+                    "source": "chatgpt",
+                    "description": "Cơm trưa cơ sở + thêm đồ uống",
+                    "amount": 450000,
+                    "currency": "VND",
+                    "category": "Food & Drink",
+                    "expense_date": "2026-06-25",
+                    "payer": {
+                      "email": "user@example.com"
+                    },
+                    "split_method": "fixed_then_equal_remainder",
+                    "participants": [
+                      {
+                        "email": "user@example.com",
+                        "fixed_amount": 150000
+                      },
+                      {
+                        "display_name": "Anh Tâm",
+                        "fixed_amount": 150000
+                      },
+                      {
+                        "display_name": "Thuần"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Proposal submitted successfully, queued for user approval",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionCreatedResponse"
+                },
+                "example": {
+                  "trace_id": "tr_01JZABC123DEFG",
+                  "submission_id": "sub_01JZABC456HIJK",
+                  "status": "pending",
+                  "expires_at": "2026-06-26T11:00:00Z",
+                  "approval_url": "https://long-pay.vercel.app/agent-submissions/sub_01JZABC456HIJK",
+                  "message": "Submission queued for FairPay user approval"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "service"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "service": {
+            "type": "string",
+            "const": "FairPay"
+          },
+          "version": {
+            "type": "string",
+            "example": "v1"
+          }
+        }
+      },
+      "AgentContextResponse": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "service",
+          "version",
+          "base_url",
+          "purpose",
+          "required_flow",
+          "available_apis",
+          "request_shape",
+          "validation_rules",
+          "categories",
+          "agent_instructions"
+        ],
+        "properties": {
+          "service": {
+            "type": "string",
+            "const": "FairPay"
+          },
+          "version": {
+            "type": "string",
+            "example": "v1"
+          },
+          "base_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "purpose": {
+            "type": "string",
+            "description": "High-level purpose statement"
+          },
+          "required_flow": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Ordered steps agents must follow"
+          },
+          "available_apis": {
+            "type": "object",
+            "description": "Available API endpoints and methods"
+          },
+          "request_shape": {
+            "type": "object",
+            "description": "Field-by-field documentation"
+          },
+          "validation_rules": {
+            "type": "object",
+            "description": "Constraints and rules to enforce"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Supported expense categories"
+          },
+          "agent_instructions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Best practices and security guidance"
+          },
+          "examples": {
+            "type": "object",
+            "description": "Canonical request examples"
+          }
+        }
+      },
+      "ActorRef": {
+        "type": "object",
+        "description": "Reference to a FairPay person.\nPrefer email when known; use display_name only when email is unknown.\nNever invent email addresses or member IDs.\n",
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Stable email address of the person"
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Human display name (used when email is unknown)"
+          }
+        },
+        "anyOf": [
+          {
+            "required": [
+              "email"
+            ]
+          },
+          {
+            "required": [
+              "display_name"
+            ]
+          }
+        ]
+      },
+      "ParticipantRef": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ActorRef"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "email": {
+                "type": "string",
+                "format": "email"
+              },
+              "display_name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "amount": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "(split_method=exact only) Amount this participant owes, in integer VND.\nSum of all participant amounts must equal the proposal total.\n"
+              },
+              "fixed_amount": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "(split_method=fixed_then_equal_remainder only) \nFixed amount this participant owes, in integer VND.\nRemaining amount is split equally among participants without fixed_amount.\n"
+              }
+            }
+          }
+        ]
+      },
+      "ExpenseProposal": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "target_email",
+          "actor_confirmed",
+          "transaction_type",
+          "description",
+          "amount",
+          "currency",
+          "payer",
+          "split_method",
+          "participants"
+        ],
+        "properties": {
+          "target_email": {
+            "type": "string",
+            "format": "email",
+            "description": "FairPay account email that will review and approve this proposal.\nMust be a real, confirmed FairPay user.\n"
+          },
+          "target_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "(Optional) Display name the user confirmed during conversation.\nHelps the user recognize their own proposal in FairPay UI.\n"
+          },
+          "actor_confirmed": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "MUST be true. Set only after asking the user to confirm:\n\"Bạn có phải là <name/email> không?\" (Vietnamese)\n\"Is your FairPay email <email>?\" (English)\n\nAgents CANNOT set this to true themselves; it requires explicit user confirmation.\n"
+          },
+          "transaction_type": {
+            "type": "string",
+            "enum": [
+              "group"
+            ],
+            "description": "MUST be \"group\". Personal/1-on-1 transactions are not supported in v1.\nIf the user says \"personal\" or \"1-on-1\", do not submit; explain the limitation.\n"
+          },
+          "group_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "(Optional) Stable FairPay group UUID, if already known.\nWhen supplied, takes precedence over group_name.\n"
+          },
+          "group_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "(Required if group_id is missing) Human-readable FairPay group name.\nExample: \"Core\", \"Tech Team\", \"Weekend Trip\".\n"
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "default": "chatgpt",
+            "description": "External agent name, for logging and attribution.\nExample: \"chatgpt\", \"claude-code\", \"fairpay-mcp\".\n"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Expense description. Examples: \"Trà sữa\", \"Ăn tối\", \"Xăng xe\".\nKeep concise; use category for classification.\n"
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9999999999,
+            "description": "Total expense amount in integer VND. No decimals.\n50k = 50000, 600 nghìn = 600000, 1 triệu = 1000000.\nAlways convert currency to VND if needed.\n"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "VND"
+            ],
+            "default": "VND",
+            "description": "Only VND is supported in v1."
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "Food & Drink",
+              "Transportation",
+              "Accommodation",
+              "Entertainment",
+              "Shopping",
+              "Utilities",
+              "Healthcare",
+              "Education",
+              "Other"
+            ],
+            "default": "Other",
+            "description": "Expense category for reporting and filtering."
+          },
+          "expense_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Expense date in YYYY-MM-DD format.\nIf omitted, defaults to the server's current date.\n"
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "(Optional) Additional context visible to the FairPay user during approval.\nUse for notes, receipts info, or explanations.\n"
+          },
+          "payer": {
+            "$ref": "#/components/schemas/ActorRef",
+            "description": "Person who paid the expense. Prefer email when known.\nIf payer participates in the split, include them in the participants list too.\n"
+          },
+          "split_method": {
+            "type": "string",
+            "enum": [
+              "equal",
+              "exact",
+              "fixed_then_equal_remainder"
+            ],
+            "description": "**equal:** Divide total evenly among all participants.\n  - Do NOT include `amount` or `fixed_amount` on any participant.\n\n**exact:** Each participant has a specific amount.\n  - Every participant MUST include `amount`.\n  - Sum of all `amount` values MUST equal the proposal `amount`.\n\n**fixed_then_equal_remainder:** Some have fixed costs, rest split equally.\n  - Participants with fixed costs use `fixed_amount`.\n  - Participants without `fixed_amount` split the remainder equally.\n  - Use `fixed_amount`, not `amount`.\n"
+          },
+          "participants": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 100,
+            "description": "People included in the split. \n- Include the payer if they also participate.\n- No duplicates (by email or normalized display_name).\n- Never invent email addresses or member IDs.\n",
+            "items": {
+              "$ref": "#/components/schemas/ParticipantRef"
+            }
+          }
+        },
+        "allOf": [
+          {
+            "anyOf": [
+              {
+                "required": [
+                  "group_id"
+                ]
+              },
+              {
+                "required": [
+                  "group_name"
+                ]
+              }
+            ]
+          },
+          {
+            "if": {
+              "properties": {
+                "split_method": {
+                  "const": "exact"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "participants": {
+                  "items": {
+                    "required": [
+                      "amount"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "split_method": {
+                  "const": "equal"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "participants": {
+                  "items": {
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "amount"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "fixed_amount"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "SubmissionCreatedResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "trace_id",
+          "submission_id",
+          "status",
+          "expires_at",
+          "message"
+        ],
+        "properties": {
+          "trace_id": {
+            "type": "string",
+            "description": "Server trace ID for debugging; include in error reports"
+          },
+          "submission_id": {
+            "type": "string",
+            "description": "Unique FairPay submission ID"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending"
+            ],
+            "description": "Proposal is pending FairPay user approval"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp when this pending proposal expires"
+          },
+          "approval_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "FairPay URL where the target user can review and approve this proposal.\nShare this URL with the user if needed.\n"
+          },
+          "message": {
+            "type": "string",
+            "example": "Submission queued for FairPay user approval"
+          }
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "trace_id",
+          "type",
+          "title",
+          "status",
+          "detail"
+        ],
+        "properties": {
+          "trace_id": {
+            "type": "string",
+            "description": "Server trace ID for debugging"
+          },
+          "type": {
+            "type": "string",
+            "format": "uri",
+            "description": "Problem type URI"
+          },
+          "title": {
+            "type": "string",
+            "description": "Short error title"
+          },
+          "status": {
+            "type": "integer",
+            "description": "HTTP status code"
+          },
+          "detail": {
+            "type": "string",
+            "description": "Human-readable error detail"
+          },
+          "code": {
+            "type": "string",
+            "description": "Stable FairPay error code"
+          },
+          "instance": {
+            "type": "string",
+            "format": "uri",
+            "description": "Reference to the specific instance that caused the error"
+          }
+        }
+      },
+      "ValidationProblem": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Problem"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "errors": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "path",
+                    "message"
+                  ],
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "description": "JSON path of the invalid field.\nExample: $.participants[1].email\n"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Validation error message"
+                    },
+                    "expected": {
+                      "type": "string",
+                      "description": "Expected format or constraint"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Malformed request body (invalid JSON, wrong Content-Type, etc).\nThe agent should re-check the request format.\n",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "example": {
+              "trace_id": "tr_01JZABC789",
+              "type": "https://long-pay.vercel.app/problems/bad-request",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "Request body must be valid JSON",
+              "code": "bad_request"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Duplicate or conflicting proposal (e.g., same proposal sent twice).\nRetry with a different client_request_id or check if already approved.\n",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "example": {
+              "trace_id": "tr_01JZABC789",
+              "type": "https://long-pay.vercel.app/problems/duplicate-submission",
+              "title": "Duplicate Submission",
+              "status": 409,
+              "detail": "A proposal with this content already exists",
+              "code": "duplicate_submission"
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "Validation error. One or more fields are invalid.\nThe agent must fix the fields listed in `errors` before retrying.\n",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ValidationProblem"
+            },
+            "example": {
+              "trace_id": "tr_01JZABC789",
+              "type": "https://long-pay.vercel.app/problems/validation-error",
+              "title": "Validation Error",
+              "status": 422,
+              "detail": "The expense proposal is invalid",
+              "code": "validation_error",
+              "errors": [
+                {
+                  "path": "$.participants[1].email",
+                  "message": "Participant must include email or display_name",
+                  "expected": "email | display_name"
+                },
+                {
+                  "path": "$.amount",
+                  "message": "Amount must be a positive integer",
+                  "expected": "integer >= 1"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "RateLimitExceeded": {
+        "description": "Rate limit exceeded. The agent should wait before retrying.\n",
+        "headers": {
+          "Retry-After": {
+            "schema": {
+              "type": "integer",
+              "example": 60
+            },
+            "description": "Seconds to wait before retrying"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "example": {
+              "trace_id": "tr_01JZABC789",
+              "type": "https://long-pay.vercel.app/problems/rate-limit-exceeded",
+              "title": "Rate Limit Exceeded",
+              "status": 429,
+              "detail": "Too many submissions. Please wait before trying again",
+              "code": "rate_limit_exceeded"
+            }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Unexpected server error. This is not the agent's fault.\nInclude the `trace_id` in any bug report to FairPay support.\n",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "example": {
+              "trace_id": "tr_01JZABC789",
+              "type": "https://long-pay.vercel.app/problems/internal-server-error",
+              "title": "Internal Server Error",
+              "status": 500,
+              "detail": "An unexpected error occurred",
+              "code": "internal_server_error"
+            }
+          }
+        }
+      }
+    }
+  }
+}
