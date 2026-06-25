@@ -205,7 +205,19 @@ export async function loadModel(model = getSelectedModel()): Promise<LocalLlmSta
         progress: 0,
         message: "Device WebGPU limits are low. Loading a smaller local model...",
       });
-      return postRequest<LocalLlmStatus>({ type: "load", model: WEB_LLM_COMPAT_MODEL });
+      try {
+        return await postRequest<LocalLlmStatus>({ type: "load", model: WEB_LLM_COMPAT_MODEL });
+      } catch (fallbackError) {
+        // If compat model also fails, mark as unsupported
+        if (isStorageBufferLimitError(fallbackError)) {
+          setStatus({
+            state: "unsupported",
+            reason: "Your WebGPU device cannot run local AI models. Using cloud AI instead.",
+          });
+          return getLocalLlmStatus();
+        }
+        throw fallbackError;
+      }
     }
 
     throw error;
