@@ -288,8 +288,8 @@ export const ExpenseContextSelector = () => {
           )}
         </div>
 
-        {/* Scrollable list */}
-        <div className="overflow-y-auto">
+        {/* Scrollable list — bounded height keeps search + CTAs fixed */}
+        <div className="max-h-[42vh] overflow-y-auto md:max-h-72">
           {/* No results */}
           {normalizedSearch && filteredOptions.length === 0 && (
             <div className="py-8 text-center">
