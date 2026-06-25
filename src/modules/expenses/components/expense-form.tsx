@@ -45,6 +45,7 @@ import { QuickDatePicker } from "./quick-date-picker";
 import { ParticipantChips } from "./participant-chips";
 import { QuickTemplates } from "./quick-templates";
 import { MarkdownEditor } from "./markdown-editor";
+import { FriendExpenseLayout } from "./friend-expense/friend-expense-layout";
 import {
   Collapsible,
   CollapsibleContent,
@@ -71,7 +72,7 @@ const expenseSchema = z.object({
   }).optional(),
 });
 
-type ExpenseFormSchema = z.infer<typeof expenseSchema>;
+export type ExpenseFormSchema = z.infer<typeof expenseSchema>;
 
 interface ExpenseFormProps {
   groupId?: string;
@@ -243,6 +244,39 @@ export const ExpenseForm = ({
   const availableMembers = useMemo(() => {
     return members.filter(m => !participants.some(p => p.user_id === m.id));
   }, [members, participants]);
+
+  // Friend context: render dedicated outcome-first UI for two-person expenses
+  if (isFriendContext && members.length === 2 && !isEdit) {
+    return (
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(handleFormSubmit)}
+          className="space-y-4 overflow-x-hidden max-w-full"
+        >
+          <FriendExpenseLayout
+            members={members}
+            currentUserId={currentUserId}
+            participants={participants}
+            isSplitValid={isSplitValid}
+            totalSplit={totalSplit}
+            amountExpressionState={amountExpressionState}
+            setAmountExpressionState={setAmountExpressionState}
+            hasBlockingExactSplitExpressions={hasBlockingExactSplitExpressions}
+            selectedTemplate={selectedTemplate}
+            handleTemplateSelect={handleTemplateSelect}
+            showAdvanced={showAdvanced}
+            setShowAdvanced={setShowAdvanced}
+            showComment={showComment}
+            setShowComment={setShowComment}
+            attachments={attachments}
+            onAttachmentsChange={onAttachmentsChange}
+            isLoading={isLoading}
+            isEdit={isEdit}
+          />
+        </form>
+      </Form>
+    );
+  }
 
   return (
     <Form {...form}>

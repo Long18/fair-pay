@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, beforeEach, vitest } from 'vitest';
+import React from 'react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 // Mock useSplitCalculation hook
 const mockSplitCalculation = {
-  participants: [],
+  participants: [] as Array<{ user_id?: string; computed_amount: number }>,
   addParticipant: vi.fn(),
   removeParticipant: vi.fn(),
   setSplitValue: vi.fn(),
@@ -54,56 +55,70 @@ vi.mock('@/modules/expenses/components/recurring-expense-form', () => ({
   RecurringExpenseForm: () => <div>RecurringExpenseForm</div>,
 }));
 
+vi.mock('@/modules/expenses/components/friend-expense/friend-expense-layout', () => ({
+  FriendExpenseLayout: () => <div>FriendExpenseLayout</div>,
+}));
+
+// Types for UI component mocks
+interface WithChildren { children?: React.ReactNode }
+interface WithChildrenAndHTMLProps extends WithChildren, React.HTMLAttributes<HTMLElement> {}
+
 // Mock UI components
 vi.mock('@/components/ui/form', () => ({
-  Form: ({ children }: any) => <form>{children}</form>,
-  FormField: ({ render }: any) => render({ field: {}, fieldState: {} }),
-  FormItem: ({ children }: any) => <div>{children}</div>,
-  FormLabel: ({ children }: any) => <label>{children}</label>,
-  FormControl: ({ children }: any) => <div>{children}</div>,
+  Form: ({ children }: WithChildren) => <form>{children}</form>,
+  FormField: ({ render }: {
+    render: (props: { field: Record<string, unknown>; fieldState: Record<string, unknown> }) => React.ReactNode;
+  }) => <>{render({ field: {}, fieldState: {} })}</>,
+  FormItem: ({ children }: WithChildren) => <div>{children}</div>,
+  FormLabel: ({ children }: WithChildren) => <label>{children}</label>,
+  FormControl: ({ children }: WithChildren) => <div>{children}</div>,
   FormMessage: () => <div />,
-  FormDescription: ({ children }: any) => <div>{children}</div>,
+  FormDescription: ({ children }: WithChildren) => <div>{children}</div>,
 }));
 
 vi.mock('@/components/ui/button', () => ({
-  Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+  Button: ({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) =>
+    <button {...props}>{children}</button>,
 }));
 
 vi.mock('@/components/ui/input', () => ({
-  Input: (props: any) => <input {...props} />,
+  Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
 }));
 
 vi.mock('@/components/ui/switch', () => ({
-  Switch: (props: any) => <input type="checkbox" {...props} />,
+  Switch: (props: React.InputHTMLAttributes<HTMLInputElement>) =>
+    <input type="checkbox" {...props} />,
 }));
 
 vi.mock('@/components/ui/radio-group', () => ({
-  RadioGroup: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-  RadioGroupItem: (props: any) => <input type="radio" {...props} />,
+  RadioGroup: ({ children, ...props }: WithChildrenAndHTMLProps) => <div {...props}>{children}</div>,
+  RadioGroupItem: (props: React.InputHTMLAttributes<HTMLInputElement>) =>
+    <input type="radio" {...props} />,
 }));
 
 vi.mock('@/components/ui/card', () => ({
-  Card: ({ children }: any) => <div>{children}</div>,
-  CardContent: ({ children }: any) => <div>{children}</div>,
-  CardHeader: ({ children }: any) => <div>{children}</div>,
-  CardTitle: ({ children }: any) => <div>{children}</div>,
-  CardDescription: ({ children }: any) => <div>{children}</div>,
+  Card: ({ children }: WithChildren) => <div>{children}</div>,
+  CardContent: ({ children }: WithChildren) => <div>{children}</div>,
+  CardHeader: ({ children }: WithChildren) => <div>{children}</div>,
+  CardTitle: ({ children }: WithChildren) => <div>{children}</div>,
+  CardDescription: ({ children }: WithChildren) => <div>{children}</div>,
 }));
 
 vi.mock('@/components/ui/collapsible', () => ({
-  Collapsible: ({ children }: any) => <div>{children}</div>,
-  CollapsibleContent: ({ children }: any) => <div>{children}</div>,
-  CollapsibleTrigger: ({ children }: any) => <button>{children}</button>,
+  Collapsible: ({ children }: WithChildren) => <div>{children}</div>,
+  CollapsibleContent: ({ children }: WithChildren) => <div>{children}</div>,
+  CollapsibleTrigger: ({ children }: WithChildren) => <button>{children}</button>,
 }));
 
 // Mock Refine useForm AFTER other mocks
 vi.mock('@refinedev/react-hook-form', () => ({
   useForm: () => ({
     control: {},
-    handleSubmit: (fn: any) => (e: any) => {
-      e?.preventDefault?.();
-      return fn({});
-    },
+    handleSubmit: (fn: (data: Record<string, unknown>) => void) =>
+      (e?: { preventDefault?: () => void }) => {
+        e?.preventDefault?.();
+        return fn({});
+      },
     watch: vi.fn(() => undefined),
     formState: { errors: {} },
     reset: vi.fn(),
@@ -147,7 +162,7 @@ describe('ExpenseForm', () => {
     expect(container.querySelector('form')).toBeInTheDocument();
   });
 
-  it('should not auto-select participants for group context', () => {
+  it('should auto-select all participants for group context', () => {
     render(
       <ExpenseForm
         groupId="group-1"
@@ -157,8 +172,8 @@ describe('ExpenseForm', () => {
       />
     );
 
-    // Phase 1: Group context does not auto-select members
-    expect(mockSplitCalculation.addParticipant).toHaveBeenCalledTimes(0);
+    // Group context auto-selects all group members on mount
+    expect(mockSplitCalculation.addParticipant).toHaveBeenCalledTimes(3);
   });
 
   it('should auto-select participants for friend context', () => {
@@ -171,7 +186,7 @@ describe('ExpenseForm', () => {
       />
     );
 
-    // Phase 1: Friend context (groupId undefined) auto-selects both parties
+    // Friend context (groupId undefined) auto-selects both parties
     expect(mockSplitCalculation.addParticipant).toHaveBeenCalledTimes(2);
     expect(mockSplitCalculation.addParticipant).toHaveBeenCalledWith('user-1');
     expect(mockSplitCalculation.addParticipant).toHaveBeenCalledWith('user-2');
@@ -195,7 +210,6 @@ describe('ExpenseForm', () => {
       />
     );
 
-    // Verify form rendered with defaultValues passed
     expect(container.querySelector('form')).toBeInTheDocument();
   });
 
@@ -224,7 +238,6 @@ describe('ExpenseForm', () => {
       />
     );
 
-    // Verify form rendered with isLoading state
     expect(container.querySelector('form')).toBeInTheDocument();
   });
 
@@ -238,7 +251,6 @@ describe('ExpenseForm', () => {
       />
     );
 
-    // Verify form renders for group context
     expect(container.querySelector('form')).toBeInTheDocument();
   });
 
@@ -253,7 +265,6 @@ describe('ExpenseForm', () => {
       />
     );
 
-    // Verify form renders with isEdit mode
     expect(container.querySelector('form')).toBeInTheDocument();
   });
 
@@ -267,7 +278,6 @@ describe('ExpenseForm', () => {
       />
     );
 
-    // Verify form renders with different currentUserId
     expect(container.querySelector('form')).toBeInTheDocument();
   });
 });
