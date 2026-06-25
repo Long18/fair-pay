@@ -6,6 +6,12 @@ import { VitePWA } from 'vite-plugin-pwa';
 import viteCompression from 'vite-plugin-compression';
 
 const NON_PRECACHE_URLS = new Set(['version.json', 'manifest.webmanifest']);
+const NON_PRECACHE_PATTERNS = [/^assets\/web-llm\.worker-.*\.js(?:\.map)?$/];
+
+const shouldPrecache = (url: string) => (
+  !NON_PRECACHE_URLS.has(url) &&
+  !NON_PRECACHE_PATTERNS.some((pattern) => pattern.test(url))
+);
 
 type PwaManifestEntry = string | { url: string };
 type PwaApiPlugin = {
@@ -35,10 +41,15 @@ const pwaPlugins = VitePWA({
     },
     workbox: {
         globPatterns: ['**/*.{js,css,ico,png,svg,woff2}'],
-        globIgnores: ['**/version.json', '**/manifest.webmanifest'],
+        globIgnores: [
+            '**/version.json',
+            '**/manifest.webmanifest',
+            '**/web-llm.worker-*.js',
+            '**/web-llm.worker-*.js.map',
+        ],
         manifestTransforms: [
             async (entries) => ({
-                manifest: entries.filter(({ url }) => !NON_PRECACHE_URLS.has(url)),
+                manifest: entries.filter(({ url }) => shouldPrecache(url)),
                 warnings: [],
             }),
         ],
@@ -156,7 +167,7 @@ export default defineConfig({
             pwaApiPlugin?.api?.extendManifestEntries?.((entries) => (
                 entries.filter((entry) => {
                     const url = typeof entry === 'string' ? entry : entry.url;
-                    return !NON_PRECACHE_URLS.has(url);
+                            return shouldPrecache(url);
                 })
             ));
             hasPatchedPrecacheEntries = true;
@@ -198,10 +209,10 @@ export default defineConfig({
             '@refinedev/core',
             'date-fns',
         ],
-        exclude: ['@refinedev/devtools'],
+        exclude: ['@refinedev/devtools', '@mlc-ai/web-llm'],
     },
     build: {
-        target: 'es2015',
+        target: 'esnext',
 
         cssMinify: 'lightningcss',
         cssCodeSplit: true,
