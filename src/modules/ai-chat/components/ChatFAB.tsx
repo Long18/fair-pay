@@ -21,8 +21,8 @@ export const ChatFAB = memo(function ChatFAB() {
         onClick={toggle}
         size="icon"
         className={cn(
-          'fixed bottom-6 z-50 h-12 w-12 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-transform',
-          isDashboard ? 'right-[6rem] md:right-[6.75rem]' : 'right-6',
+        'fixed bottom-24 z-[70] h-14 w-14 rounded-full shadow-xl hover:scale-105 active:scale-95 transition-transform md:bottom-8',
+        isDashboard ? 'right-5 md:right-[7.5rem]' : 'right-5 md:right-8',
         )}
         aria-label={open ? 'Close chat assistant' : 'Open chat assistant'}
       >

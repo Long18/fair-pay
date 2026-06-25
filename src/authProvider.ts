@@ -2,7 +2,6 @@ import { AuthProvider } from "@refinedev/core";
 import { supabaseClient } from "./utility";
 import { AuthTracker, analyticsManager, ErrorTracker } from "./lib/analytics/index";
 import { journeyTracking } from "./lib/journey-tracking";
-import { signOutPuterIfAvailable } from "./lib/puter-auth";
 
 const authProvider: AuthProvider = {
     login: async ({ email, password, providerName }) => {
@@ -290,7 +289,6 @@ const authProvider: AuthProvider = {
         AuthTracker.logout();
         analyticsManager.clearUser();
         journeyTracking.clearUser();
-        signOutPuterIfAvailable();
 
         return {
             success: true,

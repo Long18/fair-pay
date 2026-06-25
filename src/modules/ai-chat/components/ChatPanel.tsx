@@ -1,23 +1,31 @@
-import { memo, useEffect, useRef, useCallback, useMemo, useState } from 'react';
-import { useGetIdentity } from '@refinedev/core';
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { useGetIdentity } from "@refinedev/core";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
-import { AlertCircleIcon, ExternalLinkIcon, Loader2Icon, LogInIcon, SparklesIcon, Trash2Icon } from '@/components/ui/icons';
-import { ChatMessage } from './ChatMessage';
-import { ChatInput } from './ChatInput';
-import { TypingIndicator } from './TypingIndicator';
-import { useAiChat } from '../hooks/use-ai-chat';
-import { AgentConfirmationCard } from '@/components/agent/AgentConfirmationCard';
-import type { Profile } from '@/modules/profile/types';
-import { getPuter, kickoffPuterSigninFromUserGesture, waitForPuter } from '@/lib/puter-auth';
-import { useHaptics } from '@/hooks/use-haptics';
+} from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import {
+  AlertCircleIcon,
+  CheckCircleIcon,
+  Loader2Icon,
+  SparklesIcon,
+  Trash2Icon,
+  ZapIcon,
+} from "@/components/ui/icons";
+import { AgentConfirmationCard } from "@/components/agent/AgentConfirmationCard";
+import type { Profile } from "@/modules/profile/types";
+import { cn } from "@/lib/utils";
+import { useHaptics } from "@/hooks/use-haptics";
+import type { LocalLlmStatus } from "@/lib/local-llm/types";
+import { ChatInput } from "./ChatInput";
+import { ChatMessage } from "./ChatMessage";
+import { TypingIndicator } from "./TypingIndicator";
+import { useAiChat } from "../hooks/use-ai-chat";
 
 interface ChatPanelProps {
   open: boolean;
@@ -25,32 +33,36 @@ interface ChatPanelProps {
 }
 
 const SUGGESTIONS = [
-  'Who owes me money?',
-  'Show my groups',
-  'Add an expense',
-  'Recent expenses',
+  "Who owes me money?",
+  "Show my groups",
+  "Add a group expense",
+  "Recent expenses",
 ];
 
-type PuterConnectionState = 'checking' | 'disconnected' | 'connected' | 'sdk_unavailable' | 'connecting';
-
-const getPuterConnectErrorMessage = (error: unknown): string => {
-  const err = error as { error?: string; msg?: string; message?: string } | undefined;
-  const rawMessage = err?.msg || err?.message || '';
-
-  if (err?.error === 'auth_window_closed') {
-    return 'Puter sign-in was closed before completion.';
+function modelStatusCopy(status: LocalLlmStatus): { label: string; detail: string; tone: string } {
+  if (status.state === "unsupported") {
+    return { label: "Local AI unavailable", detail: status.reason, tone: "text-destructive" };
   }
 
-  if (rawMessage.includes('closed') && rawMessage.includes('null')) {
-    return 'Popup was blocked. Please allow popups for this site and try again.';
+  if (status.state === "loading") {
+    const pct = Math.round(status.progress * 100);
+    return {
+      label: `Loading local model${Number.isFinite(pct) ? ` ${pct}%` : ""}`,
+      detail: status.message,
+      tone: "text-amber-600 dark:text-amber-400",
+    };
   }
 
-  if (rawMessage) {
-    return rawMessage;
+  if (status.state === "ready") {
+    return { label: "Local AI ready", detail: status.model, tone: "text-emerald-600 dark:text-emerald-400" };
   }
 
-  return 'Could not connect to Puter right now. Please try again.';
-};
+  if (status.state === "error") {
+    return { label: "Local AI error", detail: status.message, tone: "text-destructive" };
+  }
+
+  return { label: "Local AI idle", detail: status.model, tone: "text-muted-foreground" };
+}
 
 export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
   const { data: identity } = useGetIdentity<Profile>();
@@ -59,241 +71,168 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
     isLoading,
     error,
     pendingPreview,
-    clearPreview,
+    localLlmStatus,
+    loadLocalModel,
     sendMessage,
+    clearPreview,
     clearChat,
   } = useAiChat();
-  const [puterState, setPuterState] = useState<PuterConnectionState>('checking');
-  const [puterConnectError, setPuterConnectError] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const { tap } = useHaptics();
 
-  const userInfo = useMemo(() => ({
-    full_name: identity?.full_name,
-    avatar_url: identity?.avatar_url,
-  }), [identity?.full_name, identity?.avatar_url]);
-
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const isPuterConnected = puterState === 'connected';
-  const isPuterConnecting = puterState === 'connecting';
-
-  const refreshPuterConnection = useCallback(async () => {
-    setPuterConnectError(null);
-
-    const immediate = getPuter();
-    if (immediate?.auth) {
-      setPuterState(immediate.auth.isSignedIn() ? 'connected' : 'disconnected');
-      return;
-    }
-
-    setPuterState('checking');
-    const puter = await waitForPuter(2500, 100);
-    if (!puter?.auth) {
-      setPuterState('sdk_unavailable');
-      return;
-    }
-
-    setPuterState(puter.auth.isSignedIn() ? 'connected' : 'disconnected');
-  }, []);
-
-  const handleConnectPuter = useCallback(async () => {
-    tap();
-    setPuterConnectError(null);
-    setPuterState('connecting');
-    try {
-      const result = await kickoffPuterSigninFromUserGesture();
-      if (result === 'unavailable') {
-        setPuterState('sdk_unavailable');
-        setPuterConnectError('AI service is still loading. Please try again in a moment.');
-        return;
-      }
-      setPuterState('connected');
-    } catch (error) {
-      setPuterState('disconnected');
-      setPuterConnectError(getPuterConnectErrorMessage(error));
-    }
-  }, [tap]);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages, pendingPreview, isLoading]);
+  const statusCopy = useMemo(() => modelStatusCopy(localLlmStatus), [localLlmStatus]);
+  const canLoad = localLlmStatus.state === "idle" || localLlmStatus.state === "error";
+  const inputDisabled = localLlmStatus.state !== "ready" || Boolean(pendingPreview);
 
   useEffect(() => {
     if (!open) return;
-    void refreshPuterConnection();
-  }, [open, refreshPuterConnection]);
+    const viewport = scrollRef.current?.querySelector("[data-radix-scroll-area-viewport]");
+    viewport?.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+  }, [messages.length, isLoading, pendingPreview, open]);
 
-  const handleSuggestion = useCallback((text: string) => {
-    if (!isPuterConnected) return;
-    void sendMessage(text);
-  }, [isPuterConnected, sendMessage]);
+  const handleSuggestion = useCallback(
+    (suggestion: string) => {
+      tap();
+      void sendMessage(suggestion);
+    },
+    [sendMessage, tap],
+  );
+
+  const handleLoadModel = useCallback(() => {
+    tap();
+    void loadLocalModel();
+  }, [loadLocalModel, tap]);
+
+  const handleClearChat = useCallback(() => {
+    tap();
+    clearChat();
+  }, [clearChat, tap]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="flex flex-col p-0 w-full sm:max-w-md overscroll-contain"
-      >
-        <SheetHeader className="px-4 pt-4 pb-2 border-b">
-          <div className="flex items-center justify-between pr-8">
-            <div className="flex items-center gap-2">
-              <SparklesIcon size={18} className="text-primary" aria-hidden="true" />
-              <SheetTitle className="text-base">FairPay Assistant</SheetTitle>
+      <SheetContent className="w-full gap-0 p-0 sm:max-w-[420px]">
+        <SheetHeader className="border-b px-4 py-3">
+          <div className="flex items-center justify-between gap-3 pr-8">
+            <div className="min-w-0">
+              <SheetTitle className="flex items-center gap-2 text-base">
+                <SparklesIcon size={16} className="text-primary" />
+                FairPay Assistant
+              </SheetTitle>
+              <SheetDescription className="truncate">Local browser AI for FairPay workflows</SheetDescription>
             </div>
-            {messages.length > 0 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => { tap(); clearChat(); }}
-                className="h-11 w-11"
-                aria-label="Clear chat history"
-              >
-                <Trash2Icon size={14} />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={handleClearChat}
+              disabled={messages.length === 0 && !pendingPreview}
+              aria-label="Clear chat"
+              className="h-9 w-9 shrink-0"
+            >
+              <Trash2Icon size={16} />
+            </Button>
+          </div>
+        </SheetHeader>
+
+        <div className="border-b px-4 py-3">
+          <div className="flex items-start gap-3">
+            <div
+              className={cn(
+                "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-background",
+                statusCopy.tone,
+              )}
+              aria-hidden="true"
+            >
+              {localLlmStatus.state === "loading" ? (
+                <Loader2Icon size={16} className="animate-spin" />
+              ) : localLlmStatus.state === "ready" ? (
+                <CheckCircleIcon size={16} />
+              ) : localLlmStatus.state === "unsupported" || localLlmStatus.state === "error" ? (
+                <AlertCircleIcon size={16} />
+              ) : (
+                <ZapIcon size={16} />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className={cn("text-sm font-medium", statusCopy.tone)}>{statusCopy.label}</div>
+              <div className="break-words text-xs text-muted-foreground">{statusCopy.detail}</div>
+              {localLlmStatus.state === "loading" && (
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-[width]"
+                    style={{ width: `${Math.max(2, Math.min(100, localLlmStatus.progress * 100))}%` }}
+                  />
+                </div>
+              )}
+            </div>
+            {canLoad && (
+              <Button type="button" size="sm" onClick={handleLoadModel} className="shrink-0">
+                Load
               </Button>
             )}
           </div>
-          <SheetDescription className="sr-only">
-            AI assistant to help manage expenses, groups, and payments
-          </SheetDescription>
-        </SheetHeader>
+        </div>
 
-        <ScrollArea className="flex-1 overflow-hidden">
-          <div ref={scrollRef} className="h-full overflow-y-auto">
-            <div className="px-3 pb-3" role="log" aria-live="polite" aria-label="Chat messages">
-              {messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <SparklesIcon size={32} className="text-muted-foreground/40 mb-3" aria-hidden="true" />
-                  {isPuterConnected ? (
-                    <>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">
-                        How can I help?
-                      </p>
-                      <p className="text-xs text-muted-foreground/70 mb-4 max-w-[240px]">
-                        Ask about your expenses, groups, balances, or let me help you add transactions.
-                      </p>
-                      <div className="flex flex-wrap justify-center gap-2">
-                        {SUGGESTIONS.map((s) => (
-                          <button
-                            key={s}
-                            type="button"
-                            onClick={() => { tap(); handleSuggestion(s); }}
-                            className="rounded-full border px-3 py-2.5 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer min-h-[44px]"
-                          >
-                            {s}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-sm font-medium text-foreground mb-1">
-                        Connect Third-Party AI to Start Chatting
-                      </p>
-                      <p className="text-xs text-muted-foreground/80 mb-2 max-w-[280px]">
-                        FairPay Assistant uses Puter (third-party AI). Messages you send in this chat will be sent to Puter to generate responses.
-                      </p>
-                      <a
-                        href="https://docs.puter.com/getting-started/"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                      >
-                        Learn more about Puter <ExternalLinkIcon size={12} aria-hidden="true" />
-                      </a>
-                    </>
-                  )}
+        <ScrollArea ref={scrollRef} className="min-h-0 flex-1 px-4">
+          <div className="space-y-4 py-4">
+            {messages.length === 0 && !pendingPreview && (
+              <div className="space-y-3">
+                <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
+                  Ask about balances, groups, recent expenses, or prepare a safe expense preview.
                 </div>
-              ) : (
-                messages.map((msg) => (
-                  <ChatMessage key={msg.id} message={msg} userInfo={userInfo} />
-                ))
-              )}
-              {isLoading && messages.length > 0 && <TypingIndicator />}
-            </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {SUGGESTIONS.map((suggestion) => (
+                    <Button
+                      key={suggestion}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSuggestion(suggestion)}
+                      disabled={localLlmStatus.state !== "ready" || isLoading}
+                      className="h-auto min-h-10 justify-start whitespace-normal px-3 py-2 text-left text-xs"
+                    >
+                      {suggestion}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {messages.map((message) => (
+              <ChatMessage key={message.id} message={message} userInfo={identity} />
+            ))}
+
+            {pendingPreview && (
+              <AgentConfirmationCard
+                preview={pendingPreview}
+                onDone={clearPreview}
+                onCancel={clearPreview}
+                onError={(err) => console.error(err)}
+              />
+            )}
+
+            {isLoading && <TypingIndicator />}
+
+            {error && (
+              <div className="flex gap-2 rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+                <AlertCircleIcon size={16} className="mt-0.5 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
           </div>
         </ScrollArea>
 
-        {pendingPreview && (
-          <div className="px-3 pb-2">
-            <AgentConfirmationCard
-              preview={pendingPreview}
-              onDone={() => clearPreview()}
-              onCancel={clearPreview}
-              onError={() => { /* error already surfaced via card */ }}
-            />
-          </div>
-        )}
-
-        {error && (
-          <div role="alert" className="mx-3 mb-1 rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
-            {error}
-          </div>
-        )}
-
-        {!isPuterConnected && (
-          <div className="mx-3 mb-2 rounded-md border bg-muted/40 px-3 py-3">
-            <div className="flex items-start gap-2">
-              <AlertCircleIcon size={14} className="mt-0.5 text-muted-foreground" aria-hidden="true" />
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-foreground">
-                  Third-party sign-in required for AI chat
-                </p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Connect your Puter session to use AI chat in FairPay.
-                </p>
-                {puterConnectError && (
-                  <p role="alert" className="mt-1.5 text-xs text-destructive">
-                    {puterConnectError}
-                  </p>
-                )}
-                {puterState === 'sdk_unavailable' && !puterConnectError && (
-                  <p className="mt-1.5 text-xs text-muted-foreground">
-                    AI script is still loading. Try again in a moment.
-                  </p>
-                )}
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={handleConnectPuter}
-                    disabled={isPuterConnecting || puterState === 'checking'}
-                    className="h-9"
-                  >
-                    {isPuterConnecting || puterState === 'checking' ? (
-                      <>
-                        <Loader2Icon size={14} className="mr-1.5 animate-spin" />
-                        Connecting...
-                      </>
-                    ) : (
-                      <>
-                        <LogInIcon size={14} className="mr-1.5" />
-                        Connect Puter
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => { tap(); void refreshPuterConnection(); }}
-                    disabled={isPuterConnecting}
-                    className="h-9"
-                  >
-                    Refresh status
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <ChatInput
-          onSend={(message) => { void sendMessage(message); }}
-          isLoading={isLoading || isPuterConnecting}
-          disabled={!isPuterConnected}
-        />
+        <div className="border-t p-4">
+          <ChatInput onSend={sendMessage} isLoading={isLoading} disabled={inputDisabled} />
+          {pendingPreview && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Resolve the pending preview before sending another request.
+            </p>
+          )}
+        </div>
       </SheetContent>
     </Sheet>
   );
 });
+
+export default ChatPanel;
