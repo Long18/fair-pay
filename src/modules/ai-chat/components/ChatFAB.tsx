@@ -2,7 +2,7 @@ import { memo, useState, useCallback } from 'react';
 import { useHaptics } from "@/hooks/use-haptics";
 import { useLocation } from 'react-router';
 import { Button } from '@/components/ui/button';
-import { MessageSquareIcon, XIcon } from '@/components/ui/icons';
+import { FairPayIcon, XIcon } from '@/components/ui/icons';
 import { cn } from '@/lib/utils';
 import { ChatPanel } from './ChatPanel';
 
@@ -21,12 +21,14 @@ export const ChatFAB = memo(function ChatFAB() {
         onClick={toggle}
         size="icon"
         className={cn(
-        'fixed bottom-24 z-[70] h-14 w-14 rounded-full shadow-xl hover:scale-105 active:scale-95 transition-transform md:bottom-8',
-        isDashboard ? 'right-5 md:right-[7.5rem]' : 'right-5 md:right-8',
+          'fixed left-4 z-[70] h-14 w-14 rounded-full shadow-xl transition-transform hover:scale-105 active:scale-95',
+          'bottom-[calc(env(safe-area-inset-bottom)+5rem)] md:bottom-8 md:left-8',
+          'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/30 focus-visible:ring-offset-2',
+          isDashboard && 'md:left-8',
         )}
         aria-label={open ? 'Close chat assistant' : 'Open chat assistant'}
       >
-        {open ? <XIcon size={20} /> : <MessageSquareIcon size={20} />}
+        {open ? <XIcon size={20} /> : <FairPayIcon size={24} className="rounded-sm" />}
       </Button>
     </>
   );

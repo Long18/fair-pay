@@ -1,8 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { AlertCircleIcon, Loader2Icon, SparklesIcon } from "@/components/ui/icons";
-import { chat as localLlmChat, getLocalLlmStatus, loadModel } from "@/lib/local-llm/client";
-import { DEFAULT_WEB_LLM_MODEL } from "@/lib/local-llm/types";
+import { chat as localLlmChat, getLocalLlmStatus, getSelectedModel, loadModel } from "@/lib/local-llm/client";
 
 type DashboardBalanceSummary = {
   counterparty_name?: string;
@@ -67,14 +66,14 @@ export function DashboardInsightPanel({ context }: DashboardInsightPanelProps) {
         return;
       }
 
-      const status = getLocalLlmStatus();
+      let status = getLocalLlmStatus();
       if (status.state === "unsupported") {
         setError(status.reason);
         return;
       }
 
       if (status.state !== "ready") {
-        const loaded = await loadModel();
+        const loaded = await loadModel(getSelectedModel());
         if (loaded.state === "unsupported") {
           setError(loaded.reason);
           return;
@@ -87,6 +86,8 @@ export function DashboardInsightPanel({ context }: DashboardInsightPanelProps) {
           setError("Local AI is still loading. Try again after the model is ready.");
           return;
         }
+
+        status = loaded;
       }
 
       const response = await localLlmChat(
@@ -98,7 +99,7 @@ export function DashboardInsightPanel({ context }: DashboardInsightPanelProps) {
           },
           { role: "user", content: JSON.stringify(sanitizedContext) },
         ],
-        { model: DEFAULT_WEB_LLM_MODEL },
+        { model: status.model },
       );
 
       setInsight(response.message?.content?.trim() || response.text?.trim() || "No insight was generated.");

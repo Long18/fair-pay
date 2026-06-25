@@ -30,6 +30,7 @@ async function importClient() {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  window.localStorage.clear();
   MockWorker.instances = [];
 });
 
@@ -116,5 +117,20 @@ describe("local LLM client", () => {
 
     worker.emit({ id: secondRequest.id, type: "ready", model: secondRequest.model });
     await expect(loading).resolves.toMatchObject({ state: "ready", model: secondRequest.model });
+    expect(client.getSelectedModel()).toBe(secondRequest.model);
+  });
+
+  it("persists the selected local model", async () => {
+    Object.defineProperty(navigator, "gpu", { configurable: true, value: {} });
+    vi.stubGlobal("Worker", MockWorker);
+
+    const client = await importClient();
+    const model = "TinyLlama-1.1B-Chat-v1.0-q4f16_1-MLC-1k";
+
+    expect(client.selectModel(model)).toMatchObject({ state: "idle", model });
+    expect(client.getSelectedModel()).toBe(model);
+
+    const reloaded = await importClient();
+    expect(reloaded.getLocalLlmStatus()).toMatchObject({ state: "idle", model });
   });
 });

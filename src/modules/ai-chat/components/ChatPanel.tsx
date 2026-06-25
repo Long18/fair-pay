@@ -1,5 +1,15 @@
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { useGetIdentity } from "@refinedev/core";
+import { AgentConfirmationCard } from "@/components/agent/AgentConfirmationCard";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Sheet,
   SheetContent,
@@ -7,25 +17,23 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
 import {
   AlertCircleIcon,
   CheckCircleIcon,
+  FairPayIcon,
   Loader2Icon,
-  SparklesIcon,
   Trash2Icon,
   ZapIcon,
 } from "@/components/ui/icons";
-import { AgentConfirmationCard } from "@/components/agent/AgentConfirmationCard";
-import type { Profile } from "@/modules/profile/types";
+import { WEB_LLM_MODEL_OPTIONS, type LocalLlmStatus, type WebLlmModelId } from "@/lib/local-llm/types";
 import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/use-haptics";
-import type { LocalLlmStatus } from "@/lib/local-llm/types";
+import type { Profile } from "@/modules/profile/types";
 import { ChatInput } from "./ChatInput";
-import { ChatMessage } from "./ChatMessage";
+import ChatMessage from "./ChatMessage";
 import { TypingIndicator } from "./TypingIndicator";
 import { useAiChat } from "../hooks/use-ai-chat";
+import type { ChatMessage as ChatMessageType } from "../types";
 
 interface ChatPanelProps {
   open: boolean;
@@ -34,9 +42,9 @@ interface ChatPanelProps {
 
 const SUGGESTIONS = [
   "Who owes me money?",
-  "Show my groups",
-  "Add a group expense",
-  "Recent expenses",
+  "Summarize recent activity",
+  "Prepare dinner expense for 4 people",
+  "Which groups need attention?",
 ];
 
 function modelStatusCopy(status: LocalLlmStatus): { label: string; detail: string; tone: string } {
@@ -61,7 +69,11 @@ function modelStatusCopy(status: LocalLlmStatus): { label: string; detail: strin
     return { label: "Local AI error", detail: status.message, tone: "text-destructive" };
   }
 
-  return { label: "Local AI idle", detail: status.model, tone: "text-muted-foreground" };
+  return {
+    label: "Choose a local model",
+    detail: "Load it in this browser before chatting.",
+    tone: "text-muted-foreground",
+  };
 }
 
 export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
@@ -72,6 +84,8 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
     error,
     pendingPreview,
     localLlmStatus,
+    selectedModel,
+    selectLocalModel,
     loadLocalModel,
     sendMessage,
     clearPreview,
@@ -83,12 +97,14 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
   const statusCopy = useMemo(() => modelStatusCopy(localLlmStatus), [localLlmStatus]);
   const canLoad = localLlmStatus.state === "idle" || localLlmStatus.state === "error";
   const inputDisabled = localLlmStatus.state !== "ready" || Boolean(pendingPreview);
+  const selectedOption = WEB_LLM_MODEL_OPTIONS.find((option) => option.id === selectedModel) ?? WEB_LLM_MODEL_OPTIONS[0];
 
   useEffect(() => {
     if (!open) return;
+
     const viewport = scrollRef.current?.querySelector("[data-radix-scroll-area-viewport]");
     viewport?.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
-  }, [messages.length, isLoading, pendingPreview, open]);
+  }, [messages, isLoading, pendingPreview, open]);
 
   const handleSuggestion = useCallback(
     (suggestion: string) => {
@@ -108,6 +124,14 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
     clearChat();
   }, [clearChat, tap]);
 
+  const handleModelChange = useCallback(
+    (model: string) => {
+      tap();
+      selectLocalModel(model as WebLlmModelId);
+    },
+    [selectLocalModel, tap],
+  );
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full gap-0 p-0 sm:max-w-[420px]">
@@ -115,7 +139,7 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
           <div className="flex items-center justify-between gap-3 pr-8">
             <div className="min-w-0">
               <SheetTitle className="flex items-center gap-2 text-base">
-                <SparklesIcon size={16} className="text-primary" />
+                <FairPayIcon size={18} className="rounded-sm" />
                 FairPay Assistant
               </SheetTitle>
               <SheetDescription className="truncate">Local browser AI for FairPay workflows</SheetDescription>
@@ -153,11 +177,40 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
                 <ZapIcon size={16} />
               )}
             </div>
-            <div className="min-w-0 flex-1">
-              <div className={cn("text-sm font-medium", statusCopy.tone)}>{statusCopy.label}</div>
-              <div className="break-words text-xs text-muted-foreground">{statusCopy.detail}</div>
+            <div className="min-w-0 flex-1 space-y-2">
+              <div>
+                <div className={cn("text-sm font-medium", statusCopy.tone)}>{statusCopy.label}</div>
+                <div className="break-words text-xs text-muted-foreground">{statusCopy.detail}</div>
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Select
+                  value={selectedModel}
+                  onValueChange={handleModelChange}
+                  disabled={localLlmStatus.state === "loading" || localLlmStatus.state === "unsupported"}
+                >
+                  <SelectTrigger className="h-9 w-full min-w-0 sm:w-[190px]" aria-label="Select local AI model">
+                    <SelectValue placeholder="Select model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {WEB_LLM_MODEL_OPTIONS.map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {canLoad && (
+                  <Button type="button" size="sm" onClick={handleLoadModel} className="h-9 shrink-0">
+                    Load
+                  </Button>
+                )}
+              </div>
+              <div className="text-xs text-muted-foreground">{selectedOption.description}</div>
+
               {localLlmStatus.state === "loading" && (
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                   <div
                     className="h-full rounded-full bg-primary transition-[width]"
                     style={{ width: `${Math.max(2, Math.min(100, localLlmStatus.progress * 100))}%` }}
@@ -165,11 +218,6 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
                 </div>
               )}
             </div>
-            {canLoad && (
-              <Button type="button" size="sm" onClick={handleLoadModel} className="shrink-0">
-                Load
-              </Button>
-            )}
           </div>
         </div>
 
@@ -198,7 +246,7 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
               </div>
             )}
 
-            {messages.map((message) => (
+            {messages.map((message: ChatMessageType) => (
               <ChatMessage key={message.id} message={message} userInfo={identity} />
             ))}
 
@@ -207,7 +255,7 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
                 preview={pendingPreview}
                 onDone={clearPreview}
                 onCancel={clearPreview}
-                onError={(err) => console.error(err)}
+                onError={(err: Error) => console.error(err)}
               />
             )}
 

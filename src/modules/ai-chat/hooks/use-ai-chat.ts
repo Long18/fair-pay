@@ -2,8 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useGetIdentity } from "@refinedev/core";
-import { chat as localLlmChat, loadModel, subscribeLocalLlmStatus } from "@/lib/local-llm/client";
-import { DEFAULT_WEB_LLM_MODEL, type LocalLlmStatus } from "@/lib/local-llm/types";
+import {
+  chat as localLlmChat,
+  getSelectedModel,
+  loadModel,
+  selectModel,
+  subscribeLocalLlmStatus,
+} from "@/lib/local-llm/client";
+import { type LocalLlmStatus, type WebLlmModelId } from "@/lib/local-llm/types";
 import { supabaseClient } from "@/utility/supabaseClient";
 import type { Profile } from "@/modules/profile/types";
 import type { AgentPreviewResponse } from "@/lib/agent-api/types";
@@ -28,6 +34,8 @@ interface UseAiChatReturn {
   conversationId: string | null;
   pendingPreview: AgentPreviewResponse | null;
   localLlmStatus: LocalLlmStatus;
+  selectedModel: WebLlmModelId;
+  selectLocalModel: (model: WebLlmModelId) => void;
   loadLocalModel: () => Promise<void>;
   sendMessage: (text: string) => Promise<void>;
   clearPreview: () => void;
@@ -55,8 +63,9 @@ export function useAiChat(): UseAiChatReturn {
   const [pendingPreview, setPendingPreview] = useState<AgentPreviewResponse | null>(null);
   const [localLlmStatus, setLocalLlmStatus] = useState<LocalLlmStatus>(() => ({
     state: "idle",
-    model: DEFAULT_WEB_LLM_MODEL,
+    model: getSelectedModel(),
   }));
+  const [selectedModel, setSelectedModel] = useState<WebLlmModelId>(() => getSelectedModel());
 
   const historyRef = useRef<ConversationMessage[]>([
     { role: "system", content: FAIRPAY_SYSTEM_PROMPT },
@@ -133,12 +142,20 @@ export function useAiChat(): UseAiChatReturn {
     setMessages((prev) => [...prev, msg]);
   }, []);
 
+  const selectLocalModel = useCallback((model: WebLlmModelId) => {
+    setError(null);
+    setSelectedModel(model);
+    const next = selectModel(model);
+    setLocalLlmStatus(next);
+  }, []);
+
   const loadLocalModel = useCallback(async () => {
     setError(null);
-    const loaded = await loadModel();
+    const loaded = await loadModel(selectedModel);
+    if ("model" in loaded) setSelectedModel(loaded.model as WebLlmModelId);
     if (loaded.state === "unsupported") setError(loaded.reason);
     if (loaded.state === "error") setError(loaded.message);
-  }, []);
+  }, [selectedModel]);
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -207,6 +224,8 @@ export function useAiChat(): UseAiChatReturn {
     conversationId,
     pendingPreview,
     localLlmStatus,
+    selectedModel,
+    selectLocalModel,
     loadLocalModel,
     sendMessage,
     clearPreview,

@@ -1,12 +1,15 @@
 import type { AssistantChatCompletion, AssistantChatFn } from "@/modules/ai-chat/orchestrator";
 import {
   DEFAULT_WEB_LLM_MODEL,
+  isWebLlmModelId,
   WEB_LLM_COMPAT_MODEL,
+  WEB_LLM_MODEL_STORAGE_KEY,
   type LocalLlmChatRequest,
   type LocalLlmStatus,
   type LocalLlmStatusListener,
   type LocalLlmWorkerRequest,
   type LocalLlmWorkerResponse,
+  type WebLlmModelId,
 } from "./types";
 
 type PendingRequest = {
@@ -29,6 +32,27 @@ function supportsWebGpu(): boolean {
   return typeof navigator !== "undefined" && "gpu" in navigator;
 }
 
+function readStoredModel(): WebLlmModelId {
+  if (typeof window === "undefined") return DEFAULT_WEB_LLM_MODEL;
+
+  try {
+    const stored = window.localStorage.getItem(WEB_LLM_MODEL_STORAGE_KEY);
+    return stored && isWebLlmModelId(stored) ? stored : DEFAULT_WEB_LLM_MODEL;
+  } catch {
+    return DEFAULT_WEB_LLM_MODEL;
+  }
+}
+
+function writeStoredModel(model: WebLlmModelId): void {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(WEB_LLM_MODEL_STORAGE_KEY, model);
+  } catch {
+    // Storage can be disabled in private or embedded browser contexts.
+  }
+}
+
 function getInitialStatus(): LocalLlmStatus {
   if (typeof window === "undefined" || typeof Worker === "undefined") {
     return { state: "unsupported", reason: "Local AI requires a browser with Web Worker support." };
@@ -38,7 +62,7 @@ function getInitialStatus(): LocalLlmStatus {
     return { state: "unsupported", reason: "Local AI requires a browser with WebGPU support." };
   }
 
-  return { state: "idle", model: DEFAULT_WEB_LLM_MODEL };
+  return { state: "idle", model: readStoredModel() };
 }
 
 function setStatus(next: LocalLlmStatus): void {
@@ -142,17 +166,39 @@ export function subscribeLocalLlmStatus(listener: LocalLlmStatusListener): () =>
   };
 }
 
-export async function loadModel(model = DEFAULT_WEB_LLM_MODEL): Promise<LocalLlmStatus> {
+export function getSelectedModel(): WebLlmModelId {
+  return readStoredModel();
+}
+
+export function selectModel(model: WebLlmModelId): LocalLlmStatus {
+  writeStoredModel(model);
+
+  const current = getLocalLlmStatus();
+  if (current.state === "unsupported") return current;
+
+  if (current.state === "ready" || current.state === "loading") {
+    reset();
+  } else {
+    setStatus({ state: "idle", model });
+  }
+
+  return getLocalLlmStatus();
+}
+
+export async function loadModel(model = getSelectedModel()): Promise<LocalLlmStatus> {
   const current = getLocalLlmStatus();
   if (current.state === "unsupported") return current;
   if (current.state === "ready" && current.model === model) return current;
   if (current.state === "loading" && current.model === model) return current;
+
+  if (isWebLlmModelId(model)) writeStoredModel(model);
 
   setStatus({ state: "loading", model, progress: 0, message: "Starting local model..." });
   try {
     return await postRequest<LocalLlmStatus>({ type: "load", model });
   } catch (error) {
     if (model !== WEB_LLM_COMPAT_MODEL && isStorageBufferLimitError(error)) {
+      writeStoredModel(WEB_LLM_COMPAT_MODEL);
       setStatus({
         state: "loading",
         model: WEB_LLM_COMPAT_MODEL,
