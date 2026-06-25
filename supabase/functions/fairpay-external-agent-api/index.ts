@@ -125,7 +125,16 @@ async function handleSubmission(rawText: string, req: Request, traceId: string):
 
   const parsed = ExternalAgentSubmissionRequest.safeParse(value)
   if (!parsed.success) {
-    return errRes(422, 'VALIDATION_ERROR', 'Invalid request body', parsed.error.issues, traceId)
+    const firstIssue = parsed.error.issues.find((item) => typeof item.code === 'string')
+    const code = firstIssue?.code === 'NEEDS_CLARIFICATION' || firstIssue?.code === 'UNSUPPORTED_PERSONAL_TRANSACTION'
+      ? firstIssue.code
+      : 'VALIDATION_ERROR'
+    const message = code === 'NEEDS_CLARIFICATION'
+      ? 'Clarification required before submitting the proposal'
+      : code === 'UNSUPPORTED_PERSONAL_TRANSACTION'
+        ? 'Personal/1-on-1 agent-created transactions are not supported yet'
+        : 'Invalid request body'
+    return errRes(422, code, message, parsed.error.issues, traceId)
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {

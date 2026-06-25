@@ -1,15 +1,11 @@
-// AgentContextService — canonical capability/onboarding document for external
-// agents (ChatGPT, custom LLM tools, etc.). Returned by:
-//   GET /v1/agent-context           (Edge function direct)
+// AgentContextService — canonical capability/onboarding document.
+// Returned by:
+//   GET /v1/agent-context (Edge function direct)
 //   GET /api/external-agent/context (Vercel rewrite)
-//
-// Also reachable as the discovery payload when an empty/probe POST is sent to
-// /api/external-agent-submissions (the agent's first call).
-//
-// Keep this file dependency-free — the public Edge Function must not fail on
-// remote imports.
+//   POST /api/external-agent-submissions with empty/probe body.
 
-export const FAIRPAY_BASE_URL = 'https://long-pay.vercel.app'
+const FAIRPAY_BASE_URL = 'https://long-pay.vercel.app'
+
 export const FAIRPAY_HEALTH_PATH = '/api/health'
 export const EXTERNAL_AGENT_SUBMIT_PATH = '/api/external-agent-submissions'
 export const EXTERNAL_AGENT_CONTEXT_PATH = '/api/external-agent/context'
@@ -28,7 +24,7 @@ const SUPPORTED_CATEGORIES = [
 
 const SPLIT_METHODS = ['equal', 'exact', 'fixed_then_equal_remainder'] as const
 
-export interface AgentContextDocument {
+type AgentContextDocument = {
   service: 'FairPay'
   version: 'v1'
   base_url: string
@@ -40,38 +36,31 @@ export interface AgentContextDocument {
   split_method_rules: Record<string, string>
   categories: readonly string[]
   resolution_note: string
-  examples: Record<string, { description: string; body: unknown }>
-  common_errors: Record<string, string>
+  examples: Record<string, { description: string; body: Record<string, unknown> }>
+  errors: Record<string, string>
   agent_instructions: string[]
-  network_diagnostics: {
-    expected_host: string
-    troubleshoot: string[]
-    error_classification: Record<string, string>
-  }
-  notes: string[]
+  network_diagnostics: Record<string, unknown>
+  maintainer_notes: string[]
 }
 
-// AgentContextService.
-// Single source of truth for the discovery blob. Build once per request — the
-// document is small and request-cheap to materialize.
-export const AgentContextService = {
+export class AgentContextService {
   build(): AgentContextDocument {
     return {
       service: 'FairPay',
       version: 'v1',
       base_url: FAIRPAY_BASE_URL,
       purpose:
-        'Submit, preview, and confirm shared expense proposals for FairPay groups. ' +
-        'External agents (e.g. ChatGPT) can submit proposals without an API key; ' +
-        'real expenses are only created after a signed-in FairPay user approves.',
+        'Submit shared expense proposals for FairPay groups. External agents can submit proposals without an API key; real expenses are created only after a signed-in FairPay user approves.',
       required_flow: [
-        '1. GET /api/external-agent/context — read this document and any updated rules.',
-        '2. Identify the authenticated FairPay user (target_email) from your conversation context.',
-        '3. Identify the group (group_name preferred; group_id if you happen to have it).',
-        '4. Resolve participants by email when known; otherwise by display_name. Never invent IDs.',
-        '5. Build the normalized proposal body (integer VND amounts, equal/exact/fixed split rules).',
-        '6. POST the proposal to /api/external-agent-submissions.',
-        '7. Stop. The signed-in user (or a group admin) approves the proposal in the FairPay UI before any expense is created.',
+        '1. GET /api/external-agent/context — read this capability document.',
+        '2. Identify the FairPay user from conversation context, then explicitly ask them to confirm their name/email.',
+        '3. Ask whether the expense is for a FairPay group or a personal/1-on-1 transaction.',
+        '4. If it is personal/1-on-1, stop: external agents cannot submit personal transactions yet.',
+        '5. For group expenses, identify the group (group_name preferred; group_id if already known).',
+        '6. Resolve participants by email when known; otherwise by display_name. Never invent IDs.',
+        '7. Build a normalized proposal body with integer VND amounts and valid split rules.',
+        '8. POST the proposal to /api/external-agent-submissions only after actor + group confirmation.',
+        '9. Stop. The signed-in user approves the proposal in the FairPay UI before any expense is created.',
       ],
       available_apis: {
         context: `GET ${FAIRPAY_BASE_URL}${EXTERNAL_AGENT_CONTEXT_PATH}`,
@@ -80,26 +69,33 @@ export const AgentContextService = {
       },
       request_shape: {
         target_email: 'string (required) — FairPay account email that should review the proposal.',
-        group_id: 'string UUID (optional) — supply if you already have a stable group ID.',
-        group_name: 'string (required if group_id missing) — human-readable group name, e.g. "Core".',
-        source: 'string (optional) — your agent identifier, e.g. "chatgpt".',
-        description: 'string (required, 1–200 chars).',
+        target_name: 'string (optional) — display name the user confirmed, when available.',
+        actor_confirmed: 'true (required) — set only after asking the user to confirm their FairPay name/email.',
+        transaction_type: '"group" (required). If the user says "personal" or "1-on-1", do not submit.',
+        group_id: 'string UUID (optional) — supply only if already known.',
+        group_name: 'string (required if group_id is missing) — human-readable group name, e.g. "Core".',
+        source: 'string (optional) — e.g. "chatgpt".',
+        description: 'string (required, max 200).',
         amount: 'integer (required) — VND, no decimals. Convert "50k" → 50000, "600 nghìn" → 600000.',
         currency: '"VND" (required).',
-        category: `string (optional) — one of: ${SUPPORTED_CATEGORIES.join(', ')}.`,
-        expense_date: 'string (optional) — YYYY-MM-DD. Defaults to today on the server.',
-        comment: 'string | null (optional, ≤ 1000 chars).',
-        payer: '{ email?: string, display_name?: string } — at least one of email/display_name is required.',
-        split_method: `"${SPLIT_METHODS.join('" | "')}".`,
+        category: `"${SUPPORTED_CATEGORIES.join('" | "')}" (optional).`,
+        expense_date: 'YYYY-MM-DD (optional).',
+        comment: 'string|null (optional, max 1000).',
+        payer: 'ActorRef (required) — { email?: string, display_name?: string }.',
+        split_method: `"${SPLIT_METHODS.join('" | "')}" (required).`,
         participants:
-          'Array<{ email?: string, display_name?: string, amount?: integer, fixed_amount?: integer }> ' +
-          'with 1–100 entries. Each participant must have email or display_name.',
+          'Array<ActorRef & { amount?: integer, fixed_amount?: integer }> (required, 1-100 entries). Each participant must have email or display_name.',
       },
       validation_rules: {
+        actor_confirmation:
+          'Always ask "Bạn có phải là <name/email> không?" before setting actor_confirmed=true.',
+        transaction_type:
+          'Always ask whether this is group or personal. Only group submissions are accepted in v1.',
+        group_required: 'Group submissions require group_id or group_name.',
         amount: 'Positive integer ≤ 9_999_999_999.',
         currency: 'Only "VND" is accepted.',
         participant_uniqueness:
-          'No duplicate participants. Identity is email (lowercase) when present, else display_name (case-insensitive).',
+          'No duplicate participants. Identity is email when present, otherwise normalized display_name.',
         unknown_fields: 'Unknown top-level fields are rejected.',
         request_size: 'Request body must be ≤ 32 KB.',
       },
@@ -107,18 +103,19 @@ export const AgentContextService = {
         equal: 'Do not include amount or fixed_amount on participants.',
         exact: 'Every participant must include a positive integer amount. Sum must equal the total amount.',
         fixed_then_equal_remainder:
-          'Some participants have fixed_amount; the remainder is split equally among the rest. Do not use amount.',
+          'Participants with a fixed amount use fixed_amount. Remaining amount is split equally across others. Use fixed_amount, not amount.',
       },
       categories: SUPPORTED_CATEGORIES,
       resolution_note:
-        'Do NOT call any member or group lookup endpoint. The no-key intake is proposal-only. ' +
-        'FairPay resolves names and emails into stable group_member IDs at approval time. ' +
-        'If a name is genuinely ambiguous, ask the user a follow-up question instead of guessing.',
+        'Do NOT call any member, group, or user lookup endpoint from the no-key surface. FairPay resolves names and emails into stable group_member IDs at approval time. Before submitting, ask the user to confirm actor name/email, group-vs-personal type, and the group name. If a name is genuinely ambiguous, ask a user follow-up question before submitting.',
       examples: {
-        single_person: {
-          description: 'Two-person split where the target user paid.',
+        two_person_split: {
+          description: 'Two-person group expense where the target user paid.',
           body: {
             target_email: 'user@example.com',
+            target_name: 'Nguyen Van A',
+            actor_confirmed: true,
+            transaction_type: 'group',
             group_name: 'Core',
             source: 'chatgpt',
             description: 'Cà phê',
@@ -131,9 +128,11 @@ export const AgentContextService = {
           },
         },
         multiple_people: {
-          description: 'Equal split across several named participants.',
+          description: 'Group expense split equally across multiple people.',
           body: {
             target_email: 'user@example.com',
+            actor_confirmed: true,
+            transaction_type: 'group',
             group_name: 'Core',
             source: 'chatgpt',
             description: 'Dinner',
@@ -149,29 +148,12 @@ export const AgentContextService = {
             ],
           },
         },
-        group_subset: {
-          description: 'Specific subset of group members for a one-off expense.',
-          body: {
-            target_email: 'user@example.com',
-            group_name: 'Core',
-            source: 'chatgpt',
-            description: 'Massage',
-            amount: 500000,
-            currency: 'VND',
-            category: 'Other',
-            payer: { email: 'user@example.com' },
-            split_method: 'equal',
-            participants: [
-              { display_name: 'Anh Tâm' },
-              { email: 'user@example.com' },
-              { display_name: 'Thuần' },
-            ],
-          },
-        },
         exact_split: {
-          description: 'Exact amounts per person; sum must equal the total.',
+          description: 'Exact group split; participant amounts sum to total.',
           body: {
             target_email: 'user@example.com',
+            actor_confirmed: true,
+            transaction_type: 'group',
             group_name: 'Core',
             source: 'chatgpt',
             description: 'Grocery split',
@@ -186,17 +168,20 @@ export const AgentContextService = {
           },
         },
       },
-      common_errors: {
-        VALIDATION_ERROR:
-          'Body failed schema validation. Inspect details[] for per-field issues, then re-submit.',
+      errors: {
+        NEEDS_CLARIFICATION:
+          'The user must confirm actor email/name, group-vs-personal type, or group before submission.',
+        UNSUPPORTED_PERSONAL_TRANSACTION:
+          'Personal/1-on-1 agent-created transactions are not supported yet. Do not submit; ask the user to use FairPay manually or choose a group.',
+        VALIDATION_ERROR: 'Body failed schema validation. Inspect details and fix the proposal.',
         INVALID_JSON: 'Body is missing or not valid JSON. Set Content-Type: application/json.',
-        REQUEST_TOO_LARGE: 'Body exceeds 32 KB. Trim comment / participants and retry.',
-        RATE_LIMIT_EXCEEDED: 'Too many submissions; wait ~60s before retrying.',
+        REQUEST_TOO_LARGE: 'Body exceeds 32 KB. Trim comment/participants and retry.',
+        RATE_LIMIT_EXCEEDED: 'Too many submissions; wait about 60 seconds before retrying.',
         PENDING_LIMIT_EXCEEDED:
           'The target user already has too many pending proposals. Wait for approval/rejection before sending more.',
         SUBMISSION_FAILED: 'Generic submission failure. Inspect message for the underlying reason.',
         AMBIGUOUS_PARTICIPANT:
-          'A name matched multiple group members at approval time. Ask the user to disambiguate (email preferred).',
+          'A name matched multiple group members at approval time. Ask the user for email or exact member name and resubmit.',
         FAIRPAY_HOST_UNRESOLVED:
           'Network/DNS issue reaching long-pay.vercel.app. This is a transport error, not a FairPay validation error.',
       },
@@ -204,35 +189,25 @@ export const AgentContextService = {
         'Never ask the user for an API key — there is none on this endpoint.',
         'Never call Supabase URLs directly. Use https://long-pay.vercel.app exclusively.',
         'Never call any member, group, or user lookup endpoint from the no-key surface.',
-        'Convert "k"/"nghìn" → integer VND (50k → 50000, 600 nghìn → 600000).',
-        'Detect group cues like "nhóm Core" → group_name: "Core".',
+        'Always ask: "Bạn có phải là <name/email> không?" before setting actor_confirmed=true.',
+        'Always ask whether the transaction is group or personal before submitting.',
+        'If transaction is personal/1-on-1, explain it is not supported by the agent yet and do not call submit.',
         'Prefer email over display_name when the user mentions one explicitly.',
-        'If the payer is unclear, ask before submitting. Do not guess.',
-        'If exact participants are unclear, ask before submitting. Do not include the entire group automatically.',
-        'Submit proposals only — do not attempt to bypass FairPay confirmation rules.',
+        'If a participant or group name is ambiguous, ask a follow-up question instead of guessing.',
+        'Submit only proposals; do not tell the user that an expense was created.',
       ],
       network_diagnostics: {
         expected_host: 'long-pay.vercel.app',
-        troubleshoot: [
-          'Verify DNS resolution: `dig long-pay.vercel.app +short` should return Vercel A records.',
-          'Verify outbound HTTPS (port 443) is allowed from your environment.',
-          'Verify the URL has no stray whitespace, trailing slash artifacts, or split tokens.',
-          'Verify any FAIRPAY_BASE_URL / PUBLIC_APP_URL / VERCEL_URL env var is normalized to https://long-pay.vercel.app with no trailing slash.',
-        ],
-        error_classification: {
-          'curl: (6) Could not resolve host':
-            'DNS failure. Treat as FAIRPAY_HOST_UNRESOLVED, not as a validation error.',
-          'getaddrinfo ENOTFOUND': 'Same DNS failure surface from Node fetch. FAIRPAY_HOST_UNRESOLVED.',
-          'EAI_AGAIN': 'Transient DNS failure. Retry after a short backoff.',
-          'ECONNREFUSED / ETIMEDOUT': 'Reachability issue. FAIRPAY_HOST_UNRESOLVED-class transport error.',
-        },
+        health_check: `${FAIRPAY_BASE_URL}${FAIRPAY_HEALTH_PATH}`,
+        context_check: `${FAIRPAY_BASE_URL}${EXTERNAL_AGENT_CONTEXT_PATH}`,
       },
-      notes: [
-        'Always resolve names to stable IDs only after a signed-in user approves the proposal in the FairPay UI.',
-        'Do not duplicate transaction parsing/validation across handlers — call the shared FairPay services.',
-        'Do not bypass the preview → confirm → commit flow that protects authenticated agent writes.',
+      maintainer_notes: [
+        'Keep this document aligned with docs/openapi-external-agent-chatgpt.yaml and public/.well-known/openai.yaml.',
+        'External no-key intake must never expose account, group, or member lookup APIs.',
+        'Do not bypass the FairPay approval flow for external agent submissions.',
       ],
     }
-  },
+  }
 }
 
+export default AgentContextService

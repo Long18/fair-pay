@@ -4,6 +4,8 @@ Use the FairPay domain endpoint for ChatGPT and other external agents. The route
 
 No API key, Supabase key, OAuth token, or `Authorization` header is required on any of the endpoints below.
 
+Before submitting, the agent must ask the user to confirm their FairPay name/email and whether the expense is a group or personal transaction. V1 accepts group proposals only; personal/1-on-1 agent-created transactions must not be submitted.
+
 ---
 
 ## Agent Context / Capability Discovery
@@ -73,6 +75,9 @@ curl -X POST https://long-pay.vercel.app/api/external-agent-submissions \
 ```json
 {
   "target_email": "user@example.com",
+  "target_name": "Example User",
+  "actor_confirmed": true,
+  "transaction_type": "group",
   "group_name": "Core",
   "source": "chatgpt",
   "description": "Dinner",
@@ -121,6 +126,8 @@ Never ask for an API key. Never use Supabase URLs. Never call public member or g
 
 Parse Vietnamese natural language into a pending FairPay expense proposal:
 - Convert k/nghìn to integer VND.
+- Ask “Bạn có phải là <name/email> không?” before setting `actor_confirmed: true`.
+- Ask whether the transaction is group or personal. If personal/1-on-1, do not submit.
 - Detect group names such as "nhóm Core" and send group_name: "Core".
 - Detect participants by name.
 - If the user says "có A, B, C", include only A, B, C.
@@ -220,9 +227,12 @@ curl -X POST https://long-pay.vercel.app/api/external-agent-submissions \
 # Submit a proposal (response includes trace_id for debugging)
 curl -X POST "https://long-pay.vercel.app/api/external-agent-submissions" \
   -H "Content-Type: application/json" \
-  -d '{
-    "target_email": "user@example.com",
-    "group_name": "Core",
+ -d '{
+ "target_email": "user@example.com",
+ "target_name": "Example User",
+ "actor_confirmed": true,
+ "transaction_type": "group",
+ "group_name": "Core",
     "source": "chatgpt",
     "description": "Coffee",
     "amount": 50000,

@@ -13,9 +13,11 @@ info:
 
     ## Required flow
     1. `GET /api/external-agent/context` — read capabilities, schemas, and examples.
-    2. Parse the user's natural-language input into a structured proposal.
-    3. `POST /api/external-agent-submissions` — submit the proposal.
-    4. Done — the FairPay user reviews and approves inside the website.
+    2. Ask the user to confirm their FairPay name/email.
+    3. Ask whether the transaction is group or personal. Personal/1-on-1 agent-created transactions are not supported yet.
+    4. For group transactions, parse the user's natural-language input into a structured proposal.
+    5. `POST /api/external-agent-submissions` — submit the proposal only after actor and group confirmation.
+    6. Done — the FairPay user reviews and approves inside the website.
 
     ## Probe mode
     Sending an empty body or `{}` to `POST /api/external-agent-submissions`
@@ -86,8 +88,11 @@ paths:
               two_person_split:
                 summary: Two-person equal split, target user paid
                 value:
-                  target_email: user@example.com
-                  group_name: Core
+                target_email: user@example.com
+                target_name: Example User
+                actor_confirmed: true
+                transaction_type: group
+                group_name: Core
                   source: chatgpt
                   description: Cà phê
                   amount: 50000
@@ -102,8 +107,10 @@ paths:
               group_subset:
                 summary: Specific group members by name
                 value:
-                  target_email: user@example.com
-                  group_name: Core
+                target_email: user@example.com
+                actor_confirmed: true
+                transaction_type: group
+                group_name: Core
                   source: chatgpt
                   description: Massage
                   amount: 500000
@@ -186,12 +193,24 @@ components:
 
     ExternalAgentSubmissionRequest:
       type: object
-      required: [target_email, description, amount, currency, payer, split_method, participants]
+      required: [target_email, actor_confirmed, transaction_type, description, amount, currency, payer, split_method, participants]
       properties:
         target_email:
           type: string
           format: email
           description: FairPay account email of the user who should review this proposal.
+        target_name:
+          type: string
+          maxLength: 200
+          description: Display name the user confirmed, when available.
+        actor_confirmed:
+          type: boolean
+          const: true
+          description: Set to true only after asking the user to confirm their FairPay name/email.
+        transaction_type:
+          type: string
+          enum: [group]
+          description: Only group submissions are accepted. If the user says personal/1-on-1, do not submit.
         group_id:
           type: string
           format: uuid

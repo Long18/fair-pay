@@ -1,9 +1,21 @@
 // Public contracts for no-key external agent submissions.
-// Keep this dependency-free so the public Edge Function cannot fail on remote imports.
+// This file intentionally avoids external imports so the Edge Function can
+// validate probe/submission payloads even when remote registries are down.
+
+type IssueCode =
+  | 'VALIDATION_ERROR'
+  | 'NEEDS_CLARIFICATION'
+  | 'UNSUPPORTED_PERSONAL_TRANSACTION'
+
+type Issue = {
+  path: Array<string | number>
+  message: string
+  code?: IssueCode
+}
 
 type ParseResult<T> =
   | { success: true; data: T }
-  | { success: false; error: { issues: Array<{ path: Array<string | number>; message: string }> } }
+  | { success: false; error: { issues: Issue[] } }
 
 type ActorRef = {
   email?: string
@@ -15,8 +27,13 @@ type Participant = ActorRef & {
   fixed_amount?: number
 }
 
+type TransactionType = 'group' | 'personal'
+
 type ExternalAgentSubmission = {
   target_email: string
+  target_name?: string
+  actor_confirmed: true
+  transaction_type: 'group'
   group_id?: string
   group_name?: string
   source?: string
@@ -46,8 +63,8 @@ const CATEGORIES = new Set([
   'Other',
 ])
 
-function issue(path: Array<string | number>, message: string) {
-  return { path, message }
+function issue(path: Array<string | number>, message: string, code: IssueCode = 'VALIDATION_ERROR'): Issue {
+  return { path, message, code }
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -63,48 +80,92 @@ function normalizeEmail(value: unknown): string | undefined {
 function normalizeText(value: unknown, max: number): string | undefined {
   if (typeof value !== 'string') return undefined
   const text = value.trim()
-  return text.length > 0 && text.length <= max ? text : undefined
+  if (!text || text.length > max) return undefined
+  return text
 }
 
 function parseAmount(value: unknown): number | undefined {
-  return Number.isInteger(value) && value > 0 && value <= 9_999_999_999 ? value : undefined
+  return typeof value === 'number'
+    && Number.isInteger(value)
+    && value > 0
+    && value <= 9_999_999_999
+    ? value
+    : undefined
 }
 
-function validDate(value: string): boolean {
+function isRealDate(value: string): boolean {
   if (!DATE_RE.test(value)) return false
   const [year, month, day] = value.split('-').map(Number)
   const date = new Date(Date.UTC(year, month - 1, day))
-  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+  return date.getUTCFullYear() === year
+    && date.getUTCMonth() === month - 1
+    && date.getUTCDate() === day
 }
 
-function parseActor(value: unknown, path: string, issues: Array<{ path: Array<string | number>; message: string }>): ActorRef | null {
+function parseActor(value: unknown, path: string, issues: Issue[]): ActorRef | null {
   if (!isObject(value)) {
     issues.push(issue([path], 'Actor must be an object'))
     return null
   }
+
   const allowed = new Set(['email', 'display_name'])
   for (const key of Object.keys(value)) {
     if (!allowed.has(key)) issues.push(issue([path, key], 'Unknown field'))
   }
+
   const email = value.email === undefined ? undefined : normalizeEmail(value.email)
   const displayName = value.display_name === undefined ? undefined : normalizeText(value.display_name, 200)
+
   if (value.email !== undefined && !email) issues.push(issue([path, 'email'], 'Invalid email'))
-  if (value.display_name !== undefined && !displayName) {
-    issues.push(issue([path, 'display_name'], 'Invalid display_name'))
+  if (value.display_name !== undefined && !displayName) issues.push(issue([path, 'display_name'], 'Invalid display_name'))
+  if (!email && !displayName) {
+    issues.push(issue([path], 'Provide email or display_name'))
+    return null
   }
-  if (!email && !displayName) issues.push(issue([path], 'Either email or display_name is required'))
-  return { ...(email ? { email } : {}), ...(displayName ? { display_name: displayName } : {}) }
+
+  return {
+    ...(email ? { email } : {}),
+    ...(displayName ? { display_name: displayName } : {}),
+  }
+}
+
+function parseTransactionType(value: unknown, issues: Issue[]): TransactionType | undefined {
+  if (value === undefined) {
+    issues.push(issue(
+      ['transaction_type'],
+      'Ask whether this is a group transaction or personal transaction before submitting.',
+      'NEEDS_CLARIFICATION',
+    ))
+    return undefined
+  }
+  if (value === 'personal') {
+    issues.push(issue(
+      ['transaction_type'],
+      'Personal/1-on-1 agent-created transactions are not supported yet. Ask the user to use FairPay manually or choose a group.',
+      'UNSUPPORTED_PERSONAL_TRANSACTION',
+    ))
+    return 'personal'
+  }
+  if (value !== 'group') {
+    issues.push(issue(['transaction_type'], 'transaction_type must be "group" or "personal"'))
+    return undefined
+  }
+  return 'group'
 }
 
 export const ExternalAgentSubmissionRequest = {
   safeParse(input: unknown): ParseResult<ExternalAgentSubmission> {
-    const issues: Array<{ path: Array<string | number>; message: string }> = []
+    const issues: Issue[] = []
+
     if (!isObject(input)) {
-      return { success: false, error: { issues: [issue([], 'Request body must be an object')] } }
+      return { success: false, error: { issues: [issue([], 'Body must be an object')] } }
     }
 
     const allowed = new Set([
       'target_email',
+      'target_name',
+      'actor_confirmed',
+      'transaction_type',
       'group_id',
       'group_name',
       'source',
@@ -118,6 +179,7 @@ export const ExternalAgentSubmissionRequest = {
       'split_method',
       'participants',
     ])
+
     for (const key of Object.keys(input)) {
       if (!allowed.has(key)) issues.push(issue([key], 'Unknown field'))
     }
@@ -125,47 +187,84 @@ export const ExternalAgentSubmissionRequest = {
     const targetEmail = normalizeEmail(input.target_email)
     if (!targetEmail) issues.push(issue(['target_email'], 'Invalid target_email'))
 
-    const groupId = input.group_id === undefined ? undefined : String(input.group_id).trim()
-    if (groupId && !UUID_RE.test(groupId)) issues.push(issue(['group_id'], 'Invalid group_id'))
-    const groupName = input.group_name === undefined ? undefined : normalizeText(input.group_name, 200)
-    if (!groupId && !groupName) issues.push(issue(['group_id'], 'Either group_id or group_name is required'))
+    const targetName = normalizeText(input.target_name, 200)
+    if (input.target_name !== undefined && !targetName) {
+      issues.push(issue(['target_name'], 'Invalid target_name'))
+    }
 
-    const source = input.source === undefined ? undefined : normalizeText(input.source, 100)
+    if (input.actor_confirmed !== true) {
+      issues.push(issue(
+        ['actor_confirmed'],
+        'Ask the user to confirm their FairPay name/email before submitting. For example: "Bạn có phải là người này/email này không?"',
+        'NEEDS_CLARIFICATION',
+      ))
+    }
+
+    const transactionType = parseTransactionType(input.transaction_type, issues)
+
+    const groupId = input.group_id === undefined ? undefined : normalizeText(input.group_id, 64)
+    if (groupId && !UUID_RE.test(groupId)) issues.push(issue(['group_id'], 'Invalid group_id'))
+
+    const groupName = normalizeText(input.group_name, 200)
+    if (input.group_name !== undefined && !groupName) issues.push(issue(['group_name'], 'Invalid group_name'))
+    if (transactionType === 'group' && !groupId && !groupName) {
+      issues.push(issue(
+        ['group_id'],
+        'Ask which FairPay group this expense belongs to before submitting.',
+        'NEEDS_CLARIFICATION',
+      ))
+    }
+
+    const source = normalizeText(input.source, 100)
     const description = normalizeText(input.description, 200)
-    if (!description) issues.push(issue(['description'], 'Invalid description'))
+    if (!description) issues.push(issue(['description'], 'Description is required'))
+
     const amount = parseAmount(input.amount)
     if (!amount) issues.push(issue(['amount'], 'Invalid integer VND amount'))
-    const currency = input.currency === undefined ? 'VND' : input.currency
+
+    const currency = input.currency
     if (currency !== 'VND') issues.push(issue(['currency'], 'Only VND is supported'))
-    const category = input.category === undefined ? undefined : String(input.category)
-    if (category && !CATEGORIES.has(category)) issues.push(issue(['category'], 'Invalid category'))
-    const expenseDate = input.expense_date === undefined ? undefined : String(input.expense_date)
-    if (expenseDate && !validDate(expenseDate)) issues.push(issue(['expense_date'], 'Invalid expense_date'))
-    const comment =
-      input.comment === undefined || input.comment === null ? input.comment : normalizeText(input.comment, 1000)
-    if (input.comment !== undefined && input.comment !== null && !comment) {
+
+    const category = input.category
+    if (category !== undefined && (typeof category !== 'string' || !CATEGORIES.has(category))) {
+      issues.push(issue(['category'], 'Unsupported category'))
+    }
+
+    const expenseDate = input.expense_date
+    if (expenseDate !== undefined && (typeof expenseDate !== 'string' || !isRealDate(expenseDate))) {
+      issues.push(issue(['expense_date'], 'expense_date must be YYYY-MM-DD'))
+    }
+
+    const comment = input.comment
+    if (comment !== undefined && comment !== null && (typeof comment !== 'string' || comment.length > 1000)) {
       issues.push(issue(['comment'], 'Invalid comment'))
     }
 
     const payer = parseActor(input.payer, 'payer', issues)
+
     const splitMethod = input.split_method
     if (!['equal', 'exact', 'fixed_then_equal_remainder'].includes(String(splitMethod))) {
-      issues.push(issue(['split_method'], 'Invalid split_method'))
+      issues.push(issue(['split_method'], 'Unsupported split_method'))
     }
 
     const participants: Participant[] = []
-    if (!Array.isArray(input.participants) || input.participants.length === 0 || input.participants.length > 100) {
+    if (!Array.isArray(input.participants) || input.participants.length < 1 || input.participants.length > 100) {
       issues.push(issue(['participants'], 'participants must contain 1 to 100 entries'))
     } else {
       input.participants.forEach((raw, index) => {
         const actor = parseActor(raw, `participants.${index}`, issues)
         if (!isObject(raw) || !actor) return
+
         const amountValue = raw.amount === undefined ? undefined : parseAmount(raw.amount)
         const fixedAmount = raw.fixed_amount === undefined ? undefined : parseAmount(raw.fixed_amount)
-        if (raw.amount !== undefined && !amountValue) issues.push(issue(['participants', index, 'amount'], 'Invalid amount'))
+
+        if (raw.amount !== undefined && !amountValue) {
+          issues.push(issue(['participants', index, 'amount'], 'Invalid amount'))
+        }
         if (raw.fixed_amount !== undefined && !fixedAmount) {
           issues.push(issue(['participants', index, 'fixed_amount'], 'Invalid fixed_amount'))
         }
+
         participants.push({
           ...actor,
           ...(amountValue ? { amount: amountValue } : {}),
@@ -174,9 +273,9 @@ export const ExternalAgentSubmissionRequest = {
       })
     }
 
-    const identities = participants.map((participant) =>
-      participant.email ? `email:${participant.email}` : `name:${participant.display_name?.toLowerCase()}`,
-    )
+    const identities = participants.map((participant) => (
+      participant.email ? `email:${participant.email}` : `name:${participant.display_name?.toLowerCase()}`
+    ))
     if (new Set(identities).size !== identities.length) {
       issues.push(issue(['participants'], 'Duplicate participant identity is not allowed'))
     }
@@ -186,14 +285,16 @@ export const ExternalAgentSubmissionRequest = {
     if (splitMethod === 'equal' && (hasAmount || hasFixedAmount)) {
       issues.push(issue(['participants'], 'Equal split does not accept amount or fixed_amount'))
     }
+
     if (splitMethod === 'exact' && (hasFixedAmount || participants.some((participant) => participant.amount === undefined))) {
       issues.push(issue(['participants'], 'Exact split requires amount for every participant'))
     }
+
     if (splitMethod === 'fixed_then_equal_remainder' && hasAmount) {
       issues.push(issue(['participants'], 'Fixed remainder split uses fixed_amount, not amount'))
     }
 
-    if (issues.length > 0 || !targetEmail || !description || !amount || !payer) {
+    if (issues.length > 0 || !targetEmail || transactionType !== 'group' || !description || !amount || !payer) {
       return { success: false, error: { issues } }
     }
 
@@ -201,6 +302,9 @@ export const ExternalAgentSubmissionRequest = {
       success: true,
       data: {
         target_email: targetEmail,
+        ...(targetName ? { target_name: targetName } : {}),
+        actor_confirmed: true,
+        transaction_type: 'group',
         ...(groupId ? { group_id: groupId } : {}),
         ...(groupName ? { group_name: groupName } : {}),
         ...(source ? { source } : {}),
@@ -209,7 +313,7 @@ export const ExternalAgentSubmissionRequest = {
         currency: 'VND',
         ...(category ? { category } : {}),
         ...(expenseDate ? { expense_date: expenseDate } : {}),
-        ...(comment !== undefined ? { comment } : {}),
+        ...(comment !== undefined ? { comment: comment as string | null } : {}),
         payer,
         split_method: splitMethod as ExternalAgentSubmission['split_method'],
         participants,

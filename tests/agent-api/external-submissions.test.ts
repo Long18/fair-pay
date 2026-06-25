@@ -8,6 +8,9 @@ const { ExternalAgentSubmissionRequest } = contractsModule
 
 const validSubmission = {
   target_email: 'Alice@Example.com',
+  target_name: 'Alice',
+  actor_confirmed: true,
+  transaction_type: 'group',
   group_name: 'Roommates',
   source: 'chatgpt',
   description: 'Dinner',
@@ -23,24 +26,68 @@ const validSubmission = {
   ],
 }
 
+function issueCodes(result: ReturnType<typeof ExternalAgentSubmissionRequest.safeParse>) {
+  return result.success ? [] : result.error.issues.map((issue) => issue.code)
+}
+
 describe('external agent submission contracts', () => {
-  it('accepts a valid no-key submission and normalizes target email', () => {
+  it('accepts valid group submission and normalizes target email', () => {
     const result = ExternalAgentSubmissionRequest.safeParse(validSubmission)
 
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.target_email).toBe('alice@example.com')
+      expect(result.data.actor_confirmed).toBe(true)
+      expect(result.data.transaction_type).toBe('group')
     }
   })
 
-  it('requires a target email and group hint', () => {
+  it('requires actor confirmation before submission', () => {
     const result = ExternalAgentSubmissionRequest.safeParse({
       ...validSubmission,
-      target_email: 'not-an-email',
-      group_name: undefined,
+      actor_confirmed: false,
     })
 
     expect(result.success).toBe(false)
+    expect(issueCodes(result)).toContain('NEEDS_CLARIFICATION')
+  })
+
+  it('requires group-vs-personal transaction type before submission', () => {
+    const payload = { ...validSubmission }
+    delete (payload as Partial<typeof validSubmission>).transaction_type
+    const result = ExternalAgentSubmissionRequest.safeParse(payload)
+
+    expect(result.success).toBe(false)
+    expect(issueCodes(result)).toContain('NEEDS_CLARIFICATION')
+  })
+
+  it('rejects personal transactions without enqueueing', () => {
+    const result = ExternalAgentSubmissionRequest.safeParse({
+      ...validSubmission,
+      transaction_type: 'personal',
+    })
+
+    expect(result.success).toBe(false)
+    expect(issueCodes(result)).toContain('UNSUPPORTED_PERSONAL_TRANSACTION')
+  })
+
+  it('requires a group hint for group transactions', () => {
+    const payload = { ...validSubmission }
+    delete (payload as Partial<typeof validSubmission>).group_name
+    const result = ExternalAgentSubmissionRequest.safeParse(payload)
+
+    expect(result.success).toBe(false)
+    expect(issueCodes(result)).toContain('NEEDS_CLARIFICATION')
+  })
+
+  it('rejects invalid target email while preserving target email hint', () => {
+    const result = ExternalAgentSubmissionRequest.safeParse({
+      ...validSubmission,
+      target_email: 'not-an-email',
+    })
+
+    expect(result.success).toBe(false)
+    expect(result.success ? [] : result.error.issues.map((issue) => issue.path.join('.'))).toContain('target_email')
   })
 
   it('rejects identity and auth fields from public submissions', () => {
@@ -51,6 +98,9 @@ describe('external agent submission contracts', () => {
     })
 
     expect(result.success).toBe(false)
+    const paths = result.success ? [] : result.error.issues.map((issue) => issue.path.join('.'))
+    expect(paths).toContain('actor_user_id')
+    expect(paths).toContain('authorization')
   })
 
   it('rejects duplicate participant identities', () => {
@@ -63,34 +113,28 @@ describe('external agent submission contracts', () => {
     })
 
     expect(result.success).toBe(false)
+    expect(result.success ? [] : result.error.issues.map((issue) => issue.path.join('.'))).toContain('participants')
   })
 
-  it('enforces split-method-specific amount fields', () => {
-    const equalWithAmounts = ExternalAgentSubmissionRequest.safeParse({
-      ...validSubmission,
-      participants: [
-        { email: 'alice@example.com', amount: 225000 },
-        { email: 'bob@example.com', amount: 225000 },
-      ],
-    })
-
-    const exactWithoutAmounts = ExternalAgentSubmissionRequest.safeParse({
+  it('enforces split-method-specific participant fields', () => {
+    const exact = ExternalAgentSubmissionRequest.safeParse({
       ...validSubmission,
       split_method: 'exact',
-    })
-
-    const fixedWithAmount = ExternalAgentSubmissionRequest.safeParse({
-      ...validSubmission,
-      split_method: 'fixed_then_equal_remainder',
       participants: [
-        { email: 'alice@example.com', amount: 100000 },
+        { email: 'alice@example.com', amount: 200000 },
         { email: 'bob@example.com' },
       ],
     })
+    const equal = ExternalAgentSubmissionRequest.safeParse({
+      ...validSubmission,
+      split_method: 'equal',
+      participants: [
+        { email: 'alice@example.com', amount: 200000 },
+        { email: 'bob@example.com', amount: 250000 },
+      ],
+    })
 
-    expect(equalWithAmounts.success).toBe(false)
-    expect(exactWithoutAmounts.success).toBe(false)
-    expect(fixedWithAmount.success).toBe(false)
+    expect(exact.success).toBe(false)
+    expect(equal.success).toBe(false)
   })
 })
-
