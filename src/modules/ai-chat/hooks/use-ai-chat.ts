@@ -1,7 +1,8 @@
 // Phase 3 - React state bridge for the FairPay chat orchestrator.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useGetIdentity } from "@refinedev/core";
+import { useTranslation } from "react-i18next";
 import {
   chat as localLlmChat,
   getSelectedModel,
@@ -15,7 +16,7 @@ import type { Profile } from "@/modules/profile/types";
 import type { AgentPreviewResponse } from "@/lib/agent-api/types";
 import type { ChatMessage } from "../types";
 import {
-  FAIRPAY_SYSTEM_PROMPT,
+  buildSystemPrompt,
   FairPayChatOrchestrator,
   McpClient,
   type ConversationMessage,
@@ -56,6 +57,8 @@ function localModelError(status: LocalLlmStatus): string | null {
 
 export function useAiChat(): UseAiChatReturn {
   const { data: identity } = useGetIdentity<Profile>();
+  const { i18n } = useTranslation();
+  const language = i18n.resolvedLanguage || i18n.language;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,8 +70,18 @@ export function useAiChat(): UseAiChatReturn {
   }));
   const [selectedModel, setSelectedModel] = useState<WebLlmModelId>(() => getSelectedModel());
 
+  const systemPrompt = useMemo(
+    () =>
+      buildSystemPrompt({
+        userName: identity?.full_name,
+        userEmail: identity?.email,
+        language,
+      }),
+    [identity?.full_name, identity?.email, language],
+  );
+
   const historyRef = useRef<ConversationMessage[]>([
-    { role: "system", content: FAIRPAY_SYSTEM_PROMPT },
+    { role: "system", content: systemPrompt },
   ]);
   const conversationIdRef = useRef<string | null>(conversationId);
   const orchestratorRef = useRef<FairPayChatOrchestrator | null>(null);
@@ -76,6 +89,17 @@ export function useAiChat(): UseAiChatReturn {
   useEffect(() => {
     conversationIdRef.current = conversationId;
   }, [conversationId]);
+
+  // Keep the system message in sync with the latest identity and language.
+  useEffect(() => {
+    const history = historyRef.current;
+    const systemMessage: ConversationMessage = { role: "system", content: systemPrompt };
+    if (history.length > 0 && history[0].role === "system") {
+      historyRef.current = [systemMessage, ...history.slice(1)];
+    } else {
+      historyRef.current = [systemMessage, ...history];
+    }
+  }, [systemPrompt]);
 
   useEffect(() => subscribeLocalLlmStatus(setLocalLlmStatus), []);
 
@@ -214,8 +238,8 @@ export function useAiChat(): UseAiChatReturn {
     setError(null);
     setPendingPreview(null);
     setConversationId(null);
-    historyRef.current = [{ role: "system", content: FAIRPAY_SYSTEM_PROMPT }];
-  }, []);
+    historyRef.current = [{ role: "system", content: systemPrompt }];
+  }, [systemPrompt]);
 
   return {
     messages,

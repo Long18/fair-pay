@@ -584,7 +584,13 @@
         "youAreOwed": "You are owed",
         "youOwe": "You owe",
         "noData": "No data available",
-        "spendingTrend": "Spending Trend"
+        "spendingTrend": "Spending Trend",
+        "insights": {
+            "title": "Dashboard insights",
+            "noInsight": "No insight was generated.",
+            "error": "Could not generate dashboard insights.",
+            "generate": "Generate insights"
+        }
     },
     "balances": {
         "title": "Balances",
@@ -867,7 +873,23 @@
         "dailySpendingHeatmap": "Daily Spending Heatmap",
         "spendingTrend": "Spending Trend",
         "spendingBreakdownOverTime": "Spending Breakdown Over Time",
-        "total": "Total"
+        "total": "Total",
+        "insights": {
+            "spendingIncreased": "Spending Increased",
+            "spendingDecreased": "Spending Decreased",
+            "topCategory": "Top Category",
+            "largeExpense": "Large Expense Detected",
+            "highOutstanding": "High Outstanding Balance",
+            "moneyToCollect": "Money to Collect",
+            "noExpenses": "No Expenses",
+            "spendingUp": "Up {{value}} from last period",
+            "spendingDown": "Down {{value}} from last period",
+            "topCategoryDesc": "Most of your spending is in {{category}}",
+            "largeExpenseDesc": "Your largest expense is {{value}} your average",
+            "highOutstandingDesc": "You have outstanding debts to settle",
+            "moneyToCollectDesc": "Others owe you money — consider sending reminders",
+            "noExpensesDesc": "No expenses recorded this period"
+        }
     },
     "prepaid": {
         "membersPrepaid": "{{count}} member(s) prepaid",

@@ -1,7 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { AlertCircleIcon, Loader2Icon, SparklesIcon } from "@/components/ui/icons";
 import { chat as localLlmChat, getLocalLlmStatus, getSelectedModel, loadModel } from "@/lib/local-llm/client";
+import i18n from "@/i18n";
 
 type DashboardBalanceSummary = {
   counterparty_name?: string;
@@ -51,6 +53,7 @@ function emptyContext(context: DashboardInsightContext): boolean {
 }
 
 export function DashboardInsightPanel({ context }: DashboardInsightPanelProps) {
+  const { t } = useTranslation();
   const [insight, setInsight] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -95,16 +98,16 @@ export function DashboardInsightPanel({ context }: DashboardInsightPanelProps) {
           {
             role: "system",
             content:
-              "You write compact FairPay dashboard insights. Use only the provided JSON data. Do not invent numbers. Return 2 short actionable insights and 2 suggested chat prompts.",
+              `You write compact FairPay dashboard insights. Use only the provided JSON data. Do not invent numbers. Return 2 short actionable insights and 2 suggested chat prompts.\nRespond in ${i18n.language === 'vi' ? 'Vietnamese' : 'English'}.`,
           },
           { role: "user", content: JSON.stringify(sanitizedContext) },
         ],
         { model: status.model },
       );
 
-      setInsight(response.message?.content?.trim() || response.text?.trim() || "No insight was generated.");
+      setInsight(response.message?.content?.trim() || response.text?.trim() || t('dashboard.insights.noInsight'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not generate dashboard insights.");
+      setError(err instanceof Error ? err.message : t('dashboard.insights.error'));
     } finally {
       setLoading(false);
     }
@@ -116,7 +119,7 @@ export function DashboardInsightPanel({ context }: DashboardInsightPanelProps) {
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <SparklesIcon size={16} className="text-primary" />
-            Dashboard insights
+            {t('dashboard.insights.title')}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             Uses only the balances, activity, and history already loaded on this dashboard.

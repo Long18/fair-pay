@@ -583,7 +583,13 @@
         "youAreOwed": "Bạn đang được nợ",
         "youOwe": "Bạn đang nợ",
         "noData": "Không có dữ liệu",
-        "spendingTrend": "Xu hướng chi tiêu"
+        "spendingTrend": "Xu hướng chi tiêu",
+        "insights": {
+            "title": "Phân tích tổng quan",
+            "noInsight": "Không tạo được phân tích.",
+            "error": "Không thể tạo phân tích tổng quan.",
+            "generate": "Tạo phân tích"
+        }
     },
     "balances": {
         "title": "Số dư",
@@ -866,7 +872,23 @@
         "dailySpendingHeatmap": "Bản đồ nhiệt chi tiêu hàng ngày",
         "spendingTrend": "Xu hướng chi tiêu",
         "spendingBreakdownOverTime": "Chi tiết chi tiêu theo thời gian",
-        "total": "Tổng"
+        "total": "Tổng",
+        "insights": {
+            "spendingIncreased": "Chi tiêu tăng",
+            "spendingDecreased": "Chi tiêu giảm",
+            "topCategory": "Danh mục hàng đầu",
+            "largeExpense": "Chi tiêu lớn",
+            "highOutstanding": "Nợ chưa thanh toán cao",
+            "moneyToCollect": "Tiền cần thu",
+            "noExpenses": "Không có chi tiêu",
+            "spendingUp": "Tăng {{value}} so với kỳ trước",
+            "spendingDown": "Giảm {{value}} so với kỳ trước",
+            "topCategoryDesc": "Phần lớn chi tiêu của bạn thuộc {{category}}",
+            "largeExpenseDesc": "Chi tiêu lớn nhất của bạn gấp {{value}} mức trung bình",
+            "highOutstandingDesc": "Bạn có khoản nợ chưa thanh toán",
+            "moneyToCollectDesc": "Người khác nợ bạn — hãy gửi nhắc nhở",
+            "noExpensesDesc": "Không có chi tiêu trong kỳ này"
+        }
     },
     "prepaid": {
         "membersPrepaid": "{{count}} thành viên đã trả trước",

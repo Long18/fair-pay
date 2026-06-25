@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import i18n from "@/i18n";
 import { useSpendingComparison } from "./use-spending-comparison";
 import { useTopCategories } from "./use-top-categories";
 import { useSpendingSummary, DateRangePreset, DateRange } from "./use-spending-summary";
@@ -46,8 +47,8 @@ export const useSpendingInsights = (options: UseSpendingInsightsOptions = {}) =>
         result.push({
           id: "spending-increase",
           type: "warning",
-          title: "Spending Increased",
-          description: `Your spending is up ${comparison.percentage_change.toFixed(1)}% compared to the previous period`,
+          title: i18n.t('analytics.insights.spendingIncreased'),
+          description: i18n.t('analytics.insights.spendingUp', { value: `${comparison.percentage_change.toFixed(1)}%` }),
           value: `+${comparison.percentage_change.toFixed(1)}%`,
           icon: "trending-up",
         });
@@ -55,8 +56,8 @@ export const useSpendingInsights = (options: UseSpendingInsightsOptions = {}) =>
         result.push({
           id: "spending-decrease",
           type: "success",
-          title: "Spending Decreased",
-          description: `Great job! Your spending is down ${Math.abs(comparison.percentage_change).toFixed(1)}% compared to the previous period`,
+          title: i18n.t('analytics.insights.spendingDecreased'),
+          description: i18n.t('analytics.insights.spendingDown', { value: `${Math.abs(comparison.percentage_change).toFixed(1)}%` }),
           value: `-${Math.abs(comparison.percentage_change).toFixed(1)}%`,
           icon: "trending-down",
         });
@@ -77,8 +78,8 @@ export const useSpendingInsights = (options: UseSpendingInsightsOptions = {}) =>
         result.push({
           id: "top-category",
           type: "info",
-          title: `${topCategory.category} Dominates`,
-          description: `${topCategory.percentage.toFixed(1)}% of your spending is in ${topCategory.category}`,
+          title: i18n.t('analytics.insights.topCategory'),
+          description: i18n.t('analytics.insights.topCategoryDesc', { category: topCategory.category }),
           value: `${topCategory.percentage.toFixed(1)}%`,
           icon: "pie-chart",
         });
@@ -90,8 +91,8 @@ export const useSpendingInsights = (options: UseSpendingInsightsOptions = {}) =>
         result.push({
           id: "large-expense",
           type: "warning",
-          title: "Large Expense Detected",
-          description: `Your largest expense is ${(summary.largestExpense / summary.averageExpense).toFixed(1)}x your average`,
+          title: i18n.t('analytics.insights.largeExpense'),
+          description: i18n.t('analytics.insights.largeExpenseDesc', { value: `${(summary.largestExpense / summary.averageExpense).toFixed(1)}x` }),
           icon: "alert-circle",
         });
       }
@@ -101,16 +102,16 @@ export const useSpendingInsights = (options: UseSpendingInsightsOptions = {}) =>
       result.push({
         id: "negative-balance",
         type: "warning",
-        title: "High Outstanding Balance",
-        description: "You have significant outstanding debts to settle",
+        title: i18n.t('analytics.insights.highOutstanding'),
+        description: i18n.t('analytics.insights.highOutstandingDesc'),
         icon: "alert-triangle",
       });
     } else if (summary.netBalance > 1000) {
       result.push({
         id: "positive-balance",
         type: "success",
-        title: "Money to Collect",
-        description: "You have money to collect from others",
+        title: i18n.t('analytics.insights.moneyToCollect'),
+        description: i18n.t('analytics.insights.moneyToCollectDesc'),
         icon: "check-circle",
       });
     }
@@ -119,8 +120,8 @@ export const useSpendingInsights = (options: UseSpendingInsightsOptions = {}) =>
       result.push({
         id: "no-expenses",
         type: "info",
-        title: "No Expenses",
-        description: "No expenses recorded in this period",
+        title: i18n.t('analytics.insights.noExpenses'),
+        description: i18n.t('analytics.insights.noExpensesDesc'),
         icon: "inbox",
       });
     }
