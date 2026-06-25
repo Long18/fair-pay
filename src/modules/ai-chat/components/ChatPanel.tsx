@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useGetIdentity } from "@refinedev/core";
 import { AgentConfirmationCard } from "@/components/agent/AgentConfirmationCard";
 import { Button } from "@/components/ui/button";
@@ -40,43 +41,37 @@ interface ChatPanelProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const SUGGESTIONS = [
-  "Who owes me money?",
-  "Summarize recent activity",
-  "Prepare dinner expense for 4 people",
-  "Which groups need attention?",
-];
-
-function modelStatusCopy(status: LocalLlmStatus): { label: string; detail: string; tone: string } {
+function modelStatusCopy(status: LocalLlmStatus, t: (key: string, opts?: Record<string, unknown>) => string): { label: string; detail: string; tone: string } {
   if (status.state === "unsupported") {
-    return { label: "Local AI unavailable", detail: status.reason, tone: "text-destructive" };
+    return { label: t('aiChat.status.unavailable'), detail: status.reason, tone: "text-destructive" };
   }
 
   if (status.state === "loading") {
     const pct = Math.round(status.progress * 100);
     return {
-      label: `Loading local model${Number.isFinite(pct) ? ` ${pct}%` : ""}`,
+      label: t('aiChat.status.loading', { pct: Number.isFinite(pct) ? pct : '' }),
       detail: status.message,
       tone: "text-amber-600 dark:text-amber-400",
     };
   }
 
   if (status.state === "ready") {
-    return { label: "Local AI ready", detail: status.model, tone: "text-emerald-600 dark:text-emerald-400" };
+    return { label: t('aiChat.status.ready'), detail: status.model, tone: "text-emerald-600 dark:text-emerald-400" };
   }
 
   if (status.state === "error") {
-    return { label: "Local AI error", detail: status.message, tone: "text-destructive" };
+    return { label: t('aiChat.status.error'), detail: status.message, tone: "text-destructive" };
   }
 
   return {
-    label: "Choose a local model",
-    detail: "Load it in this browser before chatting.",
+    label: t('aiChat.status.idle'),
+    detail: t('aiChat.status.idleDetail'),
     tone: "text-muted-foreground",
   };
 }
 
 export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
+  const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
   const {
     messages,
@@ -94,7 +89,14 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
   const scrollRef = useRef<HTMLDivElement>(null);
   const { tap } = useHaptics();
 
-  const statusCopy = useMemo(() => modelStatusCopy(localLlmStatus), [localLlmStatus]);
+  const suggestions = useMemo(() => [
+    t('aiChat.suggestions.whoOwes'),
+    t('aiChat.suggestions.recentActivity'),
+    t('aiChat.suggestions.dinnerExpense'),
+    t('aiChat.suggestions.groupsAttention'),
+  ], [t]);
+
+  const statusCopy = useMemo(() => modelStatusCopy(localLlmStatus, t), [localLlmStatus, t]);
   const canLoad = localLlmStatus.state === "idle" || localLlmStatus.state === "error";
   const inputDisabled = localLlmStatus.state !== "ready" || Boolean(pendingPreview);
   const selectedOption = WEB_LLM_MODEL_OPTIONS.find((option) => option.id === selectedModel) ?? WEB_LLM_MODEL_OPTIONS[0];
@@ -140,9 +142,9 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
             <div className="min-w-0">
               <SheetTitle className="flex items-center gap-2 text-base">
                 <FairPayIcon size={18} className="rounded-sm" />
-                FairPay Assistant
+                {t('aiChat.title')}
               </SheetTitle>
-              <SheetDescription className="truncate">Local browser AI for FairPay workflows</SheetDescription>
+              <SheetDescription className="truncate">{t('aiChat.subtitle')}</SheetDescription>
             </div>
             <Button
               type="button"
@@ -150,7 +152,7 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
               size="icon"
               onClick={handleClearChat}
               disabled={messages.length === 0 && !pendingPreview}
-              aria-label="Clear chat"
+              aria-label={t('aiChat.clearChat')}
               className="h-9 w-9 shrink-0"
             >
               <Trash2Icon size={16} />
@@ -189,8 +191,8 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
                   onValueChange={handleModelChange}
                   disabled={localLlmStatus.state === "loading" || localLlmStatus.state === "unsupported"}
                 >
-                  <SelectTrigger className="h-9 w-full min-w-0 sm:w-[190px]" aria-label="Select local AI model">
-                    <SelectValue placeholder="Select model" />
+                  <SelectTrigger className="h-9 w-full min-w-0 sm:w-[190px]" aria-label={t('aiChat.selectModelAria')}>
+                    <SelectValue placeholder={t('aiChat.selectModel')} />
                   </SelectTrigger>
                   <SelectContent>
                     {WEB_LLM_MODEL_OPTIONS.map((option) => (
@@ -203,7 +205,7 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
 
                 {canLoad && (
                   <Button type="button" size="sm" onClick={handleLoadModel} className="h-9 shrink-0">
-                    Load
+                    {t('aiChat.load')}
                   </Button>
                 )}
               </div>
@@ -226,10 +228,10 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
             {messages.length === 0 && !pendingPreview && (
               <div className="space-y-3">
                 <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-                  Ask about balances, groups, recent expenses, or prepare a safe expense preview.
+                  {t('aiChat.welcome')}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  {SUGGESTIONS.map((suggestion) => (
+                  {suggestions.map((suggestion) => (
                     <Button
                       key={suggestion}
                       type="button"
@@ -274,7 +276,7 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
           <ChatInput onSend={sendMessage} isLoading={isLoading} disabled={inputDisabled} />
           {pendingPreview && (
             <p className="mt-2 text-xs text-muted-foreground">
-              Resolve the pending preview before sending another request.
+              {t('aiChat.pendingPreview')}
             </p>
           )}
         </div>

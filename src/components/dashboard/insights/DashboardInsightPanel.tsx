@@ -65,7 +65,7 @@ export function DashboardInsightPanel({ context }: DashboardInsightPanelProps) {
 
     try {
       if (emptyContext(sanitizedContext)) {
-        setInsight("No dashboard data is available yet. Add expenses or settlements, then generate insights again.");
+        setInsight(t('dashboard.insights.noData'));
         return;
       }
 
@@ -86,7 +86,7 @@ export function DashboardInsightPanel({ context }: DashboardInsightPanelProps) {
           return;
         }
         if (loaded.state !== "ready") {
-          setError("Local AI is still loading. Try again after the model is ready.");
+          setError(t('dashboard.insights.modelLoading'));
           return;
         }
 

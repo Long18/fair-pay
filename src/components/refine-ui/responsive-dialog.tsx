@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { cn } from "@/lib/utils"
 import {
   Drawer,
   DrawerClose,
@@ -42,8 +43,13 @@ export function ResponsiveDialog({
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className={className}>
-          <DialogHeader>
+        <DialogContent
+          className={cn(
+            className,
+            "flex max-h-[90dvh] flex-col overflow-hidden"
+          )}
+        >
+          <DialogHeader className="shrink-0">
             <DialogTitle>{title}</DialogTitle>
             {description ? (
               <DialogDescription>{description}</DialogDescription>
@@ -51,7 +57,9 @@ export function ResponsiveDialog({
               <DialogDescription className="sr-only">{title}</DialogDescription>
             )}
           </DialogHeader>
-          {children}
+          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+            {children}
+          </div>
         </DialogContent>
       </Dialog>
     )
@@ -59,8 +67,8 @@ export function ResponsiveDialog({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent>
-        <DrawerHeader className="text-left">
+      <DrawerContent className="max-h-[85dvh]">
+        <DrawerHeader className="shrink-0 text-left">
           <DrawerTitle>{title}</DrawerTitle>
           {description ? (
             <DrawerDescription>{description}</DrawerDescription>
@@ -68,7 +76,9 @@ export function ResponsiveDialog({
             <DrawerDescription className="sr-only">{title}</DrawerDescription>
           )}
         </DrawerHeader>
-        <div className="px-4 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-12rem)] max-w-full">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4">
+          {children}
+        </div>
         {showCancel && (
           <DrawerFooter className="pt-2">
             <DrawerClose asChild>

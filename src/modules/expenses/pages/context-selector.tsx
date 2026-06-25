@@ -1,5 +1,6 @@
 import { useGetIdentity, useList, useGo } from "@refinedev/core";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router";
 import { ResponsiveDialog } from "@/components/refine-ui/responsive-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,11 +45,14 @@ const RECENT_MAX = 3;
 
 export const ExpenseContextSelector = () => {
   const go = useGo();
+  const [searchParams] = useSearchParams();
   const { tap } = useHaptics();
   const { data: identity } = useGetIdentity<Profile>();
   const { recentAll, addRecent } = useRecentExpenseContexts(identity?.id);
   const [search, setSearch] = useState("");
   const [showAllRecents, setShowAllRecents] = useState(false);
+  const requestedCounterpartyId =
+    searchParams.get("with") || searchParams.get("friendId");
 
   const { query: groupsQuery } = useList({
     resource: "group_members",
@@ -96,6 +100,20 @@ export const ExpenseContextSelector = () => {
   const friendships = friendshipsQuery.data?.data || [];
   const loadingGroups = groupsQuery.isLoading;
   const loadingFriendships = friendshipsQuery.isLoading;
+
+  const requestedFriendshipId = useMemo(() => {
+    if (!requestedCounterpartyId || !identity?.id) return null;
+
+    const match = friendships.find((friendship) => {
+      return (
+        friendship.id === requestedCounterpartyId ||
+        friendship.user_a === requestedCounterpartyId ||
+        friendship.user_b === requestedCounterpartyId
+      );
+    });
+
+    return match?.id ?? null;
+  }, [friendships, identity?.id, requestedCounterpartyId]);
 
   // Normalize groups into unified option shape
   const groupOptions: ExpenseContextOption[] = useMemo(
@@ -165,6 +183,13 @@ export const ExpenseContextSelector = () => {
   useEffect(() => {
     if (!identity) return;
     if (loadingGroups || loadingFriendships) return;
+    if (requestedFriendshipId) {
+      go({
+        to: `/friends/${requestedFriendshipId}/expenses/create`,
+        type: "replace",
+      });
+      return;
+    }
     if (groups.length === 1 && friendships.length === 0) {
       go({ to: `/groups/${groups[0].id}/expenses/create`, type: "replace" });
     } else if (friendships.length === 1 && groups.length === 0) {
@@ -179,6 +204,7 @@ export const ExpenseContextSelector = () => {
     friendships.length,
     loadingGroups,
     loadingFriendships,
+    requestedFriendshipId,
     go,
   ]);
 
