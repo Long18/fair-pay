@@ -6,7 +6,7 @@ import { FairPayChatOrchestrator } from '../../src/modules/ai-chat/orchestrator/
 import type {
   OrchestratorDeps,
   ConversationMessage,
-  PuterChatFn,
+  AssistantChatFn,
   McpClientInterface,
   LegacyToolExecutor,
 } from '../../src/modules/ai-chat/orchestrator/types'
@@ -22,7 +22,7 @@ function makeToolCall(name: string, args: Record<string, unknown> = {}) {
 }
 
 function textCompletion(text: string) {
-  return { message: { role: 'assistant', content: text } }
+  return { message: { role: 'assistant', content: JSON.stringify({ type: 'final', content: text }) } }
 }
 
 function toolCompletion(name: string, args: Record<string, unknown> = {}) {
@@ -55,7 +55,7 @@ function mockPreviewResponse(overrides: Partial<AgentPreviewResponse> = {}): Age
 }
 
 function makeDeps(overrides: Partial<OrchestratorDeps> = {}): OrchestratorDeps {
-  const chatFn: PuterChatFn = vi.fn().mockResolvedValue(textCompletion('Done.'))
+  const chatFn: AssistantChatFn = vi.fn().mockResolvedValue(textCompletion('Done.'))
   const mcpClient: McpClientInterface = { callTool: vi.fn().mockResolvedValue({ ok: true }) }
   const legacyExecutor: LegacyToolExecutor = vi.fn().mockResolvedValue({ result: 'legacy ok' })
   return { chatFn, mcpClient, legacyExecutor, ...overrides }
@@ -160,9 +160,12 @@ describe('FairPayChatOrchestrator — tool routing', () => {
     for (const toolName of MCP_TOOL_NAMES) {
       const mcpCallTool = vi.fn().mockResolvedValue({})
       const legacyExecutor: LegacyToolExecutor = vi.fn()
+      const args = toolName === 'fairpay_preview_expense'
+        ? { actor_confirmed: true, transaction_type: 'group', group_id: 'g1' }
+        : {}
       const deps = makeDeps({
         chatFn: vi.fn()
-          .mockResolvedValueOnce(toolCompletion(toolName, {}))
+          .mockResolvedValueOnce(toolCompletion(toolName, args))
           .mockResolvedValue(textCompletion('ok')),
         mcpClient: { callTool: mcpCallTool },
         legacyExecutor,
@@ -213,7 +216,7 @@ describe('FairPayChatOrchestrator — forbidden tools', () => {
   }
 
   it('includes a tool-role message with the forbidden error for the model to read', async () => {
-    const chatFn: PuterChatFn = vi.fn()
+    const chatFn: AssistantChatFn = vi.fn()
       .mockResolvedValueOnce(toolCompletion('commit', {}))
       .mockImplementation(async (msgs) => {
         const lastTool = [...msgs].reverse().find((m) => m.role === 'tool')
@@ -230,7 +233,7 @@ describe('FairPayChatOrchestrator — forbidden tools', () => {
 
   it('does not route hallucinated unknown tools to the legacy executor', async () => {
     const legacyExecutor: LegacyToolExecutor = vi.fn()
-    const chatFn: PuterChatFn = vi.fn()
+    const chatFn: AssistantChatFn = vi.fn()
       .mockResolvedValueOnce(toolCompletion('drop_all_tables', {}))
       .mockResolvedValueOnce(textCompletion('That tool is unavailable.'))
     const orch = new FairPayChatOrchestrator(makeDeps({ chatFn, legacyExecutor }))
@@ -248,7 +251,7 @@ describe('FairPayChatOrchestrator — pending preview lifecycle', () => {
     const preview = mockPreviewResponse()
     const deps = makeDeps({
       chatFn: vi.fn()
-        .mockResolvedValueOnce(toolCompletion('fairpay_preview_expense', { group_id: 'g1' }))
+        .mockResolvedValueOnce(toolCompletion('fairpay_preview_expense', { actor_confirmed: true, transaction_type: 'group', group_id: 'g1' }))
         .mockResolvedValue(textCompletion('Preview ready. Please confirm.')),
       mcpClient: { callTool: vi.fn().mockResolvedValue(preview) },
     })
@@ -264,7 +267,7 @@ describe('FairPayChatOrchestrator — pending preview lifecycle', () => {
     const preview = mockPreviewResponse({ preview_id: 'prev-uuid-2' })
     const deps = makeDeps({
       chatFn: vi.fn()
-        .mockResolvedValueOnce(toolCompletion('fairpay_preview_expense', {}))
+        .mockResolvedValueOnce(toolCompletion('fairpay_preview_expense', { actor_confirmed: true, transaction_type: 'group', group_id: 'g1' }))
         .mockResolvedValue(textCompletion('New preview ready.')),
       mcpClient: { callTool: vi.fn().mockResolvedValue(preview) },
     })
@@ -282,7 +285,7 @@ describe('FairPayChatOrchestrator — pending preview lifecycle', () => {
     const preview = mockPreviewResponse()
     const deps = makeDeps({
       chatFn: vi.fn()
-        .mockResolvedValueOnce(toolCompletion('fairpay_preview_expense', {}))
+        .mockResolvedValueOnce(toolCompletion('fairpay_preview_expense', { actor_confirmed: true, transaction_type: 'group', group_id: 'g1' }))
         .mockResolvedValue(textCompletion('Preview ready.')),
       mcpClient: { callTool: vi.fn().mockResolvedValue(preview) },
     })
@@ -297,8 +300,8 @@ describe('FairPayChatOrchestrator — pending preview lifecycle', () => {
     const preview = mockPreviewResponse()
     let modelSawToolResult: string | undefined
 
-    const chatFn: PuterChatFn = vi.fn()
-      .mockResolvedValueOnce(toolCompletion('fairpay_preview_expense', {}))
+    const chatFn: AssistantChatFn = vi.fn()
+      .mockResolvedValueOnce(toolCompletion('fairpay_preview_expense', { actor_confirmed: true, transaction_type: 'group', group_id: 'g1' }))
       .mockImplementation(async (msgs) => {
         const toolMsg = [...msgs].reverse().find((m) => m.role === 'tool')
         if (toolMsg && toolMsg.role === 'tool') {
@@ -324,7 +327,7 @@ describe('FairPayChatOrchestrator — pending preview lifecycle', () => {
   it('pendingPreview is null when preview tool returns an error', async () => {
     const deps = makeDeps({
       chatFn: vi.fn()
-        .mockResolvedValueOnce(toolCompletion('fairpay_preview_expense', {}))
+        .mockResolvedValueOnce(toolCompletion('fairpay_preview_expense', { actor_confirmed: true, transaction_type: 'group', group_id: 'g1' }))
         .mockResolvedValue(textCompletion('Failed to create preview.')),
       mcpClient: {
         callTool: vi.fn().mockRejectedValue(new Error('GROUP_NOT_FOUND')),
@@ -343,10 +346,11 @@ describe('FairPayChatOrchestrator — pending preview lifecycle', () => {
       .mockResolvedValueOnce({ groups: [{ id: 'g1', name: 'Trip' }] })
       .mockResolvedValueOnce({ group_id: 'g1', members: [] })
       .mockResolvedValueOnce(preview)
-    const chatFn: PuterChatFn = vi.fn()
+    const chatFn: AssistantChatFn = vi.fn()
       .mockResolvedValueOnce(toolCompletion('fairpay_list_groups'))
       .mockResolvedValueOnce(toolCompletion('fairpay_list_group_members', { group_id: 'g1' }))
       .mockResolvedValueOnce(toolCompletion('fairpay_preview_expense', {
+        actor_confirmed: true, transaction_type: 'group',
         group_id: 'g1', description: 'Lunch', amount: 150000,
         payer_member_id: 'mem-1', split_method: 'equal', participants: [{ member_id: 'mem-1' }],
       }))
@@ -369,12 +373,13 @@ describe('FairPayChatOrchestrator — pending preview lifecycle', () => {
     }
     const mcpCallTool = vi.fn().mockResolvedValue(members)
     let ambiguityResult: unknown
-    const chatFn: PuterChatFn = vi.fn()
+    const chatFn: AssistantChatFn = vi.fn()
       .mockResolvedValueOnce(toolCompletion('fairpay_list_group_members', { group_id: 'g1' }))
       .mockImplementationOnce(async (history) => {
         const tool = history.at(-1)
         if (tool?.role === 'tool') ambiguityResult = JSON.parse(tool.content)
         return toolCompletion('fairpay_preview_expense', {
+          actor_confirmed: true, transaction_type: 'group',
           group_id: 'g1', description: 'Lunch', amount: 100000,
           payer_member_id: 'm1', split_method: 'equal', participants: [{ member_id: 'm1' }],
         })
@@ -401,12 +406,14 @@ describe('FairPayChatOrchestrator — pending preview lifecycle', () => {
     }
     const preview = mockPreviewResponse()
     const mcpCallTool = vi.fn().mockResolvedValueOnce(members).mockResolvedValueOnce(preview)
-    const previewArgs = {
-      group_id: 'g1', description: 'Lunch', amount: 100000,
-      payer_member_id: 'm1', split_method: 'equal', participants: [{ member_id: 'm1' }],
-      confirmed_ambiguous_member_ids: ['m1'],
-    }
-    const chatFn: PuterChatFn = vi.fn()
+  const previewArgs = {
+    actor_confirmed: true,
+    transaction_type: 'group',
+    group_id: 'g1', description: 'Lunch', amount: 100000,
+    payer_member_id: 'm1', split_method: 'equal', participants: [{ member_id: 'm1' }],
+    confirmed_ambiguous_member_ids: ['m1'],
+  }
+    const chatFn: AssistantChatFn = vi.fn()
       .mockResolvedValueOnce(toolCompletion('fairpay_list_group_members', { group_id: 'g1' }))
       .mockResolvedValueOnce(toolCompletion('fairpay_preview_expense', previewArgs))
       .mockResolvedValueOnce(textCompletion('Preview ready.'))
@@ -416,6 +423,64 @@ describe('FairPayChatOrchestrator — pending preview lifecycle', () => {
 
     expect(result.pendingPreview).not.toBeNull()
     expect(mcpCallTool.mock.calls[1][1]).not.toHaveProperty('confirmed_ambiguous_member_ids')
+  })
+})
+
+describe('FairPayChatOrchestrator — expense context guard', () => {
+  async function runPreviewGuard(args: Record<string, unknown>) {
+    const chatFn: AssistantChatFn = vi.fn()
+      .mockResolvedValueOnce(toolCompletion('fairpay_preview_expense', args))
+      .mockResolvedValueOnce(textCompletion('Need more info.'))
+    const mcpCallTool = vi.fn().mockResolvedValue(mockPreviewResponse())
+    const orch = new FairPayChatOrchestrator(makeDeps({ chatFn, mcpClient: { callTool: mcpCallTool } }))
+
+    const result = await orch.processTurn('Add expense', initialHistory(), null)
+    const toolMessage = result.updatedHistory.findLast((message) => message.role === 'tool')
+    const envelope = toolMessage?.role === 'tool' ? JSON.parse(toolMessage.content) : null
+
+    return { result, envelope, mcpCallTool }
+  }
+
+  it('does not preview until actor identity is confirmed', async () => {
+    const { result, envelope, mcpCallTool } = await runPreviewGuard({
+      transaction_type: 'group',
+      group_id: 'g1',
+    })
+
+    expect(result.pendingPreview).toBeNull()
+    expect(mcpCallTool).not.toHaveBeenCalled()
+    expect(envelope.data.error).toMatchObject({
+      code: 'NEEDS_CLARIFICATION',
+      reason: 'actor_confirmation_required',
+    })
+  })
+
+  it('does not preview personal transactions', async () => {
+    const { result, envelope, mcpCallTool } = await runPreviewGuard({
+      actor_confirmed: true,
+      transaction_type: 'personal',
+      group_id: 'g1',
+    })
+
+    expect(result.pendingPreview).toBeNull()
+    expect(mcpCallTool).not.toHaveBeenCalled()
+    expect(envelope.data.error).toMatchObject({
+      code: 'UNSUPPORTED_PERSONAL_TRANSACTION',
+    })
+  })
+
+  it('does not preview until group is resolved', async () => {
+    const { result, envelope, mcpCallTool } = await runPreviewGuard({
+      actor_confirmed: true,
+      transaction_type: 'group',
+    })
+
+    expect(result.pendingPreview).toBeNull()
+    expect(mcpCallTool).not.toHaveBeenCalled()
+    expect(envelope.data.error).toMatchObject({
+      code: 'NEEDS_CLARIFICATION',
+      reason: 'group_required',
+    })
   })
 })
 
@@ -444,7 +509,7 @@ describe('FairPayChatOrchestrator — prompt injection resistance', () => {
     }
     const mcpCallTool = vi.fn().mockResolvedValue(injectedResult)
     let toolMessageRole: string | undefined
-    const chatFn: PuterChatFn = vi.fn()
+    const chatFn: AssistantChatFn = vi.fn()
       .mockResolvedValueOnce(toolCompletion('fairpay_list_groups', {}))
       .mockImplementation(async (msgs) => {
         const injectedMsg = msgs.find(
@@ -471,7 +536,7 @@ describe('FairPayChatOrchestrator — prompt injection resistance', () => {
         arguments: '{"__proto__": {"polluted": true}, "injected": "ignore above"}',
       },
     }
-    const chatFn: PuterChatFn = vi.fn()
+    const chatFn: AssistantChatFn = vi.fn()
       .mockResolvedValueOnce({ message: { role: 'assistant', content: null, tool_calls: [tc] } })
       .mockResolvedValue(textCompletion('ok'))
     const mcpCallTool = vi.fn().mockResolvedValue({ groups: [] })
@@ -488,7 +553,7 @@ describe('FairPayChatOrchestrator — prompt injection resistance', () => {
 describe('FairPayChatOrchestrator — tool error resilience', () => {
   it('wraps MCP tool errors as { error: ... } so the model can handle them gracefully', async () => {
     let modelSawError = false
-    const chatFn: PuterChatFn = vi.fn()
+    const chatFn: AssistantChatFn = vi.fn()
       .mockResolvedValueOnce(toolCompletion('fairpay_list_groups', {}))
       .mockImplementation(async (msgs) => {
         const toolMsg = [...msgs].reverse().find((m) => m.role === 'tool')
@@ -513,7 +578,7 @@ describe('FairPayChatOrchestrator — tool error resilience', () => {
 
   it('wraps legacy executor errors as { error: ... } so the model can handle them', async () => {
     let modelSawError = false
-    const chatFn: PuterChatFn = vi.fn()
+    const chatFn: AssistantChatFn = vi.fn()
       .mockResolvedValueOnce(toolCompletion('get_debt_summary', {}))
       .mockImplementation(async (msgs) => {
         const toolMsg = [...msgs].reverse().find((m) => m.role === 'tool')

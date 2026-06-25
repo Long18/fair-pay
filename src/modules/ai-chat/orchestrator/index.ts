@@ -7,9 +7,9 @@ export { PHASE3_TOOL_DEFINITIONS, MCP_TOOL_NAMES, LEGACY_TOOL_NAMES } from './to
 export type {
   ConversationMessage,
   ProcessTurnResult,
-  PuterToolCall,
-  PuterChatFn,
-  PuterChatCompletion,
+  AssistantToolCall,
+  AssistantChatFn,
+  AssistantChatCompletion,
   OrchestratorDeps,
   LegacyToolExecutor,
   McpClientInterface,
