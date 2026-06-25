@@ -4,6 +4,7 @@ import { useHaptics } from "@/hooks/use-haptics";
 import { Profile } from "@/modules/profile/types";
 import { FloatingActionButton } from "@/components/dashboard/core/FloatingActionButton";
 import { DashboardLoadingBeam } from "@/components/dashboard/core/DashboardLoadingBeam";
+import { DashboardInsightPanel } from "@/components/dashboard/insights/DashboardInsightPanel";
 import { BalanceTable } from "@/components/dashboard/balance/BalanceTable";
 import { SettledHistoryList } from "@/components/dashboard/activity/SettledHistoryList";
 import { EnhancedActivityList } from "@/components/dashboard/activity/enhanced-activity";
@@ -145,6 +146,36 @@ export const Dashboard = () => {
     }));
   }, [debts]);
 
+  const dashboardInsightContext = useMemo(() => ({
+    activeTab,
+    balances: balances.map((balance) => ({
+      counterparty_name: balance.counterparty_name,
+      amount: balance.amount,
+      currency: balance.currency,
+      is_owed: !balance.i_owe_them,
+      transaction_count: balance.transaction_count,
+      last_transaction_date: balance.last_transaction_date,
+    })),
+    recentActivities: activities.map((activity) => ({
+      type: activity.type,
+      description: activity.description,
+      amount: activity.amount,
+      currency: activity.currency,
+      date: activity.date,
+      groupName: activity.groupName,
+      paymentState: activity.paymentState,
+    })),
+    historyActivities: historyActivities.map((activity) => ({
+      type: activity.type,
+      description: activity.description,
+      amount: activity.amount,
+      currency: activity.currency,
+      date: activity.date,
+      groupName: activity.groupName,
+      paymentState: activity.paymentState,
+    })),
+  }), [activeTab, balances, activities, historyActivities]);
+
   return (
     <>
       {loading ? (
@@ -227,6 +258,8 @@ export const Dashboard = () => {
               </div>
             </div>
             </ScrollReveal>
+
+            <DashboardInsightPanel context={dashboardInsightContext} />
 
             {/* Tab Content */}
             <div className="mt-6">
