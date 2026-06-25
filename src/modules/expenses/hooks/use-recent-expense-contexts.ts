@@ -10,6 +10,7 @@ export type RecentContext = {
 };
 
 const MAX_STORED = 10;
+const MAX_RECENT = 3;
 
 export function useRecentExpenseContexts(userId: string | undefined) {
   const key = `fairpay_recent_expense_contexts_v1_${userId ?? "anon"}`;
@@ -18,21 +19,12 @@ export function useRecentExpenseContexts(userId: string | undefined) {
     []
   );
 
-  const recentGroups = useMemo(
+  // Unified recent list: sorted by timestamp across both types, top 3
+  const recentAll = useMemo(
     () =>
-      allRecents
-        .filter((r) => r.type === "group")
+      [...allRecents]
         .sort((a, b) => b.timestamp - a.timestamp)
-        .slice(0, 3),
-    [allRecents]
-  );
-
-  const recentFriends = useMemo(
-    () =>
-      allRecents
-        .filter((r) => r.type === "friend")
-        .sort((a, b) => b.timestamp - a.timestamp)
-        .slice(0, 3),
+        .slice(0, MAX_RECENT),
     [allRecents]
   );
 
@@ -43,17 +35,11 @@ export function useRecentExpenseContexts(userId: string | undefined) {
           (r) => !(r.id === ctx.id && r.type === ctx.type)
         );
         const updated = [{ ...ctx, timestamp: Date.now() }, ...deduped];
-        const groups = updated
-          .filter((r) => r.type === "group")
-          .slice(0, MAX_STORED);
-        const friends = updated
-          .filter((r) => r.type === "friend")
-          .slice(0, MAX_STORED);
-        return [...groups, ...friends];
+        return updated.slice(0, MAX_STORED * 2);
       });
     },
     [setAllRecents]
   );
 
-  return { recentGroups, recentFriends, addRecent };
+  return { recentAll, addRecent };
 }

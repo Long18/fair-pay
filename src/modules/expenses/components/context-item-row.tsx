@@ -3,6 +3,7 @@ import {
   Item,
   ItemActions,
   ItemContent,
+  ItemDescription,
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item";
@@ -36,6 +37,7 @@ type ContextItemRowProps = {
   name: string;
   type: "group" | "friend";
   avatarUrl?: string;
+  description?: string;
   onClick: () => void;
 };
 
@@ -43,6 +45,7 @@ export function ContextItemRow({
   name,
   type,
   avatarUrl,
+  description,
   onClick,
 }: ContextItemRowProps) {
   const initials = getInitials(name);
@@ -67,8 +70,21 @@ export function ContextItemRow({
         </ItemMedia>
         <ItemContent>
           <ItemTitle>{name}</ItemTitle>
+          {description && (
+            <ItemDescription className="text-xs">{description}</ItemDescription>
+          )}
         </ItemContent>
         <ItemActions>
+          <span
+            className={cn(
+              "rounded px-1.5 py-0.5 text-[10px] font-medium leading-none",
+              type === "group"
+                ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                : "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+            )}
+          >
+            {type === "group" ? "Group" : "Friend"}
+          </span>
           <ChevronRight className="size-4 text-muted-foreground/40" />
         </ItemActions>
       </button>
