@@ -1,244 +1,423 @@
 openapi: 3.1.0
 info:
   title: FairPay External Agent API
-  version: 1.0.0
   description: |
-    Public no-key API for external AI agents (ChatGPT, Claude, etc.) to submit
-    shared expense proposals to FairPay.
-
-    **No API key or authentication is required.**
-
-    Agents submit proposals only. Real expenses are created only after a
-    signed-in FairPay user approves the proposal inside the app.
-
-    ## Required flow
-    1. `GET /api/external-agent/context` — read capabilities, schemas, and examples.
-    2. Ask the user to confirm their FairPay name/email.
-    3. Ask whether the transaction is group or personal. Personal/1-on-1 agent-created transactions are not supported yet.
-    4. For group transactions, parse the user's natural-language input into a structured proposal.
-    5. `POST /api/external-agent-submissions` — submit the proposal only after actor and group confirmation.
-    6. Done — the FairPay user reviews and approves inside the website.
-
-    ## Probe mode
-    Sending an empty body or `{}` to `POST /api/external-agent-submissions`
-    returns the same capability document as `GET /api/external-agent/context`.
+    Submit shared expense proposals to FairPay via external agents (ChatGPT, Claude, etc.).
+    No API key required. Proposals are queued for FairPay user approval before any real expense is created.
+    
+    **Primary use:** ChatGPT and other agents generate group expense proposals from natural language.
+    Expenses are created only after the target FairPay user reviews and confirms in FairPay UI.
+  version: 1.0.0
+  contact:
+    name: FairPay Team
+    url: https://long-pay.vercel.app
 
 servers:
   - url: https://long-pay.vercel.app
-    description: FairPay production (Vercel)
+    description: FairPay production
+
+tags:
+  - name: Discovery
+    description: Health check and agent context
+  - name: Submissions
+    description: Submit group expense proposals
 
 paths:
   /api/health:
     get:
-      operationId: getHealth
-      summary: Check that the FairPay domain is reachable.
-      tags: [Utility]
-      security: []
+      tags:
+        - Discovery
+      summary: Health check
+      description: Verify FairPay is reachable. Use before calling other endpoints.
+      operationId: getFairPayHealth
       responses:
         '200':
-          description: Domain is reachable.
+          description: FairPay is reachable
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status: { type: string, example: ok }
-                  service: { type: string, example: FairPay }
+                $ref: '#/components/schemas/HealthResponse'
+              examples:
+                healthy:
+                  value:
+                    status: ok
+                    service: FairPay
+                    version: v1
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /api/external-agent/context:
     get:
-      operationId: getAgentContext
-      summary: Get the capability and onboarding document for this API.
+      tags:
+        - Discovery
+      summary: Agent capability document
       description: |
-        Returns a machine-readable document that describes all available
-        endpoints, request schemas, split-method rules, examples, error codes,
-        and DNS/network troubleshooting guidance.
-
-        Call this first so you understand the required flow before submitting.
-      tags: [Discovery]
-      security: []
+        Fetch the canonical agent instructions, validation rules, available APIs, and examples.
+        Call this first to orient yourself on the submission flow, split methods, and error handling.
+      operationId: getFairPayAgentContext
       responses:
         '200':
-          description: Capability document.
+          description: Agent context document
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentContextDocument'
+                $ref: '#/components/schemas/AgentContextResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /api/external-agent-submissions:
     post:
-      operationId: submitExpenseProposal
-      summary: Submit an expense proposal for a FairPay user to review.
+      tags:
+        - Submissions
+      summary: Submit a group expense proposal
       description: |
-        Submit a structured expense proposal. The proposal is queued; a FairPay
-        user or group admin must approve it before any real expense is created.
-
-        **Probe mode**: sending an empty body or `{}` returns the capability
-        document (same as `GET /api/external-agent/context`) so agents can
-        self-orient without a separate request.
-      tags: [Submissions]
-      security: []
+        Submit a group expense proposal for FairPay user approval.
+        
+        **Flow:**
+        1. User confirms their FairPay email/name.
+        2. Agent confirms transaction is group (not personal/1-on-1).
+        3. Agent confirms group name and participants.
+        4. Agent submits proposal with actor_confirmed=true.
+        5. User reviews and approves in FairPay UI; expense is then created.
+        
+        **Empty POST:** Send `{}` as a probe to get this context document (same as GET /context).
+      operationId: submitFairPayExpenseProposal
+      x-openai-isConsequential: true
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ExternalAgentSubmissionRequest'
+              $ref: '#/components/schemas/ExpenseProposal'
             examples:
-              two_person_split:
-                summary: Two-person equal split, target user paid
+              two_person_equal:
+                summary: Two people, equal split
                 value:
-                target_email: user@example.com
-                target_name: Example User
-                actor_confirmed: true
-                transaction_type: group
-                group_name: Core
+                  target_email: long.lnt@amanotes.com
+                  target_name: Thành Long
+                  actor_confirmed: true
+                  transaction_type: group
+                  group_name: Core
                   source: chatgpt
-                  description: Cà phê
+                  description: Trà sữa
                   amount: 50000
                   currency: VND
                   category: Food & Drink
+                  expense_date: '2026-06-25'
                   payer:
-                    email: user@example.com
+                    email: long.lnt@amanotes.com
                   split_method: equal
                   participants:
-                    - email: user@example.com
+                    - email: long.lnt@amanotes.com
                     - display_name: Anh Tâm
-              group_subset:
-                summary: Specific group members by name
+
+              group_equal_split:
+                summary: Group dinner, equal split
                 value:
-                target_email: user@example.com
-                actor_confirmed: true
-                transaction_type: group
-                group_name: Core
+                  target_email: user@example.com
+                  actor_confirmed: true
+                  transaction_type: group
+                  group_name: Core
                   source: chatgpt
-                  description: Massage
-                  amount: 500000
+                  description: Ăn tối
+                  amount: 600000
                   currency: VND
-                  category: Other
+                  category: Food & Drink
+                  expense_date: '2026-06-25'
                   payer:
                     email: user@example.com
                   split_method: equal
                   participants:
-                    - display_name: Anh Tâm
                     - email: user@example.com
+                    - display_name: Anh Tâm
                     - display_name: Thuần
+
+              exact_split:
+                summary: Exact split (each person has specific amount)
+                value:
+                  target_email: user@example.com
+                  actor_confirmed: true
+                  transaction_type: group
+                  group_name: Core
+                  source: chatgpt
+                  description: Ăn trưa chia lẻ
+                  amount: 300000
+                  currency: VND
+                  category: Food & Drink
+                  expense_date: '2026-06-25'
+                  payer:
+                    email: user@example.com
+                  split_method: exact
+                  participants:
+                    - email: user@example.com
+                      amount: 100000
+                    - display_name: Anh Tâm
+                      amount: 200000
+
+              fixed_then_equal:
+                summary: Fixed amounts + equal split remainder
+                value:
+                  target_email: user@example.com
+                  actor_confirmed: true
+                  transaction_type: group
+                  group_name: Core
+                  source: chatgpt
+                  description: Cơm trưa cơ sở + thêm đồ uống
+                  amount: 450000
+                  currency: VND
+                  category: Food & Drink
+                  expense_date: '2026-06-25'
+                  payer:
+                    email: user@example.com
+                  split_method: fixed_then_equal_remainder
+                  participants:
+                    - email: user@example.com
+                      fixed_amount: 150000
+                    - display_name: Anh Tâm
+                      fixed_amount: 150000
+                    - display_name: Thuần
+
       responses:
         '201':
-          description: Proposal queued successfully.
+          description: Proposal submitted successfully, queued for user approval
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SubmissionResponse'
-        '200':
-          description: Probe response — capability document returned for empty/bare-object body.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AgentContextDocument'
-        '422':
-          description: Validation error — request body failed schema checks.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
-          description: Rate limit exceeded — retry after ~60 seconds.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/SubmissionCreatedResponse'
+              example:
+                trace_id: tr_01JZABC123DEFG
+                submission_id: sub_01JZABC456HIJK
+                status: pending
+                expires_at: '2026-06-26T11:00:00Z'
+                approval_url: https://long-pay.vercel.app/agent-submissions/sub_01JZABC456HIJK
+                message: Submission queued for FairPay user approval
+
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '409':
-          description: Too many pending proposals for this target user.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '503':
-          description: Transport/DNS error reaching the FairPay backend.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
 components:
   schemas:
+    HealthResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+        - service
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        service:
+          type: string
+          const: FairPay
+        version:
+          type: string
+          example: v1
+
+    AgentContextResponse:
+      type: object
+      additionalProperties: true
+      required:
+        - service
+        - version
+        - base_url
+        - purpose
+        - required_flow
+        - available_apis
+        - request_shape
+        - validation_rules
+        - categories
+        - agent_instructions
+      properties:
+        service:
+          type: string
+          const: FairPay
+        version:
+          type: string
+          example: v1
+        base_url:
+          type: string
+          format: uri
+        purpose:
+          type: string
+          description: High-level purpose statement
+        required_flow:
+          type: array
+          items:
+            type: string
+          description: Ordered steps agents must follow
+        available_apis:
+          type: object
+          description: Available API endpoints and methods
+        request_shape:
+          type: object
+          description: Field-by-field documentation
+        validation_rules:
+          type: object
+          description: Constraints and rules to enforce
+        categories:
+          type: array
+          items:
+            type: string
+          description: Supported expense categories
+        agent_instructions:
+          type: array
+          items:
+            type: string
+          description: Best practices and security guidance
+        examples:
+          type: object
+          description: Canonical request examples
+
     ActorRef:
       type: object
       description: |
-        Reference to a person. Provide `email` when known; otherwise `display_name`.
-        At least one is required.
+        Reference to a FairPay person.
+        Prefer email when known; use display_name only when email is unknown.
+        Never invent email addresses or member IDs.
+      additionalProperties: false
       properties:
         email:
           type: string
           format: email
-          description: FairPay account email (preferred — unambiguous).
+          description: Stable email address of the person
         display_name:
           type: string
+          minLength: 1
           maxLength: 200
-          description: Person's display name. FairPay resolves it at approval time.
-      minProperties: 1
+          description: Human display name (used when email is unknown)
+      anyOf:
+        - required: [email]
+        - required: [display_name]
 
-    Participant:
+    ParticipantRef:
       allOf:
         - $ref: '#/components/schemas/ActorRef'
         - type: object
+          additionalProperties: false
           properties:
+            email:
+              type: string
+              format: email
+            display_name:
+              type: string
+              minLength: 1
+              maxLength: 200
             amount:
               type: integer
-              description: Per-person amount in integer VND. Required for `exact` split.
+              minimum: 0
+              description: |
+                (split_method=exact only) Amount this participant owes, in integer VND.
+                Sum of all participant amounts must equal the proposal total.
             fixed_amount:
               type: integer
-              description: Fixed portion in integer VND. Used with `fixed_then_equal_remainder`.
+              minimum: 0
+              description: |
+                (split_method=fixed_then_equal_remainder only) 
+                Fixed amount this participant owes, in integer VND.
+                Remaining amount is split equally among participants without fixed_amount.
 
-    ExternalAgentSubmissionRequest:
+    ExpenseProposal:
       type: object
-      required: [target_email, actor_confirmed, transaction_type, description, amount, currency, payer, split_method, participants]
+      additionalProperties: false
+      required:
+        - target_email
+        - actor_confirmed
+        - transaction_type
+        - description
+        - amount
+        - currency
+        - payer
+        - split_method
+        - participants
       properties:
         target_email:
           type: string
           format: email
-          description: FairPay account email of the user who should review this proposal.
+          description: |
+            FairPay account email that will review and approve this proposal.
+            Must be a real, confirmed FairPay user.
+
         target_name:
           type: string
+          minLength: 1
           maxLength: 200
-          description: Display name the user confirmed, when available.
+          description: |
+            (Optional) Display name the user confirmed during conversation.
+            Helps the user recognize their own proposal in FairPay UI.
+
         actor_confirmed:
           type: boolean
-          const: true
-          description: Set to true only after asking the user to confirm their FairPay name/email.
+          enum: [true]
+          description: |
+            MUST be true. Set only after asking the user to confirm:
+            "Bạn có phải là <name/email> không?" (Vietnamese)
+            "Is your FairPay email <email>?" (English)
+            
+            Agents CANNOT set this to true themselves; it requires explicit user confirmation.
+
         transaction_type:
           type: string
           enum: [group]
-          description: Only group submissions are accepted. If the user says personal/1-on-1, do not submit.
+          description: |
+            MUST be "group". Personal/1-on-1 transactions are not supported in v1.
+            If the user says "personal" or "1-on-1", do not submit; explain the limitation.
+
         group_id:
           type: string
           format: uuid
-          description: Stable group UUID (optional — use group_name if you don't have it).
+          description: |
+            (Optional) Stable FairPay group UUID, if already known.
+            When supplied, takes precedence over group_name.
+
         group_name:
           type: string
-          maxLength: 200
-          description: Human-readable group name, e.g. "Core". Required if group_id is omitted.
+          minLength: 1
+          maxLength: 120
+          description: |
+            (Required if group_id is missing) Human-readable FairPay group name.
+            Example: "Core", "Tech Team", "Weekend Trip".
+
         source:
           type: string
-          maxLength: 100
-          description: Identifier for your agent, e.g. "chatgpt".
+          minLength: 1
+          maxLength: 80
+          default: chatgpt
+          description: |
+            External agent name, for logging and attribution.
+            Example: "chatgpt", "claude-code", "fairpay-mcp".
+
         description:
           type: string
           minLength: 1
           maxLength: 200
-          description: Expense description.
+          description: |
+            Expense description. Examples: "Trà sữa", "Ăn tối", "Xăng xe".
+            Keep concise; use category for classification.
+
         amount:
           type: integer
           minimum: 1
           maximum: 9999999999
           description: |
-            Total amount in integer VND (no decimals).
-            Convert "50k" → 50000, "600 nghìn" → 600000.
+            Total expense amount in integer VND. No decimals.
+            50k = 50000, 600 nghìn = 600000, 1 triệu = 1000000.
+            Always convert currency to VND if needed.
+
         currency:
           type: string
           enum: [VND]
-          description: Only VND is supported.
+          default: VND
+          description: Only VND is supported in v1.
+
         category:
           type: string
           enum:
@@ -251,120 +430,270 @@ components:
             - Healthcare
             - Education
             - Other
+          default: Other
+          description: Expense category for reporting and filtering.
+
         expense_date:
           type: string
           format: date
-          description: YYYY-MM-DD. Defaults to today.
+          description: |
+            Expense date in YYYY-MM-DD format.
+            If omitted, defaults to the server's current date.
+
         comment:
           type: string
-          nullable: true
           maxLength: 1000
+          description: |
+            (Optional) Additional context visible to the FairPay user during approval.
+            Use for notes, receipts info, or explanations.
+
         payer:
           $ref: '#/components/schemas/ActorRef'
+          description: |
+            Person who paid the expense. Prefer email when known.
+            If payer participates in the split, include them in the participants list too.
+
         split_method:
           type: string
           enum: [equal, exact, fixed_then_equal_remainder]
           description: |
-            - `equal`: divide evenly; do NOT include amount/fixed_amount on participants.
-            - `exact`: every participant must have `amount`; sum must equal total.
-            - `fixed_then_equal_remainder`: some participants have `fixed_amount`; others share the rest equally.
+            **equal:** Divide total evenly among all participants.
+              - Do NOT include `amount` or `fixed_amount` on any participant.
+            
+            **exact:** Each participant has a specific amount.
+              - Every participant MUST include `amount`.
+              - Sum of all `amount` values MUST equal the proposal `amount`.
+            
+            **fixed_then_equal_remainder:** Some have fixed costs, rest split equally.
+              - Participants with fixed costs use `fixed_amount`.
+              - Participants without `fixed_amount` split the remainder equally.
+              - Use `fixed_amount`, not `amount`.
+
         participants:
           type: array
-          minItems: 1
+          minItems: 2
           maxItems: 100
+          description: |
+            People included in the split. 
+            - Include the payer if they also participate.
+            - No duplicates (by email or normalized display_name).
+            - Never invent email addresses or member IDs.
           items:
-            $ref: '#/components/schemas/Participant'
+            $ref: '#/components/schemas/ParticipantRef'
 
-    SubmissionResponse:
+      allOf:
+        # Require either group_id or group_name
+        - anyOf:
+            - required: [group_id]
+            - required: [group_name]
+        # Validate split method constraints
+        - if:
+            properties:
+              split_method:
+                const: exact
+          then:
+            properties:
+              participants:
+                items:
+                  required: [amount]
+        - if:
+            properties:
+              split_method:
+                const: equal
+          then:
+            properties:
+              participants:
+                items:
+                  not:
+                    anyOf:
+                      - required: [amount]
+                      - required: [fixed_amount]
+
+    SubmissionCreatedResponse:
       type: object
+      additionalProperties: false
+      required:
+        - trace_id
+        - submission_id
+        - status
+        - expires_at
+        - message
       properties:
         trace_id:
           type: string
-          format: uuid
-          description: Request trace ID for debugging.
+          description: Server trace ID for debugging; include in error reports
         submission_id:
           type: string
-          format: uuid
-          description: Stable ID for this proposal.
+          description: Unique FairPay submission ID
         status:
           type: string
-          example: pending
+          enum: [pending]
+          description: Proposal is pending FairPay user approval
         expires_at:
           type: string
           format: date-time
+          description: ISO 8601 timestamp when this pending proposal expires
+        approval_url:
+          type: string
+          format: uri
+          description: |
+            FairPay URL where the target user can review and approve this proposal.
+            Share this URL with the user if needed.
         message:
           type: string
-          example: Submission queued for FairPay approval
+          example: Submission queued for FairPay user approval
 
-    AgentContextDocument:
+    Problem:
       type: object
-      description: Machine-readable capability and onboarding document.
+      additionalProperties: false
+      required:
+        - trace_id
+        - type
+        - title
+        - status
+        - detail
       properties:
         trace_id:
           type: string
-          format: uuid
-        service:
+          description: Server trace ID for debugging
+        type:
           type: string
-          example: FairPay
-        version:
+          format: uri
+          description: Problem type URI
+        title:
           type: string
-          example: v1
-        base_url:
+          description: Short error title
+        status:
+          type: integer
+          description: HTTP status code
+        detail:
           type: string
-          example: https://long-pay.vercel.app
-        purpose:
+          description: Human-readable error detail
+        code:
           type: string
-        required_flow:
-          type: array
-          items: { type: string }
-        available_apis:
-          type: object
-          additionalProperties: { type: string }
-        request_shape:
-          type: object
-          additionalProperties: { type: string }
-        validation_rules:
-          type: object
-          additionalProperties: { type: string }
-        split_method_rules:
-          type: object
-          additionalProperties: { type: string }
-        categories:
-          type: array
-          items: { type: string }
-        resolution_note:
+          description: Stable FairPay error code
+        instance:
           type: string
-        examples:
-          type: object
-        common_errors:
-          type: object
-          additionalProperties: { type: string }
-        agent_instructions:
-          type: array
-          items: { type: string }
-        network_diagnostics:
-          type: object
+          format: uri
+          description: Reference to the specific instance that caused the error
 
-    ErrorResponse:
-      type: object
-      properties:
-        trace_id:
-          type: string
-          format: uuid
-        error:
-          type: object
-          required: [code, message]
+    ValidationProblem:
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          additionalProperties: false
           properties:
-            code:
-              type: string
-              description: Machine-readable error code.
-              examples:
-                - VALIDATION_ERROR
-                - RATE_LIMIT_EXCEEDED
-                - PENDING_LIMIT_EXCEEDED
-                - FAIRPAY_HOST_UNRESOLVED
-                - SUBMISSION_FAILED
-            message:
-              type: string
-            details:
-              description: Per-field validation issues when code is VALIDATION_ERROR.
+            errors:
+              type: array
+              minItems: 1
+              items:
+                type: object
+                additionalProperties: false
+                required:
+                  - path
+                  - message
+                properties:
+                  path:
+                    type: string
+                    description: |
+                      JSON path of the invalid field.
+                      Example: $.participants[1].email
+                  message:
+                    type: string
+                    description: Validation error message
+                  expected:
+                    type: string
+                    description: Expected format or constraint
+
+  responses:
+    BadRequest:
+      description: |
+        Malformed request body (invalid JSON, wrong Content-Type, etc).
+        The agent should re-check the request format.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            trace_id: tr_01JZABC789
+            type: https://long-pay.vercel.app/problems/bad-request
+            title: Bad Request
+            status: 400
+            detail: Request body must be valid JSON
+            code: bad_request
+
+    Conflict:
+      description: |
+        Duplicate or conflicting proposal (e.g., same proposal sent twice).
+        Retry with a different client_request_id or check if already approved.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            trace_id: tr_01JZABC789
+            type: https://long-pay.vercel.app/problems/duplicate-submission
+            title: Duplicate Submission
+            status: 409
+            detail: A proposal with this content already exists
+            code: duplicate_submission
+
+    ValidationError:
+      description: |
+        Validation error. One or more fields are invalid.
+        The agent must fix the fields listed in `errors` before retrying.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ValidationProblem'
+          example:
+            trace_id: tr_01JZABC789
+            type: https://long-pay.vercel.app/problems/validation-error
+            title: Validation Error
+            status: 422
+            detail: The expense proposal is invalid
+            code: validation_error
+            errors:
+              - path: $.participants[1].email
+                message: Participant must include email or display_name
+                expected: email | display_name
+              - path: $.amount
+                message: Amount must be a positive integer
+                expected: integer >= 1
+
+    RateLimitExceeded:
+      description: |
+        Rate limit exceeded. The agent should wait before retrying.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+            example: 60
+          description: Seconds to wait before retrying
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            trace_id: tr_01JZABC789
+            type: https://long-pay.vercel.app/problems/rate-limit-exceeded
+            title: Rate Limit Exceeded
+            status: 429
+            detail: Too many submissions. Please wait before trying again
+            code: rate_limit_exceeded
+
+    InternalServerError:
+      description: |
+        Unexpected server error. This is not the agent's fault.
+        Include the `trace_id` in any bug report to FairPay support.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            trace_id: tr_01JZABC789
+            type: https://long-pay.vercel.app/problems/internal-server-error
+            title: Internal Server Error
+            status: 500
+            detail: An unexpected error occurred
+            code: internal_server_error
