@@ -9,11 +9,11 @@ import { SPRING_DEFAULT } from "./animation";
  * positioning, and surface treatment across the app.
  */
 
-/** Z-index scale — bar below pills, backdrop above both for overlay. */
+/** Z-index scale — bar (bulk), backdrop (FAB overlay), pill (FAB items) in ascending order. */
 export const Z_FLOATING = {
   bar: 40,
+  backdrop: 45, // above page content and bar, but below pill so FAB items stay clickable
   pill: 50,
-  backdrop: 55,
 } as const;
 
 /** Bottom offsets. Mobile clears the bottom-nav (h-16 + buffer). */

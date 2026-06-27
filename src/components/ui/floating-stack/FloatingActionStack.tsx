@@ -78,7 +78,7 @@ export function FloatingActionStack({
         {isOpen && showBackdrop && children && (
           <motion.div
             className="fixed inset-0 bg-black/30 backdrop-blur-sm"
-            style={{ zIndex: Z_FLOATING.backdrop - 1 }}
+            style={{ zIndex: Z_FLOATING.backdrop }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
