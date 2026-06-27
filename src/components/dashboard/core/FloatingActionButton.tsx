@@ -1,20 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useGo } from "@refinedev/core";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
-import { useReducedMotion } from "@/hooks/ui/use-reduced-motion";
-import { SPRING_DEFAULT } from "@/lib/animation";
+import {
+  FloatingActionStack,
+  FloatingPillGroup,
+  FloatingPill,
+  type PillGroupItem,
+} from "@/components/ui/floating-stack";
+import {
+  PlusCircleIcon,
+  BanknoteIcon,
+  UsersIcon,
+  UserPlusIcon,
+  PlusIcon,
+  XIcon,
+} from "@/components/ui/icons";
 
-import { PlusCircleIcon, BanknoteIcon, UsersIcon, UserPlusIcon, PlusIcon, XIcon } from "@/components/ui/icons";
 interface FloatingActionButtonProps {
   disabled?: boolean;
 }
@@ -24,196 +27,91 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
   const go = useGo();
   const { t } = useTranslation();
   const { tap } = useHaptics();
-  const reducedMotion = useReducedMotion();
 
-  // Keyboard accessibility: Close on Escape key
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
-        setIsOpen(false);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener("keydown", handleEscape);
-      return () => document.removeEventListener("keydown", handleEscape);
-    }
-  }, [isOpen]);
-
-  const actions = [
+  const actions: PillGroupItem[] = [
     {
-      icon: PlusCircleIcon,
-      title: t('dashboard.addExpense'),
-      path: "/expenses/create",
-      color: "bg-primary hover:bg-primary/90",
-      hoverRing: "hover:ring-primary/20",
+      icon: <PlusCircleIcon className="h-5 w-5" />,
+      label: t("dashboard.addExpense"),
+      onClick: () => { tap(); go({ to: "/expenses/create" }); setIsOpen(false); },
+      ariaLabel: t("dashboard.addExpense"),
+      "data-track-id": "cta:fab:expenses:create",
+      "data-track-category": "dashboard",
     },
     {
-      icon: BanknoteIcon,
-      title: t('dashboard.settleUp'),
-      path: "/payments/create",
-      color: "bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600",
-      hoverRing: "hover:ring-green-500/20",
+      icon: <BanknoteIcon className="h-5 w-5" />,
+      label: t("dashboard.settleUp"),
+      onClick: () => { tap(); go({ to: "/payments/create" }); setIsOpen(false); },
+      ariaLabel: t("dashboard.settleUp"),
+      "data-track-id": "cta:fab:payments:create",
+      "data-track-category": "dashboard",
     },
     {
-      icon: UsersIcon,
-      title: t('dashboard.createGroup'),
-      path: "/groups/create",
-      color: "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600",
-      hoverRing: "hover:ring-blue-500/20",
+      icon: <UsersIcon className="h-5 w-5" />,
+      label: t("dashboard.createGroup"),
+      onClick: () => { tap(); go({ to: "/groups/create" }); setIsOpen(false); },
+      ariaLabel: t("dashboard.createGroup"),
+      "data-track-id": "cta:fab:groups:create",
+      "data-track-category": "dashboard",
     },
     {
-      icon: UserPlusIcon,
-      title: t('dashboard.inviteFriend'),
-      path: "/friends",
-      color: "bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600",
-      hoverRing: "hover:ring-purple-500/20",
+      icon: <UserPlusIcon className="h-5 w-5" />,
+      label: t("dashboard.inviteFriend"),
+      onClick: () => { tap(); go({ to: "/friends" }); setIsOpen(false); },
+      ariaLabel: t("dashboard.inviteFriend"),
+      "data-track-id": "cta:fab:friends",
+      "data-track-category": "dashboard",
     },
   ];
 
-  const handleClick = (path: string) => {
-    tap();
-    go({ to: path });
-    setIsOpen(false);
-  };
-
-  const toggleMenu = () => {
-    tap();
-    setIsOpen(!isOpen);
-  };
-
   // Hide FAB for unauthenticated users
-  if (disabled) {
-    return null;
-  }
+  if (disabled) return null;
 
   return (
-    <>
-      {/* Enhanced backdrop with smooth blur */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 animate-in fade-in duration-200"
-          onClick={() => setIsOpen(false)}
-          aria-hidden="true"
-        />
-      )}
+    <FloatingActionStack
+      side="right"
+      isOpen={isOpen}
+      onClose={() => setIsOpen(false)}
+      trigger={
+        <FloatingPill
+          variant="primary"
+          size="lg"
+          ariaLabel={isOpen ? t("dashboard.closeMenu") : t("dashboard.quickActions")}
+          ariaExpanded={isOpen}
+          ariaHasPopup="menu"
+          onClick={() => { tap(); setIsOpen(!isOpen); }}
+          dataAttributes={{ "data-onboarding-target": "fab-button" }}
+          data-track-id="cta:fab:toggle"
+          data-track-event="cta_click"
+          data-track-type="button"
+          data-track-category="dashboard"
+          className={cn(isOpen && "ring-4 ring-primary/30 shadow-2xl")}
+        >
+          {/* Animated glow ring behind button */}
+          <div
+            className={cn(
+              "absolute inset-0 rounded-full bg-primary/20 blur-md -z-10",
+              "transition-opacity duration-300",
+              isOpen ? "opacity-100 animate-pulse" : "opacity-0"
+            )}
+          />
 
-      {/* FAB Container */}
-      <motion.div
-        className="fixed bottom-6 right-6 z-50 flex flex-col-reverse items-end gap-3"
-        initial={reducedMotion ? false : { scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={reducedMotion ? undefined : { ...SPRING_DEFAULT, delay: 0.3 }}
-      >
-        <TooltipProvider delayDuration={300}>
-          {/* Speed Dial Actions with staggered animation */}
-          {isOpen && (
-            <div className="flex flex-col-reverse gap-3">
-              {actions.map((action, index) => (
-                <Tooltip key={index}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="icon"
-                      onClick={() => handleClick(action.path)}
-                      data-track-id={`cta:fab:${action.path.replace(/\//g, ":").replace(/^:+/, "")}`}
-                      data-track-event="cta_click"
-                      data-track-type="button"
-                      data-track-category="dashboard"
-                      className={cn(
-                        "h-12 w-12 md:h-14 md:w-14 rounded-xl text-white shadow-lg",
-                        "transition-all duration-150 ease-out",
-                        "hover:scale-110 active:scale-95",
-                        "hover:shadow-xl hover:ring-4",
-                        "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2",
-                        "relative overflow-visible group",
-                        action.color,
-                        action.hoverRing,
-                        // Smooth entrance animation
-                        "animate-in fade-in slide-in-from-bottom-1 zoom-in-95 duration-200"
-                      )}
-                      style={{
-                        animationDelay: `${index * 40}ms`,
-                        animationFillMode: "backwards",
-                      }}
-                      aria-label={action.title}
-                    >
-                      {/* Subtle glow on hover */}
-                      <div className="absolute inset-0 rounded-xl bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" />
-
-                      {/* Icon with subtle scale on hover */}
-                      <div className="relative z-10 transition-transform duration-150 group-hover:scale-110">
-                        <action.icon className="h-5 w-5 md:h-6 md:w-6" fill="currentColor" />
-                      </div>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="left"
-                    className="font-medium shadow-lg"
-                  >
-                    {action.title}
-                  </TooltipContent>
-                </Tooltip>
-              ))}
-            </div>
-          )}
-
-          {/* Main FAB with enhanced depth and modern effects */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                onClick={toggleMenu}
-                data-onboarding-target="fab-button"
-                data-track-id="cta:fab:toggle"
-                data-track-event="cta_click"
-                data-track-type="button"
-                data-track-category="dashboard"
-                className={cn(
-                  "h-14 w-14 md:h-16 md:w-16 rounded-2xl shadow-xl",
-                  "bg-primary hover:bg-primary/90 text-primary-foreground",
-                  "transition-all duration-200 ease-out",
-                  "hover:scale-110 active:scale-95",
-                  "hover:shadow-2xl hover:ring-4 hover:ring-primary/30",
-                  "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/40 focus-visible:ring-offset-2",
-                  "relative overflow-visible group",
-                  isOpen && "scale-110 shadow-2xl ring-4 ring-primary/30"
-                )}
-                aria-label={isOpen ? t('dashboard.closeMenu') : t('dashboard.quickActions')}
-                aria-expanded={isOpen}
-                aria-haspopup="menu"
-              >
-                {/* Animated glow ring */}
-                <div className={cn(
-                  "absolute inset-0 rounded-2xl bg-primary/20 blur-md -z-10",
-                  "transition-opacity duration-300",
-                  isOpen ? "opacity-100 animate-pulse" : "opacity-0 group-hover:opacity-60"
-                )} />
-
-                {/* Gradient overlay for depth */}
-                <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-white/5 to-transparent rounded-2xl pointer-events-none" />
-
-                {/* Icon with enhanced animation */}
-                <div className={cn(
-                  "relative z-10 transition-all duration-200",
-                  isOpen ? "rotate-45 scale-110" : "rotate-0 scale-100"
-                )}>
-                  {isOpen ? (
-                    <XIcon className="h-6 w-6 md:h-7 md:w-7" fill="currentColor" />
-                  ) : (
-                    <PlusIcon className="h-6 w-6 md:h-7 md:w-7" fill="currentColor" />
-                  )}
-                </div>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent
-              side="left"
-              className="font-medium shadow-lg"
-            >
-              {isOpen ? t('dashboard.closeMenu') : t('dashboard.quickActions')}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </motion.div>
-    </>
+          {/* Rotating +/X icon */}
+          <div
+            className={cn(
+              "relative z-10 transition-all duration-200",
+              isOpen ? "rotate-45" : "rotate-0"
+            )}
+          >
+            {isOpen ? (
+              <XIcon className="h-6 w-6" fill="currentColor" />
+            ) : (
+              <PlusIcon className="h-6 w-6" fill="currentColor" />
+            )}
+          </div>
+        </FloatingPill>
+      }
+    >
+      <FloatingPillGroup pills={actions} isOpen={isOpen} direction="up" />
+    </FloatingActionStack>
   );
 }
