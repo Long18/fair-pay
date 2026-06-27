@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { InboxIcon, CheckCircleIcon, XIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { FloatingActionStack, FloatingPill } from "@/components/ui/floating-stack";
 
 type SubmissionPayload = {
   description: string;
@@ -201,18 +202,18 @@ export function ExternalAgentSubmissionInbox() {
   return (
     <>
       {showLauncher && (
-        <div className="fixed bottom-6 right-6 z-50">
-          <Button
-            type="button"
-            className="shadow-lg"
-            onClick={() => setDismissed(false)}
-            aria-label={`Review ${pendingCount} pending agent submissions`}
-          >
-            <InboxIcon size={16} />
-            Agent submissions
-            <Badge variant="secondary">{pendingCount}</Badge>
-          </Button>
-        </div>
+        <FloatingActionStack
+          side="right"
+          trigger={
+            <FloatingPill
+              icon={<InboxIcon className="h-4 w-4" />}
+              label="Agent submissions"
+              badge={pendingCount}
+              onClick={() => setDismissed(false)}
+              ariaLabel={`Review ${pendingCount} pending agent submissions`}
+            />
+          }
+        />
       )}
 
       <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && setDismissed(true)}>

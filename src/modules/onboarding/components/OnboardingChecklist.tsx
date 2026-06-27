@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Sparkles, X, RotateCcw, ChevronRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { FloatingActionStack, FloatingPill } from "@/components/ui/floating-stack";
 import { useOnboardingProgress } from "../hooks/use-onboarding-progress";
 import { useOnboarding } from "./onboarding-provider";
 import { useTrackEvent } from "@/hooks/use-track-event";
@@ -44,7 +45,7 @@ function ProgressRing({ completed, total }: { completed: number; total: number }
         strokeDasharray={circumference}
         strokeDashoffset={strokeDashoffset}
         strokeLinecap="round"
-        className="text-primary transition-all duration-500"
+        className="text-primary-foreground/80 transition-all duration-500"
       />
     </svg>
   );
@@ -53,7 +54,7 @@ function ProgressRing({ completed, total }: { completed: number; total: number }
 // ─── Main component ───────────────────────────────────────────────────────────
 
 /**
- * Floating checklist widget — fixed bottom-right, expands into a popover.
+ * Floating checklist widget — right-side FloatingActionStack, expands into a popover.
  * Integrates with OnboardingProvider to replay the spotlight tutorial.
  */
 export function OnboardingChecklist() {
@@ -83,7 +84,25 @@ export function OnboardingChecklist() {
   };
 
   return (
-    <div className="fixed bottom-24 right-4 z-50 flex flex-col items-end gap-2">
+    <FloatingActionStack
+      side="right"
+      isOpen={open}
+      onClose={() => setOpen(false)}
+      showBackdrop={false}
+      trigger={
+        <FloatingPill
+          variant="primary"
+          onClick={() => setOpen((v) => !v)}
+          badge={completedCount}
+          ariaLabel={t("onboarding.checklist.title", "Get started")}
+        >
+          {/* Circular progress ring overlaid on button */}
+          <ProgressRing completed={completedCount} total={totalCount} />
+          <Sparkles className="h-5 w-5 relative z-10" />
+        </FloatingPill>
+      }
+    >
+      {/* Popover panel — stacks above the trigger */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -182,22 +201,6 @@ export function OnboardingChecklist() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* FAB trigger button */}
-      <motion.button
-        onClick={() => setOpen((v) => !v)}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className="relative flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg"
-        aria-label={t("onboarding.checklist.title", "Get started")}
-      >
-        <ProgressRing completed={completedCount} total={totalCount} />
-        <Sparkles className="h-5 w-5 relative z-10" />
-        {/* Badge */}
-        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-background border text-[10px] font-bold text-primary">
-          {completedCount}
-        </span>
-      </motion.button>
-    </div>
+    </FloatingActionStack>
   );
 }

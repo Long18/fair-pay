@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ChevronUpIcon } from "lucide-react";
+import { FloatingActionStack, FloatingPill } from "@/components/ui/floating-stack";
 
 export function ScrollToTop() {
   const [visible, setVisible] = useState(false);
@@ -19,13 +20,18 @@ export function ScrollToTop() {
 
   if (!visible) return null;
 
+  // Left-side stack so it doesn't collide with the right-side primary FAB stack
   return (
-    <button
-      onClick={scrollToTop}
-      className="fixed bottom-24 right-4 z-40 flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl animate-in fade-in zoom-in-95"
-      aria-label="Scroll to top"
-    >
-      <ChevronUpIcon className="h-5 w-5" />
-    </button>
+    <FloatingActionStack
+      side="left"
+      trigger={
+        <FloatingPill
+          size="sm"
+          icon={<ChevronUpIcon className="h-4 w-4" />}
+          ariaLabel="Scroll to top"
+          onClick={scrollToTop}
+        />
+      }
+    />
   );
 }
