@@ -118,5 +118,14 @@
     "settleUp": "Settle Up",
     "youWillReceive": "You Will Receive",
     "waiting": "Waiting"
+  },
+  "dashboard": {
+    "addExpense": "Add Expense",
+    "settleUp": "Settle Up",
+    "createGroup": "Create Group",
+    "inviteFriend": "Invite Friend",
+    "financialAssistant": "Financial Assistant",
+    "quickActions": "Quick Actions",
+    "closeMenu": "Close menu"
   }
 }

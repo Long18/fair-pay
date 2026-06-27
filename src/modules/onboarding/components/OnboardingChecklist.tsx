@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useGetIdentity } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
-import { Sparkles, X, RotateCcw, ChevronRight, Check } from "lucide-react";
+import { X, RotateCcw, ChevronRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { FloatingActionStack, FloatingPill } from "@/components/ui/floating-stack";
@@ -98,7 +98,12 @@ export function OnboardingChecklist() {
         >
           {/* Circular progress ring overlaid on button */}
           <ProgressRing completed={completedCount} total={totalCount} />
-          <Sparkles className="h-5 w-5 relative z-10" />
+          <img
+            src="/assets/fab/fab-onboarding-checklist.png"
+            alt=""
+            aria-hidden="true"
+            className="h-5 w-5 object-contain relative z-10"
+          />
         </FloatingPill>
       }
     >

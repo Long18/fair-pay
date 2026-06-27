@@ -11,16 +11,27 @@ import {
 } from "@/components/ui/floating-stack";
 import {
   PlusCircleIcon,
-  BanknoteIcon,
-  UsersIcon,
   UserPlusIcon,
-  PlusIcon,
-  XIcon,
 } from "@/components/ui/icons";
 
 interface FloatingActionButtonProps {
   disabled?: boolean;
 }
+
+// ─── Asset icon helpers ────────────────────────────────────────────────────────
+
+function FabIcon({ src, alt = "" }: { src: string; alt?: string }) {
+  return (
+    <img
+      src={src}
+      alt={alt}
+      aria-hidden={alt === ""}
+      className="h-5 w-5 object-contain"
+    />
+  );
+}
+
+// ─── Component ─────────────────────────────────────────────────────────────────
 
 export function FloatingActionButton({ disabled = false }: FloatingActionButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -38,7 +49,7 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
       "data-track-category": "dashboard",
     },
     {
-      icon: <BanknoteIcon className="h-5 w-5" />,
+      icon: <FabIcon src="/assets/fab/fab-settle-up.png" />,
       label: t("dashboard.settleUp"),
       onClick: () => { tap(); go({ to: "/payments/create" }); setIsOpen(false); },
       ariaLabel: t("dashboard.settleUp"),
@@ -46,7 +57,7 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
       "data-track-category": "dashboard",
     },
     {
-      icon: <UsersIcon className="h-5 w-5" />,
+      icon: <FabIcon src="/assets/fab/fab-create-group.png" />,
       label: t("dashboard.createGroup"),
       onClick: () => { tap(); go({ to: "/groups/create" }); setIsOpen(false); },
       ariaLabel: t("dashboard.createGroup"),
@@ -59,6 +70,18 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
       onClick: () => { tap(); go({ to: "/friends" }); setIsOpen(false); },
       ariaLabel: t("dashboard.inviteFriend"),
       "data-track-id": "cta:fab:friends",
+      "data-track-category": "dashboard",
+    },
+    {
+      icon: <FabIcon src="/assets/fab/fab-financial-assistant.png" />,
+      label: t("dashboard.financialAssistant"),
+      onClick: () => {
+        tap();
+        window.dispatchEvent(new CustomEvent("fairpay:open-chat"));
+        setIsOpen(false);
+      },
+      ariaLabel: t("dashboard.financialAssistant"),
+      "data-track-id": "cta:fab:ai-chat",
       "data-track-category": "dashboard",
     },
   ];
@@ -95,18 +118,14 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
             )}
           />
 
-          {/* Rotating +/X icon */}
-          <div
-            className={cn(
-              "relative z-10 transition-all duration-200",
-              isOpen ? "rotate-45" : "rotate-0"
-            )}
-          >
-            {isOpen ? (
-              <XIcon className="h-6 w-6" fill="currentColor" />
-            ) : (
-              <PlusIcon className="h-6 w-6" fill="currentColor" />
-            )}
+          {/* Trigger icon — swaps between quick-actions and close asset */}
+          <div className="relative z-10 transition-all duration-200">
+            <img
+              src={isOpen ? "/assets/fab/fab-close.png" : "/assets/fab/fab-quick-actions.png"}
+              alt=""
+              aria-hidden="true"
+              className="h-6 w-6 object-contain"
+            />
           </div>
         </FloatingPill>
       }

@@ -118,5 +118,14 @@
     "settleUp": "Thanh toán",
     "youWillReceive": "Bạn sẽ nhận",
     "waiting": "Đang chờ"
+  },
+  "dashboard": {
+    "addExpense": "Thêm chi tiêu",
+    "settleUp": "Thanh toán",
+    "createGroup": "Tạo nhóm",
+    "inviteFriend": "Mời bạn bè",
+    "financialAssistant": "Trợ lý tài chính",
+    "quickActions": "Thao tác nhanh",
+    "closeMenu": "Đóng menu"
   }
 }
