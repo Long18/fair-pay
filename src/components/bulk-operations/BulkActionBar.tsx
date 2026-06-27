@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "react-i18next";
 import { Trash2Icon, XIcon } from "@/components/ui/icons";
+import { FloatingBar } from "@/components/ui/floating-stack";
 
 interface BulkActionBarProps {
   selectedCount: number;
@@ -26,35 +27,32 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
   }
 
   return (
-    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
-      <div className="bg-primary text-primary-foreground shadow-lg rounded-lg px-6 py-3 flex items-center gap-4">
-        <Badge variant="secondary" className="text-base">
-          {t("bulk.selected", "{{count}} selected", { count: selectedCount })}
-        </Badge>
+    <FloatingBar className="gap-4">
+      <Badge variant="secondary" className="text-base">
+        {t("bulk.selected", "{{count}} selected", { count: selectedCount })}
+      </Badge>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => { warning(); onDelete(); }}
-            disabled={isDeleting}
-          >
-            <Trash2Icon className="h-4 w-4 mr-2" />
-            {t("bulk.delete", "Delete")}
-          </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => { warning(); onDelete(); }}
+          disabled={isDeleting}
+        >
+          <Trash2Icon className="h-4 w-4 mr-2" />
+          {t("bulk.delete", "Delete")}
+        </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => { tap(); onCancel(); }}
-            disabled={isDeleting}
-            className="text-primary-foreground hover:bg-primary-foreground/10"
-          >
-            <XIcon className="h-4 w-4 mr-2" />
-            {t("common.cancel", "Cancel")}
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => { tap(); onCancel(); }}
+          disabled={isDeleting}
+        >
+          <XIcon className="h-4 w-4 mr-2" />
+          {t("common.cancel", "Cancel")}
+        </Button>
       </div>
-    </div>
+    </FloatingBar>
   );
 };

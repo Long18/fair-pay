@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/icons";
 import { PageContainer } from "@/components/ui/page-container";
 import { Button } from "@/components/ui/button";
+import { FloatingBar } from "@/components/ui/floating-stack";
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingBeam } from "@/components/ui/loading-beam";
 import { useDebtSummary } from "@/hooks/balance/use-debt-summary";
@@ -421,78 +422,64 @@ export const PersonDebtBreakdown = () => {
 
       <AnimatePresence>
         {hasSelection && (
-          <motion.div
-            initial={prefersReducedMotion ? false : { y: 80, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={prefersReducedMotion ? { opacity: 0 } : { y: 80, opacity: 0 }}
-            transition={
-              prefersReducedMotion
-                ? { duration: 0 }
-                : { type: "spring", damping: 25, stiffness: 300 }
-            }
-            className="fixed bottom-6 left-1/2 z-50 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2"
-          >
-            <div className="flex items-center justify-between gap-3 rounded-2xl bg-foreground px-4 py-3 text-background shadow-2xl">
-              <div className="min-w-0">
-                <span className="text-[10px] font-medium uppercase tracking-[0.18em] opacity-55">
-                  {t("debts.selectedCount", "{{count}} selected", {
-                    count: selectedSplitIds.size,
-                  })}
+          <FloatingBar className="justify-between gap-3">
+            <div className="min-w-0">
+              <span className="text-[10px] font-medium uppercase tracking-[0.18em] opacity-55">
+                {t("debts.selectedCount", "{{count}} selected", {
+                  count: selectedSplitIds.size,
+                })}
+              </span>
+              <div className="mt-1 flex items-center gap-2">
+                <span className="text-sm font-extrabold tabular-nums">
+                  {formatCurrency(selectedAmount, summary.currency)}
                 </span>
-                <div className="mt-1 flex items-center gap-2">
-                  <span className="text-sm font-extrabold tabular-nums">
-                    {formatCurrency(selectedAmount, summary.currency)}
-                  </span>
-                  <span className="text-xs text-background/65">
-                    {selectedNetEffect >= 0 ? "+" : "−"}
-                    {formatCurrency(Math.abs(selectedNetEffect), summary.currency)}
-                  </span>
-                </div>
+                <span className="text-xs text-muted-foreground">
+                  {selectedNetEffect >= 0 ? "+" : "−"}
+                  {formatCurrency(Math.abs(selectedNetEffect), summary.currency)}
+                </span>
               </div>
+            </div>
 
-              <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  tap();
+                  setSelectedSplitIds(new Set());
+                }}
+              >
+                {t("common.cancel", "Cancel")}
+              </Button>
+
+              {userIsAdmin && (
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="text-background hover:bg-background/10 hover:text-background"
                   onClick={() => {
-                    tap();
-                    setSelectedSplitIds(new Set());
+                    warning();
+                    setDeleteDialogOpen(true);
                   }}
+                  disabled={isDeleting}
                 >
-                  {t("common.cancel", "Cancel")}
+                  <Trash2Icon className="h-4 w-4" />
+                  {t("common.delete", "Delete")}
                 </Button>
+              )}
 
-                {userIsAdmin && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-background hover:bg-background/10 hover:text-background"
-                    onClick={() => {
-                      warning();
-                      setDeleteDialogOpen(true);
-                    }}
-                    disabled={isDeleting}
-                  >
-                    <Trash2Icon className="h-4 w-4" />
-                    {t("common.delete", "Delete")}
-                  </Button>
-                )}
-
-                <Button
-                  size="sm"
-                  className="bg-primary text-primary-foreground hover:bg-primary/90"
-                  onClick={handleSettle}
-                  disabled={isSettling}
-                >
-                  <CheckCircle2Icon className="h-4 w-4" />
-                  {isSettling
-                    ? t("debts.settling", "Settling…")
-                    : t("debts.settle", "Settle")}
-                </Button>
-              </div>
+              <Button
+                size="sm"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                onClick={handleSettle}
+                disabled={isSettling}
+              >
+                <CheckCircle2Icon className="h-4 w-4" />
+                {isSettling
+                  ? t("debts.settling", "Settling…")
+                  : t("debts.settle", "Settle")}
+              </Button>
             </div>
-          </motion.div>
+          </FloatingBar>
         )}
       </AnimatePresence>
 
