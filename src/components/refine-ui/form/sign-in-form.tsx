@@ -160,10 +160,15 @@ export const SignInForm = () => {
             properties: { method: "email" },
           });
         },
-        onError: (error: any) => {
+        onError: (error: unknown) => {
           hapticError();
           setIsLoading(false);
-          const errorMessage = error?.message || t("auth.invalidCredentials");
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : (typeof error === "object" && error !== null && "message" in error && typeof (error as { message: unknown }).message === "string"
+                  ? (error as { message: string }).message
+                  : t("auth.invalidCredentials"));
           setError(errorMessage);
           journeyTracking.trackEvent({
             event_name: "form_error",
@@ -186,12 +191,13 @@ export const SignInForm = () => {
   };
 
   const handleDevSignIn = (role: "admin" | "moderator" | "user") => {
-    const email = role === "admin"
-      ? import.meta.env.VITE_DEV_ADMIN_EMAIL
-      : import.meta.env.VITE_DEV_USER_EMAIL;
-    const password = role === "admin"
-      ? import.meta.env.VITE_DEV_ADMIN_PASSWORD
-      : import.meta.env.VITE_DEV_USER_PASSWORD;
+    const devCredentials: Record<string, { email: string | undefined; password: string | undefined }> = {
+      admin: { email: import.meta.env.VITE_DEV_ADMIN_EMAIL, password: import.meta.env.VITE_DEV_ADMIN_PASSWORD },
+      moderator: { email: import.meta.env.VITE_DEV_MODERATOR_EMAIL, password: import.meta.env.VITE_DEV_MODERATOR_PASSWORD },
+      user: { email: import.meta.env.VITE_DEV_USER_EMAIL, password: import.meta.env.VITE_DEV_USER_PASSWORD },
+    };
+
+    const { email, password } = devCredentials[role];
 
     if (!email || !password) {
       setError(`Missing VITE_DEV_${role.toUpperCase()}_EMAIL / VITE_DEV_${role.toUpperCase()}_PASSWORD in .env`);
@@ -210,11 +216,18 @@ export const SignInForm = () => {
           setIsLoading(false);
           setDevSignInRole(null);
         },
-        onError: (error: any) => {
+        onError: (error: unknown) => {
           hapticError();
           setIsLoading(false);
           setDevSignInRole(null);
-          setError(error?.message || `Dev sign-in as ${role} failed. Ensure local Supabase has test users seeded.`);
+          const fallback = `Dev sign-in as ${role} failed. Ensure local Supabase has test users seeded.`;
+          const message =
+            error instanceof Error
+              ? error.message
+              : (typeof error === "object" && error !== null && "message" in error && typeof (error as { message: unknown }).message === "string"
+                  ? (error as { message: string }).message
+                  : fallback);
+          setError(message);
         },
       }
     );
@@ -432,7 +445,7 @@ export const SignInForm = () => {
                   </span>
                   <Separator className={cn("flex-1")} />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <Button
                     variant="outline"
                     className={cn("border-dashed border-amber-500/50 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20")}
@@ -441,7 +454,17 @@ export const SignInForm = () => {
                     type="button"
                   >
                     {devSignInRole === "admin" && <Loader2Icon className="mr-1 h-3 w-3 animate-spin" />}
-                    Sign in as Admin
+                    Admin
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className={cn("border-dashed border-emerald-500/50 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20")}
+                    onClick={() => handleDevSignIn("moderator")}
+                    disabled={isLoading}
+                    type="button"
+                  >
+                    {devSignInRole === "moderator" && <Loader2Icon className="mr-1 h-3 w-3 animate-spin" />}
+                    Moderator
                   </Button>
                   <Button
                     variant="outline"
@@ -451,7 +474,7 @@ export const SignInForm = () => {
                     type="button"
                   >
                     {devSignInRole === "user" && <Loader2Icon className="mr-1 h-3 w-3 animate-spin" />}
-                    Sign in as User
+                    User
                   </Button>
                 </div>
               </>

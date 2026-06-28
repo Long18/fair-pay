@@ -1206,6 +1206,7 @@
     "welcome": "Ask about balances, groups, recent expenses, or prepare a safe expense preview.",
     "pendingPreview": "Resolve the pending preview before sending another request.",
     "load": "Load",
+    "deleteModelCache": "Delete local",
     "selectModel": "Select model",
     "selectModelAria": "Select local AI model",
     "status": {
@@ -1221,6 +1222,11 @@
       "recentActivity": "Summarize recent activity",
       "dinnerExpense": "Prepare dinner expense for 4 people",
       "groupsAttention": "Which groups need attention?"
+    },
+    "modelPicker": {
+      "searchPlaceholder": "Search models…",
+      "noResults": "No models found.",
+      "lowVram": "Low VRAM"
     }
   }
 }

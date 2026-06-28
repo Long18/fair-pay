@@ -94,6 +94,78 @@ BEGIN
 END $$;
 
 -- ========================================
+-- PART 0B: CREATE ADMIN AND MODERATOR TEST USERS
+-- ========================================
+-- Admin user:     admin@fairpay.local     / password123  (user_roles.role = 'admin')
+-- Moderator user: moderator@fairpay.local / password123  (user_roles.role = 'user', second account for multi-user testing)
+DO $$
+DECLARE
+  admin_user_id UUID := '00000000-0000-0000-0000-000000000002';
+  mod_user_id   UUID := '00000000-0000-0000-0000-000000000003';
+BEGIN
+  -- ---- Admin ----
+  INSERT INTO auth.users (
+    id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, email_change, email_change_token_new, recovery_token,
+    is_super_admin
+  ) VALUES (
+    admin_user_id,
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated', 'authenticated',
+    'admin@fairpay.local',
+    crypt('password123', gen_salt('bf')),
+    NOW(),
+    '{"provider":"email","providers":["email"]}',
+    jsonb_build_object('full_name', 'Admin User'),
+    NOW(), NOW(), '', '', '', '', false
+  ) ON CONFLICT (id) DO NOTHING;
+
+  INSERT INTO profiles (id, email, full_name, avatar_url, created_at, updated_at)
+  VALUES (
+    admin_user_id, 'admin@fairpay.local', 'Admin User',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=admin',
+    NOW(), NOW()
+  ) ON CONFLICT (id) DO UPDATE SET full_name = EXCLUDED.full_name;
+
+  INSERT INTO user_roles (user_id, role, created_at, updated_at)
+  VALUES (admin_user_id, 'admin', NOW(), NOW())
+  ON CONFLICT DO NOTHING;
+
+  -- ---- Moderator (second regular user for multi-user testing) ----
+  INSERT INTO auth.users (
+    id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, email_change, email_change_token_new, recovery_token,
+    is_super_admin
+  ) VALUES (
+    mod_user_id,
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated', 'authenticated',
+    'moderator@fairpay.local',
+    crypt('password123', gen_salt('bf')),
+    NOW(),
+    '{"provider":"email","providers":["email"]}',
+    jsonb_build_object('full_name', 'Moderator User'),
+    NOW(), NOW(), '', '', '', '', false
+  ) ON CONFLICT (id) DO NOTHING;
+
+  INSERT INTO profiles (id, email, full_name, avatar_url, created_at, updated_at)
+  VALUES (
+    mod_user_id, 'moderator@fairpay.local', 'Moderator User',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=moderator',
+    NOW(), NOW()
+  ) ON CONFLICT (id) DO UPDATE SET full_name = EXCLUDED.full_name;
+
+  INSERT INTO user_roles (user_id, role, created_at, updated_at)
+  VALUES (mod_user_id, 'user', NOW(), NOW())
+  ON CONFLICT DO NOTHING;
+
+  RAISE NOTICE 'Created admin user: admin@fairpay.local (password: password123)';
+  RAISE NOTICE 'Created moderator user: moderator@fairpay.local (password: password123)';
+END $$;
+
+-- ========================================
 -- HELPER: Generate Vietnamese names
 -- ========================================
 DO $$

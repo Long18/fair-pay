@@ -1,15 +1,8 @@
-import { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGetIdentity } from "@refinedev/core";
 import { AgentConfirmationCard } from "@/components/agent/AgentConfirmationCard";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Sheet,
@@ -26,12 +19,13 @@ import {
   Trash2Icon,
   ZapIcon,
 } from "@/components/ui/icons";
-import { WEB_LLM_MODEL_OPTIONS, type LocalLlmStatus, type WebLlmModelId } from "@/lib/local-llm/types";
+import { getWebLlmModelEntry, type LocalLlmStatus, type WebLlmModelId } from "@/lib/local-llm/types";
 import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/use-haptics";
 import type { Profile } from "@/modules/profile/types";
 import { ChatInput } from "./ChatInput";
 import ChatMessage from "./ChatMessage";
+import { ModelPicker } from "./ModelPicker";
 import { TypingIndicator } from "./TypingIndicator";
 import { useAiChat } from "../hooks/use-ai-chat";
 import type { ChatMessage as ChatMessageType } from "../types";
@@ -82,11 +76,13 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
     selectedModel,
     selectLocalModel,
     loadLocalModel,
+    deleteLocalModelCache,
     sendMessage,
     clearPreview,
     clearChat,
   } = useAiChat();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [isDeletingModelCache, setIsDeletingModelCache] = useState(false);
   const { tap } = useHaptics();
 
   const suggestions = useMemo(() => [
@@ -97,9 +93,11 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
   ], [t]);
 
   const statusCopy = useMemo(() => modelStatusCopy(localLlmStatus, t), [localLlmStatus, t]);
+  const selectedEntry = useMemo(() => getWebLlmModelEntry(selectedModel), [selectedModel]);
   const canLoad = localLlmStatus.state === "idle" || localLlmStatus.state === "error";
+  const canDeleteModelCache = localLlmStatus.state !== "loading" && localLlmStatus.state !== "unsupported";
   const inputDisabled = localLlmStatus.state !== "ready" || Boolean(pendingPreview);
-  const selectedOption = WEB_LLM_MODEL_OPTIONS.find((option) => option.id === selectedModel) ?? WEB_LLM_MODEL_OPTIONS[0];
+  const pickerDisabled = localLlmStatus.state === "loading" || localLlmStatus.state === "unsupported";
 
   useEffect(() => {
     if (!open) return;
@@ -121,15 +119,21 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
     void loadLocalModel();
   }, [loadLocalModel, tap]);
 
+  const handleDeleteModelCache = useCallback(() => {
+    tap();
+    setIsDeletingModelCache(true);
+    void deleteLocalModelCache().finally(() => setIsDeletingModelCache(false));
+  }, [deleteLocalModelCache, tap]);
+
   const handleClearChat = useCallback(() => {
     tap();
     clearChat();
   }, [clearChat, tap]);
 
   const handleModelChange = useCallback(
-    (model: string) => {
+    (model: WebLlmModelId) => {
       tap();
-      selectLocalModel(model as WebLlmModelId);
+      selectLocalModel(model);
     },
     [selectLocalModel, tap],
   );
@@ -160,6 +164,7 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
           </div>
         </SheetHeader>
 
+        {/* Model control strip */}
         <div className="border-b px-4 py-3">
           <div className="flex items-start gap-3">
             <div
@@ -179,38 +184,51 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
                 <ZapIcon size={16} />
               )}
             </div>
+
             <div className="min-w-0 flex-1 space-y-2">
+              {/* Status label + detail */}
               <div>
                 <div className={cn("text-sm font-medium", statusCopy.tone)}>{statusCopy.label}</div>
                 <div className="break-words text-xs text-muted-foreground">{statusCopy.detail}</div>
               </div>
 
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <Select
-                  value={selectedModel}
-                  onValueChange={handleModelChange}
-                  disabled={localLlmStatus.state === "loading" || localLlmStatus.state === "unsupported"}
-                >
-                  <SelectTrigger className="h-9 w-full min-w-0 sm:w-[190px]" aria-label={t('aiChat.selectModelAria')}>
-                    <SelectValue placeholder={t('aiChat.selectModel')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {WEB_LLM_MODEL_OPTIONS.map((option) => (
-                      <SelectItem key={option.id} value={option.id}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Model picker row */}
+              <ModelPicker
+                value={selectedModel}
+                onValueChange={handleModelChange}
+                disabled={pickerDisabled}
+              />
 
+              {/* Action buttons */}
+              <div className="flex flex-wrap gap-2">
                 {canLoad && (
-                  <Button type="button" size="sm" onClick={handleLoadModel} className="h-9 shrink-0">
+                  <Button type="button" size="sm" onClick={handleLoadModel} className="h-8 shrink-0">
                     {t('aiChat.load')}
                   </Button>
                 )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDeleteModelCache}
+                  disabled={!canDeleteModelCache || isDeletingModelCache}
+                  className="h-8 shrink-0"
+                >
+                  {isDeletingModelCache ? (
+                    <Loader2Icon size={14} className="mr-1.5 animate-spin" />
+                  ) : (
+                    <Trash2Icon size={14} className="mr-1.5" />
+                  )}
+                  {t('aiChat.deleteModelCache')}
+                </Button>
               </div>
-              <div className="text-xs text-muted-foreground">{selectedOption.description}</div>
 
+              {/* Selected model description */}
+              {selectedEntry?.description && (
+                <div className="text-xs text-muted-foreground">{selectedEntry.description}</div>
+              )}
+
+              {/* Loading progress bar */}
               {localLlmStatus.state === "loading" && (
                 <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                   <div

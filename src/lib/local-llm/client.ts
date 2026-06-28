@@ -19,7 +19,8 @@ type PendingRequest = {
 
 type LocalLlmRequestWithoutId =
   | { type: "load"; model: string }
-  | { type: "chat"; payload: LocalLlmChatRequest };
+  | { type: "chat"; payload: LocalLlmChatRequest }
+  | { type: "delete-model-cache"; model: string };
 
 const listeners = new Set<LocalLlmStatusListener>();
 const pending = new Map<number, PendingRequest>();
@@ -105,6 +106,13 @@ function ensureWorker(): Worker {
     if (message.type === "response") {
       pending.get(message.id)?.resolve({ message: { content: message.content } });
       pending.delete(message.id);
+      return;
+    }
+
+    if (message.type === "cache-deleted") {
+      pending.get(message.id)?.resolve(undefined);
+      pending.delete(message.id);
+      setStatus({ state: "idle", model: message.model });
       return;
     }
 
@@ -222,6 +230,18 @@ export async function loadModel(model = getSelectedModel()): Promise<LocalLlmSta
 
     throw error;
   }
+}
+
+export async function deleteSelectedModelCache(model = getSelectedModel()): Promise<void> {
+  const current = getLocalLlmStatus();
+  if (current.state === "unsupported") return;
+
+  if (current.state === "ready" || current.state === "loading") {
+    reset();
+  }
+
+  await postRequest<void>({ type: "delete-model-cache", model });
+  setStatus({ state: "idle", model });
 }
 
 export const chat: AssistantChatFn = async (messages, options): Promise<AssistantChatCompletion> => {

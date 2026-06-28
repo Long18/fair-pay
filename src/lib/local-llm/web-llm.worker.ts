@@ -1,4 +1,4 @@
-import { CreateMLCEngine, type InitProgressReport, type MLCEngine } from "@mlc-ai/web-llm";
+import { CreateMLCEngine, deleteModelAllInfoInCache, type InitProgressReport, type MLCEngine } from "@mlc-ai/web-llm";
 import type {
   LocalLlmChatRequest,
   LocalLlmWorkerRequest,
@@ -54,6 +54,17 @@ self.addEventListener("message", async (event: MessageEvent<LocalLlmWorkerReques
       return;
     }
 
+    if (request.type === "delete-model-cache") {
+      if (loadedModel === request.model) {
+        engine = null;
+        loadedModel = null;
+      }
+
+      await deleteModelAllInfoInCache(request.model);
+      post({ id: request.id, type: "cache-deleted", model: request.model });
+      return;
+    }
+
     if (!engine) {
       throw new Error("Local AI model is not loaded.");
     }
@@ -73,7 +84,7 @@ self.addEventListener("message", async (event: MessageEvent<LocalLlmWorkerReques
     post({
       id: request.id,
       type: "error",
-      model: request.type === "load" ? request.model : request.payload.model,
+      model: request.type === "chat" ? request.payload.model : request.model,
       message: errorMessage(error),
     });
   }

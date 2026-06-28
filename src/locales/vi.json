@@ -97,6 +97,7 @@
     "youOwe": "Bạn nợ",
     "youAreOwed": "Người khác nợ bạn",
     "netBalance": "Số dư ròng",
+    "activeBalances": "Số dư đang hoạt động",
     "yourNetBalance": "Số dư ròng của bạn",
     "recentActivity": "Hoạt động gần đây",
     "quickActions": "Thao tác nhanh",
@@ -1205,6 +1206,7 @@
     "welcome": "Hỏi về số dư, nhóm, chi tiêu gần đây, hoặc tạo xem trước chi tiêu.",
     "pendingPreview": "Giải quyết xem trước đang chờ trước khi gửi yêu cầu mới.",
     "load": "Tải",
+    "deleteModelCache": "Xóa local",
     "selectModel": "Chọn mô hình",
     "selectModelAria": "Chọn mô hình AI cục bộ",
     "status": {
@@ -1220,6 +1222,11 @@
       "recentActivity": "Tóm tắt hoạt động gần đây",
       "dinnerExpense": "Chuẩn bị chi phí bữa tối cho 4 người",
       "groupsAttention": "Nhóm nào cần xem xét?"
+    },
+    "modelPicker": {
+      "searchPlaceholder": "Tìm kiếm mô hình…",
+      "noResults": "Không tìm thấy mô hình nào.",
+      "lowVram": "VRAM thấp"
     }
   }
 }

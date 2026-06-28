@@ -133,4 +133,57 @@ describe("local LLM client", () => {
     const reloaded = await importClient();
     expect(reloaded.getLocalLlmStatus()).toMatchObject({ state: "idle", model });
   });
+
+  it("offers a full catalog of supported WebLLM model choices", async () => {
+    const { WEB_LLM_MODEL_LIST, WEB_LLM_MODEL_OPTIONS, DEFAULT_WEB_LLM_MODEL, WEB_LLM_COMPAT_MODEL, isWebLlmModelId } = await import("../types");
+
+    // Full catalog is substantially larger than the original 6-model list.
+    expect(WEB_LLM_MODEL_LIST.length).toBeGreaterThanOrEqual(40);
+
+    // Legacy alias mirrors the full catalog.
+    expect(WEB_LLM_MODEL_OPTIONS.length).toBe(WEB_LLM_MODEL_LIST.length);
+
+    // Default and compat models are still present and valid.
+    expect(isWebLlmModelId(DEFAULT_WEB_LLM_MODEL)).toBe(true);
+    expect(isWebLlmModelId(WEB_LLM_COMPAT_MODEL)).toBe(true);
+
+    // Key models from every family are present.
+    const ids = WEB_LLM_MODEL_LIST.map((m) => m.id);
+    expect(ids).toContain("Hermes-3-Llama-3.2-3B-q4f16_1-MLC");
+    expect(ids).toContain("Llama-3.2-3B-Instruct-q4f16_1-MLC");
+    expect(ids).toContain("Phi-3.5-mini-instruct-q4f16_1-MLC");
+    expect(ids).toContain("SmolLM2-1.7B-Instruct-q4f16_1-MLC");
+    expect(ids).toContain("Qwen3-1.7B-q4f16_1-MLC");
+    expect(ids).toContain("gemma3-1b-it-q4f16_1-MLC");
+    expect(ids).toContain("TinyLlama-1.1B-Chat-v1.0-q4f16_1-MLC-1k");
+
+    // Each entry has required metadata fields.
+    for (const model of WEB_LLM_MODEL_LIST) {
+      expect(model.id).toBeTruthy();
+      expect(model.label).toBeTruthy();
+      expect(model.family).toBeTruthy();
+      expect(model.vramMB).toBeGreaterThan(0);
+      expect(model.contextLength).toBeGreaterThan(0);
+    }
+  });
+
+  it("deletes the selected model cache and resets to idle", async () => {
+    vi.stubGlobal("navigator", { gpu: {} });
+    vi.stubGlobal("Worker", MockWorker);
+
+    const client = await importClient();
+    const deleting = client.deleteSelectedModelCache("Llama-3.2-1B-Instruct-q4f16_1-MLC");
+    const worker = MockWorker.instances[0];
+    const request = worker.posted[0] as { id: number; type: string; model: string };
+
+    expect(request).toMatchObject({
+      type: "delete-model-cache",
+      model: "Llama-3.2-1B-Instruct-q4f16_1-MLC",
+    });
+
+    worker.emit({ id: request.id, type: "cache-deleted", model: request.model });
+
+    await expect(deleting).resolves.toBeUndefined();
+    expect(client.getLocalLlmStatus()).toMatchObject({ state: "idle", model: request.model });
+  });
 });
