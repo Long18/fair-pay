@@ -72,18 +72,6 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
       "data-track-id": "cta:fab:friends",
       "data-track-category": "dashboard",
     },
-    {
-      icon: <FabIcon src="/assets/fab/fab-financial-assistant.png" />,
-      label: t("dashboard.financialAssistant"),
-      onClick: () => {
-        tap();
-        window.dispatchEvent(new CustomEvent("fairpay:open-chat"));
-        setIsOpen(false);
-      },
-      ariaLabel: t("dashboard.financialAssistant"),
-      "data-track-id": "cta:fab:ai-chat",
-      "data-track-category": "dashboard",
-    },
   ];
 
   // Hide FAB for unauthenticated users
@@ -96,7 +84,7 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
       onClose={() => setIsOpen(false)}
       trigger={
         <FloatingPill
-          variant="primary"
+          variant="bare"
           size="lg"
           ariaLabel={isOpen ? t("dashboard.closeMenu") : t("dashboard.quickActions")}
           ariaExpanded={isOpen}
@@ -109,24 +97,12 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
           data-track-category="dashboard"
           className={cn(isOpen && "ring-4 ring-primary/30 shadow-2xl")}
         >
-          {/* Animated glow ring behind button */}
-          <div
-            className={cn(
-              "absolute inset-0 rounded-full bg-primary/20 blur-md -z-10",
-              "transition-opacity duration-300",
-              isOpen ? "opacity-100 animate-pulse" : "opacity-0"
-            )}
+          <img
+            src={isOpen ? "/assets/fab/fab-close.png" : "/assets/fab/fab-quick-actions.png"}
+            alt=""
+            aria-hidden="true"
+            className="h-8 w-8 object-contain"
           />
-
-          {/* Trigger icon — swaps between quick-actions and close asset */}
-          <div className="relative z-10 transition-all duration-200">
-            <img
-              src={isOpen ? "/assets/fab/fab-close.png" : "/assets/fab/fab-quick-actions.png"}
-              alt=""
-              aria-hidden="true"
-              className="h-6 w-6 object-contain"
-            />
-          </div>
         </FloatingPill>
       }
     >

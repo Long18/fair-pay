@@ -25,7 +25,7 @@ export interface FloatingPillProps {
   /** Shows a small badge with count at top-right. */
   badge?: number | string;
   /** Surface variant. Default: "glass". */
-  variant?: "glass" | "primary";
+  variant?: "glass" | "primary" | "bare";
   /** Additional class names. */
   className?: string;
   /** Required for icon-only pills (accessibility). */
@@ -83,7 +83,7 @@ export const FloatingPill = React.forwardRef<HTMLButtonElement, FloatingPillProp
     },
     ref
   ) {
-    const surface = variant === "primary" ? SURFACE_GLASS_PRIMARY : SURFACE_GLASS;
+    const surface = variant === "primary" ? SURFACE_GLASS_PRIMARY : variant === "bare" ? "" : SURFACE_GLASS;
     const isIconOnly = !!icon && !label && !children;
 
     const baseClasses = cn(
@@ -97,7 +97,9 @@ export const FloatingPill = React.forwardRef<HTMLButtonElement, FloatingPillProp
       "hover:scale-105 active:scale-95",
       variant === "glass"
         ? "hover:bg-background/85 hover:shadow-xl"
-        : "hover:bg-primary hover:shadow-2xl",
+        : variant === "primary"
+        ? "hover:bg-primary hover:shadow-2xl"
+        : "",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
       "select-none cursor-pointer",
       disabled && "opacity-50 pointer-events-none cursor-not-allowed",

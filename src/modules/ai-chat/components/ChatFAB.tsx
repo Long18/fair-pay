@@ -1,4 +1,4 @@
-import { memo, useState, useCallback, useEffect } from 'react';
+import { memo, useState, useCallback } from 'react';
 import { useHaptics } from "@/hooks/use-haptics";
 import { useLocation } from 'react-router';
 import { FairPayIcon, XIcon } from '@/components/ui/icons';
@@ -13,14 +13,7 @@ export const ChatFAB = memo(function ChatFAB() {
 
   const toggle = useCallback(() => { tap(); setOpen((prev) => !prev); }, [tap]);
 
-  // Allow the main FAB's "Financial Assistant" action to open this panel
-  useEffect(() => {
-    const handler = () => setOpen(true);
-    window.addEventListener('fairpay:open-chat', handler);
-    return () => window.removeEventListener('fairpay:open-chat', handler);
-  }, []);
-
-  return (
+return (
     <>
       <ChatPanel open={open} onOpenChange={setOpen} />
       <FloatingActionStack
