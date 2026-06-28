@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
-import { getAuthenticatedUser } from '../../_lib/auth.js'
+import { getAdminUser } from '../../_lib/admin-auth.js'
 import { handleCorsPreflightIfNeeded, setCorsHeaders } from '../../_lib/cors.js'
 
 interface ReminderRequest {
@@ -47,14 +47,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(405).json({ success: false, error: 'Method not allowed' })
     }
 
-    const { user, error: authError, supabase } = await getAuthenticatedUser(req.headers.authorization)
+    const { user, error: authError, supabase, status } = await getAdminUser(req.headers.authorization)
     if (!user || !supabase) {
-      return res.status(401).json({ success: false, error: authError || 'Unauthorized' })
-    }
-
-    const { data: isAdmin, error: adminError } = await supabase.rpc('is_admin')
-    if (adminError || isAdmin !== true) {
-      return res.status(403).json({ success: false, error: 'Only administrators can send reminders' })
+      return res.status(status ?? 401).json({ success: false, error: authError || 'Unauthorized' })
     }
 
     const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL

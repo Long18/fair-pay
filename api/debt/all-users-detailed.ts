@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { getAuthenticatedUser } from '../_lib/auth'
+import { getAdminUser } from '../_lib/admin-auth'
 import { handleCorsPreflightIfNeeded, setCorsHeaders } from '../_lib/cors'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -10,9 +10,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ success: false, error: 'Method not allowed' })
   }
 
-  const { user, error: authError, supabase } = await getAuthenticatedUser(req.headers.authorization)
+  const { user, error: authError, supabase, status } = await getAdminUser(req.headers.authorization)
   if (!user || !supabase) {
-    return res.status(401).json({ success: false, error: authError || 'Unauthorized' })
+    return res.status(status ?? 401).json({ success: false, error: authError || 'Unauthorized' })
   }
 
   try {
@@ -66,8 +66,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
     }
 
+    interface DetailedDebtRow {
+      user_id: string
+      full_name: string
+      email: string
+      total_owed_to_me: string | number
+      total_i_owe: string | number
+      net_balance: string | number
+      active_debt_relationships: unknown
+      debts_by_person: unknown
+      debts_by_group: unknown
+      total_count: number
+    }
+
+    const rows = data as DetailedDebtRow[]
+
     // Extract metadata from first row
-    const firstRow = data[0] as any
+    const firstRow = rows[0]
     const totalCount = firstRow.total_count
 
     // Format response
@@ -78,13 +93,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         offset: offsetNum,
         total_count: totalCount
       },
-      data: data.map((row: any) => ({
+      data: rows.map((row) => ({
         user_id: row.user_id,
         full_name: row.full_name,
         email: row.email,
-        total_owed_to_me: parseFloat(row.total_owed_to_me),
-        total_i_owe: parseFloat(row.total_i_owe),
-        net_balance: parseFloat(row.net_balance),
+        total_owed_to_me: parseFloat(String(row.total_owed_to_me)),
+        total_i_owe: parseFloat(String(row.total_i_owe)),
+        net_balance: parseFloat(String(row.net_balance)),
         active_debt_relationships: row.active_debt_relationships,
         debts_by_person: row.debts_by_person,
         debts_by_group: row.debts_by_group

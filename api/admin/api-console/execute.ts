@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
+import { getAdminUser } from '../../_lib/admin-auth'
 import { catalog } from '../../../src/modules/admin/api-docs/catalog'
 import type { ApiCatalogEntry } from '../../../src/modules/admin/api-docs/types'
 
@@ -105,7 +106,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const start = Date.now()
 
-  // ── Step 1: Extract + validate JWT ──────────────────────────────────────────
+  // ── Step 1: Authenticate + authorize admin via shared helper ───────────────
 
   const authHeader = req.headers.authorization
   if (!authHeader?.startsWith('Bearer ')) {
@@ -121,42 +122,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ success: false, status: 500, duration_ms: 0, error: 'Server misconfiguration' })
   }
 
-  // Validate token by getting user via supabase-js
-  const authClient = createClient(supabaseUrl, anonKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  })
-
-  const { data: { user }, error: authError } = await (authClient.auth as unknown as {
-    getUser: () => Promise<{ data: { user: { id: string } | null }, error: unknown | null }>
-  }).getUser()
-  if (authError || !user) {
-    return res.status(401).json({ success: false, status: 401, duration_ms: Date.now() - start, error: 'Invalid or expired token' })
+  const { user, error: adminAuthError, status: adminAuthStatus } = await getAdminUser(authHeader)
+  if (!user) {
+    const statusCode = adminAuthStatus ?? 401
+    return res.status(statusCode).json({
+      success: false,
+      status: statusCode,
+      duration_ms: Date.now() - start,
+      error: adminAuthError || 'Unauthorized',
+    })
   }
 
-  // ── Step 2: Verify admin role ────────────────────────────────────────────────
-
+  // Service-role client retained for audit log inserts + RPC execution below.
   const adminClient = createClient(supabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   })
-
-  // Call is_admin() with the user's JWT so auth.uid() resolves correctly inside the function
-  const { data: isAdmin } = await authClient.rpc('is_admin')
-
-  // Fallback: always check user_roles table directly with service role as a safety net
-  let adminVerified = isAdmin === true
-  if (!adminVerified) {
-    const { data: roleRow } = await adminClient
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single()
-    adminVerified = roleRow?.role === 'admin'
-  }
-
-  if (!adminVerified) {
-    return res.status(403).json({ success: false, status: 403, duration_ms: Date.now() - start, error: 'Admin access required' })
-  }
 
   // ── Step 3: Parse + validate request body ────────────────────────────────────
 
@@ -230,8 +210,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const execClient = createClient(supabaseUrl, serviceKey, {
         auth: { autoRefreshToken: false, persistSession: false },
       })
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await execClient.rpc(target as any, rpc_args ?? {})
+      const { data, error } = await execClient.rpc(target as unknown as never, rpc_args ?? {})
       if (error) {
         responseStatus = 500
         responseData = { error: error.message }

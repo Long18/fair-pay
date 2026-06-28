@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { getAuthenticatedUser } from '../../_lib/auth.js'
+import { getAdminUser } from '../../_lib/admin-auth.js'
 import { handleCorsPreflightIfNeeded, setCorsHeaders } from '../../_lib/cors.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -11,9 +11,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(405).json({ success: false, error: 'Method not allowed' })
     }
 
-    const { user, error: authError, supabase } = await getAuthenticatedUser(req.headers.authorization)
+    const { user, error: authError, supabase, status } = await getAdminUser(req.headers.authorization)
     if (!user || !supabase) {
-      return res.status(401).json({ success: false, error: authError || 'Unauthorized' })
+      return res.status(status ?? 401).json({ success: false, error: authError || 'Unauthorized' })
     }
 
     const { data, error } = await supabase.rpc('admin_get_email_devtool_summary', {

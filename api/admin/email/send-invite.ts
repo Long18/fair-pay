@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { getAuthenticatedUser } from '../../_lib/auth.js'
+import { getAdminUser } from '../../_lib/admin-auth.js'
 import { handleCorsPreflightIfNeeded, setCorsHeaders } from '../../_lib/cors.js'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -42,14 +42,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const authHeader = req.headers.authorization
-  const { user, error: authError, supabase } = await getAuthenticatedUser(authHeader)
+  const { user, error: authError, supabase, status } = await getAdminUser(authHeader)
   if (!user || !supabase) {
-    return res.status(401).json({ success: false, error: authError || 'Unauthorized' })
-  }
-
-  const { data: isAdmin, error: adminError } = await supabase.rpc('is_admin')
-  if (adminError || isAdmin !== true) {
-    return res.status(403).json({ success: false, error: 'Only administrators can send invites' })
+    return res.status(status ?? 401).json({ success: false, error: authError || 'Unauthorized' })
   }
 
   const body = getRequestBody(req)

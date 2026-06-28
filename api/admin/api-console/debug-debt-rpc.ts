@@ -1,8 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
+import { getAdminUser } from '../../_lib/admin-auth'
 
 export const config = { runtime: 'edge' }
 
 export default async function handler(req: Request): Promise<Response> {
+  // Admin auth required — this endpoint exposes internal diagnostic data.
+  const authHeader = req.headers.get('authorization') ?? undefined
+  const { user, error: adminError, status } = await getAdminUser(authHeader)
+  if (!user) {
+    return Response.json(
+      { error: adminError || 'Unauthorized' },
+      { status: status ?? 401 },
+    )
+  }
+
   const url = new URL(req.url)
   const viewerId = url.searchParams.get('viewer_id')
   const counterpartyId = url.searchParams.get('counterparty_id')
@@ -40,12 +51,18 @@ export default async function handler(req: Request): Promise<Response> {
     p_counterparty_id: counterpartyId,
   })
 
+  interface DebtDetailRow {
+    is_settled?: boolean
+    remaining_amount?: string | number
+  }
+  const rpcRows = Array.isArray(rpcData) ? (rpcData as DebtDetailRow[]) : null
+
   result.rpc = {
     error: rpcError ? { message: rpcError.message, code: rpcError.code, details: rpcError.details } : null,
-    rowCount: Array.isArray(rpcData) ? rpcData.length : 0,
-    firstRow: Array.isArray(rpcData) && rpcData.length > 0 ? rpcData[0] : null,
-    unsettledCount: Array.isArray(rpcData)
-      ? rpcData.filter((r: any) => !r.is_settled && Number(r.remaining_amount) > 0).length
+    rowCount: rpcRows ? rpcRows.length : 0,
+    firstRow: rpcRows && rpcRows.length > 0 ? rpcRows[0] : null,
+    unsettledCount: rpcRows
+      ? rpcRows.filter((r) => !r.is_settled && Number(r.remaining_amount) > 0).length
       : 0,
   }
 

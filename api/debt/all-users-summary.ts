@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { getAuthenticatedUser } from '../_lib/auth'
+import { getAdminUser } from '../_lib/admin-auth'
 import { handleCorsPreflightIfNeeded, setCorsHeaders } from '../_lib/cors'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -10,9 +10,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ success: false, error: 'Method not allowed' })
   }
 
-  const { user, error: authError, supabase } = await getAuthenticatedUser(req.headers.authorization)
+  const { user, error: authError, supabase, status } = await getAdminUser(req.headers.authorization)
   if (!user || !supabase) {
-    return res.status(401).json({ success: false, error: authError || 'Unauthorized' })
+    return res.status(status ?? 401).json({ success: false, error: authError || 'Unauthorized' })
   }
 
   try {
@@ -57,8 +57,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
     }
 
+    interface SummaryDebtRow {
+      user_id: string
+      full_name: string
+      net_balance: string | number
+      total_count: number
+    }
+
+    const rows = data as SummaryDebtRow[]
+
     // Extract metadata from first row
-    const firstRow = data[0] as any
+    const firstRow = rows[0]
     const totalCount = firstRow.total_count
 
     // Format response
@@ -69,10 +78,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         offset: offsetNum,
         total_count: totalCount
       },
-      data: data.map((row: any) => ({
+      data: rows.map((row) => ({
         user_id: row.user_id,
         full_name: row.full_name,
-        net_balance: parseFloat(row.net_balance)
+        net_balance: parseFloat(String(row.net_balance))
       }))
     }
 
