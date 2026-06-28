@@ -16,6 +16,10 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+// NOTE: sepay-webhook is a server-to-server webhook receiver — browsers never
+// call it, so CORS is not strictly required. The shared helper is wired in for
+// defense-in-depth / consistency, but auth is via SEPAY_WEBHOOK_SECRET below.
+import { getCorsHeaders, handleCorsPreflightIfNeeded } from '../_shared/cors.ts'
 
 interface SepayWebhookPayload {
   id: number
@@ -30,6 +34,33 @@ interface SepayWebhookPayload {
   subAccount: string | null
   referenceCode: string
   description: string
+}
+
+// Minimal supabase client shape used by the settlement helpers below. We keep
+// it loose because the Edge Function imports the JS client (not a generated
+// types module), but it's tight enough to forbid `any` while letting the
+// chained query builder work the way @supabase/supabase-js does at runtime.
+type SupabaseQueryBuilder = {
+  select: (...args: unknown[]) => SupabaseQueryBuilder
+  update: (...args: unknown[]) => SupabaseQueryBuilder
+  eq: (...args: unknown[]) => SupabaseQueryBuilder
+  in: (...args: unknown[]) => SupabaseQueryBuilder
+  single: (...args: unknown[]) => Promise<{ data: unknown; error: unknown }>
+  then: <T>(onfulfilled?: (value: { data: unknown; error: unknown }) => T | PromiseLike<T>) => Promise<T>
+}
+type SupabaseLikeClient = {
+  from: (table: string) => SupabaseQueryBuilder
+}
+
+interface PaymentOrder {
+  id: string
+  source_id: string
+  payer_user_id: string
+  payee_user_id: string
+  amount: number
+  paid_amount: number | string
+  order_invoice_number: string
+  source_type?: string
 }
 
 Deno.serve(async (req: Request) => {
@@ -183,8 +214,8 @@ Deno.serve(async (req: Request) => {
  * If fully paid, settle entire split. If partial, accumulate settled_amount.
  */
 async function settleExpenseSplits(
-  client: any,
-  order: any,
+  client: SupabaseLikeClient,
+  order: PaymentOrder,
   transferAmount: number,
   isFullyPaid: boolean
 ) {
@@ -241,7 +272,7 @@ async function settleExpenseSplits(
  * Settle debt splits between payer and payee.
  * Uses remainingBudget pattern to distribute transfer amount across splits.
  */
-async function settleDebtSplits(client: any, order: any, transferAmount: number) {
+async function settleDebtSplits(client: SupabaseLikeClient, order: PaymentOrder, transferAmount: number) {
   try {
     const { data: splits, error } = await client
       .from('expense_splits')

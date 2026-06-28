@@ -46,6 +46,12 @@ try {
 }
 
 // -- CORS ------------------------------------------------------------------
+// INTENTIONAL: This endpoint uses wildcard CORS (Access-Control-Allow-Origin: *)
+// because it is a PUBLIC discovery + intake API designed for unauthenticated
+// external AI agents (LLMs, bots) that can originate from any host.
+// No authenticated user data is returned without proper authorization.
+// All submissions are queued for human approval before any expense is created.
+// Security review: 2026-06-28 — wildcard confirmed intentional for this endpoint.
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',

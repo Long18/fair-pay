@@ -1,5 +1,10 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// NOTE: push-notification-worker is a background/cron-style function invoked
+// server-side. CORS is not strictly required, but we wire up the shared helper
+// for consistency and defense-in-depth (so manual curl from the admin app
+// honours APP_URL like other functions).
+import { getCorsHeaders, handleCorsPreflightIfNeeded } from "../_shared/cors.ts";
 
 // Web Push via fetch (no external push library — use native Web Push Protocol)
 async function sendWebPush(subscription: { endpoint: string; p256dh: string; auth: string }, payload: string, vapidPrivateKey: string, vapidPublicKey: string, subject: string) {
@@ -17,6 +22,12 @@ async function sendWebPush(subscription: { endpoint: string; p256dh: string; aut
 }
 
 serve(async (req) => {
+  // Background/cron function — but honour preflight + attach CORS headers for
+  // consistency with other functions and so any manual admin invocation works
+  // from the configured APP_URL.
+  const corsResponse = handleCorsPreflightIfNeeded(req);
+  if (corsResponse) return corsResponse;
+
   try {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -27,7 +38,7 @@ serve(async (req) => {
     const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
 
     if (!vapidPublicKey || !vapidPrivateKey) {
-      return new Response(JSON.stringify({ error: "VAPID keys not configured" }), { status: 400 });
+      return new Response(JSON.stringify({ error: "VAPID keys not configured" }), { status: 400, headers: getCorsHeaders() });
     }
 
     // Find debts unsettled > 7 days
@@ -39,7 +50,7 @@ serve(async (req) => {
       .lt("created_at", sevenDaysAgo);
 
     if (!staleDebts?.length) {
-      return new Response(JSON.stringify({ sent: 0 }), { status: 200 });
+      return new Response(JSON.stringify({ sent: 0 }), { status: 200, headers: getCorsHeaders() });
     }
 
     const userIds = [...new Set(staleDebts.map((d: { user_id: string }) => d.user_id))];
@@ -59,8 +70,8 @@ serve(async (req) => {
       if (ok) sent++;
     }
 
-    return new Response(JSON.stringify({ sent }), { status: 200 });
+    return new Response(JSON.stringify({ sent }), { status: 200, headers: getCorsHeaders() });
   } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), { status: 500 });
+    return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: getCorsHeaders() });
   }
 });
