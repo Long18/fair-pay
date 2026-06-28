@@ -182,6 +182,7 @@
         "test:agent": "vitest run tests/agent-api",
         "test:components": "vitest run tests/integration",
         "verify": "pnpm type-check && pnpm lint && pnpm test && pnpm build",
+        "i18n:check": "node scripts/check-i18n-parity.mjs",
         "openapi:lint": "npx @redocly/cli@latest lint docs/openapi-external-agent-chatgpt.yaml",
         "openapi:sync": "cp docs/openapi-external-agent-chatgpt.yaml public/.well-known/openai.yaml"
     },
