@@ -46,24 +46,26 @@ export const Dashboard = () => {
     prevIndexRef.current = currentIndex;
   }, [currentIndex]);
 
-  // Active debts (no history)
+  // Active debts (no history) — only fetch once we have an authenticated identity
   const { data: debts = [], isLoading: debtsLoading, refetch: refetchDebts, error: debtsError } = useAggregatedDebts({
-    includeHistory: false
+    includeHistory: false,
+    enabled: !!identity?.id,
   });
 
-  // History debts (only fetched when history tab is active)
+  // History debts (only fetched when history tab is active and user is authenticated)
   const { data: historyDebts = [], isLoading: historyLoading } = useAggregatedDebts({
-    includeHistory: activeTab === "history"
+    includeHistory: activeTab === "history",
+    enabled: !!identity?.id && activeTab === "history",
   });
 
   const {
     activities,
     isLoading: activitiesLoading
-  } = useEnhancedActivity({ limit: 50, enabled: activeTab === "activity" });
+  } = useEnhancedActivity({ limit: 50, enabled: !!identity?.id && activeTab === "activity" });
   const {
     activities: historyActivities,
     isLoading: historyActivitiesLoading,
-  } = useEnhancedActivity({ limit: "all", enabled: activeTab === "history" });
+  } = useEnhancedActivity({ limit: "all", enabled: !!identity?.id && activeTab === "history" });
 
   const [loading, setLoading] = useState(true);
   const visibilityDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);

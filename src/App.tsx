@@ -28,6 +28,7 @@ import { UndoManagerProvider } from "./contexts/undo-manager";
 import { analyticsManager } from "./lib/analytics/instance";
 import { JourneyTrackingBridge } from "./lib/journey-tracking";
 import { TrackingNoticeBanner } from "./components/tracking-consent-banner";
+import { ConsentBanner } from "./components/consent/ConsentBanner";
 import { ScrollToTop } from "./components/ui/scroll-to-top";
 import { SpeculationRules } from "./components/speculation-rules";
 
@@ -329,7 +330,14 @@ function App() {
                       </Layout>
                     }
                   >
-                    <Route index element={<Dashboard />} />
+                    <Route index element={
+                      <Authenticated
+                        key="authenticated-dashboard"
+                        fallback={<Dashboard />}
+                      >
+                        <Dashboard />
+                      </Authenticated>
+                    } />
 
                     {/* Public legal pages */}
                     <Route path="/privacy" element={
@@ -605,6 +613,7 @@ function App() {
                 <AnalyticsInitializer />
                 {isVercelAnalyticsEnabled ? <Analytics /> : null}
                 <TrackingNoticeBanner />
+                <ConsentBanner />
                 <ScrollToTop />
                 <Suspense fallback={null}>
                   <DonationWidget />

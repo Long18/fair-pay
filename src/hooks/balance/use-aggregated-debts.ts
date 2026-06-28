@@ -24,6 +24,7 @@ export interface AggregatedDebt {
 export interface UseAggregatedDebtsOptions {
     includeHistory?: boolean; // If true, includes settled debts in results
     dateRange?: { start: Date; end: Date };
+    enabled?: boolean; // When false, skips data fetching entirely (defaults to true)
 }
 
 /**
@@ -35,7 +36,7 @@ export interface UseAggregatedDebtsOptions {
  * @param options.includeHistory - If true, fetches all historical debts including settled ones
  */
 export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
-    const { includeHistory = false, dateRange } = options;
+    const { includeHistory = false, dateRange, enabled = true } = options;
     const { data: identity, isLoading: identityLoading } = useGetIdentity<Profile>();
     const [data, setData] = useState<AggregatedDebt[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -44,6 +45,12 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
     const channelId = useId();
 
     const fetchDebts = useCallback(async () => {
+        // Skip fetching entirely when the hook is disabled (e.g. auth still resolving)
+        if (!enabled) {
+            setIsLoading(false);
+            return;
+        }
+
         // Wait for identity to finish loading before deciding which path to take
         // This prevents showing public demo data while auth state is still resolving
         if (identityLoading) {
@@ -122,7 +129,7 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
 
             // Filter out fully settled debts when includeHistory is false
             if (!includeHistory) {
-                debts = debts.filter((debt: any) => {
+                debts = debts.filter((debt: AggregatedDebt) => {
                     // Filter out debts with amount = 0 or remaining_amount = 0
                     const amount = Number(debt.amount || 0);
                     const remainingAmount = Number(debt.remaining_amount || debt.amount || 0);
