@@ -5,7 +5,6 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
-import packageJson from "../package.json" with { type: "json" };
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -68,11 +67,25 @@ function formatLocalVersion(baseVersion, localStamp) {
 }
 
 async function readBaseVersion() {
-  if (typeof packageJson.version !== "string" || packageJson.version.length === 0) {
-    throw new Error("Unable to read version from package.json");
+  // Use git short SHA as the base version instead of semver from package.json.
+  // This prevents leaking the public version number while still providing a unique
+  // identifier for each build that callers can compare for staleness detection.
+  const explicitCommitSha =
+    process.env.VERCEL_GIT_COMMIT_SHA ??
+    process.env.GIT_COMMIT_SHA ??
+    process.env.COMMIT_SHA;
+
+  if (explicitCommitSha) {
+    return explicitCommitSha.slice(0, 7);
   }
 
-  return packageJson.version;
+  const gitSha = await captureCommand("git", ["rev-parse", "--short", "HEAD"]);
+  if (gitSha) {
+    return gitSha;
+  }
+
+  // Final fallback for environments without git: use a local marker.
+  return "local-dev";
 }
 
 function resolveChannel() {
@@ -296,6 +309,7 @@ async function main() {
     ...process.env,
     VITE_APP_VERSION: buildInfo.version,
     VITE_APP_BUILD_INFO: JSON.stringify(buildInfo),
+    VITE_BUILD_HASH: buildInfo.baseVersion,
   };
 
   console.log(`[build-version] Building ${buildInfo.version} (${buildInfo.channel})`);

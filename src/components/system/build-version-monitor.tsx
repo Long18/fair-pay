@@ -67,7 +67,6 @@ export async function refreshToLatestBuild() {
 function BuildVersionMonitorInner() {
   const hasPromptedRef = useRef(false);
   const lastCheckedAtRef = useRef(0);
-  const nextVersionRef = useRef<string | null>(null);
 
   // Register SW with autoUpdate — it auto-activates, no user prompt needed for SW itself.
   useRegisterSW({
@@ -87,14 +86,9 @@ function BuildVersionMonitorInner() {
 
     hasPromptedRef.current = true;
 
-    const description =
-      nextVersionRef.current && nextVersionRef.current !== currentBuildInfo.version
-        ? `${currentBuildInfo.version} -> ${nextVersionRef.current}`
-        : "Nhấn làm mới để tải phiên bản mới nhất.";
-
     toast.message("Có phiên bản mới", {
       id: UPDATE_TOAST_ID,
-      description,
+      description: "Nhấn làm mới để tải phiên bản mới nhất.",
       duration: Number.POSITIVE_INFINITY,
       dismissible: false,
       closeButton: false,
@@ -122,7 +116,6 @@ function BuildVersionMonitorInner() {
       }
 
       if (isNewBuildAvailable(latestBuildInfo)) {
-        nextVersionRef.current = latestBuildInfo.version;
         promptForRefresh();
       }
     } catch {

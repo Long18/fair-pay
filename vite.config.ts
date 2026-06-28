@@ -151,6 +151,9 @@ const pwaApiPlugin = pwaPlugins[0] as PwaApiPlugin | undefined;
 let hasPatchedPrecacheEntries = false;
 
 export default defineConfig({
+  define: {
+    'import.meta.env.VITE_BUILD_HASH': JSON.stringify(process.env.VITE_BUILD_HASH || 'local-dev'),
+  },
   plugins: [
     react(),
     tailwindcss(),
