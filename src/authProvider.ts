@@ -2,6 +2,16 @@ import { AuthProvider } from "@refinedev/core";
 import { supabaseClient } from "./utility";
 import { AuthTracker, analyticsManager, ErrorTracker } from "./lib/analytics/index";
 import { journeyTracking } from "./lib/journey-tracking";
+import { isAnalyticsConsentGiven } from "./lib/analytics/consent-gate";
+
+const getErrorMessage = (error: unknown): string | undefined => {
+    if (error instanceof Error) return error.message;
+    if (typeof error === 'object' && error !== null && 'message' in error) {
+        const message = (error as { message?: unknown }).message;
+        if (typeof message === 'string') return message;
+    }
+    return undefined;
+};
 
 const authProvider: AuthProvider = {
     login: async ({ email, password, providerName }) => {
@@ -26,7 +36,9 @@ const authProvider: AuthProvider = {
                 }
 
                 if (data?.url) {
-                    AuthTracker.login('oauth', providerName as 'google');
+                    if (isAnalyticsConsentGiven()) {
+                        AuthTracker.login('oauth', providerName as 'google');
+                    }
                     return {
                         success: true,
                         redirectTo: "/",
@@ -51,21 +63,23 @@ const authProvider: AuthProvider = {
             }
 
             if (data?.user) {
-                AuthTracker.login('email');
-                journeyTracking.identify(data.user.id);
-                journeyTracking.trackEvent({
-                    event_name: 'auth_login',
-                    event_category: 'auth',
-                    page_path: window.location.pathname,
-                    target_type: 'auth',
-                    target_key: 'auth:login:email',
-                    flow_name: 'auth-login',
-                    step_name: 'success',
-                    properties: {
-                        method: 'email',
-                    },
-                });
-                
+                if (isAnalyticsConsentGiven()) {
+                    AuthTracker.login('email');
+                    journeyTracking.identify(data.user.id);
+                    journeyTracking.trackEvent({
+                        event_name: 'auth_login',
+                        event_category: 'auth',
+                        page_path: window.location.pathname,
+                        target_type: 'auth',
+                        target_key: 'auth:login:email',
+                        flow_name: 'auth-login',
+                        step_name: 'success',
+                        properties: {
+                            method: 'email',
+                        },
+                    });
+                }
+
                 // Fetch profile to get full_name
                 const { data: profile } = await supabaseClient
                     .from("profiles")
@@ -73,24 +87,26 @@ const authProvider: AuthProvider = {
                     .eq("id", data.user.id)
                     .single();
 
-                analyticsManager.setUser(data.user.id, {
-                    email: data.user.email,
-                    name: profile?.full_name || data.user.email?.split("@")[0] || 'User',
-                    createdAt: data.user.created_at,
-                });
+                if (isAnalyticsConsentGiven()) {
+                    analyticsManager.setUser(data.user.id, {
+                        email: data.user.email,
+                        name: profile?.full_name || data.user.email?.split("@")[0] || 'User',
+                        createdAt: data.user.created_at,
+                    });
+                }
                 return {
                     success: true,
                     redirectTo: "/",
                 };
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             ErrorTracker.apiError({
                 endpoint: 'auth/login',
-                errorMessage: error.message || 'Login failed',
+                errorMessage: getErrorMessage(error) || 'Login failed',
             });
             return {
                 success: false,
-                error,
+                error: error as Error,
             };
         }
 
@@ -125,7 +141,9 @@ const authProvider: AuthProvider = {
                 }
 
                 if (data?.url) {
-                    AuthTracker.register('oauth');
+                    if (isAnalyticsConsentGiven()) {
+                        AuthTracker.register('oauth');
+                    }
                     return {
                         success: true,
                         redirectTo: "/",
@@ -151,21 +169,25 @@ const authProvider: AuthProvider = {
             }
 
             if (data) {
-                AuthTracker.register('email');
+                if (isAnalyticsConsentGiven()) {
+                    AuthTracker.register('email');
+                }
                 if (data.user) {
-                    journeyTracking.identify(data.user.id);
-                    journeyTracking.trackEvent({
-                        event_name: 'auth_register',
-                        event_category: 'auth',
-                        page_path: window.location.pathname,
-                        target_type: 'auth',
-                        target_key: 'auth:register:email',
-                        flow_name: 'auth-register',
-                        step_name: 'success',
-                        properties: {
-                            method: 'email',
-                        },
-                    });
+                    if (isAnalyticsConsentGiven()) {
+                        journeyTracking.identify(data.user.id);
+                        journeyTracking.trackEvent({
+                            event_name: 'auth_register',
+                            event_category: 'auth',
+                            page_path: window.location.pathname,
+                            target_type: 'auth',
+                            target_key: 'auth:register:email',
+                            flow_name: 'auth-register',
+                            step_name: 'success',
+                            properties: {
+                                method: 'email',
+                            },
+                        });
+                    }
                     // Fetch profile to get full_name (profile should be created via trigger)
                     const { data: profile } = await supabaseClient
                         .from("profiles")
@@ -173,25 +195,27 @@ const authProvider: AuthProvider = {
                         .eq("id", data.user.id)
                         .single();
 
-                    analyticsManager.setUser(data.user.id, {
-                        email: data.user.email,
-                        name: profile?.full_name || data.user.email?.split("@")[0] || 'User',
-                        createdAt: data.user.created_at,
-                    });
+                    if (isAnalyticsConsentGiven()) {
+                        analyticsManager.setUser(data.user.id, {
+                            email: data.user.email,
+                            name: profile?.full_name || data.user.email?.split("@")[0] || 'User',
+                            createdAt: data.user.created_at,
+                        });
+                    }
                 }
                 return {
                     success: true,
                     redirectTo: "/",
                 };
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             ErrorTracker.apiError({
                 endpoint: 'auth/register',
-                errorMessage: error.message || 'Register failed',
+                errorMessage: getErrorMessage(error) || 'Register failed',
             });
             return {
                 success: false,
-                error,
+                error: error as Error,
             };
         }
 
@@ -224,10 +248,10 @@ const authProvider: AuthProvider = {
                     success: true,
                 };
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             return {
                 success: false,
-                error,
+                error: error as Error,
             };
         }
 
@@ -258,10 +282,10 @@ const authProvider: AuthProvider = {
                     redirectTo: "/",
                 };
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             return {
                 success: false,
-                error,
+                error: error as Error,
             };
         }
         return {
@@ -286,9 +310,11 @@ const authProvider: AuthProvider = {
             };
         }
 
-        AuthTracker.logout();
-        analyticsManager.clearUser();
-        journeyTracking.clearUser();
+        if (isAnalyticsConsentGiven()) {
+            AuthTracker.logout();
+            analyticsManager.clearUser();
+            journeyTracking.clearUser();
+        }
 
         return {
             success: true,
@@ -315,10 +341,10 @@ const authProvider: AuthProvider = {
                     redirectTo: "/login",
                 };
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             return {
                 authenticated: false,
-                error: error || {
+                error: (error as Error) || {
                     message: "Check failed",
                     name: "Not authenticated",
                 },
@@ -357,13 +383,15 @@ const authProvider: AuthProvider = {
         if (error || !profile) {
             // If profile doesn't exist, return basic auth user data
             const fallbackName = authData.user.email?.split("@")[0] || "User";
-            
+
             // Set analytics user even if profile fetch fails
-            analyticsManager.setUser(authData.user.id, {
-                email: authData.user.email,
-                name: fallbackName,
-            });
-            journeyTracking.identify(authData.user.id);
+            if (isAnalyticsConsentGiven()) {
+                analyticsManager.setUser(authData.user.id, {
+                    email: authData.user.email,
+                    name: fallbackName,
+                });
+                journeyTracking.identify(authData.user.id);
+            }
 
             return {
                 id: authData.user.id,
@@ -374,11 +402,13 @@ const authProvider: AuthProvider = {
         }
 
         // Set analytics user with full profile data
-        analyticsManager.setUser(profile.id, {
-            email: profile.email,
-            name: profile.full_name,
-        });
-        journeyTracking.identify(profile.id);
+        if (isAnalyticsConsentGiven()) {
+            analyticsManager.setUser(profile.id, {
+                email: profile.email,
+                name: profile.full_name,
+            });
+            journeyTracking.identify(profile.id);
+        }
 
         // Return full profile data
         return {
