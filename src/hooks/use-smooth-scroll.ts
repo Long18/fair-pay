@@ -11,8 +11,9 @@ export function useSmoothScroll() {
 
     const lenis = new Lenis({
       lerp: 0.1,
-      duration: 1.2,
+      duration: 0.8,       // was 1.2 — shorter duration is more responsive on desktop
       smoothWheel: true,
+      wheelMultiplier: 1.2, // slightly more scroll distance per wheel tick
     });
 
     lenisRef.current = lenis;
