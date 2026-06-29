@@ -13,11 +13,12 @@ interface AuthResult {
  * DO NOT replace this with jwtDecode — that only decodes without verification.
  */
 export async function getAuthenticatedUser(authHeader: string | undefined): Promise<AuthResult> {
+  const token = authHeader?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim()
+
   if (!authHeader) {
     return { user: null, error: 'Missing authorization header', supabase: null }
   }
 
-  const token = authHeader.replace('Bearer ', '')
   if (!token) {
     return { user: null, error: 'Invalid authorization header format', supabase: null }
   }
