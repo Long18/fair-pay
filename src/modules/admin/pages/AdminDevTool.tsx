@@ -143,6 +143,11 @@ interface EmailOverviewResponse {
   error?: string;
 }
 
+interface AttachUserEmailsResult {
+  rows: DebtReminderRow[];
+  warning?: string;
+}
+
 interface SendReminderResponse {
   success: boolean;
   notification_ids?: string[];
@@ -430,12 +435,12 @@ function normalizeDebtRows(rows: unknown[], tAdmin: AdminT): DebtReminderRow[] {
         group_breakdown: groupBreakdown,
       };
     })
-    .filter((row) => row.user_id && row.email && row.total_i_owe > 0);
+    .filter((row) => row.user_id && row.total_i_owe > 0);
 }
 
-async function attachUserEmails(rows: DebtReminderRow[]): Promise<DebtReminderRow[]> {
+async function attachUserEmails(rows: DebtReminderRow[]): Promise<AttachUserEmailsResult> {
   const userIds = Array.from(new Set(rows.map((row) => row.user_id).filter(Boolean)));
-  if (!userIds.length) return rows;
+  if (!userIds.length) return { rows };
 
   const { data, error } = await supabaseClient
     .from("user_emails")
@@ -446,7 +451,7 @@ async function attachUserEmails(rows: DebtReminderRow[]): Promise<DebtReminderRo
 
   if (error) {
     console.warn("[admin/email] Failed to load user_emails", error);
-    return rows;
+    return { rows, warning: error.message };
   }
 
   const byUser = new Map<string, UserEmailOption[]>();
@@ -456,11 +461,13 @@ async function attachUserEmails(rows: DebtReminderRow[]): Promise<DebtReminderRo
     byUser.set(item.user_id, current);
   }
 
-  return rows.map((row) => {
+  return {
+    rows: rows.map((row) => {
     const emails = byUser.get(row.user_id) ?? row.emails;
     const email = emails.find((item) => item.is_primary)?.email ?? row.email ?? emails[0]?.email ?? null;
     return { ...row, email, emails };
-  });
+    }),
+  };
 }
 
 function getSelectedRecipientEmails(
@@ -479,7 +486,7 @@ function formatRecipientEmails(
   row: DebtReminderRow,
   recipientSelections: Record<string, string[]>
 ): string {
-  return getSelectedRecipientEmails(row, recipientSelections).join(", ");
+  return getSelectedRecipientEmails(row, recipientSelections).join(", ") || row.email || "No recipient email";
 }
 
 function toReminderDebtBreakdown(items: DebtBreakdownRow[]): ReminderDebtBreakdownItem[] {
@@ -877,8 +884,10 @@ function AdminEmailDevTools() {
     setPendingQueueError(null);
     try {
       const overview = await fetchEmailOverview();
-      const rows = await attachUserEmails(normalizeDebtRows(overview.debtors || [], tAdmin));
+      const attached = await attachUserEmails(normalizeDebtRows(overview.debtors || [], tAdmin));
+      const rows = attached.rows;
       setDebtors(rows);
+      setPendingQueueError(attached.warning ? tAdmin("devtool.emailEnrichmentWarning") : null);
       setRecipientSelections((previous) => {
         const next: Record<string, string[]> = {};
         for (const row of rows) {
@@ -896,6 +905,8 @@ function AdminEmailDevTools() {
       const message = error instanceof Error && error.message === "admin-session-missing"
         ? tAdmin("devtool.missingAdminSession")
         : error instanceof Error ? error.message : tAdmin("devtool.loadError");
+      setDebtors([]);
+      setPendingQueueError(message);
       toast.error(message);
     } finally {
       setIsLoading(false);
