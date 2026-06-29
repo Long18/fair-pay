@@ -7,6 +7,28 @@ import { handleCorsPreflightIfNeeded, setCorsHeaders } from '../../_lib/cors.js'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+function serializeError(error: unknown): Record<string, unknown> {
+  if (!error || typeof error !== 'object') return {}
+  const record = error as Record<string, unknown>
+  return {
+    code: record.code,
+    details: record.details,
+    hint: record.hint,
+  }
+}
+
+export function normalizeEmailOverview(data: unknown): { pending_queue_count: number; debtors: unknown[] } {
+  const summary = (data && typeof data === 'object' ? data : {}) as {
+    pending_queue_count?: unknown
+    debtors?: unknown
+  }
+
+  return {
+    pending_queue_count: typeof summary.pending_queue_count === 'number' ? summary.pending_queue_count : 0,
+    debtors: Array.isArray(summary.debtors) ? summary.debtors : [],
+  }
+}
+
 function getBearerToken(authHeader: string | undefined): string {
   return authHeader?.replace(/^Bearer\s+/i, '').trim() || ''
 }
@@ -53,17 +75,20 @@ async function handleOverview(req: VercelRequest, res: VercelResponse) {
   const { data, error } = await supabase.rpc('admin_get_email_devtool_summary', { p_limit: 100 })
 
   if (error) {
+    console.error('[admin/email/overview] admin_get_email_devtool_summary failed', serializeError(error), error.message)
     return res.status(500).json({
       success: false,
       error: `Failed to load email devtool summary: ${error.message}`,
+      action: 'overview',
+      ...serializeError(error),
     })
   }
 
-  const summary = (data || {}) as { pending_queue_count?: number; debtors?: unknown[] }
+  const summary = normalizeEmailOverview(data)
   return res.status(200).json({
     success: true,
-    pending_queue_count: summary.pending_queue_count ?? 0,
-    debtors: summary.debtors ?? [],
+    pending_queue_count: summary.pending_queue_count,
+    debtors: summary.debtors,
   })
 }
 
@@ -202,6 +227,12 @@ interface ReminderRequest {
   }>
 }
 
+export function normalizeReminderRequests(body: ReminderRequest): Required<ReminderRequest>['reminders'] {
+  return (body.reminders || [])
+    .filter((r) => r.user_id && r.title && r.message)
+    .slice(0, 100)
+}
+
 async function handleSendReminder(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, error: 'Method not allowed' })
@@ -218,9 +249,7 @@ async function handleSendReminder(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ success: false, error: 'Server misconfiguration' })
   }
 
-  const reminders = (parseBody<ReminderRequest>(req).reminders || [])
-    .filter((r) => r.user_id && r.title && r.message)
-    .slice(0, 100)
+  const reminders = normalizeReminderRequests(parseBody<ReminderRequest>(req))
 
   if (!reminders.length) {
     return res.status(400).json({ success: false, error: 'No valid reminders provided' })
