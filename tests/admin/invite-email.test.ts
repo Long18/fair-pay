@@ -23,7 +23,7 @@ describe("admin invite email helpers", () => {
     expect(preview.previewText).toContain("Chia tiền nhóm");
     expect(preview.html).toContain("https://long-pay.vercel.app");
     expect(preview.html).toContain("Bắt đầu với FairPay");
-    expect(preview.html).toContain('data-email-shell="maily-inspired"');
+    expect(preview.html).toContain('data-email-shell="fairpay-pastel"');
     expect(preview.html).toContain('data-email-block="invite-benefits"');
     expect(preview.html).toContain('class="cta-link"');
   });

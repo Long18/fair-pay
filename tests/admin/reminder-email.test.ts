@@ -44,7 +44,7 @@ describe("admin reminder email helpers", () => {
     expect(preview.html).toContain("@media only screen and (max-width: 640px)");
     expect(preview.html).toContain('class="email-body"');
     expect(preview.html).toContain('class="cta-link"');
-    expect(preview.html).toContain('data-email-shell="maily-inspired"');
+    expect(preview.html).toContain('data-email-shell="fairpay-pastel"');
     expect(preview.html).toContain('data-email-block="notification-card"');
     expect(preview.html).toContain('data-email-block="debt-summary"');
     expect(preview.text).toContain("You owe Lê A");
