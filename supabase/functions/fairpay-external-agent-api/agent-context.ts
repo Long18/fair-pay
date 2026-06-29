@@ -43,9 +43,8 @@ type AgentContextDocument = {
   maintainer_notes: string[]
 }
 
-export class AgentContextService {
-  build(): AgentContextDocument {
-    return {
+export function buildAgentContext(): AgentContextDocument {
+  return {
       service: 'FairPay',
       version: 'v1',
       base_url: FAIRPAY_BASE_URL,
@@ -206,8 +205,5 @@ export class AgentContextService {
         'External no-key intake must never expose account, group, or member lookup APIs.',
         'Do not bypass the FairPay approval flow for external agent submissions.',
       ],
-    }
   }
 }
-
-export default AgentContextService

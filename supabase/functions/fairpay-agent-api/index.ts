@@ -16,7 +16,8 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { handleAgentApiCorsPreflight, getAgentApiCorsHeaders } from './_cors.ts'
+import { handleAgentApiCorsPreflight } from './_cors.ts'
+import { errJson } from './response.ts'
 import { handleMe } from './handlers/me.ts'
 import { handleGroups, handleGroupMembers } from './handlers/groups.ts'
 import { handleDuplicateCheck } from './handlers/duplicate-check.ts'
@@ -31,13 +32,6 @@ const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 // Never use SUPABASE_SERVICE_ROLE_KEY in this function.
 // All data access is request-scoped via the user's JWT.
 
-function errRes(status: number, code: string, message: string): Response {
-  return new Response(JSON.stringify({ error: { code, message } }), {
-    status,
-    headers: getAgentApiCorsHeaders(),
-  })
-}
-
 serve(async (req: Request) => {
   // CORS preflight
   const preflightRes = handleAgentApiCorsPreflight(req)
@@ -45,7 +39,7 @@ serve(async (req: Request) => {
 
   // Build request-scoped user client from the Authorization header
   const authHeader = req.headers.get('Authorization')
-  if (!authHeader) return errRes(401, 'MISSING_AUTH', 'Authorization header required')
+  if (!authHeader) return errJson(401, 'MISSING_AUTH', 'Authorization header required')
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: { headers: { Authorization: authHeader } },
@@ -105,9 +99,9 @@ serve(async (req: Request) => {
       return await handleGetOperation(supabase, opMatch[1])
     }
 
-    return errRes(404, 'NOT_FOUND', `No route: ${method} ${path}`)
+    return errJson(404, 'NOT_FOUND', `No route: ${method} ${path}`)
   } catch (err) {
     console.error('[fairpay-agent-api] Unhandled error:', err)
-    return errRes(500, 'INTERNAL_ERROR', 'An unexpected error occurred')
+    return errJson(500, 'INTERNAL_ERROR', 'An unexpected error occurred')
   }
 })

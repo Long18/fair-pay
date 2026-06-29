@@ -1,5 +1,11 @@
 import { SupabaseClient, User } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getAgentApiCorsHeaders } from './_cors.ts'
+import {
+  okJson as sharedOkJson,
+  errJson as sharedErrJson,
+  parseBody as sharedParseBody,
+  type ParseBodyResult,
+} from '../_shared/agent-response.ts'
 
 // requireAuth — shared auth guard used by all handlers.
 // Returns either { user, error: null } or { user: null, error: Response }.
@@ -9,46 +15,33 @@ export type AuthResult =
   | { user: null; error: Response }
 
 export async function requireAuth(supabase: SupabaseClient): Promise<AuthResult> {
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) {
+  try {
+    const { data, error } = await supabase.auth.getUser()
+    if (error || !data?.user) {
+      return { user: null, error: errJson(401, 'UNAUTHENTICATED', 'Not authenticated') }
+    }
+    return { user: data.user, error: null }
+  } catch {
     return { user: null, error: errJson(401, 'UNAUTHENTICATED', 'Not authenticated') }
   }
-  return { user, error: null }
 }
 
+/** Convenience wrappers that bake in the agent-api CORS headers. */
 export function okJson(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: getAgentApiCorsHeaders(),
-  })
+  return sharedOkJson(data, getAgentApiCorsHeaders(), status)
 }
 
 export function errJson(
   status: number,
   code: string,
   message: string,
-  details?: unknown
+  details?: unknown,
 ): Response {
-  const errBody: { code: string; message: string; details?: unknown } = { code, message }
-  if (details !== undefined) errBody.details = details
-  return new Response(JSON.stringify({ error: errBody }), {
-    status,
-    headers: getAgentApiCorsHeaders(),
-  })
+  return sharedErrJson(status, code, message, getAgentApiCorsHeaders(), details)
 }
-
-type ParseBodyResult =
-  | { value: unknown; error: null }
-  | { value: null; error: Response }
 
 export async function parseBody(req: Request): Promise<ParseBodyResult> {
-  try {
-    const text = await req.text()
-    if (!text || text.trim() === '') {
-      return { value: {}, error: null }
-    }
-    return { value: JSON.parse(text), error: null }
-  } catch {
-    return { value: null, error: errJson(400, 'INVALID_JSON', 'Request body is not valid JSON') }
-  }
+  return sharedParseBody(req, getAgentApiCorsHeaders())
 }
+
+export type { ParseBodyResult }

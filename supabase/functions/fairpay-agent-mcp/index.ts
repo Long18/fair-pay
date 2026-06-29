@@ -3,21 +3,16 @@ import { corsHeaders, isAllowedOrigin } from './_cors.ts'
 import { handleMcpMessage, SUPPORTED_PROTOCOL_VERSIONS } from './protocol.ts'
 import { AgentApiTransportClient } from './rest-client.ts'
 import { createMcpToolExecutor } from './tools.ts'
+import { okJson } from '../_shared/agent-response.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 const AGENT_API_URL = `${SUPABASE_URL}/functions/v1/fairpay-agent-api`
 const MAX_REQUEST_BYTES = 64 * 1024
 
-function jsonResponse(req: Request, body: unknown, status: number): Response {
-  return new Response(body === null ? null : JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders(req), 'content-type': 'application/json' },
-  })
-}
-
+// MCP protocol errors use the JSON-RPC 2.0 envelope, not the standard API envelope.
 function protocolError(req: Request, status: number, code: number, message: string): Response {
-  return jsonResponse(req, { jsonrpc: '2.0', id: null, error: { code, message } }, status)
+  return okJson({ jsonrpc: '2.0', id: null, error: { code, message } }, corsHeaders(req), status)
 }
 
 serve(async (req: Request) => {
@@ -69,5 +64,5 @@ serve(async (req: Request) => {
   if (result.status === 202) {
     return new Response(null, { status: 202, headers: corsHeaders(req) })
   }
-  return jsonResponse(req, result.body, 200)
+  return okJson(result.body, corsHeaders(req))
 })
