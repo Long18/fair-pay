@@ -124,12 +124,12 @@ function buildCounterpartyRows(
         ${safeEmail ? `<div style="font-size:12px;line-height:1.45;color:#64748b;">${safeEmail}</div>` : ""}
       </td>
       <td align="right" style="padding:${options?.compact ? "10px" : "12px"} 0;border-bottom:1px solid #eef2f7;white-space:nowrap;">
-        <div style="font-size:16px;line-height:1.45;font-weight:800;color:#dc2626;">${safeAmount}</div>
+        <div style="font-size:16px;line-height:1.45;font-weight:800;color:#f43f5e;">${safeAmount}</div>
       </td>
     </tr>
     ${transactionRows ? `<tr>
       <td colspan="2" style="padding:0 0 14px;border-bottom:1px solid #eef2f7;">
-        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-radius:10px;background:#ffffff;padding:2px 12px;">
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-radius:14px;background:#ffffff;padding:2px 12px;">
           ${transactionRows}
         </table>
       </td>
@@ -176,17 +176,23 @@ function buildGroupAvatarHtml(group: ReminderGroupBreakdownItem): string {
   </div>`;
 }
 
-function buildGroupSections(groupBreakdown: ReminderGroupBreakdownItem[]): string {
+function buildGroupSections(groupBreakdown: ReminderGroupBreakdownItem[], appUrl?: string): string {
   if (!groupBreakdown.length) return "";
 
   return groupBreakdown.map((group) => {
     const safeGroupName = escapeHtml(group.groupName || "Direct / Ngoài group");
     const safeSubtotal = escapeHtml(formatCurrency(group.subtotalAmount, group.currency || "VND"));
     const counterpartyRows = buildCounterpartyRows(group.counterparties, { compact: true });
+    const groupHref = group.groupId && appUrl ? normalizeHref(appUrl, `/groups/${group.groupId}`) : undefined;
+    const groupHeaderContent = groupHref
+      ? `<a href="${escapeHtml(groupHref)}" style="display:block;text-decoration:none;color:inherit;">`
+      : '<div>';
+    const groupHeaderClose = groupHref ? '</a>' : '</div>';
 
-    return `<table class="group-card" data-email-block="group-debt-card" width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:14px;border:1px solid #e2e8f0;border-radius:16px;background:#ffffff;padding:0 16px;">
+    return `<table class="group-card" data-email-block="group-debt-card" width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:14px;border:1px solid #e2e8f0;border-radius:20px;background:#ffffff;padding:0 16px;">
       <tr>
         <td style="padding:16px 0 12px;">
+          ${groupHeaderContent}
           <table class="group-header-table" width="100%" cellpadding="0" cellspacing="0" role="presentation">
             <tr>
               <td class="group-header-avatar" width="58" valign="top">${buildGroupAvatarHtml(group)}</td>
@@ -196,10 +202,11 @@ function buildGroupSections(groupBreakdown: ReminderGroupBreakdownItem[]): strin
               </td>
               <td class="group-header-amount" align="right" valign="middle" style="white-space:nowrap;">
                 <div style="font-size:11px;line-height:1.5;color:#64748b;">Chưa settle / Outstanding</div>
-                <div style="font-size:18px;line-height:1.3;font-weight:900;color:#dc2626;">${safeSubtotal}</div>
+                <div style="font-size:18px;line-height:1.3;font-weight:900;color:#f43f5e;">${safeSubtotal}</div>
               </td>
             </tr>
           </table>
+          ${groupHeaderClose}
         </td>
       </tr>
       <tr>
@@ -216,10 +223,11 @@ function buildGroupSections(groupBreakdown: ReminderGroupBreakdownItem[]): strin
 export function buildReminderEmailPreview(input: ReminderEmailPreviewInput): ReminderEmailPreview {
   const appUrl = input.appUrl || "https://long-pay.vercel.app";
   const hasAuthAccount = input.hasAuthAccount !== false;
-  const detailLink = hasAuthAccount ? input.link || "/dashboard" : "/register";
-  const ctaLink = hasAuthAccount ? "/dashboard" : "/register";
+  const detailLink = hasAuthAccount ? input.link || "/balances" : "/register";
+  // Reminder emails always CTA to /balances — where users see outstanding debts and settle.
+  const ctaLink = hasAuthAccount ? "/balances" : "/register";
   const ctaLabel = hasAuthAccount
-    ? "Mở FairPay / Open FairPay"
+    ? "Xem số dư / View balances"
     : "Tạo tài khoản để xem chi tiết / Create account to view";
   const subject = `[FairPay] Payment reminder: ${input.title}`;
   const previewText = input.message;
@@ -235,7 +243,7 @@ export function buildReminderEmailPreview(input: ReminderEmailPreviewInput): Rem
   const ctaHref = normalizeHref(appUrl, ctaLink);
   const safeHref = escapeHtml(href);
   const safeHeroUrl = escapeHtml(normalizeHref(appUrl, "/assets/email/debt-reminder-hero.jpg"));
-  const groupSections = buildGroupSections(groupBreakdown);
+  const groupSections = buildGroupSections(groupBreakdown, appUrl);
   const legacyDebtRows = buildCounterpartyRows(debtBreakdown);
   const groupTextLines = buildGroupTextLines(groupBreakdown);
   const debtTextLines = groupTextLines.length ? groupTextLines : buildLegacyDebtTextLines(debtBreakdown);
@@ -264,7 +272,7 @@ export function buildReminderEmailPreview(input: ReminderEmailPreviewInput): Rem
     description: input.message,
     tone: "reminder",
     marker: "notification-card",
-    bodyHtml: `<a href="${safeHref}" style="display:inline-block;margin-top:10px;font-size:13px;color:#dc2626;text-decoration:none;font-weight:700;">
+    bodyHtml: `<a href="${safeHref}" style="display:inline-block;margin-top:10px;font-size:13px;color:#f43f5e;text-decoration:none;font-weight:700;">
       ${hasAuthAccount ? "Xem chi tiết / View" : "Tạo tài khoản để xem / Create account to view"} &rarr;
     </a>`,
   });
@@ -280,7 +288,7 @@ export function buildReminderEmailPreview(input: ReminderEmailPreviewInput): Rem
       marker: "debt-summary",
     })}
     ${groupSections || `
-      <table data-email-block="legacy-debt-list" width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:14px;border:1px solid #e2e8f0;border-radius:14px;padding:0 16px;background:#ffffff;">
+      <table data-email-block="legacy-debt-list" width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:14px;border:1px solid #e2e8f0;border-radius:18px;padding:0 16px;background:#ffffff;">
         ${legacyDebtRows}
       </table>`}` : "";
 

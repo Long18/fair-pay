@@ -312,7 +312,11 @@ function buildSubject(count: number, notifications: QueueRow[]): string {
 
 function buildEmailText(userName: string, notifications: QueueRow[], appUrl: string): string {
   const hasAuthAccount = notifications[0]?.has_auth_account !== false
-  const ctaUrl = joinAppUrl(appUrl, hasAuthAccount ? '/dashboard' : '/register')
+  const ctaUrl = getSmartCtaHref(notifications, appUrl)
+  const hasReminder = notifications.some((n) => n.notification_type === 'settlement_reminder')
+  const ctaActionLabel = hasAuthAccount
+    ? (hasReminder ? 'Xem số dư / View balances' : 'Mở FairPay / Open FairPay')
+    : 'Tạo tài khoản FairPay / Create your FairPay account'
   const lines: string[] = [
     `Xin chào ${userName},`,
     '',
@@ -333,7 +337,7 @@ function buildEmailText(userName: string, notifications: QueueRow[], appUrl: str
     }
     lines.push('')
   }
-  lines.push(`${hasAuthAccount ? 'Mở FairPay / Open FairPay' : 'Tạo tài khoản FairPay / Create your FairPay account'}: ${ctaUrl}`)
+  lines.push(`${ctaActionLabel}: ${ctaUrl}`)
   return lines.join('\n')
 }
 
@@ -459,12 +463,12 @@ function buildCounterpartyRows(items: DebtBreakdownItem[]): string {
           ${safeEmail ? `<div style="font-size:12px;line-height:1.45;color:#94a3b8;">${safeEmail}</div>` : ''}
         </td>
         <td align="right" style="padding:12px 0 10px;border-top:1px solid #e2e8f0;white-space:nowrap;">
-          <div style="font-size:17px;line-height:1.45;font-weight:900;color:#dc2626;">${safeAmount}</div>
+          <div style="font-size:17px;line-height:1.45;font-weight:900;color:#f43f5e;">${safeAmount}</div>
         </td>
       </tr>
       ${transactionRows ? `<tr>
         <td colspan="2" style="padding:0 0 14px;">
-          <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-radius:12px;background:#ffffff;padding:4px 12px;border:1px solid #eef2f7;">
+          <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-radius:14px;background:#ffffff;padding:4px 12px;border:1px solid #eef2f7;">
             ${transactionRows}
           </table>
         </td>
@@ -484,15 +488,21 @@ function buildGroupAvatarHtml(group: GroupBreakdownItem): string {
   </div>`
 }
 
-function buildGroupSections(groups: GroupBreakdownItem[]): string {
+function buildGroupSections(groups: GroupBreakdownItem[], appUrl?: string): string {
   return groups.map((group) => {
     const safeGroupName = escapeHtml(group.group_name || 'Direct / Ngoài group')
     const safeSubtotal = escapeHtml(formatCurrency(group.subtotal_amount, group.currency))
+    const groupHref = group.group_id && appUrl ? joinAppUrl(appUrl, `/groups/${group.group_id}`) : undefined
+    const headerOpen = groupHref
+      ? `<a href="${escapeHtml(groupHref)}" style="display:block;text-decoration:none;color:inherit;">`
+      : ''
+    const headerClose = groupHref ? '</a>' : ''
 
     return `
-      <table class="group-card" data-email-block="group-debt-card" width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:14px;border:1px solid #e2e8f0;border-radius:16px;background:#ffffff;padding:0 16px;">
+      <table class="group-card" data-email-block="group-debt-card" width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:14px;border:1px solid #e2e8f0;border-radius:20px;background:#ffffff;padding:0 16px;">
         <tr>
           <td style="padding:16px 0 12px;">
+            ${headerOpen}
             <table class="group-header-table" width="100%" cellpadding="0" cellspacing="0" role="presentation">
               <tr>
                 <td class="group-header-avatar" width="58" valign="top">${buildGroupAvatarHtml(group)}</td>
@@ -502,10 +512,11 @@ function buildGroupSections(groups: GroupBreakdownItem[]): string {
                 </td>
                 <td class="group-header-amount" align="right" valign="middle" style="white-space:nowrap;">
                   <div style="font-size:11px;line-height:1.5;color:#64748b;">Chưa settle / Outstanding</div>
-                  <div style="font-size:18px;line-height:1.3;font-weight:900;color:#dc2626;">${safeSubtotal}</div>
+                  <div style="font-size:18px;line-height:1.3;font-weight:900;color:#f43f5e;">${safeSubtotal}</div>
                 </td>
               </tr>
             </table>
+            ${headerClose}
           </td>
         </tr>
         <tr>
@@ -519,11 +530,11 @@ function buildGroupSections(groups: GroupBreakdownItem[]): string {
   }).join('')
 }
 
-function buildDebtBreakdownHtml(context: ReminderEmailContext | null): string {
+function buildDebtBreakdownHtml(context: ReminderEmailContext | null, appUrl?: string): string {
   if (!context) return ''
 
   const safeTotal = escapeHtml(formatCurrency(context.total_amount))
-  const groupSections = buildGroupSections(context.group_breakdown)
+  const groupSections = buildGroupSections(context.group_breakdown, appUrl)
   const legacyRows = buildCounterpartyRows(context.debt_breakdown)
 
   return `
@@ -537,7 +548,7 @@ function buildDebtBreakdownHtml(context: ReminderEmailContext | null): string {
       marker: 'debt-summary',
     })}
     ${groupSections || `
-    <table data-email-block="legacy-debt-list" width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:14px;border:1px solid #e2e8f0;border-radius:14px;background:#ffffff;padding:0 18px;">
+    <table data-email-block="legacy-debt-list" width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:14px;border:1px solid #e2e8f0;border-radius:18px;background:#ffffff;padding:0 18px;">
       ${legacyRows}
     </table>`}`
 }
@@ -565,9 +576,28 @@ function buildNotifRows(notifications: QueueRow[], appUrl: string): string {
           <a href="${escapeHtml(href)}" style="display:inline-block;margin-top:10px;font-size:13px;color:#2563eb;text-decoration:none;font-weight:700;">
             ${hasAuthAccount ? 'Xem chi tiết / View' : 'Tạo tài khoản để xem / Create account to view'} &rarr;
           </a>` : ''}
-        ${buildDebtBreakdownHtml(reminderContext)}`,
+        ${buildDebtBreakdownHtml(reminderContext, appUrl)}`,
     })
   }).join('')
+}
+
+function getSmartCtaHref(notifications: QueueRow[], appUrl: string): string {
+  const hasAuthAccount = notifications[0]?.has_auth_account !== false
+
+  if (!hasAuthAccount) return joinAppUrl(appUrl, '/register')
+
+  // Single notification: route to its link if available
+  if (notifications.length === 1 && notifications[0]?.link) {
+    return joinAppUrl(appUrl, notifications[0].link)
+  }
+
+  // Any settlement reminders: go to /balances (where user settles)
+  if (notifications.some((n) => n.notification_type === 'settlement_reminder')) {
+    return joinAppUrl(appUrl, '/balances')
+  }
+
+  // Default: dashboard
+  return joinAppUrl(appUrl, '/dashboard')
 }
 
 function buildEmailHtml(
@@ -577,9 +607,9 @@ function buildEmailHtml(
 ): string {
   const hasAuthAccount = notifications[0]?.has_auth_account !== false
   const hasReminder = notifications.some((notification) => notification.notification_type === 'settlement_reminder')
-  const ctaHref = joinAppUrl(appUrl, hasAuthAccount ? '/dashboard' : '/register')
+  const ctaHref = getSmartCtaHref(notifications, appUrl)
   const ctaLabel = hasAuthAccount
-    ? 'Mở FairPay / Open FairPay'
+    ? (hasReminder ? 'Xem số dư / View balances' : 'Mở FairPay / Open FairPay')
     : 'Tạo tài khoản để xem chi tiết / Create account to view'
   const heroUrl = joinAppUrl(appUrl, '/assets/email/debt-reminder-hero.jpg')
   const count = notifications.length
@@ -724,8 +754,9 @@ async function sendInviteEmails(
  * Required secrets (set via `supabase secrets set`):
  *   SMTP_HOST      - e.g. smtp.gmail.com
  *   SMTP_PORT      - e.g. 587 (STARTTLS) or 465 (SSL)
- *   SMTP_USER      - sender email address
+ *   SMTP_USER      - SMTP username
  *   SMTP_PASS      - app password or SMTP password
+ *   SMTP_FROM_EMAIL - sender email address (defaults to SMTP_USER)
  *   SMTP_FROM_NAME - display name (default: FairPay)
  *   APP_URL        - frontend URL for deep links (default: https://long-pay.vercel.app)
  */
@@ -743,6 +774,7 @@ serve(async (req) => {
     const smtpPort         = parseInt(Deno.env.get('SMTP_PORT') || '587')
     const smtpUser         = Deno.env.get('SMTP_USER')
     const smtpPass         = Deno.env.get('SMTP_PASS')
+    const smtpFromEmail    = Deno.env.get('SMTP_FROM_EMAIL') || smtpUser
     const smtpFromName     = Deno.env.get('SMTP_FROM_NAME') || 'FairPay'
     const appUrl           = Deno.env.get('APP_URL') || 'https://long-pay.vercel.app'
 
@@ -770,7 +802,7 @@ serve(async (req) => {
       const inviteResult = await sendInviteEmails(
         smtp,
         smtpFromName,
-        smtpUser,
+        smtpFromEmail,
         body.invite.emails,
         body.invite.inviter_name || 'Một người bạn',
         appUrl
@@ -859,7 +891,7 @@ serve(async (req) => {
 
         await sendHtmlEmail(smtp, {
           fromName: smtpFromName,
-          fromEmail: smtpUser,
+          fromEmail: smtpFromEmail,
           to: user_email,
           subject,
           html,
