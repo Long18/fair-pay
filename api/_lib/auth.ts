@@ -34,12 +34,18 @@ export async function getAuthenticatedUser(authHeader: string | undefined): Prom
     global: { headers: { Authorization: `Bearer ${token}` } },
   })
 
-  // Some environments (notably Vercel's function typecheck pipeline) can see a
-  // narrower auth client type; runtime still supports getUser(). Cast to avoid
-  // false-negative build failures.
-  const { data: { user }, error } = await (supabase.auth as unknown as { getUser: () => Promise<{ data: { user: User | null }, error: unknown | null }> }).getUser()
-  if (error || !user) {
-    return { user: null, error: 'Invalid or expired token', supabase: null }
+  let user: User | null = null
+  try {
+    // supabase.auth.getUser() always resolves (never rejects) in normal operation,
+    // but we wrap in try/catch to handle unexpected runtime failures (network errors,
+    // version mismatches, etc.) that would otherwise cause FUNCTION_INVOCATION_FAILED.
+    const { data, error } = await supabase.auth.getUser()
+    if (error || !data?.user) {
+      return { user: null, error: 'Invalid or expired token', supabase: null }
+    }
+    user = data.user
+  } catch {
+    return { user: null, error: 'Auth verification failed', supabase: null }
   }
 
   return { user, error: null, supabase }

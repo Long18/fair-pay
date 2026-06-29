@@ -297,23 +297,34 @@ const HANDLERS: Record<string, Handler> = {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  setCorsHeaders(res)
-  if (handleCorsPreflightIfNeeded(req, res)) return
-
-  const action = req.query.action as string
-  const fn = HANDLERS[action]
-
-  if (!fn) {
-    return res.status(404).json({ success: false, error: `Unknown email action: ${action}` })
-  }
-
+  // Wrap the entire handler so that even CORS setup failures return a structured
+  // error instead of a bare FUNCTION_INVOCATION_FAILED crash.
   try {
-    return await fn(req, res)
-  } catch (error) {
-    console.error(`[admin/email/${action}]`, error)
-    return res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Internal server error',
-    })
+    setCorsHeaders(res)
+    if (handleCorsPreflightIfNeeded(req, res)) return
+
+    const action = req.query.action as string
+    const fn = HANDLERS[action]
+
+    if (!fn) {
+      return res.status(404).json({ success: false, error: `Unknown email action: ${action}` })
+    }
+
+    try {
+      return await fn(req, res)
+    } catch (error) {
+      console.error(`[admin/email/${action}]`, error)
+      return res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal server error',
+      })
+    }
+  } catch (outerError) {
+    console.error('[admin/email] handler init failed', outerError)
+    try {
+      return res.status(500).json({ success: false, error: 'Internal server error' })
+    } catch {
+      // headers already sent — nothing we can do
+    }
   }
 }
