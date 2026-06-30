@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart as RechartsBarChart,
@@ -98,10 +98,15 @@ function TrendIndicator({ value, isPositive }: { value: number; isPositive: bool
     );
   }
   const Icon = isPositive ? ArrowUpIcon : ArrowDownIcon;
-  const colorClass = isPositive ? themeIntentTones.success.icon : themeIntentTones.danger.icon;
   return (
-    <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${colorClass}`}>
-      <Icon size={12} />
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+        isPositive
+          ? "bg-[var(--status-success-bg)] text-[var(--status-success-foreground)]"
+          : "bg-[var(--status-error-bg)] text-[var(--status-error-foreground)]"
+      }`}
+    >
+      <Icon size={11} />
       {isPositive ? "+" : ""}
       {value}%
     </span>
@@ -136,6 +141,19 @@ function MiniSparkline({ data, dataKey, color }: { data: Record<string, unknown>
         isAnimationActive={false}
       />
     </AreaChart>
+  );
+}
+
+// ─── Section Divider ────────────────────────────────────────────────
+
+function SectionDivider({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground whitespace-nowrap">
+        {label}
+      </span>
+      <div className="flex-1 h-px bg-border/60" />
+    </div>
   );
 }
 
@@ -204,22 +222,21 @@ function useAdminStats() {
   });
 }
 
-function useExpenseTrend(locale: string, enabled: boolean) {
+function useExpenseTrend(locale: string, enabled: boolean, days: number) {
   return useQuery({
-    queryKey: ["admin", "expense-trend-30d", locale],
+    queryKey: ["admin", "expense-trend", locale, days],
     queryFn: async () => {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const since = new Date();
+      since.setDate(since.getDate() - days);
 
       const { data, error } = await supabaseClient
         .from("expenses")
         .select("expense_date, amount")
-        .gte("expense_date", thirtyDaysAgo.toISOString().split("T")[0])
+        .gte("expense_date", since.toISOString().split("T")[0])
         .order("expense_date", { ascending: true });
 
       if (error) throw error;
 
-      // Group by date
       const grouped: Record<string, number> = {};
       for (const row of data ?? []) {
         const date = row.expense_date;
@@ -307,12 +324,16 @@ function useCategoryBreakdown(enabled: boolean) {
 
 // ─── Chart Configs ──────────────────────────────────────────────────
 
+type TrendPeriod = "7d" | "30d" | "90d";
+const PERIOD_DAYS: Record<TrendPeriod, number> = { "7d": 7, "30d": 30, "90d": 90 };
+
 export function AdminOverview() {
   const { tAdmin, locale } = useAdminTranslation();
   const { isModerator } = useAdminAccess();
   const showAdminOnlyWidgets = !isModerator;
+  const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>("30d");
   const { data: stats, isLoading: statsLoading } = useAdminStats();
-  const { data: expenseTrend, isLoading: trendLoading } = useExpenseTrend(locale, showAdminOnlyWidgets);
+  const { data: expenseTrend, isLoading: trendLoading } = useExpenseTrend(locale, showAdminOnlyWidgets, PERIOD_DAYS[trendPeriod]);
   const { data: registrations, isLoading: regLoading } = useRegistrationTrend(locale, showAdminOnlyWidgets);
   const { data: categories, isLoading: catLoading } = useCategoryBreakdown(showAdminOnlyWidgets);
   const { data: latestUsers, isLoading: latestLoading } = useLatestTrackedUsers(showAdminOnlyWidgets);
@@ -368,7 +389,7 @@ export function AdminOverview() {
 
       {/* ── Stat Cards ─────────────────────────────────────────── */}
       <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{tAdmin("overview.keyMetrics")}</p>
+        <SectionDivider label={tAdmin("overview.keyMetrics")} />
         <motion.div
           className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 viewport-transition-grid"
           variants={statVariants}
@@ -408,22 +429,27 @@ export function AdminOverview() {
 
                 return (
                   <motion.div key={card.key} variants={statRowVariants} custom={index}>
-                    <Card className="p-5 border-l-4" style={{ borderLeftColor: accentColor }}>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-start gap-4 min-w-0">
+                    <Card className="group relative overflow-hidden p-5 transition-shadow hover:shadow-md">
+                      <div
+                        className="pointer-events-none absolute inset-x-0 top-0 h-16 opacity-60"
+                        style={{ background: `linear-gradient(180deg, ${accentColor}14 0%, transparent 100%)` }}
+                      />
+                      <div className="relative flex flex-col gap-4">
+                        <div className="flex items-start justify-between gap-2">
                           <div
-                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${themeIntentTones[card.tone as ThemeIntent].surface} ${themeIntentTones[card.tone as ThemeIntent].icon}`}
+                            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 ${themeIntentTones[card.tone as ThemeIntent].surface} ${themeIntentTones[card.tone as ThemeIntent].icon}`}
+                            style={{ boxShadow: `inset 0 0 0 1px ${accentColor}33` }}
                           >
                             <Icon className="h-5 w-5" />
                           </div>
-                          <div className="flex flex-col gap-1 min-w-0">
-                            <span className="text-xs text-muted-foreground truncate">{tAdmin(card.labelKey)}</span>
-                            <span className="text-2xl font-semibold tabular-nums">{formatNumber(value)}</span>
-                            <TrendIndicator value={Math.abs(trendPercent)} isPositive={trendPercent >= 0} />
-                          </div>
+                          <TrendIndicator value={Math.abs(trendPercent)} isPositive={trendPercent >= 0} />
                         </div>
-                        {sparkEntry && (
-                          <div className="shrink-0 opacity-70">
+                        <div className="flex flex-col gap-1 min-w-0">
+                          <span className="text-xs font-medium text-muted-foreground truncate">{tAdmin(card.labelKey)}</span>
+                          <span className="text-2xl font-bold tabular-nums tracking-tight">{formatNumber(value)}</span>
+                        </div>
+                        {sparkEntry && sparkEntry.data.length > 0 && (
+                          <div className="-mx-1 -mb-1 h-9 opacity-70">
                             <MiniSparkline data={sparkEntry.data} dataKey={sparkEntry.dataKey} color={accentColor} />
                           </div>
                         )}
@@ -439,11 +465,30 @@ export function AdminOverview() {
         <>
       {/* ── Trends ──────────────────────────────────────────────── */}
       <div className="space-y-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{tAdmin("overview.trends")}</p>
+        <SectionDivider label={tAdmin("overview.trends")} />
         <Card>
-          <CardHeader>
-            <CardTitle>{tAdmin("overview.expenseTrend")}</CardTitle>
-            <CardDescription>{tAdmin("overview.last30Days")}</CardDescription>
+          <CardHeader className="flex flex-row items-start justify-between gap-4">
+            <div>
+              <CardTitle>{tAdmin("overview.expenseTrend")}</CardTitle>
+              <CardDescription>
+                {trendPeriod === "7d" ? tAdmin("overview.last7Days") : trendPeriod === "90d" ? tAdmin("overview.last90Days") : tAdmin("overview.last30Days")}
+              </CardDescription>
+            </div>
+            <div className="flex items-center rounded-lg border bg-muted/50 p-1 gap-0.5">
+              {(["7d", "30d", "90d"] as TrendPeriod[]).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setTrendPeriod(p)}
+                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+                    trendPeriod === p
+                      ? "bg-background shadow-sm text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
           </CardHeader>
           <CardContent>
             {trendLoading ? (
@@ -562,34 +607,43 @@ export function AdminOverview() {
             {catLoading ? (
               <LoadingBeam text={tAdmin("common.loading")} className="py-6" />
             ) : (
-              <ChartContainer config={categoryChartConfig} className="h-[280px] w-full">
-                <PieChart>
-                  <ChartTooltip
-                    content={
-                      <ChartTooltipContent
-                        labelKey="category"
-                        formatter={(value) => (
-                          <span className="font-medium">{formatNumber(Number(value))} ₫</span>
-                        )}
-                      />
-                    }
-                  />
-                  <Pie
-                    data={pieData}
-                    dataKey="amount"
-                    nameKey="category"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius="80%"
-                  >
-                    {pieData.map((entry, i) => (
-                      <Cell key={i} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                  <ChartLegend content={<ChartLegendContent nameKey="category" />} />
-                </PieChart>
-              </ChartContainer>
+              <div className="relative">
+                <ChartContainer config={categoryChartConfig} className="h-[280px] w-full">
+                  <PieChart>
+                    <ChartTooltip
+                      content={
+                        <ChartTooltipContent
+                          labelKey="category"
+                          formatter={(value) => (
+                            <span className="font-medium">{formatNumber(Number(value))} ₫</span>
+                          )}
+                        />
+                      }
+                    />
+                    <Pie
+                      data={pieData}
+                      dataKey="amount"
+                      nameKey="category"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius="80%"
+                    >
+                      {pieData.map((entry, i) => (
+                        <Cell key={i} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <ChartLegend content={<ChartLegendContent nameKey="category" />} />
+                  </PieChart>
+                </ChartContainer>
+                {/* Center donut label */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style={{ top: "-12px" }}>
+                  <span className="text-lg font-bold tabular-nums">
+                    {formatNumber(pieData.reduce((sum, d) => sum + d.amount, 0))}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Total</span>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -598,7 +652,7 @@ export function AdminOverview() {
 
       {/* ── Recent Activity ──────────────────────────────────────── */}
       <div className="space-y-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{tAdmin("overview.recentActivity")}</p>
+        <SectionDivider label={tAdmin("overview.recentActivity")} />
         <Card>
         <CardHeader>
           <CardTitle>{tAdmin("overview.latestTrackedUsers")}</CardTitle>
@@ -623,28 +677,38 @@ export function AdminOverview() {
               {tAdmin("overview.noTrackingData")}
             </p>
           ) : (
-            <AnimatedList items={latestUsers} className="divide-y">
+            <AnimatedList items={latestUsers} className="relative px-6 py-2">
               {latestUsers.map((user, index) => {
                 const initials = (user.full_name ?? user.email).charAt(0).toUpperCase();
+                const isLast = index === latestUsers.length - 1;
                 return (
                   <AnimatedRow key={user.user_id} index={index}>
                     <Link
                       to={`/admin/people/${user.user_id}/journey`}
-                      className="flex items-center gap-3 px-6 py-3 hover:bg-muted/50 transition-colors"
+                      className="group relative flex items-center gap-3 py-3 hover:bg-transparent transition-colors"
                     >
-                      <Avatar className="h-8 w-8 shrink-0">
-                        {user.avatar_url && <AvatarImage src={user.avatar_url} alt={user.full_name ?? user.email} />}
-                        <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-                      </Avatar>
+                      {/* Timeline spine */}
+                      <div className="relative flex flex-col items-center shrink-0 self-stretch" style={{ width: 32 }}>
+                        <Avatar className="h-8 w-8 z-10">
+                          {user.avatar_url && <AvatarImage src={user.avatar_url} alt={user.full_name ?? user.email} />}
+                          <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                        </Avatar>
+                        {!isLast && (
+                          <div className="absolute top-8 bottom-0 left-1/2 -translate-x-1/2 w-px bg-border/60" />
+                        )}
+                      </div>
+
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium leading-none truncate">
+                        <p className="text-sm font-medium leading-none truncate group-hover:text-primary transition-colors">
                           {user.full_name ?? user.email}
                         </p>
                         {user.full_name && (
                           <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
                         )}
                         {user.last_page && (
-                          <p className="text-xs text-muted-foreground truncate mt-0.5">{user.last_page}</p>
+                          <p className="text-xs text-muted-foreground/70 truncate mt-0.5 font-mono">
+                            {user.last_page}
+                          </p>
                         )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">

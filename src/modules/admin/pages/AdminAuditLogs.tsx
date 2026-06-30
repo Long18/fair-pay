@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect, useRef } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -73,7 +73,6 @@ import {
   FilterIcon,
   XIcon,
 } from "@/components/ui/icons";
-import { AdminPageToolbar } from "@/modules/admin/components/AdminPageToolbar";
 import { AdminSection, AdminSectionHeader } from "@/modules/admin/components/AdminSection";
 import { AdminFilterChips } from "@/modules/admin/components/AdminFilterChips";
 import {
@@ -89,7 +88,6 @@ import { motion } from "framer-motion";
 import { useStaggerAnimation } from "@/hooks/ui/use-stagger-animation";
 import { AnimatedList } from "@/components/ui/animated-list";
 import { AnimatedRow } from "@/components/ui/animated-row";
-import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 
 // ─── Constants ──────────────────────────────────────────────────────
 
@@ -699,7 +697,6 @@ export function AdminAuditLogs() {
   const { tAdmin } = useAdminTranslation();
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 400);
-  const [showFilters, setShowFilters] = useState(false);
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [tableFilter, setTableFilter] = useState<string>("all");
   const [actorFilter, setActorFilter] = useState<string>("all");
@@ -787,6 +784,8 @@ export function AdminAuditLogs() {
 
   // ─── Render ─────────────────────────────────────────────────────
 
+  const filterCount = [actionFilter !== "all", tableFilter !== "all", actorFilter !== "all", dateFrom !== "", dateTo !== ""].filter(Boolean).length;
+
   return (
     <AdminSection>
       <AdminSectionHeader
@@ -794,72 +793,8 @@ export function AdminAuditLogs() {
         description={tAdmin("auditLogs.description")}
       />
 
-
-
-      {/* Analytics: by table + by actor */}
-      {!statsLoading && stats && (stats.by_table.length > 0 || stats.by_actor.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {stats.by_table.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">{tAdmin("auditLogs.byTable")}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <AnimatedList items={stats.by_table} className="space-y-2">
-                  {stats.by_table.map((item, index) => {
-                    const pct = stats.total > 0 ? (item.count / stats.total) * 100 : 0;
-                    return (
-                      <AnimatedRow key={item.name} index={index} className="flex items-center gap-2">
-                        <Badge variant="outline" className="font-mono text-xs min-w-[100px] justify-center">
-                          {item.name}
-                        </Badge>
-                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary/60 rounded-full transition-all"
-                            style={{ width: `${Math.max(pct, 1)}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-muted-foreground tabular-nums w-12 text-right">
-                          {item.count.toLocaleString()}
-                        </span>
-                      </AnimatedRow>
-                    );
-                  })}
-                </AnimatedList>
-              </CardContent>
-            </Card>
-          )}
-          {stats.by_actor.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">{tAdmin("auditLogs.byActor")}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <AnimatedList items={stats.by_actor} className="space-y-2">
-                  {stats.by_actor.map((item, index) => {
-                    const pct = stats.total > 0 ? (item.count / stats.total) * 100 : 0;
-                    return (
-                      <AnimatedRow key={item.name} index={index} className="flex items-center gap-2">
-                        <span className="text-xs min-w-[100px] truncate">{item.name}</span>
-                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary/40 rounded-full transition-all"
-                            style={{ width: `${Math.max(pct, 1)}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-muted-foreground tabular-nums w-12 text-right">
-                          {item.count.toLocaleString()}
-                        </span>
-                      </AnimatedRow>
-                    );
-                  })}
-                </AnimatedList>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      )}
-
+      {/* KPI Strip */}
+      <AuditKpiStrip stats={stats} loading={statsLoading} />
 
       {/* Main Table Card */}
       <Card>
@@ -867,112 +802,59 @@ export function AdminAuditLogs() {
           <CardTitle>{tAdmin("auditLogs.title")}</CardTitle>
         </CardHeader>
 
-        <CardContent className="p-0 space-y-4">
-          <div className="px-6">
-            <AdminPageToolbar
-              search={search}
-              onSearchChange={(nextSearch) => { setSearch(nextSearch); setPage(0); }}
-              searchPlaceholder={tAdmin("auditLogs.searchPlaceholder")}
-              filterCount={[actionFilter !== "all", tableFilter !== "all", actorFilter !== "all", dateFrom !== "", dateTo !== ""].filter(Boolean).length}
-              onFilterToggle={() => setShowFilters((v) => !v)}
-              actions={
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => { tap(); refetch(); }}
-                    disabled={isFetching}
-                  >
-                    <RefreshCwIcon className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-                    {tAdmin("common.refresh")}
+        <CardContent className="p-0 space-y-0">
+          {/* Toolbar */}
+          <div className="px-6 pt-2">
+            <div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center">
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <div className="relative w-full sm:max-w-xs">
+                  <ScrollTextIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder={tAdmin("auditLogs.searchPlaceholder")}
+                    value={search}
+                    onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+                    className="h-10 pl-9 sm:h-9"
+                  />
+                </div>
+                {search && (
+                  <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-9 sm:w-9 shrink-0" onClick={() => setSearch("")}>
+                    <XIcon className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => void handleExportAll()}
-                    disabled={total === 0 || isExporting}
-                  >
-                    {isExporting
-                      ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                      : <DownloadIcon className="mr-2 h-4 w-4" />}
-                    {isExporting
-                      ? tAdmin("auditLogs.exporting")
-                      : tAdmin("auditLogs.exportCsvCount", { total: total.toLocaleString() })}
-                  </Button>
-                </>
-              }
-            />
+                )}
+                <AuditFilterPopover
+                  filterCount={filterCount}
+                  actionFilter={actionFilter} setActionFilter={(v) => { setActionFilter(v); setPage(0); }}
+                  tableFilter={tableFilter} setTableFilter={(v) => { setTableFilter(v); setPage(0); }}
+                  actorFilter={actorFilter} setActorFilter={(v) => { setActorFilter(v); setPage(0); }}
+                  dateFrom={dateFrom} setDateFrom={(v) => { setDateFrom(v); setPage(0); }}
+                  dateTo={dateTo} setDateTo={(v) => { setDateTo(v); setPage(0); }}
+                  filterOptions={filterOptions}
+                  onClear={clearFilters}
+                  tap={tap}
+                />
+              </div>
+              <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto sm:justify-end">
+                <Button variant="outline" size="sm" onClick={() => { tap(); refetch(); }} disabled={isFetching}>
+                  <RefreshCwIcon className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+                  {tAdmin("common.refresh")}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => void handleExportAll()} disabled={total === 0 || isExporting}>
+                  {isExporting ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : <DownloadIcon className="mr-2 h-4 w-4" />}
+                  {isExporting ? tAdmin("auditLogs.exporting") : tAdmin("auditLogs.exportCsvCount", { total: total.toLocaleString() })}
+                </Button>
+              </div>
+            </div>
             <AdminFilterChips
               filters={[
                 ...(actionFilter !== "all" ? [{ key: "action", label: tAdmin("auditLogs.filters.action", { value: actionFilter }), onRemove: () => { tap(); setActionFilter("all"); setPage(0); } }] : []),
                 ...(tableFilter !== "all" ? [{ key: "table", label: tAdmin("auditLogs.filters.table", { value: tableFilter }), onRemove: () => { tap(); setTableFilter("all"); setPage(0); } }] : []),
-                ...(actorFilter !== "all" ? [{ key: "actor", label: tAdmin("auditLogs.filters.actor", { value: filterOptions?.actors?.find((actor) => actor.id === actorFilter)?.name ?? actorFilter }), onRemove: () => { tap(); setActorFilter("all"); setPage(0); } }] : []),
+                ...(actorFilter !== "all" ? [{ key: "actor", label: tAdmin("auditLogs.filters.actor", { value: filterOptions?.actors?.find((a) => a.id === actorFilter)?.name ?? actorFilter }), onRemove: () => { tap(); setActorFilter("all"); setPage(0); } }] : []),
                 ...(dateFrom !== "" ? [{ key: "dateFrom", label: tAdmin("transactions.filterChips.dateFrom", { value: dateFrom }), onRemove: () => { setDateFrom(""); setPage(0); } }] : []),
                 ...(dateTo !== "" ? [{ key: "dateTo", label: tAdmin("transactions.filterChips.dateTo", { value: dateTo }), onRemove: () => { setDateTo(""); setPage(0); } }] : []),
               ]}
               onClearAll={clearFilters}
             />
           </div>
-          {/* Collapsible Filters */}
-          <Collapsible open={showFilters} onOpenChange={setShowFilters}>
-            <CollapsibleContent>
-              <div className="flex items-end gap-3 flex-wrap pb-4 px-6">
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">{tAdmin("common.fromDate")}</Label>
-                  <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(0); }} className="w-[150px]" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">{tAdmin("common.toDate")}</Label>
-                  <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(0); }} className="w-[150px]" />
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">{tAdmin("auditLogs.actionType")}</Label>
-                  <Select value={actionFilter} onValueChange={(v) => { tap(); setActionFilter(v); setPage(0); }}>
-                    <SelectTrigger className="w-[160px]">
-                      <SelectValue placeholder={tAdmin("common.all")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{tAdmin("auditLogs.allActions")}</SelectItem>
-                      {(filterOptions?.action_types ?? []).map((t) => (
-                        <SelectItem key={t} value={t}>{t.replace(/_/g, " ")}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">{tAdmin("auditLogs.tableEntity")}</Label>
-                  <Select value={tableFilter} onValueChange={(v) => { tap(); setTableFilter(v); setPage(0); }}>
-                    <SelectTrigger className="w-[160px]">
-                      <SelectValue placeholder={tAdmin("common.all")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{tAdmin("auditLogs.allTables")}</SelectItem>
-                      {(filterOptions?.tables ?? []).map((t) => (
-                        <SelectItem key={t} value={t}>{t}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">{tAdmin("auditLogs.actor")}</Label>
-                  <Select value={actorFilter} onValueChange={(v) => { tap(); setActorFilter(v); setPage(0); }}>
-                    <SelectTrigger className="w-[160px]">
-                      <SelectValue placeholder={tAdmin("common.all")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{tAdmin("auditLogs.allActors")}</SelectItem>
-                      {(filterOptions?.actors ?? []).map((a) => (
-                        <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
 
 
           {/* Loading */}
@@ -1007,17 +889,17 @@ export function AdminAuditLogs() {
           {/* Data Table */}
           {!isLoading && entries.length > 0 && (
             <>
-              <div className="hidden overflow-x-auto rounded-md border lg:block">
+              <div className="hidden overflow-x-auto rounded-none border-y lg:block">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="w-[160px]">{tAdmin("auditLogs.timestamp")}</TableHead>
-                      <TableHead className="w-[180px]">{tAdmin("auditLogs.actor")}</TableHead>
-                      <TableHead className="w-[100px]">{tAdmin("auditLogs.actionType")}</TableHead>
-                      <TableHead className="w-[130px]">{tAdmin("auditLogs.tableEntity")}</TableHead>
-                      <TableHead className="w-[80px]">{tAdmin("auditLogs.sourceLabel")}</TableHead>
-                      <TableHead>{tAdmin("common.details")}</TableHead>
-                      <TableHead className="w-[80px] text-center">{tAdmin("auditLogs.revert")}</TableHead>
+                    <TableRow className="bg-muted/30 hover:bg-muted/30">
+                      <TableHead className="w-[160px] text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tAdmin("auditLogs.timestamp")}</TableHead>
+                      <TableHead className="w-[200px] text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tAdmin("auditLogs.actor")}</TableHead>
+                      <TableHead className="w-[110px] text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tAdmin("auditLogs.actionType")}</TableHead>
+                      <TableHead className="w-[140px] text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tAdmin("auditLogs.tableEntity")}</TableHead>
+                      <TableHead className="w-[80px] text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tAdmin("auditLogs.sourceLabel")}</TableHead>
+                      <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tAdmin("common.details")}</TableHead>
+                      <TableHead className="w-[80px] text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tAdmin("auditLogs.revert")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <motion.tbody
@@ -1033,36 +915,37 @@ export function AdminAuditLogs() {
                         custom={index}
                         variants={rowVariants}
                         data-slot="table-row"
-                        className="hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors cursor-pointer hover:bg-accent/50 group"
+                        className="data-[state=selected]:bg-muted border-b transition-colors cursor-pointer hover:bg-accent/30 group"
                         onClick={() => {
                           tap();
                           setSelectedEntry(entry);
                           setDetailOpen(true);
                         }}
                       >
-                        <TableCell className="text-sm font-mono text-muted-foreground tabular-nums">
-                          {formatDate(entry.timestamp)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-7 w-7">
-                              <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                                {(entry.actor_name || entry.actor_email || "?")[0].toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm truncate max-w-[120px]">
-                              {entry.actor_name || entry.actor_email || tAdmin("common.system")}
-                            </span>
+                        <TableCell className="border-l-2 border-transparent group-hover:border-primary/40 transition-colors">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium tabular-nums">{formatDate(entry.timestamp)}</span>
                           </div>
                         </TableCell>
                         <TableCell>
-                          {(() => {
-                            const action = entry.action_type;
-                            if (action === "DELETE") return <Badge variant="destructive" className="gap-1 text-xs"><Trash2Icon className="size-3" aria-hidden="true" />DELETE</Badge>;
-                            if (action === "INSERT") return <Badge className="gap-1 text-xs"><PlusIcon className="size-3" aria-hidden="true" />INSERT</Badge>;
-                            if (action === "UPDATE") return <Badge variant="secondary" className="gap-1 text-xs"><PencilIcon className="size-3" aria-hidden="true" />UPDATE</Badge>;
-                            return <Badge variant="outline" className="gap-1 text-xs">{action}</Badge>;
-                          })()}
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-7 w-7 shrink-0">
+                              <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
+                                {(entry.actor_name || entry.actor_email || "?")[0].toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-sm font-medium truncate max-w-[140px]">
+                                {entry.actor_name || entry.actor_email || tAdmin("common.system")}
+                              </span>
+                              {entry.actor_name && entry.actor_email && (
+                                <span className="text-[10px] text-muted-foreground truncate max-w-[140px]">{entry.actor_email}</span>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <ActionBadge action={entry.action_type} />
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="font-mono text-xs">
@@ -1116,13 +999,7 @@ export function AdminAuditLogs() {
                       leading={<ScrollTextIcon className="mt-1 h-5 w-5 text-primary" />}
                       badges={
                         <>
-                          {(() => {
-                            const action = entry.action_type;
-                            if (action === "DELETE") return <Badge variant="destructive" className="gap-1 text-xs"><Trash2Icon className="size-3" aria-hidden="true" />DELETE</Badge>;
-                            if (action === "INSERT") return <Badge className="gap-1 text-xs"><PlusIcon className="size-3" aria-hidden="true" />INSERT</Badge>;
-                            if (action === "UPDATE") return <Badge variant="secondary" className="gap-1 text-xs"><PencilIcon className="size-3" aria-hidden="true" />UPDATE</Badge>;
-                            return <Badge variant="outline" className="gap-1 text-xs">{action}</Badge>;
-                          })()}
+                          <ActionBadge action={entry.action_type} />
                           <Badge variant={entry.source === "audit_logs" ? "secondary" : "outline"} className="text-xs font-mono">
                             {entry.source === "audit_logs" ? "DB" : "Trail"}
                           </Badge>
