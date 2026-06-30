@@ -62,3 +62,5 @@ CURSOR.md
 COMPLETE_BUG_FIX.md
 plans/
 docs/superpowers/
+.vercel
+.env*
