@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -17,10 +17,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Collapsible,
-  CollapsibleContent,
-} from "@/components/ui/collapsible";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -38,6 +34,17 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
   Table,
   TableCell,
   TableHead,
@@ -45,6 +52,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import {
   Empty,
   EmptyMedia,
@@ -62,6 +70,8 @@ import {
   PlusIcon,
   PencilIcon,
   Trash2Icon,
+  FilterIcon,
+  XIcon,
 } from "@/components/ui/icons";
 import { AdminPageToolbar } from "@/modules/admin/components/AdminPageToolbar";
 import { AdminSection, AdminSectionHeader } from "@/modules/admin/components/AdminSection";
@@ -79,6 +89,7 @@ import { motion } from "framer-motion";
 import { useStaggerAnimation } from "@/hooks/ui/use-stagger-animation";
 import { AnimatedList } from "@/components/ui/animated-list";
 import { AnimatedRow } from "@/components/ui/animated-row";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 
 // ─── Constants ──────────────────────────────────────────────────────
 
@@ -149,7 +160,207 @@ function useAuditFilterOptions() {
 }
 
 
-// ─── Diff View ──────────────────────────────────────────────────────
+// ─── Action Badge ────────────────────────────────────────────────────
+
+function ActionBadge({ action }: { action: string }) {
+  if (action === "DELETE") return (
+    <Badge className="gap-1 text-xs font-medium border bg-[var(--status-error-bg)] text-[var(--status-error-foreground)] border-[var(--status-error-border)] hover:bg-[var(--status-error-bg)]">
+      <Trash2Icon className="size-3" aria-hidden="true" />DELETE
+    </Badge>
+  );
+  if (action === "INSERT") return (
+    <Badge className="gap-1 text-xs font-medium border bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] border-[var(--status-success-border)] hover:bg-[var(--status-success-bg)]">
+      <PlusIcon className="size-3" aria-hidden="true" />INSERT
+    </Badge>
+  );
+  if (action === "UPDATE") return (
+    <Badge className="gap-1 text-xs font-medium border bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)] border-[var(--status-warning-border)] hover:bg-[var(--status-warning-bg)]">
+      <PencilIcon className="size-3" aria-hidden="true" />UPDATE
+    </Badge>
+  );
+  return <Badge variant="outline" className="text-xs">{action}</Badge>;
+}
+
+
+// ─── Audit KPI Strip ─────────────────────────────────────────────────
+
+function AuditKpiStrip({ stats, loading }: { stats: AuditStats | undefined; loading: boolean }) {
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="rounded-xl border bg-card px-4 py-3 space-y-1.5">
+            <div className="h-3 w-16 bg-muted rounded animate-pulse" />
+            <div className="h-6 w-10 bg-muted rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (!stats) return null;
+
+  const total = stats.total || 1;
+  const insertPct = Math.round((stats.inserts / total) * 100);
+  const updatePct = Math.round((stats.updates / total) * 100);
+  const deletePct = Math.round((stats.deletes / total) * 100);
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="rounded-xl border bg-card px-4 py-3">
+        <p className="text-xs text-muted-foreground mb-1">Total</p>
+        <p className="text-xl font-bold tabular-nums">{stats.total.toLocaleString()}</p>
+      </div>
+      <div className="rounded-xl border bg-card px-4 py-3">
+        <p className="text-xs text-muted-foreground mb-1">Today</p>
+        <p className="text-xl font-bold tabular-nums">{stats.today.toLocaleString()}</p>
+      </div>
+      <div className="rounded-xl border bg-card px-4 py-3">
+        <p className="text-xs text-muted-foreground mb-1">This Week</p>
+        <p className="text-xl font-bold tabular-nums">{stats.this_week.toLocaleString()}</p>
+      </div>
+      <div className="rounded-xl border bg-card px-4 py-3 space-y-2">
+        <p className="text-xs text-muted-foreground">Action split</p>
+        <div className="flex h-2 w-full rounded-full overflow-hidden gap-0.5">
+          {insertPct > 0 && (
+            <div
+              className="bg-[var(--status-success-foreground)] rounded-full transition-all"
+              style={{ width: `${insertPct}%` }}
+              title={`INSERT ${insertPct}%`}
+            />
+          )}
+          {updatePct > 0 && (
+            <div
+              className="bg-[var(--status-warning-foreground)] rounded-full transition-all"
+              style={{ width: `${updatePct}%` }}
+              title={`UPDATE ${updatePct}%`}
+            />
+          )}
+          {deletePct > 0 && (
+            <div
+              className="bg-[var(--status-error-foreground)] rounded-full transition-all"
+              style={{ width: `${deletePct}%` }}
+              title={`DELETE ${deletePct}%`}
+            />
+          )}
+        </div>
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+          <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-[var(--status-success-foreground)]" />I:{stats.inserts}</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-[var(--status-warning-foreground)]" />U:{stats.updates}</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-[var(--status-error-foreground)]" />D:{stats.deletes}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ─── Filter Popover ──────────────────────────────────────────────────
+
+function AuditFilterPopover({
+  filterCount,
+  actionFilter, setActionFilter,
+  tableFilter, setTableFilter,
+  actorFilter, setActorFilter,
+  dateFrom, setDateFrom,
+  dateTo, setDateTo,
+  filterOptions,
+  onClear,
+  tap,
+}: {
+  filterCount: number;
+  actionFilter: string; setActionFilter: (v: string) => void;
+  tableFilter: string; setTableFilter: (v: string) => void;
+  actorFilter: string; setActorFilter: (v: string) => void;
+  dateFrom: string; setDateFrom: (v: string) => void;
+  dateTo: string; setDateTo: (v: string) => void;
+  filterOptions: AuditFilterOptions | undefined;
+  onClear: () => void;
+  tap: () => void;
+}) {
+  const { tAdmin } = useAdminTranslation();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className="h-10 sm:h-9 gap-2 shrink-0">
+          <FilterIcon className="h-4 w-4" />
+          <span className="hidden min-[420px]:inline">{tAdmin("common.filter")}</span>
+          {filterCount > 0 && (
+            <Badge variant="secondary" className="h-5 px-1.5 text-xs">{filterCount}</Badge>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[360px] p-4" align="start">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-semibold">Filters</p>
+          {filterCount > 0 && (
+            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground" onClick={() => { onClear(); setOpen(false); }}>
+              <XIcon className="h-3 w-3 mr-1" />
+              {tAdmin("common.clearAll")}
+            </Button>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">{tAdmin("auditLogs.actionType")}</Label>
+            <Select value={actionFilter} onValueChange={(v) => { tap(); setActionFilter(v); }}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder={tAdmin("common.all")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{tAdmin("auditLogs.allActions")}</SelectItem>
+                {(filterOptions?.action_types ?? []).map((t) => (
+                  <SelectItem key={t} value={t}>{t.replace(/_/g, " ")}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">{tAdmin("auditLogs.tableEntity")}</Label>
+            <Select value={tableFilter} onValueChange={(v) => { tap(); setTableFilter(v); }}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder={tAdmin("common.all")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{tAdmin("auditLogs.allTables")}</SelectItem>
+                {(filterOptions?.tables ?? []).map((t) => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="col-span-2 space-y-1.5">
+            <Label className="text-xs text-muted-foreground">{tAdmin("auditLogs.actor")}</Label>
+            <Select value={actorFilter} onValueChange={(v) => { tap(); setActorFilter(v); }}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder={tAdmin("common.all")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{tAdmin("auditLogs.allActors")}</SelectItem>
+                {(filterOptions?.actors ?? []).map((a) => (
+                  <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">{tAdmin("common.fromDate")}</Label>
+            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-8 text-xs" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">{tAdmin("common.toDate")}</Label>
+            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-8 text-xs" />
+          </div>
+        </div>
+        <Separator className="my-3" />
+        <Button size="sm" className="w-full h-8 text-xs" onClick={() => setOpen(false)}>
+          Apply
+        </Button>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 function DiffView({ oldData, newData }: { oldData: Record<string, unknown> | null; newData: Record<string, unknown> | null }) {
   const { tAdmin } = useAdminTranslation();
@@ -269,18 +480,26 @@ function AuditDetailDialog({
   const hasOldNewData = entry.old_data || entry.new_data;
   const hasMetadata = entry.metadata && Object.keys(entry.metadata).length > 0;
 
+  // Count changed fields for the tab badge
+  const changedFieldCount = useMemo(() => {
+    if (!entry.old_data && !entry.new_data) return 0;
+    const allKeys = new Set([
+      ...Object.keys(entry.old_data ?? {}),
+      ...Object.keys(entry.new_data ?? {}),
+    ]);
+    let count = 0;
+    for (const key of allKeys) {
+      if (JSON.stringify(entry.old_data?.[key]) !== JSON.stringify(entry.new_data?.[key])) count++;
+    }
+    return count;
+  }, [entry]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {(() => {
-              const action = entry.action_type;
-              if (action === "DELETE") return <Badge variant="destructive" className="gap-1 text-xs"><Trash2Icon className="size-3" aria-hidden="true" />DELETE</Badge>;
-              if (action === "INSERT") return <Badge className="gap-1 text-xs"><PlusIcon className="size-3" aria-hidden="true" />INSERT</Badge>;
-              if (action === "UPDATE") return <Badge variant="secondary" className="gap-1 text-xs"><PencilIcon className="size-3" aria-hidden="true" />UPDATE</Badge>;
-              return <Badge variant="outline" className="gap-1 text-xs">{action}</Badge>;
-            })()}
+            <ActionBadge action={entry.action_type} />
             <span>{entry.table_name ?? entry.entity_type ?? "—"}</span>
           </DialogTitle>
           <DialogDescription>
@@ -288,48 +507,56 @@ function AuditDetailDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
-          <div className="space-y-4 pb-4">
-            <div className="grid grid-cols-2 gap-4">
-              <DetailItem label={tAdmin("auditLogs.actor")} value={entry.actor_name || entry.actor_email || tAdmin("common.system")} />
-              <DetailItem label={tAdmin("common.email")} value={entry.actor_email || "—"} />
-              <DetailItem label={tAdmin("auditLogs.actionType")} value={entry.action_type} />
-              <DetailItem label={tAdmin("auditLogs.tableEntity")} value={entry.table_name ?? entry.entity_type ?? "—"} />
-              <DetailItem label={tAdmin("auditLogs.entityId")} value={<span className="font-mono text-xs">{entry.entity_id || "—"}</span>} />
-              <DetailItem label="Audit ID" value={<span className="font-mono text-xs">{entry.id}</span>} />
-              <DetailItem label={tAdmin("auditLogs.timestamp")} value={formatDate(entry.timestamp)} />
-              <DetailItem label={tAdmin("auditLogs.sourceLabel")} value={
-                <Badge variant="outline" className="text-xs">
-                  {entry.source === "audit_logs" ? tAdmin("auditLogs.dataChanges") : "Settlement"}
-                </Badge>
-              } />
-            </div>
+        <Tabs defaultValue="overview" className="flex-1 flex flex-col min-h-0">
+          <TabsList className="w-full justify-start shrink-0">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="changes" className="gap-1.5">
+              Changes
+              {changedFieldCount > 0 && (
+                <Badge variant="secondary" className="h-4 px-1 text-[10px]">{changedFieldCount}</Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
 
-            {/* Diff View for old/new data */}
-            {hasOldNewData && (
-              <div>
-                <h4 className="text-sm font-medium mb-2">{tAdmin("auditLogs.dataChanges")}</h4>
+          <ScrollArea className="flex-1 -mx-6 px-6 mt-3">
+            <TabsContent value="overview" className="mt-0 pb-4">
+              <div className="grid grid-cols-2 gap-4">
+                <DetailItem label={tAdmin("auditLogs.actor")} value={entry.actor_name || entry.actor_email || tAdmin("common.system")} />
+                <DetailItem label={tAdmin("common.email")} value={entry.actor_email || "—"} />
+                <DetailItem label={tAdmin("auditLogs.actionType")} value={<ActionBadge action={entry.action_type} />} />
+                <DetailItem label={tAdmin("auditLogs.tableEntity")} value={
+                  <code className="font-mono text-xs bg-muted rounded px-1.5 py-0.5">{entry.table_name ?? entry.entity_type ?? "—"}</code>
+                } />
+                <DetailItem label={tAdmin("auditLogs.entityId")} value={<span className="font-mono text-xs">{entry.entity_id || "—"}</span>} />
+                <DetailItem label="Audit ID" value={<span className="font-mono text-xs">{entry.id}</span>} />
+                <DetailItem label={tAdmin("auditLogs.timestamp")} value={formatDate(entry.timestamp)} />
+                <DetailItem label={tAdmin("auditLogs.sourceLabel")} value={
+                  <Badge variant="outline" className="text-xs">
+                    {entry.source === "audit_logs" ? tAdmin("auditLogs.dataChanges") : "Settlement"}
+                  </Badge>
+                } />
+              </div>
+              {hasMetadata && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium mb-1">Metadata</h4>
+                  <pre className="text-xs bg-muted rounded-md p-3 overflow-x-auto whitespace-pre-wrap break-all">
+                    {JSON.stringify(entry.metadata, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="changes" className="mt-0 pb-4">
+              {hasOldNewData ? (
                 <DiffView oldData={entry.old_data} newData={entry.new_data} />
-              </div>
-            )}
-
-            {/* Metadata for audit_trail */}
-            {hasMetadata && (
-              <div>
-                <h4 className="text-sm font-medium mb-1">Metadata</h4>
-                <pre className="text-xs bg-muted rounded-md p-3 overflow-x-auto whitespace-pre-wrap break-all">
-                  {JSON.stringify(entry.metadata, null, 2)}
-                </pre>
-              </div>
-            )}
-
-            {!hasOldNewData && !hasMetadata && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                {tAdmin("auditLogs.noDetailData")}
-              </p>
-            )}
-          </div>
-        </ScrollArea>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  {tAdmin("auditLogs.noDetailData")}
+                </p>
+              )}
+            </TabsContent>
+          </ScrollArea>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
