@@ -1237,7 +1237,24 @@
     "modelPicker": {
       "searchPlaceholder": "Tìm kiếm mô hình…",
       "noResults": "Không tìm thấy mô hình nào.",
-      "lowVram": "VRAM thấp"
+      "lowVram": "VRAM thấp",
+      "title": "Chọn mô hình AI",
+      "cached": "Đã tải",
+      "deleteCache": "Xóa cache",
+      "loadModel": "Tải",
+      "switchModel": "Chuyển & tải",
+      "checkingCache": "Đang kiểm tra…",
+      "manageCacheTitle": "Quản lý mô hình đã tải",
+      "deletingCache": "Đang xóa…",
+      "recommended": "Đề xuất",
+      "contextLength": "{{k}}k ctx",
+      "loadSelected": "Tải mô hình đã chọn",
+      "alreadyLoaded": "Đã tải sẵn",
+      "downloadAndLoad": "Tải xuống & chạy",
+      "loadCached": "Tải (đã cache)",
+      "modelsDownloaded_one": "{{count}} mô hình đã tải",
+      "modelsDownloaded_other": "{{count}} mô hình đã tải",
+      "noModelsDownloaded": "Chưa tải mô hình nào"
     }
   }
 }

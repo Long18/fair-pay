@@ -1237,7 +1237,24 @@
     "modelPicker": {
       "searchPlaceholder": "Search models…",
       "noResults": "No models found.",
-      "lowVram": "Low VRAM"
+      "lowVram": "Low VRAM",
+      "title": "Select AI Model",
+      "cached": "Downloaded",
+      "deleteCache": "Delete cache",
+      "loadModel": "Load",
+      "switchModel": "Switch & load",
+      "checkingCache": "Checking…",
+      "manageCacheTitle": "Manage downloaded models",
+      "deletingCache": "Deleting…",
+      "recommended": "Recommended",
+      "contextLength": "{{k}}k ctx",
+      "loadSelected": "Load selected model",
+      "alreadyLoaded": "Already loaded",
+      "downloadAndLoad": "Download & load",
+      "loadCached": "Load (cached)",
+      "modelsDownloaded_one": "{{count}} model downloaded",
+      "modelsDownloaded_other": "{{count}} models downloaded",
+      "noModelsDownloaded": "No models downloaded"
     }
   }
 }
