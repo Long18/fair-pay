@@ -1226,7 +1226,7 @@
       "ready": "Local AI ready",
       "error": "Local AI error",
       "idle": "Choose a local model",
-      "idleDetail": "Load it in this browser before chatting."
+      "idleDetail": "Type a message — the model loads automatically on first send."
     },
     "suggestions": {
       "whoOwes": "Who owes me money?",

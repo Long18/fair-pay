@@ -1226,7 +1226,7 @@
       "ready": "AI cục bộ sẵn sàng",
       "error": "Lỗi AI cục bộ",
       "idle": "Chọn mô hình AI cục bộ",
-      "idleDetail": "Tải mô hình trên trình duyệt trước khi trò chuyện."
+      "idleDetail": "Nhập tin nhắn — mô hình sẽ tự tải khi gửi lần đầu."
     },
     "suggestions": {
       "whoOwes": "Ai đang nợ tôi tiền?",
