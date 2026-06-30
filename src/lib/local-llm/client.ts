@@ -1,8 +1,10 @@
+import { hasModelInCache } from "@mlc-ai/web-llm";
 import type { AssistantChatCompletion, AssistantChatFn } from "@/modules/ai-chat/orchestrator";
 import {
   DEFAULT_WEB_LLM_MODEL,
   isWebLlmModelId,
   WEB_LLM_COMPAT_MODEL,
+  WEB_LLM_MODEL_LIST,
   WEB_LLM_MODEL_STORAGE_KEY,
   type LocalLlmChatRequest,
   type LocalLlmStatus,
@@ -258,6 +260,61 @@ export async function deleteSelectedModelCache(model = getSelectedModel()): Prom
 
   await postRequest<void>({ type: "delete-model-cache", model });
   setStatus({ state: "idle", model });
+}
+
+/**
+ * Check whether a specific model's weights are already cached in the browser.
+ * Returns false on any error (e.g. cache API unavailable in insecure context).
+ */
+export async function checkModelCached(model: string): Promise<boolean> {
+  try {
+    return await hasModelInCache(model);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Check cache status for every model in the catalog.
+ * Returns a Set of model IDs that are already downloaded.
+ */
+export async function checkAllModelsCached(): Promise<Set<string>> {
+  const results = await Promise.allSettled(
+    WEB_LLM_MODEL_LIST.map(async (m) => ({ id: m.id, cached: await hasModelInCache(m.id) })),
+  );
+  const cached = new Set<string>();
+  for (const r of results) {
+    if (r.status === "fulfilled" && r.value.cached) {
+      cached.add(r.value.id);
+    }
+  }
+  return cached;
+}
+
+/**
+ * Delete cache for any specific model (not just the currently selected one).
+ * Resets the worker if that model happens to be loaded right now.
+ */
+export async function deleteModelCache(model: string): Promise<void> {
+  const current = getLocalLlmStatus();
+  if (current.state === "unsupported") return;
+
+  // If the model being deleted is currently loaded, reset the worker first.
+  if (
+    (current.state === "ready" || current.state === "loading") &&
+    "model" in current &&
+    current.model === model
+  ) {
+    reset();
+  }
+
+  await postRequest<void>({ type: "delete-model-cache", model });
+
+  // Only update status if the deleted model matches the currently selected one.
+  const selected = getSelectedModel();
+  if (model === selected) {
+    setStatus({ state: "idle", model });
+  }
 }
 
 export const chat: AssistantChatFn = async (messages, options): Promise<AssistantChatCompletion> => {
