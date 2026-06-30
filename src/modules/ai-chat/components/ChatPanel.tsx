@@ -103,7 +103,7 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
     if (!open) return;
 
     const viewport = scrollRef.current?.querySelector("[data-radix-scroll-area-viewport]");
-    viewport?.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+    viewport?.scrollTo({ top: viewport.scrollHeight, behavior: messages.length === 1 ? "instant" : "smooth" });
   }, [messages, isLoading, pendingPreview, open]);
 
   const handleSuggestion = useCallback(
@@ -140,8 +140,8 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full gap-0 p-0 sm:max-w-[420px]">
-        <SheetHeader className="border-b px-4 py-3">
+      <SheetContent className="flex flex-col w-full h-[100dvh] sm:h-full gap-0 p-0 sm:max-w-[520px]">
+        <SheetHeader className="shrink-0 border-b px-4 py-3">
           <div className="flex items-center justify-between gap-3 pr-8">
             <div className="min-w-0">
               <SheetTitle className="flex items-center gap-2 text-base">
@@ -165,7 +165,7 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
         </SheetHeader>
 
         {/* Model control strip */}
-        <div className="border-b px-4 py-3">
+        <div className="shrink-0 border-b px-4 py-3">
           <div className="flex items-start gap-3">
             <div
               className={cn(
@@ -266,8 +266,17 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
               </div>
             )}
 
-            {messages.map((message: ChatMessageType) => (
-              <ChatMessage key={message.id} message={message} userInfo={identity} />
+            {messages.map((message: ChatMessageType, index: number) => (
+              <ChatMessage
+                key={message.id}
+                message={message}
+                userInfo={identity}
+                isStreaming={
+                  isLoading &&
+                  index === messages.length - 1 &&
+                  message.role === "assistant"
+                }
+              />
             ))}
 
             {pendingPreview && (
@@ -290,7 +299,7 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
           </div>
         </ScrollArea>
 
-        <div className="border-t p-4">
+        <div className="shrink-0 border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <ChatInput onSend={sendMessage} isLoading={isLoading} disabled={inputDisabled} />
           {pendingPreview && (
             <p className="mt-2 text-xs text-muted-foreground">

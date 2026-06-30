@@ -1,4 +1,4 @@
-import { memo, useState, useCallback, useRef } from 'react';
+import { memo, useState, useCallback, useRef, useEffect } from 'react';
 import { useHaptics } from '@/hooks/use-haptics';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,6 +14,14 @@ export const ChatInput = memo(function ChatInput({ onSend, isLoading, disabled }
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { tap } = useHaptics();
+
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [value]);
 
   const handleSubmit = useCallback(() => {
     const trimmed = value.trim();
@@ -40,8 +48,8 @@ export const ChatInput = memo(function ChatInput({ onSend, isLoading, disabled }
         onKeyDown={handleKeyDown}
         placeholder="Ask FairPay Assistant…"
         disabled={disabled || isLoading}
-        className="min-h-[40px] max-h-[120px] resize-none text-sm"
-        rows={1}
+        className="resize-none text-sm"
+        style={{ maxHeight: '120px', overflowY: 'auto' }}
         aria-label="Chat message input"
         autoComplete="off"
         spellCheck
