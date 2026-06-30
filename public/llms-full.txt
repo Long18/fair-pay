@@ -1,0 +1,98 @@
+# FairPay - Complete Application Context
+
+## Application Overview
+FairPay is a free-to-use expense splitting application designed to simplify shared expense management. Whether you're splitting dinner bills, sharing travel costs, managing household expenses, or tracking group spending, FairPay makes it simple and transparent for everyone involved.
+
+## Core Problem Solved
+Managing shared expenses manually is error-prone, time-consuming, and often leads to disputes. FairPay automates the calculation of who owes whom, eliminating confusion and ensuring everyone pays their fair share.
+
+## Features and Functionality
+
+### Expense Management
+- Create shared expenses for groups or individual friends
+- Flexible splitting options: equal split, custom amounts, or itemized split
+- Support for multiple currencies with automatic conversion
+- Receipt attachment capability for documentation
+- Expense categorization (food, transport, accommodation, etc.)
+- Full expense history with timestamps and descriptions
+
+### Balance Tracking
+- Real-time calculation of who owes whom
+- Aggregated balance views showing net balance per person/group
+- Detailed transaction history showing every payment and settlement
+- Balance breakdown by group or friend
+- Historical balance tracking
+
+### Payment Settlement
+- Record payments between users
+- Mark debts as partially or fully paid
+- Settlement confirmation and tracking
+- Payment method recording (bank transfer, cash, MoMo, etc.)
+- Settlement history with dates and amounts
+
+### Group Management
+- Create expense groups for specific scenarios (trips, household, etc.)
+- Add and remove group members
+- Group-level balance summaries
+- Group expense activity feed
+- Member contribution tracking
+
+### Social Features
+- Friend management with balance tracking per friend
+- Activity feed showing recent transactions
+- User profiles with avatars and information
+- Notification system for shared expenses
+- Group member collaboration
+
+### Data & Security
+- Row-level security in database ensuring data privacy
+- Secure authentication with email and password
+- User data encryption in transit
+- No third-party sharing of financial information
+- GDPR-compliant privacy policy
+- Terms of service governing platform use
+
+## Technical Architecture
+- Frontend: React with TypeScript, built with Vite
+- Backend: Supabase (PostgreSQL) for data storage and real-time updates
+- Authentication: Email/password and OAuth (Google)
+- Internationalization: English and Vietnamese support
+- Mobile-optimized responsive design
+- Progressive Web App (PWA) capabilities
+
+## User Segments
+- Roommates splitting household expenses
+- Travel groups managing shared trip costs
+- Friend groups going out regularly
+- Family members coordinating finances
+- Event organizing teams
+- Any group needing transparent expense tracking
+
+## Pricing
+- **Free Plan**: Up to 5 groups, 3-month history, basic splitting
+- **Pro Plan** (99,000₫/month): Unlimited groups, unlimited history, advanced splits, CSV/PDF export
+
+## Languages Supported
+- English (en)
+- Vietnamese (vi)
+
+## Support & Contact
+Email: us.thanhlong18@gmail.com
+Support Page: https://long-pay.vercel.app/contact
+Privacy Policy: https://long-pay.vercel.app/privacy
+Terms of Service: https://long-pay.vercel.app/terms
+
+## Getting Started
+1. Visit https://long-pay.vercel.app
+2. Create a free account using email or Google OAuth
+3. Set up your first group or add a friend
+4. Record your first shared expense
+5. Let FairPay calculate balances and handle settlements
+
+## Key Statistics
+- Free expense splitting application
+- Supports unlimited users per group
+- Real-time balance calculations
+- Activity history tracking
+- Multi-currency support
+- Mobile-friendly interface

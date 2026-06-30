@@ -1,0 +1,33 @@
+# FairPay
+
+## Description
+FairPay is a free web application that makes splitting expenses fair and transparent. Track shared costs, settle debts, and manage group finances with friends, families, and travel groups.
+
+## Key Features
+- Split expenses with friends and groups
+- Track shared costs in real-time with detailed activity feeds
+- Automatic balance calculations showing who owes whom
+- Settle debts with payment recording and tracking
+- Manage multiple expense groups and relationships
+- Multi-currency support (VND, USD, EUR, etc.)
+- Receipt attachments for expense documentation
+- Real-time balance notifications
+- Group activity tracking and history
+- Payment settlement tracking
+
+## URL
+https://long-pay.vercel.app
+
+## Contact
+Email: us.thanhlong18@gmail.com
+Support: https://long-pay.vercel.app/contact
+
+## Getting Started
+1. Sign up for a free account
+2. Create groups with friends or add individual contacts
+3. Record shared expenses
+4. Let FairPay calculate balances automatically
+5. Settle debts easily with payment tracking
+
+## Privacy
+FairPay uses row-level security to protect your financial data. Your information is never shared with third parties. See our privacy policy at https://long-pay.vercel.app/privacy
