@@ -7,7 +7,7 @@
   <!-- Homepage -->
   <url>
     <loc>https://long-pay.vercel.app/</loc>
-    <lastmod>2026-02-14</lastmod>
+    <lastmod>2026-06-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
@@ -15,28 +15,28 @@
   <!-- Public Pages -->
   <url>
     <loc>https://long-pay.vercel.app/privacy</loc>
-    <lastmod>2026-02-14</lastmod>
+    <lastmod>2026-06-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
 
   <url>
     <loc>https://long-pay.vercel.app/terms</loc>
-    <lastmod>2026-02-14</lastmod>
+    <lastmod>2026-06-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
 
   <url>
     <loc>https://long-pay.vercel.app/about</loc>
-    <lastmod>2026-02-14</lastmod>
+    <lastmod>2026-06-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
   <url>
     <loc>https://long-pay.vercel.app/contact</loc>
-    <lastmod>2026-02-14</lastmod>
+    <lastmod>2026-06-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -44,14 +44,14 @@
   <!-- Free Tools -->
   <url>
     <loc>https://long-pay.vercel.app/tools/expense-calculator</loc>
-    <lastmod>2026-05-20</lastmod>
+    <lastmod>2026-06-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://long-pay.vercel.app/pricing</loc>
-    <lastmod>2026-05-20</lastmod>
+    <lastmod>2026-06-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
