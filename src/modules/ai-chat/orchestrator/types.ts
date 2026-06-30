@@ -22,6 +22,7 @@ export type AssistantChatFn = (
   options: {
     tools?: readonly unknown[];
     model?: string;
+    onChunk?: (delta: string) => void;
   },
 ) => Promise<AssistantChatCompletion>;
 

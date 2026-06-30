@@ -24,6 +24,7 @@ type LocalLlmRequestWithoutId =
 
 const listeners = new Set<LocalLlmStatusListener>();
 const pending = new Map<number, PendingRequest>();
+const chunkListeners = new Map<number, (delta: string) => void>();
 
 let worker: Worker | null = null;
 let requestId = 0;
@@ -103,7 +104,13 @@ function ensureWorker(): Worker {
       return;
     }
 
+    if (message.type === "chunk") {
+      chunkListeners.get(message.id)?.(message.delta);
+      return;
+    }
+
     if (message.type === "response") {
+      chunkListeners.delete(message.id);
       pending.get(message.id)?.resolve({ message: { content: message.content } });
       pending.delete(message.id);
       return;
@@ -138,9 +145,16 @@ function ensureWorker(): Worker {
   return worker;
 }
 
-function postRequest<T>(request: LocalLlmRequestWithoutId): Promise<T> {
+function postRequest<T>(
+  request: LocalLlmRequestWithoutId,
+  onChunk?: (delta: string) => void,
+): Promise<T> {
   const id = ++requestId;
   const activeWorker = ensureWorker();
+
+  if (onChunk) {
+    chunkListeners.set(id, onChunk);
+  }
 
   return new Promise<T>((resolve, reject) => {
     pending.set(id, {
@@ -148,6 +162,8 @@ function postRequest<T>(request: LocalLlmRequestWithoutId): Promise<T> {
       reject,
     });
     activeWorker.postMessage({ id, ...request } satisfies LocalLlmWorkerRequest);
+  }).finally(() => {
+    chunkListeners.delete(id);
   });
 }
 
@@ -250,13 +266,16 @@ export const chat: AssistantChatFn = async (messages, options): Promise<Assistan
     throw new Error("Local AI model is not ready. Load the model before chatting.");
   }
 
-  return postRequest<AssistantChatCompletion>({
-    type: "chat",
-    payload: {
-      messages,
-      model: options.model ?? current.model,
+  return postRequest<AssistantChatCompletion>(
+    {
+      type: "chat",
+      payload: {
+        messages,
+        model: options.model ?? current.model,
+      },
     },
-  });
+    options.onChunk,
+  );
 };
 
 export function reset(): void {

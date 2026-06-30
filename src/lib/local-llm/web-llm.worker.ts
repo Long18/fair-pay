@@ -69,16 +69,26 @@ self.addEventListener("message", async (event: MessageEvent<LocalLlmWorkerReques
       throw new Error("Local AI model is not loaded.");
     }
 
-    const completion = await engine.chat.completions.create({
+    const chunks = await engine.chat.completions.create({
       messages: normalizeMessages(request.payload) as never,
       temperature: 0.1,
       max_tokens: 700,
+      stream: true,
     });
+
+    let fullContent = "";
+    for await (const chunk of chunks) {
+      const delta = chunk.choices[0]?.delta?.content ?? "";
+      if (delta) {
+        fullContent += delta;
+        post({ id: request.id, type: "chunk", delta });
+      }
+    }
 
     post({
       id: request.id,
       type: "response",
-      content: completion.choices[0]?.message?.content ?? "",
+      content: fullContent,
     });
   } catch (error) {
     post({

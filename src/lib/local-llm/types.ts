@@ -698,6 +698,7 @@ export type LocalLlmWorkerRequest =
 export type LocalLlmWorkerResponse =
   | { id?: number; type: "loading"; model: string; progress: number; message: string }
   | { id?: number; type: "ready"; model: string }
+  | { id: number; type: "chunk"; delta: string }
   | { id: number; type: "response"; content: string }
   | { id: number; type: "cache-deleted"; model: string }
   | { id?: number; type: "error"; model?: string; message: string };

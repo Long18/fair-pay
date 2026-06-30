@@ -1,8 +1,7 @@
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FairPayIcon } from "@/components/ui/icons";
-import { useReducedMotion } from "@/hooks/ui/use-reduced-motion";
 import { cn } from "@/lib/utils";
 import type { ChatMessage as ChatMessageType } from "../types";
 
@@ -14,6 +13,7 @@ interface UserInfo {
 interface ChatMessageProps {
   message: ChatMessageType;
   userInfo?: UserInfo;
+  isStreaming?: boolean;
 }
 
 function getInitials(name?: string): string {
@@ -26,42 +26,12 @@ function getInitials(name?: string): string {
     .toUpperCase();
 }
 
-function useStreamingContent(content: string, enabled: boolean): string {
-  const reducedMotion = useReducedMotion();
-  const [visibleContent, setVisibleContent] = useState(() => (enabled && !reducedMotion ? "" : content));
-
-  useEffect(() => {
-    if (!enabled || reducedMotion || content.length === 0) {
-      setVisibleContent(content);
-      return;
-    }
-
-    let frame = 0;
-    let cursor = 0;
-    setVisibleContent("");
-
-    const reveal = () => {
-      cursor = Math.min(content.length, cursor + Math.max(2, Math.ceil(content.length / 80)));
-      setVisibleContent(content.slice(0, cursor));
-
-      if (cursor < content.length) {
-        frame = window.setTimeout(reveal, 18);
-      }
-    };
-
-    frame = window.setTimeout(reveal, 40);
-    return () => window.clearTimeout(frame);
-  }, [content, enabled, reducedMotion]);
-
-  return visibleContent;
-}
-
-export const ChatMessage = memo(function ChatMessage({ message, userInfo }: ChatMessageProps) {
+export const ChatMessage = memo(function ChatMessage({ message, userInfo, isStreaming = false }: ChatMessageProps) {
   const isUser = message.role === "user";
   const isError = message.metadata?.status === "failure";
-  const streamedContent = useStreamingContent(message.content, !isUser);
-  const isStreaming = !isUser && streamedContent.length < message.content.length;
   const userInitials = useMemo(() => getInitials(userInfo?.full_name), [userInfo?.full_name]);
+  // Show cursor when actively streaming or when placeholder is empty (not yet receiving tokens)
+  const showCursor = !isUser && (isStreaming || message.content === "");
 
   return (
     <div className={cn("flex gap-3", isUser ? "justify-end" : "justify-start")}>
@@ -93,9 +63,9 @@ export const ChatMessage = memo(function ChatMessage({ message, userInfo }: Chat
             ),
           }}
         >
-          {streamedContent}
+          {message.content}
         </ReactMarkdown>
-        {isStreaming && (
+        {showCursor && (
           <span className="ml-0.5 inline-block h-4 w-1 translate-y-0.5 animate-pulse rounded-full bg-primary" />
         )}
       </div>

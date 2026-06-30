@@ -110,6 +110,16 @@ export function useAiChat(): UseAiChatReturn {
     return data.session?.access_token ?? null;
   }, []);
 
+  const onChunkRef = useRef<((delta: string) => void) | undefined>(undefined);
+  const streamingMsgIdRef = useRef<string | null>(null);
+
+  // Stable chat wrapper that always reads the latest onChunk from the ref.
+  // This lets the orchestrator (created once) forward chunks without re-creation.
+  const chatFnWithStreaming = useCallback<typeof localLlmChat>(
+    (messages, options) => localLlmChat(messages, { ...options, onChunk: onChunkRef.current }),
+    [],
+  );
+
   const getOrchestrator = useCallback(() => {
     if (orchestratorRef.current) return orchestratorRef.current;
 
@@ -147,26 +157,13 @@ export function useAiChat(): UseAiChatReturn {
     };
 
     orchestratorRef.current = new FairPayChatOrchestrator({
-      chatFn: localLlmChat,
+      chatFn: chatFnWithStreaming,
       mcpClient,
       legacyExecutor,
     });
 
     return orchestratorRef.current;
   }, [getAccessToken]);
-
-  const addAssistantMessage = useCallback((content: string) => {
-    const msg: ChatMessage = {
-      id: makeMessageId("assistant"),
-      conversation_id: conversationIdRef.current || "local",
-      role: "assistant",
-      content,
-      metadata: { mode: "info", status: "success" },
-      created_at: new Date().toISOString(),
-    };
-
-    setMessages((prev) => [...prev, msg]);
-  }, []);
 
   const selectLocalModel = useCallback((model: WebLlmModelId) => {
     setError(null);
@@ -215,7 +212,28 @@ export function useAiChat(): UseAiChatReturn {
         created_at: new Date().toISOString(),
       };
 
-      setMessages((prev) => [...prev, userMsg]);
+      // Add a streaming placeholder so tokens appear incrementally.
+      const streamingId = makeMessageId("assistant-streaming");
+      streamingMsgIdRef.current = streamingId;
+      const placeholderMsg: ChatMessage = {
+        id: streamingId,
+        conversation_id: conversationId || "local",
+        role: "assistant",
+        content: "",
+        metadata: { mode: "info", status: "success" },
+        created_at: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, userMsg, placeholderMsg]);
+
+      // Wire onChunk to progressively update the streaming placeholder.
+      onChunkRef.current = (delta: string) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === streamingMsgIdRef.current ? { ...m, content: m.content + delta } : m,
+          ),
+        );
+      };
 
       try {
         const result = await getOrchestrator().processTurn(trimmed, historyRef.current, pendingPreview);
@@ -223,7 +241,20 @@ export function useAiChat(): UseAiChatReturn {
 
         if (result.pendingPreview) setPendingPreview(result.pendingPreview);
         if (!conversationId) setConversationId(`local-${Date.now()}`);
-        if (result.text) addAssistantMessage(result.text);
+
+        // Replace streaming placeholder with the final confirmed message.
+        const finalMsg: ChatMessage = {
+          id: makeMessageId("assistant"),
+          conversation_id: conversationIdRef.current || "local",
+          role: "assistant",
+          content: result.text,
+          metadata: { mode: "info", status: "success" },
+          created_at: new Date().toISOString(),
+        };
+        setMessages((prev) => [
+          ...prev.filter((m) => m.id !== streamingId),
+          ...(result.text ? [finalMsg] : []),
+        ]);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Local AI chat failed.";
         const friendly =
@@ -232,12 +263,14 @@ export function useAiChat(): UseAiChatReturn {
             : msg;
 
         setError(friendly);
-        setMessages((prev) => prev.filter((m) => m.id !== userMsg.id));
+        setMessages((prev) => prev.filter((m) => m.id !== userMsg.id && m.id !== streamingId));
       } finally {
+        onChunkRef.current = undefined;
+        streamingMsgIdRef.current = null;
         setIsLoading(false);
       }
     },
-    [addAssistantMessage, conversationId, getOrchestrator, identity, localLlmStatus, pendingPreview],
+    [conversationId, getOrchestrator, identity, localLlmStatus, pendingPreview],
   );
 
   const clearPreview = useCallback(() => {
