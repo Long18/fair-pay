@@ -57,7 +57,7 @@ const pwaPlugins = VitePWA({
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
-        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // 4 MB
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB — covers large vendor/web-llm chunks
         runtimeCaching: [
             // Navigation requests always go to network (SPA)
             {
