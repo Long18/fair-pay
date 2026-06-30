@@ -10,8 +10,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  CheckCircleIcon,
   CheckIcon,
+  DownloadIcon,
+  LayersIcon,
   Loader2Icon,
+  StarIcon,
   Trash2Icon,
   ZapIcon,
 } from "@/components/ui/icons";
@@ -135,7 +139,12 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90dvh] max-w-lg flex-col gap-0 p-0 sm:max-w-[560px]">
+      {/*
+       * overflow-hidden is required to override the base DialogContent's overflow-y-auto.
+       * Without it the entire dialog scrolls, making the footer float over the list.
+       * The inner ScrollArea handles scrolling for the model list only.
+       */}
+      <DialogContent className="flex max-h-[90dvh] max-w-lg flex-col gap-0 overflow-hidden p-0 sm:max-w-[560px]">
         <DialogHeader className="shrink-0 border-b px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <DialogTitle className="flex items-center gap-2 text-base">
@@ -153,8 +162,10 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
                     : "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-400",
                 )}
               >
-                {localLlmStatus.state === "loading" && (
+                {localLlmStatus.state === "loading" ? (
                   <Loader2Icon size={10} className="mr-1 animate-spin" />
+                ) : (
+                  <CheckCircleIcon size={10} className="mr-1" />
                 )}
                 {WEB_LLM_MODEL_LIST.find((m) => m.id === loadedModelId)?.label ??
                   loadedModelId}
@@ -180,7 +191,7 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
           </div>
         </DialogHeader>
 
-        {/* Model list */}
+        {/* Model list — this is the only scrollable region */}
         <ScrollArea className="min-h-0 flex-1">
           <div className="px-2 py-2">
             {groupedModels.length === 0 && (
@@ -191,9 +202,12 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
 
             {groupedModels.map(({ family, models }) => (
               <div key={family} className="mb-3">
-                {/* Family header */}
-                <div className="mb-1 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {family}
+                {/* Family header with icon */}
+                <div className="mb-1 flex items-center gap-1.5 px-2">
+                  <LayersIcon size={11} className="shrink-0 text-muted-foreground/60" />
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {family}
+                  </span>
                 </div>
 
                 <div className="space-y-0.5">
@@ -211,10 +225,8 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
                         className={cn(
                           "group flex w-full items-center gap-2 rounded-md px-2 py-2 text-left transition-colors",
                           "hover:bg-accent hover:text-accent-foreground",
-                          isSelected &&
-                            "bg-primary/5 ring-1 ring-inset ring-primary/20",
-                          isLoaded && isSelected &&
-                            "ring-emerald-500/30",
+                          isSelected && "bg-primary/5 ring-1 ring-inset ring-primary/20",
+                          isLoaded && isSelected && "ring-emerald-500/30",
                         )}
                       >
                         {/* Selection radio */}
@@ -229,58 +241,68 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
                           {isSelected && <CheckIcon size={10} />}
                         </span>
 
-                        {/* Label + quant */}
+                        {/* Label + meta */}
                         <span className="min-w-0 flex-1">
-                          <span className="flex items-center gap-1.5 truncate text-sm font-medium">
-                            {model.label}
+                          <span className="flex items-center gap-1.5 text-sm font-medium">
+                            <span className="truncate">{model.label}</span>
                             {model.recommended && (
-                              <Badge
-                                variant="outline"
-                                className="h-4 shrink-0 border-amber-300 px-1 py-0 text-[9px] leading-none text-amber-600 dark:border-amber-700 dark:text-amber-400"
-                              >
-                                {t("aiChat.modelPicker.recommended")}
-                              </Badge>
+                              <StarIcon
+                                size={11}
+                                className="shrink-0 text-amber-500"
+                                aria-label={t("aiChat.modelPicker.recommended")}
+                              />
+                            )}
+                            {isLoaded && (
+                              <CheckCircleIcon
+                                size={11}
+                                className="shrink-0 text-emerald-500"
+                                aria-label="Currently loaded"
+                              />
                             )}
                           </span>
-                          <span className="text-xs text-muted-foreground">
-                            {t("aiChat.modelPicker.contextLength", {
-                              k: Math.round(model.contextLength / 1024),
-                            })}
-                            {" · "}
-                            {model.quantization}
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <span>
+                              {t("aiChat.modelPicker.contextLength", {
+                                k: Math.round(model.contextLength / 1024),
+                              })}
+                            </span>
+                            <span>·</span>
+                            <span>{model.quantization}</span>
                           </span>
                         </span>
 
-                        {/* Right side: badges + delete */}
+                        {/* Right side: VRAM + cache + delete */}
                         <span className="flex shrink-0 items-center gap-1">
-                          {model.lowResource && (
-                            <Badge
-                              variant="secondary"
-                              className="h-4 px-1 py-0 text-[9px] leading-none"
-                            >
-                              {t("aiChat.modelPicker.lowVram")}
-                            </Badge>
-                          )}
-                          <Badge
-                            variant="outline"
-                            className="h-4 px-1 py-0 text-[9px] leading-none text-muted-foreground"
-                          >
-                            {formatVram(model.vramMB)}
-                          </Badge>
-
-                          {/* Cached badge */}
-                          {checkingCache ? (
-                            <span className="h-4 w-12 animate-pulse rounded bg-muted" />
-                          ) : isCached ? (
+                          {/* VRAM badge with icon */}
+                          <span className="flex items-center gap-0.5">
+                            {model.lowResource && (
+                              <Badge
+                                variant="secondary"
+                                className="h-4 px-1 py-0 text-[9px] leading-none"
+                              >
+                                {t("aiChat.modelPicker.lowVram")}
+                              </Badge>
+                            )}
                             <Badge
                               variant="outline"
-                              className="h-4 border-emerald-300 bg-emerald-50 px-1 py-0 text-[9px] leading-none text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-400"
+                              className="h-4 px-1 py-0 text-[9px] leading-none text-muted-foreground"
                             >
-                              {t("aiChat.modelPicker.cached")}
+                              {formatVram(model.vramMB)}
                             </Badge>
+                          </span>
+
+                          {/* Cache state indicator */}
+                          {checkingCache ? (
+                            <span className="h-4 w-4 animate-pulse rounded bg-muted" />
+                          ) : isCached ? (
+                            <DownloadIcon
+                              size={12}
+                              className="shrink-0 text-emerald-500"
+                              aria-label={t("aiChat.modelPicker.cached")}
+                            />
                           ) : null}
 
-                          {/* Delete cache button — only shown when cached */}
+                          {/* Delete cache button — visible on hover when cached */}
                           {isCached && (
                             <button
                               type="button"
@@ -312,6 +334,7 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
           </div>
         </ScrollArea>
 
+        {/* Footer — shrink-0 ensures it never scrolls with the list */}
         <DialogFooter className="shrink-0 border-t px-4 py-3">
           <div className="flex w-full items-center justify-between gap-2">
             {/* Downloaded count */}
