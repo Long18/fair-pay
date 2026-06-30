@@ -5,13 +5,13 @@ import {
   buildDebtOgTitle,
   fetchDebtOgCounterparty,
   fetchDebtOgData,
-} from '../_lib/debt-og-data'
-import { decodeDebtToken, encodeDebtToken } from '../_lib/share-token'
+} from '../_lib/debt-og-data.js'
+import { decodeDebtToken, encodeDebtToken } from '../_lib/share-token.js'
 import {
   appendTrackingParams,
   escapeHtml,
   toVersionToken,
-} from '../_lib/share-shared'
+} from '../_lib/share-shared.js'
 
 export const config = { runtime: 'edge' }
 

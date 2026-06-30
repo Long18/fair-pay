@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
-import { getAdminUser } from '../../_lib/admin-auth'
-import { catalog } from '../../../src/modules/admin/api-docs/catalog'
-import type { ApiCatalogEntry } from '../../../src/modules/admin/api-docs/types'
+import { getAdminUser } from '../../_lib/admin-auth.js'
+import { catalog } from '../../../src/modules/admin/api-docs/catalog.js'
+import type { ApiCatalogEntry } from '../../../src/modules/admin/api-docs/types.js'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 

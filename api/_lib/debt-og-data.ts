@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 
-import { formatOgAmount } from './og-format'
+import { formatOgAmount } from './og-format.js'
 
 type DebtDetailRow = {
   expense_id: string

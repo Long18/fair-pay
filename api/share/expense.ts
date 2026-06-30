@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 
-import { formatOgAmount, formatOgDate } from '../_lib/og-format'
+import { formatOgAmount, formatOgDate } from '../_lib/og-format.js'
 import {
   appendTrackingParams,
   escapeHtml,
   toVersionToken,
-} from '../_lib/share-shared'
+} from '../_lib/share-shared.js'
 
 export const config = { runtime: 'edge' }
 

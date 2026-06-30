@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { getAuthenticatedUser } from '../_lib/auth'
-import { handleCorsPreflightIfNeeded } from '../_lib/cors'
+import { getAuthenticatedUser } from '../_lib/auth.js'
+import { handleCorsPreflightIfNeeded } from '../_lib/cors.js'
 
 // ── /api/momo/check-transaction ───────────────────────────────────────────────
 

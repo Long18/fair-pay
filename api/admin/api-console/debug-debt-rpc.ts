@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { getAdminUser } from '../../_lib/admin-auth'
+import { getAdminUser } from '../../_lib/admin-auth.js'
 
 export const config = { runtime: 'edge' }
 

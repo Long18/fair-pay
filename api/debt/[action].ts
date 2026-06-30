@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { getAdminUser } from '../_lib/admin-auth'
-import { getAuthenticatedUser } from '../_lib/auth'
-import { handleCorsPreflightIfNeeded, setCorsHeaders } from '../_lib/cors'
+import { getAdminUser } from '../_lib/admin-auth.js'
+import { getAuthenticatedUser } from '../_lib/auth.js'
+import { handleCorsPreflightIfNeeded, setCorsHeaders } from '../_lib/cors.js'
 
 // ── /api/debt/all-users-detailed ──────────────────────────────────────────────
 
