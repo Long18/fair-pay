@@ -37,7 +37,7 @@
                 },
                 {
                     "key": "Content-Security-Policy-Report-Only",
-                    "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://va.vercel-scripts.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src * data: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://va.vercel-scripts.com https://huggingface.co https://*.huggingface.co https://cdn-lfs.huggingface.co https://*.hf.co https://*.xethub.hf.co https://raw.githubusercontent.com https://github.com https://objects.githubusercontent.com; frame-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; report-uri /api/csp-report"
+                    "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval' 'sha256-jMyJeftrwNJV6m2mzxka6zh59sPeJ3RMM47ArX/D0ag=' 'sha256-85/Qo5b2BVGu9pk4JLGAXrkp1T/i0t1kCTrpBkhhoK4=' 'sha256-HNovSe2FMcpe4B4ObazQy0f2mGjB2ZFiEWy7Oa5JsIQ=' https://va.vercel-scripts.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src * data: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://va.vercel-scripts.com https://huggingface.co https://*.huggingface.co https://cdn-lfs.huggingface.co https://*.hf.co https://*.xethub.hf.co https://raw.githubusercontent.com https://github.com https://objects.githubusercontent.com; frame-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; report-uri /api/csp-report"
                 }
             ]
         },
