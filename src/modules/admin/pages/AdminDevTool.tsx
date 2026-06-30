@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { AdminOgPreview } from "./AdminOgPreview";
 import { AdminUtmDevTool } from "./AdminUtmDevTool";
 import { AdminApiDocs } from "./AdminApiDocs";
+import { AdminAuditLogs } from "./AdminAuditLogs";
+import { AdminAgentOperations } from "./AdminAgentOperations";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -66,7 +68,9 @@ import {
   MonitorIcon,
   PieChartIcon,
   RefreshCwIcon,
+  ScrollTextIcon,
   SendIcon,
+  ZapIcon,
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { buildReminderEmailPreview } from "@/modules/admin/email/reminder-email";
@@ -1561,7 +1565,7 @@ export function AdminDevTool() {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab");
   const isApiDocsEnabled = import.meta.env.VITE_ENABLE_ADMIN_API_DOCS === "true";
-  const validTabs = ["og-preview", "email", "utm", ...(isApiDocsEnabled ? ["api-docs"] : [])] as const;
+  const validTabs = ["og-preview", "email", "utm", "audit-logs", "agent-ops", ...(isApiDocsEnabled ? ["api-docs"] : [])] as const;
   const activeTab = validTabs.includes(requestedTab as typeof validTabs[number])
     ? (requestedTab as typeof validTabs[number])
     : "og-preview";
@@ -1578,7 +1582,7 @@ export function AdminDevTool() {
           <h1 className="text-2xl font-semibold tracking-tight">{tAdmin("devtool.developerToolsTitle")}</h1>
           <p className="text-sm text-muted-foreground mt-1">{tAdmin("devtool.developerToolsSubtitle")}</p>
         </div>
-        <TabsList className={`grid w-full sm:w-fit ${isApiDocsEnabled ? "grid-cols-4" : "grid-cols-3"}`}>
+        <TabsList className={`grid w-full sm:w-fit grid-cols-3 sm:grid-cols-${isApiDocsEnabled ? "6" : "5"}`}>
           <TabsTrigger value="og-preview">
             <EyeIcon className="h-4 w-4" />
             OG Preview
@@ -1590,6 +1594,14 @@ export function AdminDevTool() {
           <TabsTrigger value="utm">
             <PieChartIcon className="h-4 w-4" />
             UTM
+          </TabsTrigger>
+          <TabsTrigger value="audit-logs">
+            <ScrollTextIcon className="h-4 w-4" />
+            Audit Logs
+          </TabsTrigger>
+          <TabsTrigger value="agent-ops">
+            <ZapIcon className="h-4 w-4" />
+            Agent Ops
           </TabsTrigger>
           {isApiDocsEnabled && (
             <TabsTrigger value="api-docs">
@@ -1608,6 +1620,12 @@ export function AdminDevTool() {
       </TabsContent>
       <TabsContent value="utm">
         <AdminUtmDevTool />
+      </TabsContent>
+      <TabsContent value="audit-logs">
+        <AdminAuditLogs />
+      </TabsContent>
+      <TabsContent value="agent-ops">
+        <AdminAgentOperations />
       </TabsContent>
       {isApiDocsEnabled && (
         <TabsContent value="api-docs">
