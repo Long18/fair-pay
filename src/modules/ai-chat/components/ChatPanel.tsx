@@ -96,7 +96,9 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
   const selectedEntry = useMemo(() => getWebLlmModelEntry(selectedModel), [selectedModel]);
   const canLoad = localLlmStatus.state === "idle" || localLlmStatus.state === "error";
   const canDeleteModelCache = localLlmStatus.state !== "loading" && localLlmStatus.state !== "unsupported";
-  const inputDisabled = localLlmStatus.state !== "ready" || Boolean(pendingPreview);
+  // Input is only blocked while actively processing a message or waiting for confirmation.
+  // If the model isn't loaded yet, sendMessage auto-loads it on first send.
+  const inputDisabled = isLoading || Boolean(pendingPreview) || localLlmStatus.state === "unsupported";
   const pickerDisabled = localLlmStatus.state === "loading" || localLlmStatus.state === "unsupported";
 
   useEffect(() => {
@@ -256,7 +258,7 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
                       variant="outline"
                       size="sm"
                       onClick={() => handleSuggestion(suggestion)}
-                      disabled={localLlmStatus.state !== "ready" || isLoading}
+                      disabled={isLoading || localLlmStatus.state === "unsupported"}
                       className="h-auto min-h-10 justify-start whitespace-normal px-3 py-2 text-left text-xs"
                     >
                       {suggestion}

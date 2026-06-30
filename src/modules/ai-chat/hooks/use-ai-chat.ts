@@ -49,11 +49,8 @@ function makeMessageId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function localModelError(status: LocalLlmStatus): string | null {
+function localModelUnsupported(status: LocalLlmStatus): string | null {
   if (status.state === "unsupported") return status.reason;
-  if (status.state === "loading") return "Local AI is still loading. Please wait for the model to finish loading.";
-  if (status.state === "error") return status.message;
-  if (status.state !== "ready") return "Load the local AI model before chatting.";
   return null;
 }
 
@@ -194,9 +191,10 @@ export function useAiChat(): UseAiChatReturn {
       const trimmed = text.trim();
       if (!trimmed || !identity) return;
 
-      const readinessError = localModelError(localLlmStatus);
-      if (readinessError) {
-        setError(readinessError);
+      // Only hard-block when the browser can't run WebLLM at all.
+      const unsupportedReason = localModelUnsupported(localLlmStatus);
+      if (unsupportedReason) {
+        setError(unsupportedReason);
         return;
       }
 
@@ -225,6 +223,37 @@ export function useAiChat(): UseAiChatReturn {
       };
 
       setMessages((prev) => [...prev, userMsg, placeholderMsg]);
+
+      // Auto-load the model if it isn't ready yet — show user the message is queued.
+      if (localLlmStatus.state !== "ready") {
+        try {
+          const loaded = await loadModel(selectedModel);
+          if (loaded.state === "unsupported") {
+            setError(loaded.reason);
+            setMessages((prev) => prev.filter((m) => m.id !== userMsg.id && m.id !== streamingId));
+            setIsLoading(false);
+            return;
+          }
+          if (loaded.state === "error") {
+            setError(loaded.message);
+            setMessages((prev) => prev.filter((m) => m.id !== userMsg.id && m.id !== streamingId));
+            setIsLoading(false);
+            return;
+          }
+          if (loaded.state !== "ready") {
+            setError("Local AI model could not be loaded.");
+            setMessages((prev) => prev.filter((m) => m.id !== userMsg.id && m.id !== streamingId));
+            setIsLoading(false);
+            return;
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "Failed to load local AI model.";
+          setError(msg);
+          setMessages((prev) => prev.filter((m) => m.id !== userMsg.id && m.id !== streamingId));
+          setIsLoading(false);
+          return;
+        }
+      }
 
       // Wire onChunk to progressively update the streaming placeholder.
       onChunkRef.current = (delta: string) => {
@@ -270,7 +299,7 @@ export function useAiChat(): UseAiChatReturn {
         setIsLoading(false);
       }
     },
-    [conversationId, getOrchestrator, identity, localLlmStatus, pendingPreview],
+    [conversationId, getOrchestrator, identity, localLlmStatus, pendingPreview, selectedModel],
   );
 
   const clearPreview = useCallback(() => {
