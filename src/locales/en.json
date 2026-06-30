@@ -267,7 +267,10 @@
       }
     },
     "insights": {
+      "title": "AI Insights",
       "noData": "No dashboard data is available yet. Add expenses or settlements, then generate insights again.",
+      "noInsight": "Unable to generate insights at this time.",
+      "error": "Could not generate dashboard insights.",
       "modelLoading": "Local AI is still loading. Try again after the model is ready."
     }
   },

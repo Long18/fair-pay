@@ -267,7 +267,10 @@
       }
     },
     "insights": {
+      "title": "Phân tích AI",
       "noData": "Chưa có dữ liệu tổng quan. Thêm chi tiêu hoặc thanh toán, sau đó tạo phân tích lại.",
+      "noInsight": "Không thể tạo phân tích vào lúc này.",
+      "error": "Không thể tạo phân tích tổng quan.",
       "modelLoading": "AI cục bộ vẫn đang tải. Thử lại sau khi mô hình sẵn sàng."
     }
   },
