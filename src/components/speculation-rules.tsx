@@ -1,18 +1,26 @@
-import React, { memo } from "react";
+import { useEffect } from "react";
 import { useSpeculationRules } from "../hooks/use-speculation-rules";
 
-const SpeculationRules = memo(function SpeculationRules() {
+function SpeculationRules() {
   const rules = useSpeculationRules();
 
-  if (!rules) return null;
+  useEffect(() => {
+    if (!rules) return;
 
-  return (
-    <script
-      key={rules}
-      type="speculationrules"
-      dangerouslySetInnerHTML={{ __html: rules }}
-    />
-  );
-});
+    // dangerouslySetInnerHTML uses the innerHTML setter, which browsers silently
+    // reject for <script type="speculationrules">. Imperative DOM creation with
+    // textContent is the only way to inject dynamic speculation rules.
+    const script = document.createElement("script");
+    script.type = "speculationrules";
+    script.textContent = rules;
+    document.head.appendChild(script);
+
+    return () => {
+      document.head.removeChild(script);
+    };
+  }, [rules]);
+
+  return null;
+}
 
 export { SpeculationRules };

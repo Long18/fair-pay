@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useGetIdentity } from "@refinedev/core";
 import { toast } from "sonner";
 import { supabaseClient } from "@/utility/supabaseClient";
 
@@ -130,9 +131,15 @@ export function ExternalAgentSubmissionInbox() {
   const [dismissed, setDismissed] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
 
+  // Only run for authenticated users — unauthenticated visitors would get 401s.
+  const { data: identity } = useGetIdentity();
+  const isAuthenticated = !!identity;
+
   // Live updates: subscribe to new external agent submissions so the inbox
   // appears without requiring the user to refocus the tab or manually refresh.
   useEffect(() => {
+    if (!isAuthenticated) return;
+
     const channel = supabaseClient
       .channel("inbox:external-agent-submissions-live")
       .on(
@@ -147,11 +154,12 @@ export function ExternalAgentSubmissionInbox() {
     return () => {
       supabaseClient.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [isAuthenticated, queryClient]);
 
   const { data = [], isLoading } = useQuery({
     queryKey: ["external-agent-submissions"],
     queryFn: listSubmissions,
+    enabled: isAuthenticated,   // never fires for unauthenticated visitors
     refetchInterval: 30_000,    // fallback poll for realtime misses
     refetchOnWindowFocus: true,
   });
