@@ -1,44 +1,37 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircleIcon, ChevronDownIcon, Loader2Icon, SparklesIcon } from "@/components/ui/icons";
-import { chat as localLlmChat, getLocalLlmStatus, getSelectedModel, loadModel } from "@/lib/local-llm/client";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { FloatingActionStack, FloatingPill } from "@/components/ui/floating-stack";
+import {
+  AlertCircleIcon,
+  Loader2Icon,
+  SparklesIcon,
+  XIcon,
+} from "@/components/ui/icons";
+import {
+  chat as localLlmChat,
+  getLocalLlmStatus,
+  getSelectedModel,
+  loadModel,
+} from "@/lib/local-llm/client";
+import { useHaptics } from "@/hooks/use-haptics";
 import i18n from "@/i18n";
+import type { DashboardInsightContext } from "./types";
 
-type DashboardBalanceSummary = {
-  counterparty_name?: string;
-  amount?: number;
-  currency?: string;
-  is_owed?: boolean;
-  transaction_count?: number;
-  last_transaction_date?: string;
-};
-
-type DashboardActivitySummary = {
-  type?: string;
-  description?: string;
-  amount?: number;
-  currency?: string;
-  date?: string;
-  groupName?: string;
-  paymentState?: string;
-};
-
-export interface DashboardInsightContext {
-  activeTab: string;
-  balances: DashboardBalanceSummary[];
-  recentActivities: DashboardActivitySummary[];
-  historyActivities: DashboardActivitySummary[];
-}
-
-interface DashboardInsightPanelProps {
+interface InsightsFABProps {
   context: DashboardInsightContext;
 }
 
@@ -60,37 +53,43 @@ function emptyContext(context: DashboardInsightContext): boolean {
 }
 
 function parseInsightResponse(raw: string): { insights: string[]; prompts: string[] } {
-  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-  const prompts = lines.filter(l => l.endsWith('?')).slice(0, 2);
-  const insights = lines.filter(l => !prompts.includes(l)).slice(0, 2);
+  const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
+  const prompts = lines.filter((l) => l.endsWith("?")).slice(0, 2);
+  const insights = lines.filter((l) => !prompts.includes(l)).slice(0, 2);
   return { insights: insights.length ? insights : [raw], prompts };
 }
 
 function formatRelativeTime(date: Date): string {
   const diffMin = Math.floor((Date.now() - date.getTime()) / 60000);
-  if (diffMin < 1) return 'just now';
+  if (diffMin < 1) return "just now";
   if (diffMin < 60) return `${diffMin}m ago`;
   return `${Math.floor(diffMin / 60)}h ago`;
 }
 
-export function DashboardInsightPanel({ context }: DashboardInsightPanelProps) {
+export const InsightsFAB = memo(function InsightsFAB({ context }: InsightsFABProps) {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
   const [insight, setInsight] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [lastGenerated, setLastGenerated] = useState<Date | null>(null);
-  const [isOpen, setIsOpen] = useState(true);
-  const sanitizedContext = useMemo(() => compactContext(context), [context]);
+  const { tap } = useHaptics();
 
+  const sanitizedContext = useMemo(() => compactContext(context), [context]);
   const parsed = useMemo(
     () => (insight ? parseInsightResponse(insight) : { insights: [], prompts: [] }),
     [insight],
   );
 
-  // Auto-open when new insight arrives
+  // Open the panel when insights finish generating
   useEffect(() => {
-    if (insight) setIsOpen(true);
-  }, [insight]);
+    if (insight && loading === false) setOpen(true);
+  }, [insight, loading]);
+
+  const toggle = useCallback(() => {
+    tap();
+    setOpen((prev) => !prev);
+  }, [tap]);
 
   const generateInsights = useCallback(async () => {
     setError(null);
@@ -98,7 +97,7 @@ export function DashboardInsightPanel({ context }: DashboardInsightPanelProps) {
 
     try {
       if (emptyContext(sanitizedContext)) {
-        setInsight(t('dashboard.insights.noData'));
+        setInsight(t("dashboard.insights.noData"));
         setLastGenerated(new Date());
         return;
       }
@@ -111,19 +110,9 @@ export function DashboardInsightPanel({ context }: DashboardInsightPanelProps) {
 
       if (status.state !== "ready") {
         const loaded = await loadModel(getSelectedModel());
-        if (loaded.state === "unsupported") {
-          setError(loaded.reason);
-          return;
-        }
-        if (loaded.state === "error") {
-          setError(loaded.message);
-          return;
-        }
-        if (loaded.state !== "ready") {
-          setError(t('dashboard.insights.modelLoading'));
-          return;
-        }
-
+        if (loaded.state === "unsupported") { setError(loaded.reason); return; }
+        if (loaded.state === "error") { setError(loaded.message); return; }
+        if (loaded.state !== "ready") { setError(t("dashboard.insights.modelLoading")); return; }
         status = loaded;
       }
 
@@ -131,7 +120,7 @@ export function DashboardInsightPanel({ context }: DashboardInsightPanelProps) {
         [
           {
             role: "system",
-            content: `You write compact FairPay dashboard insights. Use only the provided JSON data. Do not invent numbers. Return 2 short actionable insights and 2 suggested chat prompts.\nRespond in ${i18n.language === 'vi' ? 'Vietnamese' : 'English'}.`,
+            content: `You write compact FairPay dashboard insights. Use only the provided JSON data. Do not invent numbers. Return 2 short actionable insights and 2 suggested chat prompts.\nRespond in ${i18n.language === "vi" ? "Vietnamese" : "English"}.`,
           },
           { role: "user", content: JSON.stringify(sanitizedContext) },
         ],
@@ -140,79 +129,74 @@ export function DashboardInsightPanel({ context }: DashboardInsightPanelProps) {
 
       setInsight(
         response.message?.content?.trim() ||
-        response.text?.trim() ||
-        t('dashboard.insights.noInsight'),
+          response.text?.trim() ||
+          t("dashboard.insights.noInsight"),
       );
       setLastGenerated(new Date());
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('dashboard.insights.error'));
+      setError(err instanceof Error ? err.message : t("dashboard.insights.error"));
     } finally {
       setLoading(false);
     }
   }, [sanitizedContext, t]);
 
   return (
-    <section className="mx-auto mt-4 w-full max-w-5xl">
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <Card className="gap-0 py-0 shadow-sm">
-          <CardHeader className="px-4 py-3 [grid-template-rows:auto] [grid-template-columns:1fr]">
-            {/* Title row */}
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <SparklesIcon size={16} className="text-primary" />
-                <CardTitle className="text-sm font-semibold">
-                  {t('dashboard.insights.title')}
-                </CardTitle>
+    <>
+      {/* Insights sheet panel */}
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent className="flex flex-col w-full h-[100dvh] sm:h-full gap-0 p-0 sm:max-w-[420px]">
+          <SheetHeader className="shrink-0 border-b px-4 py-3">
+            <div className="flex items-center justify-between gap-3 pr-8">
+              <div className="flex min-w-0 items-center gap-2">
+                <SparklesIcon size={16} className="shrink-0 text-primary" />
+                <SheetTitle className="text-base">{t("dashboard.insights.title")}</SheetTitle>
                 {lastGenerated && (
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge variant="secondary" className="shrink-0 text-xs">
                     {formatRelativeTime(lastGenerated)}
                   </Badge>
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={generateInsights}
-                  disabled={loading}
-                  className="shrink-0"
-                >
-                  {loading ? (
-                    <Loader2Icon size={14} className="animate-spin" />
-                  ) : (
-                    <SparklesIcon size={14} />
-                  )}
-                  {insight ? t('dashboard.insights.regenerate') ?? 'Regenerate' : t('dashboard.insights.generate') ?? 'Generate'}
-                </Button>
-                {insight && (
-                  <CollapsibleTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                      <ChevronDownIcon
-                        size={14}
-                        className={cn("transition-transform duration-200", isOpen && "rotate-180")}
-                      />
-                    </Button>
-                  </CollapsibleTrigger>
+              <Button
+                type="button"
+                size="sm"
+                onClick={generateInsights}
+                disabled={loading}
+                className="shrink-0"
+              >
+                {loading ? (
+                  <Loader2Icon size={14} className="animate-spin" />
+                ) : (
+                  <SparklesIcon size={14} />
                 )}
-              </div>
+                {insight
+                  ? t("dashboard.insights.regenerate")
+                  : t("dashboard.insights.generate")}
+              </Button>
             </div>
-
-            {/* Subtitle — only shown before first generation */}
             {!insight && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                Uses only the balances, activity, and history already loaded on this dashboard.
-              </p>
+              <SheetDescription>
+                {t("dashboard.insights.subtitle", "Uses only the balances, activity, and history already loaded on this dashboard.")}
+              </SheetDescription>
             )}
-          </CardHeader>
+          </SheetHeader>
 
-          <CollapsibleContent>
-            <CardContent className="px-4 pb-4 pt-0">
+          <ScrollArea className="min-h-0 flex-1 px-4">
+            <div className="space-y-4 py-4">
+              {/* Empty / call-to-action state */}
+              {!loading && !insight && !error && (
+                <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
+                  {t("dashboard.insights.cta", "Tap Generate to get AI-powered insights from your current dashboard data.")}
+                </div>
+              )}
+
               {/* Loading skeleton */}
               {loading && (
                 <div className="space-y-2">
                   <Skeleton className="h-4 w-full" />
                   <Skeleton className="h-4 w-4/5" />
                   <Skeleton className="h-4 w-3/5" />
+                  <Skeleton className="mt-4 h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
                 </div>
               )}
 
@@ -221,7 +205,6 @@ export function DashboardInsightPanel({ context }: DashboardInsightPanelProps) {
                 <div className="space-y-3">
                   {parsed.insights.map((ins, i) => (
                     <div key={i} className="flex gap-2 text-sm">
-                      {/* Lightbulb substitute — amber dot indicator */}
                       <span
                         className="mt-2 h-2 w-2 shrink-0 rounded-full bg-amber-400"
                         aria-hidden="true"
@@ -235,6 +218,9 @@ export function DashboardInsightPanel({ context }: DashboardInsightPanelProps) {
                   {parsed.prompts.length > 0 && (
                     <>
                       <Separator className="my-2" />
+                      <p className="text-xs font-medium text-muted-foreground">
+                        {t("dashboard.insights.suggestedPrompts", "Suggested questions")}
+                      </p>
                       <div className="flex flex-wrap gap-2">
                         {parsed.prompts.map((prompt, i) => (
                           <Badge
@@ -244,7 +230,7 @@ export function DashboardInsightPanel({ context }: DashboardInsightPanelProps) {
                             role="button"
                             tabIndex={0}
                             onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') e.currentTarget.click();
+                              if (e.key === "Enter" || e.key === " ") e.currentTarget.click();
                             }}
                           >
                             {prompt}
@@ -270,10 +256,32 @@ export function DashboardInsightPanel({ context }: DashboardInsightPanelProps) {
                   <span>{error}</span>
                 </div>
               )}
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
-    </section>
+            </div>
+          </ScrollArea>
+
+          <div className="shrink-0 border-t px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <p className="text-xs text-muted-foreground">
+              {t("dashboard.insights.privacy", "Insights are generated locally in your browser — no data is sent to any server.")}
+            </p>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Floating action button — right side, above safe area */}
+      <FloatingActionStack
+        side="right"
+        trigger={
+          <FloatingPill
+            variant="primary"
+            size="default"
+            onClick={toggle}
+            ariaLabel={open ? t("dashboard.insights.close", "Close AI Insights") : t("dashboard.insights.open", "Open AI Insights")}
+            badge={insight && !open ? 1 : undefined}
+          >
+            {open ? <XIcon size={20} /> : <SparklesIcon size={22} />}
+          </FloatingPill>
+        }
+      />
+    </>
   );
-}
+});

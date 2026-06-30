@@ -273,7 +273,13 @@
       "error": "Không thể tạo phân tích tổng quan.",
       "modelLoading": "AI cục bộ vẫn đang tải. Thử lại sau khi mô hình sẵn sàng.",
       "generate": "Tạo phân tích",
-      "regenerate": "Tạo lại"
+      "regenerate": "Tạo lại",
+      "subtitle": "Chỉ sử dụng số dư, hoạt động và lịch sử đã tải trên trang tổng quan này.",
+      "cta": "Nhấn Tạo phân tích để nhận thông tin chi tiết từ dữ liệu trang tổng quan hiện tại.",
+      "suggestedPrompts": "Câu hỏi gợi ý",
+      "privacy": "Phân tích được tạo cục bộ trong trình duyệt — không có dữ liệu nào được gửi lên máy chủ.",
+      "open": "Mở AI Insights",
+      "close": "Đóng AI Insights"
     }
   },
   "groups": {

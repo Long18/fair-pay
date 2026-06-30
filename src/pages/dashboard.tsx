@@ -4,7 +4,7 @@ import { useHaptics } from "@/hooks/use-haptics";
 import { Profile } from "@/modules/profile/types";
 import { FloatingActionButton } from "@/components/dashboard/core/FloatingActionButton";
 import { DashboardLoadingBeam } from "@/components/dashboard/core/DashboardLoadingBeam";
-import { DashboardInsightPanel } from "@/components/dashboard/insights/DashboardInsightPanel";
+import { InsightsFAB } from "@/components/dashboard/insights/InsightsFAB";
 import { BalanceTable } from "@/components/dashboard/balance/BalanceTable";
 import { SettledHistoryList } from "@/components/dashboard/activity/SettledHistoryList";
 import { EnhancedActivityList } from "@/components/dashboard/activity/enhanced-activity";
@@ -261,7 +261,7 @@ export const Dashboard = () => {
             </div>
             </ScrollReveal>
 
-            <DashboardInsightPanel context={dashboardInsightContext} />
+            <InsightsFAB context={dashboardInsightContext} />
 
             {/* Tab Content */}
             <div className="mt-6">
