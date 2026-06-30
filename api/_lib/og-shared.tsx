@@ -1,6 +1,6 @@
 import { ImageResponse } from '@vercel/og'
 
-import { formatOgAmount, formatOgDate, sanitizeOgText } from '../_lib/og-format'
+import { formatOgAmount, formatOgDate, sanitizeOgText } from './og-format.js'
 
 export { formatOgAmount, formatOgDate, sanitizeOgText }
 

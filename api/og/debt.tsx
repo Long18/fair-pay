@@ -6,7 +6,7 @@ import {
   buildDebtRelationshipLabel,
   fetchDebtOgCounterparty,
   fetchDebtOgData,
-} from '../_lib/debt-og-data'
+} from '../_lib/debt-og-data.js'
 import {
   BORDER_SLATE,
   BrandHeader,
@@ -21,7 +21,7 @@ import {
   sanitizeOgText,
   SETTLED_GREEN,
   withNoCacheHeaders,
-} from '../_lib/og-shared'
+} from '../_lib/og-shared.js'
 
 export const config = {
   runtime: 'edge',
