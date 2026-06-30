@@ -16,3 +16,30 @@
 - Build: pnpm build (runs node scripts/build-with-version.mjs + vite + tsc)
 
 ### Build result: exit 0, zero TypeScript errors
+
+## 2026-06-30 — SEO/GEO Full Enhancement
+
+### Files modified
+- `index.html` — og:url trailing slash, referrer-policy meta, hreflang en/vi/x-default, Organization JSON-LD, WebSite+SearchAction JSON-LD, font preload, dateModified 2026-06-30, noscript H1, footer keyword fix + copyright 2026
+- `src/locales/en.json` — added dashboard.insights.title, noInsight, error keys
+- `src/locales/vi.json` — added dashboard.insights.title, noInsight, error keys (Vietnamese)
+- `src/pages/about.tsx` — H1 (sr-only), FAQPage JSON-LD (7 Q&A), BreadcrumbList
+- `src/pages/contact.tsx` — H1 (sr-only), BreadcrumbList
+- `src/pages/privacy.tsx` — H1 (sr-only), BreadcrumbList
+- `src/pages/terms.tsx` — H1 (sr-only), BreadcrumbList
+- `src/lib/seo.ts` — added injectJsonLd() + buildBreadcrumbSchema() helpers (deslop pass)
+- `public/sitemap.xml` — all lastmod updated to 2026-06-30
+- `public/llms.txt` — NEW: plain-text AI discovery file
+- `public/llms-full.txt` — NEW: detailed AI context file
+
+### Expected score improvements
+- SEO: 61 (D) → 80+ (B)
+- GEO: 43 (E) → 70+ (C/B)
+- Heading: 8 (F) → 75+ (C)
+- Schema: 80 (B) → 92+ (A)
+- GEO Citability: 7% → 35%+
+
+### Patterns learned
+- `src/lib/seo.ts` already existed with setSeoMeta() — extend it for new SEO helpers
+- JSON-LD injection via useEffect with cleanup is the correct SPA pattern for dynamic schemas
+- injectJsonLd() removes existing element before appending to avoid duplicates on HMR
