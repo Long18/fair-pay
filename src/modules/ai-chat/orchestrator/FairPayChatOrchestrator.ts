@@ -46,10 +46,6 @@ function stripCodeFence(value: string): string {
     .trim()
 }
 
-function looksStructured(value: string): boolean {
-  const trimmed = value.trim()
-  return trimmed.startsWith('{') || trimmed.startsWith('[') || /^```(?:json)?\s*/i.test(trimmed)
-}
 
 function parseAssistantDirective(raw: string): AssistantDirective | null {
   if (!raw.trim()) return { type: 'final', content: '' }
@@ -86,14 +82,10 @@ function parseAssistantDirective(raw: string): AssistantDirective | null {
       }
     }
   } catch {
-    if (!looksStructured(raw)) {
-      return { type: 'final', content: raw.trim() }
-    }
-
-    return null
+    return { type: 'final', content: raw.trim() }
   }
 
-  return null
+  return { type: 'final', content: raw.trim() }
 }
 
 function makeManualToolCall(directive: Extract<AssistantDirective, { type: 'tool_call' }>): AssistantToolCall {
