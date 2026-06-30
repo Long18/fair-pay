@@ -2,8 +2,8 @@
 // Merges generated entries with manual overrides.
 // Import this — never import catalog.generated.ts or catalog.overrides.ts directly.
 
-import { generatedCatalog } from './catalog.generated';
-import { catalogOverrides } from './catalog.overrides';
+import { generatedCatalog } from './catalog.generated.js';
+import { catalogOverrides } from './catalog.overrides.js';
 import type { ApiCatalogEntry, ApiFilterState } from './types';
 
 /** Merged, sorted catalog. Generated entries enriched with manual overrides. */

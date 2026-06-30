@@ -3,7 +3,7 @@
 // Keys must match the `id` field in catalog.generated.ts.
 // Changes here are never overwritten by the generator.
 
-import type { ApiCatalogEntry } from './types';
+import type { ApiCatalogEntry } from './types.js';
 
 /**
  * Partial overrides keyed by entry ID.
