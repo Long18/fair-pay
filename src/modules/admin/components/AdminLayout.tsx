@@ -27,13 +27,11 @@ import {
   LayoutDashboardIcon,
   UsersIcon,
   ReceiptIcon,
-  ScrollTextIcon,
   SmilePlusIcon,
   PanelLeftIcon,
   ArrowLeftIcon,
   SettingsIcon,
   TrendingUpIcon,
-  ZapIcon,
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useAdminTranslation } from "../i18n";
@@ -45,11 +43,9 @@ const NAV_ITEMS = [
   { key: "overview", labelKey: "nav.overview", icon: LayoutDashboardIcon, path: "/admin", capability: "canViewOverview" },
   { key: "people", labelKey: "nav.people", icon: UsersIcon, path: "/admin/people", capability: "canViewPeople" },
   { key: "transactions", labelKey: "nav.transactions", icon: ReceiptIcon, path: "/admin/transactions", capability: "canViewTransactions" },
-  { key: "audit-logs", labelKey: "nav.auditLogs", icon: ScrollTextIcon, path: "/admin/audit-logs", capability: "canViewAuditLogs" },
   { key: "reactions", labelKey: "nav.reactions", icon: SmilePlusIcon, path: "/admin/reactions", capability: "canManageReactions" },
   { key: "devtool", labelKey: "nav.devtool", icon: SettingsIcon, path: "/admin/devtool", capability: "canUseDevtool" },
   { key: "marketing", labelKey: "nav.marketing", icon: TrendingUpIcon, path: "/admin/marketing", capability: "canViewGrowth" },
-  { key: "agent-operations", labelKey: "nav.agentOperations", icon: ZapIcon, path: "/admin/agent-operations", capability: "canViewAuditLogs" },
 ] as const;
 
 // ─── Helpers ────────────────────────────────────────────────────────

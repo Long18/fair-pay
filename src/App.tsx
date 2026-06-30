@@ -112,11 +112,9 @@ const AdminOverview = lazy(() => import("./modules/admin/pages/AdminOverview").t
 const AdminPeople = lazy(() => import("./modules/admin/pages/AdminPeople").then(m => ({ default: m.AdminPeople })));
 const AdminUserJourney = lazy(() => import("./modules/admin/pages/AdminUserJourney").then(m => ({ default: m.AdminUserJourney })));
 const AdminTransactions = lazy(() => import("./modules/admin/pages/AdminTransactions").then(m => ({ default: m.AdminTransactions })));
-const AdminAuditLogs = lazy(() => import("./modules/admin/pages/AdminAuditLogs").then(m => ({ default: m.AdminAuditLogs })));
 const AdminReactions = lazy(() => import("./modules/admin/pages/AdminReactions").then(m => ({ default: m.AdminReactions })));
 const AdminDevTool = lazy(() => import("./modules/admin/pages/AdminDevTool").then(m => ({ default: m.AdminDevTool })));
 const AdminMarketing = lazy(() => import("./modules/admin/pages/AdminMarketing").then(m => ({ default: m.AdminMarketing })));
-const AdminAgentOperations = lazy(() => import("./modules/admin/pages/AdminAgentOperations").then(m => ({ default: m.AdminAgentOperations })));
 
 // Profile Edit Redirect Component
 const ProfileEditRedirect = () => {
@@ -445,7 +443,7 @@ function App() {
                     <Route path="people" element={<Suspense fallback={<AdminPageSkeleton />}><AdminPeople /></Suspense>} />
                     <Route path="people/:id/journey" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canViewTracking"><AdminUserJourney /></AdminCapabilityGuard></Suspense>} />
                     <Route path="transactions" element={<Suspense fallback={<AdminPageSkeleton />}><AdminTransactions /></Suspense>} />
-                    <Route path="audit-logs" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canViewAuditLogs"><AdminAuditLogs /></AdminCapabilityGuard></Suspense>} />
+                    <Route path="audit-logs" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canViewAuditLogs"><Navigate to="/admin/devtool?tab=audit-logs" replace /></AdminCapabilityGuard></Suspense>} />
                     <Route path="reactions" element={<Suspense fallback={<AdminPageSkeleton />}><AdminReactions /></Suspense>} />
                     <Route path="utm" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canUseDevtool"><Navigate to="/admin/devtool?tab=utm" replace /></AdminCapabilityGuard></Suspense>} />
                     <Route path="devtool" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canUseDevtool"><AdminDevTool /></AdminCapabilityGuard></Suspense>} />
@@ -453,7 +451,7 @@ function App() {
                     <Route path="marketing" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canViewGrowth"><AdminMarketing /></AdminCapabilityGuard></Suspense>} />
                     <Route path="growth" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canViewGrowth"><Navigate to="/admin/marketing?tab=growth" replace /></AdminCapabilityGuard></Suspense>} />
                     <Route path="retention" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canViewRetention"><Navigate to="/admin/marketing?tab=retention" replace /></AdminCapabilityGuard></Suspense>} />
-                    <Route path="agent-operations" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canViewAuditLogs"><AdminAgentOperations /></AdminCapabilityGuard></Suspense>} />
+                    <Route path="agent-operations" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canViewAuditLogs"><Navigate to="/admin/devtool?tab=agent-ops" replace /></AdminCapabilityGuard></Suspense>} />
                   </Route>
 
                   {/* Authenticated routes - require login */}
