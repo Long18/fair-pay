@@ -13,19 +13,19 @@ import {
 } from "@/components/ui/sheet";
 import {
   AlertCircleIcon,
-  CheckCircleIcon,
   FairPayIcon,
   Loader2Icon,
   Trash2Icon,
   ZapIcon,
 } from "@/components/ui/icons";
+import { loadModel } from "@/lib/local-llm/client";
 import { getWebLlmModelEntry, type LocalLlmStatus, type WebLlmModelId } from "@/lib/local-llm/types";
 import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/use-haptics";
 import type { Profile } from "@/modules/profile/types";
 import { ChatInput } from "./ChatInput";
 import ChatMessage from "./ChatMessage";
-import { ModelPicker } from "./ModelPicker";
+import { ModelSelectDialog } from "./ModelSelectDialog";
 import { TypingIndicator } from "./TypingIndicator";
 import { useAiChat } from "../hooks/use-ai-chat";
 import type { ChatMessage as ChatMessageType } from "../types";
@@ -35,33 +35,24 @@ interface ChatPanelProps {
   onOpenChange: (open: boolean) => void;
 }
 
-function modelStatusCopy(status: LocalLlmStatus, t: (key: string, opts?: Record<string, unknown>) => string): { label: string; detail: string; tone: string } {
-  if (status.state === "unsupported") {
-    return { label: t('aiChat.status.unavailable'), detail: status.reason, tone: "text-destructive" };
+function statusDotColor(status: LocalLlmStatus): string {
+  switch (status.state) {
+    case "ready":    return "bg-emerald-500";
+    case "loading":  return "bg-amber-500 animate-pulse";
+    case "error":
+    case "unsupported": return "bg-destructive";
+    default:         return "bg-muted-foreground/40";
   }
+}
 
-  if (status.state === "loading") {
-    const pct = Math.round(status.progress * 100);
-    return {
-      label: t('aiChat.status.loading', { pct: Number.isFinite(pct) ? pct : '' }),
-      detail: status.message,
-      tone: "text-amber-600 dark:text-amber-400",
-    };
+function statusLabel(status: LocalLlmStatus, t: (key: string, opts?: Record<string, unknown>) => string): string {
+  switch (status.state) {
+    case "unsupported": return t("aiChat.status.unavailable");
+    case "loading":     return t("aiChat.status.loading", { pct: Math.round(status.progress * 100) });
+    case "ready":       return t("aiChat.status.ready");
+    case "error":       return t("aiChat.status.error");
+    default:            return t("aiChat.status.idle");
   }
-
-  if (status.state === "ready") {
-    return { label: t('aiChat.status.ready'), detail: status.model, tone: "text-emerald-600 dark:text-emerald-400" };
-  }
-
-  if (status.state === "error") {
-    return { label: t('aiChat.status.error'), detail: status.message, tone: "text-destructive" };
-  }
-
-  return {
-    label: t('aiChat.status.idle'),
-    detail: t('aiChat.status.idleDetail'),
-    tone: "text-muted-foreground",
-  };
 }
 
 export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
@@ -75,35 +66,29 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
     localLlmStatus,
     selectedModel,
     selectLocalModel,
-    loadLocalModel,
-    deleteLocalModelCache,
     sendMessage,
     clearPreview,
     clearChat,
   } = useAiChat();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [isDeletingModelCache, setIsDeletingModelCache] = useState(false);
+  const [modelDialogOpen, setModelDialogOpen] = useState(false);
   const { tap } = useHaptics();
 
   const suggestions = useMemo(() => [
-    t('aiChat.suggestions.whoOwes'),
-    t('aiChat.suggestions.recentActivity'),
-    t('aiChat.suggestions.dinnerExpense'),
-    t('aiChat.suggestions.groupsAttention'),
+    t("aiChat.suggestions.whoOwes"),
+    t("aiChat.suggestions.recentActivity"),
+    t("aiChat.suggestions.dinnerExpense"),
+    t("aiChat.suggestions.groupsAttention"),
   ], [t]);
 
-  const statusCopy = useMemo(() => modelStatusCopy(localLlmStatus, t), [localLlmStatus, t]);
   const selectedEntry = useMemo(() => getWebLlmModelEntry(selectedModel), [selectedModel]);
-  const canLoad = localLlmStatus.state === "idle" || localLlmStatus.state === "error";
-  const canDeleteModelCache = localLlmStatus.state !== "loading" && localLlmStatus.state !== "unsupported";
+
   // Input is only blocked while actively processing a message or waiting for confirmation.
   // If the model isn't loaded yet, sendMessage auto-loads it on first send.
   const inputDisabled = isLoading || Boolean(pendingPreview) || localLlmStatus.state === "unsupported";
-  const pickerDisabled = localLlmStatus.state === "loading" || localLlmStatus.state === "unsupported";
 
   useEffect(() => {
     if (!open) return;
-
     const viewport = scrollRef.current?.querySelector("[data-radix-scroll-area-viewport]");
     viewport?.scrollTo({ top: viewport.scrollHeight, behavior: messages.length === 1 ? "instant" : "smooth" });
   }, [messages, isLoading, pendingPreview, open]);
@@ -116,201 +101,185 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
     [sendMessage, tap],
   );
 
-  const handleLoadModel = useCallback(() => {
-    tap();
-    void loadLocalModel();
-  }, [loadLocalModel, tap]);
-
-  const handleDeleteModelCache = useCallback(() => {
-    tap();
-    setIsDeletingModelCache(true);
-    void deleteLocalModelCache().finally(() => setIsDeletingModelCache(false));
-  }, [deleteLocalModelCache, tap]);
-
   const handleClearChat = useCallback(() => {
     tap();
     clearChat();
   }, [clearChat, tap]);
 
-  const handleModelChange = useCallback(
-    (model: WebLlmModelId) => {
+  // Select a new model and immediately trigger load using the explicit model id,
+  // bypassing the React state timing issue.
+  const handleSelectAndLoad = useCallback(
+    async (model: WebLlmModelId) => {
       tap();
       selectLocalModel(model);
+      await loadModel(model);
     },
     [selectLocalModel, tap],
   );
 
+  const handleOpenModelDialog = useCallback(() => {
+    tap();
+    setModelDialogOpen(true);
+  }, [tap]);
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex flex-col w-full h-[100dvh] sm:h-full gap-0 p-0 sm:max-w-[520px]">
-        <SheetHeader className="shrink-0 border-b px-4 py-3">
-          <div className="flex items-center justify-between gap-3 pr-8">
-            <div className="min-w-0">
-              <SheetTitle className="flex items-center gap-2 text-base">
-                <FairPayIcon size={18} className="rounded-sm" />
-                {t('aiChat.title')}
-              </SheetTitle>
-              <SheetDescription className="truncate">{t('aiChat.subtitle')}</SheetDescription>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={handleClearChat}
-              disabled={messages.length === 0 && !pendingPreview}
-              aria-label={t('aiChat.clearChat')}
-              className="h-9 w-9 shrink-0"
-            >
-              <Trash2Icon size={16} />
-            </Button>
-          </div>
-        </SheetHeader>
-
-        {/* Model control strip */}
-        <div className="shrink-0 border-b px-4 py-3">
-          <div className="flex items-start gap-3">
-            <div
-              className={cn(
-                "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-background",
-                statusCopy.tone,
-              )}
-              aria-hidden="true"
-            >
-              {localLlmStatus.state === "loading" ? (
-                <Loader2Icon size={16} className="animate-spin" />
-              ) : localLlmStatus.state === "ready" ? (
-                <CheckCircleIcon size={16} />
-              ) : localLlmStatus.state === "unsupported" || localLlmStatus.state === "error" ? (
-                <AlertCircleIcon size={16} />
-              ) : (
-                <ZapIcon size={16} />
-              )}
-            </div>
-
-            <div className="min-w-0 flex-1 space-y-2">
-              {/* Status label + detail */}
-              <div>
-                <div className={cn("text-sm font-medium", statusCopy.tone)}>{statusCopy.label}</div>
-                <div className="break-words text-xs text-muted-foreground">{statusCopy.detail}</div>
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent className="flex flex-col w-full h-[100dvh] sm:h-full gap-0 p-0 sm:max-w-[520px]">
+          <SheetHeader className="shrink-0 border-b px-4 py-3">
+            <div className="flex items-center justify-between gap-3 pr-8">
+              <div className="min-w-0">
+                <SheetTitle className="flex items-center gap-2 text-base">
+                  <FairPayIcon size={18} className="rounded-sm" />
+                  {t("aiChat.title")}
+                </SheetTitle>
+                <SheetDescription className="truncate">{t("aiChat.subtitle")}</SheetDescription>
               </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={handleClearChat}
+                disabled={messages.length === 0 && !pendingPreview}
+                aria-label={t("aiChat.clearChat")}
+                className="h-9 w-9 shrink-0"
+              >
+                <Trash2Icon size={16} />
+              </Button>
+            </div>
+          </SheetHeader>
 
-              {/* Model picker row */}
-              <ModelPicker
-                value={selectedModel}
-                onValueChange={handleModelChange}
-                disabled={pickerDisabled}
+          {/* Compact model status strip */}
+          <div className="shrink-0 border-b px-4 py-2">
+            <div className="flex items-center gap-2">
+              {/* Status dot */}
+              <span
+                className={cn("h-2 w-2 shrink-0 rounded-full", statusDotColor(localLlmStatus))}
+                aria-hidden="true"
               />
 
-              {/* Action buttons */}
-              <div className="flex flex-wrap gap-2">
-                {canLoad && (
-                  <Button type="button" size="sm" onClick={handleLoadModel} className="h-8 shrink-0">
-                    {t('aiChat.load')}
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDeleteModelCache}
-                  disabled={!canDeleteModelCache || isDeletingModelCache}
-                  className="h-8 shrink-0"
-                >
-                  {isDeletingModelCache ? (
-                    <Loader2Icon size={14} className="mr-1.5 animate-spin" />
-                  ) : (
-                    <Trash2Icon size={14} className="mr-1.5" />
-                  )}
-                  {t('aiChat.deleteModelCache')}
-                </Button>
-              </div>
+              {/* Status label */}
+              <span className="flex-1 truncate text-xs font-medium text-muted-foreground">
+                {statusLabel(localLlmStatus, t)}
+              </span>
 
-              {/* Selected model description */}
-              {selectedEntry?.description && (
-                <div className="text-xs text-muted-foreground">{selectedEntry.description}</div>
-              )}
-
-              {/* Loading progress bar */}
+              {/* Loading % */}
               {localLlmStatus.state === "loading" && (
-                <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-primary transition-[width]"
-                    style={{ width: `${Math.max(2, Math.min(100, localLlmStatus.progress * 100))}%` }}
-                  />
+                <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                  {Math.round(localLlmStatus.progress * 100)}%
+                </span>
+              )}
+
+              {/* Open model selector */}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 shrink-0 gap-1.5 px-2 text-xs"
+                onClick={handleOpenModelDialog}
+                disabled={localLlmStatus.state === "unsupported"}
+                aria-label={t("aiChat.selectModelAria")}
+              >
+                {localLlmStatus.state === "loading" ? (
+                  <Loader2Icon size={11} className="animate-spin" />
+                ) : (
+                  <ZapIcon size={11} />
+                )}
+                <span className="max-w-[120px] truncate">
+                  {selectedEntry?.label ?? selectedModel}
+                </span>
+              </Button>
+            </div>
+
+            {/* Loading progress bar */}
+            {localLlmStatus.state === "loading" && (
+              <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-[width] duration-300"
+                  style={{ width: `${Math.max(2, Math.min(100, localLlmStatus.progress * 100))}%` }}
+                />
+              </div>
+            )}
+          </div>
+
+          <ScrollArea ref={scrollRef} className="min-h-0 flex-1 px-4">
+            <div className="space-y-4 py-4">
+              {messages.length === 0 && !pendingPreview && (
+                <div className="space-y-3">
+                  <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
+                    {t("aiChat.welcome")}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {suggestions.map((suggestion) => (
+                      <Button
+                        key={suggestion}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSuggestion(suggestion)}
+                        disabled={isLoading || localLlmStatus.state === "unsupported"}
+                        className="h-auto min-h-10 justify-start whitespace-normal px-3 py-2 text-left text-xs"
+                      >
+                        {suggestion}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {messages.map((message: ChatMessageType, index: number) => (
+                <ChatMessage
+                  key={message.id}
+                  message={message}
+                  userInfo={identity}
+                  isStreaming={
+                    isLoading &&
+                    index === messages.length - 1 &&
+                    message.role === "assistant"
+                  }
+                />
+              ))}
+
+              {pendingPreview && (
+                <AgentConfirmationCard
+                  preview={pendingPreview}
+                  onDone={clearPreview}
+                  onCancel={clearPreview}
+                  onError={(err: Error) => console.error(err)}
+                />
+              )}
+
+              {isLoading && <TypingIndicator />}
+
+              {error && (
+                <div className="flex gap-2 rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+                  <AlertCircleIcon size={16} className="mt-0.5 shrink-0" />
+                  <span>{error}</span>
                 </div>
               )}
             </div>
-          </div>
-        </div>
+          </ScrollArea>
 
-        <ScrollArea ref={scrollRef} className="min-h-0 flex-1 px-4">
-          <div className="space-y-4 py-4">
-            {messages.length === 0 && !pendingPreview && (
-              <div className="space-y-3">
-                <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-                  {t('aiChat.welcome')}
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {suggestions.map((suggestion) => (
-                    <Button
-                      key={suggestion}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleSuggestion(suggestion)}
-                      disabled={isLoading || localLlmStatus.state === "unsupported"}
-                      className="h-auto min-h-10 justify-start whitespace-normal px-3 py-2 text-left text-xs"
-                    >
-                      {suggestion}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {messages.map((message: ChatMessageType, index: number) => (
-              <ChatMessage
-                key={message.id}
-                message={message}
-                userInfo={identity}
-                isStreaming={
-                  isLoading &&
-                  index === messages.length - 1 &&
-                  message.role === "assistant"
-                }
-              />
-            ))}
-
+          <div className="shrink-0 border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <ChatInput onSend={sendMessage} isLoading={isLoading} disabled={inputDisabled} />
             {pendingPreview && (
-              <AgentConfirmationCard
-                preview={pendingPreview}
-                onDone={clearPreview}
-                onCancel={clearPreview}
-                onError={(err: Error) => console.error(err)}
-              />
-            )}
-
-            {isLoading && <TypingIndicator />}
-
-            {error && (
-              <div className="flex gap-2 rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
-                <AlertCircleIcon size={16} className="mt-0.5 shrink-0" />
-                <span>{error}</span>
-              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {t("aiChat.pendingPreview")}
+              </p>
             )}
           </div>
-        </ScrollArea>
+        </SheetContent>
+      </Sheet>
 
-        <div className="shrink-0 border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <ChatInput onSend={sendMessage} isLoading={isLoading} disabled={inputDisabled} />
-          {pendingPreview && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              {t('aiChat.pendingPreview')}
-            </p>
-          )}
-        </div>
-      </SheetContent>
-    </Sheet>
+      {/* Model selector dialog — rendered outside Sheet to avoid stacking context issues */}
+      <ModelSelectDialog
+        open={modelDialogOpen}
+        onOpenChange={setModelDialogOpen}
+        selectedModel={selectedModel}
+        localLlmStatus={localLlmStatus}
+        onSelectAndLoad={handleSelectAndLoad}
+      />
+    </>
   );
 });
 
