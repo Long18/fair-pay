@@ -5,7 +5,6 @@ import { useGetIdentity } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
 import {
   chat as localLlmChat,
-  deleteSelectedModelCache,
   getSelectedModel,
   loadModel,
   selectModel,
@@ -38,8 +37,6 @@ interface UseAiChatReturn {
   localLlmStatus: LocalLlmStatus;
   selectedModel: WebLlmModelId;
   selectLocalModel: (model: WebLlmModelId) => void;
-  loadLocalModel: () => Promise<void>;
-  deleteLocalModelCache: () => Promise<void>;
   sendMessage: (text: string) => Promise<void>;
   clearPreview: () => void;
   clearChat: () => void;
@@ -168,23 +165,6 @@ export function useAiChat(): UseAiChatReturn {
     const next = selectModel(model);
     setLocalLlmStatus(next);
   }, []);
-
-  const loadLocalModel = useCallback(async () => {
-    setError(null);
-    const loaded = await loadModel(selectedModel);
-    if ("model" in loaded) setSelectedModel(loaded.model as WebLlmModelId);
-    if (loaded.state === "unsupported") setError(loaded.reason);
-    if (loaded.state === "error") setError(loaded.message);
-  }, [selectedModel]);
-
-  const deleteLocalModelCache = useCallback(async () => {
-    setError(null);
-    try {
-      await deleteSelectedModelCache(selectedModel);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete local model cache.");
-    }
-  }, [selectedModel]);
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -329,8 +309,6 @@ export function useAiChat(): UseAiChatReturn {
     localLlmStatus,
     selectedModel,
     selectLocalModel,
-    loadLocalModel,
-    deleteLocalModelCache,
     sendMessage,
     clearPreview,
     clearChat,
