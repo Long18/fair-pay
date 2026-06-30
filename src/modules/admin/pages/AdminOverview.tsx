@@ -17,6 +17,12 @@ import { motion } from "framer-motion";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { LoadingBeam } from "@/components/ui/loading-beam";
+import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   ChartContainer,
   ChartTooltip,
@@ -34,6 +40,7 @@ import {
   ArrowUpIcon,
   ArrowDownIcon,
   ArrowRightIcon,
+  ChevronDownIcon,
 } from "@/components/ui/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -74,11 +81,16 @@ function formatRelativeTime(value: string, tAdmin: ReturnType<typeof useAdminTra
   return tAdmin("overview.relative.daysAgo", { count: days });
 }
 
+const ACTIVITY_PAGE_SIZE = 5;
+const ACTIVITY_FETCH_LIMIT = 50;
+
 function useLatestTrackedUsers(enabled: boolean) {
   return useQuery({
     queryKey: ["admin", "latest-tracked-users"],
     queryFn: async () => {
-      const { data, error } = await supabaseClient.rpc("admin_get_latest_tracked_users", { p_limit: 10 });
+      const { data, error } = await supabaseClient.rpc("admin_get_latest_tracked_users", {
+        p_limit: ACTIVITY_FETCH_LIMIT,
+      });
       if (error) throw error;
       return (data ?? []) as LatestTrackedUser[];
     },
@@ -119,31 +131,6 @@ function calcTrendPercent(current: number, previous: number): number {
   return Math.round(((current - previous) / previous) * 100);
 }
 
-// ─── Mini Sparkline ─────────────────────────────────────────────────
-
-function MiniSparkline({ data, dataKey, color }: { data: Record<string, unknown>[]; dataKey: string; color: string }) {
-  if (!data.length) return null;
-  return (
-    <AreaChart width={80} height={36} data={data} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
-      <defs>
-        <linearGradient id={`spark-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity={0.3} />
-          <stop offset="100%" stopColor={color} stopOpacity={0} />
-        </linearGradient>
-      </defs>
-      <Area
-        type="monotone"
-        dataKey={dataKey}
-        stroke={color}
-        strokeWidth={1.5}
-        fill={`url(#spark-${dataKey})`}
-        dot={false}
-        isAnimationActive={false}
-      />
-    </AreaChart>
-  );
-}
-
 // ─── Section Divider ────────────────────────────────────────────────
 
 function SectionDivider({ label }: { label: string }) {
@@ -156,16 +143,6 @@ function SectionDivider({ label }: { label: string }) {
     </div>
   );
 }
-
-// ─── Stat Accent Vars ────────────────────────────────────────────────
-
-const STAT_ACCENT_VARS: Record<string, string> = {
-  brand: "var(--primary)",
-  chart2: "var(--chart-2)",
-  accent: "var(--accent)",
-  success: "var(--status-success-foreground)",
-  chart5: "var(--chart-5)",
-};
 
 // ─── Stat Card Skeleton ─────────────────────────────────────────────
 
@@ -332,20 +309,18 @@ export function AdminOverview() {
   const { isModerator } = useAdminAccess();
   const showAdminOnlyWidgets = !isModerator;
   const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>("30d");
+  const [trendsOpen, setTrendsOpen] = useState(false);
+  const [activityPage, setActivityPage] = useState(0);
   const { data: stats, isLoading: statsLoading } = useAdminStats();
-  const { data: expenseTrend, isLoading: trendLoading } = useExpenseTrend(locale, showAdminOnlyWidgets, PERIOD_DAYS[trendPeriod]);
-  const { data: registrations, isLoading: regLoading } = useRegistrationTrend(locale, showAdminOnlyWidgets);
-  const { data: categories, isLoading: catLoading } = useCategoryBreakdown(showAdminOnlyWidgets);
-  const { data: latestUsers, isLoading: latestLoading } = useLatestTrackedUsers(showAdminOnlyWidgets);
+  const { data: expenseTrend, isLoading: trendLoading } = useExpenseTrend(locale, showAdminOnlyWidgets && trendsOpen, PERIOD_DAYS[trendPeriod]);
+  const { data: registrations, isLoading: regLoading } = useRegistrationTrend(locale, showAdminOnlyWidgets && trendsOpen);
+  const { data: categories, isLoading: catLoading } = useCategoryBreakdown(showAdminOnlyWidgets && trendsOpen);
+  const { data: allLatestUsers, isLoading: latestLoading } = useLatestTrackedUsers(showAdminOnlyWidgets);
+
+  const latestUsers = (allLatestUsers ?? []).slice(activityPage * ACTIVITY_PAGE_SIZE, (activityPage + 1) * ACTIVITY_PAGE_SIZE);
+  const hasMoreActivity = (allLatestUsers ?? []).length > (activityPage + 1) * ACTIVITY_PAGE_SIZE;
 
   const { containerVariants: statVariants, rowVariants: statRowVariants, animationKey: statKey } = useStaggerAnimation([...STAT_CARDS]);
-
-  // Sparkline data — only for keys with semantically meaningful time-series
-  const sparkDataMap = useMemo<Record<string, { data: Record<string, unknown>[]; dataKey: string }>>(() => ({
-    totalExpenses: { data: (expenseTrend ?? []) as Record<string, unknown>[], dataKey: "total" },
-    totalUsers: { data: (registrations ?? []) as Record<string, unknown>[], dataKey: "count" },
-    // activeUsersLast7Days excluded: a single scalar, not a trend series
-  }), [expenseTrend, registrations]);
 
   // Build pie chart config dynamically
   const categoryChartConfig: ChartConfig = (categories ?? []).reduce(
@@ -402,8 +377,6 @@ export function AdminOverview() {
             : STAT_CARDS.map((card, index) => {
                 const Icon = card.icon;
                 const value = stats?.[card.key] ?? 0;
-                const accentColor = STAT_ACCENT_VARS[card.tone] ?? "var(--primary)";
-                const sparkEntry = sparkDataMap[card.key];
 
                 // Compute trend % based on comparison period
                 let trendPercent = 0;
@@ -429,30 +402,20 @@ export function AdminOverview() {
 
                 return (
                   <motion.div key={card.key} variants={statRowVariants} custom={index}>
-                    <Card className="group relative overflow-hidden p-5 transition-shadow hover:shadow-md">
-                      <div
-                        className="pointer-events-none absolute inset-x-0 top-0 h-16 opacity-60"
-                        style={{ background: `linear-gradient(180deg, ${accentColor}14 0%, transparent 100%)` }}
-                      />
-                      <div className="relative flex flex-col gap-4">
-                        <div className="flex items-start justify-between gap-2">
-                          <div
-                            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 ${themeIntentTones[card.tone as ThemeIntent].surface} ${themeIntentTones[card.tone as ThemeIntent].icon}`}
-                            style={{ boxShadow: `inset 0 0 0 1px ${accentColor}33` }}
-                          >
-                            <Icon className="h-5 w-5" />
-                          </div>
-                          <TrendIndicator value={Math.abs(trendPercent)} isPositive={trendPercent >= 0} />
+                    <Card className="p-3 sm:p-4 transition-shadow hover:shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${themeIntentTones[card.tone as ThemeIntent].surface} ${themeIntentTones[card.tone as ThemeIntent].icon}`}
+                        >
+                          <Icon className="h-4 w-4" />
                         </div>
-                        <div className="flex flex-col gap-1 min-w-0">
-                          <span className="text-xs font-medium text-muted-foreground truncate">{tAdmin(card.labelKey)}</span>
-                          <span className="text-2xl font-bold tabular-nums tracking-tight">{formatNumber(value)}</span>
-                        </div>
-                        {sparkEntry && sparkEntry.data.length > 0 && (
-                          <div className="-mx-1 -mb-1 h-9 opacity-70">
-                            <MiniSparkline data={sparkEntry.data} dataKey={sparkEntry.dataKey} color={accentColor} />
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <span className="text-[11px] font-medium text-muted-foreground truncate">{tAdmin(card.labelKey)}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg font-bold tabular-nums tracking-tight">{formatNumber(value)}</span>
+                            <TrendIndicator value={Math.abs(trendPercent)} isPositive={trendPercent >= 0} />
                           </div>
-                        )}
+                        </div>
                       </div>
                     </Card>
                   </motion.div>
@@ -464,8 +427,20 @@ export function AdminOverview() {
       {showAdminOnlyWidgets && (
         <>
       {/* ── Trends ──────────────────────────────────────────────── */}
-      <div className="space-y-4">
-        <SectionDivider label={tAdmin("overview.trends")} />
+      <div className="space-y-3">
+        <Collapsible open={trendsOpen} onOpenChange={setTrendsOpen}>
+          <CollapsibleTrigger asChild>
+            <button className="w-full flex items-center gap-3 cursor-pointer group">
+              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground whitespace-nowrap">
+                {tAdmin("overview.trends")}
+              </span>
+              <div className="flex-1 h-px bg-border/60" />
+              <ChevronDownIcon
+                className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${trendsOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-4 mt-4">
         <Card>
           <CardHeader className="flex flex-row items-start justify-between gap-4">
             <div>
@@ -648,6 +623,8 @@ export function AdminOverview() {
           </CardContent>
         </Card>
         </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
 
       {/* ── Recent Activity ──────────────────────────────────────── */}
@@ -672,7 +649,7 @@ export function AdminOverview() {
                 </div>
               ))}
             </div>
-          ) : !latestUsers?.length ? (
+          ) : !latestUsers.length ? (
             <p className="px-6 py-8 text-center text-sm text-muted-foreground">
               {tAdmin("overview.noTrackingData")}
             </p>
@@ -687,7 +664,6 @@ export function AdminOverview() {
                       to={`/admin/people/${user.user_id}/journey`}
                       className="group relative flex items-center gap-3 py-3 hover:bg-transparent transition-colors"
                     >
-                      {/* Timeline spine */}
                       <div className="relative flex flex-col items-center shrink-0 self-stretch" style={{ width: 32 }}>
                         <Avatar className="h-8 w-8 z-10">
                           {user.avatar_url && <AvatarImage src={user.avatar_url} alt={user.full_name ?? user.email} />}
@@ -697,7 +673,6 @@ export function AdminOverview() {
                           <div className="absolute top-8 bottom-0 left-1/2 -translate-x-1/2 w-px bg-border/60" />
                         )}
                       </div>
-
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium leading-none truncate group-hover:text-primary transition-colors">
                           {user.full_name ?? user.email}
@@ -731,7 +706,28 @@ export function AdminOverview() {
             </AnimatedList>
           )}
         </CardContent>
-        <CardFooter className="border-t pt-3 pb-3">
+        <CardFooter className="border-t pt-3 pb-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={activityPage === 0 || latestLoading}
+              onClick={() => setActivityPage((p) => p - 1)}
+              className="h-7 px-2 text-xs"
+            >
+              ← Prev
+            </Button>
+            <span className="text-xs text-muted-foreground tabular-nums">Page {activityPage + 1}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!hasMoreActivity || latestLoading}
+              onClick={() => setActivityPage((p) => p + 1)}
+              className="h-7 px-2 text-xs"
+            >
+              Next →
+            </Button>
+          </div>
           <Link to="/admin/people" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
             {tAdmin("overview.viewAllUsers")} <ArrowRightIcon className="h-3 w-3" />
           </Link>
