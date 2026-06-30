@@ -227,21 +227,27 @@ export function useAiChat(): UseAiChatReturn {
       // Auto-load the model if it isn't ready yet — show user the message is queued.
       if (localLlmStatus.state !== "ready") {
         try {
-          const loaded = await loadModel(selectedModel);
-          if (loaded.state === "unsupported") {
-            setError(loaded.reason);
+          // If already loading, wait for it to settle rather than calling loadModel again.
+          const settled = await new Promise<LocalLlmStatus>((resolve) => {
+            // Kick off load (no-op if already loading the same model).
+            void loadModel(selectedModel);
+            // Subscribe and resolve when the status reaches a terminal state.
+            const unsub = subscribeLocalLlmStatus((s) => {
+              if (s.state === "ready" || s.state === "unsupported" || s.state === "error") {
+                unsub();
+                resolve(s);
+              }
+            });
+          });
+
+          if (settled.state === "unsupported") {
+            setError(settled.reason);
             setMessages((prev) => prev.filter((m) => m.id !== userMsg.id && m.id !== streamingId));
             setIsLoading(false);
             return;
           }
-          if (loaded.state === "error") {
-            setError(loaded.message);
-            setMessages((prev) => prev.filter((m) => m.id !== userMsg.id && m.id !== streamingId));
-            setIsLoading(false);
-            return;
-          }
-          if (loaded.state !== "ready") {
-            setError("Local AI model could not be loaded.");
+          if (settled.state === "error") {
+            setError(settled.message);
             setMessages((prev) => prev.filter((m) => m.id !== userMsg.id && m.id !== streamingId));
             setIsLoading(false);
             return;

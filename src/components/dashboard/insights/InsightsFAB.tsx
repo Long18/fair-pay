@@ -267,9 +267,10 @@ export const InsightsFAB = memo(function InsightsFAB({ context }: InsightsFABPro
         </SheetContent>
       </Sheet>
 
-      {/* Floating action button — right side, above safe area */}
+      {/* Floating action button — left side, stacked above ChatFAB */}
       <FloatingActionStack
-        side="right"
+        side="left"
+        className="bottom-[calc(env(safe-area-inset-bottom)+8.75rem)] md:bottom-[5.25rem]"
         trigger={
           <FloatingPill
             variant="primary"
