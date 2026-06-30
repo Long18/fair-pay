@@ -4,7 +4,7 @@
 
 import { generatedCatalog } from './catalog.generated.js';
 import { catalogOverrides } from './catalog.overrides.js';
-import type { ApiCatalogEntry, ApiFilterState } from './types';
+import type { ApiCatalogEntry, ApiFilterState } from './types.js';
 
 /** Merged, sorted catalog. Generated entries enriched with manual overrides. */
 export const catalog: ApiCatalogEntry[] = generatedCatalog
