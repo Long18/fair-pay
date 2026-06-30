@@ -24,6 +24,11 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -72,6 +77,7 @@ import {
   Trash2Icon,
   FilterIcon,
   XIcon,
+  ChevronDownIcon,
 } from "@/components/ui/icons";
 import { AdminSection, AdminSectionHeader } from "@/modules/admin/components/AdminSection";
 import { AdminFilterChips } from "@/modules/admin/components/AdminFilterChips";
@@ -795,6 +801,73 @@ export function AdminAuditLogs() {
 
       {/* KPI Strip */}
       <AuditKpiStrip stats={stats} loading={statsLoading} />
+
+      {/* Analytics breakdown — collapsible */}
+      {!statsLoading && stats && (stats.by_table.length > 0 || stats.by_actor.length > 0) && (
+        <Collapsible>
+          <CollapsibleTrigger asChild>
+            <button className="w-full flex items-center gap-3 cursor-pointer group text-left">
+              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground whitespace-nowrap">
+                Analytics
+              </span>
+              <div className="flex-1 h-px bg-border/60" />
+              <ChevronDownIcon className="h-4 w-4 text-muted-foreground transition-transform duration-200" style={{ transform: "rotate(0deg)" }} />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {stats.by_table.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm">{tAdmin("auditLogs.byTable")}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {stats.by_table.map((item) => {
+                      const pct = stats.total > 0 ? (item.count / stats.total) * 100 : 0;
+                      return (
+                        <div key={item.name} className="flex items-center gap-2">
+                          <Badge variant="outline" className="font-mono text-xs min-w-[100px] justify-center">
+                            {item.name}
+                          </Badge>
+                          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                            <div className="h-full bg-primary/60 rounded-full transition-all" style={{ width: `${Math.max(pct, 1)}%` }} />
+                          </div>
+                          <span className="text-xs text-muted-foreground tabular-nums w-12 text-right">
+                            {item.count.toLocaleString()}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              )}
+              {stats.by_actor.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm">{tAdmin("auditLogs.byActor")}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {stats.by_actor.map((item) => {
+                      const pct = stats.total > 0 ? (item.count / stats.total) * 100 : 0;
+                      return (
+                        <div key={item.name} className="flex items-center gap-2">
+                          <span className="text-xs min-w-[100px] truncate">{item.name}</span>
+                          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                            <div className="h-full bg-primary/40 rounded-full transition-all" style={{ width: `${Math.max(pct, 1)}%` }} />
+                          </div>
+                          <span className="text-xs text-muted-foreground tabular-nums w-12 text-right">
+                            {item.count.toLocaleString()}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
 
       {/* Main Table Card */}
       <Card>
