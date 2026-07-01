@@ -5,6 +5,8 @@ import { useGetIdentity } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
 import {
   chat as localLlmChat,
+  checkModelCached,
+  getLocalLlmStatus,
   getSelectedModel,
   loadModel,
   selectModel,
@@ -22,17 +24,34 @@ import {
   type ConversationMessage,
   type LegacyToolExecutor,
 } from "../orchestrator";
+import {
+  type Conversation,
+  type ChatStore,
+  clearStore,
+  deriveTitle,
+  loadStore,
+  makeConversation,
+  makeConversationId,
+  removeConversation,
+  saveStore,
+  upsertConversation,
+} from "../utils/chat-storage";
+
+export type { Conversation } from "../utils/chat-storage";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) ?? "";
 const MCP_ENDPOINT_URL = `${SUPABASE_URL}/functions/v1/fairpay-agent-mcp`;
 const LEGACY_AI_CHAT_URL = `${SUPABASE_URL}/functions/v1/ai-chat`;
 
+// ── Hook ─────────────────────────────────────────────────────────────────────
+
 interface UseAiChatReturn {
   messages: ChatMessage[];
   isLoading: boolean;
   error: string | null;
   conversationId: string | null;
+  conversations: Conversation[];
   pendingPreview: AgentPreviewResponse | null;
   localLlmStatus: LocalLlmStatus;
   selectedModel: WebLlmModelId;
@@ -40,6 +59,9 @@ interface UseAiChatReturn {
   sendMessage: (text: string) => Promise<void>;
   clearPreview: () => void;
   clearChat: () => void;
+  newChat: () => void;
+  selectConversation: (id: string) => void;
+  deleteConversation: (id: string) => void;
 }
 
 function makeMessageId(prefix: string): string {
@@ -51,20 +73,14 @@ function localModelUnsupported(status: LocalLlmStatus): string | null {
   return null;
 }
 
+function freshConvId(): string {
+  return makeConversationId();
+}
+
 export function useAiChat(): UseAiChatReturn {
   const { data: identity } = useGetIdentity<Profile>();
   const { i18n } = useTranslation();
   const language = i18n.resolvedLanguage || i18n.language;
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [conversationId, setConversationId] = useState<string | null>(null);
-  const [pendingPreview, setPendingPreview] = useState<AgentPreviewResponse | null>(null);
-  const [localLlmStatus, setLocalLlmStatus] = useState<LocalLlmStatus>(() => ({
-    state: "idle",
-    model: getSelectedModel(),
-  }));
-  const [selectedModel, setSelectedModel] = useState<WebLlmModelId>(() => getSelectedModel());
 
   const systemPrompt = useMemo(
     () =>
@@ -76,9 +92,39 @@ export function useAiChat(): UseAiChatReturn {
     [identity?.full_name, identity?.email, language],
   );
 
-  const historyRef = useRef<ConversationMessage[]>([
-    { role: "system", content: systemPrompt },
-  ]);
+  // ── Store bootstrap ───────────────────────────────────────────────────────
+  const [store, setStore] = useState<ChatStore>(() => {
+    const persisted = loadStore();
+    if (persisted && persisted.conversations.length > 0) {
+      return persisted;
+    }
+    // Start with an empty store — no active conversation yet.
+    return { activeId: "", conversations: [] };
+  });
+
+  const activeConversation = useMemo(
+    () => store.conversations.find((c) => c.id === store.activeId) ?? null,
+    [store],
+  );
+
+  const [messages, setMessages] = useState<ChatMessage[]>(
+    () => activeConversation?.messages ?? [],
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(
+    () => activeConversation?.id ?? null,
+  );
+  const [pendingPreview, setPendingPreview] = useState<AgentPreviewResponse | null>(null);
+  const [localLlmStatus, setLocalLlmStatus] = useState<LocalLlmStatus>(() => ({
+    state: "idle",
+    model: getSelectedModel(),
+  }));
+  const [selectedModel, setSelectedModel] = useState<WebLlmModelId>(() => getSelectedModel());
+
+  const historyRef = useRef<ConversationMessage[]>(
+    activeConversation?.history ?? [{ role: "system", content: systemPrompt }],
+  );
   const conversationIdRef = useRef<string | null>(conversationId);
   const orchestratorRef = useRef<FairPayChatOrchestrator | null>(null);
 
@@ -99,6 +145,39 @@ export function useAiChat(): UseAiChatReturn {
 
   useEffect(() => subscribeLocalLlmStatus(setLocalLlmStatus), []);
 
+  // Auto-load the selected model on mount if it's already cached on this device
+  useEffect(() => {
+    const s = getLocalLlmStatus();
+    if (s.state !== "idle") return;
+    void checkModelCached(s.model).then((cached) => {
+      if (cached) void loadModel(s.model);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Persist store whenever messages or store changes ───────────────────────
+  const storeRef = useRef(store);
+  useEffect(() => { storeRef.current = store; }, [store]);
+
+  useEffect(() => {
+    if (!conversationId || messages.length === 0) return;
+    const conv: Conversation = {
+      id: conversationId,
+      title: deriveTitle(messages),
+      createdAt: activeConversation?.createdAt ?? new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      messages,
+      history: historyRef.current,
+    };
+    const nextStore = upsertConversation(
+      { ...storeRef.current, activeId: conversationId },
+      conv,
+    );
+    setStore(nextStore);
+    saveStore(nextStore);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, conversationId]);
+
   const getAccessToken = useCallback(async (): Promise<string | null> => {
     const { data } = await supabaseClient.auth.getSession();
     return data.session?.access_token ?? null;
@@ -107,8 +186,6 @@ export function useAiChat(): UseAiChatReturn {
   const onChunkRef = useRef<((delta: string) => void) | undefined>(undefined);
   const streamingMsgIdRef = useRef<string | null>(null);
 
-  // Stable chat wrapper that always reads the latest onChunk from the ref.
-  // This lets the orchestrator (created once) forward chunks without re-creation.
   const chatFnWithStreaming = useCallback<typeof localLlmChat>(
     (messages, options) => localLlmChat(messages, { ...options, onChunk: onChunkRef.current }),
     [],
@@ -166,12 +243,69 @@ export function useAiChat(): UseAiChatReturn {
     setLocalLlmStatus(next);
   }, []);
 
+  // ── New chat ──────────────────────────────────────────────────────────────
+  const newChat = useCallback(() => {
+    setMessages([]);
+    setError(null);
+    setPendingPreview(null);
+    const newId = freshConvId();
+    setConversationId(newId);
+    historyRef.current = [{ role: "system", content: systemPrompt }];
+    setStore((prev) => {
+      const next = { ...prev, activeId: newId };
+      saveStore(next);
+      return next;
+    });
+  }, [systemPrompt]);
+
+  // ── Select existing conversation ─────────────────────────────────────────
+  const selectConversation = useCallback((id: string) => {
+    const conv = storeRef.current.conversations.find((c) => c.id === id);
+    if (!conv) return;
+    setMessages(conv.messages);
+    setConversationId(conv.id);
+    setError(null);
+    setPendingPreview(null);
+    historyRef.current = conv.history.length > 0
+      ? conv.history
+      : [{ role: "system", content: systemPrompt }];
+    setStore((prev) => {
+      const next = { ...prev, activeId: id };
+      saveStore(next);
+      return next;
+    });
+  }, [systemPrompt]);
+
+  // ── Delete conversation ──────────────────────────────────────────────────
+  const deleteConversation = useCallback((id: string) => {
+    setStore((prev) => {
+      const next = removeConversation(prev, id);
+      saveStore(next);
+      // If we deleted the active conversation, switch to the next one or blank slate.
+      if (prev.activeId === id) {
+        const next2 = next.conversations[0];
+        if (next2) {
+          setMessages(next2.messages);
+          setConversationId(next2.id);
+          historyRef.current = next2.history.length > 0
+            ? next2.history
+            : [{ role: "system", content: systemPrompt }];
+        } else {
+          setMessages([]);
+          setConversationId(null);
+          historyRef.current = [{ role: "system", content: systemPrompt }];
+        }
+        setError(null);
+      }
+      return next;
+    });
+  }, [systemPrompt]);
+
   const sendMessage = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
       if (!trimmed || !identity) return;
 
-      // Only hard-block when the browser can't run WebLLM at all.
       const unsupportedReason = localModelUnsupported(localLlmStatus);
       if (unsupportedReason) {
         setError(unsupportedReason);
@@ -181,21 +315,26 @@ export function useAiChat(): UseAiChatReturn {
       setIsLoading(true);
       setError(null);
 
+      // Ensure there's an active conversation id.
+      const activeId = conversationIdRef.current ?? freshConvId();
+      if (!conversationIdRef.current) {
+        setConversationId(activeId);
+      }
+
       const userMsg: ChatMessage = {
         id: makeMessageId("user"),
-        conversation_id: conversationId || "local",
+        conversation_id: activeId,
         role: "user",
         content: trimmed,
         metadata: { mode: "info", status: "success" },
         created_at: new Date().toISOString(),
       };
 
-      // Add a streaming placeholder so tokens appear incrementally.
       const streamingId = makeMessageId("assistant-streaming");
       streamingMsgIdRef.current = streamingId;
       const placeholderMsg: ChatMessage = {
         id: streamingId,
-        conversation_id: conversationId || "local",
+        conversation_id: activeId,
         role: "assistant",
         content: "",
         metadata: { mode: "info", status: "success" },
@@ -204,14 +343,10 @@ export function useAiChat(): UseAiChatReturn {
 
       setMessages((prev) => [...prev, userMsg, placeholderMsg]);
 
-      // Auto-load the model if it isn't ready yet — show user the message is queued.
       if (localLlmStatus.state !== "ready") {
         try {
-          // If already loading, wait for it to settle rather than calling loadModel again.
           const settled = await new Promise<LocalLlmStatus>((resolve) => {
-            // Kick off load (no-op if already loading the same model).
             void loadModel(selectedModel);
-            // Subscribe and resolve when the status reaches a terminal state.
             const unsub = subscribeLocalLlmStatus((s) => {
               if (s.state === "ready" || s.state === "unsupported" || s.state === "error") {
                 unsub();
@@ -241,7 +376,6 @@ export function useAiChat(): UseAiChatReturn {
         }
       }
 
-      // Wire onChunk to progressively update the streaming placeholder.
       onChunkRef.current = (delta: string) => {
         setMessages((prev) =>
           prev.map((m) =>
@@ -255,9 +389,7 @@ export function useAiChat(): UseAiChatReturn {
         historyRef.current = result.updatedHistory;
 
         if (result.pendingPreview) setPendingPreview(result.pendingPreview);
-        if (!conversationId) setConversationId(`local-${Date.now()}`);
 
-        // Replace streaming placeholder with the final confirmed message.
         const finalMsg: ChatMessage = {
           id: makeMessageId("assistant"),
           conversation_id: conversationIdRef.current || "local",
@@ -292,19 +424,32 @@ export function useAiChat(): UseAiChatReturn {
     setPendingPreview(null);
   }, []);
 
+  // clearChat deletes the current conversation and starts fresh.
   const clearChat = useCallback(() => {
+    if (conversationId) {
+      setStore((prev) => {
+        const next = removeConversation(prev, conversationId);
+        const nextId = freshConvId();
+        const withNew = { ...next, activeId: nextId };
+        saveStore(withNew);
+        return withNew;
+      });
+    } else {
+      clearStore();
+    }
     setMessages([]);
     setError(null);
     setPendingPreview(null);
     setConversationId(null);
     historyRef.current = [{ role: "system", content: systemPrompt }];
-  }, [systemPrompt]);
+  }, [conversationId, systemPrompt]);
 
   return {
     messages,
     isLoading,
     error,
     conversationId,
+    conversations: store.conversations,
     pendingPreview,
     localLlmStatus,
     selectedModel,
@@ -312,5 +457,8 @@ export function useAiChat(): UseAiChatReturn {
     sendMessage,
     clearPreview,
     clearChat,
+    newChat,
+    selectConversation,
+    deleteConversation,
   };
 }
