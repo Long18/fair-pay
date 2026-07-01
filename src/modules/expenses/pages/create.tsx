@@ -15,6 +15,7 @@ import { GroupMember } from "@/modules/groups/types";
 import { Friendship } from "@/modules/friends/types";
 import { toast } from "sonner";
 import { supabaseClient } from "@/utility/supabaseClient";
+import { successConfirmation } from "@/assets/expense-friend";
 import { ExpenseTracker, ErrorTracker } from "@/lib/analytics/index";
 import { journeyTracking } from "@/lib/journey-tracking";
 import { useTrackEvent } from "@/hooks/use-track-event";
@@ -24,6 +25,7 @@ export const ExpenseCreate = () => {
   const go = useGo();
   const { data: identity } = useGetIdentity<Profile>();
   const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
+  const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
   const { uploadAttachments } = useAttachments();
   const { createRecurring } = useCreateRecurringExpense();
   const { track } = useTrackEvent();
@@ -303,7 +305,11 @@ export const ExpenseCreate = () => {
               console.error("Failed to create recurring expense:", error);
             }
           } else {
-            toast.success("Expense created successfully");
+            setShowSuccessOverlay(true);
+            setTimeout(() => {
+              go({ to: `/expenses/show/${expenseId}` });
+            }, 1600);
+            return;
           }
 
           // Navigate to the created expense to show details
@@ -367,16 +373,33 @@ export const ExpenseCreate = () => {
       title={isGroupContext ? "Add Group Expense" : "Add Expense with Friend"}
       className="sm:max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden"
     >
-      <ExpenseForm
-        groupId={groupId}
-        members={availableMembers}
-        currentUserId={identity.id}
-        onSubmit={handleSubmit}
-        isLoading={false}
-        topPartnerIds={topPartnerIds}
-        attachments={attachments}
-        onAttachmentsChange={setAttachments}
-      />
+      {showSuccessOverlay ? (
+        <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+          <img
+            src={successConfirmation}
+            alt=""
+            aria-hidden="true"
+            className="h-24 w-24 object-contain"
+          />
+          <p className="text-base font-bold text-foreground">
+            {"Expense added!"}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {"Balances are being updated…"}
+          </p>
+        </div>
+      ) : (
+        <ExpenseForm
+          groupId={groupId}
+          members={availableMembers}
+          currentUserId={identity.id}
+          onSubmit={handleSubmit}
+          isLoading={false}
+          topPartnerIds={topPartnerIds}
+          attachments={attachments}
+          onAttachmentsChange={setAttachments}
+        />
+      )}
     </ResponsiveDialog>
   );
 };
