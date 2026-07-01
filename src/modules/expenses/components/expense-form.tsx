@@ -51,6 +51,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  amountHeroBg,
+  receiptCoinSticker,
+  waitingCoinSticker,
+} from "@/assets/expense-friend";
 
 const expenseSchema = z.object({
   description: z.string().min(1, "Description is required").max(200),
@@ -313,49 +318,79 @@ export const ExpenseForm = ({
               )}
             />
 
-            {/* Amount and Currency in same row */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="col-span-1 sm:col-span-2">
-                <FormField
-                  control={form.control}
-                  name="amount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Amount</FormLabel>
-                      <FormControl>
-                        <AmountInput
-                          value={field.value}
-                          onChange={field.onChange}
-                          onExpressionStateChange={setAmountExpressionState}
-                          currency={currency}
-                          placeholder="0.00"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="currency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Currency</FormLabel>
-                    <FormControl>
-                      <select
-                        {...field}
-                        className="w-full h-11 px-3 border border-input rounded-lg bg-background"
-                      >
-                        <option value="VND">VND</option>
-                        <option value="USD">USD</option>
-                        <option value="EUR">EUR</option>
-                      </select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+            {/* Amount and Currency — hero card */}
+            <div
+              className="relative rounded-2xl overflow-hidden border border-border/40 shadow-sm"
+              style={{
+                backgroundImage: `url(${amountHeroBg})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
+            >
+              <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px]" aria-hidden="true" />
+              <img
+                src={
+                  amountExpressionState.status === "valid" && (amountExpressionState.value ?? 0) > 0
+                    ? receiptCoinSticker
+                    : waitingCoinSticker
+                }
+                alt=""
+                aria-hidden="true"
+                className={cn(
+                  "absolute right-3 top-1/2 -translate-y-1/2 h-20 w-20 object-contain pointer-events-none select-none transition-opacity duration-300",
+                  amountExpressionState.status === "valid" && (amountExpressionState.value ?? 0) > 0
+                    ? "opacity-90"
+                    : "opacity-40"
                 )}
               />
+              <div className="relative z-10 p-4 pr-24 space-y-3">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  {t("expenses.totalAmount", { defaultValue: "Total amount" })}
+                </p>
+                <div className="flex items-end gap-2">
+                  <div className="flex-1 min-w-0">
+                    <FormField
+                      control={form.control}
+                      name="amount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <AmountInput
+                              value={field.value}
+                              onChange={field.onChange}
+                              onExpressionStateChange={setAmountExpressionState}
+                              currency={currency}
+                              placeholder="0"
+                              className="h-14 text-3xl font-bold border-0 bg-transparent shadow-none px-0 focus-visible:ring-0 tabular-nums"
+                              aria-label={t("expenses.amount", { defaultValue: "Amount" })}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="currency"
+                    render={({ field }) => (
+                      <FormItem className="shrink-0 mb-1">
+                        <FormControl>
+                          <select
+                            {...field}
+                            className="h-9 px-2 text-sm font-semibold border border-input/60 rounded-lg bg-background/70 text-muted-foreground cursor-pointer"
+                            aria-label={t("expenses.currency", { defaultValue: "Currency" })}
+                          >
+                            <option value="VND">VND</option>
+                            <option value="USD">USD</option>
+                            <option value="EUR">EUR</option>
+                          </select>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Date and Paid By */}
