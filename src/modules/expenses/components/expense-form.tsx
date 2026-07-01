@@ -15,7 +15,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -569,48 +568,41 @@ export const ExpenseForm = ({
                 <FormItem>
                   <FormLabel>How to split?</FormLabel>
                   <FormControl>
-                    <RadioGroup
-                      onValueChange={(v) => { tap(); field.onChange(v); }}
-                      value={field.value}
-                      className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+                    <div
+                      role="radiogroup"
+                      aria-label="How to split?"
+                      className="flex gap-2"
                     >
-                      <FormItem>
-                        <FormControl>
-                          <RadioGroupItem value="equal" id="equal" className="peer sr-only" />
-                        </FormControl>
-                        <label
-                          htmlFor="equal"
-                          className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-background p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                        >
-                          <span className="text-sm font-medium">Equally</span>
-                          <span className="text-xs text-muted-foreground">Split even</span>
-                        </label>
-                      </FormItem>
-                      <FormItem>
-                        <FormControl>
-                          <RadioGroupItem value="exact" id="exact" className="peer sr-only" />
-                        </FormControl>
-                        <label
-                          htmlFor="exact"
-                          className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-background p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                        >
-                          <span className="text-sm font-medium">Exact</span>
-                          <span className="text-xs text-muted-foreground">Set amounts</span>
-                        </label>
-                      </FormItem>
-                      <FormItem>
-                        <FormControl>
-                          <RadioGroupItem value="percentage" id="percentage" className="peer sr-only" />
-                        </FormControl>
-                        <label
-                          htmlFor="percentage"
-                          className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-background p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                        >
-                          <span className="text-sm font-medium">Percent</span>
-                          <span className="text-xs text-muted-foreground">By %</span>
-                        </label>
-                      </FormItem>
-                    </RadioGroup>
+                      {(["equal", "exact", "percentage"] as const).map((method) => {
+                        const splitLabels: Record<string, string> = {
+                          equal: "Equally",
+                          exact: "Exact",
+                          percentage: "Percent",
+                        };
+                        return (
+                          <label
+                            key={method}
+                            className={cn(
+                              "flex-1 flex items-center justify-center gap-1.5 h-9 rounded-lg border-2 text-sm font-medium cursor-pointer transition-colors",
+                              field.value === method
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "border-border bg-background hover:bg-accent"
+                            )}
+                          >
+                            <input
+                              type="radio"
+                              className="sr-only"
+                              value={method}
+                              checked={field.value === method}
+                              onChange={() => { tap(); field.onChange(method); }}
+                              aria-label={splitLabels[method]}
+                            />
+                            {field.value === method && <CheckIcon className="h-3.5 w-3.5" aria-hidden="true" />}
+                            {splitLabels[method]}
+                          </label>
+                        );
+                      })}
+                    </div>
                   </FormControl>
                 </FormItem>
               )}
