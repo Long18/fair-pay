@@ -262,7 +262,7 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-7 shrink-0 gap-1.5 px-2 text-xs"
+                className="h-11 min-w-[44px] shrink-0 gap-1.5 px-3 text-xs"
                 onClick={handleOpenModelDialog}
                 disabled={localLlmStatus.state === "unsupported"}
                 aria-label={t("aiChat.selectModelAria")}

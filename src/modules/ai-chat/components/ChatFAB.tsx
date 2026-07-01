@@ -25,16 +25,6 @@ function useFabState() {
   return 'idle' as FabState;
 }
 
-function FabLabel({ state, progress }: { state: FabState; progress?: number }) {
-  if (state === 'loading') {
-    const pct = progress != null ? `${Math.round(progress * 100)}%` : '';
-    return <span className="text-[13px] font-semibold whitespace-nowrap">Loading model… {pct}</span>;
-  }
-  if (state === 'responding') return <span className="text-[13px] font-semibold whitespace-nowrap">Thinking…</span>;
-  if (state === 'done') return <span className="text-[13px] font-semibold whitespace-nowrap">Replied</span>;
-  if (state === 'error') return <span className="text-[13px] font-semibold whitespace-nowrap">Model error</span>;
-  return <span className="text-[13px] font-semibold whitespace-nowrap">Ask FairPay AI</span>;
-}
 
 function FabIcon({ state }: { state: FabState }) {
   if (state === 'loading') {
@@ -84,8 +74,6 @@ const ChatFABInner = memo(function ChatFABInner() {
 
   const toggle = useCallback(() => { tap(); setOpen((prev) => !prev); }, [tap]);
 
-  const progress = localLlmStatus.state === 'loading' ? localLlmStatus.progress : undefined;
-
   return (
     <>
       {/* keyframes injected once */}
@@ -113,20 +101,19 @@ const ChatFABInner = memo(function ChatFABInner() {
               <XIcon size={20} />
             </FloatingPill>
           ) : (
-            // When panel is closed: state-machine pill
+            // When panel is closed: icon-only circular button (no label text)
             <FloatingPill
               variant="glass"
               size="default"
               onClick={toggle}
               ariaLabel="Open FairPay Assistant"
               className={cn(
-                "gap-2 px-4",
+                "aspect-square !px-0 !min-w-[48px]",
                 fabState === 'done' && "border-emerald-300 dark:border-emerald-800",
                 fabState === 'error' && "border-destructive/40",
               )}
             >
               <FabIcon state={fabState} />
-              <FabLabel state={fabState} progress={progress} />
             </FloatingPill>
           )
         }
