@@ -82,6 +82,7 @@ function groupIntoBaseModels(models: readonly WebLlmModelEntry[]) {
 export const ModelSelectDialog = memo(function ModelSelectDialog({
   open,
   onOpenChange,
+  selectedModel,
   localLlmStatus,
   onSelectAndLoad,
 }: ModelSelectDialogProps) {
@@ -94,22 +95,48 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
   const [checkingCache, setCheckingCache] = useState(false);
   const [deletingModels, setDeletingModels] = useState<Set<string>>(new Set());
   const searchRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    setSearch("");
-    setActiveFamily("All");
-    setExpandedKey(null);
-    setCheckingCache(true);
-    void checkAllModelsCached()
-      .then(setCachedModels)
-      .finally(() => setCheckingCache(false));
-  }, [open]);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const loadedModelId =
     localLlmStatus.state === "ready" || localLlmStatus.state === "loading"
       ? localLlmStatus.model
       : null;
+
+  useEffect(() => {
+    if (!open) return;
+    setSearch("");
+
+    // Auto-expand and scroll to the active model: loaded takes priority over selected
+    const targetId = loadedModelId ?? selectedModel;
+    const targetEntry = WEB_LLM_MODEL_LIST.find((m) => m.id === targetId);
+    if (targetEntry) {
+      setActiveFamily(targetEntry.family);
+      setExpandedKey(baseModelKey(targetEntry));
+    } else {
+      setActiveFamily("All");
+      setExpandedKey(null);
+    }
+
+    setCheckingCache(true);
+    void checkAllModelsCached()
+      .then(setCachedModels)
+      .finally(() => setCheckingCache(false));
+  }, [open, loadedModelId, selectedModel]);
+
+  // Scroll the expanded card into view and focus it after the DOM settles
+  useEffect(() => {
+    if (!expandedKey || !open) return;
+    const timeout = setTimeout(() => {
+      const el = scrollContainerRef.current?.querySelector<HTMLElement>(
+        `[data-model-key="${CSS.escape(expandedKey)}"]`,
+      );
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        el.focus({ preventScroll: true });
+      }
+    }, 80);
+    return () => clearTimeout(timeout);
+  }, [expandedKey, open]);
 
   const loadedEntry = useMemo(
     () => WEB_LLM_MODEL_LIST.find((m) => m.id === loadedModelId),
@@ -268,7 +295,7 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
         </div>
 
         {/* ── Model grid (2-column, collapsible cards) ── */}
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-3">
+        <div ref={scrollContainerRef} className="min-h-0 flex-1 overflow-y-auto px-5 pb-3">
           {baseModels.length === 0 && (
             <p className="py-8 text-center text-sm text-muted-foreground">
               {t("aiChat.modelPicker.noResults")}
@@ -285,8 +312,10 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
               return (
                 <div
                   key={key}
+                  data-model-key={key}
+                  tabIndex={-1}
                   className={cn(
-                    "rounded-xl border transition-all",
+                    "rounded-xl border transition-all outline-none",
                     isExpanded
                       ? "bg-primary/5 border-primary/30 ring-1 ring-primary/20 col-span-1 sm:col-span-2"
                       : "bg-background hover:border-muted-foreground/30",
