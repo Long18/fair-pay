@@ -70,7 +70,6 @@ const ChatFABInner = memo(function ChatFABInner() {
   const [open, setOpen] = useState(false);
   const { tap } = useHaptics();
   const fabState = useFabState();
-  const { localLlmStatus } = useAiChatContext();
 
   const toggle = useCallback(() => { tap(); setOpen((prev) => !prev); }, [tap]);
 
