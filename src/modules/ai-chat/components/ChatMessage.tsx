@@ -30,8 +30,11 @@ export const ChatMessage = memo(function ChatMessage({ message, userInfo, isStre
   const isUser = message.role === "user";
   const isError = message.metadata?.status === "failure";
   const userInitials = useMemo(() => getInitials(userInfo?.full_name), [userInfo?.full_name]);
-  // Show cursor when actively streaming or when placeholder is empty (not yet receiving tokens)
-  const showCursor = !isUser && (isStreaming || message.content === "");
+  const hasContent = message.content.length > 0;
+  // Inline cursor rides at the end of the last rendered block (paragraph/li/etc.)
+  const showInlineCursor = !isUser && isStreaming && hasContent;
+  // Placeholder cursor for the empty-content edge case (no tokens yet)
+  const showPlaceholderCursor = !isUser && !hasContent;
 
   return (
     <div className={cn("flex gap-3", isUser ? "justify-end" : "justify-start")}>
@@ -50,6 +53,10 @@ export const ChatMessage = memo(function ChatMessage({ message, userInfo, isStre
             ? "bg-primary text-primary-foreground"
             : "border bg-card text-card-foreground",
           isError && "border-destructive/30 bg-destructive/10 text-destructive",
+          // Inline blinking cursor at the end of the last block, so it tracks
+          // the last character of the streaming text instead of dropping to a
+          // new line below the paragraph.
+          showInlineCursor && "[&>*:last-child]:after:content-['▊'] [&>*:last-child]:after:ml-0.5 [&>*:last-child]:after:inline-block [&>*:last-child]:after:animate-pulse [&>*:last-child]:after:text-primary [&>*:last-child]:after:font-normal [&>*:last-child]:after:align-baseline",
         )}
       >
         <ReactMarkdown
@@ -65,7 +72,7 @@ export const ChatMessage = memo(function ChatMessage({ message, userInfo, isStre
         >
           {message.content}
         </ReactMarkdown>
-        {showCursor && (
+        {showPlaceholderCursor && (
           <span className="ml-0.5 inline-block h-4 w-1 translate-y-0.5 animate-pulse rounded-full bg-primary" />
         )}
       </div>
