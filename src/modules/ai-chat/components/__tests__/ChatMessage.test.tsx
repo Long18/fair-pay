@@ -1,6 +1,6 @@
-import { act } from "react";
 import { render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 import ChatMessage from "../ChatMessage";
 import type { ChatMessage as ChatMessageType } from "../../types";
 
@@ -20,29 +20,57 @@ function makeMessage(content: string, role: ChatMessageType["role"] = "assistant
 }
 
 describe("ChatMessage", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it("uses the FairPay logo for assistant messages", () => {
     render(<ChatMessage message={makeMessage("Hello")} />);
-
     expect(screen.getByAltText("FairPay")).toBeInTheDocument();
   });
 
-  it("reveals assistant content with a streaming effect", async () => {
-    render(<ChatMessage message={makeMessage("Streaming response text")} />);
+  it("renders plain text content directly (no timer reveal)", () => {
+    render(<ChatMessage message={makeMessage("Hello there")} />);
+    expect(screen.getByText("Hello there")).toBeInTheDocument();
+  });
 
-    expect(screen.queryByText("Streaming response text")).not.toBeInTheDocument();
+  it("renders user messages as-is without parsing", () => {
+    const raw = `{"type":"final","content":"should not be stripped"}`;
+    render(<ChatMessage message={makeMessage(raw, "user")} />);
+    // User messages bypass parsing — raw content is shown
+    expect(screen.getByText(raw)).toBeInTheDocument();
+  });
 
-    await act(async () => {
-      vi.runAllTimers();
-    });
+  it("extracts content from the final JSON contract", () => {
+    const raw = `<think>reasoning</think>{"type":"final","content":"Clean answer"}`;
+    render(<ChatMessage message={makeMessage(raw)} />);
+    expect(screen.getByText("Clean answer")).toBeInTheDocument();
+    // Raw JSON must not be visible
+    expect(screen.queryByText(/"type"/)).not.toBeInTheDocument();
+  });
 
-    expect(screen.getByText("Streaming response text")).toBeInTheDocument();
+  it("does not show reasoning text by default (collapsed)", () => {
+    const raw = `<think>internal reasoning here</think>{"type":"final","content":"Answer"}`;
+    render(<ChatMessage message={makeMessage(raw)} />);
+    expect(screen.queryByText("internal reasoning here")).not.toBeInTheDocument();
+  });
+
+  it("shows reasoning text after clicking the trigger", async () => {
+    const user = userEvent.setup();
+    const raw = `<think>internal reasoning here</think>{"type":"final","content":"Answer"}`;
+    render(<ChatMessage message={makeMessage(raw)} />);
+
+    const trigger = screen.getByText("Reasoning");
+    await user.click(trigger);
+
+    expect(screen.getByText("internal reasoning here")).toBeInTheDocument();
+  });
+
+  it("shows Thinking... label while reasoning block is still open", () => {
+    const raw = `<think>still thinking...`;
+    render(<ChatMessage message={makeMessage(raw)} isStreaming />);
+    expect(screen.getByText("Thinking...")).toBeInTheDocument();
+  });
+
+  it("falls back to raw text when no JSON contract is present", () => {
+    const raw = "Just a plain response with no wrapper.";
+    render(<ChatMessage message={makeMessage(raw)} />);
+    expect(screen.getByText(raw)).toBeInTheDocument();
   });
 });
