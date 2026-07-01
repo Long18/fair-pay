@@ -30,6 +30,7 @@ import {
   type LocalLlmStatus,
   type WebLlmModelId,
 } from "@/lib/local-llm/types";
+import { FAMILY_ICONS } from "@/assets/webllm-icons";
 import { cn } from "@/lib/utils";
 
 interface ModelSelectDialogProps {
@@ -213,7 +214,13 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
               <div key={family} className="mb-3 last:mb-1">
                 {/* Family heading */}
                 <div className="mb-1 flex items-center gap-1.5 px-2">
-                  <LayersIcon size={10} className="shrink-0 text-muted-foreground/50" />
+                  <img
+                    src={FAMILY_ICONS[family]}
+                    alt={family}
+                    width={12}
+                    height={12}
+                    className="shrink-0 rounded-sm object-contain opacity-70"
+                  />
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
                     {family}
                   </span>
