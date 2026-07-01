@@ -340,7 +340,7 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
                     />
                   )}
 
-                  {isLoading && <TypingIndicator />}
+                  {isLoading && messages[messages.length - 1]?.role !== "assistant" && <TypingIndicator />}
 
                   {error && (
                     <div className="flex gap-2 rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">

@@ -198,23 +198,9 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
       >
         {/* ── Header ── */}
         <DialogHeader className="shrink-0 px-5 pt-4 pb-3">
-          <div className="flex items-center justify-between gap-3">
-            <DialogTitle className="text-lg font-bold">
-              {t("aiChat.modelPicker.title")}
-            </DialogTitle>
-            <div className="flex items-center gap-1">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => onOpenChange(false)}
-                aria-label={t("common.close")}
-              >
-                <XIcon size={14} />
-              </Button>
-            </div>
-          </div>
+          <DialogTitle className="text-lg font-bold">
+            {t("aiChat.modelPicker.title")}
+          </DialogTitle>
         </DialogHeader>
 
         {/* ── Green selected model banner ── */}
