@@ -12,6 +12,8 @@ import { MoreVerticalIcon, Trash2Icon } from "@/components/ui/icons";
 import { motion } from "framer-motion";
 import { useHaptics } from "@/hooks/use-haptics";
 
+const vndNumberFormatter = new Intl.NumberFormat("vi-VN");
+
 interface FriendRowProps {
   friend: {
     id: string;
@@ -40,7 +42,7 @@ export const FriendRow = ({
 
   const formatBalance = (amount: number) => {
     const absAmount = Math.abs(amount);
-    const formatted = new Intl.NumberFormat("vi-VN").format(absAmount);
+    const formatted = vndNumberFormatter.format(absAmount);
     return amount >= 0 ? `+${formatted}` : `-${formatted}`;
   };
 

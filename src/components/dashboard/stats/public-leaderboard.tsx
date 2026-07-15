@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LeaderboardUser } from "@/hooks/analytics/use-sample-leaderboard";
 
+const viVnNumberFormatter = new Intl.NumberFormat("vi-VN");
+
 interface PublicLeaderboardProps {
   users: LeaderboardUser[];
   title: string;
@@ -14,7 +16,7 @@ export const PublicLeaderboard = ({ users, title, type }: PublicLeaderboardProps
 
   const formatAmount = (amount: number) => {
     const absAmount = Math.abs(amount);
-    return new Intl.NumberFormat("vi-VN").format(absAmount);
+    return viVnNumberFormatter.format(absAmount);
   };
 
   const getBadgeEmoji = (badge?: "gold" | "silver" | "bronze") => {

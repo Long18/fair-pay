@@ -7,6 +7,9 @@ import { motion } from "framer-motion";
 import { EyeIcon, UsersIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useStaggerAnimation } from "@/hooks/ui/use-stagger-animation";
+
+const vndNumberFormatter = new Intl.NumberFormat('vi-VN');
+
 interface GroupBalance {
   group_id: string;
   group_name: string;
@@ -26,7 +29,7 @@ export const GroupsTable = ({ groups, isLoading }: GroupsTableProps) => {
   const { containerVariants, rowVariants, animationKey } = useStaggerAnimation(groups);
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('vi-VN').format(Math.abs(value));
+    return vndNumberFormatter.format(Math.abs(value));
   };
 
   const formatTimeAgo = (date?: string) => {

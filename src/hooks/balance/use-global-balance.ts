@@ -140,13 +140,16 @@ export const useGlobalBalance = (): GlobalBalance => {
       // Filter data for this specific group
       const groupExpenses = expenses.filter(e => e.group_id === group.id);
       const groupPayments = payments.filter(p => p.group_id === group.id);
-      const groupMembers = allMembers
-        .filter(m => m.group_id === group.id)
-        .map((m: any) => ({
-          id: m.user_id,
-          full_name: m.profiles?.full_name || "Unknown",
-          avatar_url: m.profiles?.avatar_url,
-        }));
+      const groupMembers = allMembers.reduce<{ id: any; full_name: any; avatar_url: any }[]>((acc, m: any) => {
+        if (m.group_id === group.id) {
+          acc.push({
+            id: m.user_id,
+            full_name: m.profiles?.full_name || "Unknown",
+            avatar_url: m.profiles?.avatar_url,
+          });
+        }
+        return acc;
+      }, []);
 
       // Calculate balances for this group using pure function (not hook)
       const balances = calculateBalances(

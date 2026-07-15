@@ -39,12 +39,22 @@ function joinAppUrl(appUrl: string, link: string): string {
   return `${appUrl.replace(/\/$/, '')}/${link.replace(/^\//, '')}`
 }
 
+const currencyFormatterCache = new Map<string, Intl.NumberFormat>()
+function getCurrencyFormatter(currency: string): Intl.NumberFormat {
+  let formatter = currencyFormatterCache.get(currency)
+  if (!formatter) {
+    formatter = new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 0,
+    })
+    currencyFormatterCache.set(currency, formatter)
+  }
+  return formatter
+}
+
 function formatCurrency(value: number, currency = 'VND'): string {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(Math.abs(value))
+  return getCurrencyFormatter(currency).format(Math.abs(value))
 }
 
 interface AgingDebtRow {

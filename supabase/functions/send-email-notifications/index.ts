@@ -106,9 +106,11 @@ function normalizeInviteEmails(value: unknown): string[] {
       ? value.split(/[\s,;]+/)
       : []
 
-  const emails = rawItems
-    .map((email) => email.trim().toLowerCase())
-    .filter((email) => EMAIL_RE.test(email))
+  const emails = rawItems.reduce<string[]>((acc, email) => {
+    const normalized = email.trim().toLowerCase()
+    if (EMAIL_RE.test(normalized)) acc.push(normalized)
+    return acc
+  }, [])
 
   return Array.from(new Set(emails))
 }
@@ -119,9 +121,11 @@ async function readWorkerRequest(req: Request): Promise<WorkerRequest> {
 
   const parsed = JSON.parse(raw) as Record<string, unknown>
   const notificationIds = Array.isArray(parsed.notification_ids)
-    ? parsed.notification_ids
-        .map((id) => String(id))
-        .filter((id) => UUID_RE.test(id))
+    ? parsed.notification_ids.reduce<string[]>((acc, id) => {
+        const normalized = String(id)
+        if (UUID_RE.test(normalized)) acc.push(normalized)
+        return acc
+      }, [])
     : undefined
   const invite = parsed.invite && typeof parsed.invite === 'object'
     ? parsed.invite as Record<string, unknown>
@@ -206,13 +210,29 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#039;')
 }
 
-function formatCurrency(value: number, currency = 'VND'): string {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(Math.abs(value))
+const currencyFormatterCache = new Map<string, Intl.NumberFormat>()
+function getCurrencyFormatter(currency: string): Intl.NumberFormat {
+  let formatter = currencyFormatterCache.get(currency)
+  if (!formatter) {
+    formatter = new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 0,
+    })
+    currencyFormatterCache.set(currency, formatter)
+  }
+  return formatter
 }
+
+function formatCurrency(value: number, currency = 'VND'): string {
+  return getCurrencyFormatter(currency).format(Math.abs(value))
+}
+
+const dateFormatter = new Intl.DateTimeFormat('vi-VN', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+})
 
 function formatDate(value: string | null): string {
   if (!value) return ''
@@ -220,63 +240,74 @@ function formatDate(value: string | null): string {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
 
-  return new Intl.DateTimeFormat('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(date)
+  return dateFormatter.format(date)
 }
 
 function normalizeDebtTransactions(value: unknown, fallbackCurrency: string): DebtTransaction[] {
   if (!Array.isArray(value)) return []
 
-  return value.map((transaction) => {
+  return value.reduce<DebtTransaction[]>((acc, transaction) => {
     const tx = transaction as Record<string, unknown>
-    return {
-      expense_id: String(tx.expense_id || ''),
-      description: String(tx.description || 'Chi phí'),
-      amount: Number(tx.amount || 0),
-      currency: String(tx.currency || fallbackCurrency),
-      expense_date: tx.expense_date ? String(tx.expense_date) : null,
+    const expenseId = String(tx.expense_id || '')
+    const amount = Number(tx.amount || 0)
+    if (expenseId && amount > 0) {
+      acc.push({
+        expense_id: expenseId,
+        description: String(tx.description || 'Chi phí'),
+        amount,
+        currency: String(tx.currency || fallbackCurrency),
+        expense_date: tx.expense_date ? String(tx.expense_date) : null,
+      })
     }
-  }).filter((transaction) => transaction.expense_id && transaction.amount > 0)
+    return acc
+  }, [])
 }
 
 function normalizeDebtBreakdownItems(value: unknown): DebtBreakdownItem[] {
   if (!Array.isArray(value)) return []
 
-  return value.map((item) => {
+  return value.reduce<DebtBreakdownItem[]>((acc, item) => {
     const debt = item as Record<string, unknown>
     const currency = String(debt.currency || 'VND')
+    const counterpartyKey = String(debt.counterparty_key || '')
+    const amount = Number(debt.amount || 0)
 
-    return {
-      counterparty_key: String(debt.counterparty_key || ''),
-      counterparty_name: String(debt.counterparty_name || 'Không rõ'),
-      counterparty_email: debt.counterparty_email ? String(debt.counterparty_email) : null,
-      amount: Number(debt.amount || 0),
-      currency,
-      direction: 'user_owes_counterparty' as const,
-      transactions: normalizeDebtTransactions(debt.transactions, currency),
+    if (counterpartyKey && amount > 0) {
+      acc.push({
+        counterparty_key: counterpartyKey,
+        counterparty_name: String(debt.counterparty_name || 'Không rõ'),
+        counterparty_email: debt.counterparty_email ? String(debt.counterparty_email) : null,
+        amount,
+        currency,
+        direction: 'user_owes_counterparty' as const,
+        transactions: normalizeDebtTransactions(debt.transactions, currency),
+      })
     }
-  }).filter((item) => item.counterparty_key && item.amount > 0)
+    return acc
+  }, [])
 }
 
 function normalizeGroupBreakdownItems(value: unknown): GroupBreakdownItem[] {
   if (!Array.isArray(value)) return []
 
-  return value.map((item) => {
+  return value.reduce<GroupBreakdownItem[]>((acc, item) => {
     const group = item as Record<string, unknown>
     const currency = String(group.currency || 'VND')
+    const subtotalAmount = Number(group.subtotal_amount || 0)
+    const counterparties = normalizeDebtBreakdownItems(group.counterparties)
 
-    return {
-      group_id: group.group_id ? String(group.group_id) : null,
-      group_name: String(group.group_name || 'Direct / Ngoài group'),
-      group_avatar_url: group.group_avatar_url ? String(group.group_avatar_url) : null,
-      subtotal_amount: Number(group.subtotal_amount || 0),
-      currency,
-      counterparties: normalizeDebtBreakdownItems(group.counterparties),
+    if (subtotalAmount > 0 && counterparties.length > 0) {
+      acc.push({
+        group_id: group.group_id ? String(group.group_id) : null,
+        group_name: String(group.group_name || 'Direct / Ngoài group'),
+        group_avatar_url: group.group_avatar_url ? String(group.group_avatar_url) : null,
+        subtotal_amount: subtotalAmount,
+        currency,
+        counterparties,
+      })
     }
-  }).filter((item) => item.subtotal_amount > 0 && item.counterparties.length > 0)
+    return acc
+  }, [])
 }
 
 function normalizeReminderEmailContext(value: unknown): ReminderEmailContext | null {

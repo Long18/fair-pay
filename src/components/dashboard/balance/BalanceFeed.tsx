@@ -7,6 +7,9 @@ import { useTranslation } from "react-i18next";
 
 import { ArrowDownIcon, ArrowUpIcon, WalletIcon, CheckCircle2Icon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
+
+const vndNumberFormatter = new Intl.NumberFormat('vi-VN');
+
 interface BalanceFeedProps {
   disabled?: boolean;
 }
@@ -32,7 +35,7 @@ export function BalanceFeed({ disabled = false }: BalanceFeedProps) {
   const netBalance = totalOwedToMe - totalIOwe;
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('vi-VN').format(Math.abs(value));
+    return vndNumberFormatter.format(Math.abs(value));
   };
 
   if (isLoading) {

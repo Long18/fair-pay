@@ -2,6 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CreditCardIcon, RefreshCwIcon } from "@/components/ui/icons";
 import { useHaptics } from '@/hooks/use-haptics';
+
+const vndNumberFormatter = new Intl.NumberFormat('vi-VN');
+
 interface RepaymentPlanCardProps {
   nextDate: string;
   instalmentsLeft: number;
@@ -23,7 +26,7 @@ export const RepaymentPlanCard = ({
 }: RepaymentPlanCardProps) => {
   const { tap } = useHaptics();
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('vi-VN').format(value);
+    return vndNumberFormatter.format(value);
   };
 
   return (

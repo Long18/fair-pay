@@ -2,6 +2,9 @@ import { DataCard } from "@/components/ui/data-card";
 import { Button } from "@/components/ui/button";
 import { WalletIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
+
+const vndNumberFormatter = new Intl.NumberFormat('vi-VN');
+
 interface OneOffPaymentCardProps {
   discountPercentage: number;
   discountedAmount: number;
@@ -17,7 +20,7 @@ export const OneOffPaymentCard = ({
 }: OneOffPaymentCardProps) => {
   const { success } = useHaptics();
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('vi-VN').format(value);
+    return vndNumberFormatter.format(value);
   };
 
   return (

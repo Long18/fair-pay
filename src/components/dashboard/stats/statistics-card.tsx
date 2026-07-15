@@ -1,6 +1,8 @@
 import { DataCard } from "@/components/ui/data-card";
 import { CircularProgress } from "../balance/circular-progress";
 
+const vndNumberFormatter = new Intl.NumberFormat('vi-VN');
+
 interface StatisticsCardProps {
   percentage: number;
   title: string;
@@ -19,7 +21,7 @@ export const StatisticsCard = ({
   currency: _currency = "VND",
 }: StatisticsCardProps) => {
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('vi-VN').format(value);
+    return vndNumberFormatter.format(value);
   };
 
   return (

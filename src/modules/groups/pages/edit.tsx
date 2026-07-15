@@ -96,7 +96,10 @@ export const GroupEdit = () => {
   // Current member IDs (excluding current user who is auto-added)
   const currentMemberIds = useMemo(() => {
     if (!identity?.id) return [];
-    return currentMembers.filter((m) => m.id !== identity.id).map((m) => m.id);
+    return currentMembers.reduce<typeof currentMembers[number]["id"][]>((acc, m) => {
+      if (m.id !== identity.id) acc.push(m.id);
+      return acc;
+    }, []);
   }, [currentMembers, identity]);
 
   const handleSubmit = (values: GroupFormValues) => {

@@ -418,9 +418,10 @@ export class FairPayChatOrchestrator {
         : [],
     )
 
-    const unresolved = Array.from(selected)
-      .filter((id) => ambiguous.has(id) && !confirmed.has(id))
-      .map((id) => ambiguous.get(id)!)
+    const unresolved = Array.from(selected).reduce<ReturnType<typeof ambiguous.get>[]>((acc, id) => {
+      if (ambiguous.has(id) && !confirmed.has(id)) acc.push(ambiguous.get(id)!)
+      return acc
+    }, [])
 
     if (unresolved.length === 0) return null
 

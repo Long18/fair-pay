@@ -3,6 +3,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 
 import { MoreVerticalIcon } from "@/components/ui/icons";
+
+const decimalFormatter = new Intl.NumberFormat('en-US', {
+  style: 'decimal',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 interface Document {
   id: string;
   type: string;
@@ -19,11 +26,7 @@ interface DocumentsTableProps {
 
 export const DocumentsTable = ({ documents, currency = "USD" }: DocumentsTableProps) => {
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'decimal',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
+    return decimalFormatter.format(value);
   };
 
   const getStatusColor = (status?: string) => {

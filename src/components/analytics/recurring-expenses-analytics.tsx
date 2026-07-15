@@ -6,6 +6,15 @@ import { Progress } from "@/components/ui/progress";
 import { useRecurringExpenses } from "@/modules/expenses/hooks/use-recurring-expenses";
 import { TrendingUpIcon, PieChartIcon, CalendarIcon, ActivityIcon } from "@/components/ui/icons";
 
+const vndCurrencyFormatter = new Intl.NumberFormat("vi-VN", {
+  style: "currency",
+  currency: "VND",
+});
+
+function formatCurrency(amount: number) {
+  return vndCurrencyFormatter.format(amount);
+}
+
 export function RecurringExpensesAnalytics() {
   const { t } = useTranslation();
   const { recurring, active, paused } = useRecurringExpenses({});
@@ -106,13 +115,6 @@ export function RecurringExpensesAnalytics() {
 
   // Active vs Paused ratio
   const activePercentage = recurring.length > 0 ? (active.length / recurring.length) * 100 : 0;
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
-  };
 
   const getFrequencyLabel = (frequency: string) => {
     const labels: Record<string, string> = {

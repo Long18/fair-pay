@@ -227,12 +227,18 @@ export const ProfileShowUnified = () => {
   useEffect(() => {
     const groupMembersData = groupMembersQuery.data;
     if (groupMembersData) {
-      const groups = (groupMembersData.data || []).map((gm: any) => ({
-        id: gm.groups?.id,
-        name: gm.groups?.name,
-        created_at: gm.groups?.created_at,
-        avatar_url: gm.groups?.avatar_url,
-      })).filter((g: any) => g.id);
+      const groups = (groupMembersData.data || []).reduce<any[]>((acc, gm: any) => {
+        const id = gm.groups?.id;
+        if (id) {
+          acc.push({
+            id,
+            name: gm.groups?.name,
+            created_at: gm.groups?.created_at,
+            avatar_url: gm.groups?.avatar_url,
+          });
+        }
+        return acc;
+      }, []);
       setMyGroups(groups);
     }
   }, [groupMembersQuery.data]);
@@ -259,15 +265,19 @@ export const ProfileShowUnified = () => {
           console.error('Error fetching friendships:', error);
           setMyFriends([]);
         } else {
-          const friends = (data || []).map((f: any) => {
+          const friends = (data || []).reduce<any[]>((acc, f: any) => {
             const friendProfile = f.user_a === profileId ? f.user_b_profile : f.user_a_profile;
-            return {
-              id: friendProfile?.id || '',
-              full_name: friendProfile?.full_name || '',
-              avatar_url: friendProfile?.avatar_url || '',
-              email: friendProfile?.email || '',
-            };
-          }).filter(f => f.id);
+            const id = friendProfile?.id || '';
+            if (id) {
+              acc.push({
+                id,
+                full_name: friendProfile?.full_name || '',
+                avatar_url: friendProfile?.avatar_url || '',
+                email: friendProfile?.email || '',
+              });
+            }
+            return acc;
+          }, []);
           setMyFriends(friends);
         }
         setFriendsLoading(false);

@@ -410,14 +410,20 @@ serve(async (req) => {
           // Fetch user's current debts
           const { data: balances } = await supabase
             .rpc('get_user_balances', { p_user_id: user.id })
-          const debts: DebtRow[] = (balances || [])
-            .filter((b: { net_balance: number }) => b.net_balance < 0)
-            .map((b: { counterparty_id: string; net_balance: number; currency: string }) => ({
-              creditor_id: b.counterparty_id,
-              debtor_id: user.id,
-              amount: Math.abs(b.net_balance),
-              currency: b.currency || 'VND',
-            }))
+          const debts: DebtRow[] = (balances || []).reduce<DebtRow[]>(
+            (acc, b: { counterparty_id: string; net_balance: number; currency: string }) => {
+              if (b.net_balance < 0) {
+                acc.push({
+                  creditor_id: b.counterparty_id,
+                  debtor_id: user.id,
+                  amount: Math.abs(b.net_balance),
+                  currency: b.currency || 'VND',
+                })
+              }
+              return acc
+            },
+            []
+          )
           emailParts = buildWeeklySummary(userName, debts, appUrl)
         } else {
           emailParts = buildWinbackEmail(userName, appUrl)

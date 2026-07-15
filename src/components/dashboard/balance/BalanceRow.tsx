@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { MailIcon } from "@/components/ui/icons";
 import { UserDisplay } from "@/components/user-display";
 
+const vndNumberFormatter = new Intl.NumberFormat('vi-VN');
+
 interface BalanceRowProps {
   counterpartyId?: string;
   counterpartyName: string;
@@ -30,7 +32,7 @@ export function BalanceRow({
 }: BalanceRowProps) {
   const { tap } = useHaptics();
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('vi-VN').format(Math.abs(value));
+    return vndNumberFormatter.format(Math.abs(value));
   };
 
   const displayAmount = `₫${formatCurrency(amount)}`;

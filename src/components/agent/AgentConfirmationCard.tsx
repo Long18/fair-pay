@@ -19,8 +19,10 @@ interface AgentConfirmationCardProps {
   onCancel?: () => void
 }
 
+const vndFormatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 })
+
 function formatVnd(amount: number): string {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(amount)
+  return vndFormatter.format(amount)
 }
 
 export function AgentConfirmationCard({ preview, onDone, onError, onCancel }: AgentConfirmationCardProps) {

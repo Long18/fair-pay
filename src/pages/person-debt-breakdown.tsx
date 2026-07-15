@@ -163,21 +163,27 @@ export const PersonDebtBreakdown = () => {
     }
 
     if (activeTab === "unsettled") {
-      return monthGroups
-        .filter((group) => group.unsettled.length > 0)
-        .map((group) => ({
-          ...group,
-          displayNetAmount: group.openNetAmount,
-        }));
+      return monthGroups.reduce<((typeof monthGroups)[number] & { displayNetAmount: number })[]>((acc, group) => {
+        if (group.unsettled.length > 0) {
+          acc.push({
+            ...group,
+            displayNetAmount: group.openNetAmount,
+          });
+        }
+        return acc;
+      }, []);
     }
 
-    return monthGroups
-      .filter((group) => group.settled.length > 0)
-      .map((group) => ({
-        ...group,
-        unsettled: [] as typeof group.unsettled,
-        displayNetAmount: group.settledNetAmount,
-      }));
+    return monthGroups.reduce<((typeof monthGroups)[number] & { displayNetAmount: number })[]>((acc, group) => {
+      if (group.settled.length > 0) {
+        acc.push({
+          ...group,
+          unsettled: [] as typeof group.unsettled,
+          displayNetAmount: group.settledNetAmount,
+        });
+      }
+      return acc;
+    }, []);
   }, [monthGroups, activeTab]);
 
   const selectedAmount = useMemo(() => {
@@ -264,9 +270,11 @@ export const PersonDebtBreakdown = () => {
   const hasSelection = selectedSplitIds.size > 0;
   const isLoading = isLoadingProfile || isLoadingExpenses || isLoadingSummary;
   const shareVersionSource = useMemo(() => {
-    const candidates = expenses
-      .flatMap((expense) => [expense.settled_at, expense.expense_date])
-      .filter((value): value is string => Boolean(value));
+    const candidates = expenses.reduce<string[]>((acc, expense) => {
+      if (expense.settled_at) acc.push(expense.settled_at);
+      if (expense.expense_date) acc.push(expense.expense_date);
+      return acc;
+    }, []);
 
     return candidates.sort().pop() ?? null;
   }, [expenses]);

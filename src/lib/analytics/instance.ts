@@ -21,6 +21,6 @@ export { VercelAnalyticsProvider } from './providers/vercel';
 export * from './types';
 export * from './trackers';
 export { trackEvent } from './track';
-export { setUserDisplay, getUserDisplay, clearUserDisplay } from './user-display';
+export { setUserDisplay, getUserDisplay } from './user-display';
 export type { UserDisplayMetadata } from './user-display';
 export type { TrackEventOptions } from './track';

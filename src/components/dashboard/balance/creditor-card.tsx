@@ -5,6 +5,9 @@ import { useHaptics } from "@/hooks/use-haptics";
 import { motion } from "framer-motion";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { SPRING_GENTLE } from "@/lib/animation";
+
+const vndNumberFormatter = new Intl.NumberFormat('vi-VN');
+
 interface CreditorCardProps {
   name: string;
   logo?: string;
@@ -30,7 +33,7 @@ export const CreditorCard = ({
 }: CreditorCardProps) => {
   const { tap } = useHaptics();
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('vi-VN').format(value);
+    return vndNumberFormatter.format(value);
   };
 
   const reducedMotion = useReducedMotion();

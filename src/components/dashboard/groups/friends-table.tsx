@@ -11,6 +11,8 @@ import { useHaptics } from "@/hooks/use-haptics";
 import { AnimatedList } from "@/components/ui/animated-list";
 import { AnimatedRow } from "@/components/ui/animated-row";
 import { useStaggerAnimation } from "@/hooks/ui/use-stagger-animation";
+
+const vndNumberFormatter = new Intl.NumberFormat('vi-VN');
 /**
  * Friends Table Component
  *
@@ -49,7 +51,7 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
   const { containerVariants, rowVariants, animationKey } = useStaggerAnimation(friends);
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('vi-VN').format(Math.abs(value));
+    return vndNumberFormatter.format(Math.abs(value));
   };
 
   const getBalanceColor = (iOweThem: boolean) => {

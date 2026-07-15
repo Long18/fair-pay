@@ -5,6 +5,13 @@ import { useTableSort, SortConfig } from "@/hooks/table/use-table-sort";
 import { useTablePagination } from "@/hooks/table/use-table-pagination";
 import { useHaptics } from "@/hooks/use-haptics";
 import { MoreVerticalIcon, ArrowUpIcon, ArrowDownIcon } from "@/components/ui/icons";
+
+const decimalFormatter = new Intl.NumberFormat('en-US', {
+  style: 'decimal',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 interface Payment {
   id: string;
   date: string;
@@ -28,11 +35,7 @@ export const PaymentsTable = ({
 }: PaymentsTableProps) => {
   const { tap } = useHaptics();
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'decimal',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
+    return decimalFormatter.format(value);
   };
 
   // Sort configuration

@@ -108,17 +108,19 @@ export function useCategoryBreakdown(
     const total = Array.from(categoryMap.values()).reduce((sum, { amount }) => sum + amount, 0);
 
     const result: CategoryData[] = Array.from(categoryMap.entries())
-      .map(([category, { amount, count }]) => {
-        const categoryMeta = getCategoryMeta(category);
-        return {
-          category,
-          amount,
-          count,
-          percentage: total > 0 ? (amount / total) * 100 : 0,
-          color: categoryMeta?.color || '#gray',
-        };
-      })
-      .filter(item => item.amount > 0)
+      .reduce<CategoryData[]>((acc, [category, { amount, count }]) => {
+        if (amount > 0) {
+          const categoryMeta = getCategoryMeta(category);
+          acc.push({
+            category,
+            amount,
+            count,
+            percentage: total > 0 ? (amount / total) * 100 : 0,
+            color: categoryMeta?.color || '#gray',
+          });
+        }
+        return acc;
+      }, [])
       .sort((a, b) => b.amount - a.amount);
 
     return result;

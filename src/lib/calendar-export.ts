@@ -6,6 +6,16 @@ import { format } from "date-fns";
  * Compatible with Google Calendar, Apple Calendar, Outlook
  */
 
+const currencyFormatterCache = new Map<string, Intl.NumberFormat>();
+function getCurrencyFormatter(currency: string) {
+  let formatter = currencyFormatterCache.get(currency);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat("vi-VN", { style: "currency", currency });
+    currencyFormatterCache.set(currency, formatter);
+  }
+  return formatter;
+}
+
 interface ICSEvent {
   uid: string;
   summary: string;
@@ -183,10 +193,7 @@ export function recurringExpenseToICSEvent(expense: RecurringExpense): ICSEvent 
   const amount = template?.amount || 0;
   const currency = template?.currency || "VND";
 
-  const description = `Amount: ${new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency,
-  }).format(amount)}\\nFrequency: ${expense.frequency}\\nInterval: Every ${expense.interval} ${expense.frequency}${expense.interval > 1 ? "s" : ""}`;
+  const description = `Amount: ${getCurrencyFormatter(currency).format(amount)}\\nFrequency: ${expense.frequency}\\nInterval: Every ${expense.interval} ${expense.frequency}${expense.interval > 1 ? "s" : ""}`;
 
   return {
     uid: expense.id,
@@ -213,9 +220,10 @@ export function exportRecurringExpenseToCalendar(expense: RecurringExpense): voi
  * Export all recurring expenses to ICS file
  */
 export function exportAllRecurringExpensesToCalendar(expenses: RecurringExpense[]): void {
-  const events = expenses
-    .filter(e => e.is_active) // Only export active expenses
-    .map(recurringExpenseToICSEvent);
+  const events = expenses.reduce<ReturnType<typeof recurringExpenseToICSEvent>[]>((acc, e) => {
+    if (e.is_active) acc.push(recurringExpenseToICSEvent(e)); // Only export active expenses
+    return acc;
+  }, []);
 
   const icsContent = generateICSFile(events);
 
@@ -237,18 +245,6 @@ function downloadICSFile(content: string, filename: string): void {
   document.body.removeChild(link);
 
   URL.revokeObjectURL(url);
-}
-
-/**
- * Generate calendar subscription URL (for future implementation)
- * This would require a backend endpoint to serve the ICS file
- */
-export function getCalendarSubscriptionURL(userId: string): string {
-  // In production, this would be:
-  // return `https://api.fairpay.app/calendar/${userId}/recurring-expenses.ics`;
-
-  // For now, return a placeholder
-  return `webcal://api.fairpay.app/calendar/${userId}/recurring-expenses.ics`;
 }
 
 /**
@@ -286,7 +282,7 @@ export function addToGoogleCalendar(expense: RecurringExpense): void {
   const amount = template?.amount || 0;
   const currency = template?.currency || "VND";
   const description = encodeURIComponent(
-    `Amount: ${new Intl.NumberFormat("vi-VN", { style: "currency", currency }).format(amount)}\nFrequency: ${expense.frequency}`
+    `Amount: ${getCurrencyFormatter(currency).format(amount)}\nFrequency: ${expense.frequency}`
   );
 
   const recurrence = getGoogleCalendarRecurrence(expense);

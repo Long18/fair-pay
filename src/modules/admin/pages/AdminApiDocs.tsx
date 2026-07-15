@@ -943,13 +943,15 @@ function ExecutionTab({ entry }: { entry: ApiCatalogEntry }) {
         return;
       }
 
-      const missingRequired = entry.params
-        .filter((p) => p.required)
-        .filter((p) => {
+      const missingRequired = entry.params.reduce<string[]>((acc, p) => {
+        if (p.required) {
           const value = args[p.name];
-          return value == null || (typeof value === "string" && value.trim() === "");
-        })
-        .map((p) => p.name);
+          if (value == null || (typeof value === "string" && value.trim() === "")) {
+            acc.push(p.name);
+          }
+        }
+        return acc;
+      }, []);
       if (missingRequired.length > 0) {
         setRpcArgsError(`Missing required RPC fields: ${missingRequired.join(", ")}`);
         return;
@@ -957,7 +959,10 @@ function ExecutionTab({ entry }: { entry: ApiCatalogEntry }) {
 
       execute(entry, { rpc_args: args });
     } else {
-      const requiredQueryKeys = entry.params.filter((p) => p.required).map((p) => p.name);
+      const requiredQueryKeys = entry.params.reduce<string[]>((acc, p) => {
+        if (p.required) acc.push(p.name);
+        return acc;
+      }, []);
       const query = rowsToRecord(queryRows);
       const missingRequired = requiredQueryKeys.filter((key) => {
         const value = query[key];

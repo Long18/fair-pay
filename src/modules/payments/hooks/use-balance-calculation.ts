@@ -144,8 +144,9 @@ export const useMyDebts = (
     // Simple approach: show direct relationships
     // Future: implement debt simplification algorithm
     return balances
-      .filter(b => b.user_id !== currentUserId && b.balance !== 0)
       .map(user => {
+        if (user.user_id === currentUserId || user.balance === 0) return null;
+
         const myBalance = currentBalance.balance;
         const theirBalance = user.balance;
 

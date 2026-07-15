@@ -21,9 +21,11 @@ export function normalizeInviteEmails(value: string | string[]): string[] {
     ? value
     : value.split(/[\s,;]+/);
 
-  const emails = rawItems
-    .map((email) => email.trim().toLowerCase())
-    .filter((email) => EMAIL_RE.test(email));
+  const emails = rawItems.reduce<string[]>((acc, email) => {
+    const normalized = email.trim().toLowerCase();
+    if (EMAIL_RE.test(normalized)) acc.push(normalized);
+    return acc;
+  }, []);
 
   return Array.from(new Set(emails));
 }

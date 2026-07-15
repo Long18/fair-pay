@@ -117,9 +117,10 @@ export function useJourneyGraph(params: {
 
     // Find root nodes (nodes with no incoming edges)
     const targetSet = new Set(graphData.edges.map((e) => e.target));
-    const rootNodeIds = graphData.nodes
-      .map((n) => n.page_path)
-      .filter((id) => !targetSet.has(id));
+    const rootNodeIds = graphData.nodes.reduce<typeof graphData.nodes[number]["page_path"][]>((acc, n) => {
+      if (!targetSet.has(n.page_path)) acc.push(n.page_path);
+      return acc;
+    }, []);
 
     // Add synthetic source nodes above each root node
     const sourceLabel = sourceName ?? "direct";

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -51,12 +52,18 @@ export function ExpenseBreakdownItemSelectable({
   const expenseUrl = `/expenses/show/${id}`;
   const signedAmount = direction === "i_owe" ? -myShare : myShare;
 
-  const formatDate = (value: string) => {
-    try {
-      return new Intl.DateTimeFormat(i18n.language, {
+  const dateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(i18n.language, {
         month: "short",
         day: "numeric",
-      }).format(new Date(value));
+      }),
+    [i18n.language]
+  );
+
+  const formatDate = (value: string) => {
+    try {
+      return dateFormatter.format(new Date(value));
     } catch {
       return value;
     }

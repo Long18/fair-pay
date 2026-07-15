@@ -29,9 +29,11 @@ export function statusBadgeVariant(status: AgentOperationStatus): BadgeVariant {
  * Format an integer VND amount with thousand separators plus ₫ symbol.
  * Returns null when the amount is unavailable (non-committed operations).
  */
+const vndNumberFormatter = new Intl.NumberFormat("vi-VN");
+
 export function formatVndAmount(amount: number | null | undefined): string | null {
   if (amount == null) return null;
-  return new Intl.NumberFormat("vi-VN").format(amount) + " ₫";
+  return vndNumberFormatter.format(amount) + " ₫";
 }
 
 // ─── Security field allowlist ─────────────────────────────────────────────────

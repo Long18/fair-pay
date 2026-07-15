@@ -533,9 +533,15 @@ Deno.serve(async (req: Request) => {
       console.error('Failed to upsert user attribution', attributionError)
     }
 
-    const sanitizedEvents = events
-      .filter((event) => ALLOWED_EVENT_NAMES.has(event.event_name))
-      .map((event) => ({
+    const sanitizedEvents = events.reduce<ReturnType<typeof buildSanitizedEvent>[]>((acc, event) => {
+      if (ALLOWED_EVENT_NAMES.has(event.event_name)) {
+        acc.push(buildSanitizedEvent(event))
+      }
+      return acc
+    }, [])
+
+    function buildSanitizedEvent(event: (typeof events)[number]) {
+      return {
         session_id: sessionId,
         user_id: userId,
         anonymous_id: anonymousId,
@@ -549,7 +555,8 @@ Deno.serve(async (req: Request) => {
         referrer_path: event.referrer_path ? sanitizePath(event.referrer_path) : null,
         properties: sanitizeProperties(event.properties),
         occurred_at: parseOccurredAt(event.occurred_at),
-      }))
+      }
+    }
 
     if (sanitizedEvents.length === 0) {
       return new Response(JSON.stringify({ success: true, accepted: 0 }), {

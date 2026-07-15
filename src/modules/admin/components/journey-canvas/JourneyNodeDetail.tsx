@@ -35,12 +35,23 @@ function formatDuration(seconds: number | null): string {
   return `${m}m ${s}s`;
 }
 
-function formatLastVisited(dateStr: string, locale: string): string {
-  try {
-    return new Intl.DateTimeFormat(locale, {
+// Bounded locale set (admin i18n locales), safe to cache per locale.
+const lastVisitedFormatterCache = new Map<string, Intl.DateTimeFormat>();
+function getLastVisitedFormatter(locale: string): Intl.DateTimeFormat {
+  let formatter = lastVisitedFormatterCache.get(locale);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, {
       dateStyle: "short",
       timeStyle: "short",
-    }).format(new Date(dateStr));
+    });
+    lastVisitedFormatterCache.set(locale, formatter);
+  }
+  return formatter;
+}
+
+function formatLastVisited(dateStr: string, locale: string): string {
+  try {
+    return getLastVisitedFormatter(locale).format(new Date(dateStr));
   } catch {
     return dateStr;
   }

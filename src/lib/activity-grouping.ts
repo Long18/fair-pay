@@ -11,6 +11,12 @@ import type { EnhancedActivityItem } from "@/types/activity";
 
 export type TimePeriod = "today" | "this_week" | "this_month" | "earlier";
 
+const decimalAmountFormatter = new Intl.NumberFormat("en-US", {
+  style: "decimal",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
+
 export interface TimePeriodGroup {
   period: TimePeriod;
   label: string;
@@ -94,14 +100,18 @@ export function groupActivitiesByTimePeriod(
   });
 
   // Convert to array of TimePeriodGroup, filtering out empty periods
-  const result: TimePeriodGroup[] = periods
-    .map((period) => ({
-      period,
-      label: getTimePeriodLabel(period),
-      activities: grouped.get(period) || [],
-      isCollapsed: false, // Default to expanded
-    }))
-    .filter((group) => group.activities.length > 0); // Only include non-empty groups
+  const result: TimePeriodGroup[] = periods.reduce<TimePeriodGroup[]>((acc, period) => {
+    const activities = grouped.get(period) || [];
+    if (activities.length > 0) {
+      acc.push({
+        period,
+        label: getTimePeriodLabel(period),
+        activities,
+        isCollapsed: false, // Default to expanded
+      });
+    }
+    return acc;
+  }, []); // Only include non-empty groups
 
   return result;
 }
@@ -193,11 +203,7 @@ export function generateContextLine(activity: EnhancedActivityItem): string {
   parts.push(dateStr);
 
   // Add amount
-  const amountStr = new Intl.NumberFormat("en-US", {
-    style: "decimal",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(activity.amount);
+  const amountStr = decimalAmountFormatter.format(activity.amount);
   parts.push(`${amountStr} ${activity.currency}`);
 
   // Add payment state

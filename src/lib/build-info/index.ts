@@ -45,17 +45,19 @@ const DEPLOYED_VERSION_PATTERN =
 const LOCAL_VERSION_PATTERN =
   /^(?<baseVersion>\d+\.\d+\.\d+)-local-(?<localStamp>\d{10,})$/;
 
+const vietnamDateTimeFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: BUILD_INFO_TIMEZONE,
+  year: "2-digit",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
+
 function getVietnamFormatterParts(date: Date): Record<string, string> {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: BUILD_INFO_TIMEZONE,
-    year: "2-digit",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  }).formatToParts(date);
+  const parts = vietnamDateTimeFormatter.formatToParts(date);
 
   return parts.reduce<Record<string, string>>((lookup, part) => {
     if (part.type !== "literal") {

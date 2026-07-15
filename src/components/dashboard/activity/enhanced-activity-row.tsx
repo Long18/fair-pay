@@ -125,18 +125,16 @@ function getDashboardNarrative(
   };
 }
 
+const decimalAmountFormatter = new Intl.NumberFormat("en-US", {
+  style: "decimal",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
+
 function getDefaultDisplayAmount(activity: EnhancedActivityItem) {
   return {
-    totalLabel: `${new Intl.NumberFormat("en-US", {
-      style: "decimal",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(activity.totalAmount)} ${activity.currency}`,
-    userLabel: `${new Intl.NumberFormat("en-US", {
-      style: "decimal",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(activity.userAmount)} ${activity.currency}`,
+    totalLabel: `${decimalAmountFormatter.format(activity.totalAmount)} ${activity.currency}`,
+    userLabel: `${decimalAmountFormatter.format(activity.userAmount)} ${activity.currency}`,
     className:
       activity.oweStatus.direction === "owe"
         ? "text-semantic-negative"

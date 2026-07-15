@@ -155,11 +155,19 @@ export const useEnhancedActivity = (
   }, [enabled, friendshipId, groupId, limit, sharedScopeUserId, viewerId]);
 
   const expenseIds = useMemo(
-    () => ledgerRefs.filter((activity) => activity.type === "expense").map((activity) => activity.id),
+    () =>
+      ledgerRefs.reduce<(typeof ledgerRefs)[number]["id"][]>((acc, activity) => {
+        if (activity.type === "expense") acc.push(activity.id);
+        return acc;
+      }, []),
     [ledgerRefs]
   );
   const paymentIds = useMemo(
-    () => ledgerRefs.filter((activity) => activity.type === "payment").map((activity) => activity.id),
+    () =>
+      ledgerRefs.reduce<(typeof ledgerRefs)[number]["id"][]>((acc, activity) => {
+        if (activity.type === "payment") acc.push(activity.id);
+        return acc;
+      }, []),
     [ledgerRefs]
   );
 

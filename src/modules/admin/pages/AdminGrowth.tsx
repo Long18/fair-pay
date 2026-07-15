@@ -74,7 +74,10 @@ function useReferralStats(enabled: boolean) {
 
       // Active referrers: unique referrer_ids that produced at least one signup
       const activeReferrerSet = new Set(
-        events.filter((e) => e.event_type === "signup").map((e) => e.referrer_id),
+        events.reduce<typeof events[number]["referrer_id"][]>((acc, e) => {
+          if (e.event_type === "signup") acc.push(e.referrer_id);
+          return acc;
+        }, []),
       );
       const activeReferrers = activeReferrerSet.size;
 

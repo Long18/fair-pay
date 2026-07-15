@@ -47,13 +47,29 @@ function escapeHtml(text: string): string {
   return escapeEmailHtml(text);
 }
 
-function formatCurrency(value: number, currency = "VND"): string {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(Math.abs(value));
+const currencyFormatterCache = new Map<string, Intl.NumberFormat>();
+function getCurrencyFormatter(currency: string): Intl.NumberFormat {
+  let formatter = currencyFormatterCache.get(currency);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    });
+    currencyFormatterCache.set(currency, formatter);
+  }
+  return formatter;
 }
+
+function formatCurrency(value: number, currency = "VND"): string {
+  return getCurrencyFormatter(currency).format(Math.abs(value));
+}
+
+const dateFormatter = new Intl.DateTimeFormat("vi-VN", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
 
 function formatDate(value?: string | null): string {
   if (!value) return "";
@@ -61,11 +77,7 @@ function formatDate(value?: string | null): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
 
-  return new Intl.DateTimeFormat("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(date);
+  return dateFormatter.format(date);
 }
 
 function normalizeHref(appUrl: string, link: string): string {

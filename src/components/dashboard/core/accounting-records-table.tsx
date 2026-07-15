@@ -8,6 +8,13 @@ import { useTablePagination } from "@/hooks/table/use-table-pagination";
 
 import { MoreVerticalIcon, SearchIcon, XIcon, ArrowUpIcon, ArrowDownIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
+
+const decimalFormatter = new Intl.NumberFormat('en-US', {
+  style: 'decimal',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 interface AccountingRecord {
   id: string;
   operationDate: string;
@@ -75,11 +82,7 @@ export const AccountingRecordsTable = ({ records }: AccountingRecordsTableProps)
   } = useTablePagination(sortedData, 10);
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'decimal',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
+    return decimalFormatter.format(value);
   };
 
   const getSortIcon = (column: keyof AccountingRecord) => {

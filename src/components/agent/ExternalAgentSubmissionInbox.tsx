@@ -56,12 +56,13 @@ type ExternalAgentSubmission = {
   expires_at: string;
 };
 
-const formatVnd = (amount: number) =>
-  new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0,
-  }).format(amount);
+const vndFormatter = new Intl.NumberFormat("vi-VN", {
+  style: "currency",
+  currency: "VND",
+  maximumFractionDigits: 0,
+});
+
+const formatVnd = (amount: number) => vndFormatter.format(amount);
 
 async function listSubmissions(): Promise<ExternalAgentSubmission[]> {
   const { data, error } = await rpc("list_external_agent_submissions");

@@ -11,6 +11,8 @@ import {
 import { useTranslation } from "react-i18next";
 import { StaggerChildren } from "@/components/ui/stagger-children";
 
+const vndNumberFormatter = new Intl.NumberFormat('vi-VN');
+
 interface DashboardTopCardsProps {
   disabled?: boolean;
 }
@@ -27,7 +29,7 @@ export function DashboardTopCards({ disabled = false }: DashboardTopCardsProps) 
     : 0;
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('vi-VN').format(Math.abs(value));
+    return vndNumberFormatter.format(Math.abs(value));
   };
 
   return (

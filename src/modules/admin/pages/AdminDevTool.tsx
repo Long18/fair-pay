@@ -160,12 +160,22 @@ interface SendReminderResponse {
 
 type PreviewViewport = "desktop" | "mobile";
 
+const currencyFormatterCache = new Map<string, Intl.NumberFormat>();
+function getCurrencyFormatter(currency: string): Intl.NumberFormat {
+  let formatter = currencyFormatterCache.get(currency);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    });
+    currencyFormatterCache.set(currency, formatter);
+  }
+  return formatter;
+}
+
 function formatCurrency(value: number, currency = "VND"): string {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(Math.abs(value));
+  return getCurrencyFormatter(currency).format(Math.abs(value));
 }
 
 type AdminT = ReturnType<typeof useAdminTranslation>["tAdmin"];
@@ -327,24 +337,34 @@ async function createReminderNotifications(
 }
 
 function normalizeDebtRows(rows: unknown[], tAdmin: AdminT): DebtReminderRow[] {
-  return rows
-    .map((row) => {
+  return rows.reduce<DebtReminderRow[]>((acc, row) => {
       const value = row as Record<string, unknown>;
       const userId = String(value.user_id || "");
       const primaryEmail = value.email ? String(value.email) : null;
       const rawEmails = Array.isArray(value.emails) ? value.emails : [];
       const emails = rawEmails.length
-        ? rawEmails.map((item) => {
+        ? rawEmails.reduce<{
+            id: string;
+            user_id: string;
+            email: string;
+            is_primary: boolean;
+            receives_notifications: boolean;
+            is_verified: boolean;
+          }[]>((emailAcc, item) => {
             const email = item as Record<string, unknown>;
-            return {
-              id: String(email.id || email.email || ""),
-              user_id: String(email.user_id || userId),
-              email: String(email.email || ""),
-              is_primary: email.is_primary === true,
-              receives_notifications: email.receives_notifications !== false,
-              is_verified: email.is_verified === true,
-            };
-          }).filter((email) => email.email)
+            const emailValue = String(email.email || "");
+            if (emailValue) {
+              emailAcc.push({
+                id: String(email.id || email.email || ""),
+                user_id: String(email.user_id || userId),
+                email: emailValue,
+                is_primary: email.is_primary === true,
+                receives_notifications: email.receives_notifications !== false,
+                is_verified: email.is_verified === true,
+              });
+            }
+            return emailAcc;
+          }, [])
         : primaryEmail
           ? [{
               id: primaryEmail,
@@ -356,90 +376,178 @@ function normalizeDebtRows(rows: unknown[], tAdmin: AdminT): DebtReminderRow[] {
             }]
           : [];
       const debtBreakdown = Array.isArray(value.debt_breakdown)
-        ? value.debt_breakdown.map((item) => {
+        ? value.debt_breakdown.reduce<{
+            counterparty_key: string;
+            counterparty_name: string;
+            counterparty_email: string | null;
+            amount: number;
+            currency: string;
+            direction: "user_owes_counterparty";
+            transactions: {
+              expense_id: string;
+              description: string;
+              amount: number;
+              currency: string;
+              expense_date: string | null;
+            }[];
+          }[]>((debtAcc, item) => {
             const debt = item as Record<string, unknown>;
             const transactions = Array.isArray(debt.transactions)
-              ? debt.transactions.map((transaction) => {
+              ? debt.transactions.reduce<{
+                  expense_id: string;
+                  description: string;
+                  amount: number;
+                  currency: string;
+                  expense_date: string | null;
+                }[]>((txAcc, transaction) => {
                   const tx = transaction as Record<string, unknown>;
-                  return {
-                    expense_id: String(tx.expense_id || ""),
-                    description: String(tx.description || tAdmin("devtool.fallbackExpense")),
-                    amount: Number(tx.amount || 0),
-                    currency: String(tx.currency || debt.currency || "VND"),
-                    expense_date: tx.expense_date ? String(tx.expense_date) : null,
-                  };
-                }).filter((transaction) => transaction.expense_id && transaction.amount > 0)
+                  const expenseId = String(tx.expense_id || "");
+                  const amount = Number(tx.amount || 0);
+                  if (expenseId && amount > 0) {
+                    txAcc.push({
+                      expense_id: expenseId,
+                      description: String(tx.description || tAdmin("devtool.fallbackExpense")),
+                      amount,
+                      currency: String(tx.currency || debt.currency || "VND"),
+                      expense_date: tx.expense_date ? String(tx.expense_date) : null,
+                    });
+                  }
+                  return txAcc;
+                }, [])
               : [];
 
-            return {
-              counterparty_key: String(debt.counterparty_key || ""),
-              counterparty_name: String(debt.counterparty_name || tAdmin("common.unknown")),
-              counterparty_email: debt.counterparty_email ? String(debt.counterparty_email) : null,
-              amount: Number(debt.amount || 0),
-              currency: String(debt.currency || "VND"),
-              direction: "user_owes_counterparty" as const,
-              transactions,
-            };
-          }).filter((item) => item.counterparty_key && item.amount > 0)
+            const counterpartyKey = String(debt.counterparty_key || "");
+            const amount = Number(debt.amount || 0);
+            if (counterpartyKey && amount > 0) {
+              debtAcc.push({
+                counterparty_key: counterpartyKey,
+                counterparty_name: String(debt.counterparty_name || tAdmin("common.unknown")),
+                counterparty_email: debt.counterparty_email ? String(debt.counterparty_email) : null,
+                amount,
+                currency: String(debt.currency || "VND"),
+                direction: "user_owes_counterparty" as const,
+                transactions,
+              });
+            }
+            return debtAcc;
+          }, [])
         : [];
       const groupBreakdown = Array.isArray(value.group_breakdown)
-        ? value.group_breakdown.map((item) => {
+        ? value.group_breakdown.reduce<{
+            group_id: string | null;
+            group_name: string;
+            group_avatar_url: string | null;
+            subtotal_amount: number;
+            currency: string;
+            counterparties: {
+              counterparty_key: string;
+              counterparty_name: string;
+              counterparty_email: string | null;
+              amount: number;
+              currency: string;
+              direction: "user_owes_counterparty";
+              transactions: {
+                expense_id: string;
+                description: string;
+                amount: number;
+                currency: string;
+                expense_date: string | null;
+              }[];
+            }[];
+          }[]>((groupAcc, item) => {
             const group = item as Record<string, unknown>;
             const currency = String(group.currency || "VND");
             const counterparties = Array.isArray(group.counterparties)
-              ? group.counterparties.map((counterparty) => {
+              ? group.counterparties.reduce<{
+                  counterparty_key: string;
+                  counterparty_name: string;
+                  counterparty_email: string | null;
+                  amount: number;
+                  currency: string;
+                  direction: "user_owes_counterparty";
+                  transactions: {
+                    expense_id: string;
+                    description: string;
+                    amount: number;
+                    currency: string;
+                    expense_date: string | null;
+                  }[];
+                }[]>((counterpartyAcc, counterparty) => {
                   const debt = counterparty as Record<string, unknown>;
                   const transactions = Array.isArray(debt.transactions)
-                    ? debt.transactions.map((transaction) => {
+                    ? debt.transactions.reduce<{
+                        expense_id: string;
+                        description: string;
+                        amount: number;
+                        currency: string;
+                        expense_date: string | null;
+                      }[]>((txAcc, transaction) => {
                         const tx = transaction as Record<string, unknown>;
-                        return {
-                          expense_id: String(tx.expense_id || ""),
-                          description: String(tx.description || tAdmin("devtool.fallbackExpense")),
-                          amount: Number(tx.amount || 0),
-                          currency: String(tx.currency || debt.currency || currency),
-                          expense_date: tx.expense_date ? String(tx.expense_date) : null,
-                        };
-                      }).filter((transaction) => transaction.expense_id && transaction.amount > 0)
+                        const expenseId = String(tx.expense_id || "");
+                        const amount = Number(tx.amount || 0);
+                        if (expenseId && amount > 0) {
+                          txAcc.push({
+                            expense_id: expenseId,
+                            description: String(tx.description || tAdmin("devtool.fallbackExpense")),
+                            amount,
+                            currency: String(tx.currency || debt.currency || currency),
+                            expense_date: tx.expense_date ? String(tx.expense_date) : null,
+                          });
+                        }
+                        return txAcc;
+                      }, [])
                     : [];
 
-                  return {
-                    counterparty_key: String(debt.counterparty_key || ""),
-                    counterparty_name: String(debt.counterparty_name || tAdmin("common.unknown")),
-                    counterparty_email: debt.counterparty_email ? String(debt.counterparty_email) : null,
-                    amount: Number(debt.amount || 0),
-                    currency: String(debt.currency || currency),
-                    direction: "user_owes_counterparty" as const,
-                    transactions,
-                  };
-                }).filter((counterparty) => counterparty.counterparty_key && counterparty.amount > 0)
+                  const counterpartyKey = String(debt.counterparty_key || "");
+                  const amount = Number(debt.amount || 0);
+                  if (counterpartyKey && amount > 0) {
+                    counterpartyAcc.push({
+                      counterparty_key: counterpartyKey,
+                      counterparty_name: String(debt.counterparty_name || tAdmin("common.unknown")),
+                      counterparty_email: debt.counterparty_email ? String(debt.counterparty_email) : null,
+                      amount,
+                      currency: String(debt.currency || currency),
+                      direction: "user_owes_counterparty" as const,
+                      transactions,
+                    });
+                  }
+                  return counterpartyAcc;
+                }, [])
               : [];
 
-            return {
-              group_id: group.group_id ? String(group.group_id) : null,
-              group_name: String(group.group_name || tAdmin("devtool.directGroup")),
-              group_avatar_url: group.group_avatar_url ? String(group.group_avatar_url) : null,
-              subtotal_amount: Number(group.subtotal_amount || 0),
-              currency,
-              counterparties,
-            };
-          }).filter((group) => group.subtotal_amount > 0 && group.counterparties.length > 0)
+            const subtotalAmount = Number(group.subtotal_amount || 0);
+            if (subtotalAmount > 0 && counterparties.length > 0) {
+              groupAcc.push({
+                group_id: group.group_id ? String(group.group_id) : null,
+                group_name: String(group.group_name || tAdmin("devtool.directGroup")),
+                group_avatar_url: group.group_avatar_url ? String(group.group_avatar_url) : null,
+                subtotal_amount: subtotalAmount,
+                currency,
+                counterparties,
+              });
+            }
+            return groupAcc;
+          }, [])
         : [];
 
-      return {
-        user_id: userId,
-        full_name: String(value.full_name || tAdmin("common.unknown")),
-        email: emails.find((email) => email.is_primary)?.email ?? primaryEmail ?? emails[0]?.email ?? null,
-        emails,
-        avatar_url: value.avatar_url ? String(value.avatar_url) : null,
-        has_auth_account: value.has_auth_account !== false,
-        total_i_owe: Number(value.total_i_owe || 0),
-        net_balance: Number(value.net_balance || 0),
-        active_debt_relationships: Number(value.active_debt_relationships || 0),
-        debt_breakdown: debtBreakdown,
-        group_breakdown: groupBreakdown,
-      };
-    })
-    .filter((row) => row.user_id && row.total_i_owe > 0);
+      const totalIOwe = Number(value.total_i_owe || 0);
+      if (userId && totalIOwe > 0) {
+        acc.push({
+          user_id: userId,
+          full_name: String(value.full_name || tAdmin("common.unknown")),
+          email: emails.find((email) => email.is_primary)?.email ?? primaryEmail ?? emails[0]?.email ?? null,
+          emails,
+          avatar_url: value.avatar_url ? String(value.avatar_url) : null,
+          has_auth_account: value.has_auth_account !== false,
+          total_i_owe: totalIOwe,
+          net_balance: Number(value.net_balance || 0),
+          active_debt_relationships: Number(value.active_debt_relationships || 0),
+          debt_breakdown: debtBreakdown,
+          group_breakdown: groupBreakdown,
+        });
+      }
+      return acc;
+    }, []);
 }
 
 async function attachUserEmails(rows: DebtReminderRow[]): Promise<AttachUserEmailsResult> {

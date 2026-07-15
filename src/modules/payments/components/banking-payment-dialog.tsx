@@ -18,6 +18,11 @@ import { ExpenseSplit } from '@/modules/expenses/types';
 import { useUserSettings } from '@/hooks/settings/use-user-settings';
 import { useHaptics } from '@/hooks/use-haptics';
 
+const vndCurrencyFormatter = new Intl.NumberFormat('vi-VN', {
+  style: 'currency',
+  currency: 'VND',
+});
+
 interface BankingPaymentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -112,10 +117,7 @@ export function BankingPaymentDialog({
           </DialogTitle>
           <DialogDescription>
             {t('payments.banking.description', 'Pay {{amount}} to {{name}}', {
-              amount: new Intl.NumberFormat('vi-VN', {
-                style: 'currency',
-                currency: 'VND',
-              }).format(amount),
+              amount: vndCurrencyFormatter.format(amount),
               name: split.profiles?.full_name || 'recipient',
             })}
           </DialogDescription>

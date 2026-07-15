@@ -11,6 +11,21 @@ import { RepeatIcon, ArrowRightIcon, CalendarIcon } from "@/components/ui/icons"
 import { format } from "date-fns";
 import { vi, enUS } from "date-fns/locale";
 
+const vndCurrencyFormatter = new Intl.NumberFormat("vi-VN", {
+  style: "currency",
+  currency: "VND",
+});
+
+const currencyFormatterCache = new Map<string, Intl.NumberFormat>();
+function getCurrencyFormatter(currency: string) {
+  let formatter = currencyFormatterCache.get(currency);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat("vi-VN", { style: "currency", currency });
+    currencyFormatterCache.set(currency, formatter);
+  }
+  return formatter;
+}
+
 export function RecurringExpensesSummary() {
   const { t, i18n } = useTranslation();
   const go = useGo();
@@ -108,10 +123,7 @@ export function RecurringExpensesSummary() {
             {t("recurring.summary.monthlyTotal", "Monthly Total")}
           </span>
           <span className="text-lg font-semibold">
-            {new Intl.NumberFormat("vi-VN", {
-              style: "currency",
-              currency: "VND",
-            }).format(monthlyTotal)}
+            {vndCurrencyFormatter.format(monthlyTotal)}
           </span>
         </div>
 
@@ -144,10 +156,7 @@ export function RecurringExpensesSummary() {
                       </p>
                     </div>
                     <span className="text-sm font-medium ml-2 whitespace-nowrap">
-                      {new Intl.NumberFormat("vi-VN", {
-                        style: "currency",
-                        currency: template?.currency || "VND",
-                      }).format(template?.amount || 0)}
+                      {getCurrencyFormatter(template?.currency || "VND").format(template?.amount || 0)}
                     </span>
                   </div>
                 );

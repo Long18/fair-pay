@@ -6,6 +6,12 @@ export function formatOgAmount(amount: number, currency: string): string {
   return `${rounded < 0 ? '-' : ''}${withDots} ${normalizedCurrency}`
 }
 
+const ogDateFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+})
+
 export function formatOgDate(dateStr: string): string {
   try {
     const date = new Date(dateStr)
@@ -13,11 +19,7 @@ export function formatOgDate(dateStr: string): string {
       return dateStr
     }
 
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(date)
+    return ogDateFormatter.format(date)
   } catch {
     return dateStr
   }

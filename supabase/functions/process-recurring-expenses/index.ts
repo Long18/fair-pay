@@ -33,16 +33,27 @@ interface ProcessingResults {
 
 const VIETNAM_TIMEZONE = 'Asia/Ho_Chi_Minh'
 
+// Bounded key space (one timeZone per call site in practice), safe to cache.
+const dateTimeZoneFormatterCache = new Map<string, Intl.DateTimeFormat>()
+function getDateTimeZoneFormatter(timeZone: string): Intl.DateTimeFormat {
+  let formatter = dateTimeZoneFormatterCache.get(timeZone)
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    })
+    dateTimeZoneFormatterCache.set(timeZone, formatter)
+  }
+  return formatter
+}
+
 function getDateStringInTimeZone(
   date: Date = new Date(),
   timeZone: string = VIETNAM_TIMEZONE
 ): string {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(date)
+  const parts = getDateTimeZoneFormatter(timeZone).formatToParts(date)
 
   const year = parts.find((part) => part.type === 'year')?.value
   const month = parts.find((part) => part.type === 'month')?.value

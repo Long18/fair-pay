@@ -44,18 +44,22 @@ function parseBody<T>(req: VercelRequest): T {
 function normalizeInviteEmails(value: string | string[] | undefined): string[] {
   if (!value) return []
   const rawItems = Array.isArray(value) ? value : value.split(/[\s,;]+/)
-  const emails = rawItems
-    .map((e) => e.trim().toLowerCase())
-    .filter((e) => EMAIL_RE.test(e))
+  const emails = rawItems.reduce<string[]>((acc, e) => {
+    const normalized = e.trim().toLowerCase()
+    if (EMAIL_RE.test(normalized)) acc.push(normalized)
+    return acc
+  }, [])
   return Array.from(new Set(emails))
 }
 
 function normalizeRecipientEmails(value: unknown): string[] | null {
   if (!Array.isArray(value)) return null
   const emails = Array.from(new Set(
-    value
-      .map((item) => typeof item === 'string' ? item.trim().toLowerCase() : '')
-      .filter((item) => item && EMAIL_RE.test(item))
+    value.reduce<string[]>((acc, item) => {
+      const normalized = typeof item === 'string' ? item.trim().toLowerCase() : ''
+      if (normalized && EMAIL_RE.test(normalized)) acc.push(normalized)
+      return acc
+    }, [])
   ))
   return emails.length ? emails : null
 }

@@ -55,9 +55,11 @@ function toNumber(value: unknown): number {
 }
 
 function pickLatestActivity(rows: DebtDetailRow[]): string | null {
-  const candidates = rows
-    .flatMap((row) => [row.created_at, row.expense_date])
-    .filter((value): value is string => Boolean(value))
+  const candidates = rows.reduce<string[]>((acc, row) => {
+    if (row.created_at) acc.push(row.created_at)
+    if (row.expense_date) acc.push(row.expense_date)
+    return acc
+  }, [])
 
   return candidates.sort().pop() ?? null
 }

@@ -20,6 +20,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useReducedMotion } from "@/hooks/ui/use-reduced-motion";
 import { SPRING_DEFAULT, STAGGER_DELAY, ENTRANCE_Y } from "@/lib/animation";
 
+const currencyFormatterCache = new Map<string, Intl.NumberFormat>();
+function getCurrencyFormatter(currency: string) {
+  let formatter = currencyFormatterCache.get(currency);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat("vi-VN", { style: "currency", currency });
+    currencyFormatterCache.set(currency, formatter);
+  }
+  return formatter;
+}
+
 interface NotificationCenterProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -127,10 +137,7 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
                               </p>
                             </div>
                             <span className="text-sm font-medium text-destructive whitespace-nowrap">
-                              {new Intl.NumberFormat("vi-VN", {
-                                style: "currency",
-                                currency: template?.currency || "VND",
-                              }).format(template?.amount || 0)}
+                              {getCurrencyFormatter(template?.currency || "VND").format(template?.amount || 0)}
                             </span>
                           </div>
                         </motion.div>
@@ -180,10 +187,7 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
                               </p>
                             </div>
                             <span className="text-sm font-medium whitespace-nowrap">
-                              {new Intl.NumberFormat("vi-VN", {
-                                style: "currency",
-                                currency: template?.currency || "VND",
-                              }).format(template?.amount || 0)}
+                              {getCurrencyFormatter(template?.currency || "VND").format(template?.amount || 0)}
                             </span>
                           </div>
                         </motion.div>

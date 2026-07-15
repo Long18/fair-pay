@@ -2,17 +2,19 @@ import { Card, CardContent } from "@/components/ui/card";
 import { PublicStats } from "@/hooks/analytics/use-sample-leaderboard";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 
+const viVnNumberFormatter = new Intl.NumberFormat("vi-VN");
+
 interface PublicStatsProps {
   stats: PublicStats;
 }
 
 export const PublicStatsComponent = ({ stats }: PublicStatsProps) => {
   const formatNumber = (num: number) => {
-    return new Intl.NumberFormat("vi-VN").format(num);
+    return viVnNumberFormatter.format(num);
   };
 
   const formatAmount = (num: number) => {
-    return `₫${new Intl.NumberFormat("vi-VN").format(num)}`;
+    return `₫${viVnNumberFormatter.format(num)}`;
   };
 
   const statCards = [

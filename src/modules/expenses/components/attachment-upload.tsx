@@ -134,10 +134,13 @@ export const AttachmentUpload = ({
   };
 
   const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
-    const clipboardFiles = Array.from(e.clipboardData.items)
-      .filter((item) => item.kind === "file")
-      .map((item) => item.getAsFile())
-      .filter((file): file is File => file !== null);
+    const clipboardFiles = Array.from(e.clipboardData.items).reduce<File[]>((acc, item) => {
+      if (item.kind === "file") {
+        const file = item.getAsFile();
+        if (file !== null) acc.push(file);
+      }
+      return acc;
+    }, []);
 
     if (clipboardFiles.length === 0) return;
 

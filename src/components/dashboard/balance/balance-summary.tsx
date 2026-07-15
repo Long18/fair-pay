@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { SPRING_GENTLE, ENTRANCE_Y, STAGGER_DELAY } from "@/lib/animation";
 
+const vndNumberFormatter = new Intl.NumberFormat('vi-VN');
+
 interface BalanceSummaryProps {
   totalOwed: number;
   totalOwedToMe: number;
@@ -18,7 +20,7 @@ export const BalanceSummary = ({
   const reducedMotion = useReducedMotion();
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('vi-VN').format(Math.abs(value));
+    return vndNumberFormatter.format(Math.abs(value));
   };
 
   const cards = [
