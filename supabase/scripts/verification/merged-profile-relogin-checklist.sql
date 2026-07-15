@@ -1,0 +1,61 @@
+-- Manual / local regression checks for merged-profile re-login fix
+-- (20260715000000_fix_merged_profile_relogin.sql).
+--
+-- Run against a disposable local Supabase DB as a role that can call
+-- admin_merge_profiles (or via service_role + set admin claims).
+-- Do NOT run against production.
+--
+-- Expected outcomes after a fresh merge A → B:
+--   1. profiles: only B remains; A gone
+--   2. user_emails for both emails → user_id = B
+--   3. auth.users A has banned_until = infinity
+--   4. exactly one profile_merge_transactions row for the pair
+--   5. second admin_merge_profiles(A,B) returns { success: true, noop: true }
+--   6. no second merge transaction row
+--
+-- Sign-in / sign-up (app-level):
+--   - Email B → session for B, profile B
+--   - Email A (banned auth) → sign-in rejected
+--   - Sign-up with Email A while email is on B’s user_emails and B has
+--     active auth → aborted with "already linked" (if email freed in auth)
+
+-- Example sketch (replace UUIDs):
+--
+-- SELECT public.admin_merge_profiles(
+--   'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,  -- source A
+--   'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid   -- target B
+-- );
+--
+-- SELECT id, banned_until FROM auth.users
+-- WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+--
+-- SELECT user_id, email, source FROM public.user_emails
+-- WHERE user_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+-- ORDER BY email;
+--
+-- SELECT * FROM public.profile_merge_transactions
+-- WHERE pair_low = LEAST(
+--         'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
+--         'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid
+--       )
+--   AND pair_high = GREATEST(
+--         'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
+--         'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid
+--       );
+--
+-- SELECT public.admin_merge_profiles(
+--   'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
+--   'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid
+-- );
+-- -- Expect: {"success": true, "noop": true, ...}
+--
+-- SELECT count(*) FROM public.profile_merge_transactions
+-- WHERE pair_low = LEAST(
+--         'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
+--         'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid
+--       )
+--   AND pair_high = GREATEST(
+--         'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
+--         'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid
+--       );
+-- -- Expect: 1
