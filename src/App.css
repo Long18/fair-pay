@@ -619,7 +619,7 @@ html:lang(vi) {
   /* Custom Scrollbar Styling - Modern & Theme-Aware with Transparent Background */
   * {
     scrollbar-width: thin;
-    scrollbar-color: oklch(var(--border)) transparent;
+    scrollbar-color: var(--border) transparent;
   }
 
   *::-webkit-scrollbar {
@@ -632,7 +632,7 @@ html:lang(vi) {
   }
 
   *::-webkit-scrollbar-thumb {
-    background: oklch(var(--border));
+    background: var(--border);
     border-radius: 5px;
   }
 
@@ -1176,7 +1176,7 @@ html:lang(vi) {
 }
 .card-hover-glow:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 20px rgba(var(--primary-rgb, 34, 197, 94), 0.2),
+  box-shadow: 0 0 20px color-mix(in oklch, var(--primary) 20%, transparent),
               0 8px 16px -4px rgba(0, 0, 0, 0.1);
 }
 
@@ -1201,7 +1201,7 @@ html:lang(vi) {
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 .avatar-hover-glow:hover {
-  box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 34, 197, 94), 0.3);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 30%, transparent);
   transform: scale(1.05);
 }
 

@@ -144,15 +144,15 @@ interface ImageIconProps extends React.ImgHTMLAttributes<HTMLImageElement> {
 // ============ Navigation/Menu Icons ============
 
 export const HomeIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Home size={size} fill="currentColor" {...props} />
+  <Home size={size} {...props} />
 );
 
 export const SettingsIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Settings size={size} fill="currentColor" {...props} />
+  <Settings size={size} {...props} />
 );
 
 export const ListIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <List size={size} fill="currentColor" {...props} />
+  <List size={size} {...props} />
 );
 
 // ============ Custom Brand Icons (Keep as-is) ============
@@ -448,125 +448,125 @@ export const PaymentPlansIcon: React.FC<IconProps> = ({ className, size = 24, ..
 // ============ Common UI Icons ============
 
 export const SearchIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Search size={size} fill="currentColor" {...props} />
+  <Search size={size} {...props} />
 );
 
 export const UserIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <User size={size} fill="currentColor" {...props} />
+  <User size={size} {...props} />
 );
 
 export const LogOutIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <LogOut size={size} fill="currentColor" {...props} />
+  <LogOut size={size} {...props} />
 );
 
 export const BellIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Bell size={size} fill="currentColor" {...props} />
+  <Bell size={size} {...props} />
 );
 
 export const PlusIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Plus size={size} fill="currentColor" {...props} />
+  <Plus size={size} {...props} />
 );
 
 export const XIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <X size={size} fill="currentColor" {...props} />
+  <X size={size} {...props} />
 );
 
 export const CheckIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Check size={size} fill="currentColor" {...props} />
+  <Check size={size} {...props} />
 );
 
 // ============ Chevron Icons ============
 
 export const ChevronLeftIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <ChevronLeft size={size} fill="currentColor" {...props} />
+  <ChevronLeft size={size} {...props} />
 );
 
 export const ChevronRightIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <ChevronRight size={size} fill="currentColor" {...props} />
+  <ChevronRight size={size} {...props} />
 );
 
 export const ChevronUpIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <ChevronUp size={size} fill="currentColor" {...props} />
+  <ChevronUp size={size} {...props} />
 );
 
 export const ChevronDownIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <ChevronDown size={size} fill="currentColor" {...props} />
+  <ChevronDown size={size} {...props} />
 );
 
 export const ChevronsUpDownIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <ChevronsUpDown size={size} fill="currentColor" {...props} />
+  <ChevronsUpDown size={size} {...props} />
 );
 
 export const ChevronsLeftIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <ChevronsLeft size={size} fill="currentColor" {...props} />
+  <ChevronsLeft size={size} {...props} />
 );
 
 export const ChevronsRightIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <ChevronsRight size={size} fill="currentColor" {...props} />
+  <ChevronsRight size={size} {...props} />
 );
 
 // ============ Shape Icons ============
 
 export const CircleIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Circle size={size} fill="currentColor" {...props} />
+  <Circle size={size} {...props} />
 );
 
 export const MinusIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Minus size={size} fill="currentColor" {...props} />
+  <Minus size={size} {...props} />
 );
 
 // ============ More/Menu Icons ============
 
 export const MoreVerticalIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <MoreVertical size={size} fill="currentColor" {...props} />
+  <MoreVertical size={size} {...props} />
 );
 
 export const MoreHorizontalIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <MoreHorizontal size={size} fill="currentColor" {...props} />
+  <MoreHorizontal size={size} {...props} />
 );
 
 // ============ Loading/Spinner Icons ============
 
 export const Loader2Icon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Loader2 size={size} fill="currentColor" {...props} />
+  <Loader2 size={size} {...props} />
 );
 
 // ============ Action Icons ============
 
 export const EyeIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Eye size={size} fill="currentColor" {...props} />
+  <Eye size={size} {...props} />
 );
 
 export const EyeOffIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <EyeOff size={size} fill="currentColor" {...props} />
+  <EyeOff size={size} {...props} />
 );
 
 export const PencilIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Pencil size={size} fill="currentColor" {...props} />
+  <Pencil size={size} {...props} />
 );
 
 export const TrashIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Trash size={size} fill="currentColor" {...props} />
+  <Trash size={size} {...props} />
 );
 
 export const Trash2Icon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Trash2 size={size} fill="currentColor" {...props} />
+  <Trash2 size={size} {...props} />
 );
 
 export const RefreshCcwIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <RefreshCcw size={size} fill="currentColor" {...props} />
+  <RefreshCcw size={size} {...props} />
 );
 
 export const RefreshCwIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <RefreshCw size={size} fill="currentColor" {...props} />
+  <RefreshCw size={size} {...props} />
 );
 
 export const CopyIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Copy size={size} fill="currentColor" {...props} />
+  <Copy size={size} {...props} />
 );
 
 export const ShareIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Share2 size={size} fill="currentColor" {...props} />
+  <Share2 size={size} {...props} />
 );
 
 export const ZoomInIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
@@ -584,149 +584,149 @@ export const RotateCcwIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
 // ============ Arrow Icons ============
 
 export const ArrowLeftIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <ArrowLeft size={size} fill="currentColor" {...props} />
+  <ArrowLeft size={size} {...props} />
 );
 
 export const ArrowRightIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <ArrowRight size={size} fill="currentColor" {...props} />
+  <ArrowRight size={size} {...props} />
 );
 
 export const ArrowUpIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <ArrowUp size={size} fill="currentColor" {...props} />
+  <ArrowUp size={size} {...props} />
 );
 
 export const ArrowDownIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <ArrowDown size={size} fill="currentColor" {...props} />
+  <ArrowDown size={size} {...props} />
 );
 
 export const ArrowUpRightIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <ArrowUpRight size={size} fill="currentColor" {...props} />
+  <ArrowUpRight size={size} {...props} />
 );
 
 export const ArrowUpDownIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <ArrowUpDown size={size} fill="currentColor" {...props} />
+  <ArrowUpDown size={size} {...props} />
 );
 
 export const TrendingUpIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <TrendingUp size={size} fill="currentColor" {...props} />
+  <TrendingUp size={size} {...props} />
 );
 
 export const TrendingDownIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <TrendingDown size={size} fill="currentColor" {...props} />
+  <TrendingDown size={size} {...props} />
 );
 
 // ============ Financial Icons ============
 
 export const WalletIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Wallet size={size} fill="currentColor" {...props} />
+  <Wallet size={size} {...props} />
 );
 
 export const CreditCardIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <CreditCard size={size} fill="currentColor" {...props} />
+  <CreditCard size={size} {...props} />
 );
 
 export const ReceiptIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Receipt size={size} fill="currentColor" {...props} />
+  <Receipt size={size} {...props} />
 );
 
 export const BanknoteIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Banknote size={size} fill="currentColor" {...props} />
+  <Banknote size={size} {...props} />
 );
 
 export const HandCoinsIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <HandCoins size={size} fill="currentColor" {...props} />
+  <HandCoins size={size} {...props} />
 );
 
 // ============ User/Social Icons ============
 
 export const UsersIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Users size={size} fill="currentColor" {...props} />
+  <Users size={size} {...props} />
 );
 
 export const Users2Icon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Users2 size={size} fill="currentColor" {...props} />
+  <Users2 size={size} {...props} />
 );
 
 export const GroupIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Users2 size={size} fill="currentColor" {...props} />
+  <Users2 size={size} {...props} />
 );
 
 export const UserPlusIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <UserPlus size={size} fill="currentColor" {...props} />
+  <UserPlus size={size} {...props} />
 );
 
 export const UserMinusIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <UserMinus size={size} fill="currentColor" {...props} />
+  <UserMinus size={size} {...props} />
 );
 
 export const HeartIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Heart size={size} fill="currentColor" {...props} />
+  <Heart size={size} {...props} />
 );
 
 // ============ Date/Time Icons ============
 
 export const CalendarIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Calendar size={size} fill="currentColor" {...props} />
+  <Calendar size={size} {...props} />
 );
 
 export const ClockIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Clock size={size} fill="currentColor" {...props} />
+  <Clock size={size} {...props} />
 );
 
 export const RepeatIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Repeat size={size} fill="currentColor" {...props} />
+  <Repeat size={size} {...props} />
 );
 
 // ============ File Icons ============
 
 export const UploadIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Upload size={size} fill="currentColor" {...props} />
+  <Upload size={size} {...props} />
 );
 
 export const DownloadIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Download size={size} fill="currentColor" {...props} />
+  <Download size={size} {...props} />
 );
 
 export const ImageIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Image size={size} fill="currentColor" {...props} />
+  <Image size={size} {...props} />
 );
 
 export const FileIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <File size={size} fill="currentColor" {...props} />
+  <File size={size} {...props} />
 );
 
 export const FileImageIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <FileImage size={size} fill="currentColor" {...props} />
+  <FileImage size={size} {...props} />
 );
 
 export const FilePlusIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <FilePlus size={size} fill="currentColor" {...props} />
+  <FilePlus size={size} {...props} />
 );
 
 // ============ Alert/Status Icons ============
 
 export const InfoIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Info size={size} fill="currentColor" {...props} />
+  <Info size={size} {...props} />
 );
 
 export const AlertCircleIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <AlertCircle size={size} fill="currentColor" {...props} />
+  <AlertCircle size={size} {...props} />
 );
 
 export const AlertTriangleIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <AlertTriangle size={size} fill="currentColor" {...props} />
+  <AlertTriangle size={size} {...props} />
 );
 
 export const CheckCircle2Icon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <CheckCircle2 size={size} fill="currentColor" {...props} />
+  <CheckCircle2 size={size} {...props} />
 );
 
 export const XCircleIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <XCircle size={size} fill="currentColor" {...props} />
+  <XCircle size={size} {...props} />
 );
 
 export const PlusCircleIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <PlusCircle size={size} fill="currentColor" {...props} />
+  <PlusCircle size={size} {...props} />
 );
 
 export const FlameIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
@@ -744,165 +744,165 @@ export const StarIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
 // ============ Math/Currency Icons ============
 
 export const PercentIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Percent size={size} fill="currentColor" {...props} />
+  <Percent size={size} {...props} />
 );
 
 export const DollarSignIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <DollarSign size={size} fill="currentColor" {...props} />
+  <DollarSign size={size} {...props} />
 );
 
 // ============ Theme Icons ============
 
 export const SunIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Sun size={size} fill="currentColor" {...props} />
+  <Sun size={size} {...props} />
 );
 
 export const MoonIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Moon size={size} fill="currentColor" {...props} />
+  <Moon size={size} {...props} />
 );
 
 export const MonitorIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Monitor size={size} fill="currentColor" {...props} />
+  <Monitor size={size} {...props} />
 );
 
 export const GlobeIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Globe size={size} fill="currentColor" {...props} />
+  <Globe size={size} {...props} />
 );
 
 // ============ Activity/Filter Icons ============
 
 export const ActivityIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Activity size={size} fill="currentColor" {...props} />
+  <Activity size={size} {...props} />
 );
 
 export const FilterIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Filter size={size} fill="currentColor" {...props} />
+  <Filter size={size} {...props} />
 );
 
 export const ListFilterIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <ListFilter size={size} fill="currentColor" {...props} />
+  <ListFilter size={size} {...props} />
 );
 
 // ============ UI Control Icons ============
 
 export const GripVerticalIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <GripVertical size={size} fill="currentColor" {...props} />
+  <GripVertical size={size} {...props} />
 );
 
 export const PanelLeftIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <PanelLeft size={size} fill="currentColor" {...props} />
+  <PanelLeft size={size} {...props} />
 );
 
 export const PauseIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Pause size={size} fill="currentColor" {...props} />
+  <Pause size={size} {...props} />
 );
 
 export const PlayIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Play size={size} fill="currentColor" {...props} />
+  <Play size={size} {...props} />
 );
 
 // ============ Category Icons (for expenses) ============
 
 export const ZapIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Zap size={size} fill="currentColor" {...props} />
+  <Zap size={size} {...props} />
 );
 
 export const HelpCircleIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <HelpCircle size={size} fill="currentColor" {...props} />
+  <HelpCircle size={size} {...props} />
 );
 
 export const ShoppingCartIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <ShoppingCart size={size} fill="currentColor" {...props} />
+  <ShoppingCart size={size} {...props} />
 );
 
 export const UtensilsIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Utensils size={size} fill="currentColor" {...props} />
+  <Utensils size={size} {...props} />
 );
 
 export const CarIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Car size={size} fill="currentColor" {...props} />
+  <Car size={size} {...props} />
 );
 
 export const BriefcaseIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Briefcase size={size} fill="currentColor" {...props} />
+  <Briefcase size={size} {...props} />
 );
 
 export const CoffeeIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Coffee size={size} fill="currentColor" {...props} />
+  <Coffee size={size} {...props} />
 );
 
 export const FilmIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Film size={size} fill="currentColor" {...props} />
+  <Film size={size} {...props} />
 );
 
 export const MessageSquareIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <MessageSquare size={size} fill="currentColor" {...props} />
+  <MessageSquare size={size} {...props} />
 );
 
 export const BoldIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Bold size={size} fill="currentColor" {...props} />
+  <Bold size={size} {...props} />
 );
 
 export const ItalicIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Italic size={size} fill="currentColor" {...props} />
+  <Italic size={size} {...props} />
 );
 
 export const LinkIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Link size={size} fill="currentColor" {...props} />
+  <Link size={size} {...props} />
 );
 
 export const CodeIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Code size={size} fill="currentColor" {...props} />
+  <Code size={size} {...props} />
 );
 
 export const MailIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Mail size={size} fill="currentColor" {...props} />
+  <Mail size={size} {...props} />
 );
 
 export const LockIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Lock size={size} fill="currentColor" {...props} />
+  <Lock size={size} {...props} />
 );
 
 // ============ Additional Icons ============
 
 export const CheckSquareIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <CheckSquare size={size} fill="currentColor" {...props} />
+  <CheckSquare size={size} {...props} />
 );
 
 export const TrophyIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Trophy size={size} fill="currentColor" {...props} />
+  <Trophy size={size} {...props} />
 );
 
 export const PieChartIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <PieChart size={size} fill="currentColor" {...props} />
+  <PieChart size={size} {...props} />
 );
 
 export const ScaleIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Scale size={size} fill="currentColor" {...props} />
+  <Scale size={size} {...props} />
 );
 
 export const SparklesIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Sparkles size={size} fill="currentColor" {...props} />
+  <Sparkles size={size} {...props} />
 );
 
 export const InboxIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Inbox size={size} fill="currentColor" {...props} />
+  <Inbox size={size} {...props} />
 );
 
 export const FileTextIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <FileText size={size} fill="currentColor" {...props} />
+  <FileText size={size} {...props} />
 );
 
 export const HistoryIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <History size={size} fill="currentColor" {...props} />
+  <History size={size} {...props} />
 );
 
 export const CameraIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Camera size={size} fill="currentColor" {...props} />
+  <Camera size={size} {...props} />
 );
 
 export const PaletteIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Palette size={size} fill="currentColor" {...props} />
+  <Palette size={size} {...props} />
 );
 
 export const QrCodeIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
@@ -986,13 +986,13 @@ export const BookOpenIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
 );
 
 export const ShieldIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <Shield size={size} fill="currentColor" {...props} />
+  <Shield size={size} {...props} />
 );
 
 export const ShieldOffIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <ShieldOff size={size} fill="currentColor" {...props} />
+  <ShieldOff size={size} {...props} />
 );
 
 export const ShieldCheckIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
-  <ShieldCheck size={size} fill="currentColor" {...props} />
+  <ShieldCheck size={size} {...props} />
 );
