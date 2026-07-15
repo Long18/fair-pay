@@ -17,6 +17,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AdminCrudSheet } from "../components/AdminCrudSheet";
+import { AdminPageHeader } from "../components/AdminPageHeader";
+import {
+  AdminMobileCard,
+  AdminMobileCards,
+} from "../components/AdminMobileCards";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,9 +49,6 @@ import {
 } from "@/components/ui/empty";
 import {
   SmilePlusIcon,
-  SmileIcon,
-  CheckCircle2Icon,
-  XIcon,
   PencilIcon,
   Trash2Icon,
   PlusIcon,
@@ -248,12 +250,12 @@ function ReactionFormDialog({
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="code">Code (unique)</Label>
+            <Label htmlFor="code">{tAdmin("reactions.codeUnique")}</Label>
             <Input
               id="code"
               value={form.code}
               onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
-              placeholder="thumbs_up"
+              placeholder={tAdmin("reactions.codePlaceholder")}
             />
           </div>
           <div className="space-y-2">
@@ -262,7 +264,7 @@ function ReactionFormDialog({
               id="label"
               value={form.label}
               onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
-              placeholder="Thumbs Up"
+              placeholder={tAdmin("reactions.labelPlaceholder")}
             />
           </div>
         </div>
@@ -277,45 +279,51 @@ function ReactionFormDialog({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="emoji">Emoji</SelectItem>
-              <SelectItem value="image">Image</SelectItem>
-              <SelectItem value="gif">GIF</SelectItem>
+              <SelectItem value="emoji">{tAdmin("reactions.mediaEmoji")}</SelectItem>
+              <SelectItem value="image">{tAdmin("reactions.mediaImage")}</SelectItem>
+              <SelectItem value="gif">{tAdmin("reactions.mediaGif")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {form.media_type === "emoji" ? (
           <div className="space-y-2">
-            <Label htmlFor="emoji">Emoji</Label>
+            <Label htmlFor="emoji">{tAdmin("reactions.emoji")}</Label>
             <Input
               id="emoji"
               value={form.emoji}
               onChange={(e) => setForm((f) => ({ ...f, emoji: e.target.value }))}
-              placeholder="👍"
+              placeholder={tAdmin("reactions.emojiPlaceholder")}
             />
           </div>
         ) : (
           <div className="space-y-2">
-            <Label htmlFor="image_url">URL ({form.media_type === "gif" ? "GIF" : "Image"})</Label>
+            <Label htmlFor="image_url">
+              {tAdmin("reactions.imageUrl", {
+                type: form.media_type === "gif"
+                  ? tAdmin("reactions.mediaGif")
+                  : tAdmin("reactions.mediaImage"),
+              })}
+            </Label>
             <Input
               id="image_url"
               value={form.image_url}
               onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value }))}
-              placeholder="https://..."
+              placeholder={tAdmin("reactions.imageUrlPlaceholder")}
             />
             {form.image_url && (
-              <img src={form.image_url} alt="Preview" className="h-10 w-10 object-contain rounded border" />
+              <img src={form.image_url} alt={tAdmin("reactions.previewAlt")} className="h-10 w-10 object-contain rounded border" />
             )}
           </div>
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="emoji_mart_id">Emoji Mart ID</Label>
+          <Label htmlFor="emoji_mart_id">{tAdmin("reactions.emojiMartId")}</Label>
           <Input
             id="emoji_mart_id"
             value={form.emoji_mart_id}
             onChange={(e) => setForm((f) => ({ ...f, emoji_mart_id: e.target.value }))}
-            placeholder="+1, joy, fire..."
+            placeholder={tAdmin("reactions.emojiMartPlaceholder")}
           />
           <p className="text-[11px] text-muted-foreground">{tAdmin("reactions.emojiMartHelp")}</p>
         </div>
@@ -384,24 +392,51 @@ export function AdminReactions() {
     toggleMutation.mutate({ id, is_active });
   }, [toggleMutation, tap]);
 
-  const activeCount = useMemo(() => (items ?? []).filter((i) => i.is_active).length, [items]);
-
   const { containerVariants, rowVariants, animationKey } = useStaggerAnimation(items ?? []);
+
+  const mediaTypeBadge = (item: ReactionType) => (
+    <Badge
+      className={
+        item.media_type === "emoji"
+          ? "bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] border-[var(--status-info-border)]"
+          : item.media_type === "gif"
+            ? "bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] border-[var(--status-success-border)]"
+            : "bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)] border-[var(--status-warning-border)]"
+      }
+    >
+      {item.media_type}
+    </Badge>
+  );
+
+  const rowActions = (item: ReactionType) => (
+    <div className="flex items-center justify-end gap-1">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        onClick={() => handleEdit(item)}
+        aria-label={`${tAdmin("common.edit")} ${item.label}`}
+      >
+        <PencilIcon className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 text-destructive"
+        onClick={() => { tap(); setDeleteTarget(item); }}
+        aria-label={`${tAdmin("common.delete")} ${item.label}`}
+      >
+        <Trash2Icon className="h-4 w-4" />
+      </Button>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{tAdmin("reactions.title")}</h1>
-        <p className="text-sm text-muted-foreground mt-1">{tAdmin("reactions.subtitle")}</p>
-      </div>
-
-      {/* Main Table */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <div>
-            <CardTitle>{tAdmin("reactions.cardTitle")}</CardTitle>
-            <CardDescription>{tAdmin("reactions.cardDescription")}</CardDescription>
-          </div>
+      <AdminPageHeader
+        title={tAdmin("reactions.title")}
+        description={tAdmin("reactions.subtitle")}
+        actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => { tap(); refetch(); }} disabled={isFetching}>
               <RefreshCwIcon className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
@@ -412,6 +447,14 @@ export function AdminReactions() {
               {tAdmin("reactions.create")}
             </Button>
           </div>
+        }
+      />
+
+      {/* Main Table */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle>{tAdmin("reactions.cardTitle")}</CardTitle>
+          <CardDescription>{tAdmin("reactions.cardDescription")}</CardDescription>
         </CardHeader>
 
         <CardContent>
@@ -434,75 +477,89 @@ export function AdminReactions() {
           )}
 
           {!isLoading && items && items.length > 0 && (
-            <div className="rounded-md border">
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-                key={animationKey}
-              >
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="w-[60px]">{tAdmin("reactions.order")}</TableHead>
-                      <TableHead className="w-[60px]">Preview</TableHead>
-                      <TableHead className="w-[120px]">Code</TableHead>
-                      <TableHead>{tAdmin("reactions.label")}</TableHead>
-                      <TableHead className="w-[90px]">{tAdmin("common.type")}</TableHead>
-                      <TableHead className="w-[90px]">{tAdmin("common.status")}</TableHead>
-                      <TableHead className="w-[100px] text-right">{tAdmin("common.actions")}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {items.map((item, index) => (
-                      <motion.tr
-                        key={item.id}
-                        variants={rowVariants}
-                        custom={index}
-                        className="group hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors"
-                      >
-                        <TableCell className="text-sm text-muted-foreground tabular-nums">{item.sort_order}</TableCell>
-                        <TableCell><ReactionPreview item={item} /></TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="font-mono text-xs">{item.code}</Badge>
-                        </TableCell>
-                        <TableCell className="text-sm">{item.label}</TableCell>
-                        <TableCell>
-                          <Badge
-                            className={
-                              item.media_type === "emoji"
-                                ? "bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] border-[var(--status-info-border)]"
-                                : item.media_type === "gif"
-                                  ? "bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] border-[var(--status-success-border)]"
-                                  : "bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)] border-[var(--status-warning-border)]"
-                            }
-                          >
-                            {item.media_type}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Switch
-                            checked={item.is_active}
-                            onCheckedChange={(v) => handleToggle(item.id, v)}
-                            aria-label={`${tAdmin("reactions.active")} ${item.label}`}
-                          />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(item)} aria-label={`${tAdmin("common.edit")} ${item.label}`}>
-                              <PencilIcon className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { tap(); setDeleteTarget(item); }} aria-label={`${tAdmin("common.delete")} ${item.label}`}>
-                              <Trash2Icon className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </motion.tr>
-                    ))}
-                  </TableBody>
-                </Table>
-              </motion.div>
-            </div>
+            <>
+              {/* Mobile cards */}
+              <div className="md:hidden">
+                <AdminMobileCards
+                  items={items}
+                  getKey={(item) => item.id}
+                  renderItem={(item) => (
+                    <AdminMobileCard
+                      title={item.label}
+                      description={item.code}
+                      leading={<ReactionPreview item={item} />}
+                      badges={mediaTypeBadge(item)}
+                      meta={[
+                        { label: tAdmin("reactions.order"), value: item.sort_order },
+                        {
+                          label: tAdmin("common.status"),
+                          value: (
+                            <Switch
+                              checked={item.is_active}
+                              onCheckedChange={(v) => handleToggle(item.id, v)}
+                              aria-label={`${tAdmin("reactions.active")} ${item.label}`}
+                            />
+                          ),
+                        },
+                      ]}
+                      actions={rowActions(item)}
+                    />
+                  )}
+                />
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden md:block rounded-md border">
+                <motion.div
+                  variants={containerVariants}
+                  initial="hidden"
+                  animate="visible"
+                  key={animationKey}
+                >
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="w-[60px]">{tAdmin("reactions.order")}</TableHead>
+                        <TableHead className="w-[60px]">{tAdmin("reactions.preview")}</TableHead>
+                        <TableHead className="w-[120px]">{tAdmin("reactions.code")}</TableHead>
+                        <TableHead>{tAdmin("reactions.label")}</TableHead>
+                        <TableHead className="w-[90px]">{tAdmin("common.type")}</TableHead>
+                        <TableHead className="w-[90px]">{tAdmin("common.status")}</TableHead>
+                        <TableHead className="w-[100px] text-right">{tAdmin("common.actions")}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {items.map((item, index) => (
+                        <motion.tr
+                          key={item.id}
+                          variants={rowVariants}
+                          custom={index}
+                          className="hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors"
+                        >
+                          <TableCell className="text-sm text-muted-foreground tabular-nums">{item.sort_order}</TableCell>
+                          <TableCell><ReactionPreview item={item} /></TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="font-mono text-xs">{item.code}</Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">{item.label}</TableCell>
+                          <TableCell>{mediaTypeBadge(item)}</TableCell>
+                          <TableCell>
+                            <Switch
+                              checked={item.is_active}
+                              onCheckedChange={(v) => handleToggle(item.id, v)}
+                              aria-label={`${tAdmin("reactions.active")} ${item.label}`}
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {rowActions(item)}
+                          </TableCell>
+                        </motion.tr>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </motion.div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

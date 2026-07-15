@@ -129,9 +129,11 @@ import {
   AdminMobileCards,
   AdminMobilePagination,
 } from "../components/AdminMobileCards";
-import { useIsMobile } from "@/hooks/ui/use-mobile";
 import { useAdminTranslation } from "../i18n";
 import { useAdminAccess } from "../hooks/use-admin-access";
+import { AdminPageHeader } from "../components/AdminPageHeader";
+import { AdminTabs, AdminTabsContent } from "../components/AdminTabs";
+import { useAdminTabParam } from "../hooks/use-admin-tab-param";
 import { ModeratorPeople } from "./ModeratorPeople";
 
 // ─── Shared Types ───────────────────────────────────────────────────
@@ -3571,12 +3573,13 @@ function InviteFriendsTab() {
 // ─── MAIN COMPONENT ─────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════
 
+const PEOPLE_TABS = ["users", "groups", "friendships", "invite"] as const;
+
 export function AdminPeople() {
   const { tap } = useHaptics();
   const { tAdmin } = useAdminTranslation();
   const { isModerator } = useAdminAccess();
-  const isMobile = useIsMobile();
-  const [activeTab, setActiveTab] = useState<"users" | "groups" | "friendships" | "invite">("users");
+  const [activeTab, setActiveTab] = useAdminTabParam("users", PEOPLE_TABS);
 
   if (isModerator) {
     return <ModeratorPeople />;
@@ -3584,61 +3587,39 @@ export function AdminPeople() {
 
   const handleTabChange = (value: string) => {
     tap();
-    setActiveTab(value as typeof activeTab);
+    setActiveTab(value);
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{tAdmin("people.title")}</h1>
-        <p className="text-sm text-muted-foreground mt-1">{tAdmin("people.subtitle")}</p>
-      </div>
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
-        {isMobile ? (
-          <Select value={activeTab} onValueChange={handleTabChange}>
-            <SelectTrigger className="mb-4">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="users">{tAdmin("people.usersTab")}</SelectItem>
-              <SelectItem value="groups">{tAdmin("people.groupsTab")}</SelectItem>
-              <SelectItem value="friendships">{tAdmin("people.friendshipsTab")}</SelectItem>
-              <SelectItem value="invite">{tAdmin("people.inviteTab")}</SelectItem>
-            </SelectContent>
-          </Select>
-        ) : (
-          <TabsList>
-            <TabsTrigger value="users" className="gap-2">
-              <UsersIcon className="h-4 w-4" />
-              {tAdmin("people.usersTab")}
-            </TabsTrigger>
-            <TabsTrigger value="groups" className="gap-2">
-              <GroupIcon className="h-4 w-4" />
-              {tAdmin("people.groupsTab")}
-            </TabsTrigger>
-            <TabsTrigger value="friendships" className="gap-2">
-              <HeartHandshakeIcon className="h-4 w-4" />
-              {tAdmin("people.friendshipsTab")}
-            </TabsTrigger>
-            <TabsTrigger value="invite" className="gap-2">
-              <MailIcon className="h-4 w-4" />
-              {tAdmin("people.inviteTab")}
-            </TabsTrigger>
-          </TabsList>
-        )}
-        <TabsContent value="users" className="mt-4">
+      <AdminPageHeader
+        title={tAdmin("people.title")}
+        description={tAdmin("people.subtitle")}
+      />
+      <AdminTabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        listClassName="sm:grid-cols-4"
+        items={[
+          { value: "users", label: tAdmin("people.usersTab"), icon: UsersIcon },
+          { value: "groups", label: tAdmin("people.groupsTab"), icon: GroupIcon },
+          { value: "friendships", label: tAdmin("people.friendshipsTab"), icon: HeartHandshakeIcon },
+          { value: "invite", label: tAdmin("people.inviteTab"), icon: MailIcon },
+        ]}
+      >
+        <AdminTabsContent value="users" className="mt-4">
           <UsersTab />
-        </TabsContent>
-        <TabsContent value="groups" className="mt-4">
+        </AdminTabsContent>
+        <AdminTabsContent value="groups" className="mt-4">
           <GroupsTab />
-        </TabsContent>
-        <TabsContent value="friendships" className="mt-4">
+        </AdminTabsContent>
+        <AdminTabsContent value="friendships" className="mt-4">
           <FriendshipsTab />
-        </TabsContent>
-        <TabsContent value="invite" className="mt-4">
+        </AdminTabsContent>
+        <AdminTabsContent value="invite" className="mt-4">
           <InviteFriendsTab />
-        </TabsContent>
-      </Tabs>
+        </AdminTabsContent>
+      </AdminTabs>
     </div>
   );
 }

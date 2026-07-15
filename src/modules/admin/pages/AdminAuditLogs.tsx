@@ -79,7 +79,8 @@ import {
   XIcon,
   ChevronDownIcon,
 } from "@/components/ui/icons";
-import { AdminSection, AdminSectionHeader } from "@/modules/admin/components/AdminSection";
+import { AdminSection } from "@/modules/admin/components/AdminSection";
+import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { AdminFilterChips } from "@/modules/admin/components/AdminFilterChips";
 import {
   AdminMobileCard,
@@ -754,7 +755,7 @@ function exportToCsv(entries: AuditLogEntry[], tAdmin: ReturnType<typeof useAdmi
 
 // ─── Main Component ─────────────────────────────────────────────────
 
-export function AdminAuditLogs() {
+export function AdminAuditLogs({ embedded = false }: { embedded?: boolean }) {
   const { tAdmin } = useAdminTranslation();
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 400);
@@ -849,9 +850,10 @@ export function AdminAuditLogs() {
 
   return (
     <AdminSection>
-      <AdminSectionHeader
+      <AdminPageHeader
         title={tAdmin("auditLogs.title")}
         description={tAdmin("auditLogs.description")}
+        density={embedded ? "section" : "page"}
       />
 
       {/* KPI Strip */}

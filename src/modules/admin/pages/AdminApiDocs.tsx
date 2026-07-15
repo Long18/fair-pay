@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslate } from "@refinedev/core";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/ui/use-mobile";
+import { AdminPageHeader } from "../components/AdminPageHeader";
 
 // UI primitives
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1308,7 +1309,7 @@ function EmptySelectionState() {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-export function AdminApiDocs() {
+export function AdminApiDocs({ embedded = false }: { embedded?: boolean }) {
   const t = useTranslate();
   const isMobile = useIsMobile();
   const [filters, setFilters] = useState<ApiFilterState>(DEFAULT_FILTER_STATE);
@@ -1334,41 +1335,39 @@ export function AdminApiDocs() {
   );
 
   return (
-    <div className="container max-w-7xl px-2 py-4 md:px-4 md:py-6">
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="typography-page-title">{t("adminApiDocs.title")}</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {stats.total} endpoints · {stats.http} HTTP · {stats.rpc} RPC · {stats.usedInCode} in use
-          </p>
-        </div>
-        {isMobile && (
-          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="sm" onClick={() => tap()}>
-                <FilterIcon className="w-4 h-4 mr-2" />
-                Browse
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-[300px] p-0">
-              <SheetHeader className="p-3 border-b">
-                <SheetTitle className="text-sm">API Endpoints</SheetTitle>
-              </SheetHeader>
-              <div className="flex flex-col h-[calc(100vh-60px)]">
-                <CatalogPanel
-                  entries={filteredEntries}
-                  filters={filters}
-                  onFiltersChange={setFilters}
-                  selectedId={selectedId}
-                  onSelect={handleSelect}
-                  totalCount={stats.total}
-                />
-              </div>
-            </SheetContent>
-          </Sheet>
-        )}
-      </div>
+    <div className={embedded ? "space-y-4" : "container max-w-7xl space-y-4 px-2 py-4 md:px-4 md:py-6"}>
+      <AdminPageHeader
+        title={t("adminApiDocs.title")}
+        description={`${stats.total} endpoints · ${stats.http} HTTP · ${stats.rpc} RPC · ${stats.usedInCode} in use`}
+        density={embedded ? "section" : "page"}
+        actions={
+          isMobile ? (
+            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm" onClick={() => tap()}>
+                  <FilterIcon className="w-4 h-4 mr-2" />
+                  Browse
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[300px] p-0">
+                <SheetHeader className="p-3 border-b">
+                  <SheetTitle className="text-sm">API Endpoints</SheetTitle>
+                </SheetHeader>
+                <div className="flex flex-col h-[calc(100vh-60px)]">
+                  <CatalogPanel
+                    entries={filteredEntries}
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                    selectedId={selectedId}
+                    onSelect={handleSelect}
+                    totalCount={stats.total}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+          ) : undefined
+        }
+      />
 
       {/* Split layout */}
       <div

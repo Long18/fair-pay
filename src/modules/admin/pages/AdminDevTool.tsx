@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { AdminOgPreview } from "./AdminOgPreview";
 import { AdminUtmDevTool } from "./AdminUtmDevTool";
@@ -13,7 +12,6 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
@@ -73,6 +71,9 @@ import {
   ZapIcon,
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
+import { AdminPageHeader } from "../components/AdminPageHeader";
+import { AdminTabs, AdminTabsContent } from "../components/AdminTabs";
+import { useAdminTabParam } from "../hooks/use-admin-tab-param";
 import { buildReminderEmailPreview } from "@/modules/admin/email/reminder-email";
 import type {
   ReminderDebtBreakdownItem,
@@ -897,7 +898,7 @@ function SendResultCard({ result }: { result: EmailSendResult | null }) {
   );
 }
 
-function AdminEmailDevTools() {
+function AdminEmailDevTools({ embedded = false }: { embedded?: boolean }) {
   const { tAdmin } = useAdminTranslation();
   const { tap, success, warning } = useHaptics();
   const [debtors, setDebtors] = useState<DebtReminderRow[]>([]);
@@ -1105,28 +1106,29 @@ function AdminEmailDevTools() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{tAdmin("devtool.title")}</h1>
-          <p className="text-sm text-muted-foreground text-pretty">{tAdmin("devtool.subtitle")}</p>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            tap();
-            refresh();
-          }}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCwIcon className="mr-2 h-4 w-4" />
-          )}
-          {tAdmin("common.refresh")}
-        </Button>
-      </div>
+      <AdminPageHeader
+        title={tAdmin("devtool.title")}
+        description={tAdmin("devtool.subtitle")}
+        density={embedded ? "section" : "page"}
+        actions={
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              tap();
+              refresh();
+            }}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCwIcon className="mr-2 h-4 w-4" />
+            )}
+            {tAdmin("common.refresh")}
+          </Button>
+        }
+      />
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -1670,76 +1672,83 @@ function AdminEmailDevTools() {
 
 export function AdminDevTool() {
   const { tAdmin } = useAdminTranslation();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const requestedTab = searchParams.get("tab");
   const isApiDocsEnabled = import.meta.env.VITE_ENABLE_ADMIN_API_DOCS === "true";
-  const validTabs = ["og-preview", "email", "utm", "audit-logs", "agent-ops", ...(isApiDocsEnabled ? ["api-docs"] : [])] as const;
-  const activeTab = validTabs.includes(requestedTab as typeof validTabs[number])
-    ? (requestedTab as typeof validTabs[number])
-    : "og-preview";
-  const handleTabChange = (value: string) => {
-    const next = new URLSearchParams(searchParams);
-    next.set("tab", value);
-    setSearchParams(next, { replace: true });
-  };
+  const validTabs = [
+    "og-preview",
+    "email",
+    "utm",
+    "audit-logs",
+    "agent-ops",
+    ...(isApiDocsEnabled ? ["api-docs"] : []),
+  ] as const;
+  const [activeTab, setActiveTab] = useAdminTabParam("og-preview", validTabs);
 
   return (
-    <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{tAdmin("devtool.developerToolsTitle")}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{tAdmin("devtool.developerToolsSubtitle")}</p>
-        </div>
-        <TabsList className={`grid w-full sm:w-fit grid-cols-3 sm:grid-cols-${isApiDocsEnabled ? "6" : "5"}`}>
-          <TabsTrigger value="og-preview">
-            <EyeIcon className="h-4 w-4" />
-            OG Preview
-          </TabsTrigger>
-          <TabsTrigger value="email">
-            <MailIcon className="h-4 w-4" />
-            {tAdmin("devtool.debtTab")}
-          </TabsTrigger>
-          <TabsTrigger value="utm">
-            <PieChartIcon className="h-4 w-4" />
-            UTM
-          </TabsTrigger>
-          <TabsTrigger value="audit-logs">
-            <ScrollTextIcon className="h-4 w-4" />
-            Audit Logs
-          </TabsTrigger>
-          <TabsTrigger value="agent-ops">
-            <ZapIcon className="h-4 w-4" />
-            Agent Ops
-          </TabsTrigger>
-          {isApiDocsEnabled && (
-            <TabsTrigger value="api-docs">
-              <BookOpenIcon className="h-4 w-4" />
-              API Docs
-            </TabsTrigger>
-          )}
-        </TabsList>
-      </div>
-
-      <TabsContent value="og-preview">
-        <AdminOgPreview />
-      </TabsContent>
-      <TabsContent value="email">
-        <AdminEmailDevTools />
-      </TabsContent>
-      <TabsContent value="utm">
-        <AdminUtmDevTool />
-      </TabsContent>
-      <TabsContent value="audit-logs">
-        <AdminAuditLogs />
-      </TabsContent>
-      <TabsContent value="agent-ops">
-        <AdminAgentOperations />
-      </TabsContent>
-      {isApiDocsEnabled && (
-        <TabsContent value="api-docs">
-          <AdminApiDocs />
-        </TabsContent>
-      )}
-    </Tabs>
+    <div className="space-y-6">
+      <AdminPageHeader
+        title={tAdmin("devtool.developerToolsTitle")}
+        description={tAdmin("devtool.developerToolsSubtitle")}
+      />
+      <AdminTabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        mobileAsSelect={false}
+        listClassName={isApiDocsEnabled ? "sm:grid-cols-6" : "sm:grid-cols-5"}
+        items={[
+          {
+            value: "og-preview",
+            label: tAdmin("devtool.tabs.ogPreview"),
+            icon: EyeIcon,
+          },
+          {
+            value: "email",
+            label: tAdmin("devtool.debtTab"),
+            icon: MailIcon,
+          },
+          {
+            value: "utm",
+            label: tAdmin("devtool.tabs.utm"),
+            icon: PieChartIcon,
+          },
+          {
+            value: "audit-logs",
+            label: tAdmin("devtool.tabs.auditLogs"),
+            icon: ScrollTextIcon,
+          },
+          {
+            value: "agent-ops",
+            label: tAdmin("devtool.tabs.agentOps"),
+            icon: ZapIcon,
+          },
+          {
+            value: "api-docs",
+            label: tAdmin("devtool.tabs.apiDocs"),
+            icon: BookOpenIcon,
+            enabled: isApiDocsEnabled,
+          },
+        ]}
+      >
+        <AdminTabsContent value="og-preview">
+          <AdminOgPreview embedded />
+        </AdminTabsContent>
+        <AdminTabsContent value="email">
+          <AdminEmailDevTools embedded />
+        </AdminTabsContent>
+        <AdminTabsContent value="utm">
+          <AdminUtmDevTool embedded />
+        </AdminTabsContent>
+        <AdminTabsContent value="audit-logs">
+          <AdminAuditLogs embedded />
+        </AdminTabsContent>
+        <AdminTabsContent value="agent-ops">
+          <AdminAgentOperations embedded />
+        </AdminTabsContent>
+        {isApiDocsEnabled ? (
+          <AdminTabsContent value="api-docs">
+            <AdminApiDocs embedded />
+          </AdminTabsContent>
+        ) : null}
+      </AdminTabs>
+    </div>
   );
 }

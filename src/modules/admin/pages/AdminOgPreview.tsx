@@ -26,6 +26,7 @@ import {
   EyeIcon,
 } from "@/components/ui/icons";
 import { useAdminTranslation } from "../i18n";
+import { AdminPageHeader } from "../components/AdminPageHeader";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -281,7 +282,7 @@ function TwitterPreview({ meta }: { meta: OgMeta }) {
 
 // ─── Main Component ─────────────────────────────────────────────────
 
-export function AdminOgPreview() {
+export function AdminOgPreview({ embedded = false }: { embedded?: boolean }) {
   const { tAdmin } = useAdminTranslation();
   const [url, setUrl] = useState("");
   const [status, setStatus] = useState<CheckStatus>("idle");
@@ -462,11 +463,11 @@ export function AdminOgPreview() {
 
   return (
     <div className="space-y-6">
-      {/* ── Header ──────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight">{tAdmin("ogPreview.title")}</h1>
-        <p className="text-sm text-muted-foreground">{tAdmin("ogPreview.subtitle")}</p>
-      </div>
+      <AdminPageHeader
+        title={tAdmin("ogPreview.title")}
+        description={tAdmin("ogPreview.subtitle")}
+        density={embedded ? "section" : "page"}
+      />
 
       {/* ── URL Input ───────────────────────────────────────────── */}
       <Card>

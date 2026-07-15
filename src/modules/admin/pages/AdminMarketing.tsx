@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart as RechartsBarChart,
@@ -19,7 +18,6 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -34,8 +32,12 @@ import { useAdminTranslation } from "../i18n";
 import { useAdminAccess } from "../hooks/use-admin-access";
 import { formatNumber } from "@/lib/locale-utils";
 import { useStaggerAnimation } from "@/hooks/ui/use-stagger-animation";
-import { themeIntentTones } from "@/lib/theme-intents";
 import { cn } from "@/lib/utils";
+import { AdminPageHeader } from "../components/AdminPageHeader";
+import { AdminTabs, AdminTabsContent } from "../components/AdminTabs";
+import { AdminMetricCard, AdminMetricGrid } from "../components/AdminMetricCard";
+import { useAdminTabParam } from "../hooks/use-admin-tab-param";
+import type { ThemeIntent } from "@/lib/theme-intents";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -596,57 +598,10 @@ const SHARE_CHART_CONFIG = {
 } satisfies ChartConfig;
 
 const FUNNEL_CARDS = [
-  { key: "totalCodes" as const, labelKey: "growth.totalCodes", icon: TrendingUpIcon, tone: "brand" as const },
-  { key: "totalSignups" as const, labelKey: "growth.totalSignups", icon: UsersIcon, tone: "chart2" as const },
-  { key: "activeReferrers" as const, labelKey: "growth.activeReferrers", icon: ActivityIcon, tone: "success" as const },
+  { key: "totalCodes" as const, labelKey: "growth.totalCodes", icon: TrendingUpIcon, intent: "brand" as ThemeIntent },
+  { key: "totalSignups" as const, labelKey: "growth.totalSignups", icon: UsersIcon, intent: "info" as ThemeIntent },
+  { key: "activeReferrers" as const, labelKey: "growth.activeReferrers", icon: ActivityIcon, intent: "success" as ThemeIntent },
 ] as const;
-
-const STAT_ACCENT_VARS: Record<string, string> = {
-  brand: "var(--primary)",
-  chart2: "var(--chart-2)",
-  success: "var(--status-success-foreground)",
-};
-
-function StatCardSkeleton() {
-  return (
-    <Card className="p-5">
-      <div className="flex items-start gap-4">
-        <div className="h-10 w-10 rounded-lg bg-muted animate-pulse" />
-        <div className="flex flex-col gap-2">
-          <div className="h-3 w-24 bg-muted rounded animate-pulse" />
-          <div className="h-7 w-16 bg-muted rounded animate-pulse" />
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-interface SimpleStatCardProps {
-  icon: React.FC<{ className?: string }>;
-  label: string;
-  value: string | number;
-  loading: boolean;
-}
-
-function SimpleStatCard({ icon: Icon, label, value, loading }: SimpleStatCardProps) {
-  return (
-    <Card className="p-5">
-      <div className="flex items-start gap-4">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <Icon className="h-5 w-5" />
-        </div>
-        <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-xs text-muted-foreground">{label}</span>
-          {loading ? (
-            <div className="h-7 w-20 bg-muted rounded animate-pulse" />
-          ) : (
-            <span className="text-2xl font-semibold tabular-nums">{value}</span>
-          )}
-        </div>
-      </div>
-    </Card>
-  );
-}
 
 // ─── Tab: Growth ──────────────────────────────────────────────────────
 
@@ -664,45 +619,33 @@ function GrowthTab({ enabled, locale }: { enabled: boolean; locale: string }) {
   return (
     <div className="space-y-6">
       {/* ── Referral Funnel ────────────────────────────────────── */}
-      <div className="space-y-3">
+      <div className="space-y-6">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           {tAdmin("growth.referralFunnel")}
         </p>
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-3 gap-4"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
           key={animationKey}
         >
-          {referralLoading
-            ? Array.from({ length: 3 }).map((_, i) => <StatCardSkeleton key={i} />)
-            : FUNNEL_CARDS.map((card, index) => {
-                const Icon = card.icon;
-                const value = referralStats?.[card.key] ?? 0;
-                const accentColor = STAT_ACCENT_VARS[card.tone] ?? "var(--primary)";
-                return (
-                  <motion.div key={card.key} variants={rowVariants} custom={index}>
-                    <Card className="p-5 border-l-4" style={{ borderLeftColor: accentColor }}>
-                      <div className="flex items-start gap-4">
-                        <div
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${themeIntentTones[card.tone].surface} ${themeIntentTones[card.tone].icon}`}
-                        >
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <div className="flex flex-col gap-1 min-w-0">
-                          <span className="text-xs text-muted-foreground truncate">
-                            {tAdmin(card.labelKey)}
-                          </span>
-                          <span className="text-2xl font-semibold tabular-nums">
-                            {formatNumber(value)}
-                          </span>
-                        </div>
-                      </div>
-                    </Card>
-                  </motion.div>
-                );
-              })}
+          <AdminMetricGrid columns={3}>
+            {FUNNEL_CARDS.map((card, index) => {
+              const value = referralStats?.[card.key] ?? 0;
+              return (
+                <motion.div key={card.key} variants={rowVariants} custom={index}>
+                  <AdminMetricCard
+                    icon={card.icon}
+                    label={tAdmin(card.labelKey)}
+                    value={formatNumber(value)}
+                    loading={referralLoading}
+                    variant="accent"
+                    intent={card.intent}
+                  />
+                </motion.div>
+              );
+            })}
+          </AdminMetricGrid>
         </motion.div>
       </div>
 
@@ -751,24 +694,24 @@ function GrowthTab({ enabled, locale }: { enabled: boolean; locale: string }) {
       </div>
 
       {/* ── Subscriptions Stats ─────────────────────────────────── */}
-      <div className="space-y-3">
+      <div className="space-y-6">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           {tAdmin("marketing.subscriptions")}
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <SimpleStatCard
+        <AdminMetricGrid columns={2}>
+          <AdminMetricCard
             icon={UsersIcon}
             label={tAdmin("marketing.freeUsers")}
             value={formatNumber(subscriptionStats?.freeUsers ?? 0)}
             loading={subscriptionLoading}
           />
-          <SimpleStatCard
+          <AdminMetricCard
             icon={ActivityIcon}
             label={tAdmin("marketing.proUsers")}
             value={formatNumber(subscriptionStats?.proUsers ?? 0)}
             loading={subscriptionLoading}
           />
-        </div>
+        </AdminMetricGrid>
       </div>
 
       {/* ── Top Referrers Table ─────────────────────────────────── */}
@@ -871,45 +814,46 @@ function RetentionTab({ enabled }: { enabled: boolean }) {
   return (
     <div className="space-y-6">
       {/* ── Debt Aging Stat Cards ────────────────────────────────── */}
-      <div className="space-y-3">
+      <div className="space-y-6">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           {tAdmin("retention.debtAging")}
         </p>
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-3 gap-4"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
           key={animationKey}
         >
-          <motion.div variants={rowVariants} custom={0}>
-            <SimpleStatCard
-              icon={UsersIcon}
-              label={tAdmin("retention.usersWithOldDebt")}
-              value={formatNumber(debtAging?.usersWithOldDebt ?? 0)}
-              loading={debtLoading}
-            />
-          </motion.div>
-          <motion.div variants={rowVariants} custom={1}>
-            <SimpleStatCard
-              icon={ActivityIcon}
-              label={tAdmin("retention.remindersSent")}
-              value={formatNumber(debtAging?.remindersSent ?? 0)}
-              loading={debtLoading}
-            />
-          </motion.div>
-          <motion.div variants={rowVariants} custom={2}>
-            <SimpleStatCard
-              icon={RepeatIcon}
-              label={tAdmin("retention.completionRate")}
-              value={
-                funnel && funnel.total > 0
-                  ? `${Math.round((funnel.completedCount / funnel.total) * 100)}%`
-                  : "—"
-              }
-              loading={funnelLoading}
-            />
-          </motion.div>
+          <AdminMetricGrid columns={3}>
+            <motion.div variants={rowVariants} custom={0}>
+              <AdminMetricCard
+                icon={UsersIcon}
+                label={tAdmin("retention.usersWithOldDebt")}
+                value={formatNumber(debtAging?.usersWithOldDebt ?? 0)}
+                loading={debtLoading}
+              />
+            </motion.div>
+            <motion.div variants={rowVariants} custom={1}>
+              <AdminMetricCard
+                icon={ActivityIcon}
+                label={tAdmin("retention.remindersSent")}
+                value={formatNumber(debtAging?.remindersSent ?? 0)}
+                loading={debtLoading}
+              />
+            </motion.div>
+            <motion.div variants={rowVariants} custom={2}>
+              <AdminMetricCard
+                icon={RepeatIcon}
+                label={tAdmin("retention.completionRate")}
+                value={
+                  funnel && funnel.total > 0
+                    ? `${Math.round((funnel.completedCount / funnel.total) * 100)}%`
+                    : "—"
+                }
+                loading={funnelLoading}
+              />
+            </motion.div>
+          </AdminMetricGrid>
         </motion.div>
       </div>
 
@@ -1082,8 +1026,8 @@ function EmailsTab({ enabled }: { enabled: boolean }) {
           <span className="text-sm font-medium">{selectedUser.full_name ?? selectedUser.user_id}</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <SimpleStatCard icon={MailIcon} label="Total emails" value={selectedUser.emails.length} loading={false} />
-          <SimpleStatCard icon={ActivityIcon} label="Last sent" value={new Date(selectedUser.lastSent).toLocaleDateString()} loading={false} />
+          <AdminMetricCard icon={MailIcon} label="Total emails" value={selectedUser.emails.length} loading={false} />
+          <AdminMetricCard icon={ActivityIcon} label="Last sent" value={new Date(selectedUser.lastSent).toLocaleDateString()} loading={false} />
         </div>
         <Card>
           <CardHeader>
@@ -1122,7 +1066,7 @@ function EmailsTab({ enabled }: { enabled: boolean }) {
           <span className="text-muted-foreground">/</span>
           <Badge variant="secondary" className="font-mono">{selectedType}</Badge>
         </div>
-        <SimpleStatCard icon={MailIcon} label="Total sent" value={formatNumber(typeCount)} loading={false} />
+        <AdminMetricCard icon={MailIcon} label="Total sent" value={formatNumber(typeCount)} loading={false} />
         <Card>
           <CardHeader>
             <CardTitle>Recipients</CardTitle>
@@ -1158,13 +1102,13 @@ function EmailsTab({ enabled }: { enabled: boolean }) {
       {/* Stat cards */}
       <motion.div className="grid grid-cols-1 sm:grid-cols-3 gap-4" variants={containerVariants} initial="hidden" animate="visible" key={animationKey}>
         <motion.div variants={rowVariants} custom={0}>
-          <SimpleStatCard icon={MailIcon} label={tAdmin("marketing.emailsSent")} value={formatNumber(emailStats?.totalSent ?? 0)} loading={statsLoading} />
+          <AdminMetricCard icon={MailIcon} label={tAdmin("marketing.emailsSent")} value={formatNumber(emailStats?.totalSent ?? 0)} loading={statsLoading} />
         </motion.div>
         <motion.div variants={rowVariants} custom={1}>
-          <SimpleStatCard icon={ActivityIcon} label={tAdmin("marketing.emailsSentRecently")} value={formatNumber(emailStats?.sentLast7Days ?? 0)} loading={statsLoading} />
+          <AdminMetricCard icon={ActivityIcon} label={tAdmin("marketing.emailsSentRecently")} value={formatNumber(emailStats?.sentLast7Days ?? 0)} loading={statsLoading} />
         </motion.div>
         <motion.div variants={rowVariants} custom={2}>
-          <SimpleStatCard icon={RepeatIcon} label={tAdmin("marketing.emailsPending")} value={formatNumber(emailStats?.pending ?? 0)} loading={statsLoading} />
+          <AdminMetricCard icon={RepeatIcon} label={tAdmin("marketing.emailsPending")} value={formatNumber(emailStats?.pending ?? 0)} loading={statsLoading} />
         </motion.div>
       </motion.div>
 
@@ -1370,8 +1314,8 @@ function ExperimentsTab({ enabled }: { enabled: boolean }) {
         </div>
 
         <div className="grid sm:grid-cols-3 gap-4">
-          <SimpleStatCard icon={ActivityIcon} label={tAdmin("marketing.experimentAssignments")} value={formatNumber(totalAssignments)} loading={isLoading} />
-          <SimpleStatCard icon={UsersIcon} label={tAdmin("marketing.experimentVariants")} value={selectedExp.variants.length} loading={false} />
+          <AdminMetricCard icon={ActivityIcon} label={tAdmin("marketing.experimentAssignments")} value={formatNumber(totalAssignments)} loading={isLoading} />
+          <AdminMetricCard icon={UsersIcon} label={tAdmin("marketing.experimentVariants")} value={selectedExp.variants.length} loading={false} />
           <Card className="p-5">
             <div className="flex flex-col gap-1.5">
               <span className="text-xs text-muted-foreground">{tAdmin("marketing.experimentKey")}</span>
@@ -1556,16 +1500,12 @@ function ExperimentsTab({ enabled }: { enabled: boolean }) {
 
 // ─── AdminMarketing Page ──────────────────────────────────────────────
 
+const MARKETING_TABS = ["growth", "retention", "emails", "experiments"] as const;
+
 export function AdminMarketing() {
   const { tAdmin, locale } = useAdminTranslation();
   const { canViewGrowth } = useAdminAccess();
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const activeTab = searchParams.get("tab") ?? "growth";
-
-  function handleTabChange(value: string) {
-    setSearchParams({ tab: value });
-  }
+  const [activeTab, setActiveTab] = useAdminTabParam("growth", MARKETING_TABS);
 
   if (!canViewGrowth) {
     return (
@@ -1577,37 +1517,38 @@ export function AdminMarketing() {
 
   return (
     <div className="space-y-6">
-      {/* ── Page Header ────────────────────────────────────────── */}
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Marketing</h1>
-        <p className="text-sm text-muted-foreground mt-1">{tAdmin("marketing.subtitle")}</p>
-      </div>
+      <AdminPageHeader
+        title={tAdmin("marketing.title")}
+        description={tAdmin("marketing.subtitle")}
+      />
 
-      {/* ── Tabs ───────────────────────────────────────────────── */}
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList>
-          <TabsTrigger value="growth">{tAdmin("marketing.tabGrowth")}</TabsTrigger>
-          <TabsTrigger value="retention">{tAdmin("marketing.tabRetention")}</TabsTrigger>
-          <TabsTrigger value="emails">{tAdmin("marketing.tabEmails")}</TabsTrigger>
-          <TabsTrigger value="experiments">{tAdmin("marketing.tabExperiments")}</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="growth" className="mt-6">
+      <AdminTabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        listClassName="sm:grid-cols-4"
+        items={[
+          { value: "growth", label: tAdmin("marketing.tabGrowth") },
+          { value: "retention", label: tAdmin("marketing.tabRetention") },
+          { value: "emails", label: tAdmin("marketing.tabEmails") },
+          { value: "experiments", label: tAdmin("marketing.tabExperiments") },
+        ]}
+      >
+        <AdminTabsContent value="growth" className="mt-6">
           <GrowthTab enabled={canViewGrowth && activeTab === "growth"} locale={locale} />
-        </TabsContent>
+        </AdminTabsContent>
 
-        <TabsContent value="retention" className="mt-6">
+        <AdminTabsContent value="retention" className="mt-6">
           <RetentionTab enabled={canViewGrowth && activeTab === "retention"} />
-        </TabsContent>
+        </AdminTabsContent>
 
-        <TabsContent value="emails" className="mt-6">
+        <AdminTabsContent value="emails" className="mt-6">
           <EmailsTab enabled={canViewGrowth && activeTab === "emails"} />
-        </TabsContent>
+        </AdminTabsContent>
 
-        <TabsContent value="experiments" className="mt-6">
+        <AdminTabsContent value="experiments" className="mt-6">
           <ExperimentsTab enabled={canViewGrowth && activeTab === "experiments"} />
-        </TabsContent>
-      </Tabs>
+        </AdminTabsContent>
+      </AdminTabs>
     </div>
   );
 }

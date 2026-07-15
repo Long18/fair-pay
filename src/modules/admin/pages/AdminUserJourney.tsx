@@ -31,7 +31,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -47,12 +46,16 @@ import {
   ArrowLeftIcon,
   ClockIcon,
   ExternalLinkIcon,
-  FileTextIcon,
   Loader2Icon,
   Trash2Icon,
   UserIcon,
+  FileTextIcon,
 } from "@/components/ui/icons";
 import { JourneyCanvasView } from "../components/journey-canvas";
+import { AdminPageHeader } from "../components/AdminPageHeader";
+import { AdminTabs, AdminTabsContent } from "../components/AdminTabs";
+import { AdminMetricCard, AdminMetricGrid } from "../components/AdminMetricCard";
+import { useAdminTabParam } from "../hooks/use-admin-tab-param";
 import { useAdminTranslation } from "../i18n";
 import type {
   AdminUserRow,
@@ -62,6 +65,8 @@ import type {
   UserTrackingOverview,
   UserTrackingSessionRow,
 } from "../types";
+
+const JOURNEY_TABS = ["canvas", "timeline"] as const;
 
 const EVENT_FILTER_OPTIONS = [
   { value: "all", labelKey: "journey.eventOptions.allEvents" },
@@ -134,6 +139,7 @@ export function AdminUserJourney() {
   const { id: userId } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useAdminTabParam("canvas", JOURNEY_TABS);
   const [dateFrom, setDateFrom] = useState(() => {
     const value = new Date();
     value.setDate(value.getDate() - 14);
@@ -263,111 +269,106 @@ export function AdminUserJourney() {
   return (
     <>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-1">
-            <Button asChild variant="ghost" className="w-fit px-0 text-muted-foreground hover:text-foreground">
-              <Link to="/admin/people">
-                <ArrowLeftIcon className="mr-2 h-4 w-4" />
-                {tAdmin("journey.backToPeople")}
-              </Link>
-            </Button>
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-primary/10 p-2 text-primary">
-                <UserIcon className="h-5 w-5" />
+        <div className="space-y-3">
+          <Button asChild variant="ghost" className="w-fit px-0 text-muted-foreground hover:text-foreground">
+            <Link to="/admin/people">
+              <ArrowLeftIcon className="mr-2 h-4 w-4" />
+              {tAdmin("journey.backToPeople")}
+            </Link>
+          </Button>
+          <AdminPageHeader
+            title={
+              <span className="inline-flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-2">
+                  <span className="rounded-full bg-primary/10 p-2 text-primary">
+                    <UserIcon className="h-5 w-5" />
+                  </span>
+                  {tAdmin("journey.titleForUser", { name: user?.full_name ?? tAdmin("common.user") })}
+                </span>
+                {user?.journey_tracking_ignored ? (
+                  <Badge variant="outline">{tAdmin("status.ignored")}</Badge>
+                ) : null}
+              </span>
+            }
+            description={user?.email ?? tAdmin("journey.loadingUser")}
+            actions={
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-full sm:w-[160px]" />
+                <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-full sm:w-[160px]" />
+                <Select value={eventFilter} onValueChange={setEventFilter}>
+                  <SelectTrigger className="w-full sm:w-[190px]">
+                    <SelectValue placeholder={tAdmin("journey.eventFilterPlaceholder")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EVENT_FILTER_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {tAdmin(option.labelKey)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  className="shrink-0"
+                >
+                  <Trash2Icon className="mr-2 h-4 w-4" />
+                  {tAdmin("journey.deleteData")}
+                </Button>
               </div>
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-2xl font-semibold tracking-tight">
-                    {tAdmin("journey.titleForUser", { name: user?.full_name ?? tAdmin("common.user") })}
-                  </h1>
-                  {user?.journey_tracking_ignored ? (
-                    <Badge variant="outline">{tAdmin("status.ignored")}</Badge>
-                  ) : null}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {user?.email ?? tAdmin("journey.loadingUser")}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-full sm:w-[160px]" />
-            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-full sm:w-[160px]" />
-            <Select value={eventFilter} onValueChange={setEventFilter}>
-              <SelectTrigger className="w-full sm:w-[190px]">
-                <SelectValue placeholder={tAdmin("journey.eventFilterPlaceholder")} />
-              </SelectTrigger>
-              <SelectContent>
-                {EVENT_FILTER_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {tAdmin(option.labelKey)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setDeleteDialogOpen(true)}
-              className="shrink-0"
-            >
-              <Trash2Icon className="mr-2 h-4 w-4" />
-              {tAdmin("journey.deleteData")}
-            </Button>
-          </div>
+            }
+          />
         </div>
 
         {/* Overview cards */}
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>{tAdmin("journey.totalSessions")}</CardDescription>
-              <CardTitle className="text-3xl">{overview?.total_sessions ?? 0}</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              {tAdmin("journey.firstSeen", { value: formatDateTime(overview?.first_seen_at, locale) })}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>{tAdmin("journey.totalEvents")}</CardDescription>
-              <CardTitle className="text-3xl">{overview?.total_events ?? 0}</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              {tAdmin("journey.uniquePages", { count: overview?.unique_pages ?? 0 })}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>{tAdmin("journey.latestSource")}</CardDescription>
-              <CardTitle className="text-xl">{overview?.top_sources?.[0]?.name ?? "direct"}</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              {tAdmin("journey.lastSeen", { value: formatDateTime(overview?.last_seen_at, locale) })}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>{tAdmin("journey.latestEntryLink")}</CardDescription>
-              <CardTitle className="text-base break-all">{overview?.latest_entry_link ?? "—"}</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              {tAdmin("journey.sources", { value: formatAggregateLabel(overview?.top_sources ?? []) })}
-            </CardContent>
-          </Card>
-        </div>
+        <AdminMetricGrid columns={4}>
+          <AdminMetricCard
+            variant="plain"
+            label={tAdmin("journey.totalSessions")}
+            value={overview?.total_sessions ?? 0}
+            loading={isOverviewLoading}
+            description={tAdmin("journey.firstSeen", { value: formatDateTime(overview?.first_seen_at, locale) })}
+          />
+          <AdminMetricCard
+            variant="plain"
+            label={tAdmin("journey.totalEvents")}
+            value={overview?.total_events ?? 0}
+            loading={isOverviewLoading}
+            description={tAdmin("journey.uniquePages", { count: overview?.unique_pages ?? 0 })}
+          />
+          <AdminMetricCard
+            variant="plain"
+            label={tAdmin("journey.latestSource")}
+            value={overview?.top_sources?.[0]?.name ?? "direct"}
+            loading={isOverviewLoading}
+            description={tAdmin("journey.lastSeen", { value: formatDateTime(overview?.last_seen_at, locale) })}
+          />
+          <AdminMetricCard
+            variant="plain"
+            label={tAdmin("journey.latestEntryLink")}
+            value={
+              <span className="break-all text-base font-semibold leading-snug">
+                {overview?.latest_entry_link ?? "—"}
+              </span>
+            }
+            loading={isOverviewLoading}
+            description={tAdmin("journey.sources", { value: formatAggregateLabel(overview?.top_sources ?? []) })}
+          />
+        </AdminMetricGrid>
 
         {/* Tab toggle: Canvas / Timeline */}
-        <Tabs defaultValue="canvas" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="canvas">{tAdmin("journey.canvasTab")}</TabsTrigger>
-            <TabsTrigger value="timeline">{tAdmin("journey.timelineTab")}</TabsTrigger>
-          </TabsList>
-
+        <AdminTabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          items={[
+            { value: "canvas", label: tAdmin("journey.canvasTab") },
+            { value: "timeline", label: tAdmin("journey.timelineTab") },
+          ]}
+          listClassName="sm:grid-cols-2"
+        >
           {/* Canvas tab */}
-          <TabsContent value="canvas">
+          <AdminTabsContent value="canvas">
             <JourneyCanvasView
               userId={userId}
               sessionId={selectedSessionId}
@@ -377,10 +378,10 @@ export function AdminUserJourney() {
               sourceName={searchParams.get("source") || selectedSession?.landing_source || overview?.top_sources?.[0]?.name || null}
               entryLink={selectedSession?.entry_link ?? overview?.latest_entry_link ?? null}
             />
-          </TabsContent>
+          </AdminTabsContent>
 
           {/* Timeline tab (existing view) */}
-          <TabsContent value="timeline">
+          <AdminTabsContent value="timeline">
             <div className="grid gap-4 xl:grid-cols-[360px,1fr]">
               <Card className="min-h-[480px]">
                 <CardHeader>
@@ -578,8 +579,8 @@ export function AdminUserJourney() {
                 </Card>
               </div>
             </div>
-          </TabsContent>
-        </Tabs>
+          </AdminTabsContent>
+        </AdminTabs>
       </div>
 
       {/* Raw metadata dialog */}

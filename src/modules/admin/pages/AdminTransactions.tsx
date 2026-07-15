@@ -71,7 +71,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Empty,
   EmptyMedia,
@@ -97,6 +96,9 @@ import {
 import { AdminNotifications } from "@/modules/admin/sub-pages/AdminNotifications";
 import { AdminPageToolbar } from "@/modules/admin/components/AdminPageToolbar";
 import { AdminFilterChips } from "@/modules/admin/components/AdminFilterChips";
+import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
+import { AdminTabs, AdminTabsContent } from "@/modules/admin/components/AdminTabs";
+import { useAdminTabParam } from "@/modules/admin/hooks/use-admin-tab-param";
 import { useAdminTranslation } from "../i18n";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
 import { getCategoryMeta } from "@/modules/expenses/lib/categories";
@@ -112,7 +114,6 @@ import {
   AdminMobileCards,
   AdminMobilePagination,
 } from "../components/AdminMobileCards";
-import { useIsMobile } from "@/hooks/ui/use-mobile";
 import {
   applySplitSettlementChangeTyped,
   getExpenseSettlementStatus,
@@ -1694,56 +1695,56 @@ function PaymentsTab({ moderatorMode }: { moderatorMode: boolean }) {
 // ─── MAIN EXPORT ────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════
 
+const TRANSACTION_TABS_FULL = ["expenses", "payments", "notifications"] as const;
+const TRANSACTION_TABS_MOD = ["expenses", "payments"] as const;
+
 export function AdminTransactions() {
-  const isMobile = useIsMobile();
   const { tAdmin } = useAdminTranslation();
   const { isModerator } = useAdminAccess();
-  const [activeTab, setActiveTab] = useState<"expenses" | "payments" | "notifications">("expenses");
+  const validTabs = isModerator ? TRANSACTION_TABS_MOD : TRANSACTION_TABS_FULL;
+  const [activeTab, setActiveTab] = useAdminTabParam("expenses", validTabs);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{tAdmin("transactions.title")}</h1>
-        <p className="text-sm text-muted-foreground mt-1">{tAdmin("transactions.subtitle")}</p>
-      </div>
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="w-full">
-        {isMobile ? (
-          <Select value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
-            <SelectTrigger className="mb-4">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="expenses">{tAdmin("transactions.expensesTab")}</SelectItem>
-              <SelectItem value="payments">{tAdmin("transactions.paymentsTab")}</SelectItem>
-              {!isModerator ? <SelectItem value="notifications">{tAdmin("transactions.notificationsTab")}</SelectItem> : null}
-            </SelectContent>
-          </Select>
-        ) : (
-          <TabsList>
-            <TabsTrigger value="expenses" className="gap-2">
-              <ReceiptIcon className="h-4 w-4" />
-              {tAdmin("transactions.expensesTab")}
-            </TabsTrigger>
-            <TabsTrigger value="payments" className="gap-2">
-              <CreditCardIcon className="h-4 w-4" />
-              {tAdmin("transactions.paymentsTab")}
-            </TabsTrigger>
-            {!isModerator ? <TabsTrigger value="notifications" className="gap-2">
-              <BellIcon className="h-4 w-4" />
-              {tAdmin("transactions.notificationsTab")}
-            </TabsTrigger> : null}
-          </TabsList>
-        )}
-        <TabsContent value="expenses" className="mt-4">
+      <AdminPageHeader
+        title={tAdmin("transactions.title")}
+        description={tAdmin("transactions.subtitle")}
+      />
+      <AdminTabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        listClassName={isModerator ? "sm:grid-cols-2" : "sm:grid-cols-3"}
+        items={[
+          {
+            value: "expenses",
+            label: tAdmin("transactions.expensesTab"),
+            icon: ReceiptIcon,
+          },
+          {
+            value: "payments",
+            label: tAdmin("transactions.paymentsTab"),
+            icon: CreditCardIcon,
+          },
+          {
+            value: "notifications",
+            label: tAdmin("transactions.notificationsTab"),
+            icon: BellIcon,
+            enabled: !isModerator,
+          },
+        ]}
+      >
+        <AdminTabsContent value="expenses" className="mt-4">
           <ExpensesTab moderatorMode={isModerator} />
-        </TabsContent>
-        <TabsContent value="payments" className="mt-4">
+        </AdminTabsContent>
+        <AdminTabsContent value="payments" className="mt-4">
           <PaymentsTab moderatorMode={isModerator} />
-        </TabsContent>
-        {!isModerator ? <TabsContent value="notifications" className="mt-4">
-          <AdminNotifications />
-        </TabsContent> : null}
-      </Tabs>
+        </AdminTabsContent>
+        {!isModerator ? (
+          <AdminTabsContent value="notifications" className="mt-4">
+            <AdminNotifications />
+          </AdminTabsContent>
+        ) : null}
+      </AdminTabs>
     </div>
   );
 }

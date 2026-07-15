@@ -2,7 +2,7 @@ import { useMemo, useState, useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { supabaseClient } from "@/utility/supabaseClient";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -52,6 +52,8 @@ import { useAdminTranslation } from "../i18n";
 import { formatDate } from "@/lib/locale-utils";
 import { useIsMobile } from "@/hooks/ui/use-mobile";
 import { cn } from "@/lib/utils";
+import { AdminPageHeader } from "../components/AdminPageHeader";
+import { AdminMetricCard, AdminMetricGrid } from "../components/AdminMetricCard";
 import type {
   AgentOperationRow,
   AgentOperationStatus,
@@ -174,19 +176,6 @@ function StatusBadge({ status }: { status: AgentOperationStatus }) {
   );
 }
 
-function MetricCard({ label, value }: { label: string; value: string | number }) {
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="text-xs text-muted-foreground uppercase tracking-wide">
-          {label}
-        </div>
-        <div className="text-2xl font-semibold mt-1 tabular-nums">{value}</div>
-      </CardContent>
-    </Card>
-  );
-}
-
 function MetricsRow({
   metrics,
   isLoading,
@@ -213,29 +202,38 @@ function MetricsRow({
       : tAdmin("agentOperations.metrics.seconds", { n: p95 });
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-      <MetricCard label={tAdmin("agentOperations.metrics.total")} value={metrics.total} />
-      <MetricCard
+    <AdminMetricGrid columns={3} className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+      <AdminMetricCard
+        variant="plain"
+        label={tAdmin("agentOperations.metrics.total")}
+        value={metrics.total}
+      />
+      <AdminMetricCard
+        variant="plain"
         label={tAdmin("agentOperations.metrics.committed")}
         value={metrics.by_status?.committed ?? 0}
       />
-      <MetricCard
+      <AdminMetricCard
+        variant="plain"
         label={tAdmin("agentOperations.metrics.failed")}
         value={metrics.by_status?.failed ?? 0}
       />
-      <MetricCard
+      <AdminMetricCard
+        variant="plain"
         label={tAdmin("agentOperations.metrics.completionRate")}
         value={`${metrics.completion_rate}%`}
       />
-      <MetricCard
+      <AdminMetricCard
+        variant="plain"
         label={tAdmin("agentOperations.metrics.activePreviews")}
         value={metrics.active_previews}
       />
-      <MetricCard
+      <AdminMetricCard
+        variant="plain"
         label={tAdmin("agentOperations.metrics.p95CommitTime")}
         value={p95Display}
       />
-    </div>
+    </AdminMetricGrid>
   );
 }
 
@@ -606,7 +604,7 @@ function OperationDetailDialog({
 
 // ─── Main Page ──────────────────────────────────────────────────────
 
-export function AdminAgentOperations() {
+export function AdminAgentOperations({ embedded = false }: { embedded?: boolean }) {
   const { tAdmin } = useAdminTranslation();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
@@ -690,15 +688,11 @@ export function AdminAgentOperations() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ZapIcon className="h-5 w-5" />
-            {tAdmin("agentOperations.title")}
-          </CardTitle>
-          <CardDescription>{tAdmin("agentOperations.description")}</CardDescription>
-        </CardHeader>
-      </Card>
+      <AdminPageHeader
+        title={tAdmin("agentOperations.title")}
+        description={tAdmin("agentOperations.description")}
+        density={embedded ? "section" : "page"}
+      />
 
       <MetricsRow metrics={metricsQuery.data} isLoading={metricsQuery.isLoading} />
 

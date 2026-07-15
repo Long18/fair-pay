@@ -3,9 +3,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { useAdminTranslation } from "../i18n";
-import { useIsMobile } from "@/hooks/ui/use-mobile";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,6 +12,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Loader2Icon, GroupIcon, PencilIcon, UsersIcon } from "@/components/ui/icons";
 import { formatDate } from "@/lib/locale-utils";
+import { AdminPageHeader } from "../components/AdminPageHeader";
+import { AdminTabs, AdminTabsContent } from "../components/AdminTabs";
+import { useAdminTabParam } from "../hooks/use-admin-tab-param";
+import { useHaptics } from "@/hooks/use-haptics";
 
 type ModeratorUserRow = {
   id: string;
@@ -287,47 +288,40 @@ function ModeratorGroupsTab() {
   );
 }
 
+const MODERATOR_PEOPLE_TABS = ["users", "groups"] as const;
+
 export function ModeratorPeople() {
   const { tAdmin } = useAdminTranslation();
-  const isMobile = useIsMobile();
-  const [activeTab, setActiveTab] = useState<"users" | "groups">("users");
+  const { tap } = useHaptics();
+  const [activeTab, setActiveTab] = useAdminTabParam("users", MODERATOR_PEOPLE_TABS);
+
+  const handleTabChange = (value: string) => {
+    tap();
+    setActiveTab(value);
+  };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{tAdmin("people.title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{tAdmin("people.subtitle")}</p>
-      </div>
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
-        {isMobile ? (
-          <Select value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
-            <SelectTrigger className="mb-4">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="users">{tAdmin("people.usersTab")}</SelectItem>
-              <SelectItem value="groups">{tAdmin("people.groupsTab")}</SelectItem>
-            </SelectContent>
-          </Select>
-        ) : (
-          <TabsList>
-            <TabsTrigger value="users" className="gap-2">
-              <UsersIcon className="h-4 w-4" />
-              {tAdmin("people.usersTab")}
-            </TabsTrigger>
-            <TabsTrigger value="groups" className="gap-2">
-              <GroupIcon className="h-4 w-4" />
-              {tAdmin("people.groupsTab")}
-            </TabsTrigger>
-          </TabsList>
-        )}
-        <TabsContent value="users" className="mt-4">
+      <AdminPageHeader
+        title={tAdmin("people.title")}
+        description={tAdmin("people.subtitle")}
+      />
+      <AdminTabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        listClassName="sm:grid-cols-2"
+        items={[
+          { value: "users", label: tAdmin("people.usersTab"), icon: UsersIcon },
+          { value: "groups", label: tAdmin("people.groupsTab"), icon: GroupIcon },
+        ]}
+      >
+        <AdminTabsContent value="users" className="mt-4">
           <ModeratorUsersTab />
-        </TabsContent>
-        <TabsContent value="groups" className="mt-4">
+        </AdminTabsContent>
+        <AdminTabsContent value="groups" className="mt-4">
           <ModeratorGroupsTab />
-        </TabsContent>
-      </Tabs>
+        </AdminTabsContent>
+      </AdminTabs>
     </div>
   );
 }

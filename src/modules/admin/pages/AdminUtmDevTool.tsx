@@ -22,6 +22,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { AdminPageHeader } from "../components/AdminPageHeader";
+import { AdminMetricCard, AdminMetricGrid } from "../components/AdminMetricCard";
 import {
   Select,
   SelectContent,
@@ -157,39 +159,6 @@ function eventBadgeVariant(eventName: string): "default" | "secondary" | "destru
   if (eventName.includes("copied")) return "secondary";
   if (eventName.includes("failed")) return "destructive";
   return "outline";
-}
-
-function MetricCard({
-  label,
-  value,
-  description,
-  icon: Icon,
-  isText = false,
-}: {
-  label: string;
-  value: number | string;
-  description: string;
-  icon: typeof ActivityIcon;
-  isText?: boolean;
-}) {
-  return (
-    <Card className="transition-shadow hover:shadow-sm">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardDescription className="text-xs font-medium uppercase tracking-wide">{label}</CardDescription>
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        {isText ? (
-          <Badge variant="secondary" className="max-w-full truncate font-mono text-xs" title={String(value)}>
-            {value}
-          </Badge>
-        ) : (
-          <CardTitle className="break-words text-2xl tabular-nums">{value}</CardTitle>
-        )}
-        <p className="mt-1.5 text-xs text-muted-foreground">{description}</p>
-      </CardContent>
-    </Card>
-  );
 }
 
 function MetricTable({ title, description, rows }: { title: string; description: string; rows: UtmMetricRow[] }) {
@@ -612,13 +581,47 @@ function MetricsTab({ data, isLoading }: { data: UtmPerformanceResponse | undefi
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <MetricCard label="Sessions" value={data?.total_sessions ?? 0} description={`Top source: ${topSource}`} icon={ActivityIcon} />
-        <MetricCard label="Events" value={data?.total_events ?? 0} description="Events with attribution context" icon={ZapIcon} />
-        <MetricCard label="Shares" value={data?.total_shares ?? 0} description="Generated, copied, completed, failed" icon={ShareIcon} />
-        <MetricCard label="Top campaign" value={topCampaign} description="Highest-traffic campaign" icon={LinkIcon} isText />
-        <MetricCard label="Signups" value={totalSignups} description="Auth register events by source" icon={UserPlusIcon} />
-      </div>
+      <AdminMetricGrid columns={4} className="xl:grid-cols-5">
+        <AdminMetricCard
+          variant="muted"
+          label="Sessions"
+          value={data?.total_sessions ?? 0}
+          description={`Top source: ${topSource}`}
+          icon={ActivityIcon}
+        />
+        <AdminMetricCard
+          variant="muted"
+          label="Events"
+          value={data?.total_events ?? 0}
+          description="Events with attribution context"
+          icon={ZapIcon}
+        />
+        <AdminMetricCard
+          variant="muted"
+          label="Shares"
+          value={data?.total_shares ?? 0}
+          description="Generated, copied, completed, failed"
+          icon={ShareIcon}
+        />
+        <AdminMetricCard
+          variant="muted"
+          label="Top campaign"
+          value={
+            <Badge variant="secondary" className="max-w-full truncate font-mono text-xs" title={String(topCampaign)}>
+              {topCampaign}
+            </Badge>
+          }
+          description="Highest-traffic campaign"
+          icon={LinkIcon}
+        />
+        <AdminMetricCard
+          variant="muted"
+          label="Signups"
+          value={totalSignups}
+          description="Auth register events by source"
+          icon={UserPlusIcon}
+        />
+      </AdminMetricGrid>
 
       <div className="grid gap-3 xl:grid-cols-2">
         <MetricTable title="Traffic by source" description="Sessions grouped by decoded source or referrer fallback." rows={data?.traffic_by_source ?? []} />
@@ -729,7 +732,7 @@ function RecentSharesTab({ rows }: { rows: UtmRecentShareRow[] }) {
   );
 }
 
-export function AdminUtmDevTool() {
+export function AdminUtmDevTool({ embedded = false }: { embedded?: boolean }) {
   const [filters, setFilters] = useState<FilterState>(() => getInitialFilters());
 
   const rpcFilters = useMemo(
@@ -773,27 +776,20 @@ export function AdminUtmDevTool() {
 
   return (
     <div className="space-y-4">
-      {/* Page header */}
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex items-start gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-primary/5">
-            <ShareIcon className="h-4 w-4 text-primary" />
+      <AdminPageHeader
+        title="Share Links"
+        description="Build compact share URLs, inspect decoded attribution, and monitor performance."
+        density={embedded ? "section" : "page"}
+        actions={
+          <div className="flex flex-wrap gap-1.5">
+            <Badge variant="secondary" className="text-xs">
+              <ZapIcon className="mr-1 h-3 w-3" />
+              compact ref
+            </Badge>
+            <Badge variant="outline" className="text-xs">legacy links accepted</Badge>
           </div>
-          <div>
-            <h2 className="text-base font-semibold tracking-tight">Share Links</h2>
-            <p className="text-xs text-muted-foreground">
-              Build compact share URLs, inspect decoded attribution, and monitor performance.
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          <Badge variant="secondary" className="text-xs">
-            <ZapIcon className="mr-1 h-3 w-3" />
-            compact ref
-          </Badge>
-          <Badge variant="outline" className="text-xs">legacy links accepted</Badge>
-        </div>
-      </div>
+        }
+      />
 
       <FilterPanel
         filters={filters}
