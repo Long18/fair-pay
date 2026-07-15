@@ -1,5 +1,6 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
+import { useTranslation } from "react-i18next";
 
 import { CheckCircle2Icon, ClockIcon, TrendingUpIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,8 @@ export interface PaymentStateBadgeProps
 
 const PaymentStateBadge = React.forwardRef<HTMLSpanElement, PaymentStateBadgeProps>(
   ({ className, state, size, percentage, ...props }, ref) => {
+    const { t } = useTranslation();
+
     const getIcon = () => {
       switch (state) {
         case "paid":
@@ -43,21 +46,27 @@ const PaymentStateBadge = React.forwardRef<HTMLSpanElement, PaymentStateBadgePro
           return <ClockIcon />;
         case "partial":
           return <TrendingUpIcon />;
-        default:
-          return null;
+        default: {
+          const _exhaustive: never = state;
+          return _exhaustive;
+        }
       }
     };
 
     const getLabel = () => {
       switch (state) {
         case "paid":
-          return "Paid";
+          return t("status.paid");
         case "unpaid":
-          return "Unpaid";
+          return t("status.unpaid");
         case "partial":
-          return percentage !== undefined ? `${percentage}% Paid` : "Partial";
-        default:
-          return "";
+          return percentage !== undefined
+            ? t("status.partialPercentPaid", { percentage })
+            : t("status.partial");
+        default: {
+          const _exhaustive: never = state;
+          return _exhaustive;
+        }
       }
     };
 

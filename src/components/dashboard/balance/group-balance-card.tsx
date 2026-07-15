@@ -28,8 +28,8 @@ export const GroupBalanceCard = ({ group, currency = "VND" }: GroupBalanceCardPr
   };
 
   const getBalanceColor = (balance: number) => {
-    if (balance > 0) return "text-green-600";
-    if (balance < 0) return "text-red-600";
+    if (balance > 0) return "text-semantic-positive";
+    if (balance < 0) return "text-semantic-negative";
     return "text-muted-foreground";
   };
 
@@ -96,7 +96,7 @@ export const GroupBalanceCard = ({ group, currency = "VND" }: GroupBalanceCardPr
                     </AvatarFallback>
                   </Avatar>
                   <span className="flex-1 truncate">{debtor.user_name}</span>
-                  <span className="text-xs text-red-600 font-medium">
+                  <span className="text-xs text-semantic-negative font-medium">
                     {formatCurrency(Math.abs(debtor.balance))}
                   </span>
                 </div>

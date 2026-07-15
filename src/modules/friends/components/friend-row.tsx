@@ -47,8 +47,8 @@ export const FriendRow = ({
   };
 
   const getBalanceColor = (amount: number) => {
-    if (amount > 0) return "text-green-600 dark:text-green-400";
-    if (amount < 0) return "text-red-600 dark:text-red-400";
+    if (amount > 0) return "text-semantic-positive";
+    if (amount < 0) return "text-semantic-negative";
     return "text-muted-foreground";
   };
 

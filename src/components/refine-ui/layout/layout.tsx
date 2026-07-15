@@ -22,15 +22,12 @@ export function Layout({ children }: PropsWithChildren) {
             "flex",
             "flex-col",
             "flex-1",
-            // Padding top to account for fixed navbar
-            // Mobile: h-14 + spacing = pt-16
-            // Desktop: h-16 + spacing = pt-20
-            "px-2",
+            // Padding top for fixed navbar (h-14 mobile / h-16 desktop) + small gap
             "pt-16",
             "md:pt-20",
-            "md:px-4",
-            "lg:px-6",
-            "lg:pt-24",
+            // Global horizontal gutters (PageContainer pages should use padding="none")
+            "px-4",
+            "sm:px-6",
             "viewport-transition"
           )}
         >

@@ -3,6 +3,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { PageContainer } from '@/components/ui/page-container';
+import { PageContent } from '@/components/ui/page-content';
+import { PageHeader } from '@/components/ui/page-header';
 import { useUserSettings } from '../hooks/use-user-settings';
 import { DisplaySettingsForm, NotificationSettingsForm, PrivacySettingsForm } from '../components';
 import { SettingsIcon, BellIcon, LockIcon, RotateCcwIcon } from "@/components/ui/icons";
@@ -32,21 +35,22 @@ export function SettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 p-4 md:p-6">
-        <Skeleton className="h-10 w-64" />
-        <Skeleton className="h-[500px] w-full" />
-      </div>
+      <PageContainer padding="none" variant="narrow">
+        <PageContent>
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-[500px] w-full" />
+        </PageContent>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold">{t('settings.title')}</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          {t('settings.subtitle')}
-        </p>
-      </div>
+    <PageContainer padding="none" variant="narrow">
+      <PageContent>
+      <PageHeader
+        title={t('settings.title')}
+        description={t('settings.subtitle')}
+      />
 
       <Tabs defaultValue="display" className="space-y-4 sm:space-y-6">
         <TabsList className="grid w-full grid-cols-3 sm:max-w-md">
@@ -188,6 +192,7 @@ export function SettingsPage() {
         <ReferralCard />
         <ReferralStats />
       </div>
-    </div>
+      </PageContent>
+    </PageContainer>
   );
 }

@@ -56,8 +56,8 @@ export const FriendsTable = ({ friends, isLoading }: FriendsTableProps) => {
 
   const getBalanceColor = (iOweThem: boolean) => {
     return iOweThem
-      ? 'text-red-600 dark:text-red-400'
-      : 'text-green-600 dark:text-green-400';
+      ? 'text-semantic-negative'
+      : 'text-semantic-positive';
   };
 
   const getBalanceIcon = (iOweThem: boolean) => {

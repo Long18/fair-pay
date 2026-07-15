@@ -26,6 +26,7 @@ import { useSpendingInsights } from "@/hooks/analytics/use-spending-insights";
 // Layout primitives
 import { PageContainer } from "@/components/ui/page-container";
 import { PageContent } from "@/components/ui/page-content";
+import { PageHeader } from "@/components/ui/page-header";
 
 // UI components
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -408,47 +409,49 @@ export const BalancesPage = () => {
 
   // ── render ─────────────────────────────────────────────────────────────
   return (
-    <PageContainer variant="default" withBackground fullHeight>
-      {/* ──────────────────────────────────────────────────────────────────
-          PAGE ACTIONS – refresh + export buttons (no title)
-      ────────────────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-end gap-2 px-4 sm:px-6">
-        <Button
-          onClick={handleExportCSV}
-          variant="ghost"
-          size="sm"
-          disabled={isReportsLoading || breakdown.length === 0}
-          className="gap-1.5 text-muted-foreground hover:text-foreground"
-          aria-label={t("reports.exportCSV", "Export CSV")}
-        >
-          <DownloadIcon className="h-4 w-4" />
-          <span className="hidden sm:inline text-xs">CSV</span>
-        </Button>
-        <Button
-          onClick={handleExportPDF}
-          variant="ghost"
-          size="sm"
-          disabled={isReportsLoading || breakdown.length === 0}
-          className="gap-1.5 text-muted-foreground hover:text-foreground"
-          aria-label={t("reports.exportPDF", "Export PDF")}
-        >
-          <FileTextIcon className="h-4 w-4" />
-          <span className="hidden sm:inline text-xs">PDF</span>
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          disabled={isRefreshing || isBalancesLoading}
-          className="gap-2"
-          aria-label={t("balances.refresh", "Refresh")}
-        >
-          <RefreshCwIcon className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} aria-hidden="true" />
-          <span className="hidden sm:inline text-xs">{t("balances.refresh", "Refresh")}</span>
-        </Button>
-      </div>
-
+    <PageContainer padding="none" variant="default" withBackground fullHeight>
       <PageContent>
+        <PageHeader
+          title={t("reports.spendingInsights", "Insights")}
+          action={
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                onClick={handleExportCSV}
+                variant="ghost"
+                size="sm"
+                disabled={isReportsLoading || breakdown.length === 0}
+                className="gap-1.5 text-muted-foreground hover:text-foreground"
+                aria-label={t("reports.exportCSV", "Export CSV")}
+              >
+                <DownloadIcon className="h-4 w-4" />
+                <span className="hidden sm:inline text-xs">CSV</span>
+              </Button>
+              <Button
+                onClick={handleExportPDF}
+                variant="ghost"
+                size="sm"
+                disabled={isReportsLoading || breakdown.length === 0}
+                className="gap-1.5 text-muted-foreground hover:text-foreground"
+                aria-label={t("reports.exportPDF", "Export PDF")}
+              >
+                <FileTextIcon className="h-4 w-4" />
+                <span className="hidden sm:inline text-xs">PDF</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing || isBalancesLoading}
+                className="gap-2"
+                aria-label={t("balances.refresh", "Refresh")}
+              >
+                <RefreshCwIcon className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} aria-hidden="true" />
+                <span className="hidden sm:inline text-xs">{t("balances.refresh", "Refresh")}</span>
+              </Button>
+            </div>
+          }
+        />
+
         {/* ──────────────────────────────────────────────────────────────
             ERROR BANNER
         ────────────────────────────────────────────────────────────── */}
@@ -606,32 +609,23 @@ export const BalancesPage = () => {
             {/* Insights panel */}
             <InsightsPanel insights={insights} isLoading={insightsLoading} />
 
-            {/* Tabs – underline style via custom overrides */}
+            {/* Tabs – underline variant for primary, pill for nested */}
             <div ref={chartsRef}>
               <Tabs
+                variant="underline"
                 value={activeTab}
                 onValueChange={(v) => setActiveTab(v as MergedTab)}
                 className="space-y-4 md:space-y-6"
               >
-                {/* Custom tab header: pills on left, export on right */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <TabsList className="bg-transparent p-0 h-auto border-b border-border rounded-none w-full sm:w-auto">
-                    <TabsTrigger
-                      value="charts"
-                      className="text-xs sm:text-sm px-4 py-2.5 rounded-none data-[state=active]:shadow-none data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary border-b-2 border-transparent transition-colors duration-200"
-                    >
+                  <TabsList className="w-full sm:w-auto">
+                    <TabsTrigger value="charts" className="text-xs sm:text-sm">
                       {t("reports.charts", "Charts")}
                     </TabsTrigger>
-                    <TabsTrigger
-                      value="breakdown"
-                      className="text-xs sm:text-sm px-4 py-2.5 rounded-none data-[state=active]:shadow-none data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary border-b-2 border-transparent transition-colors duration-200"
-                    >
+                    <TabsTrigger value="breakdown" className="text-xs sm:text-sm">
                       {t("reports.breakdown", "Breakdown")}
                     </TabsTrigger>
-                    <TabsTrigger
-                      value="balances"
-                      className="text-xs sm:text-sm px-4 py-2.5 rounded-none data-[state=active]:shadow-none data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary border-b-2 border-transparent transition-colors duration-200"
-                    >
+                    <TabsTrigger value="balances" className="text-xs sm:text-sm">
                       {t("balances.title", "Balances")}
                       {debts.length > 0 && (
                         <span className="ml-1.5 text-xs bg-primary/10 text-primary rounded-full px-1.5 py-0.5">
@@ -640,10 +634,7 @@ export const BalancesPage = () => {
                       )}
                     </TabsTrigger>
                     {showSpenders && (
-                      <TabsTrigger
-                        value="spenders"
-                        className="text-xs sm:text-sm px-4 py-2.5 rounded-none data-[state=active]:shadow-none data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary border-b-2 border-transparent transition-colors duration-200"
-                      >
+                      <TabsTrigger value="spenders" className="text-xs sm:text-sm">
                         {t("reports.topSpenders", "Top Spenders")}
                       </TabsTrigger>
                     )}
@@ -765,30 +756,25 @@ export const BalancesPage = () => {
                   ) : (
                     /* sub-tabs: You Owe / Owed to You */
                     <Tabs
+                      variant="pill"
                       value={balancesSubTab}
                       onValueChange={(v) => setBalancesSubTab(v as "you-owe" | "owed-to-you")}
                       className="space-y-4"
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <TabsList className="bg-muted/60 dark:bg-muted/40 rounded-lg p-0.5 h-auto w-full sm:w-auto">
-                          <TabsTrigger
-                            value="you-owe"
-                            className="text-xs sm:text-sm rounded-md data-[state=active]:shadow-sm transition-all duration-200"
-                          >
+                        <TabsList className="w-full sm:w-auto">
+                          <TabsTrigger value="you-owe" className="text-xs sm:text-sm">
                             {t("balances.youOwe", "You Owe")}
                             {iOwe.length > 0 && (
-                              <span className="ml-1.5 text-xs bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 rounded-full px-1.5 py-0.5">
+                              <span className="ml-1.5 text-xs bg-status-error-bg text-semantic-negative rounded-full px-1.5 py-0.5">
                                 {iOwe.length}
                               </span>
                             )}
                           </TabsTrigger>
-                          <TabsTrigger
-                            value="owed-to-you"
-                            className="text-xs sm:text-sm rounded-md data-[state=active]:shadow-sm transition-all duration-200"
-                          >
+                          <TabsTrigger value="owed-to-you" className="text-xs sm:text-sm">
                             {t("balances.owedToYou", "Owed to You")}
                             {owedToMe.length > 0 && (
-                              <span className="ml-1.5 text-xs bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400 rounded-full px-1.5 py-0.5">
+                              <span className="ml-1.5 text-xs bg-status-success-bg text-semantic-positive rounded-full px-1.5 py-0.5">
                                 {owedToMe.length}
                               </span>
                             )}
@@ -847,7 +833,7 @@ export const BalancesPage = () => {
                             <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-md bg-gradient-to-r from-red-50 to-transparent dark:from-red-950/20 dark:to-transparent border border-red-100 dark:border-red-900/30">
                               <p className="text-sm text-foreground">
                                 <span className="text-muted-foreground">{t("balances.youOweTotal", "You owe")}</span>{" "}
-                                <span className="font-bold tabular-nums text-red-600 dark:text-red-400">
+                                <span className="font-bold tabular-nums text-semantic-negative">
                                   {formatNumber(totalIOwe)} ₫
                                 </span>{" "}
                                 <span className="text-muted-foreground">

@@ -65,6 +65,7 @@ import {
 export function NavBar() {
   const isMobile = useIsMobile();
   const scrolled = useScrolled(10);
+  const { t } = useTranslation();
 
   return (
     <nav
@@ -124,8 +125,7 @@ export function NavBar() {
               "border-border/30",
             ]
       )}
-      role="navigation"
-      aria-label="Main navigation"
+      aria-label={t("header.mainNav", "Main navigation")}
     >
       {/* Left section: Logo + Mobile Hamburger */}
       <div className="flex items-center gap-2">
@@ -147,9 +147,11 @@ export function NavBar() {
 function NavLogo() {
   const go = useGo();
   const { tap } = useHaptics();
+  const { t } = useTranslation();
 
   return (
     <button
+      type="button"
       onClick={() => { tap(); go({ to: "/" }); }}
       data-track-id="nav:logo"
       data-track-event="nav_click"
@@ -165,7 +167,7 @@ function NavLogo() {
         "focus-visible:ring-offset-2",
         "rounded-lg"
       )}
-      aria-label="Go to home"
+      aria-label={t("header.goHome", "Go to home")}
     >
       <FairPayIcon className="w-10 h-10" />
       <span className="text-base md:text-lg font-bold">FairPay</span>
@@ -232,7 +234,7 @@ function NavItem({ item, isActive, onClick, showLabel = true }: NavItemProps) {
         "transition-all duration-200",
         isActive
           ? "bg-primary/10 text-primary"
-          : "text-muted-foreground hover:text-foreground hover:bg-accent"
+          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
       )}
       onClick={() => { tap(); onClick?.(); }}
     >
@@ -296,8 +298,10 @@ function NavActions() {
         <ThemeSelector className="h-9 w-9 md:h-10 md:w-10" />
       </div>
 
-      {/* Language toggle - hidden on mobile */}
-      {!isMobile && <LanguageToggle className="h-9 w-9 md:h-10 md:w-10" />}
+      {/* Language toggle - hidden on mobile; match search/bell icon cluster */}
+      {!isMobile && (
+        <LanguageToggle className="h-9 w-9 md:h-10 md:w-10 rounded-full hover:bg-accent" />
+      )}
 
       {/* Notifications */}
       <NotificationPanel />
@@ -316,6 +320,7 @@ function NavActions() {
 function MobileNavMenu() {
   const [open, setOpen] = useState(false);
   const { menuItems, selectedKey } = useMenu();
+  const { t } = useTranslation();
 
   // Close on escape key
   useEffect(() => {
@@ -349,7 +354,7 @@ function MobileNavMenu() {
             "rounded-lg",
             "hover:bg-accent"
           )}
-          aria-label="Open navigation menu"
+          aria-label={t("header.openMenu", "Open navigation menu")}
           aria-expanded={open}
         >
           <PanelLeftIcon className="h-5 w-5" />
@@ -370,7 +375,7 @@ function MobileNavMenu() {
           </SheetTitle>
         </SheetHeader>
 
-        <nav className="flex flex-col p-4 gap-1" role="navigation">
+        <nav className="flex flex-col p-4 gap-1" aria-label={t("header.mainNav", "Main navigation")}>
           <TooltipProvider delayDuration={0}>
             {visibleItems.map((item: TreeMenuItem) => (
               <MobileNavItem
@@ -420,7 +425,7 @@ function MobileNavItem({ item, isActive, onClick }: MobileNavItemProps) {
         "transition-all duration-200",
         isActive
           ? "bg-primary/10 text-primary"
-          : "text-foreground hover:bg-accent"
+          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
       )}
       onClick={() => { tap(); onClick(); }}
     >
@@ -534,7 +539,7 @@ function UserDropdown() {
               data-track-category="navigation"
             >
               <LayoutDashboardIcon className="h-4 w-4" />
-              <span>Admin Dashboard</span>
+              <span>{t("nav.adminDashboard", "Admin Dashboard")}</span>
             </DropdownMenuItem>
           </>
         )}

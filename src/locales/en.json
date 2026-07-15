@@ -1109,7 +1109,13 @@
   "header": {
     "search": "Search...",
     "welcomeBack": "Welcome back, {{name}}",
-    "welcomeGuest": "Welcome back, Guest"
+    "welcomeGuest": "Welcome back, Guest",
+    "mainNav": "Main navigation",
+    "goHome": "Go to home",
+    "openMenu": "Open navigation menu"
+  },
+  "nav": {
+    "adminDashboard": "Admin Dashboard"
   },
   "footer": {
     "tagline": "Split expenses fairly",
@@ -2024,7 +2030,18 @@
     "error": "Failed to update reaction"
   },
   "status": {
-    "settled": "Settled"
+    "paid": "Paid",
+    "unpaid": "Unpaid",
+    "partial": "Partial",
+    "partialPercentPaid": "{{percentage}}% Paid",
+    "settled": "Settled",
+    "pending": "Pending",
+    "debtBadge": {
+      "owe": "YOU OWE",
+      "owed": "OWES YOU",
+      "settled": "SETTLED",
+      "pending": "PENDING"
+    }
   },
   "table": {
     "filter": {

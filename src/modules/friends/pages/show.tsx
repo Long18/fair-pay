@@ -385,16 +385,16 @@ export const FriendShow = () => {
             >
               <TabsList className="grid w-full rounded-lg" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
                 <TabsTrigger value="activity" className="rounded-lg">
-                  <ReceiptIcon size={16} className="mr-2 sm:mr-0 lg:mr-2" />
-                  <span className="hidden lg:inline">{t('expenses.title', 'Expenses')}</span>
+                  <ReceiptIcon size={16} className="mr-0 sm:mr-2" />
+                  <span className="hidden sm:inline">{t('expenses.title', 'Expenses')}</span>
                 </TabsTrigger>
                 <TabsTrigger value="balances" className="rounded-lg">
-                  <BanknoteIcon size={16} className="mr-2 sm:mr-0 lg:mr-2" />
-                  <span className="hidden lg:inline">{t('balances.title', 'Balances')}</span>
+                  <BanknoteIcon size={16} className="mr-0 sm:mr-2" />
+                  <span className="hidden sm:inline">{t('balances.title', 'Balances')}</span>
                 </TabsTrigger>
                 <TabsTrigger value="recurring" className="rounded-lg">
-                  <RepeatIcon size={16} className="mr-2 sm:mr-0 lg:mr-2" />
-                  <span className="hidden lg:inline">{t('expenses.recurring', 'Recurring')}</span>
+                  <RepeatIcon size={16} className="mr-0 sm:mr-2" />
+                  <span className="hidden sm:inline">{t('expenses.recurring', 'Recurring')}</span>
                 </TabsTrigger>
               </TabsList>
 

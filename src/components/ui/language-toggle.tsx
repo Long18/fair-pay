@@ -42,13 +42,13 @@ export const LanguageToggle = ({ className }: LanguageToggleProps) => {
                 size="icon"
                 data-onboarding-target="language-toggle"
                 className={cn(
-                  "relative min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0",
+                  "relative shrink-0",
                   className
                 )}
                 aria-label={t('settings.language')}
               >
-                <GlobeIcon className="h-[1.2rem] w-[1.2rem] md:h-4 md:w-4" />
-                <span className="hidden md:flex absolute -top-1 -right-1 text-[10px] font-semibold text-muted-foreground bg-muted/80 backdrop-blur-sm px-1.5 py-0.5 rounded-md border border-border/50">
+                <GlobeIcon className="h-4 w-4 md:h-5 md:w-5" />
+                <span className="absolute bottom-1 right-1 text-[9px] font-bold leading-none text-muted-foreground pointer-events-none">
                   {currentLangCode}
                 </span>
                 <span className="sr-only">{t('settings.language')}</span>

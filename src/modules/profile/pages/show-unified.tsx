@@ -699,12 +699,12 @@ export const ProfileShowUnified = () => {
                   {isOwnProfile && (
                     <>
                       <TabsTrigger value="groups" className="rounded-lg">
-                        <UsersIcon size={16} className="mr-2 sm:mr-0 lg:mr-2" />
-                        <span className="hidden lg:inline">{t('profile.groups', 'Groups')}</span>
+                        <UsersIcon size={16} className="mr-0 sm:mr-2" />
+                        <span className="hidden sm:inline">{t('profile.groups', 'Groups')}</span>
                       </TabsTrigger>
                       <TabsTrigger value="friends" className="rounded-lg">
-                        <UserIcon size={16} className="mr-2 sm:mr-0 lg:mr-2" />
-                        <span className="hidden lg:inline">{t('profile.friends', 'Friends')}</span>
+                        <UserIcon size={16} className="mr-0 sm:mr-2" />
+                        <span className="hidden sm:inline">{t('profile.friends', 'Friends')}</span>
                       </TabsTrigger>
                     </>
                   )}

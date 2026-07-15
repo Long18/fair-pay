@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/use-haptics";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export type DebtFilterTab = "all" | "unsettled" | "settled";
 
@@ -43,36 +44,28 @@ export function DebtFilterTabs({
   ];
 
   return (
-    <div className={cn("rounded-xl bg-muted/60 p-1", className)} role="tablist">
-      <div className="grid grid-cols-3 gap-1">
-        {tabs.map((tab) => {
-          const isActive = tab.key === activeTab;
-
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              onClick={() => {
-                tap();
-                onTabChange(tab.key);
-              }}
-              className={cn(
-                "rounded-lg px-3 py-2 text-sm font-semibold transition-all",
-                isActive
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <span>{tab.label}</span>
-              <span className="ml-1.5 text-xs font-medium opacity-60">
-                {tab.count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
+    <Tabs
+      value={activeTab}
+      onValueChange={(value) => {
+        tap();
+        onTabChange(value as DebtFilterTab);
+      }}
+      className={cn("w-full", className)}
+    >
+      <TabsList className="grid w-full grid-cols-3 h-auto">
+        {tabs.map((tab) => (
+          <TabsTrigger
+            key={tab.key}
+            value={tab.key}
+            className="px-3 py-2 font-semibold"
+          >
+            <span>{tab.label}</span>
+            <span className="ml-1.5 text-xs font-medium opacity-60">
+              {tab.count}
+            </span>
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
   );
 }

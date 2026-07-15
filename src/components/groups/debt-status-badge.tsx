@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { useReducedMotion } from '@/hooks/ui/use-reduced-motion';
 import { SPRING_DEFAULT } from '@/lib/animation';
+import { useTranslation } from 'react-i18next';
 
 interface DebtStatusBadgeProps {
   status: 'owe' | 'owed' | 'settled' | 'pending';
@@ -19,13 +20,25 @@ export function DebtStatusBadge({
   currency,
   size = 'md',
 }: DebtStatusBadgeProps) {
+  const { t } = useTranslation();
   const reducedMotion = useReducedMotion();
   const colors = DEBT_STATUS_COLORS[status];
-  const labels = {
-    owe: 'YOU OWE',
-    owed: 'OWES YOU',
-    settled: 'SETTLED',
-    pending: 'PENDING',
+
+  const getLabel = () => {
+    switch (status) {
+      case 'owe':
+        return t('status.debtBadge.owe');
+      case 'owed':
+        return t('status.debtBadge.owed');
+      case 'settled':
+        return t('status.debtBadge.settled');
+      case 'pending':
+        return t('status.debtBadge.pending');
+      default: {
+        const _exhaustive: never = status;
+        return _exhaustive;
+      }
+    }
   };
 
   return (
@@ -43,7 +56,7 @@ export function DebtStatusBadge({
           size === 'lg' && 'text-base px-4 py-1.5'
         )}
       >
-        {labels[status]}
+        {getLabel()}
         {amount !== undefined && currency && (
           <span className="ml-1 font-bold">
             {formatNumber(Math.abs(amount))} {currency}

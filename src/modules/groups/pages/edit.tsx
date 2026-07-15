@@ -8,6 +8,9 @@ import { Friendship } from "@/modules/friends/types";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { LoadingBeam } from "@/components/ui/loading-beam";
+import { PageContainer } from "@/components/ui/page-container";
+import { PageContent } from "@/components/ui/page-content";
+import { PageHeader } from "@/components/ui/page-header";
 import { ArrowLeftIcon } from "@/components/ui/icons";
 import type { Profile } from "@/modules/profile/types";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -132,59 +135,64 @@ export const GroupEdit = () => {
 
   if (isLoadingGroup) {
     return (
-      <div className="container mx-auto max-w-2xl px-4 py-6">
-        <LoadingBeam text="Đang tải nhóm..." />
-      </div>
+      <PageContainer padding="none" variant="narrow">
+        <PageContent>
+          <LoadingBeam text="Đang tải nhóm..." />
+        </PageContent>
+      </PageContainer>
     );
   }
 
   if (!group) {
     return (
-      <div className="container mx-auto max-w-2xl px-4 py-6">
-        <div className="text-center py-16 space-y-3">
-          <p className="text-lg font-medium text-muted-foreground">Group not found</p>
-          <Button variant="outline" onClick={() => { tap(); go({ to: "/groups" }); }}>
-            Back to Groups
-          </Button>
-        </div>
-      </div>
+      <PageContainer padding="none" variant="narrow">
+        <PageContent>
+          <div className="text-center py-16 space-y-3">
+            <p className="text-lg font-medium text-muted-foreground">Group not found</p>
+            <Button variant="outline" onClick={() => { tap(); go({ to: "/groups" }); }}>
+              Back to Groups
+            </Button>
+          </div>
+        </PageContent>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-6 space-y-4">
-      <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 shrink-0"
-          onClick={() => { tap(); go({ to: `/groups/show/${group.id}` }); }}
-          aria-label="Back to group"
-        >
-          <ArrowLeftIcon className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Edit Group</h1>
-          <p className="text-sm text-muted-foreground">
-            Update {group.name}
-          </p>
+    <PageContainer padding="none" variant="narrow">
+      <PageContent>
+        <div className="flex items-start gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="mt-0.5 h-9 w-9 shrink-0"
+            onClick={() => { tap(); go({ to: `/groups/show/${group.id}` }); }}
+            aria-label="Back to group"
+          >
+            <ArrowLeftIcon className="h-4 w-4" />
+          </Button>
+          <PageHeader
+            className="flex-1"
+            title="Edit Group"
+            description={`Update ${group.name}`}
+          />
         </div>
-      </div>
 
-      <GroupForm
-        onSubmit={handleSubmit}
-        defaultValues={{
-          name: group.name,
-          description: group.description || "",
-          simplify_debts: group.simplify_debts,
-          avatar_url: group.avatar_url || "",
-          member_ids: currentMemberIds,
-        }}
-        isLoading={isSubmitting}
-        availableMembers={availableMembers}
-        existingMembers={currentMembers}
-        currentUserId={identity?.id}
-      />
-    </div>
+        <GroupForm
+          onSubmit={handleSubmit}
+          defaultValues={{
+            name: group.name,
+            description: group.description || "",
+            simplify_debts: group.simplify_debts,
+            avatar_url: group.avatar_url || "",
+            member_ids: currentMemberIds,
+          }}
+          isLoading={isSubmitting}
+          availableMembers={availableMembers}
+          existingMembers={currentMembers}
+          currentUserId={identity?.id}
+        />
+      </PageContent>
+    </PageContainer>
   );
 };

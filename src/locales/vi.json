@@ -1109,7 +1109,13 @@
   "header": {
     "search": "Tìm kiếm...",
     "welcomeBack": "Chào mừng trở lại, {{name}}",
-    "welcomeGuest": "Chào mừng trở lại, Khách"
+    "welcomeGuest": "Chào mừng trở lại, Khách",
+    "mainNav": "Điều hướng chính",
+    "goHome": "Về trang chủ",
+    "openMenu": "Mở menu điều hướng"
+  },
+  "nav": {
+    "adminDashboard": "Bảng điều khiển Admin"
   },
   "footer": {
     "tagline": "Chia chi phí công bằng",
@@ -2024,7 +2030,18 @@
     "error": "Failed to update reaction"
   },
   "status": {
-    "settled": "Settled"
+    "paid": "Đã trả",
+    "unpaid": "Chưa trả",
+    "partial": "Một phần",
+    "partialPercentPaid": "Đã trả {{percentage}}%",
+    "settled": "Đã tất toán",
+    "pending": "Đang chờ",
+    "debtBadge": {
+      "owe": "BẠN NỢ",
+      "owed": "NỢ BẠN",
+      "settled": "ĐÃ TẤT TOÁN",
+      "pending": "ĐANG CHỜ"
+    }
   },
   "table": {
     "filter": {

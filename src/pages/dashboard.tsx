@@ -24,7 +24,6 @@ import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { FloatingDecoration } from "@/components/ui/floating-decoration";
 import { CoinShape, ChartLineShape, CircleShape, HexagonShape, WalletShape } from "@/components/ui/decorative-shapes";
 
-
 export const Dashboard = () => {
   const { data: identity } = useGetIdentity<Profile>();
   const { t } = useTranslation();
@@ -153,7 +152,7 @@ export const Dashboard = () => {
       {loading ? (
         <DashboardLoadingBeam />
       ) : (
-        <PageContainer variant="default">
+        <PageContainer padding="none" variant="default">
 
           <PageContent className="relative">
             {/* Floating Decorations */}
@@ -177,58 +176,54 @@ export const Dashboard = () => {
 
             {/* Tab Switcher */}
             <ScrollReveal direction="up">
-            <div className="flex items-center justify-center w-full">
-              <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit" data-onboarding-target="dashboard-tabs">
-                {([
-                  { key: "balances" as const, label: t('balances.title', 'Balances'), icon: WalletIcon, count: balances.length },
-                  { key: "activity" as const, label: t('dashboard.recentActivity', 'Activity'), icon: ActivityIcon, count: activities.length },
-                  { key: "history" as const, label: t('history.title', 'History'), icon: HistoryIcon, count: historyActivities.length },
-                ]).map((tab) => {
-                  const Icon = tab.icon;
-                  const isActive = activeTab === tab.key;
-                  return (
-                    <button
-                      key={tab.key}
-                      onClick={() => { tap(); setActiveTab(tab.key); }}
-                      data-track-id={`nav:dashboard-tab:${tab.key}`}
-                      data-track-event="nav_click"
-                      data-track-type="tab"
-                      data-track-category="navigation"
-                      data-track-flow="dashboard"
-                      data-track-step={tab.key}
-                      className={cn(
-                        "relative flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all cursor-pointer",
-                        isActive
-                          ? "bg-background text-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span>{tab.label}</span>
-                      {tab.count > 0 && (
-                        <span
-                          className={cn(
-                            "text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center",
-                            isActive
-                              ? "bg-primary/10 text-primary"
-                              : "bg-muted-foreground/10 text-muted-foreground"
-                          )}
-                        >
-                          {tab.count}
-                        </span>
-                      )}
-                      {isActive && (
-                        <motion.div
-                          layoutId="dashboard-tab-underline"
-                          className="absolute bottom-0 left-0 right-0 h-1 bg-green-500 rounded-t-full"
-                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                        />
-                      )}
-                    </button>
-                  );
-                })}
+            <Tabs
+              value={activeTab}
+              onValueChange={(value) => {
+                tap();
+                setActiveTab(value as "balances" | "activity" | "history");
+              }}
+              className="gap-0"
+            >
+              <div className="flex items-center justify-center w-full">
+                <TabsList data-onboarding-target="dashboard-tabs">
+                  {([
+                    { key: "balances" as const, label: t('balances.title', 'Balances'), icon: WalletIcon, count: balances.length },
+                    { key: "activity" as const, label: t('dashboard.recentActivity', 'Activity'), icon: ActivityIcon, count: activities.length },
+                    { key: "history" as const, label: t('history.title', 'History'), icon: HistoryIcon, count: historyActivities.length },
+                  ]).map((tab) => {
+                    const Icon = tab.icon;
+                    return (
+                      <TabsTrigger
+                        key={tab.key}
+                        value={tab.key}
+                        data-track-id={`nav:dashboard-tab:${tab.key}`}
+                        data-track-event="nav_click"
+                        data-track-type="tab"
+                        data-track-category="navigation"
+                        data-track-flow="dashboard"
+                        data-track-step={tab.key}
+                        className="gap-2 px-4"
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span>{tab.label}</span>
+                        {tab.count > 0 && (
+                          <span
+                            className={cn(
+                              "text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center",
+                              activeTab === tab.key
+                                ? "bg-primary/10 text-primary"
+                                : "bg-muted-foreground/10 text-muted-foreground"
+                            )}
+                          >
+                            {tab.count}
+                          </span>
+                        )}
+                      </TabsTrigger>
+                    );
+                  })}
+                </TabsList>
               </div>
-            </div>
+            </Tabs>
             </ScrollReveal>
 
             {/* Tab Content */}

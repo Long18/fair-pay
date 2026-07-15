@@ -281,7 +281,7 @@ export const PersonDebtBreakdown = () => {
 
   if (isLoading) {
     return (
-      <PageContainer variant="narrow">
+      <PageContainer padding="none" variant="narrow">
         <LoadingBeam text={t("debts.loading", "Đang tải chi tiết…")} />
       </PageContainer>
     );
@@ -289,7 +289,7 @@ export const PersonDebtBreakdown = () => {
 
   if (!counterparty?.data || !summary) {
     return (
-      <PageContainer variant="narrow">
+      <PageContainer padding="none" variant="narrow">
         <Card className="rounded-xl">
           <CardContent className="p-8">
             <Empty>
@@ -315,7 +315,7 @@ export const PersonDebtBreakdown = () => {
   }
 
   return (
-    <PageContainer variant="narrow" spacing="compact" className="pb-28">
+    <PageContainer padding="none" variant="narrow" spacing="compact" className="pb-28">
       <div className="space-y-0">
         <DebtBreakdownHeader
           counterpartyName={counterparty.data.full_name}

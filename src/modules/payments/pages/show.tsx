@@ -2,6 +2,9 @@ import { useOne, useGo, useGetIdentity } from "@refinedev/core";
 import { useParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PageContainer } from "@/components/ui/page-container";
+import { PageContent } from "@/components/ui/page-content";
+import { PageHeader } from "@/components/ui/page-header";
 import { PaymentWithProfiles } from "../types";
 import { Profile } from "@/modules/profile/types";
 import { Badge } from "@/components/ui/badge";
@@ -36,24 +39,28 @@ export const PaymentShow = () => {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6 max-w-4xl">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-1/3"></div>
-          <div className="h-64 bg-muted rounded"></div>
-        </div>
-      </div>
+      <PageContainer padding="none" variant="narrow">
+        <PageContent>
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-muted rounded w-1/3"></div>
+            <div className="h-64 bg-muted rounded"></div>
+          </div>
+        </PageContent>
+      </PageContainer>
     );
   }
 
   if (!payment) {
     return (
-      <div className="container mx-auto p-6 max-w-4xl">
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">Payment not found</p>
-          </CardContent>
-        </Card>
-      </div>
+      <PageContainer padding="none" variant="narrow">
+        <PageContent>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-center text-muted-foreground">Payment not found</p>
+            </CardContent>
+          </Card>
+        </PageContent>
+      </PageContainer>
     );
   }
 
@@ -62,22 +69,23 @@ export const PaymentShow = () => {
   const group = payment.groups;
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
+    <PageContainer padding="none" variant="narrow">
+      <PageContent>
+      <div className="flex items-start gap-3">
         <Button
           variant="ghost"
           size="icon"
+          className="mt-0.5 h-9 w-9 shrink-0"
           onClick={() => { tap(); go({ to: "/" }); }}
+          aria-label={t("common.back", { defaultValue: "Back" })}
         >
           <ArrowLeftIcon className="h-5 w-5" />
         </Button>
-        <div>
-          <h1 className="text-2xl font-bold">Payment Details</h1>
-          <p className="text-sm text-muted-foreground">
-            {formatDate(payment.created_at)}
-          </p>
-        </div>
+        <PageHeader
+          className="flex-1"
+          title={t("payments.showTitle", { defaultValue: "Payment Details" })}
+          description={formatDate(payment.created_at)}
+        />
       </div>
 
       {/* Payment Amount Card */}
@@ -173,6 +181,7 @@ export const PaymentShow = () => {
           )}
         </CardContent>
       </Card>
-    </div>
+      </PageContent>
+    </PageContainer>
   );
 };
