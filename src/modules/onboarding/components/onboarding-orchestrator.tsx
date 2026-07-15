@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/ui/use-mobile";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
@@ -8,11 +9,13 @@ import type { TutorialStep } from "../types";
 import { useSpotlight } from "../hooks/use-spotlight";
 import { useCameraScroll } from "../hooks/use-camera-scroll";
 import { SpotlightOverlay } from "./spotlight-overlay";
-import { FloatingStepPanel } from "./floating-step-panel";
+import { OnboardingTutorialShell } from "./onboarding-tutorial-shell";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface OnboardingOrchestratorProps {
+  /** Full list of eligible tutorial steps */
+  steps: TutorialStep[];
   /** Current tutorial step configuration */
   stepConfig: TutorialStep;
   /** Zero-based index of the current step */
@@ -27,6 +30,8 @@ export interface OnboardingOrchestratorProps {
   onNext: () => void;
   /** Go back to the previous step */
   onBack: () => void;
+  /** Jump to a specific step */
+  onGoToStep: (index: number) => void;
   /** Skip/dismiss the entire tutorial */
   onSkip: () => void;
   /** Enter try-it interaction mode */
@@ -59,19 +64,58 @@ function targetExists(selector: string | null): boolean {
   return true;
 }
 
+// ─── Minimal interaction-mode bar ────────────────────────────────────────────
+
+function TryItBar({
+  currentStep,
+  totalSteps,
+  onExitTryIt,
+}: {
+  currentStep: number;
+  totalSteps: number;
+  onExitTryIt: () => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div
+      className="fixed bottom-0 left-0 right-0 z-[70] flex min-h-[44px] items-center justify-between border-t bg-card px-4 py-2"
+      role="status"
+      aria-label={t("onboarding.interactionMode.status", {
+        current: currentStep + 1,
+        total: totalSteps,
+        defaultValue: `Step ${currentStep + 1} of ${totalSteps}`,
+      })}
+    >
+      <span className="text-sm text-muted-foreground">
+        {t("onboarding.interactionMode.stepProgress", {
+          current: currentStep + 1,
+          total: totalSteps,
+          defaultValue: `Step ${currentStep + 1} of ${totalSteps}`,
+        })}
+      </span>
+      <Button
+        size="sm"
+        className="min-h-[44px] bg-primary text-primary-foreground hover:bg-primary/90"
+        onClick={onExitTryIt}
+        aria-label={t("onboarding.actions.continue", "Continue")}
+      >
+        {t("onboarding.actions.continue", "Continue")}
+      </Button>
+    </div>
+  );
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 /**
- * Orchestrates the onboarding tutorial presentation (v2).
+ * Orchestrates the onboarding tutorial presentation.
  *
- * Changes from v1:
- * - Replaces BottomSheet/Dialog with FloatingStepPanel (compact, draggable)
- * - Integrates CameraController for smooth scroll-to-target before spotlight
- * - Supports interactionMode for try-it feature
- * - No backdrop-click dismiss — only Skip button dismisses
- * - Unified desktop + mobile experience
+ * Desktop: shadcn Dialog + Carousel. Mobile: Drawer + Carousel.
+ * Spotlight + try-it bar remain for interactive steps.
  */
 export function OnboardingOrchestrator({
+  steps,
   stepConfig,
   currentStep,
   totalSteps,
@@ -79,6 +123,7 @@ export function OnboardingOrchestrator({
   interactionMode,
   onNext,
   onBack,
+  onGoToStep,
   onSkip,
   onTryIt,
   onExitTryIt,
@@ -87,54 +132,40 @@ export function OnboardingOrchestrator({
   const reducedMotion = useReducedMotion();
   const isMobile = useIsMobile();
 
-  // Camera scroll hook
   const { scrollToTarget, isScrolling } = useCameraScroll();
 
-  // Resolve the correct target selector based on device type
-  // On mobile, use mobileTargetSelector if defined (can be null to skip spotlight)
   const resolvedSelector =
     isMobile && stepConfig.mobileTargetSelector !== undefined
       ? stepConfig.mobileTargetSelector
       : stepConfig.targetSelector;
 
-  // Spotlight hook — used to get the rect for FloatingStepPanel positioning
   const hasTarget = targetExists(resolvedSelector);
-  const { spotlightRect } = useSpotlight(
+  const { spotlightRect: _spotlightRect } = useSpotlight(
     hasTarget ? resolvedSelector : null,
-    !isScrolling, // only compute spotlight after scroll completes
+    !isScrolling,
   );
 
-  // Track whether we've completed the camera scroll for the current step
   const [cameraReady, setCameraReady] = useState(false);
   const currentStepIdRef = useRef(stepConfig.id);
-
-  // Debounce ref
   const lastNavRef = useRef<number>(0);
-
-  // ── Camera scroll on step change ───────────────────────────────────────
 
   useEffect(() => {
     if (currentStepIdRef.current !== stepConfig.id) {
       currentStepIdRef.current = stepConfig.id;
       setCameraReady(false);
 
-      // Scroll to target, then mark camera as ready
       scrollToTarget(resolvedSelector).then(() => {
         setCameraReady(true);
       });
     } else if (!cameraReady) {
-      // Initial mount — scroll to first step's target
       scrollToTarget(resolvedSelector).then(() => {
         setCameraReady(true);
       });
     }
   }, [stepConfig.id, resolvedSelector, scrollToTarget, cameraReady]);
 
-  // ── Debounced navigation ───────────────────────────────────────────────
-
   const debouncedNav = useCallback(
     (action: () => void) => {
-      // Block navigation during scroll animation
       if (isScrolling) return;
       const now = Date.now();
       if (now - lastNavRef.current < NAV_DEBOUNCE_MS) return;
@@ -144,25 +175,33 @@ export function OnboardingOrchestrator({
     [isScrolling],
   );
 
-  const handleNext = useCallback(() => debouncedNav(onNext), [debouncedNav, onNext]);
-  const handleBack = useCallback(() => debouncedNav(onBack), [debouncedNav, onBack]);
-  const handleSkip = useCallback(() => debouncedNav(onSkip), [debouncedNav, onSkip]);
-
-  // ── Don't render until camera is ready ─────────────────────────────────
+  const handleNext = useCallback(
+    () => debouncedNav(onNext),
+    [debouncedNav, onNext],
+  );
+  const handleBack = useCallback(
+    () => debouncedNav(onBack),
+    [debouncedNav, onBack],
+  );
+  const handleSkip = useCallback(
+    () => debouncedNav(onSkip),
+    [debouncedNav, onSkip],
+  );
+  const handleGoToStep = useCallback(
+    (index: number) => debouncedNav(() => onGoToStep(index)),
+    [debouncedNav, onGoToStep],
+  );
 
   if (!cameraReady && !reducedMotion) {
     return null;
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────
-
   return (
     <>
-      {/* Spotlight overlay */}
       {hasTarget && (
         <SpotlightOverlay
           targetSelector={resolvedSelector}
-          isVisible={cameraReady}
+          isVisible={cameraReady && interactionMode}
           padding={stepConfig.spotlightPadding}
           shape={stepConfig.spotlightShape}
           interactionMode={interactionMode}
@@ -170,19 +209,24 @@ export function OnboardingOrchestrator({
         />
       )}
 
-      {/* Floating step panel (replaces BottomSheet/Dialog) */}
-      <FloatingStepPanel
-        step={stepConfig}
-        currentIndex={currentStep}
-        totalSteps={totalSteps}
-        spotlightRect={hasTarget ? spotlightRect : null}
-        interactionMode={interactionMode}
-        onNext={handleNext}
-        onBack={handleBack}
-        onSkip={handleSkip}
-        onTryIt={onTryIt}
-        onExitTryIt={onExitTryIt}
-      />
+      {interactionMode ? (
+        <TryItBar
+          currentStep={currentStep}
+          totalSteps={totalSteps}
+          onExitTryIt={onExitTryIt}
+        />
+      ) : (
+        <OnboardingTutorialShell
+          open
+          steps={steps}
+          currentIndex={currentStep}
+          onGoToStep={handleGoToStep}
+          onNext={handleNext}
+          onBack={handleBack}
+          onSkip={handleSkip}
+          onTryIt={hasTarget ? onTryIt : undefined}
+        />
+      )}
     </>
   );
 }

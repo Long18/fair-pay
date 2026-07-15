@@ -9,6 +9,8 @@ export { OnboardingStepContent } from "./components/onboarding-step-content";
 export type { OnboardingStepContentProps } from "./components/onboarding-step-content";
 export { OnboardingOrchestrator } from "./components/onboarding-orchestrator";
 export type { OnboardingOrchestratorProps } from "./components/onboarding-orchestrator";
+export { OnboardingTutorialShell } from "./components/onboarding-tutorial-shell";
+export type { OnboardingTutorialShellProps } from "./components/onboarding-tutorial-shell";
 export { FloatingStepPanel } from "./components/floating-step-panel";
 export type { FloatingStepPanelProps } from "./components/floating-step-panel";
 export { OnboardingProvider, useOnboarding } from "./components/onboarding-provider";
