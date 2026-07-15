@@ -114,11 +114,11 @@ export const GroupCreate = () => {
 
           // Create group members (creator is automatically added as admin by trigger)
           if (member_ids && member_ids.length > 0) {
+            // role defaults to 'member' in DB; RLS rejects forged admin inserts
             const memberPromises = member_ids.map((userId) =>
               supabaseClient.from("group_members").insert({
                 group_id: groupId,
                 user_id: userId,
-                role: "member",
               })
             );
 
