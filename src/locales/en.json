@@ -1095,6 +1095,60 @@
       "expenseDesc": "Log a shared cost and split it fairly",
       "settle": "Settle a debt",
       "settleDesc": "Pay back what you owe or get paid"
+    },
+    "welcome": {
+      "title": "Welcome to FairPay",
+      "description": "Split expenses fairly with friends and groups. This short tour shows you the essentials."
+    },
+    "dashboard": {
+      "title": "Your dashboard",
+      "description": "See balances, recent activity, and who owes whom — all in one place."
+    },
+    "addExpense": {
+      "title": "Add an expense",
+      "description": "Tap the plus button to log a shared cost and choose how to split it."
+    },
+    "connections": {
+      "title": "Friends & connections",
+      "description": "Add friends so you can split costs and settle up together."
+    },
+    "theme": {
+      "title": "Personalize your theme",
+      "description": "Switch light or dark mode anytime from the theme controls."
+    },
+    "payments": {
+      "title": "Payments",
+      "description": "Track what you owe and get paid back — settle debts when you are ready."
+    },
+    "notifications": {
+      "title": "Stay in the loop",
+      "description": "Get alerts when friends add expenses or request a settlement."
+    },
+    "language": {
+      "title": "Choose your language",
+      "description": "Use FairPay in English or Vietnamese — switch anytime."
+    },
+    "completion": {
+      "title": "You are all set",
+      "description": "Start adding expenses, invite friends, and keep balances clear."
+    },
+    "actions": {
+      "next": "Next",
+      "back": "Back",
+      "skip": "Skip",
+      "done": "Get started",
+      "continue": "Continue",
+      "tryIt": "Try it",
+      "restart": "Restart tutorial"
+    },
+    "interactionMode": {
+      "status": "Tutorial step {{current}} of {{total}}",
+      "stepProgress": "Step {{current}} of {{total}}"
+    },
+    "a11y": {
+      "dialogLabel": "Onboarding tutorial",
+      "stepProgress": "Step {{current}} of {{total}}",
+      "carouselLabel": "Tutorial steps"
     }
   },
   "referrals": {

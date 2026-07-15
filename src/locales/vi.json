@@ -1095,6 +1095,60 @@
       "expenseDesc": "Ghi lại khoản chi chung và chia hợp lý",
       "settle": "Thanh toán một khoản nợ",
       "settleDesc": "Trả nợ hoặc nhận lại tiền của bạn"
+    },
+    "welcome": {
+      "title": "Chào mừng đến với FairPay",
+      "description": "Chia sẻ chi phí công bằng với bạn bè và nhóm. Tour ngắn này sẽ giới thiệu những phần quan trọng nhất."
+    },
+    "dashboard": {
+      "title": "Bảng điều khiển của bạn",
+      "description": "Xem số dư, hoạt động gần đây và ai nợ ai — tất cả trong một nơi."
+    },
+    "addExpense": {
+      "title": "Thêm chi phí",
+      "description": "Nhấn nút cộng để ghi khoản chi chung và chọn cách chia."
+    },
+    "connections": {
+      "title": "Bạn bè & kết nối",
+      "description": "Thêm bạn bè để cùng chia chi phí và thanh toán."
+    },
+    "theme": {
+      "title": "Tùy chỉnh giao diện",
+      "description": "Chuyển sáng/tối bất cứ lúc nào từ bộ chọn giao diện."
+    },
+    "payments": {
+      "title": "Thanh toán",
+      "description": "Theo dõi khoản bạn nợ và được hoàn lại — thanh toán khi sẵn sàng."
+    },
+    "notifications": {
+      "title": "Luôn được cập nhật",
+      "description": "Nhận thông báo khi bạn bè thêm chi phí hoặc yêu cầu thanh toán."
+    },
+    "language": {
+      "title": "Chọn ngôn ngữ",
+      "description": "Dùng FairPay bằng tiếng Anh hoặc tiếng Việt — đổi bất cứ lúc nào."
+    },
+    "completion": {
+      "title": "Bạn đã sẵn sàng",
+      "description": "Bắt đầu thêm chi phí, mời bạn bè và giữ số dư rõ ràng."
+    },
+    "actions": {
+      "next": "Tiếp",
+      "back": "Quay lại",
+      "skip": "Bỏ qua",
+      "done": "Bắt đầu",
+      "continue": "Tiếp tục",
+      "tryIt": "Thử ngay",
+      "restart": "Xem lại hướng dẫn"
+    },
+    "interactionMode": {
+      "status": "Bước hướng dẫn {{current}} / {{total}}",
+      "stepProgress": "Bước {{current}} / {{total}}"
+    },
+    "a11y": {
+      "dialogLabel": "Hướng dẫn bắt đầu",
+      "stepProgress": "Bước {{current}} / {{total}}",
+      "carouselLabel": "Các bước hướng dẫn"
     }
   },
   "referrals": {

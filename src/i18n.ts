@@ -36,6 +36,29 @@ i18n
       vi: { translation: { ...vi, ...adminTranslations.vi } },
     },
     fallbackLng: 'en',
+    // Prefer default-locale copy over raw key paths when a translation is missing
+    returnNull: false,
+    returnEmptyString: false,
+    parseMissingKeyHandler: (key) => {
+      const bundle = i18n.getResourceBundle('en', 'translation') as
+        | Record<string, unknown>
+        | undefined;
+      if (!bundle) return key;
+      const parts = key.split('.');
+      let current: unknown = bundle;
+      for (const part of parts) {
+        if (
+          current &&
+          typeof current === 'object' &&
+          part in (current as Record<string, unknown>)
+        ) {
+          current = (current as Record<string, unknown>)[part];
+        } else {
+          return key;
+        }
+      }
+      return typeof current === 'string' ? current : key;
+    },
     interpolation: {
       escapeValue: false,
     },
