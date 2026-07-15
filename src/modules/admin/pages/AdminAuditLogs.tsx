@@ -166,6 +166,15 @@ function useAuditFilterOptions() {
 
 // ─── Action Badge ────────────────────────────────────────────────────
 
+const SETTLEMENT_SUMMARY_ACTIONS = new Set([
+  "SETTLE_SUMMARY",
+  "settle_batch",
+  "settle_all_with_person",
+  "manual_settle_all",
+  "settle_all_user_splits",
+  "settle_all",
+]);
+
 function ActionBadge({ action }: { action: string }) {
   if (action === "DELETE") return (
     <Badge className="gap-1 text-xs font-medium border bg-[var(--status-error-bg)] text-[var(--status-error-foreground)] border-[var(--status-error-border)] hover:bg-[var(--status-error-bg)]">
@@ -182,6 +191,13 @@ function ActionBadge({ action }: { action: string }) {
       <PencilIcon className="size-3" aria-hidden="true" />UPDATE
     </Badge>
   );
+  if (SETTLEMENT_SUMMARY_ACTIONS.has(action)) {
+    return (
+      <Badge className="gap-1 text-xs font-medium border bg-primary/10 text-primary border-primary/20 hover:bg-primary/10">
+        Settle Up
+      </Badge>
+    );
+  }
   return <Badge variant="outline" className="text-xs">{action}</Badge>;
 }
 
@@ -602,8 +618,8 @@ function useRevertAuditEntry() {
     },
     onSuccess: (data) => {
       toast.success(tAdmin("auditLogs.revertSuccess", { action: data.action, table: data.table_name }));
-      queryClient.invalidateQueries({ queryKey: ["admin-audit-logs"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-audit-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "audit-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "audit-stats"] });
     },
     onError: (error) => {
       toast.error(tAdmin("auditLogs.revertError", { message: error.message }));
@@ -611,13 +627,35 @@ function useRevertAuditEntry() {
   });
 }
 
+function hasSettlementRevertPayload(entry: AuditLogEntry): boolean {
+  const splits = entry.old_data?.splits;
+  if (Array.isArray(splits) && splits.length > 0) return true;
+
+  const priorStates = entry.metadata?.priorStates;
+  if (Array.isArray(priorStates) && priorStates.length > 0) return true;
+
+  const splitIds = entry.metadata?.splitIds ?? entry.new_data?.split_ids;
+  return Array.isArray(splitIds) && splitIds.length > 0;
+}
+
 function canRevertEntry(entry: AuditLogEntry): boolean {
-  // Only audit_logs source entries (not audit_trail) can be reverted
-  // Must have old_data (for UPDATE/DELETE) or new_data (for INSERT)
-  if (entry.source !== "audit_logs") return false;
-  if (entry.action_type === "DELETE" && entry.old_data) return true;
-  if (entry.action_type === "UPDATE" && entry.old_data) return true;
-  if (entry.action_type === "INSERT" && entry.entity_id) return true;
+  if (entry.source === "audit_logs") {
+    if (entry.action_type === "SETTLE_SUMMARY" && hasSettlementRevertPayload(entry)) return true;
+    if (entry.action_type === "DELETE" && entry.old_data) return true;
+    if (entry.action_type === "UPDATE" && entry.old_data) return true;
+    if (entry.action_type === "INSERT" && entry.entity_id) return true;
+    return false;
+  }
+
+  // Settlement trail summaries (incl. legacy settle_all_* without SETTLE_SUMMARY)
+  if (
+    entry.source === "audit_trail" &&
+    SETTLEMENT_SUMMARY_ACTIONS.has(entry.action_type) &&
+    hasSettlementRevertPayload(entry)
+  ) {
+    return true;
+  }
+
   return false;
 }
 
@@ -642,7 +680,9 @@ function RevertAuditDialog({
       ? tAdmin("auditLogs.revertAction.delete")
       : entry.action_type === "UPDATE"
         ? tAdmin("auditLogs.revertAction.update")
-        : tAdmin("auditLogs.revertAction.insert");
+        : SETTLEMENT_SUMMARY_ACTIONS.has(entry.action_type)
+          ? "Settle Up"
+          : tAdmin("auditLogs.revertAction.insert");
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -1234,7 +1274,36 @@ export function AdminAuditLogs() {
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
+function getSettlementSummary(entry: AuditLogEntry): string | null {
+  if (!SETTLEMENT_SUMMARY_ACTIONS.has(entry.action_type)) return null;
+
+  const amount =
+    (entry.new_data?.total_amount as number | undefined) ??
+    (entry.metadata?.totalAmount as number | undefined);
+  const currency =
+    (entry.new_data?.currency as string | undefined) ??
+    (entry.metadata?.currency as string | undefined) ??
+    "";
+  const splitCount =
+    (entry.new_data?.splits_updated as number | undefined) ??
+    (entry.metadata?.splitsUpdated as number | undefined) ??
+    (Array.isArray(entry.new_data?.split_ids) ? entry.new_data.split_ids.length : undefined) ??
+    (Array.isArray(entry.metadata?.splitIds) ? (entry.metadata.splitIds as unknown[]).length : undefined);
+
+  const parts: string[] = ["Settle Up"];
+  if (typeof amount === "number") {
+    parts.push(currency ? `${amount} ${currency}` : String(amount));
+  }
+  if (typeof splitCount === "number") {
+    parts.push(`${splitCount} split(s)`);
+  }
+  return parts.join(" · ");
+}
+
 function getDetailSummary(entry: AuditLogEntry, tAdmin: ReturnType<typeof useAdminTranslation>["tAdmin"]): string {
+  const settlementSummary = getSettlementSummary(entry);
+  if (settlementSummary) return settlementSummary;
+
   if (entry.old_data || entry.new_data) {
     const data = entry.new_data ?? entry.old_data ?? {};
     const keys = Object.keys(data);
