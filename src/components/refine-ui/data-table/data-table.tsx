@@ -64,6 +64,25 @@ export function DataTable<TData extends BaseRecord>({
     vertical: false,
   });
 
+  // Pin trailing action columns so ⋮ stays reachable while scrolling horizontally
+  const actionColumnIds = leafColumns
+    .flatMap((col) =>
+      col.id === "actions" || col.id.endsWith("Actions") ? [col.id] : []
+    )
+    .join(",");
+
+  useEffect(() => {
+    if (!actionColumnIds) return;
+    const actionIds = actionColumnIds.split(",");
+    const current = table.reactTable.getState().columnPinning?.right ?? [];
+    const alreadyPinned = actionIds.every((id) => current.includes(id));
+    if (alreadyPinned) return;
+    table.reactTable.setColumnPinning((prev) => ({
+      left: prev.left,
+      right: Array.from(new Set([...(prev.right ?? []), ...actionIds])),
+    }));
+  }, [actionColumnIds, table.reactTable]);
+
   useEffect(() => {
     const checkOverflow = () => {
       if (tableRef.current && tableContainerRef.current) {
@@ -122,7 +141,7 @@ export function DataTable<TData extends BaseRecord>({
       )}
       <div ref={tableContainerRef} className={cn("rounded-md", "border", "overflow-x-auto")}>
         {isLoading ? (
-          <Table ref={tableRef} style={{ tableLayout: "fixed", width: "100%" }}>
+          <Table ref={tableRef} containerClassName="overflow-visible" style={{ tableLayout: "fixed", width: "max-content", minWidth: "100%" }}>
             <TableHeader>
               {getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
@@ -208,7 +227,7 @@ export function DataTable<TData extends BaseRecord>({
             animate="visible"
             key={animationKey}
           >
-            <Table ref={tableRef} style={{ tableLayout: "fixed", width: "100%" }}>
+            <Table ref={tableRef} containerClassName="overflow-visible" style={{ tableLayout: "fixed", width: "max-content", minWidth: "100%" }}>
               <TableHeader>
                 {getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
@@ -373,25 +392,11 @@ export function getCommonStyles<TData>({
         : undefined,
     opacity: 1,
     position: isOverflowing.horizontal && isPinned ? "sticky" : "relative",
-    background: isOverflowing.horizontal && isPinned ? "var(--background)" : "",
-    borderTopRightRadius:
-      isOverflowing.horizontal && isPinned === "right"
-        ? "var(--radius)"
-        : undefined,
-    borderBottomRightRadius:
-      isOverflowing.horizontal && isPinned === "right"
-        ? "var(--radius)"
-        : undefined,
-    borderTopLeftRadius:
-      isOverflowing.horizontal && isPinned === "left"
-        ? "var(--radius)"
-        : undefined,
-    borderBottomLeftRadius:
-      isOverflowing.horizontal && isPinned === "left"
-        ? "var(--radius)"
-        : undefined,
+    background:
+      isOverflowing.horizontal && isPinned ? "var(--background)" : undefined,
     width: column.getSize(),
-    zIndex: isOverflowing.horizontal && isPinned ? 1 : 0,
+    minWidth: column.getSize(),
+    zIndex: isOverflowing.horizontal && isPinned ? 2 : 0,
   };
 }
 

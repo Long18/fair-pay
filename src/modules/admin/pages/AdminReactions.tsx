@@ -509,14 +509,14 @@ export function AdminReactions() {
               </div>
 
               {/* Desktop table */}
-              <div className="hidden md:block rounded-md border">
+              <div className="hidden md:block overflow-x-auto rounded-md border">
                 <motion.div
                   variants={containerVariants}
                   initial="hidden"
                   animate="visible"
                   key={animationKey}
                 >
-                  <Table>
+                  <Table containerClassName="overflow-visible">
                     <TableHeader>
                       <TableRow className="bg-muted/50">
                         <TableHead className="w-[60px]">{tAdmin("reactions.order")}</TableHead>
@@ -525,7 +525,7 @@ export function AdminReactions() {
                         <TableHead>{tAdmin("reactions.label")}</TableHead>
                         <TableHead className="w-[90px]">{tAdmin("common.type")}</TableHead>
                         <TableHead className="w-[90px]">{tAdmin("common.status")}</TableHead>
-                        <TableHead className="w-[100px] text-right">{tAdmin("common.actions")}</TableHead>
+                        <TableHead className="sticky right-0 z-10 w-[100px] bg-background text-right">{tAdmin("common.actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -550,7 +550,7 @@ export function AdminReactions() {
                               aria-label={`${tAdmin("reactions.active")} ${item.label}`}
                             />
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="sticky right-0 z-10 bg-background text-right">
                             {rowActions(item)}
                           </TableCell>
                         </motion.tr>

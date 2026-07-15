@@ -66,6 +66,10 @@ import {
   AlertTriangleIcon,
   Loader2Icon,
 } from "@/components/ui/icons";
+import {
+  AdminMobileCard,
+  AdminMobileCards,
+} from "../components/AdminMobileCards";
 import { formatDate } from "@/lib/locale-utils";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -840,7 +844,56 @@ export function AdminNotifications() {
               )}
             </Empty>
           ) : (
-            <DataTable table={table} />
+            <>
+              <div className="hidden md:block">
+                <DataTable table={table} />
+              </div>
+              <div className="space-y-3 md:hidden">
+                <AdminMobileCards
+                  items={table.reactTable.getRowModel().rows.map((row) => row.original)}
+                  getKey={(notification) => notification.id}
+                  renderItem={(notification) => (
+                    <AdminMobileCard
+                      title={notification.title || notification.message}
+                      description={notification.user_name}
+                      leading={
+                        <UserAvatar
+                          user={{
+                            full_name: notification.user_name,
+                            avatar_url: notification.user_avatar,
+                          }}
+                          size="md"
+                        />
+                      }
+                      badges={
+                        <>
+                          <TypeBadge type={notification.type} />
+                          <ReadStatusBadge isRead={notification.is_read} />
+                        </>
+                      }
+                      meta={[
+                        {
+                          label: tAdmin("common.createdAt"),
+                          value: formatDate(notification.created_at),
+                        },
+                      ]}
+                      actions={
+                        <RowActions
+                          onEdit={() => {
+                            setEditNotification(notification);
+                            setEditDialogOpen(true);
+                          }}
+                          onDelete={() => {
+                            setDeleteNotification(notification);
+                            setDeleteDialogOpen(true);
+                          }}
+                        />
+                      }
+                    />
+                  )}
+                />
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

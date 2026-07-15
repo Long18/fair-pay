@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { useGetIdentity, useGo, type CrudFilters } from "@refinedev/core";
 import { useInstantUpdate, useInstantDelete } from "@/hooks/use-instant-mutation";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { AnimatedList } from "@/components/ui/animated-list";
 import { AnimatedRow } from "@/components/ui/animated-row";
 import { supabaseClient } from "@/utility/supabaseClient";
-import { DataTable } from "@/components/refine-ui/data-table/data-table";
+import { DataTable, getCommonStyles } from "@/components/refine-ui/data-table/data-table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -2347,18 +2347,47 @@ function UsersTab() {
   ], [go, identity?.id, tap, warning, handleToggleJourneyTracking, tAdmin]);
 
   const [sorting, setSorting] = useState<SortingState>([{ id: "created_at", desc: true }]);
+  const [columnPinning, setColumnPinning] = useState<{ left?: string[]; right?: string[] }>({
+    right: ["actions"],
+  });
+  const usersScrollRef = useRef<HTMLDivElement>(null);
+  const [usersTableOverflow, setUsersTableOverflow] = useState({
+    horizontal: false,
+    vertical: false,
+  });
 
   const reactTable = useReactTable({
     data: filteredData,
     columns,
-    state: { sorting },
+    state: { sorting, columnPinning },
     onSortingChange: setSorting,
+    onColumnPinningChange: setColumnPinning,
+    enableColumnPinning: true,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     initialState: { pagination: { pageSize: 10 } },
   });
+
+  useEffect(() => {
+    const checkOverflow = () => {
+      const container = usersScrollRef.current;
+      const tableEl = container?.querySelector("table");
+      if (!tableEl || !container) return;
+      setUsersTableOverflow({
+        horizontal: tableEl.offsetWidth > container.clientWidth,
+        vertical: tableEl.offsetHeight > container.clientHeight,
+      });
+    };
+    checkOverflow();
+    window.addEventListener("resize", checkOverflow);
+    const timeoutId = setTimeout(checkOverflow, 100);
+    return () => {
+      window.removeEventListener("resize", checkOverflow);
+      clearTimeout(timeoutId);
+    };
+  }, [filteredData]);
 
   // Handlers
   const handleToggleRole = useCallback((user: AdminUserRow) => {
@@ -2716,13 +2745,19 @@ function UsersTab() {
               />
             ) : (
               <>
-                <div className="hidden overflow-x-auto rounded-md border md:block">
-                  <Table>
+                <div ref={usersScrollRef} className="hidden overflow-x-auto rounded-md border md:block">
+                  <Table containerClassName="overflow-visible" style={{ tableLayout: "fixed", width: "max-content", minWidth: "100%" }}>
                     <TableHeader>
                       {reactTable.getHeaderGroups().map((headerGroup) => (
                         <TableRow key={headerGroup.id}>
                           {headerGroup.headers.map((header) => (
-                            <TableHead key={header.id} style={{ width: header.getSize() }}>
+                            <TableHead
+                              key={header.id}
+                              style={getCommonStyles({
+                                column: header.column,
+                                isOverflowing: usersTableOverflow,
+                              })}
+                            >
                               {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                             </TableHead>
                           ))}
@@ -2734,7 +2769,13 @@ function UsersTab() {
                         reactTable.getRowModel().rows.map((row) => (
                           <TableRow key={row.original?.id ?? row.id}>
                             {row.getVisibleCells().map((cell) => (
-                              <TableCell key={cell.id} style={{ width: cell.column.getSize() }}>
+                              <TableCell
+                                key={cell.id}
+                                style={getCommonStyles({
+                                  column: cell.column,
+                                  isOverflowing: usersTableOverflow,
+                                })}
+                              >
                                 <div className="truncate">{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>
                               </TableCell>
                             ))}
