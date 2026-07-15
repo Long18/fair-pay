@@ -2,8 +2,16 @@ import type { ThemeIntent } from "@/lib/theme-intents";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-/** localStorage key for persisting onboarding state */
+/** Base localStorage key for persisting onboarding state */
 export const STORAGE_KEY = "fairpay-onboarding-state";
+
+/**
+ * Per-user storage key so anonymous visitors never share tutorial state
+ * with an authenticated account.
+ */
+export function getOnboardingStorageKey(userId: string): string {
+  return `${STORAGE_KEY}:${userId}`;
+}
 
 /** Current app version, used for version-aware state migration */
 export const APP_VERSION: string =

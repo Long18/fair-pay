@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 
-import { STORAGE_KEY, APP_VERSION } from "../types";
+import { STORAGE_KEY, APP_VERSION, getOnboardingStorageKey } from "../types";
 import type { OnboardingState } from "../types";
 
 // ─── Stable persistence helper ───────────────────────────────────────────────
@@ -9,8 +9,8 @@ import type { OnboardingState } from "../types";
  * Persist state to localStorage. Extracted as a standalone function
  * so callbacks can reference it without depending on React state.
  */
-function persist(state: OnboardingState): void {
-  persistToLocalStorage(STORAGE_KEY, state);
+function persist(storageKey: string, state: OnboardingState): void {
+  persistToLocalStorage(storageKey, state);
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -57,6 +57,17 @@ function persistToLocalStorage(key: string, state: OnboardingState): boolean {
   }
 }
 
+/**
+ * Resolve the storage key for onboarding persistence.
+ * Prefer per-user keys; fall back to the legacy global key for tests / migrations.
+ */
+export function resolveOnboardingStorageKey(userId?: string | null): string {
+  if (userId) {
+    return getOnboardingStorageKey(userId);
+  }
+  return STORAGE_KEY;
+}
+
 // ─── Options ─────────────────────────────────────────────────────────────────
 
 export interface UseOnboardingStateOptions {
@@ -66,6 +77,16 @@ export interface UseOnboardingStateOptions {
   syncToSupabase?: boolean;
   /** Total number of steps in the current registry (for version migration) */
   totalSteps?: number;
+  /**
+   * Authenticated user id. When set, state is keyed per user.
+   * When omitted/null and enabled is false, the tutorial stays inactive.
+   */
+  userId?: string | null;
+  /**
+   * When false, do not activate or persist (unauthenticated / public routes).
+   * Defaults to true for backward-compatible unit tests.
+   */
+  enabled?: boolean;
 }
 
 // ─── Initialization Logic ────────────────────────────────────────────────────
@@ -86,34 +107,43 @@ export interface UseOnboardingStateOptions {
 export function initializeOnboarding(
   forceShow: boolean,
   totalSteps: number,
+  storageKey: string = STORAGE_KEY,
 ): { shouldShow: boolean; initialState: OnboardingState } {
-  const persisted = readFromLocalStorage(STORAGE_KEY);
+  const persisted = readFromLocalStorage(storageKey);
+
+  // Migrate from legacy global key into per-user key when needed
+  const legacy =
+    storageKey !== STORAGE_KEY ? readFromLocalStorage(STORAGE_KEY) : null;
+  const source = persisted ?? legacy;
 
   // Step 2: forceShow overrides everything
   if (forceShow) {
     const freshState = createFreshState(APP_VERSION);
-    persistToLocalStorage(STORAGE_KEY, freshState);
+    persistToLocalStorage(storageKey, freshState);
     return { shouldShow: true, initialState: freshState };
   }
 
   // Step 3: No persisted state → first-time user
-  if (!persisted) {
+  if (!source) {
     const freshState = createFreshState(APP_VERSION);
-    persistToLocalStorage(STORAGE_KEY, freshState);
+    persistToLocalStorage(storageKey, freshState);
     return { shouldShow: true, initialState: freshState };
   }
 
   // Version-aware migration (Requirement 14.1, 14.2)
-  let migrated = persisted;
-  if (persisted.appVersion !== APP_VERSION) {
-    migrated = { ...persisted, appVersion: APP_VERSION };
-    if (persisted.lastStepIndex >= totalSteps) {
+  let migrated = source;
+  if (source.appVersion !== APP_VERSION) {
+    migrated = { ...source, appVersion: APP_VERSION };
+    if (source.lastStepIndex >= totalSteps) {
       migrated = { ...migrated, lastStepIndex: 0 };
     }
   }
 
   // Step 4: Already completed → don't show
   if (migrated.completed) {
+    if (!persisted && legacy) {
+      persistToLocalStorage(storageKey, migrated);
+    }
     return { shouldShow: false, initialState: migrated };
   }
 
@@ -123,7 +153,7 @@ export function initializeOnboarding(
       ...migrated,
       showCount: migrated.showCount + 1,
     };
-    persistToLocalStorage(STORAGE_KEY, resumedState);
+    persistToLocalStorage(storageKey, resumedState);
     return { shouldShow: true, initialState: resumedState };
   }
 
@@ -132,7 +162,7 @@ export function initializeOnboarding(
     ...migrated,
     showCount: migrated.showCount + 1,
   };
-  persistToLocalStorage(STORAGE_KEY, activatedState);
+  persistToLocalStorage(storageKey, activatedState);
   return { shouldShow: true, initialState: activatedState };
 }
 
@@ -143,7 +173,7 @@ export function initializeOnboarding(
  *
  * Exposes:
  * - `state`: current OnboardingState
- * - `isActive`: true IFF !state.completed || forceShow
+ * - `isActive`: true IFF enabled && (!state.completed || forceShow)
  * - `markCompleted(skipped?, skippedAtStep?)`: idempotent completion
  * - `updateProgress(stepIndex)`: persist step progress
  * - `reset()`: clear state and return to fresh
@@ -151,26 +181,79 @@ export function initializeOnboarding(
 export function useOnboardingState(options?: UseOnboardingStateOptions) {
   const forceShow = options?.forceShow ?? false;
   const totalSteps = options?.totalSteps ?? 9;
+  const userId = options?.userId ?? null;
+  const enabled = options?.enabled ?? true;
+  const storageKey = resolveOnboardingStorageKey(userId);
 
   const forceShowRef = useRef(forceShow);
   useEffect(() => {
     forceShowRef.current = forceShow;
   }, [forceShow]);
 
+  const storageKeyRef = useRef(storageKey);
+  useEffect(() => {
+    storageKeyRef.current = storageKey;
+  }, [storageKey]);
+
+  const enabledRef = useRef(enabled);
+  useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
+
   const [state, setStateInternal] = useState<OnboardingState>(() => {
-    const { initialState } = initializeOnboarding(forceShow, totalSteps);
+    if (!enabled) {
+      return createFreshState(APP_VERSION);
+    }
+    const { initialState } = initializeOnboarding(
+      forceShow,
+      totalSteps,
+      storageKey,
+    );
     return initialState;
   });
 
+  // Re-initialize when the authenticated user changes (guest → signed in,
+  // or switching accounts). Skip the first mount — useState already seeded.
+  const didMountRef = useRef(false);
+  const prevStorageKeyRef = useRef(storageKey);
+  const prevEnabledRef = useRef(enabled);
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      prevStorageKeyRef.current = storageKey;
+      prevEnabledRef.current = enabled;
+      return;
+    }
+
+    const userChanged = prevStorageKeyRef.current !== storageKey;
+    const enabledChanged = prevEnabledRef.current !== enabled;
+    prevStorageKeyRef.current = storageKey;
+    prevEnabledRef.current = enabled;
+
+    if (!userChanged && !enabledChanged) {
+      return;
+    }
+
+    if (!enabled) {
+      setStateInternal(createFreshState(APP_VERSION));
+      return;
+    }
+    const { initialState } = initializeOnboarding(
+      forceShowRef.current,
+      totalSteps,
+      storageKey,
+    );
+    setStateInternal(initialState);
+  }, [enabled, storageKey, totalSteps]);
+
   // Keep a ref to the latest state so callbacks don't close over stale values.
-  // This breaks the dependency cycle: callbacks never depend on `state`,
-  // so their references stay stable across renders.
   const stateRef = useRef(state);
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
 
-  const isActive = !state.completed || forceShowRef.current;
+  const isActive =
+    enabled && (!state.completed || forceShowRef.current);
 
   /**
    * Mark the tutorial as completed (or skipped).
@@ -179,6 +262,7 @@ export function useOnboardingState(options?: UseOnboardingStateOptions) {
    */
   const markCompleted = useCallback(
     (skipped?: boolean, skippedAtStep?: number) => {
+      if (!enabledRef.current) return;
       setStateInternal((prev) => {
         // Idempotent: if already completed, preserve existing values
         if (prev.completed) return prev;
@@ -189,7 +273,7 @@ export function useOnboardingState(options?: UseOnboardingStateOptions) {
           skipped: skipped ?? false,
           skippedAtStep: skippedAtStep ?? null,
         };
-        persist(next);
+        persist(storageKeyRef.current, next);
         return next;
       });
     },
@@ -200,25 +284,24 @@ export function useOnboardingState(options?: UseOnboardingStateOptions) {
    * Update the current step progress.
    * Stable reference — does not depend on `state`.
    */
-  const updateProgress = useCallback(
-    (stepIndex: number) => {
-      setStateInternal((prev) => {
-        if (prev.lastStepIndex === stepIndex) return prev;
-        const next: OnboardingState = { ...prev, lastStepIndex: stepIndex };
-        persist(next);
-        return next;
-      });
-    },
-    [],
-  );
+  const updateProgress = useCallback((stepIndex: number) => {
+    if (!enabledRef.current) return;
+    setStateInternal((prev) => {
+      if (prev.lastStepIndex === stepIndex) return prev;
+      const next: OnboardingState = { ...prev, lastStepIndex: stepIndex };
+      persist(storageKeyRef.current, next);
+      return next;
+    });
+  }, []);
 
   /**
    * Reset all onboarding state to fresh defaults.
    * Stable reference.
    */
   const reset = useCallback(() => {
+    if (!enabledRef.current) return;
     const freshState = createFreshState(APP_VERSION);
-    persist(freshState);
+    persist(storageKeyRef.current, freshState);
     setStateInternal(freshState);
   }, []);
 

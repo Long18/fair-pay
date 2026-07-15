@@ -36,7 +36,34 @@ function readPersistedState(): OnboardingState | null {
 // ─── Setup ───────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
-  window.localStorage.clear();
+  // Node 26 may expose an unavailable localStorage; ensure a usable store for tests.
+  if (
+    typeof window.localStorage === "undefined" ||
+    typeof window.localStorage.clear !== "function"
+  ) {
+    const store = new Map<string, string>();
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: (key: string) => store.get(key) ?? null,
+        setItem: (key: string, value: string) => {
+          store.set(key, String(value));
+        },
+        removeItem: (key: string) => {
+          store.delete(key);
+        },
+        clear: () => {
+          store.clear();
+        },
+        get length() {
+          return store.size;
+        },
+        key: (index: number) => Array.from(store.keys())[index] ?? null,
+      },
+    });
+  } else {
+    window.localStorage.clear();
+  }
 });
 
 // ============================================================================
@@ -293,9 +320,11 @@ describe("useOnboardingState", () => {
 
   describe("localStorage fallback (Req 6.3)", () => {
     it("falls back to in-memory state when localStorage throws on read", () => {
-      const getItemSpy = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
-        throw new Error("Storage unavailable");
-      });
+      const getItemSpy = vi
+        .spyOn(window.localStorage, "getItem")
+        .mockImplementation(() => {
+          throw new Error("Storage unavailable");
+        });
 
       const { result } = renderHook(() => useOnboardingState());
 
@@ -307,9 +336,11 @@ describe("useOnboardingState", () => {
     });
 
     it("continues working when localStorage throws on write", () => {
-      const setItemSpy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
-        throw new Error("Quota exceeded");
-      });
+      const setItemSpy = vi
+        .spyOn(window.localStorage, "setItem")
+        .mockImplementation(() => {
+          throw new Error("Quota exceeded");
+        });
 
       const { result } = renderHook(() => useOnboardingState());
 
@@ -321,6 +352,32 @@ describe("useOnboardingState", () => {
       expect(result.current.state.lastStepIndex).toBe(3);
 
       setItemSpy.mockRestore();
+    });
+  });
+
+  describe("auth gating", () => {
+    it("isActive is false when enabled=false", () => {
+      const { result } = renderHook(() =>
+        useOnboardingState({ enabled: false }),
+      );
+      expect(result.current.isActive).toBe(false);
+    });
+
+    it("persists under a per-user storage key", () => {
+      const userId = "user-abc";
+      const { result } = renderHook(() =>
+        useOnboardingState({ userId, enabled: true }),
+      );
+
+      act(() => {
+        result.current.markCompleted();
+      });
+
+      const raw = window.localStorage.getItem(
+        `fairpay-onboarding-state:${userId}`,
+      );
+      expect(raw).not.toBeNull();
+      expect(JSON.parse(raw!).completed).toBe(true);
     });
   });
 });

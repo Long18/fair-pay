@@ -27,7 +27,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     icon: FairPayIcon,
     targetSelector: null,
     intent: "brand",
-    requiresAuth: false,
+    requiresAuth: true,
     tooltipPosition: "center",
   },
   {
@@ -39,7 +39,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     spotlightShape: "pill",
     spotlightPadding: 8,
     intent: "brand",
-    requiresAuth: false,
+    requiresAuth: true,
     tooltipPosition: "bottom",
     action: {
       labelKey: "onboarding.actions.tryIt",
@@ -85,7 +85,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     spotlightShape: "circle",
     spotlightPadding: 8,
     intent: "accent",
-    requiresAuth: false,
+    requiresAuth: true,
     tooltipPosition: "bottom",
     action: {
       labelKey: "onboarding.actions.tryIt",
@@ -125,7 +125,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     spotlightShape: "circle",
     spotlightPadding: 8,
     intent: "info",
-    requiresAuth: false,
+    requiresAuth: true,
     tooltipPosition: "bottom",
   },
   {
@@ -135,7 +135,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     icon: CheckCircle2Icon,
     targetSelector: null,
     intent: "success",
-    requiresAuth: false,
+    requiresAuth: true,
     tooltipPosition: "center",
   },
 ];
@@ -143,8 +143,8 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
 /**
  * Hook that provides the filtered tutorial steps based on authentication state.
  *
- * For unauthenticated users, steps with `requiresAuth: true` are excluded.
- * For authenticated users, all steps are included.
+ * Unauthenticated users get no steps — the tutorial is auth-gated.
+ * Authenticated users get the full registry.
  *
  * The result is memoized to avoid unnecessary re-renders.
  */
@@ -153,7 +153,7 @@ export function useTutorialSteps(isAuthenticated: boolean) {
     if (isAuthenticated) {
       return TUTORIAL_STEPS;
     }
-    return TUTORIAL_STEPS.filter((step) => !step.requiresAuth);
+    return [];
   }, [isAuthenticated]);
 
   const totalSteps = steps.length;

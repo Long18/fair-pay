@@ -41,16 +41,23 @@ export function OnboardingProvider({
   children,
   forceShow,
 }: OnboardingProviderProps) {
-  // ── Auth state ───────────────────────────────────────────────────────
-  const { data: identity } = useGetIdentity<Profile>();
-  const isAuthenticated = !!identity;
+  // ── Auth state — tutorial must never run for guests / public routes ─
+  const { data: identity, isLoading: identityLoading } =
+    useGetIdentity<Profile>();
+  const userId = identity?.id ?? null;
+  const isAuthenticated = !!userId;
 
-  // ── Step engine (filtered by auth) ───────────────────────────────────
+  // ── Step engine (empty when unauthenticated) ─────────────────────────
   const { steps, totalSteps, getStep } = useTutorialSteps(isAuthenticated);
 
-  // ── Persisted state ──────────────────────────────────────────────────
+  // ── Persisted state (per-user; disabled until authenticated) ─────────
   const { state, isActive, markCompleted, updateProgress, reset } =
-    useOnboardingState({ forceShow, totalSteps });
+    useOnboardingState({
+      forceShow,
+      totalSteps,
+      userId,
+      enabled: isAuthenticated && !identityLoading,
+    });
 
   // ── Local step index ─────────────────────────────────────────────────
   const [currentStep, setCurrentStep] = useState(() => {
@@ -174,11 +181,15 @@ export function OnboardingProvider({
     ],
   );
 
+  const showTutorial =
+    isAuthenticated && !identityLoading && isActive && stepConfig !== null;
+
   return (
     <OnboardingContext.Provider value={contextValue}>
       {children}
-      {isActive && stepConfig !== null && (
+      {showTutorial && (
         <OnboardingOrchestrator
+          steps={steps}
           stepConfig={stepConfig}
           currentStep={currentStep}
           totalSteps={totalSteps}
@@ -186,6 +197,7 @@ export function OnboardingProvider({
           interactionMode={interactionMode}
           onNext={next}
           onBack={back}
+          onGoToStep={goToStep}
           onSkip={skip}
           onTryIt={enterTryIt}
           onExitTryIt={exitTryIt}

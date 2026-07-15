@@ -76,21 +76,14 @@ describe("useTutorialSteps", () => {
     expect(result.current.totalSteps).toBe(9);
   });
 
-  it("filters out requiresAuth steps for unauthenticated users", () => {
+  it("returns no steps for unauthenticated users", () => {
     const { result } = renderHook(() => useTutorialSteps(false));
-
-    const authSteps = result.current.steps.filter((s) => s.requiresAuth);
-    expect(authSteps).toHaveLength(0);
+    expect(result.current.steps).toHaveLength(0);
+    expect(result.current.totalSteps).toBe(0);
   });
 
-  it("unauthenticated users see only non-auth steps", () => {
-    const { result } = renderHook(() => useTutorialSteps(false));
-
-    const expectedIds = TUTORIAL_STEPS
-      .filter((s) => !s.requiresAuth)
-      .map((s) => s.id);
-
-    expect(result.current.steps.map((s) => s.id)).toEqual(expectedIds);
+  it("every registered step requires authentication", () => {
+    expect(TUTORIAL_STEPS.every((s) => s.requiresAuth)).toBe(true);
   });
 
   it("totalSteps matches steps.length", () => {
@@ -119,11 +112,10 @@ describe("useTutorialSteps", () => {
     expect(result.current.getStep(100)).toBeNull();
   });
 
-  it("getStep returns null for out-of-bounds on filtered steps", () => {
+  it("getStep returns null when there are no unauthenticated steps", () => {
     const { result } = renderHook(() => useTutorialSteps(false));
 
-    // Filtered steps have fewer entries
-    expect(result.current.getStep(result.current.totalSteps)).toBeNull();
+    expect(result.current.getStep(0)).toBeNull();
   });
 
   it("maintains deterministic order across renders", () => {
