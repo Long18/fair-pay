@@ -40,6 +40,7 @@ export interface AuditLogEntry {
   actor_id: string | null;
   actor_name: string | null;
   actor_email: string | null;
+  actor_avatar_url: string | null;
   action_type: string;
   table_name: string | null;
   entity_type: string | null;

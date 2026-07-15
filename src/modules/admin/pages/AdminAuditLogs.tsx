@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/user-display";
 import {
   Select,
   SelectContent,
@@ -526,7 +526,21 @@ function AuditDetailDialog({
           <ScrollArea className="flex-1 -mx-6 px-6 mt-3">
             <TabsContent value="overview" className="mt-0 pb-4">
               <div className="grid grid-cols-2 gap-4">
-                <DetailItem label={tAdmin("auditLogs.actor")} value={entry.actor_name || entry.actor_email || tAdmin("common.system")} />
+                <DetailItem
+                  label={tAdmin("auditLogs.actor")}
+                  value={
+                    <div className="flex items-center gap-2">
+                      <UserAvatar
+                        size="sm"
+                        user={{
+                          full_name: entry.actor_name || entry.actor_email || "?",
+                          avatar_url: entry.actor_avatar_url ?? null,
+                        }}
+                      />
+                      <span>{entry.actor_name || entry.actor_email || tAdmin("common.system")}</span>
+                    </div>
+                  }
+                />
                 <DetailItem label={tAdmin("common.email")} value={entry.actor_email || "—"} />
                 <DetailItem label={tAdmin("auditLogs.actionType")} value={<ActionBadge action={entry.action_type} />} />
                 <DetailItem label={tAdmin("auditLogs.tableEntity")} value={
@@ -1003,11 +1017,14 @@ export function AdminAuditLogs() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <Avatar className="h-7 w-7 shrink-0">
-                              <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
-                                {(entry.actor_name || entry.actor_email || "?")[0].toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
+                            <UserAvatar
+                              size="sm"
+                              user={{
+                                full_name: entry.actor_name || entry.actor_email || "?",
+                                avatar_url: entry.actor_avatar_url ?? null,
+                              }}
+                              className="h-7 w-7"
+                            />
                             <div className="flex flex-col min-w-0">
                               <span className="text-sm font-medium truncate max-w-[140px]">
                                 {entry.actor_name || entry.actor_email || tAdmin("common.system")}
@@ -1070,7 +1087,15 @@ export function AdminAuditLogs() {
                     <AdminMobileCard
                       title={entry.table_name ?? entry.entity_type ?? "—"}
                       description={`${entry.actor_name || entry.actor_email || tAdmin("common.system")} · ${formatDate(entry.timestamp)}`}
-                      leading={<ScrollTextIcon className="mt-1 h-5 w-5 text-primary" />}
+                      leading={
+                        <UserAvatar
+                          size="sm"
+                          user={{
+                            full_name: entry.actor_name || entry.actor_email || "?",
+                            avatar_url: entry.actor_avatar_url ?? null,
+                          }}
+                        />
+                      }
                       badges={
                         <>
                           <ActionBadge action={entry.action_type} />
