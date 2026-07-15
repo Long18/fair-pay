@@ -121,6 +121,10 @@ import { AdminTableSkeleton } from "../components/AdminTableSkeleton";
 import { AdminEmptyState } from "../components/AdminEmptyState";
 import { AdminCrudDialog } from "../components/AdminCrudSheet";
 import {
+  PostCreateConnectionsDialog,
+  type PostCreateUserRef,
+} from "../components/PostCreateConnectionsDialog";
+import {
   AdminMobileCard,
   AdminMobileCards,
   AdminMobilePagination,
@@ -1690,8 +1694,8 @@ function CreateFriendshipSheet({
         return;
       }
       const { error } = await supabaseClient.from("friendships").insert({
-        user_a: userA,
-        user_b: userB,
+        user_a: userA < userB ? userA : userB,
+        user_b: userA < userB ? userB : userA,
         status,
         created_by: createdBy,
       });
@@ -2078,6 +2082,8 @@ function UsersTab() {
   // Create
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [postCreateUser, setPostCreateUser] = useState<PostCreateUserRef | null>(null);
+  const [postCreateOpen, setPostCreateOpen] = useState(false);
 
   // Edit
   const [editUser, setEditUser] = useState<AdminUserRow | null>(null);
@@ -2339,16 +2345,23 @@ function UsersTab() {
   const handleCreateUser = useCallback(async (data: CreateUserFormValues) => {
     setIsCreating(true);
     try {
-      const { error } = await supabaseClient.rpc("admin_create_profile", {
+      const { data: createdRows, error } = await supabaseClient.rpc("admin_create_profile", {
         p_full_name: data.full_name,
         p_email: data.email,
         p_role: data.role,
         p_avatar_url: data.avatar_url ?? null,
       });
       if (error) throw error;
+
+      const created = Array.isArray(createdRows) ? createdRows[0] : null;
       toast.success(tAdmin("people.success.userCreated", { name: data.full_name }));
       setCreateDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+
+      if (created?.id) {
+        setPostCreateUser({ id: created.id, full_name: created.full_name || data.full_name });
+        setPostCreateOpen(true);
+      }
     } catch (err: unknown) {
       toast.error(tAdmin("common.errorWithMessage", { message: getErrorMessage(err, tAdmin("people.errors.createUserFailed")) }));
     } finally { setIsCreating(false); }
@@ -2358,13 +2371,23 @@ function UsersTab() {
     if (!mergeSourceUser || !targetUserId || mergeSourceUser.id === targetUserId) return;
     setIsMerging(true);
     try {
-      const { error } = await supabaseClient.rpc("admin_merge_profiles", {
+      const { data: mergeResult, error } = await supabaseClient.rpc("admin_merge_profiles", {
         p_source_user_id: mergeSourceUser.id,
         p_target_user_id: targetUserId,
       });
       if (error) throw error;
 
-      toast.success(tAdmin("people.success.userMerged", { name: mergeSourceUser.full_name }));
+      const isNoop =
+        mergeResult != null &&
+        typeof mergeResult === "object" &&
+        !Array.isArray(mergeResult) &&
+        (mergeResult as { noop?: boolean }).noop === true;
+
+      toast.success(
+        isNoop
+          ? tAdmin("people.success.userAlreadyMerged", { name: mergeSourceUser.full_name })
+          : tAdmin("people.success.userMerged", { name: mergeSourceUser.full_name }),
+      );
       setMergeDialogOpen(false);
       setMergeSourceUser(null);
       if (selectedUser?.id === mergeSourceUser.id) {
@@ -2815,6 +2838,20 @@ function UsersTab() {
         isDeleting={isDeleting}
       />
       <CreateUserDialog key={createDialogOpen ? "create-user-open" : "create-user-closed"} open={createDialogOpen} onOpenChange={setCreateDialogOpen} onSubmit={handleCreateUser} isCreating={isCreating} />
+      <PostCreateConnectionsDialog
+        key={postCreateUser?.id ?? "post-create-empty"}
+        open={postCreateOpen}
+        onOpenChange={(open) => {
+          setPostCreateOpen(open);
+          if (!open) setPostCreateUser(null);
+        }}
+        user={postCreateUser}
+        createdBy={identity?.id ?? ""}
+        onDone={() => {
+          queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+          queryClient.invalidateQueries({ queryKey: ["admin", "friendships"] });
+        }}
+      />
       <EditUserDialog
         key={editUser?.id ?? "edit-user-empty"}
         user={editUser}
