@@ -156,7 +156,10 @@ function useReferralStats(enabled: boolean) {
       const totalSignups = events.filter((e) => e.event_type === "signup").length;
 
       const activeReferrerSet = new Set(
-        events.filter((e) => e.event_type === "signup").map((e) => e.referrer_id),
+        events.reduce<typeof events[number]["referrer_id"][]>((acc, e) => {
+          if (e.event_type === "signup") acc.push(e.referrer_id);
+          return acc;
+        }, []),
       );
       const activeReferrers = activeReferrerSet.size;
 
@@ -1405,9 +1408,9 @@ function ExperimentsTab({ enabled }: { enabled: boolean }) {
                     </div>
                     <div className="h-3 w-full rounded-full bg-muted overflow-hidden">
                       <motion.div
-                        className="h-full rounded-full bg-primary"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${v.pct}%` }}
+                        className="h-full w-full origin-left rounded-full bg-primary"
+                        initial={{ scaleX: 0 }}
+                        animate={{ scaleX: v.pct / 100 }}
                         transition={{ duration: 0.6, ease: "easeOut" }}
                       />
                     </div>
@@ -1515,9 +1518,9 @@ function ExperimentsTab({ enabled }: { enabled: boolean }) {
                             <span className="text-xs font-mono w-16 shrink-0 text-muted-foreground truncate">{v.variant}</span>
                             <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                               <motion.div
-                                className="h-full bg-primary rounded-full"
-                                initial={{ width: 0 }}
-                                animate={{ width: `${v.pct}%` }}
+                                className="h-full w-full origin-left bg-primary rounded-full"
+                                initial={{ scaleX: 0 }}
+                                animate={{ scaleX: v.pct / 100 }}
                                 transition={{ duration: 0.5, delay: index * 0.06 + 0.2 }}
                               />
                             </div>

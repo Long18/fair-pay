@@ -143,9 +143,9 @@ export function OnboardingChecklist() {
             {/* Progress bar */}
             <div className="mx-4 mb-3 h-1.5 w-auto rounded-full bg-muted overflow-hidden">
               <motion.div
-                className="h-full rounded-full bg-primary"
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.round((completedCount / totalCount) * 100)}%` }}
+                className="h-full w-full origin-left rounded-full bg-primary"
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: completedCount / totalCount }}
                 transition={{ duration: 0.5, ease: "easeOut" }}
               />
             </div>

@@ -151,12 +151,12 @@ export const SwipeableTabs = ({
           <motion.div
             key={index}
             animate={{
-              width: index === currentIndex ? 24 : 8,
+              scaleX: index === currentIndex ? 3 : 1,
               opacity: index === currentIndex ? 1 : 0.5,
             }}
             transition={{ duration: 0.2 }}
             className={cn(
-              "h-2 rounded-full bg-primary",
+              "h-2 w-2 origin-center rounded-full bg-primary",
               index !== currentIndex && "bg-muted-foreground"
             )}
           />
