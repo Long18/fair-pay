@@ -1196,64 +1196,116 @@ function DeleteConfirmDialog({
 }
 
 function MergeUserDialog({
-  sourceUser,
+  initialSourceUser,
   users,
   open,
   onOpenChange,
   onConfirm,
   isMerging,
+  identityId,
 }: {
-  sourceUser: AdminUserRow | null;
+  initialSourceUser: AdminUserRow | null;
   users: AdminUserRow[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (targetUserId: string) => void;
+  onConfirm: (targetUserId: string, sourceUserIds: string[]) => void;
   isMerging: boolean;
+  identityId?: string;
 }) {
   const { tAdmin } = useAdminTranslation();
   const [targetUserId, setTargetUserId] = useState("");
+  const [sourceUserIds, setSourceUserIds] = useState<string[]>([]);
+  const [sourceSearch, setSourceSearch] = useState("");
 
   useEffect(() => {
-    if (open) setTargetUserId("");
-  }, [open, sourceUser?.id]);
+    if (!open) return;
+    setTargetUserId("");
+    setSourceSearch("");
+    setSourceUserIds(initialSourceUser?.id ? [initialSourceUser.id] : []);
+  }, [open, initialSourceUser?.id]);
 
-  const targetUsers = useMemo(
-    () => users.filter((user) => user.id !== sourceUser?.id),
-    [sourceUser?.id, users],
+  const excludedFromTarget = useMemo(
+    () => new Set([...sourceUserIds, identityId].filter(Boolean) as string[]),
+    [identityId, sourceUserIds],
   );
 
-  if (!sourceUser) return null;
+  const targetUsers = useMemo(
+    () => users.filter((user) => !excludedFromTarget.has(user.id)),
+    [excludedFromTarget, users],
+  );
+
+  const sourceOptions = useMemo(() => {
+    const q = sourceSearch.trim().toLowerCase();
+    return users.filter((user) => {
+      if (user.id === targetUserId || user.id === identityId) return false;
+      if (!q) return true;
+      return (
+        user.full_name.toLowerCase().includes(q) ||
+        user.email.toLowerCase().includes(q)
+      );
+    });
+  }, [identityId, sourceSearch, targetUserId, users]);
+
+  const selectedSources = useMemo(
+    () => users.filter((user) => sourceUserIds.includes(user.id)),
+    [sourceUserIds, users],
+  );
+
+  const toggleSource = (id: string) => {
+    setSourceUserIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
+
+  if (!initialSourceUser && sourceUserIds.length === 0) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent className="sm:max-w-[560px]">
         <DialogHeader>
           <DialogTitle>{tAdmin("people.mergeProfileTitle")}</DialogTitle>
           <DialogDescription>
-            {tAdmin("people.mergeProfileDescription", {
-              name: sourceUser.full_name,
-              email: sourceUser.email,
-            })}
+            {tAdmin("people.mergeProfilesDescription")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="rounded-lg border bg-muted/20 p-3 text-sm">
-            <DetailRow
-              label={tAdmin("people.mergeSource")}
-              value={<span className="font-medium">{sourceUser.full_name}</span>}
+          <div className="space-y-2">
+            <Label>{tAdmin("people.mergeSources")}</Label>
+            <Input
+              value={sourceSearch}
+              onChange={(e) => setSourceSearch(e.target.value)}
+              placeholder={tAdmin("people.searchMergeSources")}
+              disabled={isMerging}
             />
-            <DetailRow
-              label={tAdmin("common.email")}
-              value={
-                <div className="space-y-0.5">
-                  <span translate="no">{sourceUser.email}</span>
-                  {(sourceUser.emails ?? []).filter((e) => !e.is_primary).map((e) => (
-                    <p key={e.id} className="text-xs text-muted-foreground" translate="no">{e.email}</p>
-                  ))}
-                </div>
-              }
-            />
+            <div className="max-h-44 space-y-1 overflow-y-auto rounded-md border p-2">
+              {sourceOptions.length === 0 ? (
+                <p className="px-1 py-2 text-sm text-muted-foreground">{tAdmin("common.noData")}</p>
+              ) : (
+                sourceOptions.map((user) => {
+                  const checked = sourceUserIds.includes(user.id);
+                  return (
+                    <label
+                      key={user.id}
+                      className="flex cursor-pointer items-center gap-2 rounded px-1 py-1.5 hover:bg-muted/60"
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={() => toggleSource(user.id)}
+                        disabled={isMerging}
+                      />
+                      <span className="min-w-0 flex-1 truncate text-sm">{user.full_name}</span>
+                      <span className="truncate text-xs text-muted-foreground" translate="no">{user.email}</span>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+            {selectedSources.length > 0 ? (
+              <p className="text-xs text-muted-foreground">
+                {tAdmin("people.mergeSourcesSelected", { count: selectedSources.length })}
+              </p>
+            ) : null}
           </div>
 
           <div className="space-y-2">
@@ -1268,7 +1320,7 @@ function MergeUserDialog({
           </div>
 
           <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-            {tAdmin("people.mergeProfileWarning")}
+            {tAdmin("people.mergeProfilesWarning")}
           </p>
         </div>
 
@@ -1277,8 +1329,8 @@ function MergeUserDialog({
             {tAdmin("common.cancel")}
           </Button>
           <Button
-            onClick={() => onConfirm(targetUserId)}
-            disabled={isMerging || !targetUserId}
+            onClick={() => onConfirm(targetUserId, sourceUserIds)}
+            disabled={isMerging || !targetUserId || sourceUserIds.length === 0}
           >
             {isMerging ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
             {tAdmin("people.mergeProfileSubmit")}
@@ -2367,30 +2419,37 @@ function UsersTab() {
     } finally { setIsCreating(false); }
   }, [queryClient, tAdmin]);
 
-  const handleMergeUser = useCallback(async (targetUserId: string) => {
-    if (!mergeSourceUser || !targetUserId || mergeSourceUser.id === targetUserId) return;
+  const handleMergeUser = useCallback(async (targetUserId: string, sourceUserIds: string[]) => {
+    const sources = sourceUserIds.filter((id) => id && id !== targetUserId);
+    if (!targetUserId || sources.length === 0) return;
     setIsMerging(true);
     try {
-      const { data: mergeResult, error } = await supabaseClient.rpc("admin_merge_profiles", {
-        p_source_user_id: mergeSourceUser.id,
-        p_target_user_id: targetUserId,
-      });
-      if (error) throw error;
-
-      const isNoop =
-        mergeResult != null &&
-        typeof mergeResult === "object" &&
-        !Array.isArray(mergeResult) &&
-        (mergeResult as { noop?: boolean }).noop === true;
+      let mergedCount = 0;
+      let noopCount = 0;
+      for (const sourceId of sources) {
+        const { data: mergeResult, error } = await supabaseClient.rpc("admin_merge_profiles", {
+          p_source_user_id: sourceId,
+          p_target_user_id: targetUserId,
+        });
+        if (error) throw error;
+        const isNoop =
+          mergeResult != null &&
+          typeof mergeResult === "object" &&
+          !Array.isArray(mergeResult) &&
+          (mergeResult as { noop?: boolean }).noop === true;
+        if (isNoop) noopCount += 1;
+        else mergedCount += 1;
+      }
 
       toast.success(
-        isNoop
-          ? tAdmin("people.success.userAlreadyMerged", { name: mergeSourceUser.full_name })
-          : tAdmin("people.success.userMerged", { name: mergeSourceUser.full_name }),
+        tAdmin("people.success.usersMerged", {
+          merged: mergedCount,
+          noop: noopCount,
+        }),
       );
       setMergeDialogOpen(false);
       setMergeSourceUser(null);
-      if (selectedUser?.id === mergeSourceUser.id) {
+      if (selectedUser && sources.includes(selectedUser.id)) {
         setDetailOpen(false);
         setSelectedUser(null);
       }
@@ -2400,7 +2459,7 @@ function UsersTab() {
     } finally {
       setIsMerging(false);
     }
-  }, [mergeSourceUser, queryClient, selectedUser?.id, tAdmin]);
+  }, [queryClient, selectedUser, tAdmin]);
 
   const handleEditUser = useCallback(async (data: {
     full_name: string;
@@ -2862,7 +2921,7 @@ function UsersTab() {
         isSelf={identity?.id === editUser?.id}
       />
       <MergeUserDialog
-        sourceUser={mergeSourceUser}
+        initialSourceUser={mergeSourceUser}
         users={usersData ?? []}
         open={mergeDialogOpen}
         onOpenChange={(open) => {
@@ -2873,6 +2932,7 @@ function UsersTab() {
         }}
         onConfirm={handleMergeUser}
         isMerging={isMerging}
+        identityId={identity?.id}
       />
     </>
   );
