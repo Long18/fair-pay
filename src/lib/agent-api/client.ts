@@ -26,7 +26,6 @@ import type {
 } from './types'
 
 export type { AgentApiError } from './types'
-export { isAgentApiError } from './types'
 
 export class AgentApiClientError extends Error {
   readonly status: number

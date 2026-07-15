@@ -59,22 +59,6 @@ export async function createSepayOrder(
 }
 
 /**
- * Fetch a SePay order by invoice number.
- */
-export async function fetchSepayOrder(
-  invoiceNumber: string
-): Promise<SepayPaymentOrder | null> {
-  const { data, error } = await supabaseClient
-    .from('sepay_payment_orders')
-    .select('*')
-    .eq('order_invoice_number', invoiceNumber)
-    .single();
-
-  if (error) return null;
-  return data as SepayPaymentOrder;
-}
-
-/**
  * Fetch a SePay order by ID.
  */
 export async function fetchSepayOrderById(
@@ -88,22 +72,4 @@ export async function fetchSepayOrderById(
 
   if (error) return null;
   return data as SepayPaymentOrder;
-}
-
-/**
- * Check if a user has SePay configured (bank account linked to SePay).
- */
-export async function checkPayeeSepayConfigured(
-  userId: string
-): Promise<boolean> {
-  const { data, error } = await supabaseClient
-    .from('user_settings')
-    .select('sepay_config')
-    .eq('user_id', userId)
-    .single();
-
-  if (error || !data?.sepay_config) return false;
-
-  const config = data.sepay_config as { bank_account_number?: string; bank_name?: string };
-  return Boolean(config.bank_account_number && config.bank_name);
 }

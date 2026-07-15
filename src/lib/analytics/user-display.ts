@@ -19,7 +19,3 @@ export function setUserDisplay(metadata: UserDisplayMetadata): void {
 export function getUserDisplay(): UserDisplayMetadata | null {
   return currentUserDisplay;
 }
-
-export function clearUserDisplay(): void {
-  currentUserDisplay = null;
-}

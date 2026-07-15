@@ -16,14 +16,8 @@ export const Z_FLOATING = {
   pill: 50,
 } as const;
 
-/** Bottom offsets. Mobile clears the bottom-nav (h-16 + buffer). */
-export const BOTTOM_OFFSET = {
-  mobile: "calc(env(safe-area-inset-bottom) + 5rem)",
-  desktop: "1.5rem",
-} as const;
-
 /** Pill height scale (px). All pills use rounded-full; width follows content. */
-export const PILL_SIZES = {
+const PILL_SIZES = {
   sm: 40,
   default: 48,
   lg: 56,

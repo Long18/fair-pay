@@ -3,7 +3,6 @@
 
 // Hero backgrounds
 import amountHeroBg from "./hero/amount-hero-bg.png";
-import amountHeroBgAlt from "./hero/amount-hero-bg-alt.png";
 
 // Decorative stickers
 import receiptCoinSticker from "./stickers/receipt-coin-sticker.png";
@@ -13,7 +12,6 @@ import waitingCoinSticker from "./stickers/waiting-coin-sticker.png";
 import paidStatusIcon from "./icons/paid-status.png";
 import owesYouIcon from "./icons/owes-you.png";
 import loanModeIcon from "./icons/loan-mode.png";
-import customSplitIcon from "./icons/custom-split.png";
 import moreOptionsIcon from "./icons/more-options.png";
 
 // Quick-pick icons
@@ -24,14 +22,11 @@ import shoppingIcon from "./icons/shopping.png";
 import groceriesIcon from "./icons/groceries.png";
 
 // Illustrations
-import twoPersonSplit from "./illustrations/two-person-split.png";
-import emptyAmount from "./illustrations/empty-amount.png";
 import successConfirmation from "./illustrations/success-confirmation.png";
 
 export {
   // Hero
   amountHeroBg,
-  amountHeroBgAlt,
   // Stickers
   receiptCoinSticker,
   waitingCoinSticker,
@@ -39,7 +34,6 @@ export {
   paidStatusIcon,
   owesYouIcon,
   loanModeIcon,
-  customSplitIcon,
   moreOptionsIcon,
   coffeeIcon,
   lunchIcon,
@@ -47,7 +41,5 @@ export {
   shoppingIcon,
   groceriesIcon,
   // Illustrations
-  twoPersonSplit,
-  emptyAmount,
   successConfirmation,
 };

@@ -32,10 +32,3 @@ export function handleCorsPreflightIfNeeded(
   }
   return false
 }
-
-/**
- * Check if VITE_APP_URL is configured. Returns true if missing (caller should return 500).
- */
-export function isCorsConfigMissing(): boolean {
-  return !process.env.VITE_APP_URL
-}

@@ -100,29 +100,3 @@ export function BottomSheet({
     </Dialog>
   );
 }
-
-/**
- * Hook to get bottom sheet props for conditional rendering
- *
- * @example
- * const { isMobile, SheetComponent, HeaderComponent, ... } = useBottomSheet();
- *
- * return (
- *   <SheetComponent open={open} onOpenChange={setOpen}>
- *     <ContentComponent>...</ContentComponent>
- *   </SheetComponent>
- * );
- */
-export function useBottomSheet() {
-  const isMobile = useMediaQuery('(max-width: 768px)');
-
-  return {
-    isMobile,
-    SheetComponent: isMobile ? Drawer : Dialog,
-    ContentComponent: isMobile ? DrawerContent : DialogContent,
-    HeaderComponent: isMobile ? DrawerHeader : DialogHeader,
-    TitleComponent: isMobile ? DrawerTitle : DialogTitle,
-    DescriptionComponent: isMobile ? DrawerDescription : DialogDescription,
-    FooterComponent: isMobile ? DrawerFooter : DialogFooter,
-  };
-}

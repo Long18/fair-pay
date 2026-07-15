@@ -929,20 +929,6 @@ export function createThemeVariant(themeName: string, mode: string): string {
   return `${themeName}-${mode}`;
 }
 
-export function getAllThemeVariants(): ThemeVariant[] {
-  const variants: ThemeVariant[] = [];
-  const modes: Array<"light" | "dark" | "system"> = ["light", "dark", "system"];
-
-  Object.keys(themePalettes).forEach((themeName) => {
-    modes.forEach((mode) => {
-      const variant = createThemeVariant(themeName, mode);
-      variants.push(parseThemeVariant(variant));
-    });
-  });
-
-  return variants;
-}
-
 export function getThemeVariantsByGroup(): Array<{
   label: string;
   variants: ThemeVariant[];

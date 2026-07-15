@@ -214,10 +214,3 @@ export function areDebtsEquivalent(debts1: DebtEdge[], debts2: DebtEdge[]): bool
 
   return true;
 }
-
-/**
- * Format debt edge for display
- */
-export function formatDebtEdge(debt: DebtEdge, getUserName: (id: string) => string): string {
-  return `${getUserName(debt.from)} owes ${getUserName(debt.to)} ${debt.amount.toFixed(2)}`;
-}

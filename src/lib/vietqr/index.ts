@@ -88,13 +88,6 @@ export function formatTransferDescription(reference: string, description?: strin
 }
 
 /**
- * Check if VietQR is configured for a user
- */
-export function isVietQRConfigured(bankInfo: { bankCode?: string; accountNo?: string; accountName?: string } | null): boolean {
-  return Boolean(bankInfo?.bankCode && bankInfo?.accountNo && bankInfo?.accountName);
-}
-
-/**
  * Create VietQR config from bank info
  */
 export function createVietQRConfig(bankInfo: {

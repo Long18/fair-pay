@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, type ReactNode } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
@@ -18,12 +18,4 @@ export function GSAPProvider({ children }: { children: ReactNode }) {
       {children}
     </GSAPContext.Provider>
   );
-}
-
-export function useGSAPContext() {
-  const context = useContext(GSAPContext);
-  if (!context) {
-    throw new Error("useGSAPContext must be used within a GSAPProvider");
-  }
-  return context;
 }

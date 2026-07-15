@@ -14,33 +14,11 @@ export const SPRING_DEFAULT: Transition = {
   damping: 25,
 };
 
-// Spring transition used for tooltips (snappy, short)
-export const SPRING_TOOLTIP: Transition = {
-  type: "spring",
-  stiffness: 500,
-  damping: 30,
-  mass: 0.6,
-};
-
 // Spring transition used for gentle hover lifts
 export const SPRING_GENTLE: Transition = {
   type: "spring",
   stiffness: 260,
   damping: 20,
-};
-
-// Ease transition used for generic animations
-export const EASE_DEFAULT: Transition = {
-  type: "tween",
-  ease: "easeOut",
-  duration: 0.2,
-};
-
-// Spring transition used for overlay components (dialog, sheet, drawer)
-export const SPRING_OVERLAY: Transition = {
-  type: "spring",
-  stiffness: 300,
-  damping: 30,
 };
 
 // Stagger delay between list items in seconds

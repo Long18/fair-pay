@@ -181,12 +181,3 @@ export interface AgentApiError {
     details?: unknown
   }
 }
-
-export function isAgentApiError(v: unknown): v is AgentApiError {
-  return (
-    typeof v === 'object' &&
-    v !== null &&
-    'error' in v &&
-    typeof (v as AgentApiError).error?.code === 'string'
-  )
-}

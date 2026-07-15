@@ -28,16 +28,6 @@ export function CircleShape({ size = 24, ...props }: ShapeProps) {
   );
 }
 
-export function DotsShape({ size = 24, ...props }: ShapeProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" {...props}>
-      <circle cx="4" cy="12" r="2" opacity="0.3" />
-      <circle cx="12" cy="12" r="2" opacity="0.2" />
-      <circle cx="20" cy="12" r="2" opacity="0.1" />
-    </svg>
-  );
-}
-
 export function HexagonShape({ size = 24, ...props }: ShapeProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>

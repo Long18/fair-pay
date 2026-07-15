@@ -60,13 +60,6 @@ export function getBankByCode(code: string): VietQRBank | undefined {
 }
 
 /**
- * Get bank by BIN
- */
-export function getBankByBin(bin: string): VietQRBank | undefined {
-  return VIETNAMESE_BANKS.find(bank => bank.bin === bin);
-}
-
-/**
  * Get all banks sorted by popularity (common banks first)
  */
 export function getPopularBanks(): VietQRBank[] {
@@ -78,16 +71,4 @@ export function getPopularBanks(): VietQRBank[] {
     .filter(b => !popularCodes.includes(b.code))
     .sort((a, b) => a.shortName.localeCompare(b.shortName));
   return [...popular, ...others];
-}
-
-/**
- * Search banks by name or code
- */
-export function searchBanks(query: string): VietQRBank[] {
-  const q = query.toLowerCase();
-  return VIETNAMESE_BANKS.filter(bank =>
-    bank.code.toLowerCase().includes(q) ||
-    bank.shortName.toLowerCase().includes(q) ||
-    bank.name.toLowerCase().includes(q)
-  );
 }

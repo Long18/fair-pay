@@ -6,7 +6,6 @@
 
 export const DEFAULT_LOCALE = 'vi-VN';
 
-export const DEFAULT_CURRENCY = 'VND';
 export const DEFAULT_CURRENCY_SYMBOL = '₫';
 
 export const DATE_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {

@@ -14,15 +14,3 @@ export const PAYMENT_METHODS = {
 } as const;
 
 export type PaymentMethod = keyof typeof PAYMENT_METHODS;
-
-export function getPaymentMethodInfo(method: PaymentMethod | string | null) {
-  return PAYMENT_METHODS[(method as PaymentMethod) || 'cash'] || PAYMENT_METHODS.cash;
-}
-
-export function getPaymentMethodOptions() {
-  return Object.entries(PAYMENT_METHODS).map(([value, config]) => ({
-    value,
-    displayLabel: `${config.icon} ${config.label}`,
-    ...config,
-  }));
-}

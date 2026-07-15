@@ -2,12 +2,10 @@
 // These are the hooks the AI chat and UI use to call the agent API.
 
 import { useCallback, useMemo, useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { supabaseClient } from '@/utility/supabaseClient'
 import { AgentApiClient } from './client'
 import type {
-  AgentPreviewRequest,
-  AgentDuplicateCheckRequest,
   AgentCommitRequest,
   AgentPreviewResponse,
 } from './types'
@@ -25,57 +23,6 @@ export function createAgentApiClient(): AgentApiClient {
 
 export function useAgentApiClient(): AgentApiClient {
   return useMemo(() => createAgentApiClient(), [])
-}
-
-export function useAgentMe() {
-  const client = useAgentApiClient()
-  return useQuery({
-    queryKey: ['agent', 'me'],
-    queryFn: () => client.getMe(),
-  })
-}
-
-export function useAgentGroups() {
-  const client = useAgentApiClient()
-  return useQuery({
-    queryKey: ['agent', 'groups'],
-    queryFn: () => client.getGroups(),
-  })
-}
-
-export function useAgentGroupMembers(groupId: string | null) {
-  const client = useAgentApiClient()
-  return useQuery({
-    queryKey: ['agent', 'groups', groupId, 'members'],
-    queryFn: () => client.getGroupMembers(groupId!),
-    enabled: !!groupId,
-  })
-}
-
-export function useAgentOperation(previewId: string | null, poll = false) {
-  const client = useAgentApiClient()
-  return useQuery({
-    queryKey: ['agent', 'operations', previewId],
-    queryFn: () => client.pollOperation(previewId!),
-    enabled: !!previewId,
-    refetchInterval: poll ? 2000 : false,
-  })
-}
-
-// -- Mutation hooks ------------------------------------------------------
-
-export function useAgentDuplicateCheck() {
-  const client = useAgentApiClient()
-  return useMutation({
-    mutationFn: (body: AgentDuplicateCheckRequest) => client.checkDuplicates(body),
-  })
-}
-
-export function useAgentPreview() {
-  const client = useAgentApiClient()
-  return useMutation({
-    mutationFn: (body: AgentPreviewRequest) => client.previewExpense(body),
-  })
 }
 
 // -- Confirm + Commit flow (UI controller only) --------------------------

@@ -76,11 +76,4 @@ export function findBankById(id: string): VietQRBank | undefined {
     return VIETQR_BANKS.find(bank => bank.id === id);
 }
 
-/**
- * Find bank by code
- */
-export function findBankByCode(code: string): VietQRBank | undefined {
-    return VIETQR_BANKS.find(bank => bank.code === code);
-}
-
 
