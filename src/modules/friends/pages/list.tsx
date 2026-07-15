@@ -10,7 +10,8 @@ import { PaginationControls, PaginationMetadata } from "@/components/ui/paginati
 import { Profile } from "@/modules/profile/types";
 import { Friendship, Friend } from "../types";
 import { AddFriendModal } from "../components/add-friend-modal";
-import { FriendRow } from "../components/friend-row";
+import { FriendRow } from "../components/friend-row"
+import { PeopleYouMayKnowList } from "../components/people-you-may-know-list";
 import { RemoveFriendDialog } from "../components/remove-friend-dialog";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -303,6 +304,8 @@ export const FriendListContent = () => {
             </CardContent>
           </Card>
         )}
+
+          <PeopleYouMayKnowList />
 
           {/* Accepted Friends */}
           <Card>

@@ -743,6 +743,39 @@ export type Database = {
           },
         ]
       }
+      friend_suggestion_dismissals: {
+        Row: {
+          dismissed_at: string
+          suggested_user_id: string
+          user_id: string
+        }
+        Insert: {
+          dismissed_at?: string
+          suggested_user_id: string
+          user_id: string
+        }
+        Update: {
+          dismissed_at?: string
+          suggested_user_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "friend_suggestion_dismissals_suggested_user_id_fkey"
+            columns: ["suggested_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "friend_suggestion_dismissals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       friendships: {
         Row: {
           created_at: string
@@ -1437,6 +1470,32 @@ export type Database = {
           id?: string
           processed_at?: string
           provider?: string
+        }
+        Relationships: []
+      }
+      profile_merge_transactions: {
+        Row: {
+          id: string
+          merged_at: string
+          pair_high: string
+          pair_low: string
+          source_emails: string[]
+          source_user_id: string
+          target_user_id: string
+        }
+        Insert: {
+          id?: string
+          merged_at?: string
+          source_emails?: string[]
+          source_user_id: string
+          target_user_id: string
+        }
+        Update: {
+          id?: string
+          merged_at?: string
+          source_emails?: string[]
+          source_user_id?: string
+          target_user_id?: string
         }
         Relationships: []
       }
@@ -2800,6 +2859,15 @@ export type Database = {
         Returns: {
           expense_id: string
           payment_events: Json
+        }[]
+      }
+      get_people_you_may_know: {
+        Args: { p_limit?: number }
+        Returns: {
+          avatar_url: string | null
+          full_name: string
+          mutual_count: number
+          user_id: string
         }[]
       }
       get_friendship: {

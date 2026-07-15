@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils";
 
 import { CheckIcon, ChevronsUpDownIcon, UserPlusIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
+import { PeopleYouMayKnowList } from "@/modules/friends/components/people-you-may-know-list";
 const addFriendSchema = z.object({
   userId: z.string().min(1, "Please select a user"),
 });
@@ -209,6 +210,12 @@ export const AddFriendModal = ({ trigger }: AddFriendModalProps) => {
             Search for a user by name to send them a friend request.
           </DialogDescription>
         </DialogHeader>
+        <PeopleYouMayKnowList
+          enabled={open}
+          onConnected={() => {
+            friendshipsQuery.refetch();
+          }}
+        />
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             <FormField
