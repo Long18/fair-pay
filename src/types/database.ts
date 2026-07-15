@@ -2914,6 +2914,7 @@ export type Database = {
           top_debtors: Json
         }[]
       }
+      get_login_account_status: { Args: never; Returns: Json }
       get_member_monthly_share: {
         Args: { p_recurring_expense_id: string; p_user_id: string }
         Returns: number

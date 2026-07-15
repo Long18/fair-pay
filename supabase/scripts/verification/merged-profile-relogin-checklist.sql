@@ -9,13 +9,18 @@
 --   1. profiles: only B remains; A gone
 --   2. user_emails for both emails → user_id = B
 --   3. auth.users A has banned_until = infinity
---   4. exactly one profile_merge_transactions row for the pair
---   5. second admin_merge_profiles(A,B) returns { success: true, noop: true }
---   6. no second merge transaction row
+--   4. any OTHER auth.users whose email/identity matches A's emails
+--      (except B) is also banned — Google can create a different auth uid
+--   5. exactly one profile_merge_transactions row for the pair
+--   6. second admin_merge_profiles(A,B) returns { success: true, noop: true }
+--   7. no second merge transaction row
 --
 -- Sign-in / sign-up (app-level):
 --   - Email B → session for B, profile B
 --   - Email A (banned auth) → sign-in rejected
+--   - Orphan auth session (no profiles row, email on B) →
+--     get_login_account_status() returns reason=merged_into_other_account
+--     and the client signs out
 --   - Sign-up with Email A while email is on B’s user_emails and B has
 --     active auth → aborted with "already linked" (if email freed in auth)
 
