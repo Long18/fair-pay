@@ -172,15 +172,16 @@ export const useGlobalSearch = (query: string) => {
   const addToRecentSearches = useCallback((search: string) => {
     if (!search || search.length < 2) return;
 
-    setRecentSearches((prev) => {
-      const updated = [search, ...prev.filter((s) => s !== search)].slice(
-        0,
-        MAX_RECENT_SEARCHES
-      );
-      localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
-      return updated;
-    });
+    setRecentSearches((prev) =>
+      [search, ...prev.filter((s) => s !== search)].slice(0, MAX_RECENT_SEARCHES)
+    );
   }, []);
+
+  useEffect(() => {
+    if (recentSearches.length > 0) {
+      localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(recentSearches));
+    }
+  }, [recentSearches]);
 
   const clearRecentSearches = useCallback(() => {
     setRecentSearches([]);

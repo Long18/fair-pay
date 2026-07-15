@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -453,10 +453,12 @@ export function AdminOgPreview() {
 
   // Scroll when logs change
   const prevLogCount = useRef(0);
-  if (logs.length !== prevLogCount.current) {
-    prevLogCount.current = logs.length;
-    requestAnimationFrame(scrollToBottom);
-  }
+  useEffect(() => {
+    if (logs.length !== prevLogCount.current) {
+      prevLogCount.current = logs.length;
+      requestAnimationFrame(scrollToBottom);
+    }
+  }, [logs.length, scrollToBottom]);
 
   return (
     <div className="space-y-6">

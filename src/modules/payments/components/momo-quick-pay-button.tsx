@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGetIdentity } from '@refinedev/core';
 import { Profile } from '@/modules/profile/types';
@@ -38,25 +38,7 @@ export function MomoQuickPayButton({
   const [isLoadingSplits, setIsLoadingSplits] = useState(false);
   const loadedRef = React.useRef(false);
 
-  // Don't show if MoMo not configured
-  if (!momoAPI.isConfigured()) {
-    return null;
-  }
-
-  // Load unpaid splits when dialog opens (only once)
-  useEffect(() => {
-    if (dialogOpen && identity?.id && !loadedRef.current) {
-      loadedRef.current = true;
-      loadUnpaidSplits();
-    }
-
-    // Reset when dialog closes
-    if (!dialogOpen) {
-      loadedRef.current = false;
-    }
-  }, [dialogOpen, identity?.id]);
-
-  const loadUnpaidSplits = async () => {
+  const loadUnpaidSplits = useCallback(async () => {
     if (!identity?.id) return;
 
     setIsLoadingSplits(true);
@@ -108,7 +90,27 @@ export function MomoQuickPayButton({
     } finally {
       setIsLoadingSplits(false);
     }
-  };
+  }, [identity?.id, counterpartyId]);
+
+  // Load unpaid splits when dialog opens (only once)
+  useEffect(() => {
+    if (!momoAPI.isConfigured()) return;
+
+    if (dialogOpen && identity?.id && !loadedRef.current) {
+      loadedRef.current = true;
+      void loadUnpaidSplits();
+    }
+
+    // Reset when dialog closes
+    if (!dialogOpen) {
+      loadedRef.current = false;
+    }
+  }, [dialogOpen, identity?.id, loadUnpaidSplits]);
+
+  // Don't show if MoMo not configured
+  if (!momoAPI.isConfigured()) {
+    return null;
+  }
 
   return (
     <>

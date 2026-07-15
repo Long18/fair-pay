@@ -479,14 +479,10 @@ function AuditDetailDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const { tAdmin } = useAdminTranslation();
-  if (!entry) return null;
-
-  const hasOldNewData = entry.old_data || entry.new_data;
-  const hasMetadata = entry.metadata && Object.keys(entry.metadata).length > 0;
 
   // Count changed fields for the tab badge
   const changedFieldCount = useMemo(() => {
-    if (!entry.old_data && !entry.new_data) return 0;
+    if (!entry || (!entry.old_data && !entry.new_data)) return 0;
     const allKeys = new Set([
       ...Object.keys(entry.old_data ?? {}),
       ...Object.keys(entry.new_data ?? {}),
@@ -497,6 +493,11 @@ function AuditDetailDialog({
     }
     return count;
   }, [entry]);
+
+  if (!entry) return null;
+
+  const hasOldNewData = entry.old_data || entry.new_data;
+  const hasMetadata = entry.metadata && Object.keys(entry.metadata).length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

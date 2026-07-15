@@ -74,25 +74,17 @@ export function useTableSort<T>(
 
   // Set sort key (toggle direction on re-click)
   const setSortKey = useCallback((key: keyof T) => {
-    setSortKeyState(prevKey => {
-      // If same key, toggle direction
-      if (prevKey === key) {
-        setSortDirectionState(prevDirection => {
-          if (prevDirection === "asc") return "desc";
-          if (prevDirection === "desc") return null; // Third click clears sort
-          return "asc"; // First click
-        });
-
-        // Check if we need to clear the key (will be handled by state callback)
-        // We need to defer this check until the state update is complete
-        return key; // Return key first, will be cleared in next update if needed
-      } else {
-        // Different key, set to asc
-        setSortDirectionState("asc");
-        return key;
-      }
-    });
-  }, []);
+    if (sortKey === key) {
+      setSortDirectionState((prevDirection) => {
+        if (prevDirection === "asc") return "desc";
+        if (prevDirection === "desc") return null;
+        return "asc";
+      });
+    } else {
+      setSortKeyState(key);
+      setSortDirectionState("asc");
+    }
+  }, [sortKey]);
 
   // Clear sort key when direction becomes null
   useEffect(() => {

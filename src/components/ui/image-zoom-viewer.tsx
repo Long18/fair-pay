@@ -65,6 +65,12 @@ export function ImageZoomViewer({
     setPosition({ x: 0, y: 0 });
   }, []);
 
+  useEffect(() => {
+    if (scale === MIN_SCALE) {
+      setPosition({ x: 0, y: 0 });
+    }
+  }, [scale]);
+
   // Prevent wheel scroll on the container when zoomed
   useEffect(() => {
     const container = containerRef.current;
@@ -73,11 +79,7 @@ export function ImageZoomViewer({
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const delta = e.deltaY > 0 ? -0.3 : 0.3;
-      setScale((prev) => {
-        const next = Math.max(MIN_SCALE, Math.min(MAX_SCALE, prev + delta));
-        if (next === MIN_SCALE) setPosition({ x: 0, y: 0 });
-        return next;
-      });
+      setScale((prev) => Math.max(MIN_SCALE, Math.min(MAX_SCALE, prev + delta)));
     };
 
     container.addEventListener("wheel", onWheel, { passive: false });
@@ -199,11 +201,7 @@ export function ImageZoomViewer({
   );
 
   const zoomOut = useCallback(() => {
-    setScale((prev) => {
-      const next = Math.max(MIN_SCALE, prev - 0.5);
-      if (next === MIN_SCALE) setPosition({ x: 0, y: 0 });
-      return next;
-    });
+    setScale((prev) => Math.max(MIN_SCALE, prev - 0.5));
   }, []);
 
   const zoomIn = useCallback(() => {

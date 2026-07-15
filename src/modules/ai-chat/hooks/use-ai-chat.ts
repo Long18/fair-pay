@@ -278,27 +278,26 @@ export function useAiChat(): UseAiChatReturn {
 
   // ── Delete conversation ──────────────────────────────────────────────────
   const deleteConversation = useCallback((id: string) => {
-    setStore((prev) => {
-      const next = removeConversation(prev, id);
-      saveStore(next);
-      // If we deleted the active conversation, switch to the next one or blank slate.
-      if (prev.activeId === id) {
-        const next2 = next.conversations[0];
-        if (next2) {
-          setMessages(next2.messages);
-          setConversationId(next2.id);
-          historyRef.current = next2.history.length > 0
-            ? next2.history
-            : [{ role: "system", content: systemPrompt }];
-        } else {
-          setMessages([]);
-          setConversationId(null);
-          historyRef.current = [{ role: "system", content: systemPrompt }];
-        }
-        setError(null);
+    const prev = storeRef.current;
+    const next = removeConversation(prev, id);
+    saveStore(next);
+    setStore(next);
+
+    if (prev.activeId === id) {
+      const nextConv = next.conversations[0];
+      if (nextConv) {
+        setMessages(nextConv.messages);
+        setConversationId(nextConv.id);
+        historyRef.current = nextConv.history.length > 0
+          ? nextConv.history
+          : [{ role: "system", content: systemPrompt }];
+      } else {
+        setMessages([]);
+        setConversationId(null);
+        historyRef.current = [{ role: "system", content: systemPrompt }];
       }
-      return next;
-    });
+      setError(null);
+    }
   }, [systemPrompt]);
 
   const sendMessage = useCallback(

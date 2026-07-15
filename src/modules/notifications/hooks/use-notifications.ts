@@ -19,15 +19,21 @@ export const useNotifications = () => {
   const permissionRequested = useRef(false);
   const isMobile = useIsMobile();
   const isMobileRef = useRef(isMobile);
-  isMobileRef.current = isMobile;
+  useEffect(() => {
+    isMobileRef.current = isMobile;
+  }, [isMobile]);
 
   // Keep stable refs for callbacks used inside the realtime effect closure.
   // Without these, the effect captures stale versions of playSound/go/refetch
   // from the initial render, causing intermittent failures on desktop.
   const playSoundRef = useRef(playSound);
-  playSoundRef.current = playSound;
+  useEffect(() => {
+    playSoundRef.current = playSound;
+  }, [playSound]);
   const goRef = useRef(go);
-  goRef.current = go;
+  useEffect(() => {
+    goRef.current = go;
+  }, [go]);
 
   // Request browser notification permission once
   useEffect(() => {
@@ -67,7 +73,9 @@ export const useNotifications = () => {
 
   // Stable ref for query.refetch — avoids stale closure in realtime effect
   const refetchRef = useRef(query.refetch);
-  refetchRef.current = query.refetch;
+  useEffect(() => {
+    refetchRef.current = query.refetch;
+  }, [query.refetch]);
 
   // Map joined profile data to flat actor fields
   const notifications: Notification[] = (query.data?.data || []).map((n) => {

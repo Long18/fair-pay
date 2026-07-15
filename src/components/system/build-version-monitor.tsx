@@ -1,5 +1,5 @@
 import { coerceBuildInfo, currentBuildInfo, isNewBuildAvailable } from "@/lib/build-info";
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
@@ -101,7 +101,7 @@ function BuildVersionMonitorInner() {
     });
   };
 
-  const checkForNewBuild = async () => {
+  const checkForNewBuild = useCallback(async () => {
     const now = Date.now();
     if (now - lastCheckedAtRef.current < MIN_CHECK_GAP_MS) {
       return;
@@ -121,7 +121,7 @@ function BuildVersionMonitorInner() {
     } catch {
       // Ignore version fetch errors to keep the monitor fail-silent.
     }
-  };
+  }, []);
 
   useEffect(() => {
     void checkForNewBuild();

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useGo } from "@refinedev/core";
 import {
@@ -33,11 +33,11 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
     clearRecentSearches,
   } = useGlobalSearch(query);
 
-  const groupedResults = {
+  const groupedResults = useMemo(() => ({
     expenses: results.filter((r) => r.type === "expense").slice(0, 5),
     groups: results.filter((r) => r.type === "group").slice(0, 5),
     friends: results.filter((r) => r.type === "friend").slice(0, 5),
-  };
+  }), [results]);
 
   const totalResults =
     groupedResults.expenses.length +

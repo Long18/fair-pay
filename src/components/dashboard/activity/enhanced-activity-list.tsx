@@ -208,8 +208,10 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
   // Handlers - use refs to avoid dependency on searchParams
   const searchParamsRef = React.useRef(searchParams);
   const setSearchParamsRef = React.useRef(setSearchParams);
-  searchParamsRef.current = searchParams;
-  setSearchParamsRef.current = setSearchParams;
+  React.useEffect(() => {
+    searchParamsRef.current = searchParams;
+    setSearchParamsRef.current = setSearchParams;
+  });
 
   const handleFilterChange = React.useCallback((filter: PaymentStateFilter) => {
     const newParams = new URLSearchParams(searchParamsRef.current);

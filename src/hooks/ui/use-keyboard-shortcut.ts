@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useMemo } from "react";
 
 /**
  * Keyboard Shortcut Configuration
@@ -162,14 +162,24 @@ export function useCommandPaletteShortcut(
   onOpen: () => void,
   enabled: boolean = true
 ) {
-  useKeyboardShortcut([
-    {
-      key: "cmd+k",
-      callback: onOpen,
-      description: "Open command palette",
-      enabled,
-    },
-  ]);
+  const onOpenRef = useRef(onOpen);
+  useEffect(() => {
+    onOpenRef.current = onOpen;
+  }, [onOpen]);
+
+  const shortcuts = useMemo(
+    () => [
+      {
+        key: "cmd+k",
+        callback: () => onOpenRef.current(),
+        description: "Open command palette",
+        enabled,
+      },
+    ],
+    [enabled]
+  );
+
+  useKeyboardShortcut(shortcuts);
 }
 
 /**
@@ -184,12 +194,22 @@ export function useCommandPaletteShortcut(
  * useEscapeKey(() => setModalOpen(false), modalOpen);
  */
 export function useEscapeKey(onEscape: () => void, enabled: boolean = true) {
-  useKeyboardShortcut([
-    {
-      key: "esc",
-      callback: onEscape,
-      description: "Close/Cancel",
-      enabled,
-    },
-  ]);
+  const onEscapeRef = useRef(onEscape);
+  useEffect(() => {
+    onEscapeRef.current = onEscape;
+  }, [onEscape]);
+
+  const shortcuts = useMemo(
+    () => [
+      {
+        key: "esc",
+        callback: () => onEscapeRef.current(),
+        description: "Close/Cancel",
+        enabled,
+      },
+    ],
+    [enabled]
+  );
+
+  useKeyboardShortcut(shortcuts);
 }

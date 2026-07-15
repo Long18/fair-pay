@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 import { STORAGE_KEY, APP_VERSION } from "../types";
 import type { OnboardingState } from "../types";
@@ -153,7 +153,9 @@ export function useOnboardingState(options?: UseOnboardingStateOptions) {
   const totalSteps = options?.totalSteps ?? 9;
 
   const forceShowRef = useRef(forceShow);
-  forceShowRef.current = forceShow;
+  useEffect(() => {
+    forceShowRef.current = forceShow;
+  }, [forceShow]);
 
   const [state, setStateInternal] = useState<OnboardingState>(() => {
     const { initialState } = initializeOnboarding(forceShow, totalSteps);
@@ -164,7 +166,9 @@ export function useOnboardingState(options?: UseOnboardingStateOptions) {
   // This breaks the dependency cycle: callbacks never depend on `state`,
   // so their references stay stable across renders.
   const stateRef = useRef(state);
-  stateRef.current = state;
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   const isActive = !state.completed || forceShowRef.current;
 

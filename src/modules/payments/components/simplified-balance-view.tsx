@@ -37,6 +37,13 @@ export const SimplifiedBalanceView = ({
   const { t } = useTranslation();
   const { success } = useHaptics();
 
+  const simplifiedBalances = useSimplifiedBalances({
+    balances,
+    simplify: simplifyDebts,
+  });
+
+  const { iOwe, owesMe } = useMySimplifiedDebts(simplifiedBalances, currentUserId);
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -66,12 +73,6 @@ export const SimplifiedBalanceView = ({
       </div>
     );
   }
-  const simplifiedBalances = useSimplifiedBalances({
-    balances,
-    simplify: simplifyDebts,
-  });
-
-  const { iOwe, owesMe } = useMySimplifiedDebts(simplifiedBalances, currentUserId);
 
   const formatCurrency = (amount: number) => {
     return formatCurrencyUtil(amount, currency);

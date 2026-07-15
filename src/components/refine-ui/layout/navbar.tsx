@@ -264,7 +264,8 @@ function NavActions() {
   const isMobile = useIsMobile();
   const { tap } = useHaptics();
 
-  useSearchShortcut(() => setSearchOpen(true));
+  const openSearch = useCallback(() => setSearchOpen(true), []);
+  useSearchShortcut(openSearch);
 
   return (
     <div className="flex items-center gap-1 md:gap-2">

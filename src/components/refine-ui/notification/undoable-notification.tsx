@@ -28,19 +28,21 @@ export function UndoableNotification({
   const [remaining, setRemaining] = React.useState(undoableTimeout);
 
   React.useEffect(() => {
+    setRemaining(undoableTimeout);
+  }, [undoableTimeout]);
+
+  React.useEffect(() => {
     const interval = setInterval(() => {
-      setRemaining((prev) => {
-        if (prev <= 0.1) {
-          clearInterval(interval);
-          onClose?.();
-          return 0;
-        }
-        return prev - 0.1;
-      });
+      setRemaining((prev) => (prev <= 0.1 ? 0 : prev - 0.1));
     }, 100);
 
     return () => clearInterval(interval);
-  }, [onClose, undoableTimeout]);
+  }, [undoableTimeout]);
+
+  React.useEffect(() => {
+    if (remaining > 0) return;
+    onClose?.();
+  }, [remaining, onClose]);
 
   const handleUndo = () => {
     tap();

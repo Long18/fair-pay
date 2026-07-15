@@ -138,9 +138,11 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
             }
 
             if (debts.length > 0) {
-                const counterpartyIds = debts
-                    .map((d: { counterparty_id: string }) => d.counterparty_id)
-                    .filter((id: string) => id != null && id !== '');
+                const counterpartyIds = debts.reduce((acc: string[], d: { counterparty_id: string }) => {
+                    const id = d.counterparty_id;
+                    if (id != null && id !== '') acc.push(id);
+                    return acc;
+                }, [] as string[]);
                 if (counterpartyIds.length > 0) {
                     const { data: profiles } = await supabaseClient
                         .from("profiles")
@@ -172,7 +174,9 @@ export const useAggregatedDebts = (options: UseAggregatedDebtsOptions = {}) => {
     // Debounced version of fetchDebts for real-time subscriptions
     // Use useRef to maintain a stable reference to avoid infinite loops
     const fetchDebtsRef = useRef(fetchDebts);
-    fetchDebtsRef.current = fetchDebts;
+    useEffect(() => {
+        fetchDebtsRef.current = fetchDebts;
+    }, [fetchDebts]);
 
     const debouncedFetchDebts = useCallback(() => {
         if (debounceTimerRef.current) {
