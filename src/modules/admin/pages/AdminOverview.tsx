@@ -37,6 +37,8 @@ import {
   ReceiptIcon,
   CreditCardIcon,
   ActivityIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
   ArrowRightIcon,
   ChevronDownIcon,
 } from "@/components/ui/icons";
@@ -49,11 +51,10 @@ import { useStaggerAnimation } from "@/hooks/ui/use-stagger-animation";
 
 import { formatNumber } from "@/lib/locale-utils";
 import { getCategoryMeta } from "@/modules/expenses";
-import type { ThemeIntent } from "@/lib/theme-intents";
+import { themeIntentTones, type ThemeIntent } from "@/lib/theme-intents";
 import { useAdminTranslation } from "../i18n";
 import { useAdminAccess } from "../hooks/use-admin-access";
 import { AdminPageHeader } from "../components/AdminPageHeader";
-import { AdminMetricCard } from "../components/AdminMetricCard";
 
 // ─── Latest Tracked Users ────────────────────────────────────────────
 
@@ -101,6 +102,30 @@ function useLatestTrackedUsers(enabled: boolean) {
 
 // ─── Trend Indicator ────────────────────────────────────────────────
 
+function TrendIndicator({ value, isPositive }: { value: number; isPositive: boolean }) {
+  if (value === 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-xs font-medium text-muted-foreground">
+        —
+      </span>
+    );
+  }
+  const Icon = isPositive ? ArrowUpIcon : ArrowDownIcon;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+        isPositive
+          ? "bg-[var(--status-success-bg)] text-[var(--status-success-foreground)]"
+          : "bg-[var(--status-error-bg)] text-[var(--status-error-foreground)]"
+      }`}
+    >
+      <Icon size={11} />
+      {isPositive ? "+" : ""}
+      {value}%
+    </span>
+  );
+}
+
 /** Compute percentage change between current and previous values. */
 function calcTrendPercent(current: number, previous: number): number {
   if (previous === 0) return current > 0 ? 100 : 0;
@@ -117,6 +142,21 @@ function SectionDivider({ label }: { label: string }) {
       </span>
       <div className="flex-1 h-px bg-border/60" />
     </div>
+  );
+}
+
+function StatCardSkeleton() {
+  return (
+    <Card className="p-5">
+      <div className="flex items-start gap-4">
+        <div className="h-10 w-10 rounded-lg bg-muted animate-pulse" />
+        <div className="flex flex-col gap-2">
+          <div className="h-3 w-24 bg-muted rounded animate-pulse" />
+          <div className="h-7 w-16 bg-muted rounded animate-pulse" />
+          <div className="h-3 w-12 bg-muted rounded animate-pulse" />
+        </div>
+      </div>
+    </Card>
   );
 }
 
@@ -331,51 +371,61 @@ export function AdminOverview() {
           animate="visible"
           key={statKey}
         >
-          {STAT_CARDS.map((card, index) => {
-              const value = stats?.[card.key] ?? 0;
+          {statsLoading
+            ? Array.from({ length: 5 }).map((_, i) => <StatCardSkeleton key={i} />)
+            : STAT_CARDS.map((card, index) => {
+                const Icon = card.icon;
+                const value = stats?.[card.key] ?? 0;
 
-              let trendPercent = 0;
-              if (stats) {
-                switch (card.key) {
-                  case "totalUsers":
-                    trendPercent = calcTrendPercent(stats.totalUsers, stats.prevTotalUsers);
-                    break;
-                  case "totalGroups":
-                    trendPercent = calcTrendPercent(stats.totalGroups, stats.prevTotalGroups);
-                    break;
-                  case "totalExpenses":
-                    trendPercent = calcTrendPercent(stats.currExpenses30d, stats.prevExpenses30d);
-                    break;
-                  case "totalPayments":
-                    trendPercent = calcTrendPercent(stats.currPayments30d, stats.prevPayments30d);
-                    break;
-                  case "activeUsersLast7Days":
-                    trendPercent = calcTrendPercent(stats.activeUsersLast7Days, stats.prevActiveUsers7d);
-                    break;
+                let trendPercent = 0;
+                if (stats) {
+                  switch (card.key) {
+                    case "totalUsers":
+                      trendPercent = calcTrendPercent(stats.totalUsers, stats.prevTotalUsers);
+                      break;
+                    case "totalGroups":
+                      trendPercent = calcTrendPercent(stats.totalGroups, stats.prevTotalGroups);
+                      break;
+                    case "totalExpenses":
+                      trendPercent = calcTrendPercent(stats.currExpenses30d, stats.prevExpenses30d);
+                      break;
+                    case "totalPayments":
+                      trendPercent = calcTrendPercent(stats.currPayments30d, stats.prevPayments30d);
+                      break;
+                    case "activeUsersLast7Days":
+                      trendPercent = calcTrendPercent(stats.activeUsersLast7Days, stats.prevActiveUsers7d);
+                      break;
+                  }
                 }
-              }
 
-              return (
-                <motion.div key={card.key} variants={statRowVariants} custom={index}>
-                  <AdminMetricCard
-                    variant="compact"
-                    label={tAdmin(card.labelKey)}
-                    value={formatNumber(value)}
-                    icon={card.icon}
-                    intent={card.tone}
-                    loading={statsLoading}
-                    trend={
-                      trendPercent === 0
-                        ? undefined
-                        : {
-                            value: `${trendPercent >= 0 ? "+" : ""}${trendPercent}%`,
-                            positive: trendPercent >= 0,
-                          }
-                    }
-                  />
-                </motion.div>
-              );
-            })}
+                return (
+                  <motion.div key={card.key} variants={statRowVariants} custom={index}>
+                    <Card className="p-3 sm:p-4 transition-shadow hover:shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${themeIntentTones[card.tone].surface} ${themeIntentTones[card.tone].icon}`}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div className="flex min-w-0 flex-1 flex-col">
+                          <span className="truncate text-[11px] font-medium text-muted-foreground">
+                            {tAdmin(card.labelKey)}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg font-bold tabular-nums tracking-tight">
+                              {formatNumber(value)}
+                            </span>
+                            <TrendIndicator
+                              value={Math.abs(trendPercent)}
+                              isPositive={trendPercent >= 0}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  </motion.div>
+                );
+              })}
         </motion.div>
       </div>
 
