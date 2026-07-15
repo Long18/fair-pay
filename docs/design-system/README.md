@@ -1,8 +1,8 @@
 # FairPay Design System
 
-**Version**: 1.0.0
-**Status**: Foundation Complete
-**Last Updated**: 2026-01-13
+**Version**: 1.1.0
+**Status**: Foundation + remediation (PR-1…PR-5 largely done; PR-6 docs/i18n/prune)
+**Last Updated**: 2026-07-15
 
 ---
 
@@ -25,6 +25,7 @@ The FairPay Design System establishes the foundational rules, patterns, and prin
 3. **[Layout Rules](./layout-rules.md)** - Page patterns, grid/flex layouts, responsive design
 4. **[Interaction Rules](./interaction-rules.md)** - Loading states, validation, feedback, animations
 5. **[Naming Conventions](./naming-conventions.md)** - File, component, variable, type naming standards
+6. **[UI/UX Remediation PRs](./ui-ux-remediation-prs.md)** - Sequenced PR roadmap (PR-1…PR-5 largely done; PR-6 = docs / i18n / prune). Inventory IDs and acceptance criteria remain accurate.
 
 ---
 
@@ -69,13 +70,23 @@ See [tokens.md](./tokens.md) for full spacing scale including secondary values (
 | Narrow | `max-w-4xl` | Forms, detail views |
 | Full Width | `w-full` | Reports, charts |
 
+**Required chrome:** List and settings pages MUST use `PageHeader` (title via `typography-page-title`) inside `PageContainer`. Horizontal gutters are owned by `Layout` (`px-4 sm:px-6`); nested pages should pass `padding="none"` on `PageContainer` to avoid double padding. See [layout-rules.md](./layout-rules.md).
+
 ```tsx
-// Default page
-<div className="container max-w-7xl px-4 py-6 md:px-6 md:py-8">
-  <h1 className="typography-page-title mb-6">Dashboard</h1>
+import { PageContainer } from "@/components/ui/page-container"
+import { PageHeader } from "@/components/ui/page-header"
+
+<PageContainer padding="none" spacing="default">
+  <PageHeader title="Dashboard" action={<Button>Create</Button>} />
   <div className="space-y-6">{/* Sections */}</div>
-</div>
+</PageContainer>
 ```
+
+---
+
+### Icons
+
+Default is **stroke-only** via Lucide wrappers in `src/components/ui/icons.tsx`. Do not hardcode `fill="currentColor"` on Lucide icons. Pass `fill` via props (or a dedicated `*Solid` export) only when a filled glyph is intentional.
 
 ---
 
@@ -239,10 +250,10 @@ Names should describe purpose, not appearance.
 
 ### Phase 3: Layout Consistency
 
-- [ ] Create PageContainer wrapper component
-- [ ] Create PageTitle component
-- [ ] Standardize tab navigation
-- [ ] Fix container padding inconsistencies
+- [x] Create PageContainer wrapper component (`src/components/ui/page-container.tsx`)
+- [x] Create PageHeader component (`src/components/ui/page-header.tsx`) — required on list/settings pages
+- [x] Standardize tab navigation (shadcn Tabs pill/underline CVA)
+- [x] Fix container padding inconsistencies (Layout gutters + `PageContainer padding="none"`)
 - [ ] Add mobile breadcrumb alternative
 
 ### Phase 4: UX Flows
@@ -268,16 +279,14 @@ Names should describe purpose, not appearance.
 ### Page Template
 
 ```tsx
+import { PageContainer } from "@/components/ui/page-container"
+import { PageHeader } from "@/components/ui/page-header"
+
 export function ExpensesPage() {
   return (
-    <div className="container max-w-7xl px-4 py-6 md:px-6 md:py-8">
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="typography-page-title">Expenses</h1>
-        <Button>Create Expense</Button>
-      </div>
+    <PageContainer padding="none">
+      <PageHeader title="Expenses" action={<Button>Create Expense</Button>} />
 
-      {/* Page content */}
       <div className="space-y-6">
         <section>
           <h2 className="typography-section-title mb-4">Recent</h2>
@@ -286,7 +295,7 @@ export function ExpensesPage() {
           </div>
         </section>
       </div>
-    </div>
+    </PageContainer>
   )
 }
 ```
@@ -373,6 +382,15 @@ Found an issue or have a suggestion? Create an issue in the project repository w
 
 ## Changelog
 
+### Version 1.1.0 (2026-07-15)
+
+**Remediation docs sync (PR-6)**:
+- Documented `PageHeader` / `PageContainer` as canonical page chrome
+- Documented single gutter owner (Layout + `padding="none"`)
+- Icon stroke-only policy
+- Button / Badge docs match live `button.tsx` / `badge.tsx`
+- Remediation roadmap: PR-1…PR-5 largely done
+
 ### Version 1.0.0 (2026-01-13)
 
 **Initial Release**:
@@ -383,7 +401,3 @@ Found an issue or have a suggestion? Create an issue in the project repository w
 - Codified interaction patterns
 - Enforced naming conventions
 - Created design system documentation structure
-
----
-
-**Next**: Proceed to [Phase 2: Component Consolidation](../../plans/260113-1935-ui-ux-system-refactor/phase-02-component-consolidation.md)

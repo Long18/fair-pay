@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
  *
  * @example
  * <MobileOnly>
- *   <BottomNavigation>...</BottomNavigation>
+ *   <nav className="fixed bottom-0 …">…</nav>
  * </MobileOnly>
  */
 export interface MobileOnlyProps extends React.HTMLAttributes<HTMLDivElement> {

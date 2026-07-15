@@ -81,7 +81,6 @@ const DASHBOARD_DOMAIN_MAPPING: DashboardMappingEntry[] = [
   { domain: "core", file: "FloatingActionButton.tsx" },
   { domain: "core", file: "quick-actions.tsx" },
   { domain: "core", file: "tab-navigation.tsx" },
-  { domain: "core", file: "welcome-header.tsx" },
   { domain: "core", file: "accounting-notes.tsx" },
   { domain: "core", file: "accounting-records-table.tsx" },
   { domain: "core", file: "contributing-expense-item.tsx" },

@@ -1,6 +1,31 @@
 # Layout System Rules
 
-Consistent layout patterns create visual rhythm and reduce cognitive load. This document defines the 3 standard page layouts and layout composition rules for FairPay.
+Consistent layout patterns create visual rhythm and reduce cognitive load. This document defines the standard page layouts and layout composition rules for FairPay.
+
+---
+
+## Horizontal gutter ownership (single owner)
+
+**Canonical pattern (authenticated app shell):**
+
+1. `Layout` (`src/components/refine-ui/layout/layout.tsx`) owns horizontal gutters: `px-4 sm:px-6`.
+2. Nested pages use `PageContainer` with **`padding="none"`** so content is not double-padded.
+3. Vertical rhythm comes from `PageContainer` `spacing` (`default` / `compact` / `spacious` / `none`).
+
+```tsx
+// layout.tsx — gutters once
+<div className="container mx-auto … px-4 sm:px-6 pt-16 md:pt-20">
+  {children}
+</div>
+
+// page — no second horizontal pad
+<PageContainer padding="none" variant="default">
+  <PageHeader title="…" />
+  …
+</PageContainer>
+```
+
+**Do not** add another `px-4 md:px-6` on the page root when already inside `Layout`. Outside the shell (rare marketing / standalone), `PageContainer padding="default"` is fine.
 
 ---
 
@@ -8,80 +33,63 @@ Consistent layout patterns create visual rhythm and reduce cognitive load. This 
 
 ### Pattern 1: Default Page (Most Common)
 
-**Use for**: Dashboard, Expenses List, Payments, Groups, Friends
+**Use for**: Dashboard, Expenses List, Payments, Groups, Friends, Settings
 
 ```tsx
-<div className="container max-w-7xl px-4 py-6 md:px-6 md:py-8">
-  {/* Page title */}
-  <h1 className="typography-page-title mb-6">Dashboard</h1>
+import { PageContainer } from "@/components/ui/page-container"
+import { PageHeader } from "@/components/ui/page-header"
 
-  {/* Page content */}
+<PageContainer padding="none" variant="default">
+  <PageHeader title="Dashboard" action={<Button>Create</Button>} />
   <div className="space-y-6">
-    {/* Sections with 24px vertical gap */}
     <section>
       <h2 className="typography-section-title mb-4">Overview</h2>
       {/* Section content */}
     </section>
   </div>
-</div>
+</PageContainer>
 ```
 
 **Breakdown**:
-- Container: `max-w-7xl` (1280px max width)
-- Padding: `px-4 py-6` mobile → `md:px-6 md:py-8` desktop
+- Max width: `max-w-7xl` via `PageContainer variant="default"`
+- Horizontal padding: owned by `Layout` (`px-4 sm:px-6`); page uses `padding="none"`
 - Section spacing: `space-y-6` (24px)
 
 ---
 
 ### Pattern 2: Narrow Page
 
-**Use for**: Forms, Settings, Profile Edit, Detail Views
+**Use for**: Forms, Profile Edit, Detail Views
 
 ```tsx
-<div className="container max-w-4xl px-4 py-6 mx-auto">
-  {/* Page title */}
-  <h1 className="typography-page-title mb-6">Create Expense</h1>
-
-  {/* Form content (narrower for readability) */}
+<PageContainer padding="none" variant="narrow">
+  <PageHeader title="Create Expense" />
   <Card className="p-4 md:p-6">
-    <form className="space-y-4">
-      {/* Form fields */}
-    </form>
+    <form className="space-y-4">{/* fields */}</form>
   </Card>
-</div>
+</PageContainer>
 ```
 
 **Breakdown**:
-- Container: `max-w-4xl` (896px max width, better for forms)
-- Padding: `px-4 py-6` (consistent mobile/desktop)
+- Max width: `max-w-4xl` via `variant="narrow"`
 - Form spacing: `space-y-4` (16px between fields)
 
 ---
 
 ### Pattern 3: Full Width
 
-**Use for**: Reports, Charts, Data Visualizations, Tables
+**Use for**: Charts, Data Visualizations, Wide Tables
 
 ```tsx
-<div className="w-full px-4 py-6 md:px-6 md:py-8">
-  {/* Page title */}
-  <div className="container max-w-7xl mx-auto mb-6">
-    <h1 className="typography-page-title">Reports</h1>
-  </div>
-
-  {/* Full-width content */}
-  <div className="container max-w-7xl mx-auto">
-    <Card className="p-4 md:p-6">
-      {/* Charts, tables, etc. */}
-    </Card>
-  </div>
-</div>
+<PageContainer padding="none" variant="full">
+  <PageHeader title="Reports" />
+  <Card className="p-4 md:p-6">{/* charts, tables */}</Card>
+</PageContainer>
 ```
 
 **Breakdown**:
-- Wrapper: `w-full` (no max-width constraint)
-- Content containers: `max-w-7xl mx-auto` (centered with max width)
-- Padding: `px-4 py-6` mobile → `md:px-6 md:py-8` desktop
+- Max width: unconstrained (`variant="full"`)
+- Still nested under Layout gutters
 
 ---
 
@@ -90,20 +98,20 @@ Consistent layout patterns create visual rhythm and reduce cognitive load. This 
 ```
 What type of page are you building?
 
-├─ List view (expenses, groups, friends)
-│  └─ Use Default Page (max-w-7xl)
+├─ List view (expenses, groups, friends, settings)
+│  └─ PageContainer default + PageHeader (required)
 
 ├─ Form (create/edit)
-│  └─ Use Narrow Page (max-w-4xl)
+│  └─ PageContainer narrow + PageHeader
 
-├─ Data visualization (reports, charts)
-│  └─ Use Full Width (w-full with max-w-7xl content)
+├─ Data visualization (charts, wide tables)
+│  └─ PageContainer full + PageHeader
 
 ├─ Dashboard (multiple sections)
-│  └─ Use Default Page (max-w-7xl)
+│  └─ PageContainer default + PageHeader
 
 └─ Detail view (expense show, group show)
-   └─ Use Default Page (max-w-7xl)
+   └─ PageContainer default + PageHeader
 ```
 
 ---
@@ -112,11 +120,11 @@ What type of page are you building?
 
 | Max Width | Value | Use Case |
 |-----------|-------|----------|
-| `max-w-4xl` | 896px | Forms, narrow content |
-| `max-w-7xl` | 1280px | Default pages, dashboards |
-| `w-full` | 100% | Full-width layouts |
+| `max-w-4xl` | 896px | Forms, narrow content (`variant="narrow"`) |
+| `max-w-7xl` | 1280px | Default pages, dashboards (`variant="default"`) |
+| `max-w-none` / full | 100% | Full-width layouts (`variant="full"`) |
 
-**Rule**: DO NOT use arbitrary max-widths like `max-w-[950px]`. Use approved values only.
+**Rule**: DO NOT use arbitrary max-widths like `max-w-[950px]`. Use approved `PageContainer` variants only.
 
 ---
 
@@ -256,19 +264,10 @@ className="py-6 md:py-8"  // 24px → 32px (8px increment)
 ```tsx
 export function ExpensesListPage() {
   return (
-    // 1. Page Container
-    <div className="container max-w-7xl px-4 py-6 md:px-6 md:py-8">
+    <PageContainer padding="none" variant="default">
+      <PageHeader title="Expenses" action={<Button>Create Expense</Button>} />
 
-      {/* 2. Page Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="typography-page-title">Expenses</h1>
-        <Button>Create Expense</Button>
-      </div>
-
-      {/* 3. Page Content (sections with spacing) */}
       <div className="space-y-6">
-
-        {/* Section 1 */}
         <section>
           <h2 className="typography-section-title mb-4">Recent Expenses</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -278,24 +277,23 @@ export function ExpensesListPage() {
           </div>
         </section>
 
-        {/* Section 2 */}
         <section>
           <h2 className="typography-section-title mb-4">All Expenses</h2>
           <DataTable />
         </section>
-
       </div>
-    </div>
+    </PageContainer>
   )
 }
 ```
 
 ### Structure Rules
 
-**Rule 1**: Page title MUST have `mb-6` (24px margin below)
+**Rule 1**: List/settings pages MUST use `PageHeader` (not a raw `h1` with ad-hoc text sizes)
 **Rule 2**: Section headers MUST have `mb-4` (16px margin below)
 **Rule 3**: Sections MUST use `space-y-6` (24px vertical gap)
 **Rule 4**: Card grids MUST use `gap-4` (16px gap between cards)
+**Rule 5**: Do not double horizontal gutters when nested under `Layout`
 
 ---
 
@@ -495,11 +493,11 @@ export function ExpensesListPage() {
 
 ### Layout Pattern Quick Reference
 
-| Page Type | Pattern | Max Width | Padding |
+| Page Type | Pattern | Max Width | Gutters |
 |-----------|---------|-----------|---------|
-| List views | Default | `max-w-7xl` | `px-4 py-6 md:px-6 md:py-8` |
-| Forms | Narrow | `max-w-4xl` | `px-4 py-6` |
-| Reports | Full Width | `w-full` | `px-4 py-6 md:px-6 md:py-8` |
+| List / settings | Default + `PageHeader` | `max-w-7xl` | Layout `px-4 sm:px-6`; `PageContainer padding="none"` |
+| Forms | Narrow + `PageHeader` | `max-w-4xl` | Same |
+| Charts / wide tables | Full + `PageHeader` | full | Same |
 
 ### Spacing Quick Reference
 
@@ -513,11 +511,11 @@ export function ExpensesListPage() {
 
 ### Validation Checklist
 
-- [ ] Using one of 3 approved page patterns (Default, Narrow, Full Width)
-- [ ] Container padding follows mobile-first progression
-- [ ] Page titles have `mb-6` (24px margin below)
+- [ ] Using `PageContainer` + `PageHeader` (one of default / narrow / full)
+- [ ] No double horizontal padding (Layout owns gutters; page uses `padding="none"`)
+- [ ] Page titles use `PageHeader` / `typography-page-title` (not ad-hoc text sizes)
 - [ ] Section headers have `mb-4` (16px margin below)
 - [ ] Card grids use `gap-4` (16px gap)
 - [ ] Mobile stacking follows priority order (primary content first)
 - [ ] Sticky elements use approved z-index scale
-- [ ] Empty states centered with `py-12` padding
+- [ ] Empty states use shared empty primitives / centered `py-12` padding

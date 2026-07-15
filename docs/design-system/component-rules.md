@@ -123,17 +123,19 @@ import { Button } from "@/components/ui/button"
 
 ### Size Variants
 
+Live sizes from `src/components/ui/button.tsx` (document reality, not aspirational 44px):
+
 ```tsx
-// Default (44px height - mobile compliant)
+// Default — h-9 (36px)
 <Button size="default">Click Me</Button>
 
-// Small (36px height - use sparingly)
+// Small — h-8 (32px)
 <Button size="sm">Small Button</Button>
 
-// Large (52px height - hero CTAs)
+// Large — h-10 (40px)
 <Button size="lg">Get Started</Button>
 
-// Icon only (44x44px)
+// Icon only — size-9 (36×36)
 <Button size="icon">
   <PlusIcon className="size-4" />
 </Button>
@@ -142,7 +144,7 @@ import { Button } from "@/components/ui/button"
 ### Button Rules
 
 **Rule 1**: Maximum one `variant="default"` button per screen section
-**Rule 2**: All buttons MUST be ≥44px height on mobile (default size compliant)
+**Rule 2**: Prefer `size="default"` (`h-9`). Where a larger touch target is needed, use `size="lg"` or wrap with padding — do not assume 44px default height
 **Rule 3**: Destructive actions MUST use `variant="destructive"` and confirm before executing
 **Rule 4**: Icon-only buttons MUST have `aria-label` for accessibility
 
@@ -237,38 +239,64 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/u
 
 ---
 
+## PageContainer & PageHeader (canonical)
+
+List views, settings, and authenticated shell pages MUST use these primitives — do not invent ad-hoc `text-2xl|3xl|4xl` titles or hand-rolled `container max-w-* px-*` wrappers.
+
+```tsx
+import { PageContainer } from "@/components/ui/page-container"
+import { PageHeader } from "@/components/ui/page-header"
+
+// Inside Layout (which already applies px-4 sm:px-6 gutters):
+<PageContainer padding="none" variant="default">
+  <PageHeader
+    title="Connections"
+    description="People and groups you share expenses with"
+    action={<Button>Invite</Button>}
+  />
+  {/* content */}
+</PageContainer>
+```
+
+| Prop | Notes |
+|------|--------|
+| `PageContainer` `variant` | `default` (`max-w-7xl`), `narrow` (`max-w-4xl`), `full` |
+| `PageContainer` `padding` | Use `"none"` when nested under `Layout` (avoids double gutters). Use `"default"` only outside Layout |
+| `PageHeader` `title` | Renders `typography-page-title` `<h1>` |
+| `PageHeader` `action` | Right-side CTA slot |
+
+Admin surfaces use `AdminPageHeader` / `AdminTabs` / `AdminMetricCard` under `src/modules/admin/components/`.
+
+---
+
 ## Badge
 
 ### Variants
 
+Exactly the variants in `src/components/ui/badge.tsx` — there is **no** `success` variant:
+
 | Variant | Usage | Example |
 |---------|-------|---------|
-| `default` | Neutral status | "Draft", "Pending" |
+| `default` | Neutral / primary emphasis | "Draft", "Pending" |
 | `secondary` | Low-priority info | "Optional", "Beta" |
 | `outline` | Counts, labels | "5 items", "New" |
 | `destructive` | Errors, warnings | "Overdue", "Failed" |
-| `success` | Positive status | "Paid", "Completed" |
 
 ### Usage Examples
 
 ```tsx
 import { Badge } from "@/components/ui/badge"
 
-// Status indicators
-<Badge variant="success">Paid</Badge>
+// Built-in variants only
 <Badge variant="destructive">Unpaid</Badge>
 <Badge variant="default">Partial</Badge>
-
-// Counts
 <Badge variant="outline">5 expenses</Badge>
-
-// Labels
 <Badge variant="secondary">Optional</Badge>
 ```
 
 ### Custom Status Badges
 
-For payment/expense status, use semantic colors:
+For payment/expense status, use semantic status tokens (or `PaymentStateBadge` / `DebtStatusBadge`), not a fake `variant="success"`:
 
 ```tsx
 // Paid (green)
@@ -286,6 +314,14 @@ For payment/expense status, use semantic colors:
   Partial
 </Badge>
 ```
+
+---
+
+## Icons
+
+**Default:** stroke-only Lucide wrappers from `@/components/ui/icons`.
+
+**Fill:** only when intentional — pass `fill` via props, or use a dedicated filled/custom SVG (e.g. clock-face dot). Do not bake `fill="currentColor"` into shared Lucide wrappers.
 
 ---
 
@@ -496,7 +532,11 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
     <TableRow>
       <TableCell>Coffee</TableCell>
       <TableCell className="tabular-nums">$25.00</TableCell>
-      <TableCell><Badge variant="success">Paid</Badge></TableCell>
+      <TableCell>
+        <Badge className="bg-status-success-bg text-status-success-foreground border-status-success-border">
+          Paid
+        </Badge>
+      </TableCell>
     </TableRow>
   </TableBody>
 </Table>
@@ -520,7 +560,9 @@ On mobile, use card-based layout instead of tables:
         <span className="typography-row-title">{expense.name}</span>
         <span className="typography-amount">{expense.amount}</span>
       </div>
-      <Badge variant="success">{expense.status}</Badge>
+      <Badge className="bg-status-success-bg text-status-success-foreground border-status-success-border">
+        {expense.status}
+      </Badge>
     </Card>
   ))}
 </div>
@@ -558,9 +600,11 @@ Need layout?
 
 - [ ] Using `<Card>` only for self-contained data entities
 - [ ] Maximum one primary button per screen section
-- [ ] All buttons ≥44px height on mobile
+- [ ] Buttons use live sizes (`h-9` default / `h-8` sm / `h-10` lg / `size-9` icon)
+- [ ] Using `<PageContainer>` + `<PageHeader>` on list/settings pages
 - [ ] Using `<ResponsiveDialog>` for forms (not full-page modals)
 - [ ] All form inputs have associated `<Label>`
 - [ ] Tables replaced with cards on mobile
-- [ ] Status badges use semantic color tokens
-- [ ] Tab styling consistent across pages
+- [ ] Status badges use semantic color tokens (no inventing Badge variants)
+- [ ] Icons are stroke-only by default; fill only via explicit props
+- [ ] Tab styling consistent across pages (pill / underline CVA only)
