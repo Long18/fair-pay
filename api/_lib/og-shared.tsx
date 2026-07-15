@@ -124,6 +124,7 @@ export function OgAvatar({
     return (
       <img
         src={avatarUrl}
+        alt={name}
         width={size}
         height={size}
         style={{ borderRadius, objectFit: 'cover' }}
