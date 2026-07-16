@@ -670,8 +670,8 @@ function buildEmailHtml(
     ctaLabel,
     tone: hasReminder ? 'reminder' : 'default',
     heroHtml: hasReminder ? `<tr>
-      <td data-email-block="hero-image" style="background:#111827;">
-        <img src="${escapeHtml(heroUrl)}" width="600" alt="FairPay debt reminder overview" style="display:block;width:100%;max-width:600px;height:auto;">
+      <td data-email-block="hero-image" style="background:#0f172a;line-height:0;font-size:0;">
+        <img src="${escapeHtml(heroUrl)}" width="600" height="140" alt="FairPay debt reminder overview" style="display:block;width:100%;max-width:600px;height:140px;object-fit:cover;object-position:center top;border:0;">
       </td>
     </tr>` : '',
   })
@@ -779,8 +779,12 @@ async function sendInviteEmails(
  * Called via cron every 5 minutes (set up via pg_cron + pg_net, see migration).
  * For each user with unsent notifications:
  *   1. Groups all pending notifications into a single digest email
- *   2. Sends via SMTP (denomailer)
+ *   2. Sends via SMTP (denomailer), with a short gap between recipients
  *   3. Marks notifications with email_sent_at timestamp
+ *
+ * Timing (enforced by get_email_notification_queue, admin bypass via p_include_recent):
+ *   - Batch window: notifications wait 30 minutes before email (accumulate into one digest)
+ *   - Per-user cooldown: at most one digest every 2 hours
  *
  * Required secrets (set via `supabase secrets set`):
  *   SMTP_HOST      - e.g. smtp.gmail.com
@@ -911,9 +915,19 @@ serve(async (req) => {
     const successfulNotificationIds = new Set<string>()
     const failedNotificationIds = new Set<string>()
 
-    // ── 4. Send digest per selected recipient ─────────────────────────────
-    for (const notifs of byRecipient.values()) {
+    // ── 4. Send digest per selected recipient (spaced to avoid SMTP blast) ─
+    // Admin bulk UI staggers 60–90s between recipients client-side.
+    // This short gap is a safety net when multiple digests share one worker run.
+    const recipientGroups = Array.from(byRecipient.values())
+    const interSendDelayMs = 5_000
+
+    for (let i = 0; i < recipientGroups.length; i++) {
+      const notifs = recipientGroups[i]
       const { user_email, user_name } = notifs[0]
+
+      if (i > 0) {
+        await new Promise((resolve) => setTimeout(resolve, interSendDelayMs))
+      }
 
       try {
         const html    = buildEmailHtml(user_name || 'there', notifs, appUrl)

@@ -327,8 +327,8 @@ export function buildReminderEmailPreview(input: ReminderEmailPreviewInput): Rem
     ctaLabel,
     tone: "reminder",
     heroHtml: `<tr>
-      <td data-email-block="hero-image" style="background:#111827;">
-        <img src="${safeHeroUrl}" width="600" alt="FairPay debt reminder overview" style="display:block;width:100%;max-width:600px;height:auto;">
+      <td data-email-block="hero-image" style="background:#0f172a;line-height:0;font-size:0;">
+        <img src="${safeHeroUrl}" width="600" height="140" alt="FairPay debt reminder overview" style="display:block;width:100%;max-width:600px;height:140px;object-fit:cover;object-position:center top;border:0;">
       </td>
     </tr>`,
     footerHtml: `

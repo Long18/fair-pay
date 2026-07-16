@@ -113,6 +113,8 @@ describe("admin reminder email helpers", () => {
 
     expect(preview.html).toContain("/assets/email/debt-reminder-hero.jpg");
     expect(preview.html).toContain('alt="FairPay debt reminder overview"');
+    expect(preview.html).toContain('height="140"');
+    expect(preview.html).toContain("height:140px");
     expect(preview.html).toContain('alt="iCloud"');
     expect(preview.html).toContain("YouTube Premium");
     expect(preview.html).toContain("YP");

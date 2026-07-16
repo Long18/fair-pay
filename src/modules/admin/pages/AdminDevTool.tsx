@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AdminOgPreview } from "./AdminOgPreview";
 import { AdminUtmDevTool } from "./AdminUtmDevTool";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -59,6 +60,7 @@ import {
   AlertTriangleIcon,
   BookOpenIcon,
   CheckCircle2Icon,
+  ClockIcon,
   EyeIcon,
   ListFilterIcon,
   Loader2Icon,
@@ -68,6 +70,7 @@ import {
   RefreshCwIcon,
   ScrollTextIcon,
   SendIcon,
+  Undo2Icon,
   ZapIcon,
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -139,6 +142,53 @@ interface EmailSendResult {
   errors?: string[];
   message?: string;
   error?: string;
+}
+
+/** Gmail-style undo window before the first email leaves the outbox. */
+const UNDO_DELAY_MIN_MS = 10_000;
+const UNDO_DELAY_MAX_MS = 30_000;
+/** Stagger between cold-outreach sends to reduce instant-spam signals. */
+const STAGGER_DELAY_MIN_MS = 60_000;
+const STAGGER_DELAY_MAX_MS = 90_000;
+
+type ScheduledSendPhase = "undo" | "sending" | "waiting" | "done" | "cancelled";
+
+interface ScheduledSendState {
+  phase: ScheduledSendPhase;
+  total: number;
+  currentIndex: number;
+  sent: number;
+  failed: number;
+  skipped: number;
+  deadlineMs: number | null;
+  currentName: string | null;
+  errors: string[];
+}
+
+function randomBetweenMs(minMs: number, maxMs: number): number {
+  return Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+}
+
+function waitMs(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new DOMException("Aborted", "AbortError"));
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      window.clearTimeout(timer);
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === "AbortError";
 }
 
 interface EmailOverviewResponse {
@@ -898,6 +948,125 @@ function SendResultCard({ result }: { result: EmailSendResult | null }) {
   );
 }
 
+function ScheduledSendBanner({
+  state,
+  nowMs,
+  onCancel,
+  tAdmin,
+}: {
+  state: ScheduledSendState;
+  nowMs: number;
+  onCancel: () => void;
+  tAdmin: AdminT;
+}) {
+  const secondsLeft = state.deadlineMs
+    ? Math.max(0, Math.ceil((state.deadlineMs - nowMs) / 1000))
+    : 0;
+  const completed = state.sent + state.failed;
+  const progressValue = state.total > 0 ? Math.round((completed / state.total) * 100) : 0;
+  const canCancel = state.phase === "undo" || state.phase === "waiting" || state.phase === "sending";
+
+  let title = tAdmin("devtool.scheduledProgress", {
+    sent: completed,
+    total: state.total,
+  });
+  let description = tAdmin("devtool.staggerHint");
+
+  switch (state.phase) {
+    case "undo":
+      title = tAdmin("devtool.scheduledUndoTitle", { count: state.total });
+      description = tAdmin("devtool.scheduledUndoDescription", { seconds: secondsLeft });
+      break;
+    case "sending":
+      title = tAdmin("devtool.scheduledSending", {
+        name: state.currentName ?? "",
+        current: state.currentIndex + 1,
+        total: state.total,
+      });
+      description = tAdmin("devtool.staggerHint");
+      break;
+    case "waiting":
+      title = tAdmin("devtool.scheduledWaiting", {
+        name: state.currentName ?? "",
+        seconds: secondsLeft,
+        sent: completed,
+        total: state.total,
+      });
+      description = tAdmin("devtool.staggerHint");
+      break;
+    case "done":
+      title = tAdmin("devtool.scheduledDone", {
+        sent: state.sent,
+        failed: state.failed,
+      });
+      description = state.failed
+        ? tAdmin("devtool.scheduledDoneWithErrors")
+        : tAdmin("devtool.scheduledDoneSuccess");
+      break;
+    case "cancelled":
+      title = tAdmin("devtool.scheduledCancelled", {
+        sent: state.sent,
+        remaining: Math.max(0, state.total - completed),
+      });
+      description = tAdmin("devtool.sendUndone");
+      break;
+    default: {
+      const _exhaustive: never = state.phase;
+      void _exhaustive;
+      break;
+    }
+  }
+
+  return (
+    <div
+      className={cn(
+        "rounded-lg border p-3 shadow-sm",
+        state.phase === "cancelled"
+          ? "border-border bg-muted/40"
+          : state.phase === "done" && state.failed
+            ? "border-[var(--status-warning-bg)] bg-[var(--status-warning-bg)]"
+            : state.phase === "done"
+              ? "border-[var(--status-success-bg)] bg-[var(--status-success-bg)]"
+              : "border-primary/20 bg-primary/5"
+      )}
+      role="status"
+      aria-live="polite"
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 space-y-1">
+          <div className="flex items-center gap-2 font-medium">
+            {state.phase === "sending" ? (
+              <Loader2Icon className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
+            ) : state.phase === "done" && !state.failed ? (
+              <CheckCircle2Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+            ) : state.phase === "cancelled" ? (
+              <Undo2Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+            ) : (
+              <ClockIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+            )}
+            <span className="text-sm">{title}</span>
+          </div>
+          <p className="text-xs leading-5 text-muted-foreground">{description}</p>
+        </div>
+        {canCancel ? (
+          <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={onCancel}>
+            <Undo2Icon className="mr-1.5 h-4 w-4" aria-hidden="true" />
+            {state.phase === "undo" ? tAdmin("devtool.undoSend") : tAdmin("devtool.cancelRemaining")}
+          </Button>
+        ) : null}
+      </div>
+      {state.phase !== "cancelled" ? (
+        <Progress value={state.phase === "undo" ? 0 : progressValue} className="mt-3 h-1.5" />
+      ) : null}
+      {(state.phase === "undo" || state.phase === "waiting") && secondsLeft > 0 ? (
+        <p className="mt-2 text-xs tabular-nums text-muted-foreground">
+          {tAdmin("devtool.countdownSeconds", { seconds: secondsLeft })}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function AdminEmailDevTools({ embedded = false }: { embedded?: boolean }) {
   const { tAdmin } = useAdminTranslation();
   const { tap, success, warning } = useHaptics();
@@ -916,6 +1085,10 @@ function AdminEmailDevTools({ embedded = false }: { embedded?: boolean }) {
   const [confirmBulkOpen, setConfirmBulkOpen] = useState(false);
   const [groupFilter, setGroupFilter] = useState("all");
   const [recipientSelections, setRecipientSelections] = useState<Record<string, string[]>>({});
+  const [scheduledSend, setScheduledSend] = useState<ScheduledSendState | null>(null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const bulkAbortRef = useRef<AbortController | null>(null);
+  const dismissTimerRef = useRef<number | null>(null);
 
   const previewEmail = useMemo(() => {
     if (!previewRow) return null;
@@ -983,7 +1156,11 @@ function AdminEmailDevTools({ embedded = false }: { embedded?: boolean }) {
 
   const allSelected = visibleDebtors.length > 0 && selectedRows.length === visibleDebtors.length;
   const someSelected = selectedRows.length > 0 && !allSelected;
-  const isBusy = sendingUserId !== null;
+  const isBulkScheduling =
+    scheduledSend !== null &&
+    scheduledSend.phase !== "done" &&
+    scheduledSend.phase !== "cancelled";
+  const isBusy = sendingUserId !== null || isBulkScheduling;
 
   const totalDebtAll = useMemo(() => debtors.reduce((sum, row) => sum + row.total_i_owe, 0), [debtors]);
 
@@ -991,6 +1168,22 @@ function AdminEmailDevTools({ embedded = false }: { embedded?: boolean }) {
     () => selectedRows.reduce((sum, row) => sum + row.total_i_owe, 0),
     [selectedRows]
   );
+
+  useEffect(() => {
+    if (!scheduledSend?.deadlineMs) return;
+    if (scheduledSend.phase !== "undo" && scheduledSend.phase !== "waiting") return;
+    const id = window.setInterval(() => setNowMs(Date.now()), 250);
+    return () => window.clearInterval(id);
+  }, [scheduledSend?.deadlineMs, scheduledSend?.phase]);
+
+  useEffect(() => {
+    return () => {
+      bulkAbortRef.current?.abort();
+      if (dismissTimerRef.current !== null) {
+        window.clearTimeout(dismissTimerRef.current);
+      }
+    };
+  }, []);
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
@@ -1068,23 +1261,182 @@ function AdminEmailDevTools({ embedded = false }: { embedded?: boolean }) {
   const handleRemindSelected = useCallback(async () => {
     if (!selectedRows.length) return;
     tap();
-    setSendingUserId("__bulk__");
-    try {
-      const ids = await createReminderNotifications(
-        selectedRows,
-        tAdmin,
-        (row) => getSelectedRecipientEmails(row, recipientSelections)
-      );
-      if (!ids.length) throw new Error("queue-error");
+    setConfirmBulkOpen(false);
 
-      const result = await sendEmailForNotificationIds(ids);
-      setSendResult(result);
-      success();
-      toast.success(tAdmin("devtool.sentMany", { count: ids.length }));
-      setSelectedUserIds([]);
-      setConfirmBulkOpen(false);
+    const rows = selectedRows.map((row) => row);
+    const selectionsSnapshot = { ...recipientSelections };
+    setSelectedUserIds([]);
+
+    if (dismissTimerRef.current !== null) {
+      window.clearTimeout(dismissTimerRef.current);
+      dismissTimerRef.current = null;
+    }
+
+    bulkAbortRef.current?.abort();
+    const controller = new AbortController();
+    bulkAbortRef.current = controller;
+    const { signal } = controller;
+
+    const undoMs = randomBetweenMs(UNDO_DELAY_MIN_MS, UNDO_DELAY_MAX_MS);
+    setSendingUserId("__bulk__");
+    setScheduledSend({
+      phase: "undo",
+      total: rows.length,
+      currentIndex: 0,
+      sent: 0,
+      failed: 0,
+      skipped: 0,
+      deadlineMs: Date.now() + undoMs,
+      currentName: rows[0]?.full_name ?? null,
+      errors: [],
+    });
+    setNowMs(Date.now());
+
+    let sent = 0;
+    let failed = 0;
+    let skipped = 0;
+    const errors: string[] = [];
+
+    try {
+      await waitMs(undoMs, signal);
+
+      for (let i = 0; i < rows.length; i += 1) {
+        if (signal.aborted) throw new DOMException("Aborted", "AbortError");
+
+        const row = rows[i];
+        setScheduledSend({
+          phase: "sending",
+          total: rows.length,
+          currentIndex: i,
+          sent,
+          failed,
+          skipped,
+          deadlineMs: null,
+          currentName: row.full_name,
+          errors: [...errors],
+        });
+
+        try {
+          const ids = await createReminderNotifications(
+            [row],
+            tAdmin,
+            (item) => getSelectedRecipientEmails(item, selectionsSnapshot)
+          );
+          if (!ids.length) throw new Error("queue-error");
+
+          const result = await sendEmailForNotificationIds(ids);
+          sent += result.sent ?? (result.success === false ? 0 : 1);
+          failed += result.failed ?? (result.success === false ? 1 : 0);
+          skipped += result.skipped ?? 0;
+          if (result.errors?.length) errors.push(...result.errors);
+          if (result.error) errors.push(result.error);
+          if (result.success === false && !result.failed) failed += 1;
+        } catch (rowError) {
+          failed += 1;
+          const message = rowError instanceof Error && rowError.message === "queue-error"
+            ? tAdmin("devtool.queueError")
+            : rowError instanceof Error
+              ? rowError.message
+              : tAdmin("devtool.sendError");
+          errors.push(`${row.full_name}: ${message}`);
+        }
+
+        setScheduledSend({
+          phase: "sending",
+          total: rows.length,
+          currentIndex: i,
+          sent,
+          failed,
+          skipped,
+          deadlineMs: null,
+          currentName: row.full_name,
+          errors: [...errors],
+        });
+
+        if (signal.aborted) throw new DOMException("Aborted", "AbortError");
+
+        if (i < rows.length - 1) {
+          const staggerMs = randomBetweenMs(STAGGER_DELAY_MIN_MS, STAGGER_DELAY_MAX_MS);
+          setScheduledSend({
+            phase: "waiting",
+            total: rows.length,
+            currentIndex: i + 1,
+            sent,
+            failed,
+            skipped,
+            deadlineMs: Date.now() + staggerMs,
+            currentName: rows[i + 1].full_name,
+            errors: [...errors],
+          });
+          setNowMs(Date.now());
+          await waitMs(staggerMs, signal);
+        }
+      }
+
+      const aggregate: EmailSendResult = {
+        success: failed === 0,
+        sent,
+        failed,
+        skipped,
+        errors: errors.length ? errors : undefined,
+      };
+      setSendResult(aggregate);
+      setScheduledSend({
+        phase: "done",
+        total: rows.length,
+        currentIndex: rows.length,
+        sent,
+        failed,
+        skipped,
+        deadlineMs: null,
+        currentName: null,
+        errors: [...errors],
+      });
+      if (failed === 0) {
+        success();
+        toast.success(tAdmin("devtool.sentMany", { count: sent || rows.length }));
+      } else {
+        warning();
+        toast.error(tAdmin("devtool.sentManyPartial", { sent, failed, total: rows.length }));
+      }
       refresh();
+      dismissTimerRef.current = window.setTimeout(() => {
+        setScheduledSend((current) => (current?.phase === "done" ? null : current));
+        dismissTimerRef.current = null;
+      }, 5000);
     } catch (error) {
+      if (isAbortError(error)) {
+        setScheduledSend({
+          phase: "cancelled",
+          total: rows.length,
+          currentIndex: Math.min(sent + failed, rows.length),
+          sent,
+          failed,
+          skipped,
+          deadlineMs: null,
+          currentName: null,
+          errors: [...errors],
+        });
+        if (sent > 0 || failed > 0) {
+          setSendResult({
+            success: failed === 0,
+            sent,
+            failed,
+            skipped,
+            errors: errors.length ? errors : undefined,
+            message: tAdmin("devtool.sendUndone"),
+          });
+        }
+        toast.message(tAdmin("devtool.sendUndone"));
+        warning();
+        refresh();
+        dismissTimerRef.current = window.setTimeout(() => {
+          setScheduledSend((current) => (current?.phase === "cancelled" ? null : current));
+          dismissTimerRef.current = null;
+        }, 4000);
+        return;
+      }
+
       warning();
       const message = error instanceof Error && error.message === "queue-error"
         ? tAdmin("devtool.queueError")
@@ -1092,10 +1444,19 @@ function AdminEmailDevTools({ embedded = false }: { embedded?: boolean }) {
           ? tAdmin("devtool.atLeastOneNotification")
           : error instanceof Error ? error.message : tAdmin("devtool.sendError");
       toast.error(message);
+      setScheduledSend(null);
     } finally {
       setSendingUserId(null);
+      if (bulkAbortRef.current === controller) {
+        bulkAbortRef.current = null;
+      }
     }
   }, [recipientSelections, selectedRows, refresh, success, tap, tAdmin, warning]);
+
+  const cancelScheduledSend = useCallback(() => {
+    tap();
+    bulkAbortRef.current?.abort();
+  }, [tap]);
 
   const openBulkPreview = useCallback(() => {
     if (!selectedRows.length) return;
@@ -1130,38 +1491,47 @@ function AdminEmailDevTools({ embedded = false }: { embedded?: boolean }) {
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{tAdmin("devtool.pendingQueue")}</CardDescription>
-            <CardTitle className="text-3xl tabular-nums">{pendingQueueCount ?? "—"}</CardTitle>
-            <p className="pt-1 text-xs text-muted-foreground">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Card className="shadow-none">
+          <CardHeader className="space-y-1 p-4 pb-3">
+            <CardDescription className="text-xs">{tAdmin("devtool.pendingQueue")}</CardDescription>
+            <CardTitle className="text-xl tabular-nums">{pendingQueueCount ?? "—"}</CardTitle>
+            <p className="text-[11px] leading-4 text-muted-foreground">
               {tAdmin("devtool.pendingQueueHelp")}
             </p>
           </CardHeader>
           {pendingQueueError && (
-            <CardContent>
+            <CardContent className="px-4 pb-3 pt-0">
               <p className="text-sm text-[var(--status-warning-foreground)]">{pendingQueueError}</p>
             </CardContent>
           )}
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{tAdmin("devtool.debtorsWithEmail")}</CardDescription>
-            <CardTitle className="text-3xl tabular-nums">{debtors.length}</CardTitle>
+        <Card className="shadow-none">
+          <CardHeader className="space-y-1 p-4 pb-3">
+            <CardDescription className="text-xs">{tAdmin("devtool.debtorsWithEmail")}</CardDescription>
+            <CardTitle className="text-xl tabular-nums">{debtors.length}</CardTitle>
           </CardHeader>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{tAdmin("devtool.totalDebtAll")}</CardDescription>
-            <CardTitle className="text-3xl tabular-nums text-balance">
+        <Card className="shadow-none">
+          <CardHeader className="space-y-1 p-4 pb-3">
+            <CardDescription className="text-xs">{tAdmin("devtool.totalDebtAll")}</CardDescription>
+            <CardTitle className="text-xl tabular-nums text-balance">
               {debtors.length ? formatCurrency(totalDebtAll) : "—"}
             </CardTitle>
           </CardHeader>
         </Card>
       </div>
+
+      {scheduledSend ? (
+        <ScheduledSendBanner
+          state={scheduledSend}
+          nowMs={nowMs}
+          onCancel={cancelScheduledSend}
+          tAdmin={tAdmin}
+        />
+      ) : null}
 
       <SendResultCard result={sendResult} />
 
@@ -1251,12 +1621,14 @@ function AdminEmailDevTools({ embedded = false }: { embedded?: boolean }) {
                   }}
                   disabled={!selectedRows.length || isBusy}
                 >
-                  {sendingUserId === "__bulk__" ? (
+                  {sendingUserId === "__bulk__" || isBulkScheduling ? (
                     <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     <SendIcon className="mr-2 h-4 w-4" aria-hidden="true" />
                   )}
-                  {tAdmin("devtool.sendSelectedEmail")}
+                  {isBulkScheduling
+                    ? tAdmin("devtool.sendingScheduled")
+                    : tAdmin("devtool.sendSelectedEmail")}
                 </Button>
               </div>
             </div>
@@ -1648,6 +2020,9 @@ function AdminEmailDevTools({ embedded = false }: { embedded?: boolean }) {
                 </ScrollArea>
                 <p className="text-xs text-muted-foreground">
                   {tAdmin("devtool.confirmBulkDescription")}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {tAdmin("devtool.confirmBulkTimingHint")}
                 </p>
               </div>
             </AlertDialogDescription>
