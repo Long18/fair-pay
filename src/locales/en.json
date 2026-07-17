@@ -1912,6 +1912,46 @@
     "deleteModelCache": "Delete local",
     "selectModel": "Select model",
     "selectModelAria": "Select local AI model",
+    "inputPlaceholder": "Ask FairPay Assistant…",
+    "inputAria": "Chat message input",
+    "sendAria": "Send message",
+    "comingSoon": "Coming soon",
+    "attachComingSoon": "Attach file (coming soon)",
+    "micComingSoon": "Voice input (coming soon)",
+    "scrollToLatest": "Latest",
+    "greeting": {
+      "morning": "Good morning, {{name}}",
+      "afternoon": "Good afternoon, {{name}}",
+      "evening": "Good evening, {{name}}",
+      "fallbackName": "there"
+    },
+    "sidebar": {
+      "searchPlaceholder": "Search chats…",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "previous7Days": "Previous 7 Days",
+      "older": "Older"
+    },
+    "pills": {
+      "balances": "Balances",
+      "expense": "Add expense",
+      "groups": "Groups",
+      "settle": "Settle up"
+    },
+    "tabs": {
+      "chat": "Chat",
+      "insights": "Insights"
+    },
+    "insights": {
+      "title": "AI Insights",
+      "generate": "Generate",
+      "regenerate": "Regenerate",
+      "privacyNote": "Uses only the balances, activity, and history already loaded in FairPay.",
+      "idleHint": "Tap Generate to get AI-powered insights from your current data.",
+      "loadModelFirst": "Load a model first using the selector in the chat input.",
+      "suggestedQuestions": "Suggested questions",
+      "footer": "Insights are generated locally in your browser — no data is sent to any server."
+    },
     "status": {
       "unavailable": "Local AI unavailable",
       "loading": "Loading local model {{pct}}%",

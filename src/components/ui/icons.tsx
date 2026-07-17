@@ -118,6 +118,9 @@ import {
   SmilePlus,
   Smile,
   Send,
+  Paperclip,
+  Mic,
+  Menu,
   CornerDownRight,
   AtSign,
   Undo2,
@@ -961,6 +964,18 @@ export const SmileIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
 
 export const SendIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
   <Send size={size} {...props} />
+);
+
+export const PaperclipIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Paperclip size={size} {...props} />
+);
+
+export const MicIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Mic size={size} {...props} />
+);
+
+export const MenuIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
+  <Menu size={size} {...props} />
 );
 
 export const CornerDownRightIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (

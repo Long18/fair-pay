@@ -1912,6 +1912,46 @@
     "deleteModelCache": "Xóa local",
     "selectModel": "Chọn mô hình",
     "selectModelAria": "Chọn mô hình AI cục bộ",
+    "inputPlaceholder": "Hỏi Trợ lý FairPay…",
+    "inputAria": "Ô nhập tin nhắn",
+    "sendAria": "Gửi tin nhắn",
+    "comingSoon": "Sắp ra mắt",
+    "attachComingSoon": "Đính kèm tệp (sắp ra mắt)",
+    "micComingSoon": "Nhập bằng giọng nói (sắp ra mắt)",
+    "scrollToLatest": "Mới nhất",
+    "greeting": {
+      "morning": "Chào buổi sáng, {{name}}",
+      "afternoon": "Chào buổi chiều, {{name}}",
+      "evening": "Chào buổi tối, {{name}}",
+      "fallbackName": "bạn"
+    },
+    "sidebar": {
+      "searchPlaceholder": "Tìm cuộc trò chuyện…",
+      "today": "Hôm nay",
+      "yesterday": "Hôm qua",
+      "previous7Days": "7 ngày gần đây",
+      "older": "Cũ hơn"
+    },
+    "pills": {
+      "balances": "Số dư",
+      "expense": "Thêm chi tiêu",
+      "groups": "Nhóm",
+      "settle": "Tất toán"
+    },
+    "tabs": {
+      "chat": "Chat",
+      "insights": "Insights"
+    },
+    "insights": {
+      "title": "AI Insights",
+      "generate": "Tạo",
+      "regenerate": "Tạo lại",
+      "privacyNote": "Chỉ dùng số dư, hoạt động và lịch sử đã có trong FairPay.",
+      "idleHint": "Nhấn Tạo để nhận insight từ dữ liệu hiện tại của bạn.",
+      "loadModelFirst": "Hãy tải mô hình trước bằng bộ chọn trong ô chat.",
+      "suggestedQuestions": "Câu hỏi gợi ý",
+      "footer": "Insights được tạo cục bộ trên trình duyệt — không gửi dữ liệu lên máy chủ."
+    },
     "status": {
       "unavailable": "AI cục bộ không khả dụng",
       "loading": "Đang tải mô hình {{pct}}%",

@@ -86,7 +86,7 @@ const DonationSettings = lazy(() => import("./modules/settings").then(m => ({ de
 const BankSettings = lazy(() => import("./modules/settings/pages/bank-settings").then(m => ({ default: m.BankSettingsPage })));
 const SepaySettings = lazy(() => import("./modules/settings/pages/sepay-settings").then(m => ({ default: m.SepaySettingsPage })));
 const DonationWidget = lazy(() => import("./components/donation-widget").then(m => ({ default: m.DonationWidget })));
-const ChatFAB = lazy(() => import("./modules/ai-chat").then(m => ({ default: m.ChatFAB })));
+const AiChatPage = lazy(() => import("./modules/ai-chat/pages/AiChatPage").then(m => ({ default: m.AiChatPage })));
 
 // Onboarding module - lazy loaded (only needed on first visit)
 const OnboardingProvider = lazy(() => import("./modules/onboarding").then(m => ({ default: m.OnboardingProvider })));
@@ -559,6 +559,13 @@ function App() {
                         </ErrorBoundary>
                       </Suspense>
                     } />
+                    <Route path="/ai-chat" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <ErrorBoundary context="AI Chat">
+                          <AiChatPage />
+                        </ErrorBoundary>
+                      </Suspense>
+                    } />
                     <Route path="/settings" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <SettingsPage />
@@ -616,11 +623,6 @@ function App() {
                 <Suspense fallback={null}>
                   <DonationWidget />
                 </Suspense>
-                <Authenticated key="chat-fab" fallback={null}>
-                  <Suspense fallback={null}>
-                    <ChatFAB />
-                  </Suspense>
-                </Authenticated>
                 <Authenticated key="onboarding-checklist" fallback={null}>
                   <Suspense fallback={null}>
                     <OnboardingChecklistFAB />
