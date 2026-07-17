@@ -42,7 +42,9 @@ scripts/verification/*-output.txt
 # AI/Agent tool directories
 .agents/skills/find-skills/
 .claude/
-.cursor/
+.cursor/*
+!.cursor/agents/
+!.cursor/agents/**
 .cursorignore
 .cursorindexingignore
 .kiro/
@@ -56,7 +58,7 @@ data/state_store.db/
 data/stream_store/
 
 # Local-only docs and planning files
-AGENTS.md
+# AGENTS.md is shared team guidance for coding agents (keep tracked)
 CLAUDE.md
 CURSOR.md
 COMPLETE_BUG_FIX.md
