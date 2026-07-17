@@ -66,13 +66,15 @@ const unpaidColors = getPaymentStateColors('unpaid');
 The project uses ESLint to automatically detect hardcoded status colors:
 
 ```bash
-# Run ESLint to check for violations
-npm run lint
+# Run ESLint to check for violations (prefer path-scoped during iteration)
+pnpm exec eslint path/to/file.tsx
+pnpm lint
 
-# Auto-fix some issues (won't fix status colors automatically)
-npm run lint:fix
+# Type-check
+pnpm type-check
 ```
 
+For agent-oriented validation, see [AGENTS.md](AGENTS.md). Do not rely on `lint:fix` — it is not defined; fix status-color violations by switching to `@/lib/status-colors` helpers.
 **Error Message**: If you use hardcoded status colors, you'll see:
 ```
 Use status color tokens from '@/lib/status-colors' instead of hardcoded Tailwind status colors.

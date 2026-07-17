@@ -21,7 +21,7 @@ FairPay helps users track shared expenses with friends and groups. Split bills, 
 
 - Node.js 20+
 - pnpm
-- Supabase CLI
+- (Optional, local backend only) Docker Desktop + Supabase CLI
 
 ### Installation
 
@@ -29,23 +29,31 @@ FairPay helps users track shared expenses with friends and groups. Split bills, 
 # Install dependencies
 pnpm install
 
-# Start local Supabase
-pnpm supabase:start
+# Configure env (preferred filename for this repo)
+cp .env.example .env.local
+# Set at least VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
+# Remote hosted project: paste project URL + anon key and skip local Supabase.
+# Local Supabase: requires Docker Desktop. Migrations expect core tables from
+# supabase/baseline.sql (not applied by supabase start alone). Prefer a hosted
+# project for agents; for a full local DB see supabase/scripts/sync/sync-full.sh
+# or apply baseline.sql then copy keys from `pnpm supabase:status`.
 
 # Run development server
 pnpm dev
 ```
 
+See [AGENTS.md](AGENTS.md) for the agent-oriented validation recipe (`test:mcp`, scoped vitest, etc.) and local Supabase caveats.
+
 ### Environment Variables
 
-Copy `.env.example` to `.env` and configure:
+Copy `.env.example` to **`.env.local`** (preferred) or `.env` and configure:
 
 ```env
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_anon_key
 ```
 
-## Development
+Local Supabase (`pnpm supabase:start`) is **optional** when using a hosted project. A cold local stack also needs [`supabase/baseline.sql`](supabase/baseline.sql) applied (migrations start from mid-history and will fail without it).## Development
 
 ```bash
 # Development server
