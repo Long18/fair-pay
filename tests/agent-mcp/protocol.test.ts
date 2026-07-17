@@ -113,11 +113,54 @@ describe('FairPay MCP REST adapter', () => {
   it('passes preview data to the REST preview endpoint without committing', async () => {
     const { request, execute } = fakeTransport()
     const preview = {
-      group_id: 'g', description: 'Lunch', amount: 100000,
-      payer_member_id: 'payer', split_method: 'equal', participants: [{ member_id: 'payer' }],
+      actor_confirmed: true,
+      transaction_type: 'group',
+      group_id: 'g',
+      description: 'Lunch',
+      amount: 100000,
+      payer_member_id: 'payer',
+      split_method: 'equal',
+      participants: [{ member_id: 'payer' }],
+      confirmed_ambiguous_member_ids: ['payer'],
     }
     await execute('fairpay_preview_expense', preview)
-    expect(request).toHaveBeenCalledWith('POST', '/v1/expenses/preview', preview)
+    expect(request).toHaveBeenCalledWith('POST', '/v1/expenses/preview', {
+      group_id: 'g',
+      description: 'Lunch',
+      amount: 100000,
+      payer_member_id: 'payer',
+      split_method: 'equal',
+      participants: [{ member_id: 'payer' }],
+    })
+  })
+
+  it('blocks preview without actor confirmation or group transaction type', async () => {
+    const { request, execute } = fakeTransport()
+    const base = {
+      group_id: 'g',
+      description: 'Lunch',
+      amount: 100000,
+      payer_member_id: 'payer',
+      split_method: 'equal',
+      participants: [{ member_id: 'payer' }],
+    }
+
+    await expect(execute('fairpay_preview_expense', base)).resolves.toMatchObject({
+      status: 'needs_clarification',
+      reason: 'actor_confirmation_required',
+    })
+    await expect(execute('fairpay_preview_expense', { ...base, actor_confirmed: true })).resolves.toMatchObject({
+      status: 'needs_clarification',
+      reason: 'transaction_type_required',
+    })
+    await expect(execute('fairpay_preview_expense', {
+      ...base,
+      actor_confirmed: true,
+      transaction_type: 'personal',
+    })).resolves.toMatchObject({
+      status: 'unsupported_personal',
+    })
+    expect(request).not.toHaveBeenCalled()
   })
 
   it('rejects direct calls to forbidden tools', async () => {
@@ -138,5 +181,83 @@ describe('FairPay MCP REST adapter', () => {
     expect(fetchMock).toHaveBeenCalledWith('https://example.test/v1/me', expect.objectContaining({
       headers: expect.objectContaining({ 'x-fairpay-agent-source': 'internal_mcp' }),
     }))
+  })
+})
+
+describe('FairPay MCP resolveExpenseContext', () => {
+  const me = { user_id: 'u1', email: 'a@example.com', full_name: 'Alice' }
+  const group = { id: 'g1', name: 'Trip' }
+  const members = [
+    { member_id: 'm1', user_id: 'u1', full_name: 'Alice', email: 'a@example.com' },
+    { member_id: 'm2', user_id: 'u2', full_name: 'Bob', email: 'b@example.com' },
+  ]
+
+  function transportWithContext() {
+    const request = vi.fn(async (method: string, path: string) => {
+      if (path === '/v1/me') return me
+      if (path === '/v1/groups') return { groups: [group] }
+      if (path === '/v1/groups/g1/members') return { members }
+      return { ok: true }
+    })
+    return { request, execute: createMcpToolExecutor({ request }) }
+  }
+
+  it('returns needs_clarification when payer is missing (never ready with null payer)', async () => {
+    const { execute } = transportWithContext()
+    const result = await execute('fairpay_resolve_expense_context', {
+      actor_confirmed: true,
+      transaction_type: 'group',
+      group_id: 'g1',
+    })
+    expect(result).toMatchObject({
+      status: 'needs_clarification',
+      reason: 'payer_required',
+    })
+    expect((result as { payer?: unknown }).payer).toBeUndefined()
+  })
+
+  it('returns needs_clarification when participants are missing', async () => {
+    const { execute } = transportWithContext()
+    const result = await execute('fairpay_resolve_expense_context', {
+      actor_confirmed: true,
+      transaction_type: 'group',
+      group_id: 'g1',
+      payer: { email: 'a@example.com' },
+    })
+    expect(result).toMatchObject({
+      status: 'needs_clarification',
+      reason: 'participants_required',
+    })
+  })
+
+  it('returns ready only when payer and participants all resolve', async () => {
+    const { execute } = transportWithContext()
+    const result = await execute('fairpay_resolve_expense_context', {
+      actor_confirmed: true,
+      transaction_type: 'group',
+      group_id: 'g1',
+      payer: { email: 'a@example.com' },
+      participants: [{ email: 'a@example.com' }, { email: 'b@example.com' }],
+    })
+    expect(result).toMatchObject({
+      status: 'ready',
+      payer: { status: 'resolved' },
+    })
+    expect((result as { payer: { candidates: unknown[] } }).payer.candidates).toHaveLength(1)
+  })
+
+  it('returns needs_clarification for unresolved members', async () => {
+    const { execute } = transportWithContext()
+    const result = await execute('fairpay_resolve_expense_context', {
+      actor_confirmed: true,
+      transaction_type: 'group',
+      group_id: 'g1',
+      payer: { email: 'a@example.com' },
+      participants: [{ email: 'missing@example.com' }],
+    })
+    expect(result).toMatchObject({
+      status: 'needs_clarification',
+      reason: 'member_resolution_required',
+    })
   })
 })

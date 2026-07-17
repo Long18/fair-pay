@@ -60,7 +60,11 @@ export interface McpClientOptions {
   anonKey: string
   /** Override fetch (used by tests). Defaults to global fetch. */
   fetchImpl?: typeof fetch
+  /** Request timeout in ms. Defaults to 30s. */
+  timeoutMs?: number
 }
+
+const DEFAULT_MCP_TIMEOUT_MS = 30_000
 
 /**
  * Lightweight JSON-RPC client for the Phase 2 MCP endpoint. One request per
@@ -73,12 +77,14 @@ export class McpClient implements McpClientInterface {
   private readonly getToken: () => Promise<string | null>
   private readonly anonKey: string
   private readonly fetchImpl: typeof fetch
+  private readonly timeoutMs: number
 
   constructor(options: McpClientOptions) {
     this.endpointUrl = options.endpointUrl
     this.getToken = options.getToken
     this.anonKey = options.anonKey
     this.fetchImpl = options.fetchImpl ?? fetch
+    this.timeoutMs = options.timeoutMs ?? DEFAULT_MCP_TIMEOUT_MS
   }
 
   /**
@@ -131,6 +137,8 @@ export class McpClient implements McpClientInterface {
 
   private async sendInitializedNotification(token: string): Promise<void> {
     let response: Response
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs)
     try {
       response = await this.fetchImpl(this.endpointUrl, {
         method: 'POST',
@@ -142,9 +150,15 @@ export class McpClient implements McpClientInterface {
           'mcp-protocol-version': MCP_PROTOCOL_VERSION,
         },
         body: JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }),
+        signal: controller.signal,
       })
     } catch (caught) {
+      if (caught instanceof Error && caught.name === 'AbortError') {
+        throw new McpClientError(-32000, `MCP request timed out after ${this.timeoutMs}ms`)
+      }
       throw new McpClientError(-32000, caught instanceof Error ? caught.message : 'MCP initialization failed')
+    } finally {
+      clearTimeout(timer)
     }
     if (response.status !== 202) {
       throw new McpClientError(-32000, `MCP initialized notification returned HTTP ${response.status}`)
@@ -166,6 +180,8 @@ export class McpClient implements McpClientInterface {
     }
     if (includeProtocolHeader) headers['mcp-protocol-version'] = MCP_PROTOCOL_VERSION
 
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs)
     let res: Response
     try {
       res = await this.fetchImpl(this.endpointUrl, {
@@ -174,12 +190,18 @@ export class McpClient implements McpClientInterface {
           ...headers,
         },
         body: JSON.stringify({ jsonrpc: '2.0', id, method, params }),
+        signal: controller.signal,
       })
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new McpClientError(-32000, `MCP request timed out after ${this.timeoutMs}ms`)
+      }
       throw new McpClientError(
         -32000,
         err instanceof Error ? err.message : 'MCP endpoint unreachable',
       )
+    } finally {
+      clearTimeout(timer)
     }
 
     let body: JsonRpcResponse | null = null

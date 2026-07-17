@@ -501,6 +501,21 @@ describe('FairPayChatOrchestrator — prompt injection resistance', () => {
     expect(FAIRPAY_SYSTEM_PROMPT).toMatch(/member_id/i)
   })
 
+  it('system prompt fairpay_* tool names match the Phase 2/3 catalogs', () => {
+    const promptNames = [...FAIRPAY_SYSTEM_PROMPT.matchAll(/\bfairpay_[a-z0-9_]+\b/g)].map((m) => m[0])
+    const unique = [...new Set(promptNames)]
+    expect(unique.length).toBeGreaterThan(0)
+    for (const name of unique) {
+      expect(MCP_TOOL_NAMES.has(name), `unknown prompt tool: ${name}`).toBe(true)
+    }
+    expect(unique).toContain('fairpay_list_group_members')
+    expect(unique).toContain('fairpay_resolve_expense_context')
+    expect(unique).toContain('fairpay_get_operation')
+    expect(unique).not.toContain('fairpay_get_group_members')
+    expect(unique).not.toContain('fairpay_get_expense_context')
+    expect(unique).not.toContain('fairpay_get_operation_status')
+  })
+
   it('tool result with injected instruction text is returned verbatim to the model without re-interpretation', async () => {
     // If a tool returns data that looks like an instruction, the orchestrator
     // must pass it as a regular tool-role message — not elevated to system role.

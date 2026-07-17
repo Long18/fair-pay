@@ -113,12 +113,30 @@ export const MCP_TOOLS: readonly McpToolDefinition[] = [
     name: 'fairpay_preview_expense',
     title: 'Preview a FairPay expense',
     description:
-      'Validate and store an immutable VND group-expense preview. This never commits an expense; the user must confirm inside FairPay.',
+      'Validate and store an immutable VND group-expense preview. Requires actor_confirmed=true and transaction_type=group. This never commits an expense; the user must confirm inside FairPay.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
-      required: ['group_id', 'description', 'amount', 'payer_member_id', 'split_method', 'participants'],
+      required: [
+        'actor_confirmed',
+        'transaction_type',
+        'group_id',
+        'description',
+        'amount',
+        'payer_member_id',
+        'split_method',
+        'participants',
+      ],
       properties: {
+        actor_confirmed: {
+          type: 'boolean',
+          description: 'Must be true after the user confirms their FairPay name/email.',
+        },
+        transaction_type: {
+          type: 'string',
+          enum: ['group', 'personal'],
+          description: 'Must be group; personal agent-created transactions are not supported.',
+        },
         group_id: UUID_SCHEMA,
         description: { type: 'string', minLength: 1, maxLength: 200 },
         amount: VND_SCHEMA,
@@ -155,6 +173,12 @@ export const MCP_TOOLS: readonly McpToolDefinition[] = [
               fixed_amount: VND_SCHEMA,
             },
           },
+        },
+        confirmed_ambiguous_member_ids: {
+          type: 'array',
+          items: UUID_SCHEMA,
+          description:
+            'Include an ambiguous member_id only after the user explicitly selected that candidate.',
         },
       },
     },
@@ -299,9 +323,45 @@ async function resolveExpenseContext(transport: AgentApiTransport, args: Record<
     members?: Array<Record<string, unknown>>
   }
   const members = Array.isArray(membersResponse.members) ? membersResponse.members : []
-  const payer = resolveMembers(args.payer, members)[0] ?? null
+
+  if (args.payer === undefined || args.payer === null) {
+    return {
+      status: 'needs_clarification',
+      reason: 'payer_required',
+      message: 'Ask who paid for this expense before previewing.',
+      actor: me,
+      group,
+      members,
+    }
+  }
+
+  const payer = resolveMembers(args.payer, members)[0]
+  if (!payer || payer.status !== 'resolved') {
+    return {
+      status: 'needs_clarification',
+      reason: 'member_resolution_required',
+      message: 'Ask the user to clarify the payer (exact member_id or email).',
+      actor: me,
+      group,
+      payer: payer ?? null,
+      members,
+    }
+  }
+
+  if (!Array.isArray(args.participants) || args.participants.length === 0) {
+    return {
+      status: 'needs_clarification',
+      reason: 'participants_required',
+      message: 'Ask which members should split this expense before previewing.',
+      actor: me,
+      group,
+      payer,
+      members,
+    }
+  }
+
   const participants = resolveMembers(args.participants, members)
-  const unresolved = [payer, ...participants].filter((result) => result && result.status !== 'resolved')
+  const unresolved = participants.filter((result) => result.status !== 'resolved')
 
   return {
     status: unresolved.length === 0 ? 'ready' : 'needs_clarification',
@@ -312,6 +372,51 @@ async function resolveExpenseContext(transport: AgentApiTransport, args: Record<
     participants,
     members,
   }
+}
+
+/** Workflow gates shared with the in-app orchestrator — enforced before Agent API preview. */
+function validatePreviewPreflight(args: Record<string, unknown>): Record<string, unknown> | null {
+  if (args.actor_confirmed !== true) {
+    return {
+      status: 'needs_clarification',
+      reason: 'actor_confirmation_required',
+      message: 'Ask the user to confirm their FairPay name/email before previewing.',
+    }
+  }
+
+  if (args.transaction_type === undefined) {
+    return {
+      status: 'needs_clarification',
+      reason: 'transaction_type_required',
+      message: 'Ask whether this is a group transaction or a personal/1-on-1 transaction before previewing.',
+    }
+  }
+
+  if (args.transaction_type === 'personal') {
+    return {
+      status: 'unsupported_personal',
+      reason: 'personal_not_supported',
+      message: 'Personal/1-on-1 agent-created transactions are not supported yet.',
+    }
+  }
+
+  if (args.transaction_type !== 'group') {
+    return {
+      status: 'needs_clarification',
+      reason: 'invalid_transaction_type',
+      message: 'transaction_type must be "group" or "personal".',
+    }
+  }
+
+  return null
+}
+
+function previewBodyForAgentApi(args: Record<string, unknown>): Record<string, unknown> {
+  const body = { ...args }
+  delete body.actor_confirmed
+  delete body.transaction_type
+  delete body.confirmed_ambiguous_member_ids
+  return body
 }
 
 export function createMcpToolExecutor(transport: AgentApiTransport) {
@@ -329,8 +434,11 @@ export function createMcpToolExecutor(transport: AgentApiTransport) {
         return resolveExpenseContext(transport, args)
       case 'fairpay_check_expense_duplicates':
         return transport.request('POST', '/v1/expense-duplicate-checks', args)
-      case 'fairpay_preview_expense':
-        return transport.request('POST', '/v1/expenses/preview', args)
+      case 'fairpay_preview_expense': {
+        const preflight = validatePreviewPreflight(args)
+        if (preflight) return preflight
+        return transport.request('POST', '/v1/expenses/preview', previewBodyForAgentApi(args))
+      }
       case 'fairpay_get_operation':
         return transport.request('GET', `/v1/operations/${encodeURIComponent(requireString(args, 'preview_id'))}`)
       default:

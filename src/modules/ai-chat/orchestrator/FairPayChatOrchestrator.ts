@@ -435,12 +435,12 @@ export class FairPayChatOrchestrator {
   }
 
   private mcpArguments(name: string, args: Record<string, unknown>): Record<string, unknown> {
+    // Pass actor_confirmed / transaction_type so MCP enforces the same preflight
+    // gates. Strip confirmed_ambiguous_member_ids (orchestrator-local only);
+    // MCP also strips workflow fields before the Agent API.
     if (name !== 'fairpay_preview_expense') return args
-
     const mcpArgs = { ...args }
     delete mcpArgs.confirmed_ambiguous_member_ids
-    delete mcpArgs.actor_confirmed
-    delete mcpArgs.transaction_type
     return mcpArgs
   }
 }
