@@ -6,6 +6,8 @@ export { ProfileAvatarUpload } from "./components/profile-avatar-upload";
 export { ProfileMobileNavigation } from "./components/profile-mobile-navigation";
 export { ProfileGroupsList } from "./components/profile-groups-list";
 export { ProfileFriendsList } from "./components/profile-friends-list";
+export { ProfileAboutSidebar } from "./components/profile-about-sidebar";
+export { ProfileOverview } from "./components/profile-overview";
 export { SwipeableTabs } from "./components/swipeable-tabs";
 export { PullToRefresh } from "./components/pull-to-refresh";
 export * from "./components/profile-empty-states";

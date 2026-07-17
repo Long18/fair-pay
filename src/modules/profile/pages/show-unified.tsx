@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Profile } from "../types";
 import { supabaseClient } from "@/utility/supabaseClient";
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { isAdmin } from "@/lib/rbac";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -40,17 +40,11 @@ import {
   UserIcon,
   BanknoteIcon,
   Loader2Icon,
-  ActivityIcon,
   UsersIcon,
-  PencilIcon,
   PlusIcon,
 } from "@/components/ui/icons";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
-import { formatCurrency, formatDateShort } from "@/lib/locale-utils";
-import { useAggregatedDebts } from "@/hooks/balance/use-aggregated-debts";
 import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
-import { EnhancedActivityList } from "@/components/dashboard/activity/enhanced-activity-list";
 import { SharePlatformPicker } from "@/components/share/share-platform-picker";
 import { journeyTracking } from "@/lib/journey-tracking";
 import { useTrackEvent } from "@/hooks/use-track-event";
@@ -62,9 +56,11 @@ import { ProfileMobileNavigation } from "../components/profile-mobile-navigation
 import { ProfileForm } from "../components/profile-form";
 import { ProfileGroupsList } from "../components/profile-groups-list";
 import { ProfileFriendsList } from "../components/profile-friends-list";
+import { ProfileAboutSidebar } from "../components/profile-about-sidebar";
+import { ProfileOverview } from "../components/profile-overview";
 import { SwipeableTabs } from "../components/swipeable-tabs";
 import { PullToRefresh } from "../components/pull-to-refresh";
-import { EmptyActivities, EmptyBalances } from "../components/profile-empty-states";
+import { EmptyBalances } from "../components/profile-empty-states";
 import { dispatchSettlementEvent } from "@/lib/settlement-events";
 
 interface DebtSummary {
@@ -99,7 +95,7 @@ export const ProfileShowUnified = () => {
   const [isSettling, setIsSettling] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [activeTab, setActiveTab] = useState("activity");
+  const [activeTab, setActiveTab] = useState("overview");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [shareProfileOpen, setShareProfileOpen] = useState(false);
 
@@ -518,15 +514,15 @@ export const ProfileShowUnified = () => {
     }
   };
 
-  // Tab configuration
-  const tabs = ["activity", "balances"];
+  // Tab configuration — overview mirrors shadcn Profile tab
+  const tabs = ["overview", "balances"];
   if (isOwnProfile) {
     tabs.push("groups", "friends");
   }
 
   if (isLoadingProfile) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="flex items-center justify-center h-64">
           <Loader2Icon size={32} className="animate-spin text-muted-foreground" />
         </div>
@@ -536,7 +532,7 @@ export const ProfileShowUnified = () => {
 
   if (!profile) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
         <Card className="rounded-xl">
           <CardContent className="p-8 text-center">
             <UserIcon size={48} className="mx-auto mb-4 text-muted-foreground/50" />
@@ -573,10 +569,51 @@ export const ProfileShowUnified = () => {
       return sum + (d.i_owe_them ? -Math.abs(amountToUse) : Math.abs(amountToUse));
     }, 0);
 
+  const headerTabs = !isEditMode ? (
+    <TabsList className="h-auto w-full justify-start gap-1 rounded-none bg-transparent p-0">
+      <TabsTrigger
+        value="overview"
+        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3 py-3"
+      >
+        {t("profile.overviewTab", "Profile")}
+      </TabsTrigger>
+      <TabsTrigger
+        value="balances"
+        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3 py-3"
+      >
+        <BanknoteIcon size={14} className="mr-1.5 hidden sm:inline" />
+        {t("profile.balances", "Balances")}
+      </TabsTrigger>
+      {isOwnProfile && (
+        <>
+          <TabsTrigger
+            value="groups"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3 py-3"
+          >
+            <UsersIcon size={14} className="mr-1.5 hidden sm:inline" />
+            {t("profile.groups", "Groups")}
+            {myGroups.length > 0 && (
+              <Badge variant="secondary" className="ml-1.5 rounded-full h-5 min-w-5 px-1.5 text-[10px]">
+                {myGroups.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger
+            value="friends"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3 py-3"
+          >
+            <UserIcon size={14} className="mr-1.5 hidden sm:inline" />
+            {t("profile.friends", "Friends")}
+          </TabsTrigger>
+        </>
+      )}
+    </TabsList>
+  ) : null;
+
   return (
     <>
       <PullToRefresh onRefresh={handleRefresh} disabled={!isOwnProfile || isEditMode}>
-        <div className="container mx-auto px-4 py-4 sm:py-8 max-w-4xl pb-20 sm:pb-8">
+        <div className="container mx-auto px-4 py-4 sm:py-8 max-w-6xl pb-20 sm:pb-8">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -593,22 +630,14 @@ export const ProfileShowUnified = () => {
                 <ArrowLeftIcon size={16} className="mr-2" />
                 {t('common.back', 'Back')}
               </Button>
-
-              {isOwnProfile && !isEditMode && (
-                <Button
-                  onClick={() => { tap(); track('profile_edit_clicked'); setEditMode(true); }}
-                  variant="outline"
-                  size="sm"
-                  className="rounded-lg"
-                >
-                  <PencilIcon size={16} className="mr-2" />
-                  {t('profile.edit', 'Edit Profile')}
-                </Button>
-              )}
             </div>
 
-            {/* Profile Header */}
-            <Card className="rounded-xl overflow-hidden">
+            <Tabs
+              value={isEditMode ? "overview" : activeTab}
+              onValueChange={(tab) => { tap(); setActiveTab(tab); }}
+              className="w-full space-y-6"
+            >
+              {/* Profile Header / Edit */}
               <AnimatePresence mode="wait">
                 {isEditMode ? (
                   <motion.div
@@ -618,36 +647,38 @@ export const ProfileShowUnified = () => {
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.3, type: "spring", stiffness: 100, damping: 15 }}
                   >
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-semibold">{t('profile.editProfile', 'Edit Profile')}</h2>
-                        <Button
-                          onClick={handleCancelEdit}
-                          variant="ghost"
-                          size="sm"
-                        >
-                          {t('common.cancel', 'Cancel')}
-                        </Button>
-                      </div>
-
-                      <div className="space-y-6">
-                        <div className="flex justify-center">
-                          <ProfileAvatarUpload
-                            currentAvatarUrl={editForm.avatar_url}
-                            fullName={editForm.full_name}
-                            onUpload={handleAvatarUpload}
-                            size="lg"
-                          />
+                    <Card className="rounded-xl">
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between mb-6">
+                          <h2 className="text-xl font-semibold">{t('profile.editProfile', 'Edit Profile')}</h2>
+                          <Button
+                            onClick={handleCancelEdit}
+                            variant="ghost"
+                            size="sm"
+                          >
+                            {t('common.cancel', 'Cancel')}
+                          </Button>
                         </div>
 
-                        <ProfileForm
-                          onSubmit={handleSaveProfile}
-                          defaultValues={editForm}
-                          isLoading={isSaving}
-                          onChangePassword={() => setChangePasswordDialogOpen(true)}
-                        />
-                      </div>
-                    </CardContent>
+                        <div className="space-y-6">
+                          <div className="flex justify-center">
+                            <ProfileAvatarUpload
+                              currentAvatarUrl={editForm.avatar_url}
+                              fullName={editForm.full_name}
+                              onUpload={handleAvatarUpload}
+                              size="lg"
+                            />
+                          </div>
+
+                          <ProfileForm
+                            onSubmit={handleSaveProfile}
+                            defaultValues={editForm}
+                            isLoading={isSaving}
+                            onChangePassword={() => setChangePasswordDialogOpen(true)}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
                   </motion.div>
                 ) : (
                   <motion.div
@@ -664,175 +695,141 @@ export const ProfileShowUnified = () => {
                       onAvatarClick={() => { track('profile_avatar_clicked'); document.getElementById('avatar-input')?.click(); }}
                       onShareClick={handleShareProfile}
                       isUploadingAvatar={isUploadingAvatar}
+                      tabs={headerTabs}
                     />
                   </motion.div>
                 )}
               </AnimatePresence>
-            </Card>
 
-            {/* Tabs for Activities, Balances, Groups, Friends */}
-            <AnimatePresence>
-              {!isEditMode && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3, type: "spring", stiffness: 100, damping: 15 }}
-                  className="w-full"
-                >
-                  <Tabs
-                    value={activeTab}
-                    onValueChange={(tab) => { tap(); setActiveTab(tab); }}
+              {/* Body */}
+              <AnimatePresence>
+                {!isEditMode && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3, type: "spring", stiffness: 100, damping: 15 }}
                     className="w-full"
                   >
-                <TabsList className="grid w-full rounded-lg" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
-                  <TabsTrigger value="activity" className="rounded-lg">
-                    <ActivityIcon size={16} className="mr-2" />
-                    <span className="hidden sm:inline">{t('profile.activity', 'Activity')}</span>
-                    <span className="sm:hidden">{t('profile.activity', 'Activity')}</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="balances" className="rounded-lg">
-                    <BanknoteIcon size={16} className="mr-2" />
-                    <span className="hidden sm:inline">{t('profile.balances', 'Balances')}</span>
-                    <span className="sm:hidden">{t('profile.balances', 'Balances')}</span>
-                  </TabsTrigger>
-                  {isOwnProfile && (
-                    <>
-                      <TabsTrigger value="groups" className="rounded-lg">
-                        <UsersIcon size={16} className="mr-0 sm:mr-2" />
-                        <span className="hidden sm:inline">{t('profile.groups', 'Groups')}</span>
-                      </TabsTrigger>
-                      <TabsTrigger value="friends" className="rounded-lg">
-                        <UserIcon size={16} className="mr-0 sm:mr-2" />
-                        <span className="hidden sm:inline">{t('profile.friends', 'Friends')}</span>
-                      </TabsTrigger>
-                    </>
-                  )}
-                </TabsList>
-
-                <SwipeableTabs
-                  tabs={tabs}
-                  activeTab={activeTab}
-                  onTabChange={(tab) => { tap(); setActiveTab(tab); }}
-                  className="mt-4"
-                >
-                  {/* Activity Tab */}
-                  <TabsContent value="activity" className="mt-0">
-                    <Card className="rounded-xl">
-                      <CardHeader>
-                        <CardTitle>{t('profile.recentActivity', 'Recent Activity')}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <EnhancedActivityList
-                          activities={enhancedActivities}
-                          currentUserId={identity?.id || ""}
-                          currency="VND"
-                          isLoading={isLoadingActivities}
-                          showSummary={true}
-                          showFilters={true}
-                          showSort={true}
-                          showTimeGrouping={true}
-                        />
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-
-                  {/* Balances Tab */}
-                  <TabsContent value="balances" className="mt-0">
-                    <Card className="rounded-xl">
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle>{t('profile.balanceDetails', 'Balance Details')}</CardTitle>
-                          <div className="flex items-center gap-2">
-                            <Label htmlFor="show-history" className="text-sm">
-                              <HistoryIcon size={16} className="inline mr-1" />
-                              {t('profile.showHistory', 'History')}
-                            </Label>
-                            <Switch
-                              id="show-history"
-                              checked={showHistory}
-                              onCheckedChange={(v) => { tap(); setShowHistory(v); }}
-                            />
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        {isLoadingDebts ? (
-                          <div className="flex items-center justify-center py-8">
-                            <Loader2Icon size={24} className="animate-spin text-muted-foreground" />
-                          </div>
-                        ) : debts.length === 0 ? (
-                          <EmptyBalances />
-                        ) : (
-                          <BalanceTable
-                            balances={debts}
-                            showHistory={showHistory}
+                    <SwipeableTabs
+                      tabs={tabs}
+                      activeTab={activeTab}
+                      onTabChange={(tab) => { tap(); setActiveTab(tab); }}
+                    >
+                      <TabsContent value="overview" className="mt-0">
+                        <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+                          <ProfileAboutSidebar
+                            profile={profile}
+                            isOwnProfile={isOwnProfile}
+                            groupsCount={myGroups.length}
+                            friendsCount={myFriends.length}
                           />
-                        )}
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-
-                  {/* Groups Tab */}
-                  {isOwnProfile && (
-                    <TabsContent value="groups" className="mt-0">
-                      <Card className="rounded-xl">
-                        <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <CardTitle>{t('profile.myGroups', 'My Groups')}</CardTitle>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => { tap(); go({ to: "/groups/create" }); }}
-                              className="rounded-lg"
-                            >
-                              <PlusIcon size={16} className="mr-2" />
-                              {t('common.create', 'Create')}
-                            </Button>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <ProfileGroupsList
-                            groups={myGroups}
-                            isLoading={groupsLoading || groupMembersQuery.isLoading}
-                          />
-                        </CardContent>
-                      </Card>
-                    </TabsContent>
-                  )}
-
-                  {/* Friends Tab */}
-                  {isOwnProfile && (
-                    <TabsContent value="friends" className="mt-0">
-                      <Card className="rounded-xl">
-                        <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <CardTitle>{t('profile.myFriends', 'My Friends')}</CardTitle>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => { tap(); go({ to: "/friends" }); }}
-                              className="rounded-lg"
-                            >
-                              <PlusIcon size={16} className="mr-2" />
-                              {t('common.add', 'Add')}
-                            </Button>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <ProfileFriendsList
+                          <ProfileOverview
+                            activities={enhancedActivities}
+                            isLoadingActivities={isLoadingActivities}
+                            currentUserId={identity?.id || ""}
                             friends={myFriends}
-                            isLoading={friendsLoading}
+                            friendsLoading={friendsLoading}
+                            groups={myGroups}
+                            groupsLoading={groupsLoading || groupMembersQuery.isLoading}
+                            isOwnProfile={isOwnProfile}
                           />
-                        </CardContent>
-                      </Card>
-                    </TabsContent>
-                  )}
-                </SwipeableTabs>
-                  </Tabs>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="balances" className="mt-0">
+                        <Card className="rounded-xl">
+                          <CardHeader>
+                            <div className="flex items-center justify-between">
+                              <CardTitle>{t('profile.balanceDetails', 'Balance Details')}</CardTitle>
+                              <div className="flex items-center gap-2">
+                                <Label htmlFor="show-history" className="text-sm">
+                                  <HistoryIcon size={16} className="inline mr-1" />
+                                  {t('profile.showHistory', 'History')}
+                                </Label>
+                                <Switch
+                                  id="show-history"
+                                  checked={showHistory}
+                                  onCheckedChange={(v) => { tap(); setShowHistory(v); }}
+                                />
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            {isLoadingDebts ? (
+                              <div className="flex items-center justify-center py-8">
+                                <Loader2Icon size={24} className="animate-spin text-muted-foreground" />
+                              </div>
+                            ) : debts.length === 0 ? (
+                              <EmptyBalances />
+                            ) : (
+                              <BalanceTable
+                                balances={debts}
+                                showHistory={showHistory}
+                              />
+                            )}
+                          </CardContent>
+                        </Card>
+                      </TabsContent>
+
+                      {isOwnProfile && (
+                        <TabsContent value="groups" className="mt-0">
+                          <Card className="rounded-xl">
+                            <CardHeader>
+                              <div className="flex items-center justify-between">
+                                <CardTitle>{t('profile.myGroups', 'My Groups')}</CardTitle>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => { tap(); go({ to: "/groups/create" }); }}
+                                  className="rounded-lg"
+                                >
+                                  <PlusIcon size={16} className="mr-2" />
+                                  {t('common.create', 'Create')}
+                                </Button>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <ProfileGroupsList
+                                groups={myGroups}
+                                isLoading={groupsLoading || groupMembersQuery.isLoading}
+                              />
+                            </CardContent>
+                          </Card>
+                        </TabsContent>
+                      )}
+
+                      {isOwnProfile && (
+                        <TabsContent value="friends" className="mt-0">
+                          <Card className="rounded-xl">
+                            <CardHeader>
+                              <div className="flex items-center justify-between">
+                                <CardTitle>{t('profile.myFriends', 'My Friends')}</CardTitle>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => { tap(); go({ to: "/friends" }); }}
+                                  className="rounded-lg"
+                                >
+                                  <PlusIcon size={16} className="mr-2" />
+                                  {t('common.add', 'Add')}
+                                </Button>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <ProfileFriendsList
+                                friends={myFriends}
+                                isLoading={friendsLoading}
+                              />
+                            </CardContent>
+                          </Card>
+                        </TabsContent>
+                      )}
+                    </SwipeableTabs>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </Tabs>
           </motion.div>
         </div>
       </PullToRefresh>
