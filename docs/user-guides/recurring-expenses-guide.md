@@ -68,12 +68,16 @@ Recurring expenses are payments that happen automatically on a regular schedule.
 1. Click the three-dot menu (⋮) on any expense card
 2. Select "Edit"
 3. Modify:
+   - **Amount** (e.g. upgrade iCloud from 200k → 300k)
+   - **Description**
    - Frequency (change from monthly to weekly, etc.)
    - Interval (change from every 1 month to every 2 months)
    - End date (add or remove an end date)
 4. Click "Save"
 
-**Note:** You cannot edit the expense amount or description through the recurring edit dialog. To change those, you'll need to delete and recreate the recurring expense.
+**Who can edit:** The person who created the recurring expense, a **group admin**, or either person in a friend context.
+
+**Note:** Amount and schedule changes apply to **future** cycles only. Expenses already created stay unchanged. Member shares are recalculated automatically when you change the amount.
 
 ### Pausing a Recurring Expense
 

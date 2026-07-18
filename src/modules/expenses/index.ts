@@ -26,6 +26,12 @@ export {
   useDeleteRecurringExpense,
 } from "./hooks/use-recurring-expenses";
 export type { RecurringExpenseWithCoverage } from "./hooks/use-recurring-expenses";
+export { useUpdateRecurringExpenseFull } from "./hooks/use-update-recurring-expense-full";
+export type {
+  UpdateRecurringExpenseFullParams,
+  UpdateRecurringExpenseFullResult,
+} from "./hooks/use-update-recurring-expense-full";
+export { EditRecurringDialog } from "./components/edit-recurring-dialog";
 export { usePrepaidPayments } from "./hooks/use-prepaid-payments";
 export type { PrepaidPaymentWithCreator } from "./hooks/use-prepaid-payments";
 export { useRecordPrepaidPayment } from "./hooks/use-record-prepaid-payment";

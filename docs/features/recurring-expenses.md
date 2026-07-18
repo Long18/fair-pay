@@ -28,12 +28,15 @@ The Recurring Expenses feature automates the creation of repetitive payments lik
 **Location**: `/src/pages/recurring-expenses.tsx`
 
 #### Update/Edit
+- **Amount & Description**: Change subscription price or name on the template
 - **Frequency Editing**: Change how often expense repeats
 - **Interval Editing**: Adjust repeat interval
 - **End Date Management**: Set or remove end date
+- **Permissions**: Template creator, group admin, friendship participant, or platform admin
 - **Responsive Dialog**: Bottom sheet on mobile, dialog on desktop
+- **Future-only**: Past instances unchanged; next cycles use updated template + recalculated splits
 
-**Implementation**: `EditRecurringDialog` component
+**Implementation**: `EditRecurringDialog` + `update_recurring_expense` RPC
 **Location**: `/src/modules/expenses/components/edit-recurring-dialog.tsx`
 
 #### Delete

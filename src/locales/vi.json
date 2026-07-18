@@ -585,6 +585,15 @@
     "pageDescription": "Quản lý lịch trình tạo chi phí tự động",
     "memberShares": "Phần chia mỗi thành viên mỗi kỳ",
     "edit": "Chỉnh sửa",
+    "editDialog": {
+      "title": "Chỉnh sửa chi phí định kỳ",
+      "description": "Cập nhật số tiền, mô tả hoặc lịch. Các kỳ sau dùng giá trị mới; chi phí đã tạo không đổi.",
+      "futureOnlyNote": "Đổi số tiền sẽ cập nhật phần chia của thành viên cho các kỳ tiếp theo.",
+      "success": "Đã cập nhật chi phí định kỳ",
+      "error": "Không thể cập nhật chi phí định kỳ",
+      "descriptionRequired": "Vui lòng nhập mô tả",
+      "amountRequired": "Số tiền phải lớn hơn 0"
+    },
     "recurringTemplate": "Mẫu định kỳ",
     "cycle": {
       "unknownError": "Đã xảy ra lỗi không xác định",
@@ -633,15 +642,15 @@
     },
     "actions": {
       "delete": "Delete",
-      "edit": "Edit Template",
-      "menu": "Open menu",
-      "pause": "Pause",
-      "prepay": "Record Prepayment",
-      "resume": "Resume",
-      "skip": "Skip Next"
+      "edit": "Chỉnh sửa",
+      "menu": "Mở menu",
+      "pause": "Tạm dừng",
+      "prepay": "Ghi nhận trả trước",
+      "resume": "Tiếp tục",
+      "skip": "Bỏ qua kỳ tiếp"
     },
-    "biweekly": "Bi-weekly",
-    "biweeks": "bi-weeks",
+    "biweekly": "Hai tuần một lần",
+    "biweeks": "chu kỳ 2 tuần",
     "create": {
       "description": "Select a group or friend for this recurring expense. You will then create the expense template.",
       "info": "A recurring expense creates automatic copies of an expense on a regular schedule (weekly, monthly, etc.).",

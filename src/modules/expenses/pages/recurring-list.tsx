@@ -1,5 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RecurringExpenseCard } from '../components/recurring-expense-card';
+import { EditRecurringDialog } from '../components/edit-recurring-dialog';
 import { useRecurringExpenses } from '../hooks/use-recurring-expenses';
 import { RecurringExpense } from '../types/recurring';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -24,12 +25,17 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
   const go = useGo();
   const { tap } = useHaptics();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [editingRecurring, setEditingRecurring] = useState<RecurringExpense | null>(null);
   const { recurring, active, paused, isLoading, error } = useRecurringExpenses({
     groupId,
     friendshipId,
   });
 
   const isStandalonePage = !groupId && !friendshipId;
+
+  const handleEdit = (item: RecurringExpense) => {
+    setEditingRecurring(item);
+  };
 
   if (isLoading) {
     return (
@@ -87,7 +93,11 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
             </div>
           ) : (
             active.map((item) => (
-              <RecurringExpenseCard key={item.id} recurring={item as RecurringExpense} />
+              <RecurringExpenseCard
+                key={item.id}
+                recurring={item as RecurringExpense}
+                onEdit={handleEdit}
+              />
             ))
           )}
         </TabsContent>
@@ -101,11 +111,23 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
             </div>
           ) : (
             paused.map((item) => (
-              <RecurringExpenseCard key={item.id} recurring={item as RecurringExpense} />
+              <RecurringExpenseCard
+                key={item.id}
+                recurring={item as RecurringExpense}
+                onEdit={handleEdit}
+              />
             ))
           )}
         </TabsContent>
       </Tabs>
+
+      <EditRecurringDialog
+        open={!!editingRecurring}
+        onOpenChange={(open) => {
+          if (!open) setEditingRecurring(null);
+        }}
+        recurring={editingRecurring}
+      />
     </div>
   );
 

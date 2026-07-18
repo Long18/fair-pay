@@ -3304,6 +3304,18 @@ export type Database = {
         Args: { p_cycle_date: string; p_recurring_expense_id: string }
         Returns: Json
       }
+      update_recurring_expense: {
+        Args: {
+          p_amount?: number | null
+          p_clear_end_date?: boolean
+          p_description?: string | null
+          p_end_date?: string | null
+          p_frequency?: string | null
+          p_interval?: number | null
+          p_recurring_expense_id: string
+        }
+        Returns: Json
+      }
       read_admin_audit_logs: {
         Args: {
           p_action_type?: string

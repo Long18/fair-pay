@@ -585,6 +585,15 @@
     "pageDescription": "Manage your auto-created expense schedules",
     "memberShares": "Member shares per occurrence",
     "edit": "Edit",
+    "editDialog": {
+      "title": "Edit Recurring Expense",
+      "description": "Update the amount, description, or schedule. Future cycles use the new values; past expenses stay unchanged.",
+      "futureOnlyNote": "Changing the amount updates member shares for the next occurrences only.",
+      "success": "Recurring expense updated successfully",
+      "error": "Failed to update recurring expense",
+      "descriptionRequired": "Description is required",
+      "amountRequired": "Amount must be greater than 0"
+    },
     "recurringTemplate": "Recurring template",
     "cycle": {
       "unknownError": "Unknown error occurred",
@@ -633,7 +642,7 @@
     },
     "actions": {
       "delete": "Delete",
-      "edit": "Edit Template",
+      "edit": "Edit",
       "menu": "Open menu",
       "pause": "Pause",
       "prepay": "Record Prepayment",
