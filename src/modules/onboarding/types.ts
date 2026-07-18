@@ -41,10 +41,9 @@ export interface TutorialStep {
   requiresAuth: boolean;
   /** Position of the tooltip relative to spotlight */
   tooltipPosition?: "top" | "bottom" | "left" | "right" | "center";
-  /** Optional action the user can take during this step */
+  /** Optional try-it action label (handler comes from provider via onTryIt) */
   action?: {
     labelKey: string;
-    handler: () => void;
   };
   /** Fallback target selector for mobile when primary target is hidden */
   mobileTargetSelector?: string | null;

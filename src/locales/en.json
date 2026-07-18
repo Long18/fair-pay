@@ -1723,7 +1723,10 @@
     "checklist": {
       "title": "Get started with FairPay",
       "progress": "{{completed}} of {{total}} steps complete",
+      "allDone": "You're all set!",
       "skip": "Skip for now",
+      "dismiss": "I'll explore myself",
+      "close": "Close",
       "replayTutorial": "Replay tutorial"
     },
     "steps": {
@@ -1791,6 +1794,12 @@
       "dialogLabel": "Onboarding tutorial",
       "stepProgress": "Step {{current}} of {{total}}",
       "carouselLabel": "Tutorial steps"
+    },
+    "skipConfirm": {
+      "title": "Skip tutorial?",
+      "description": "You can replay it anytime from Settings.",
+      "confirm": "Skip",
+      "cancel": "Keep going"
     }
   },
   "referrals": {

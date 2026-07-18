@@ -2,6 +2,12 @@ import { useCallback, useEffect, useState } from "react";
 import { useGetIdentity } from "@refinedev/core";
 import { supabaseClient } from "@/utility/supabaseClient";
 import type { Profile } from "@/modules/profile/types";
+import {
+  CHECKLIST_STEP_KEYS,
+  markOnboardingStep,
+  ONBOARDING_PROGRESS_EVENT,
+  type OnboardingProgressDetail,
+} from "../utils/mark-step";
 
 export interface UseOnboardingProgressReturn {
   steps: Record<string, boolean>;
@@ -11,56 +17,89 @@ export interface UseOnboardingProgressReturn {
   markComplete: () => Promise<void>;
 }
 
+function allChecklistDone(steps: Record<string, boolean>): boolean {
+  return CHECKLIST_STEP_KEYS.every((key) => steps[key] === true);
+}
+
 export function useOnboardingProgress(): UseOnboardingProgressReturn {
   const { data: identity } = useGetIdentity<Profile>();
+  const userId = identity?.id;
   const [steps, setSteps] = useState<Record<string, boolean>>({});
   const [isCompleted, setIsCompleted] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
+
+  // No identity → not loading. With identity → loading until that user is fetched.
+  const isLoading = Boolean(userId) && loadedUserId !== userId;
+
+  const markComplete = useCallback(async () => {
+    if (!userId) return;
+    setIsCompleted(true);
+    await supabaseClient
+      .from("profiles")
+      .update({ onboarding_completed: true })
+      .eq("id", userId);
+  }, [userId]);
 
   useEffect(() => {
-    if (!identity?.id) return;
+    if (!userId) return;
 
     let cancelled = false;
-    setIsLoading(true);
 
     supabaseClient
       .from("profiles")
       .select("onboarding_steps, onboarding_completed")
-      .eq("id", identity.id)
+      .eq("id", userId)
       .single()
       .then(({ data, error }) => {
-        if (cancelled || error) return;
-        setSteps((data?.onboarding_steps as Record<string, boolean>) ?? {});
-        setIsCompleted(data?.onboarding_completed ?? false);
-        setIsLoading(false);
+        if (cancelled) return;
+        if (error) {
+          setLoadedUserId(userId);
+          return;
+        }
+
+        const fetchedSteps =
+          (data?.onboarding_steps as Record<string, boolean>) ?? {};
+        const completed = data?.onboarding_completed ?? false;
+        setSteps(fetchedSteps);
+        setIsCompleted(completed);
+        setLoadedUserId(userId);
+
+        if (!completed && allChecklistDone(fetchedSteps)) {
+          void markComplete();
+        }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [identity?.id]);
+  }, [userId, markComplete]);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<OnboardingProgressDetail>).detail;
+      if (!detail?.steps) return;
+      setSteps(detail.steps);
+      setIsCompleted(detail.completed);
+    };
+
+    window.addEventListener(ONBOARDING_PROGRESS_EVENT, handler);
+    return () => {
+      window.removeEventListener(ONBOARDING_PROGRESS_EVENT, handler);
+    };
+  }, []);
 
   const updateStep = useCallback(
     async (step: string) => {
-      if (!identity?.id) return;
+      if (!userId) return;
       const next = { ...steps, [step]: true };
       setSteps(next);
-      await supabaseClient
-        .from("profiles")
-        .update({ onboarding_steps: next })
-        .eq("id", identity.id);
+      if (allChecklistDone(next)) {
+        setIsCompleted(true);
+      }
+      await markOnboardingStep(userId, step);
     },
-    [identity?.id, steps],
+    [userId, steps],
   );
-
-  const markComplete = useCallback(async () => {
-    if (!identity?.id) return;
-    setIsCompleted(true);
-    await supabaseClient
-      .from("profiles")
-      .update({ onboarding_completed: true })
-      .eq("id", identity.id);
-  }, [identity?.id]);
 
   return { steps, isCompleted, isLoading, updateStep, markComplete };
 }

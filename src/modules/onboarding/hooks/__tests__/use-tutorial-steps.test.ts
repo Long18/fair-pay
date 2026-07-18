@@ -5,12 +5,11 @@ import { TUTORIAL_STEPS, useTutorialSteps } from "../use-tutorial-steps";
 
 // ============================================================================
 // Unit tests for TUTORIAL_STEPS registry
-// Requirements: 13.1, 13.2, 13.3
 // ============================================================================
 
 describe("TUTORIAL_STEPS registry", () => {
-  it("contains exactly 9 steps", () => {
-    expect(TUTORIAL_STEPS).toHaveLength(9);
+  it("contains exactly 5 steps", () => {
+    expect(TUTORIAL_STEPS).toHaveLength(5);
   });
 
   it("has unique ids for every step", () => {
@@ -25,10 +24,6 @@ describe("TUTORIAL_STEPS registry", () => {
       "dashboard-overview",
       "add-expense",
       "connections",
-      "theme-customization",
-      "payments",
-      "notifications",
-      "language",
       "completion",
     ]);
   });
@@ -62,18 +57,26 @@ describe("TUTORIAL_STEPS registry", () => {
       expect(step.descriptionKey.length).toBeGreaterThan(0);
     }
   });
+
+  it("try-it actions only carry labelKey (no handler)", () => {
+    for (const step of TUTORIAL_STEPS) {
+      if (step.action) {
+        expect(step.action).toEqual({ labelKey: expect.any(String) });
+        expect(step.action).not.toHaveProperty("handler");
+      }
+    }
+  });
 });
 
 // ============================================================================
 // Unit tests for useTutorialSteps hook
-// Requirements: 3.1, 3.2, 3.3
 // ============================================================================
 
 describe("useTutorialSteps", () => {
-  it("returns all 9 steps for authenticated users", () => {
+  it("returns all 5 steps for authenticated users", () => {
     const { result } = renderHook(() => useTutorialSteps(true));
-    expect(result.current.steps).toHaveLength(9);
-    expect(result.current.totalSteps).toBe(9);
+    expect(result.current.steps).toHaveLength(5);
+    expect(result.current.totalSteps).toBe(5);
   });
 
   it("returns no steps for unauthenticated users", () => {
@@ -100,7 +103,7 @@ describe("useTutorialSteps", () => {
     const firstStep = result.current.getStep(0);
     expect(firstStep?.id).toBe("welcome");
 
-    const lastStep = result.current.getStep(8);
+    const lastStep = result.current.getStep(4);
     expect(lastStep?.id).toBe("completion");
   });
 
@@ -108,7 +111,7 @@ describe("useTutorialSteps", () => {
     const { result } = renderHook(() => useTutorialSteps(true));
 
     expect(result.current.getStep(-1)).toBeNull();
-    expect(result.current.getStep(9)).toBeNull();
+    expect(result.current.getStep(5)).toBeNull();
     expect(result.current.getStep(100)).toBeNull();
   });
 

@@ -1,6 +1,16 @@
 import { useCallback, useEffect, useEffectEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Carousel,
@@ -111,7 +121,7 @@ function TutorialActions({
   step,
   onNext,
   onBack,
-  onSkip,
+  onRequestSkip,
   onTryIt,
 }: {
   currentIndex: number;
@@ -119,7 +129,7 @@ function TutorialActions({
   step: TutorialStep;
   onNext: () => void;
   onBack: () => void;
-  onSkip: () => void;
+  onRequestSkip: () => void;
   onTryIt?: () => void;
 }) {
   const { t } = useTranslation();
@@ -167,7 +177,7 @@ function TutorialActions({
             className="min-h-[44px] text-muted-foreground"
             onClick={() => {
               tap();
-              onSkip();
+              onRequestSkip();
             }}
             aria-label={t("onboarding.actions.skip", "Skip")}
           >
@@ -178,7 +188,7 @@ function TutorialActions({
         )}
 
         <Button
-          className="min-h-[44px] bg-primary text-primary-foreground hover:bg-primary/90"
+          className="min-h-[44px]"
           onClick={() => {
             tap();
             onNext();
@@ -215,6 +225,9 @@ export function OnboardingTutorialShell({
   const { t } = useTranslation();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [api, setApi] = useState<CarouselApi>();
+  const [skipConfirmOpen, setSkipConfirmOpen] = useState(false);
+  /** Hide shell while confirm is open so AlertDialog is not trapped under Dialog/Drawer overlay */
+  const shellOpen = open && !skipConfirmOpen;
   const step = steps[currentIndex] ?? steps[0];
   const onGoToStepEvent = useEffectEvent(onGoToStep);
 
@@ -237,14 +250,27 @@ export function OnboardingTutorialShell({
     };
   }, [api, currentIndex]);
 
+  const requestSkipConfirm = useCallback(() => {
+    setSkipConfirmOpen(true);
+  }, []);
+
   const handleOpenChange = useCallback(
     (nextOpen: boolean) => {
       if (!nextOpen) {
-        onSkip();
+        requestSkipConfirm();
       }
     },
-    [onSkip],
+    [requestSkipConfirm],
   );
+
+  const handleConfirmSkip = useCallback(() => {
+    setSkipConfirmOpen(false);
+    onSkip();
+  }, [onSkip]);
+
+  const handleSkipConfirmOpenChange = useCallback((nextOpen: boolean) => {
+    setSkipConfirmOpen(nextOpen);
+  }, []);
 
   if (!step || steps.length === 0) {
     return null;
@@ -282,46 +308,81 @@ export function OnboardingTutorialShell({
       step={step}
       onNext={onNext}
       onBack={onBack}
-      onSkip={onSkip}
+      onRequestSkip={requestSkipConfirm}
       onTryIt={onTryIt}
     />
   );
 
+  const skipConfirmDialog = (
+    <AlertDialog
+      open={skipConfirmOpen}
+      onOpenChange={handleSkipConfirmOpenChange}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {t("onboarding.skipConfirm.title", "Skip tutorial?")}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {t(
+              "onboarding.skipConfirm.description",
+              "You can replay it anytime from Settings.",
+            )}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>
+            {t("onboarding.skipConfirm.cancel", "Keep going")}
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={handleConfirmSkip}>
+            {t("onboarding.skipConfirm.confirm", "Skip")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
   if (isDesktop) {
     return (
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent
-          className="flex max-h-[90dvh] w-full max-w-md flex-col gap-4 overflow-hidden rounded-2xl border bg-card/95 shadow-lg backdrop-blur-sm sm:max-w-lg"
-          aria-label={dialogLabel}
-        >
-          <DialogHeader className="sr-only">
-            <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>{description}</DialogDescription>
-          </DialogHeader>
-          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-            {body}
-          </div>
-          <DialogFooter className="sm:justify-stretch">{actions}</DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <>
+        <Dialog open={shellOpen} onOpenChange={handleOpenChange}>
+          <DialogContent
+            className="flex max-h-[90dvh] w-full max-w-md flex-col gap-4 overflow-hidden rounded-lg border bg-card sm:max-w-lg"
+            aria-label={dialogLabel}
+          >
+            <DialogHeader className="sr-only">
+              <DialogTitle>{title}</DialogTitle>
+              <DialogDescription>{description}</DialogDescription>
+            </DialogHeader>
+            <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+              {body}
+            </div>
+            <DialogFooter className="sm:justify-stretch">{actions}</DialogFooter>
+          </DialogContent>
+        </Dialog>
+        {skipConfirmDialog}
+      </>
     );
   }
 
   return (
-    <Drawer open={open} onOpenChange={handleOpenChange}>
-      <DrawerContent
-        className="max-h-[85dvh] rounded-t-2xl bg-card/95 backdrop-blur-sm"
-        aria-label={dialogLabel}
-      >
-        <DrawerHeader className="sr-only text-left">
-          <DrawerTitle>{title}</DrawerTitle>
-          <DrawerDescription>{description}</DrawerDescription>
-        </DrawerHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 pb-2">
-          {body}
-        </div>
-        <DrawerFooter className="pt-2">{actions}</DrawerFooter>
-      </DrawerContent>
-    </Drawer>
+    <>
+      <Drawer open={shellOpen} onOpenChange={handleOpenChange}>
+        <DrawerContent
+          className="max-h-[85dvh] rounded-t-lg bg-card"
+          aria-label={dialogLabel}
+        >
+          <DrawerHeader className="sr-only text-left">
+            <DrawerTitle>{title}</DrawerTitle>
+            <DrawerDescription>{description}</DrawerDescription>
+          </DrawerHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 pb-2">
+            {body}
+          </div>
+          <DrawerFooter className="pt-2">{actions}</DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+      {skipConfirmDialog}
+    </>
   );
 }

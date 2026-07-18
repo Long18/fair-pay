@@ -5,10 +5,6 @@ import {
   WalletIcon,
   PlusIcon,
   UsersIcon,
-  PaletteIcon,
-  CreditCardIcon,
-  BellIcon,
-  GlobeIcon,
   CheckCircle2Icon,
 } from "@/components/ui/icons";
 
@@ -43,7 +39,6 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     tooltipPosition: "bottom",
     action: {
       labelKey: "onboarding.actions.tryIt",
-      handler: () => {},
     },
   },
   {
@@ -59,7 +54,6 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     tooltipPosition: "top",
     action: {
       labelKey: "onboarding.actions.tryIt",
-      handler: () => {},
     },
   },
   {
@@ -75,58 +69,6 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     tooltipPosition: "bottom",
     // On mobile, connections is inside the hamburger menu — no spotlight target
     mobileTargetSelector: null,
-  },
-  {
-    id: "theme-customization",
-    titleKey: "onboarding.theme.title",
-    descriptionKey: "onboarding.theme.description",
-    icon: PaletteIcon,
-    targetSelector: '[data-onboarding-target="theme-selector"]',
-    spotlightShape: "circle",
-    spotlightPadding: 8,
-    intent: "accent",
-    requiresAuth: true,
-    tooltipPosition: "bottom",
-    action: {
-      labelKey: "onboarding.actions.tryIt",
-      handler: () => {},
-    },
-    // On mobile, theme selector may be hidden on very small screens
-    mobileTargetSelector: null,
-  },
-  {
-    id: "payments",
-    titleKey: "onboarding.payments.title",
-    descriptionKey: "onboarding.payments.description",
-    icon: CreditCardIcon,
-    targetSelector: null,
-    intent: "success",
-    requiresAuth: true,
-    tooltipPosition: "center",
-  },
-  {
-    id: "notifications",
-    titleKey: "onboarding.notifications.title",
-    descriptionKey: "onboarding.notifications.description",
-    icon: BellIcon,
-    targetSelector: '[data-onboarding-target="notification-panel"]',
-    spotlightShape: "circle",
-    spotlightPadding: 8,
-    intent: "warning",
-    requiresAuth: true,
-    tooltipPosition: "bottom",
-  },
-  {
-    id: "language",
-    titleKey: "onboarding.language.title",
-    descriptionKey: "onboarding.language.description",
-    icon: GlobeIcon,
-    targetSelector: '[data-onboarding-target="language-toggle"]',
-    spotlightShape: "circle",
-    spotlightPadding: 8,
-    intent: "info",
-    requiresAuth: true,
-    tooltipPosition: "bottom",
   },
   {
     id: "completion",

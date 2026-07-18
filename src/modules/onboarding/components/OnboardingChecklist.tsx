@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import { useGetIdentity } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, RotateCcw, ChevronRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { FloatingActionStack, FloatingPill } from "@/components/ui/floating-stack";
 import { useOnboardingProgress } from "../hooks/use-onboarding-progress";
@@ -15,15 +17,40 @@ import type { Profile } from "@/modules/profile/types";
 
 function useChecklistSteps(userId: string | undefined) {
   return [
-    { key: "profile",  labelKey: "onboarding.steps.profile",  href: userId ? `/profile/${userId}` : "/settings/profile" },
-    { key: "friend",   labelKey: "onboarding.steps.friend",   href: "/friends" },
-    { key: "group",    labelKey: "onboarding.steps.group",    href: "/groups/create" },
-    { key: "expense",  labelKey: "onboarding.steps.expense",  href: "/expenses/create" },
-    { key: "settle",   labelKey: "onboarding.steps.settle",   href: "/balances" },
-  ];
+    {
+      key: "profile",
+      labelKey: "onboarding.steps.profile",
+      descKey: "onboarding.steps.profileDesc",
+      href: userId ? `/profile/${userId}` : "/settings/profile",
+    },
+    {
+      key: "friend",
+      labelKey: "onboarding.steps.friend",
+      descKey: "onboarding.steps.friendDesc",
+      href: "/friends",
+    },
+    {
+      key: "group",
+      labelKey: "onboarding.steps.group",
+      descKey: "onboarding.steps.groupDesc",
+      href: "/groups/create",
+    },
+    {
+      key: "expense",
+      labelKey: "onboarding.steps.expense",
+      descKey: "onboarding.steps.expenseDesc",
+      href: "/expenses/create",
+    },
+    {
+      key: "settle",
+      labelKey: "onboarding.steps.settle",
+      descKey: "onboarding.steps.settleDesc",
+      href: "/balances",
+    },
+  ] as const;
 }
 
-// ─── Circular progress ring ───────────────────────────────────────────────────
+// ─── Circular progress ring (FAB overlay) ─────────────────────────────────────
 
 function ProgressRing({ completed, total }: { completed: number; total: number }) {
   const radius = 18;
@@ -32,20 +59,27 @@ function ProgressRing({ completed, total }: { completed: number; total: number }
   const strokeDashoffset = circumference * (1 - progress);
 
   return (
-    <svg width="44" height="44" className="absolute inset-0 -rotate-90">
+    <svg width="44" height="44" className="absolute inset-0 -rotate-90" aria-hidden="true">
       <circle
-        cx="22" cy="22" r={radius}
-        fill="none" stroke="currentColor"
-        strokeWidth="3" className="text-muted/30"
+        cx="22"
+        cy="22"
+        r={radius}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        className="text-primary-foreground/25"
       />
       <circle
-        cx="22" cy="22" r={radius}
-        fill="none" stroke="currentColor"
+        cx="22"
+        cy="22"
+        r={radius}
+        fill="none"
+        stroke="currentColor"
         strokeWidth="3"
         strokeDasharray={circumference}
         strokeDashoffset={strokeDashoffset}
         strokeLinecap="round"
-        className="text-primary-foreground/80 transition-all duration-500"
+        className="text-primary-foreground transition-all duration-500"
       />
     </svg>
   );
@@ -54,7 +88,7 @@ function ProgressRing({ completed, total }: { completed: number; total: number }
 // ─── Main component ───────────────────────────────────────────────────────────
 
 /**
- * Floating checklist widget — right-side FloatingActionStack, expands into a popover.
+ * Floating checklist widget — right-side FloatingActionStack, expands into a panel.
  * Integrates with OnboardingProvider to replay the spotlight tutorial.
  */
 export function OnboardingChecklist() {
@@ -71,8 +105,10 @@ export function OnboardingChecklist() {
 
   const completedCount = checklistSteps.filter((s) => !!steps[s.key]).length;
   const totalCount = checklistSteps.length;
+  const allDone = completedCount === totalCount;
+  const progressValue = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
-  const handleSkip = async () => {
+  const handleDismiss = async () => {
     track("onboarding_checklist_skipped", { completedCount, totalCount });
     await markComplete();
     setOpen(false);
@@ -96,99 +132,118 @@ export function OnboardingChecklist() {
           badge={completedCount}
           ariaLabel={t("onboarding.checklist.title", "Get started")}
         >
-          {/* Circular progress ring overlaid on button */}
           <ProgressRing completed={completedCount} total={totalCount} />
           <img
             src="/assets/fab/fab-onboarding-checklist.png"
             alt=""
             aria-hidden="true"
-            className="h-5 w-5 object-contain relative z-10"
+            className="relative z-10 h-5 w-5 object-contain"
           />
         </FloatingPill>
       }
     >
-      {/* Popover panel — stacks above the trigger */}
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: 12, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="w-72 rounded-2xl border bg-card shadow-xl overflow-hidden"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="w-72 overflow-hidden rounded-lg border bg-card p-0 shadow-sm"
+            role="dialog"
+            aria-label={t("onboarding.checklist.title", "Get started with FairPay")}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 pt-4 pb-2">
-              <div>
+            <div className="flex items-start justify-between gap-2 px-4 pt-4 pb-2">
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold leading-tight">
                   {t("onboarding.checklist.title", "Get started with FairPay")}
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {t("onboarding.checklist.progress", {
-                    completed: completedCount,
-                    total: totalCount,
-                    defaultValue: `${completedCount} of ${totalCount} steps complete`,
-                  })}
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {allDone
+                    ? t("onboarding.checklist.allDone", "You're all set!")
+                    : t("onboarding.checklist.progress", {
+                        completed: completedCount,
+                        total: totalCount,
+                        defaultValue: `${completedCount} of ${totalCount} steps complete`,
+                      })}
                 </p>
               </div>
-              <button type="button"
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0"
                 onClick={() => setOpen(false)}
-                className="rounded-full p-1 hover:bg-muted transition-colors"
-                aria-label="Close"
+                aria-label={t("onboarding.checklist.close", "Close")}
               >
-                <X className="h-4 w-4 text-muted-foreground" />
-              </button>
+                <X className="h-4 w-4" />
+              </Button>
             </div>
 
-            {/* Progress bar */}
-            <div className="mx-4 mb-3 h-1.5 w-auto rounded-full bg-muted overflow-hidden">
-              <motion.div
-                className="h-full w-full origin-left rounded-full bg-primary"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: completedCount / totalCount }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
-              />
+            {/* Progress */}
+            <div className="px-4 pb-3">
+              <Progress value={progressValue} className="h-1.5" />
             </div>
 
             {/* Steps */}
-            <div className="divide-y divide-border mx-4">
+            <ul className="mx-4 mb-1 divide-y divide-border">
               {checklistSteps.map((s) => {
                 const done = !!steps[s.key];
                 return (
-                  <a
-                    key={s.key}
-                    href={s.href}
-                    onClick={() => setOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 py-2.5 text-sm transition-colors",
-                      done
-                        ? "text-muted-foreground line-through"
-                        : "hover:text-primary",
-                    )}
-                  >
-                    <span
+                  <li key={s.key}>
+                    <Link
+                      to={s.href}
+                      onClick={() => setOpen(false)}
                       className={cn(
-                        "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs font-semibold",
+                        "flex min-h-11 items-start gap-3 py-2.5 text-sm transition-colors",
                         done
-                          ? "border-green-500 bg-green-500 text-white"
-                          : "border-muted-foreground/40 text-muted-foreground",
+                          ? "text-muted-foreground"
+                          : "hover:text-primary",
                       )}
                     >
-                      {done ? <Check className="h-3 w-3" /> : null}
-                    </span>
-                    <span className="flex-1">{t(s.labelKey)}</span>
-                    {!done && <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />}
-                  </a>
+                      <span
+                        className={cn(
+                          "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs font-semibold",
+                          done
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-muted-foreground/40 text-muted-foreground",
+                        )}
+                        aria-hidden="true"
+                      >
+                        {done ? <Check className="h-3 w-3" /> : null}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span
+                          className={cn(
+                            "block font-medium leading-tight",
+                            done && "line-through",
+                          )}
+                        >
+                          {t(s.labelKey)}
+                        </span>
+                        <span className="mt-0.5 block text-xs font-normal text-muted-foreground no-underline">
+                          {t(s.descKey)}
+                        </span>
+                      </span>
+                      {!done && (
+                        <ChevronRight
+                          className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/60"
+                          aria-hidden="true"
+                        />
+                      )}
+                    </Link>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
 
-            {/* Footer actions */}
-            <div className="flex items-center justify-between px-4 py-3 border-t mt-2">
+            {/* Footer */}
+            <div className="mt-2 flex items-center justify-between gap-2 border-t px-3 py-2.5">
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 gap-1.5 text-xs text-muted-foreground"
+                className="h-9 gap-1.5 px-2 text-xs text-muted-foreground"
                 onClick={handleReplayTutorial}
               >
                 <RotateCcw className="h-3 w-3" />
@@ -197,10 +252,10 @@ export function OnboardingChecklist() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 text-xs text-muted-foreground"
-                onClick={handleSkip}
+                className="h-9 px-2 text-xs text-muted-foreground"
+                onClick={handleDismiss}
               >
-                {t("onboarding.checklist.skip", "Skip")}
+                {t("onboarding.checklist.dismiss", "I'll explore myself")}
               </Button>
             </div>
           </motion.div>

@@ -6,7 +6,6 @@ import { useIsMobile } from "@/hooks/ui/use-mobile";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
 import type { TutorialStep } from "../types";
-import { useSpotlight } from "../hooks/use-spotlight";
 import { useCameraScroll } from "../hooks/use-camera-scroll";
 import { SpotlightOverlay } from "./spotlight-overlay";
 import { OnboardingTutorialShell } from "./onboarding-tutorial-shell";
@@ -96,7 +95,7 @@ function TryItBar({
       </span>
       <Button
         size="sm"
-        className="min-h-[44px] bg-primary text-primary-foreground hover:bg-primary/90"
+        className="min-h-[44px]"
         onClick={onExitTryIt}
         aria-label={t("onboarding.actions.continue", "Continue")}
       >
@@ -119,7 +118,6 @@ export function OnboardingOrchestrator({
   stepConfig,
   currentStep,
   totalSteps,
-  progress: _progress,
   interactionMode,
   onNext,
   onBack,
@@ -140,10 +138,6 @@ export function OnboardingOrchestrator({
       : stepConfig.targetSelector;
 
   const hasTarget = targetExists(resolvedSelector);
-  const { spotlightRect: _spotlightRect } = useSpotlight(
-    hasTarget ? resolvedSelector : null,
-    !isScrolling,
-  );
 
   const [cameraReady, setCameraReady] = useState(false);
   const currentStepIdRef = useRef(stepConfig.id);
@@ -201,7 +195,7 @@ export function OnboardingOrchestrator({
       {hasTarget && (
         <SpotlightOverlay
           targetSelector={resolvedSelector}
-          isVisible={cameraReady && interactionMode}
+          isVisible={cameraReady && hasTarget}
           padding={stepConfig.spotlightPadding}
           shape={stepConfig.spotlightShape}
           interactionMode={interactionMode}

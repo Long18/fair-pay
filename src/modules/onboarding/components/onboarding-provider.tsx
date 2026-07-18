@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { useGetIdentity } from "@refinedev/core";
+import { useLocation, useNavigate } from "react-router";
 
 import type { Profile } from "@/modules/profile/types";
 
@@ -46,6 +47,8 @@ export function OnboardingProvider({
     useGetIdentity<Profile>();
   const userId = identity?.id ?? null;
   const isAuthenticated = !!userId;
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // ── Step engine (empty when unauthenticated) ─────────────────────────
   const { steps, totalSteps, getStep } = useTutorialSteps(isAuthenticated);
@@ -115,11 +118,11 @@ export function OnboardingProvider({
     setInteractionMode(false);
     reset();
     setCurrentStep(0);
-    // Navigate to home page so dashboard targets are available
-    if (window.location.pathname !== "/") {
-      window.location.href = "/";
+    // SPA navigate home so dashboard targets are available (no full reload)
+    if (location.pathname !== "/") {
+      navigate("/");
     }
-  }, [reset]);
+  }, [reset, location.pathname, navigate]);
 
   // ── Interaction mode: enter ──────────────────────────────────────────
   const enterTryIt = useCallback(() => {

@@ -5,17 +5,17 @@ export { useCameraScroll } from "./hooks/use-camera-scroll";
 export { useDarkMode } from "./hooks/use-dark-mode";
 export { SpotlightOverlay } from "./components/spotlight-overlay";
 export type { SpotlightOverlayProps } from "./components/spotlight-overlay";
-export { OnboardingStepContent } from "./components/onboarding-step-content";
-export type { OnboardingStepContentProps } from "./components/onboarding-step-content";
 export { OnboardingOrchestrator } from "./components/onboarding-orchestrator";
 export type { OnboardingOrchestratorProps } from "./components/onboarding-orchestrator";
 export { OnboardingTutorialShell } from "./components/onboarding-tutorial-shell";
 export type { OnboardingTutorialShellProps } from "./components/onboarding-tutorial-shell";
-export { FloatingStepPanel } from "./components/floating-step-panel";
-export type { FloatingStepPanelProps } from "./components/floating-step-panel";
 export { OnboardingProvider, useOnboarding } from "./components/onboarding-provider";
 export { OnboardingChecklist } from "./components/OnboardingChecklist";
-export { OnboardingChecklistItem } from "./components/OnboardingChecklistItem";
-export type { OnboardingChecklistItemProps } from "./components/OnboardingChecklistItem";
 export { useOnboardingProgress } from "./hooks/use-onboarding-progress";
 export type { UseOnboardingProgressReturn } from "./hooks/use-onboarding-progress";
+export {
+  CHECKLIST_STEP_KEYS,
+  ONBOARDING_PROGRESS_EVENT,
+  markOnboardingStep,
+} from "./utils/mark-step";
+export type { OnboardingProgressDetail } from "./utils/mark-step";

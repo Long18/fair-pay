@@ -1723,7 +1723,10 @@
     "checklist": {
       "title": "Bắt đầu với FairPay",
       "progress": "{{completed}} / {{total}} bước hoàn thành",
+      "allDone": "Bạn đã sẵn sàng!",
       "skip": "Bỏ qua",
+      "dismiss": "Tôi sẽ tự khám phá",
+      "close": "Đóng",
       "replayTutorial": "Xem lại hướng dẫn"
     },
     "steps": {
@@ -1791,6 +1794,12 @@
       "dialogLabel": "Hướng dẫn bắt đầu",
       "stepProgress": "Bước {{current}} / {{total}}",
       "carouselLabel": "Các bước hướng dẫn"
+    },
+    "skipConfirm": {
+      "title": "Bỏ qua hướng dẫn?",
+      "description": "Bạn có thể xem lại bất cứ lúc nào trong Cài đặt.",
+      "confirm": "Bỏ qua",
+      "cancel": "Tiếp tục"
     }
   },
   "referrals": {
