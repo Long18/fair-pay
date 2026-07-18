@@ -53,17 +53,23 @@ export function MemberPrepaidBalanceList({
 
 function MemberBalanceCard({ member }: { member: MemberPrepaidInfo }) {
   const { t } = useTranslation();
-  const hasPrepaid = member.balance_amount > 0;
+  const hasRemainingCredit = member.balance_amount > 0;
+  const hasPaymentHistory = member.payment_count > 0;
 
   return (
     <div className="rounded-lg border p-3 space-y-2 bg-card">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="font-medium">{member.user_name}</span>
-          {hasPrepaid ? (
+          {hasRemainingCredit ? (
             <Badge variant="default" className="gap-1">
               <CheckCircle2Icon className="h-3 w-3" />
               {member.months_remaining} {t('prepaid.monthsLabel', 'month(s)')}
+            </Badge>
+          ) : hasPaymentHistory ? (
+            <Badge variant="secondary" className="gap-1">
+              <CheckCircle2Icon className="h-3 w-3" />
+              {t('prepaid.prepaidUsedUp', 'Prepaid used up')}
             </Badge>
           ) : (
             <Badge variant="outline" className="gap-1">
@@ -93,12 +99,13 @@ function MemberBalanceCard({ member }: { member: MemberPrepaidInfo }) {
         </div>
       </div>
 
-      {member.payment_count > 0 && (
+      {hasPaymentHistory && (
         <p className="text-xs text-muted-foreground">
-          {t('prepaid.totalPrepaidInfo', 'Total prepaid: {{amount}} {{currency}} ({{count}} payment(s))', {
+          {t('prepaid.totalPrepaidInfo', 'Total prepaid: {{amount}} {{currency}} ({{count}} payment(s), {{months}} month(s) covered)', {
             amount: formatNumber(member.total_prepaid),
             currency: member.currency,
             count: member.payment_count,
+            months: member.periods_covered || member.payment_count,
           })}
         </p>
       )}

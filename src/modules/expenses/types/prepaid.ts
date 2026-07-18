@@ -47,6 +47,7 @@ export interface MemberPrepaidInfo {
   currency: string;
   total_prepaid: number;
   payment_count: number;
+  periods_covered: number;
 }
 
 /**
