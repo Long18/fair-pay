@@ -1,8 +1,7 @@
-import {
-  prebuiltAppConfig,
-  type AppConfig,
-  type CacheBackend,
-} from "@mlc-ai/web-llm";
+import { prebuiltAppConfig, type AppConfig } from "@mlc-ai/web-llm";
+
+/** Mirrors web-llm `CacheBackend` (not re-exported from the package entry). */
+type CacheBackend = NonNullable<AppConfig["cacheBackend"]>;
 
 /**
  * Preferred storage for WebLLM weights. IndexedDB survives PWA/build
