@@ -21,12 +21,12 @@ import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/use-haptics";
 import type { Profile } from "@/modules/profile/types";
 import { useAiChatContext } from "../AiChatContext";
-import { ChatEmptyState } from "../components/ChatEmptyState";
-import { ChatInput } from "../components/ChatInput";
-import { ChatInsightsPanel } from "../components/ChatInsightsPanel";
-import { ChatSidebar } from "../components/ChatSidebar";
-import { ChatThread } from "../components/ChatThread";
-import { ModelSelectDialog } from "../components/ModelSelectDialog";
+import { ChatEmptyState } from "./ChatEmptyState";
+import { ChatInput } from "./ChatInput";
+import { ChatInsightsPanel } from "./ChatInsightsPanel";
+import { ChatSidebar } from "./ChatSidebar";
+import { ChatThread } from "./ChatThread";
+import { ModelSelectDialog } from "./ModelSelectDialog";
 
 type ActiveTab = "chat" | "insights";
 
@@ -35,7 +35,8 @@ function firstNameFrom(fullName?: string | null): string | undefined {
   return fullName.trim().split(/\s+/)[0];
 }
 
-export const AiChatPage = memo(function AiChatPage() {
+/** Chat UI body (sidebar + thread) sized to fill a dialog or other fixed-height shell. */
+export const AiChatView = memo(function AiChatView() {
   const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
   const { tap } = useHaptics();
@@ -130,16 +131,16 @@ export const AiChatPage = memo(function AiChatPage() {
   };
 
   return (
-    <div className="flex min-h-[calc(100dvh-4rem)] md:min-h-[calc(100dvh-5rem)] flex-col bg-background">
-      <div className="flex min-h-0 flex-1 overflow-hidden border-t">
+    <div className="flex h-full min-h-0 flex-col bg-background">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* Desktop sidebar */}
-        <div className="hidden w-[280px] shrink-0 lg:block xl:w-[300px]">
+        <div className="hidden h-full w-[280px] shrink-0 lg:block xl:w-[300px]">
           <ChatSidebar {...sidebarProps} />
         </div>
 
         {/* Main pane */}
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2.5 sm:px-4">
+          <header className="flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2.5 pr-12 sm:px-4 sm:pr-14">
             <div className="flex min-w-0 items-center gap-2">
               <Button
                 type="button"
@@ -292,5 +293,3 @@ export const AiChatPage = memo(function AiChatPage() {
     </div>
   );
 });
-
-export default AiChatPage;

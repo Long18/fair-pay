@@ -1,6 +1,7 @@
 export { ChatFAB } from './components/ChatFAB';
 export { ChatPanel } from './components/ChatPanel';
-export { AiChatPage } from './pages/AiChatPage';
+export { AiChatDialog } from './components/AiChatDialog';
+export { AiChatView } from './components/AiChatView';
 export { useAiChat } from './hooks/use-ai-chat';
 export { AiChatProvider, useAiChatContext } from './AiChatContext';
 export type {

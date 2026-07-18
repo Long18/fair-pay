@@ -1,5 +1,4 @@
 import { memo, useCallback } from "react";
-import { useLocation, useNavigate } from "react-router";
 import { useHaptics } from "@/hooks/use-haptics";
 import { AlertCircleIcon, CheckIcon } from "@/components/ui/icons";
 import { FloatingActionStack, FloatingPill } from "@/components/ui/floating-stack";
@@ -57,19 +56,18 @@ function FabIcon({ state }: { state: FabState }) {
   );
 }
 
-/** Navigates to full-page /ai-chat. Expects AiChatProvider above. */
+/** Opens the FairPay Assistant dialog. Expects AiChatProvider above. */
 export const ChatFAB = memo(function ChatFAB() {
-  const navigate = useNavigate();
-  const location = useLocation();
   const { tap } = useHaptics();
+  const { isChatOpen, openChat } = useAiChatContext();
   const fabState = useFabState();
 
-  const openChat = useCallback(() => {
+  const handleOpen = useCallback(() => {
     tap();
-    void navigate("/ai-chat");
-  }, [navigate, tap]);
+    openChat();
+  }, [openChat, tap]);
 
-  if (location.pathname === "/ai-chat") return null;
+  if (isChatOpen) return null;
 
   return (
     <>
@@ -86,7 +84,7 @@ export const ChatFAB = memo(function ChatFAB() {
           <FloatingPill
             variant="glass"
             size="default"
-            onClick={openChat}
+            onClick={handleOpen}
             ariaLabel="Open FairPay Assistant"
             className={cn(
               "aspect-square !px-0 !min-w-[48px]",

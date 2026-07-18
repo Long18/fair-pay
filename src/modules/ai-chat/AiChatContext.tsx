@@ -1,13 +1,26 @@
 /**
- * Shared context so ChatFAB and ChatPanel read from one useAiChat instance
+ * Shared context so ChatFAB and AiChatDialog read from one useAiChat instance
  * without prop-drilling or duplicate worker spawns.
  */
-import { createContext, useContext, useMemo, useRef, useState, useEffect, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
 import { useAiChat } from "./hooks/use-ai-chat";
 
 type AiChatCtx = ReturnType<typeof useAiChat> & {
   /** True for ~1.4 s after isLoading transitions false — drives FAB "done" flash. */
   fabDone: boolean;
+  isChatOpen: boolean;
+  setChatOpen: (open: boolean) => void;
+  openChat: () => void;
+  closeChat: () => void;
 };
 
 const AiChatContext = createContext<AiChatCtx | null>(null);
@@ -15,6 +28,7 @@ const AiChatContext = createContext<AiChatCtx | null>(null);
 export function AiChatProvider({ children }: { children: ReactNode }) {
   const chat = useAiChat();
   const [fabDone, setFabDone] = useState(false);
+  const [isChatOpen, setChatOpen] = useState(false);
   const prevLoading = useRef(chat.isLoading);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -31,7 +45,20 @@ export function AiChatProvider({ children }: { children: ReactNode }) {
     };
   }, [chat.isLoading, chat.messages.length]);
 
-  const value = useMemo<AiChatCtx>(() => ({ ...chat, fabDone }), [chat, fabDone]);
+  const openChat = useCallback(() => setChatOpen(true), []);
+  const closeChat = useCallback(() => setChatOpen(false), []);
+
+  const value = useMemo<AiChatCtx>(
+    () => ({
+      ...chat,
+      fabDone,
+      isChatOpen,
+      setChatOpen,
+      openChat,
+      closeChat,
+    }),
+    [chat, fabDone, isChatOpen, openChat, closeChat],
+  );
 
   return <AiChatContext.Provider value={value}>{children}</AiChatContext.Provider>;
 }

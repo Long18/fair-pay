@@ -86,8 +86,6 @@ const DonationSettings = lazy(() => import("./modules/settings").then(m => ({ de
 const BankSettings = lazy(() => import("./modules/settings/pages/bank-settings").then(m => ({ default: m.BankSettingsPage })));
 const SepaySettings = lazy(() => import("./modules/settings/pages/sepay-settings").then(m => ({ default: m.SepaySettingsPage })));
 const DonationWidget = lazy(() => import("./components/donation-widget").then(m => ({ default: m.DonationWidget })));
-const AiChatPage = lazy(() => import("./modules/ai-chat/pages/AiChatPage").then(m => ({ default: m.AiChatPage })));
-
 // Onboarding module - lazy loaded (only needed on first visit)
 const OnboardingProvider = lazy(() => import("./modules/onboarding").then(m => ({ default: m.OnboardingProvider })));
 const OnboardingChecklistFAB = lazy(() => import("./modules/onboarding/components/OnboardingChecklist").then(m => ({ default: m.OnboardingChecklist })));
@@ -559,13 +557,7 @@ function App() {
                         </ErrorBoundary>
                       </Suspense>
                     } />
-                    <Route path="/ai-chat" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <ErrorBoundary context="AI Chat">
-                          <AiChatPage />
-                        </ErrorBoundary>
-                      </Suspense>
-                    } />
+                    <Route path="/ai-chat" element={<Navigate to="/" replace />} />
                     <Route path="/settings" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <SettingsPage />
