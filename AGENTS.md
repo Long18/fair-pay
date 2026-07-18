@@ -56,6 +56,7 @@ Project agents live in [`.cursor/agents/`](.cursor/agents/):
 - `fairpay-agent-mcp` — MCP Edge Function, catalogs, security boundaries, MCP tests
 - `fairpay-ai-chat` — In-app WebLLM chat (mlc-ai/web-llm): worker/cache, model catalog, compact/full prompts, orchestrator, preview→UI confirm
 - `fairpay-external-agent` — ChatGPT Actions / no-key external agent API (not in-app WebLLM)
+- `react-doctor` — React Doctor scans, `/doctor` triage, regression checks, rule explain/config
 
 ## SQL / migrations
 
