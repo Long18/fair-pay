@@ -102,13 +102,19 @@ function isRealDate(value: string): boolean {
     && date.getUTCDate() === day
 }
 
-function parseActor(value: unknown, path: string, issues: Issue[]): ActorRef | null {
+function parseActor(
+  value: unknown,
+  path: string,
+  issues: Issue[],
+  extraAllowedKeys: readonly string[] = [],
+): ActorRef | null {
   if (!isObject(value)) {
     issues.push(issue([path], 'Actor must be an object'))
     return null
   }
 
-  const allowed = new Set(['email', 'display_name'])
+  // Participants may also carry amount / fixed_amount; payer must not.
+  const allowed = new Set(['email', 'display_name', ...extraAllowedKeys])
   for (const key of Object.keys(value)) {
     if (!allowed.has(key)) issues.push(issue([path, key], 'Unknown field'))
   }
@@ -252,7 +258,7 @@ export const ExternalAgentSubmissionRequest = {
       issues.push(issue(['participants'], 'participants must contain 1 to 100 entries'))
     } else {
       input.participants.forEach((raw, index) => {
-        const actor = parseActor(raw, `participants.${index}`, issues)
+        const actor = parseActor(raw, `participants.${index}`, issues, ['amount', 'fixed_amount'])
         if (!isObject(raw) || !actor) return
 
         const amountValue = raw.amount === undefined ? undefined : parseAmount(raw.amount)
@@ -286,8 +292,18 @@ export const ExternalAgentSubmissionRequest = {
       issues.push(issue(['participants'], 'Equal split does not accept amount or fixed_amount'))
     }
 
-    if (splitMethod === 'exact' && (hasFixedAmount || participants.some((participant) => participant.amount === undefined))) {
-      issues.push(issue(['participants'], 'Exact split requires amount for every participant'))
+    if (splitMethod === 'exact') {
+      if (hasFixedAmount || participants.some((participant) => participant.amount === undefined)) {
+        issues.push(issue(['participants'], 'Exact split requires amount for every participant'))
+      } else if (amount !== undefined) {
+        const participantSum = participants.reduce((sum, participant) => sum + (participant.amount ?? 0), 0)
+        if (participantSum !== amount) {
+          issues.push(issue(
+            ['participants'],
+            `Sum of participant amounts (${participantSum}) must equal total amount (${amount})`,
+          ))
+        }
+      }
     }
 
     if (splitMethod === 'fixed_then_equal_remainder' && hasAmount) {

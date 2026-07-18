@@ -117,7 +117,7 @@ describe('external agent submission contracts', () => {
   })
 
   it('enforces split-method-specific participant fields', () => {
-    const exact = ExternalAgentSubmissionRequest.safeParse({
+    const exactMissingAmount = ExternalAgentSubmissionRequest.safeParse({
       ...validSubmission,
       split_method: 'exact',
       participants: [
@@ -125,7 +125,7 @@ describe('external agent submission contracts', () => {
         { email: 'bob@example.com' },
       ],
     })
-    const equal = ExternalAgentSubmissionRequest.safeParse({
+    const equalWithAmounts = ExternalAgentSubmissionRequest.safeParse({
       ...validSubmission,
       split_method: 'equal',
       participants: [
@@ -134,7 +134,78 @@ describe('external agent submission contracts', () => {
       ],
     })
 
-    expect(exact.success).toBe(false)
-    expect(equal.success).toBe(false)
+    expect(exactMissingAmount.success).toBe(false)
+    expect(equalWithAmounts.success).toBe(false)
+  })
+
+  it('accepts exact split when every participant has amount summing to total', () => {
+    const result = ExternalAgentSubmissionRequest.safeParse({
+      ...validSubmission,
+      amount: 450000,
+      split_method: 'exact',
+      participants: [
+        { email: 'alice@example.com', amount: 200000 },
+        { email: 'bob@example.com', amount: 250000 },
+      ],
+    })
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.participants).toEqual([
+        { email: 'alice@example.com', amount: 200000 },
+        { email: 'bob@example.com', amount: 250000 },
+      ])
+    }
+  })
+
+  it('rejects exact split when participant amounts do not sum to total', () => {
+    const result = ExternalAgentSubmissionRequest.safeParse({
+      ...validSubmission,
+      amount: 450000,
+      split_method: 'exact',
+      participants: [
+        { email: 'alice@example.com', amount: 100000 },
+        { email: 'bob@example.com', amount: 100000 },
+      ],
+    })
+
+    expect(result.success).toBe(false)
+    const messages = result.success ? [] : result.error.issues.map((issue) => issue.message)
+    expect(messages.some((message) => message.includes('must equal total amount'))).toBe(true)
+  })
+
+  it('accepts fixed_then_equal_remainder with fixed_amount on some participants', () => {
+    const result = ExternalAgentSubmissionRequest.safeParse({
+      ...validSubmission,
+      amount: 450000,
+      split_method: 'fixed_then_equal_remainder',
+      participants: [
+        { email: 'alice@example.com', fixed_amount: 150000 },
+        { email: 'bob@example.com', fixed_amount: 150000 },
+        { display_name: 'Thuần' },
+      ],
+    })
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.participants[0]).toEqual({
+        email: 'alice@example.com',
+        fixed_amount: 150000,
+      })
+      expect(result.data.participants[2]).toEqual({ display_name: 'Thuần' })
+    }
+  })
+
+  it('rejects amount on participants for fixed_then_equal_remainder', () => {
+    const result = ExternalAgentSubmissionRequest.safeParse({
+      ...validSubmission,
+      split_method: 'fixed_then_equal_remainder',
+      participants: [
+        { email: 'alice@example.com', amount: 150000 },
+        { email: 'bob@example.com' },
+      ],
+    })
+
+    expect(result.success).toBe(false)
   })
 })

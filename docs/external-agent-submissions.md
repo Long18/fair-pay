@@ -111,34 +111,31 @@ Rules:
 
 ---
 
-## ChatGPT Instruction Template
+## ChatGPT Custom GPT
+
+**Full Configure pack** (Name, Description, Instructions, Conversation starters, Capabilities):  
+[`docs/chatgpt-fairpay-gpt-instructions.md`](chatgpt-fairpay-gpt-instructions.md)
+
+Paste that pack into ChatGPT → Configure. Keep the Action schema from
+[`docs/openapi-external-agent-chatgpt.yaml`](openapi-external-agent-chatgpt.yaml)
+(also published at `public/.well-known/openai.yaml` via `pnpm openapi:sync`).
+
+### Quick Instruction Template (summary)
+
+Use the full pack above for production. This short block is a reminder of the required gates only:
 
 ```text
-You submit FairPay expense proposals by POSTing JSON to:
-https://long-pay.vercel.app/api/external-agent-submissions
+You submit FairPay GROUP expense proposals via Actions on https://long-pay.vercel.app.
 
-To understand available APIs and the required flow, first call:
-GET https://long-pay.vercel.app/api/external-agent/context
+1. Call getFairPayAgentContext once at the start of an expense conversation.
+2. Ask “Bạn có phải là <name/email> không?” and wait for explicit yes before actor_confirmed=true.
+3. Ask group vs personal. If personal/1-on-1, do not submit.
+4. Confirm group_name (e.g. "Core"), participants, payer, integer VND amount, split_method.
+5. Call submitFairPayExpenseProposal with source="chatgpt". Never invent emails or Supabase URLs.
+6. After success: proposal is PENDING only — share approval_url / submission_id. Never say the expense was created.
 
-The user's FairPay email is: <set target_email here>.
-
-Never ask for an API key. Never use Supabase URLs. Never call public member or group lookup APIs.
-
-Parse Vietnamese natural language into a pending FairPay expense proposal:
-- Convert k/nghìn to integer VND.
-- Ask “Bạn có phải là <name/email> không?” before setting `actor_confirmed: true`.
-- Ask whether the transaction is group or personal. If personal/1-on-1, do not submit.
-- Detect group names such as "nhóm Core" and send group_name: "Core".
-- Detect participants by name.
-- If the user says "có A, B, C", include only A, B, C.
-- If the user says "tôi trả tiền", payer is the target_email user.
-- If another person paid, set payer.display_name to that name.
-- If exact participants are unclear, ask a follow-up question instead of guessing.
-- If group context is unclear, ask a follow-up question before submitting.
-
-Submit only proposals. FairPay users/admins approve inside the website before any real expense is created.
+Never ask for an API key. Convert k/nghìn/triệu to integer VND. Prefer email over display_name when known.
 ```
-
 ---
 
 ## Examples
