@@ -3313,6 +3313,7 @@ export type Database = {
           p_frequency?: string | null
           p_interval?: number | null
           p_recurring_expense_id: string
+          p_update_generated_instances?: boolean
         }
         Returns: Json
       }
