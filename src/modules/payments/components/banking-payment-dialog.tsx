@@ -127,7 +127,7 @@ export function BankingPaymentDialog({
           <>
             <Separator />
             <div className="flex flex-col items-center py-4 gap-4">
-              <button
+              <button type="button"
                 onClick={handleQRClick}
                 className="relative w-64 h-64 rounded-lg border bg-white p-2 cursor-pointer hover:shadow-lg transition-shadow group"
                 aria-label={t('payments.banking.tapToOpenBank', 'Tap to open bank app')}

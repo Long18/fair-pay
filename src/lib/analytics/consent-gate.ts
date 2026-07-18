@@ -3,11 +3,14 @@
  * Analytics should only fire after user has explicitly opted in.
  */
 
-const CONSENT_STORAGE_KEY = 'fairpay-consent'
+const CONSENT_STORAGE_KEY = 'fairpay-consent:v1'
+const LEGACY_CONSENT_STORAGE_KEY = 'fairpay-consent'
 
 export function isAnalyticsConsentGiven(): boolean {
   try {
-    const stored = localStorage.getItem(CONSENT_STORAGE_KEY)
+    const stored =
+      localStorage.getItem(CONSENT_STORAGE_KEY) ??
+      localStorage.getItem(LEGACY_CONSENT_STORAGE_KEY)
     if (!stored) return false
     const parsed = JSON.parse(stored)
     return parsed.analytics === 'accepted'

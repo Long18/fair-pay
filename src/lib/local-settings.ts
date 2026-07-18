@@ -61,22 +61,36 @@ export const DEFAULT_LOCAL_SETTINGS: LocalSettings = {
 /**
  * LocalStorage key for settings
  */
-const STORAGE_KEY = 'fairpay:local-settings';
+const STORAGE_KEY = 'fairpay:local-settings:v1';
+const LEGACY_STORAGE_KEY = 'fairpay:local-settings';
 
 /**
  * LocalStorage key for last updated timestamp
  */
-const TIMESTAMP_KEY = 'fairpay:settings-timestamp';
+const TIMESTAMP_KEY = 'fairpay:settings-timestamp:v1';
+const LEGACY_TIMESTAMP_KEY = 'fairpay:settings-timestamp';
 
 /**
  * Get local settings from localStorage with validation
  */
 export function getLocalSettings(): LocalSettings {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored =
+      localStorage.getItem(STORAGE_KEY) ??
+      localStorage.getItem(LEGACY_STORAGE_KEY);
 
     if (!stored) {
       return DEFAULT_LOCAL_SETTINGS;
+    }
+
+    if (!localStorage.getItem(STORAGE_KEY)) {
+      localStorage.setItem(STORAGE_KEY, stored);
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
+      const legacyTs = localStorage.getItem(LEGACY_TIMESTAMP_KEY);
+      if (legacyTs) {
+        localStorage.setItem(TIMESTAMP_KEY, legacyTs);
+        localStorage.removeItem(LEGACY_TIMESTAMP_KEY);
+      }
     }
 
     const parsed = JSON.parse(stored) as Partial<LocalSettings>;

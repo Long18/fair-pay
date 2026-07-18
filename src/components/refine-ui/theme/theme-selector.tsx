@@ -93,7 +93,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
     };
 
     return (
-      <button
+      <button type="button"
         key={variantKey}
         onClick={handleClick}
         className={cn(

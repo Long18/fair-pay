@@ -157,9 +157,9 @@ export const ProfileAvatarUpload = ({
         <AnimatePresence>
           {!disabled && (
             <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0 }}
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
               className={cn(
                 "absolute bottom-0 right-0 rounded-full shadow-lg",
                 "bg-primary text-primary-foreground",
@@ -178,8 +178,8 @@ export const ProfileAvatarUpload = ({
         {/* Preview Remove Button */}
         {previewUrl && !isUploading && (
           <motion.button
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
             onClick={handleRemovePreview}
             className={cn(
               "absolute top-0 right-0 rounded-full shadow-lg",

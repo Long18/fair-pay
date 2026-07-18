@@ -816,13 +816,13 @@ serve(async (req) => {
     const unauthorized = await authorizeWorkerRequest(req, supabaseUrl, supabaseKey, supabaseAnonKey)
     if (unauthorized) return unauthorized
 
-    const body = await readWorkerRequest(req)
-
     if (!smtpHost || !smtpUser || !smtpPass) {
       throw new Error(
         'SMTP configuration missing. Set SMTP_HOST, SMTP_USER, SMTP_PASS via `supabase secrets set`.'
       )
     }
+
+    const body = await readWorkerRequest(req)
 
     if (body.invite?.emails.length) {
       const smtp = new SMTPClient({

@@ -602,7 +602,9 @@ function normalizeDebtRows(rows: unknown[], tAdmin: AdminT): DebtReminderRow[] {
 }
 
 async function attachUserEmails(rows: DebtReminderRow[]): Promise<AttachUserEmailsResult> {
-  const userIds = Array.from(new Set(rows.map((row) => row.user_id).filter(Boolean)));
+  const userIds = Array.from(
+    new Set(rows.flatMap((row) => (row.user_id ? [row.user_id] : []))),
+  );
   if (!userIds.length) return { rows };
 
   const { data, error } = await supabaseClient
@@ -1132,9 +1134,11 @@ function AdminEmailDevTools({ embedded = false }: { embedded?: boolean }) {
     return visibleDebtors.find((d) => d.user_id === bulkPreviewFocusUserId) ?? null;
   }, [visibleDebtors, bulkPreviewFocusUserId]);
 
+  const selectedUserIdSet = useMemo(() => new Set(selectedUserIds), [selectedUserIds]);
+
   const selectedRows = useMemo(
-    () => visibleDebtors.filter((d) => selectedUserIds.includes(d.user_id)),
-    [visibleDebtors, selectedUserIds]
+    () => visibleDebtors.filter((d) => selectedUserIdSet.has(d.user_id)),
+    [visibleDebtors, selectedUserIdSet]
   );
 
   const effectiveBulkFocusRow = bulkFocusRow ?? selectedRows[0] ?? null;
@@ -1672,7 +1676,7 @@ function AdminEmailDevTools({ embedded = false }: { embedded?: boolean }) {
                 visibleDebtors.map((row) => {
                   const topGroup = row.group_breakdown[0];
                   const topDebt = row.debt_breakdown[0];
-                  const rowSelected = selectedUserIds.includes(row.user_id);
+                  const rowSelected = selectedUserIdSet.has(row.user_id);
                   return (
                     <TableRow key={row.user_id} data-state={rowSelected ? "selected" : undefined}>
                       <TableCell>

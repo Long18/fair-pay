@@ -63,7 +63,7 @@ export const ActivitySummary: React.FC<ActivitySummaryProps> = ({
       <CardContent className="p-4 md:p-6">
         {/* Mobile: Collapsible Header */}
         {onToggleCollapse && (
-          <button
+          <button type="button"
             onClick={() => { tap(); onToggleCollapse?.(); }}
             className="flex items-center justify-between w-full mb-4 md:hidden focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md p-2 -m-2"
             aria-label={isCollapsed ? "Expand summary" : "Collapse summary"}

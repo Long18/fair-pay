@@ -60,7 +60,7 @@ export const ActivityFilterControls: React.FC<ActivityFilterControlsProps> = ({
   return (
     <div className={cn("flex flex-wrap items-center gap-2", compact && "gap-1.5", className)}>
       {filters.map((filter) => (
-        <button
+        <button type="button"
           key={filter.value}
           onClick={() => { tap(); onFilterChange(filter.value); }}
           className={cn(

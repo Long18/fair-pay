@@ -59,10 +59,10 @@ export const ExpenseFiltersPanel = ({
     filters.dateRange?.endDate || format(new Date(), 'yyyy-MM-dd')
   );
   const [minAmount, setMinAmount] = useState<string>(
-    filters.amountRange?.min?.toString() || ''
+    () => filters.amountRange?.min?.toString() || ''
   );
   const [maxAmount, setMaxAmount] = useState<string>(
-    filters.amountRange?.max?.toString() || ''
+    () => filters.amountRange?.max?.toString() || ''
   );
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
     filters.categories || []
@@ -132,6 +132,8 @@ export const ExpenseFiltersPanel = ({
         : [...prev, payerId]
     );
   };
+
+  const selectedPayerSet = new Set(selectedPayers);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -267,23 +269,23 @@ export const ExpenseFiltersPanel = ({
               <Label className="text-base font-semibold">Paid By</Label>
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {members.map((member) => (
-                  <div
-                    key={member.id}
-                    className="flex items-center space-x-2 py-1.5"
-                  >
-                    <Checkbox
-                      id={`payer-${member.id}`}
-                      checked={selectedPayers.includes(member.id)}
-                      onCheckedChange={() => togglePayer(member.id)}
-                    />
-                    <label
-                      htmlFor={`payer-${member.id}`}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    <div
+                      key={member.id}
+                      className="flex items-center space-x-2 py-1.5"
                     >
-                      {member.full_name}
-                    </label>
-                  </div>
-                ))}
+                      <Checkbox
+                        id={`payer-${member.id}`}
+                        checked={selectedPayerSet.has(member.id)}
+                        onCheckedChange={() => togglePayer(member.id)}
+                      />
+                      <label
+                        htmlFor={`payer-${member.id}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      >
+                        {member.full_name}
+                      </label>
+                    </div>
+                  ))}
               </div>
             </div>
           )}

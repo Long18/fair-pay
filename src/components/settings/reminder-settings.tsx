@@ -38,14 +38,31 @@ const DEFAULT_SETTINGS: ReminderSettings = {
   calendarType: "google",
 };
 
+const REMINDER_SETTINGS_KEY = "recurring-reminder-settings:v1";
+const LEGACY_REMINDER_SETTINGS_KEY = "recurring-reminder-settings";
+
+function loadReminderSettings(): ReminderSettings {
+  const saved =
+    localStorage.getItem(REMINDER_SETTINGS_KEY) ??
+    localStorage.getItem(LEGACY_REMINDER_SETTINGS_KEY);
+  if (!saved) return DEFAULT_SETTINGS;
+  try {
+    const parsed = JSON.parse(saved) as ReminderSettings;
+    if (!localStorage.getItem(REMINDER_SETTINGS_KEY)) {
+      localStorage.setItem(REMINDER_SETTINGS_KEY, saved);
+      localStorage.removeItem(LEGACY_REMINDER_SETTINGS_KEY);
+    }
+    return parsed;
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
+
 export function ReminderSettingsComponent() {
   const { t } = useTranslation();
   const { open: notify } = useNotification();
   const { tap, success } = useHaptics();
-  const [settings, setSettings] = useState<ReminderSettings>(() => {
-    const saved = localStorage.getItem("recurring-reminder-settings");
-    return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
-  });
+  const [settings, setSettings] = useState<ReminderSettings>(loadReminderSettings);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -62,7 +79,8 @@ export function ReminderSettingsComponent() {
     setIsSaving(true);
 
     // Save to localStorage (in production, this would be an API call)
-    localStorage.setItem("recurring-reminder-settings", JSON.stringify(settings));
+    localStorage.setItem(REMINDER_SETTINGS_KEY, JSON.stringify(settings));
+    localStorage.removeItem(LEGACY_REMINDER_SETTINGS_KEY);
 
     setTimeout(() => {
       setIsSaving(false);

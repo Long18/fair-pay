@@ -7,7 +7,8 @@ import { Friendship } from "@/modules/friends/types";
 import { SearchResult } from "./types";
 import { formatDateShort } from "@/lib/locale-utils";
 
-const RECENT_SEARCHES_KEY = "fairpay_recent_searches";
+const RECENT_SEARCHES_KEY = "fairpay_recent_searches:v1";
+const LEGACY_RECENT_SEARCHES_KEY = "fairpay_recent_searches";
 const MAX_RECENT_SEARCHES = 5;
 
 export const useGlobalSearch = (query: string) => {
@@ -81,10 +82,16 @@ export const useGlobalSearch = (query: string) => {
 
   // Load recent searches from localStorage
   useEffect(() => {
-    const stored = localStorage.getItem(RECENT_SEARCHES_KEY);
+    const stored =
+      localStorage.getItem(RECENT_SEARCHES_KEY) ??
+      localStorage.getItem(LEGACY_RECENT_SEARCHES_KEY);
     if (stored) {
       try {
         setRecentSearches(JSON.parse(stored));
+        if (!localStorage.getItem(RECENT_SEARCHES_KEY)) {
+          localStorage.setItem(RECENT_SEARCHES_KEY, stored);
+          localStorage.removeItem(LEGACY_RECENT_SEARCHES_KEY);
+        }
       } catch (e) {
         console.error("Failed to load recent searches", e);
       }
@@ -133,29 +140,29 @@ export const useGlobalSearch = (query: string) => {
     }));
 
     // Filter friends by name matching query
-    const friendResults: SearchResult[] = friendships
-      .map((friendship: any) => {
-        const isUserA = friendship.user_a_id === identity?.id;
-        const friendProfile = isUserA
-          ? friendship.user_b_profile
-          : friendship.user_a_profile;
+    const friendResults: SearchResult[] = friendships.flatMap((friendship: any) => {
+      const isUserA = friendship.user_a_id === identity?.id;
+      const friendProfile = isUserA
+        ? friendship.user_b_profile
+        : friendship.user_a_profile;
 
-        if (
-          friendProfile?.full_name
-            ?.toLowerCase()
-            .includes(query.toLowerCase())
-        ) {
-          return {
+      if (
+        friendProfile?.full_name
+          ?.toLowerCase()
+          .includes(query.toLowerCase())
+      ) {
+        return [
+          {
             id: friendship.id,
             type: "friend" as const,
             title: friendProfile.full_name,
             subtitle: "Friend",
             link: `/friends/show/${friendship.id}`,
-          };
-        }
-        return null;
-      })
-      .filter(Boolean) as SearchResult[];
+          },
+        ];
+      }
+      return [];
+    });
 
     setResults([...expenseResults, ...groupResults, ...friendResults]);
   }, [

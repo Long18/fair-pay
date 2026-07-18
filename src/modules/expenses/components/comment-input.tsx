@@ -20,6 +20,8 @@ init({ data: emojiData });
 // Sentinel UUIDs matching the DB migration
 const MENTION_ALL_ID = "00000000-0000-0000-0000-000000000001";
 const MENTION_HERE_ID = "00000000-0000-0000-0000-000000000002";
+const EMPTY_COMMENTERS: CommentUser[] = [];
+const EMPTY_CUSTOM_REACTIONS: ReactionType[] = [];
 
 interface CommentInputProps {
   currentUser: CommentUser | null;
@@ -36,13 +38,13 @@ interface CommentInputProps {
 export const CommentInput = memo(({
   currentUser,
   participants,
-  commenters = [],
+  commenters = EMPTY_COMMENTERS,
   onSubmit,
   isSubmitting,
   placeholder,
   autoFocus = false,
   compact = false,
-  customReactions = [],
+  customReactions = EMPTY_CUSTOM_REACTIONS,
 }: CommentInputProps) => {
   const { t } = useTranslation();
   const { tap } = useHaptics();

@@ -15,6 +15,8 @@ interface EmojiSelectEvent {
   unified?: string;
 }
 
+const EMPTY_CUSTOM_REACTIONS: ReactionType[] = [];
+
 interface EmojiPickerPopoverProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -29,7 +31,7 @@ export const EmojiPickerPopover = memo(({
   open,
   onOpenChange,
   onSelect,
-  customReactions = [],
+  customReactions = EMPTY_CUSTOM_REACTIONS,
   children,
   side = "top",
   align = "start",

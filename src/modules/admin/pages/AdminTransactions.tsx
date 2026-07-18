@@ -685,7 +685,7 @@ function CreatePaymentDialog({
   const [toUser, setToUser] = useState("");
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("VND");
-  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split("T")[0]);
+  const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [groupId, setGroupId] = useState<string>("");
   const [friendshipId, setFriendshipId] = useState<string>("");
   const [note, setNote] = useState("");
@@ -855,7 +855,7 @@ function EditPaymentDialog({
   const [toUser, setToUser] = useState(payment?.to_user_id ?? "");
   const [amount, setAmount] = useState(payment ? String(payment.amount) : "");
   const [currency, setCurrency] = useState(payment?.currency || "VND");
-  const [paymentDate, setPaymentDate] = useState(payment?.payment_date?.split("T")[0] ?? "");
+  const [paymentDate, setPaymentDate] = useState(() => payment?.payment_date?.split("T")[0] ?? "");
   const [groupId, setGroupId] = useState(payment?.group_id ?? "");
   const [friendshipId, setFriendshipId] = useState(payment?.friendship_id ?? "");
   const [note, setNote] = useState(payment?.note ?? "");

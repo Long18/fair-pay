@@ -348,7 +348,9 @@ export const GroupShow = () => {
             action: {
               label: "Pay More",
               onClick: () => {
-                setSelectedSettlement({ ...selectedSettlement, amount: remaining });
+                setSelectedSettlement((prev) =>
+                  prev ? { ...prev, amount: remaining } : prev,
+                );
                 setQuickSettleDialogOpen(true);
               },
             },

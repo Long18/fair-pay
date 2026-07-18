@@ -75,7 +75,8 @@ export function DataTable<TData extends BaseRecord>({
     if (!actionColumnIds) return;
     const actionIds = actionColumnIds.split(",");
     const current = table.reactTable.getState().columnPinning?.right ?? [];
-    const alreadyPinned = actionIds.every((id) => current.includes(id));
+    const currentSet = new Set(current);
+    const alreadyPinned = actionIds.every((id) => currentSet.has(id));
     if (alreadyPinned) return;
     table.reactTable.setColumnPinning((prev) => ({
       left: prev.left,

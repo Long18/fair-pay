@@ -31,7 +31,9 @@ interface ExpenseListProps {
   members?: Array<{ id: string; full_name: string }>;
 }
 
-export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseListProps) => {
+const EMPTY_MEMBERS: Array<{ id: string; full_name: string }> = [];
+
+export const ExpenseList = ({ groupId, friendshipId, members = EMPTY_MEMBERS }: ExpenseListProps) => {
   const go = useGo();
   const { t } = useTranslation();
   const { tap } = useHaptics();
@@ -164,6 +166,8 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
     return <div className="text-center py-8">Loading expenses...</div>;
   }
 
+  const selectedExpenseIdSet = new Set(selectedExpenseIds);
+
   return (
     <div className="space-y-4">
       {/* Action Bar */}
@@ -271,7 +275,7 @@ export const ExpenseList = ({ groupId, friendshipId, members = [] }: ExpenseList
                 {/* Selection Checkbox */}
                 {selectionMode && (
                   <Checkbox
-                    checked={selectedExpenseIds.includes(expense.id)}
+                    checked={selectedExpenseIdSet.has(expense.id)}
                     onCheckedChange={() => handleToggleSelection(expense.id)}
                   />
                 )}

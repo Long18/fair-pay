@@ -103,8 +103,8 @@ export const EmptyBalances = ({ className, onAction }: EmptyStateProps) => {
           />
         </motion.div>
         <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.2, type: "spring" }}
           className="absolute -top-2 -right-2"
         >
@@ -167,8 +167,8 @@ export const EmptyFriends = ({ className, onAction }: EmptyStateProps) => {
             {[0, 1, 2].map((i) => (
               <motion.div
                 key={i}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: i * 0.1, type: "spring" }}
                 className="w-4 h-4 bg-primary/20 rounded-full border-2 border-background"
               />

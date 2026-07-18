@@ -190,7 +190,7 @@ export function DonationWidget() {
         >
           <Tooltip open={showRandomTooltip} onOpenChange={setShowRandomTooltip}>
             <TooltipTrigger asChild>
-              <button
+              <button type="button"
                 onClick={() => { tap(); setIsDialogOpen(true); }}
                 className={cn(
                   'h-14 w-14 sm:h-16 sm:w-16 rounded-full overflow-hidden',

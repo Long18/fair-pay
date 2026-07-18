@@ -128,7 +128,7 @@ export function SpendingHeatmap({
                   const intensity = getIntensity(amount);
 
                   return (
-                    <button
+                    <button type="button"
                       key={dayIndex}
                       onClick={() => { tap(); onDayClick?.(dateStr); }}
                       className={`aspect-square rounded-md ${getColorClass(

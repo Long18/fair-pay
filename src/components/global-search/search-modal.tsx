@@ -212,7 +212,7 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
                     const CategoryIcon = categoryMeta?.icon;
 
                     return (
-                      <button
+                      <button type="button"
                         key={result.id}
                         className={cn(
                           "w-full px-4 py-2 flex items-center gap-3 hover:bg-muted transition-colors text-left",
@@ -268,7 +268,7 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
                       index + groupedResults.expenses.length;
 
                     return (
-                      <button
+                      <button type="button"
                         key={result.id}
                         className={cn(
                           "w-full px-4 py-2 flex items-center gap-3 hover:bg-muted transition-colors text-left",
@@ -307,7 +307,7 @@ export const SearchModal = ({ open, onOpenChange }: SearchModalProps) => {
                       groupedResults.groups.length;
 
                     return (
-                      <button
+                      <button type="button"
                         key={result.id}
                         className={cn(
                           "w-full px-4 py-2 flex items-center gap-3 hover:bg-muted transition-colors text-left",

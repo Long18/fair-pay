@@ -131,7 +131,7 @@ export function OnboardingChecklist() {
                   })}
                 </p>
               </div>
-              <button
+              <button type="button"
                 onClick={() => setOpen(false)}
                 className="rounded-full p-1 hover:bg-muted transition-colors"
                 aria-label="Close"

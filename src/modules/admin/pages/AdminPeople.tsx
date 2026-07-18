@@ -532,9 +532,15 @@ function UserDetailDialog({
                       {tAdmin("people.primaryEmail")}
                     </Badge>
                   </span>
-                  {(user.emails ?? []).filter((e) => !e.is_primary).map((e) => (
-                    <span key={e.id} className="block text-xs opacity-70" translate="no">{e.email}</span>
-                  ))}
+                  {(user.emails ?? []).flatMap((e) =>
+                    e.is_primary
+                      ? []
+                      : [
+                          <span key={e.id} className="block text-xs opacity-70" translate="no">
+                            {e.email}
+                          </span>,
+                        ],
+                  )}
                 </DialogDescription>
               </div>
             </div>
@@ -1248,9 +1254,11 @@ function MergeUserDialog({
     });
   }, [identityId, sourceSearch, targetUserId, users]);
 
+  const sourceUserIdSet = useMemo(() => new Set(sourceUserIds), [sourceUserIds]);
+
   const selectedSources = useMemo(
-    () => users.filter((user) => sourceUserIds.includes(user.id)),
-    [sourceUserIds, users],
+    () => users.filter((user) => sourceUserIdSet.has(user.id)),
+    [sourceUserIdSet, users],
   );
 
   const toggleSource = (id: string) => {
@@ -1285,7 +1293,7 @@ function MergeUserDialog({
                 <p className="px-1 py-2 text-sm text-muted-foreground">{tAdmin("common.noData")}</p>
               ) : (
                 sourceOptions.map((user) => {
-                  const checked = sourceUserIds.includes(user.id);
+                  const checked = sourceUserIdSet.has(user.id);
                   return (
                     <label
                       key={user.id}
@@ -1435,7 +1443,7 @@ function EditUserDialog({
   const { tAdmin } = useAdminTranslation();
   const [fullName, setFullName] = useState(user?.full_name ?? "");
   const [primaryEmailId, setPrimaryEmailId] = useState(
-    user?.emails?.find((email) => email.is_primary)?.id ?? null,
+    () => user?.emails?.find((email) => email.is_primary)?.id ?? null,
   );
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url ?? "");
   const [role, setRole] = useState<"admin" | "moderator" | "user">(user?.role ?? "user");

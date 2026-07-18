@@ -92,6 +92,8 @@ interface ExpenseSummaryCardProps {
   initialCommentsExpanded?: boolean;
 }
 
+const EMPTY_PARTICIPANTS: CommentUser[] = [];
+
 export const ExpenseSummaryCard = memo(({
   expense,
   canEdit,
@@ -102,7 +104,7 @@ export const ExpenseSummaryCard = memo(({
   onEdit,
   onDelete,
   currentUser = null,
-  participants = [],
+  participants = EMPTY_PARTICIPANTS,
   maxVisibleComments = 3,
   initialCommentsExpanded = false,
 }: ExpenseSummaryCardProps) => {

@@ -185,7 +185,7 @@ export function DonationDialog({ open, onOpenChange, settings }: DonationDialogP
                     {t('settings.donation.qrCode', 'QR Code')}
                 </p>
                 <div className="flex flex-col items-center gap-3">
-                  <button
+                  <button type="button"
                     onClick={handleQRClick}
                     className="group relative aspect-square w-full max-w-[292px] overflow-hidden rounded-xl border bg-background p-2 transition-shadow hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     aria-label={t('settings.donation.tapToOpenBank', 'Tap to open bank app')}

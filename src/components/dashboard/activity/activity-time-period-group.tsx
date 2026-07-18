@@ -60,7 +60,7 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
     <div className={cn("space-y-3", className)}>
       {/* Group Header */}
       <div className="flex items-center gap-2">
-        <button
+        <button type="button"
           onClick={() => { tap(); onToggleGroup(); }}
           className={cn(
             "flex items-center gap-2 text-sm font-semibold text-foreground",

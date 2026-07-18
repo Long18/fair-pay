@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Profile } from "../types";
 import { supabaseClient } from "@/utility/supabaseClient";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { isAdmin } from "@/lib/rbac";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -96,12 +96,11 @@ export const ProfileShowUnified = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [shareProfileOpen, setShareProfileOpen] = useState(false);
 
   // Edit mode support
   const isEditMode = searchParams.get("edit") === "true";
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const hasUnsavedChangesRef = useRef(false);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   
   const setEditMode = (enabled: boolean) => {
@@ -116,7 +115,7 @@ export const ProfileShowUnified = () => {
 
   const handleCancelEdit = () => {
     tap();
-    if (hasUnsavedChanges) {
+    if (hasUnsavedChangesRef.current) {
       setShowUnsavedDialog(true);
     } else {
       setEditMode(false);
@@ -125,7 +124,7 @@ export const ProfileShowUnified = () => {
 
   const confirmCancelEdit = () => {
     warning();
-    setHasUnsavedChanges(false);
+    hasUnsavedChangesRef.current = false;
     setShowUnsavedDialog(false);
     setEditMode(false);
   };
@@ -339,7 +338,6 @@ export const ProfileShowUnified = () => {
 
   // Refresh all data
   const handleRefresh = useCallback(async () => {
-    setIsRefreshing(true);
     try {
       await Promise.all([
         fetchDebts(showHistory),
@@ -349,8 +347,6 @@ export const ProfileShowUnified = () => {
     } catch (error) {
       console.error('Error refreshing:', error);
       toast.error(t('common.refreshError', 'Failed to refresh'));
-    } finally {
-      setIsRefreshing(false);
     }
   }, [fetchDebts, showHistory, profileQuery, t]);
 
@@ -426,7 +422,7 @@ export const ProfileShowUnified = () => {
       success();
       track('profile_update_success');
       toast.success(t('profile.profileUpdated', 'Profile updated successfully'));
-      setHasUnsavedChanges(false);
+      hasUnsavedChangesRef.current = false;
       setEditMode(false);
       profileQuery.refetch();
     } catch (error: any) {

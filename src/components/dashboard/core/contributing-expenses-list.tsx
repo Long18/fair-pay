@@ -114,7 +114,7 @@ export function ContributingExpensesList({
         ))}
         {settled.length > 0 && (
           <>
-            <button
+            <button type="button"
               onClick={() => { tap(); setSettledExpanded((v) => !v); }}
               className={cn(
                 "w-full flex items-center gap-1.5 px-3 py-2 rounded-md",

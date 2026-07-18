@@ -1014,7 +1014,7 @@ function EmailsTab({ enabled }: { enabled: boolean }) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-2">
-          <button onClick={() => setSelectedUser(null)} className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <button type="button" onClick={() => setSelectedUser(null)} className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <ArrowLeftIcon className="h-4 w-4" aria-hidden="true" />
             Back
           </button>
@@ -1059,7 +1059,7 @@ function EmailsTab({ enabled }: { enabled: boolean }) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-2">
-          <button onClick={() => setSelectedType(null)} className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <button type="button" onClick={() => setSelectedType(null)} className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <ArrowLeftIcon className="h-4 w-4" aria-hidden="true" />
             Back
           </button>
@@ -1300,7 +1300,7 @@ function ExperimentsTab({ enabled }: { enabled: boolean }) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-2">
-          <button
+          <button type="button"
             onClick={() => setSelectedExp(null)}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >

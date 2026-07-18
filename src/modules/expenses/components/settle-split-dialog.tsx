@@ -37,7 +37,7 @@ export const SettleSplitDialog = ({
 }: SettleSplitDialogProps) => {
   const { t } = useTranslation();
   const { tap, success } = useHaptics();
-  const [customAmount, setCustomAmount] = useState<string>(computedAmount.toString());
+  const [customAmount, setCustomAmount] = useState<string>(() => computedAmount.toString());
   const [error, setError] = useState<string>("");
 
   const handleAmountChange = (value: string) => {

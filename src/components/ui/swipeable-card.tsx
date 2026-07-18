@@ -113,7 +113,7 @@ export function SwipeableCard({
       {leftActions.length > 0 && (
         <div className="absolute left-0 top-0 bottom-0 flex items-stretch">
           {leftActions.map((action, index) => (
-            <button
+            <button type="button"
               key={index}
               onClick={() => handleActionClick(action)}
               className={cn(
@@ -136,7 +136,7 @@ export function SwipeableCard({
       {rightActions.length > 0 && (
         <div className="absolute right-0 top-0 bottom-0 flex items-stretch">
           {rightActions.map((action, index) => (
-            <button
+            <button type="button"
               key={index}
               onClick={() => handleActionClick(action)}
               className={cn(

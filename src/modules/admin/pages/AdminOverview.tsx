@@ -435,7 +435,7 @@ export function AdminOverview() {
       <div className="space-y-3">
         <Collapsible open={trendsOpen} onOpenChange={setTrendsOpen}>
           <CollapsibleTrigger asChild>
-            <button className="w-full flex items-center gap-3 cursor-pointer group">
+            <button type="button" className="w-full flex items-center gap-3 cursor-pointer group">
               <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground whitespace-nowrap">
                 {tAdmin("overview.trends")}
               </span>
@@ -456,7 +456,7 @@ export function AdminOverview() {
             </div>
             <div className="flex items-center rounded-lg border bg-muted/50 p-1 gap-0.5">
               {(["7d", "30d", "90d"] as TrendPeriod[]).map((p) => (
-                <button
+                <button type="button"
                   key={p}
                   onClick={() => setTrendPeriod(p)}
                   className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${

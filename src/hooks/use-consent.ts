@@ -8,12 +8,22 @@ interface ConsentState {
   timestamp: string | null
 }
 
-const CONSENT_STORAGE_KEY = 'fairpay-consent'
+const CONSENT_STORAGE_KEY = 'fairpay-consent:v1'
+const LEGACY_CONSENT_STORAGE_KEY = 'fairpay-consent'
 
 function getStoredConsent(): ConsentState {
   try {
-    const stored = localStorage.getItem(CONSENT_STORAGE_KEY)
-    if (stored) return JSON.parse(stored)
+    const stored =
+      localStorage.getItem(CONSENT_STORAGE_KEY) ??
+      localStorage.getItem(LEGACY_CONSENT_STORAGE_KEY)
+    if (stored) {
+      const parsed = JSON.parse(stored) as ConsentState
+      if (!localStorage.getItem(CONSENT_STORAGE_KEY)) {
+        localStorage.setItem(CONSENT_STORAGE_KEY, stored)
+        localStorage.removeItem(LEGACY_CONSENT_STORAGE_KEY)
+      }
+      return parsed
+    }
   } catch {}
   return { analytics: 'pending', timestamp: null }
 }

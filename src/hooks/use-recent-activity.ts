@@ -66,7 +66,9 @@ export const useRecentActivity = (limit: number = 20): RecentActivity => {
 
                         // Fetch avatar_urls from profiles table
                         if (activities.length > 0) {
-                            const createdByIds = activities.map((a) => a.created_by_id).filter(Boolean);
+                            const createdByIds = activities.flatMap((a) =>
+                              a.created_by_id ? [a.created_by_id] : [],
+                            );
                             if (createdByIds.length > 0) {
                                 const { data: profiles } = await supabaseClient
                                     .from("profiles")

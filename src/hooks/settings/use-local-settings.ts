@@ -32,7 +32,7 @@ export function useLocalSettings() {
   useEffect(() => {
     // Listen for settings changes from other tabs or components
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'fairpay:local-settings') {
+      if (e.key === 'fairpay:local-settings:v1' || e.key === 'fairpay:local-settings') {
         setSettings(getLocalSettings());
       }
     };

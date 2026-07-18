@@ -21,13 +21,13 @@ export function ConsentBanner() {
           )}
         </p>
         <div className="flex gap-2 shrink-0">
-          <button
+          <button type="button"
             onClick={rejectAnalytics}
             className="px-4 py-2 text-sm border rounded-md hover:bg-muted transition-colors"
           >
             {t('consent.reject', 'Decline')}
           </button>
-          <button
+          <button type="button"
             onClick={acceptAnalytics}
             className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
           >

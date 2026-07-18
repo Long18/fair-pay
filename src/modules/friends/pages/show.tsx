@@ -10,7 +10,7 @@ import { Profile } from "@/modules/profile/types";
 import { Friendship } from "../types";
 import { RecurringExpenseList } from "@/modules/expenses";
 import { SimplifiedBalanceView, PaymentList, useBalanceCalculation } from "@/modules/payments";
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useCallback, useEffect } from "react";
 import { useTrackEvent } from "@/hooks/use-track-event";
 import { formatDateShort } from "@/lib/locale-utils";
 import { motion } from "framer-motion";
@@ -39,7 +39,6 @@ export const FriendShow = () => {
   const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const { tap } = useHaptics();
   const { track } = useTrackEvent();
 
@@ -177,7 +176,6 @@ export const FriendShow = () => {
 
   // Refresh all data
   const handleRefresh = useCallback(async () => {
-    setIsRefreshing(true);
     try {
       await Promise.all([
         friendshipQuery.refetch(),
@@ -188,8 +186,6 @@ export const FriendShow = () => {
     } catch (error) {
       console.error('Error refreshing:', error);
       toast.error(t('common.refreshError', 'Failed to refresh'));
-    } finally {
-      setIsRefreshing(false);
     }
   }, [friendshipQuery, expensesQuery, paymentsQuery, t]);
 

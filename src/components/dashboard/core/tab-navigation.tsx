@@ -21,7 +21,7 @@ export const TabNavigation = ({ tabs, activeTab, onTabChange }: TabNavigationPro
     <div className="border-b border-gray-200">
       <nav className="flex gap-8">
         {tabs.map((tab) => (
-          <button
+          <button type="button"
             key={tab.id}
             onClick={() => { tap(); onTabChange(tab.id); }}
             className={cn(

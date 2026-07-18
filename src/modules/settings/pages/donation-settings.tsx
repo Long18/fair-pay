@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDonationSettings, useUpdateDonationSettings, uploadDonationImage } from '@/hooks/settings/use-donation-settings';
 import { Button } from '@/components/ui/button';
@@ -28,8 +28,8 @@ export const DonationSettings = () => {
   const [donateMessageVi, setDonateMessageVi] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [qrCodeFile, setQrCodeFile] = useState<File | null>(null);
+  const avatarFileRef = useRef<File | null>(null);
+  const qrCodeFileRef = useRef<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
   // Bank info state
@@ -61,7 +61,7 @@ export const DonationSettings = () => {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setAvatarFile(file);
+      avatarFileRef.current = file;
       const reader = new FileReader();
       reader.onloadend = () => {
         setAvatarUrl(reader.result as string);
@@ -73,7 +73,7 @@ export const DonationSettings = () => {
   const handleQrCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setQrCodeFile(file);
+      qrCodeFileRef.current = file;
       const reader = new FileReader();
       reader.onloadend = () => {
         setQrCodeUrl(reader.result as string);
@@ -89,12 +89,12 @@ export const DonationSettings = () => {
       let newAvatarUrl = avatarUrl;
       let newQrCodeUrl = qrCodeUrl;
 
-      if (avatarFile) {
-        newAvatarUrl = await uploadDonationImage(avatarFile, 'avatar');
+      if (avatarFileRef.current) {
+        newAvatarUrl = await uploadDonationImage(avatarFileRef.current, 'avatar');
       }
 
-      if (qrCodeFile) {
-        newQrCodeUrl = await uploadDonationImage(qrCodeFile, 'qr-code');
+      if (qrCodeFileRef.current) {
+        newQrCodeUrl = await uploadDonationImage(qrCodeFileRef.current, 'qr-code');
       }
 
       await updateSettings.mutateAsync({
@@ -113,8 +113,8 @@ export const DonationSettings = () => {
 
       success();
       toast.success(t('settings.donation.saved', 'Donation settings saved successfully'));
-      setAvatarFile(null);
-      setQrCodeFile(null);
+      avatarFileRef.current = null;
+      qrCodeFileRef.current = null;
     } catch (error) {
       console.error('Error saving donation settings:', error);
       toast.error(t('settings.donation.error', 'Failed to save donation settings'));

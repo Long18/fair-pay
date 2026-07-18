@@ -65,13 +65,16 @@ interface GroupFormProps {
   existingMembers?: ExistingMember[];
 }
 
+const EMPTY_MEMBERS: ExtendedMember[] = [];
+const EMPTY_EXISTING_MEMBERS: ExistingMember[] = [];
+
 export const GroupForm = ({
   onSubmit,
   defaultValues,
   isLoading,
-  availableMembers = [],
+  availableMembers = EMPTY_MEMBERS,
   currentUserId,
-  existingMembers = [],
+  existingMembers = EMPTY_EXISTING_MEMBERS,
 }: GroupFormProps) => {
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>(
     defaultValues?.member_ids || []
@@ -109,9 +112,10 @@ export const GroupForm = ({
     setSelectedMemberIds(selectedMemberIds.filter((id) => id !== memberId));
   };
 
-  const selectedMembers = availableMembers.filter((m) =>
-    selectedMemberIds.includes(m.id)
-  );
+  const selectedMembers = (() => {
+    const selectedIdSet = new Set(selectedMemberIds);
+    return availableMembers.filter((m) => selectedIdSet.has(m.id));
+  })();
 
   const getInitials = (name: string) =>
     name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?";

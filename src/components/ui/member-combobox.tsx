@@ -42,8 +42,9 @@ export function MemberCombobox({
 }: MemberComboboxProps) {
   const [open, setOpen] = React.useState(false);
 
+  const selectedIdSet = React.useMemo(() => new Set(selectedIds), [selectedIds]);
   const availableMembers = members.filter(
-    (m) => !selectedIds.includes(m.id)
+    (m) => !selectedIdSet.has(m.id)
   );
 
   return (
@@ -81,7 +82,7 @@ export function MemberCombobox({
                   <CheckIcon
                     className={cn(
                       "h-4 w-4 shrink-0",
-                      selectedIds.includes(member.id) ? "opacity-100" : "opacity-0"
+                      selectedIdSet.has(member.id) ? "opacity-100" : "opacity-0"
                     )}
                   />
                   <UserAvatar
