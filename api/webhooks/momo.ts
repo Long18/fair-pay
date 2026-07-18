@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { timingSafeEqual } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase Admin client with service role key
@@ -12,6 +13,13 @@ const supabaseAdmin = createClient(
         },
     }
 );
+
+function signaturesMatch(provided: string, expected: string): boolean {
+    const a = Buffer.from(provided);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length) return false;
+    return timingSafeEqual(a, b);
+}
 
 interface MomoWebhookPayload {
     signature: string;
@@ -42,7 +50,7 @@ export default async function handler(
             console.error('MOMO_WEBHOOK_SIGNATURE not configured - rejecting webhook');
             return res.status(500).json({ error: 'Webhook not configured' });
         }
-        if (payload.signature !== expectedSignature) {
+        if (!signaturesMatch(payload.signature, expectedSignature)) {
             console.error('Invalid webhook signature', {
                 timestamp: new Date().toISOString(),
                 ip: req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown',

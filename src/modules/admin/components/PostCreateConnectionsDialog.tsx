@@ -85,9 +85,11 @@ export function PostCreateConnectionsDialog({
 
   const friendOptions = useMemo(() => {
     const q = friendSearch.trim().toLowerCase();
-    return profiles
-      .filter((p) => p.id !== user?.id)
-      .filter((p) => !q || p.full_name.toLowerCase().includes(q));
+    return profiles.filter(
+      (p) =>
+        p.id !== user?.id &&
+        (!q || p.full_name.toLowerCase().includes(q)),
+    );
   }, [friendSearch, profiles, user?.id]);
 
   const groupOptions = useMemo(() => {
@@ -159,10 +161,10 @@ export function PostCreateConnectionsDialog({
       }
 
       for (const groupId of selectedGroupIds) {
+        // role defaults to 'member' in DB; RLS rejects forged admin inserts
         const { error } = await supabaseClient.from("group_members").insert({
           group_id: groupId,
           user_id: user.id,
-          role: "member",
         });
         if (error && error.code !== "23505") throw error;
       }
@@ -183,6 +185,9 @@ export function PostCreateConnectionsDialog({
   };
 
   if (!user) return null;
+
+  const selectedFriendIdSet = new Set(selectedFriendIds);
+  const selectedGroupIdSet = new Set(selectedGroupIds);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -225,7 +230,7 @@ export function PostCreateConnectionsDialog({
                     </p>
                   ) : (
                     friendOptions.map((profile) => {
-                      const checked = selectedFriendIds.includes(profile.id);
+                      const checked = selectedFriendIdSet.has(profile.id);
                       return (
                         <label
                           key={profile.id}
@@ -261,7 +266,7 @@ export function PostCreateConnectionsDialog({
                     </p>
                   ) : (
                     groupOptions.map((group) => {
-                      const checked = selectedGroupIds.includes(group.id);
+                      const checked = selectedGroupIdSet.has(group.id);
                       return (
                         <label
                           key={group.id}

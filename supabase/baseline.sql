@@ -1727,16 +1727,16 @@ CREATE POLICY "Anonymous users can read donation settings"
   TO anon
   USING (true);
 
-CREATE POLICY "Authenticated users can insert donation settings"
+CREATE POLICY "Admins can insert donation settings"
   ON donation_settings FOR INSERT
   TO authenticated
-  WITH CHECK (true);
+  WITH CHECK (is_admin());
 
-CREATE POLICY "Authenticated users can update donation settings"
+CREATE POLICY "Admins can update donation settings"
   ON donation_settings FOR UPDATE
   TO authenticated
-  USING (true)
-  WITH CHECK (true);
+  USING (is_admin())
+  WITH CHECK (is_admin());
 
 -- ========================================
 -- SECTION 9: STORAGE BUCKETS & POLICIES

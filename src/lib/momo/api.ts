@@ -284,7 +284,15 @@ class MomoAPIService {
             return true;
         }
 
-        return signature === expectedSignature;
+        if (signature.length !== expectedSignature.length) {
+            return false;
+        }
+        // Constant-time compare (browser-safe; avoids `===` timing leaks)
+        let mismatch = 0;
+        for (let i = 0; i < signature.length; i++) {
+            mismatch |= signature.charCodeAt(i) ^ expectedSignature.charCodeAt(i);
+        }
+        return mismatch === 0;
     }
 }
 
