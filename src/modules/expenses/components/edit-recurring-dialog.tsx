@@ -186,7 +186,7 @@ export function EditRecurringDialog({
             <AlertDescription>
               {t(
                 "recurring.editDialog.futureOnlyNote",
-                "Changing the amount updates member shares for the next occurrences only."
+                "Changing the amount updates the template and member shares for upcoming cycles only. Past months stay as they were."
               )}
             </AlertDescription>
           </Alert>

@@ -77,7 +77,7 @@ Recurring expenses are payments that happen automatically on a regular schedule.
 
 **Who can edit:** The person who created the recurring expense, a **group admin**, or either person in a friend context.
 
-**Note:** Amount and schedule changes apply to **future** cycles only. Expenses already created stay unchanged. Member shares are recalculated automatically when you change the amount.
+**What gets updated:** Amount changes apply to the **template** (and upcoming cycles). Already-generated expenses stay at their original amounts. Member shares on the template are recalculated for future occurrences.
 
 ### Pausing a Recurring Expense
 

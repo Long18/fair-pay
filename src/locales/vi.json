@@ -588,7 +588,7 @@
     "editDialog": {
       "title": "Chỉnh sửa chi phí định kỳ",
       "description": "Cập nhật số tiền, mô tả hoặc lịch. Các kỳ sau dùng giá trị mới; chi phí đã tạo không đổi.",
-      "futureOnlyNote": "Đổi số tiền sẽ cập nhật phần chia của thành viên cho các kỳ tiếp theo.",
+      "futureOnlyNote": "Đổi số tiền chỉ cập nhật mẫu và phần chia cho các kỳ sắp tới. Các tháng đã tạo giữ nguyên.",
       "success": "Đã cập nhật chi phí định kỳ",
       "error": "Không thể cập nhật chi phí định kỳ",
       "descriptionRequired": "Vui lòng nhập mô tả",

@@ -10,6 +10,8 @@ export interface UpdateRecurringExpenseFullParams {
   interval?: number;
   endDate?: string | null;
   clearEndDate?: boolean;
+  /** When true, also sync past generated instances + prepaid. Default false (future-only). */
+  updateGeneratedInstances?: boolean;
 }
 
 export interface UpdateRecurringExpenseFullResult {
@@ -41,6 +43,7 @@ export function useUpdateRecurringExpenseFull() {
         p_interval: params.interval ?? null,
         p_end_date: params.endDate ?? null,
         p_clear_end_date: params.clearEndDate ?? false,
+        p_update_generated_instances: params.updateGeneratedInstances ?? false,
       });
 
       if (error) {

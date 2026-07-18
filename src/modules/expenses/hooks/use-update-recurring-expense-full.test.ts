@@ -44,6 +44,7 @@ describe("useUpdateRecurringExpenseFull", () => {
       p_interval: 1,
       p_end_date: null,
       p_clear_end_date: false,
+      p_update_generated_instances: false,
     });
     expect(response).toEqual({
       success: true,

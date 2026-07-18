@@ -34,7 +34,7 @@ The Recurring Expenses feature automates the creation of repetitive payments lik
 - **End Date Management**: Set or remove end date
 - **Permissions**: Template creator, group admin, friendship participant, or platform admin
 - **Responsive Dialog**: Bottom sheet on mobile, dialog on desktop
-- **Future-only**: Past instances unchanged; next cycles use updated template + recalculated splits
+- **Future-only by default**: Past generated instances and prepaid history stay unchanged; next cycles use the updated template + recalculated splits
 
 **Implementation**: `EditRecurringDialog` + `update_recurring_expense` RPC
 **Location**: `/src/modules/expenses/components/edit-recurring-dialog.tsx`

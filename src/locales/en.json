@@ -588,7 +588,7 @@
     "editDialog": {
       "title": "Edit Recurring Expense",
       "description": "Update the amount, description, or schedule. Future cycles use the new values; past expenses stay unchanged.",
-      "futureOnlyNote": "Changing the amount updates member shares for the next occurrences only.",
+      "futureOnlyNote": "Changing the amount updates the template and member shares for upcoming cycles only. Past months stay as they were.",
       "success": "Recurring expense updated successfully",
       "error": "Failed to update recurring expense",
       "descriptionRequired": "Description is required",
