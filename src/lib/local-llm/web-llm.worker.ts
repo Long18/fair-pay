@@ -1,9 +1,20 @@
-import { CreateMLCEngine, deleteModelAllInfoInCache, type InitProgressReport, type MLCEngine } from "@mlc-ai/web-llm";
+import {
+  CreateMLCEngine,
+  deleteModelAllInfoInCache,
+  hasModelInCache,
+  type InitProgressReport,
+  type MLCEngine,
+} from "@mlc-ai/web-llm";
 import type {
   LocalLlmChatRequest,
   LocalLlmWorkerRequest,
   LocalLlmWorkerResponse,
 } from "./types";
+import {
+  resolveWebLlmAppConfig,
+  WEBLLM_APP_CONFIG,
+  WEBLLM_LEGACY_APP_CONFIG,
+} from "./webllm-app-config";
 
 let engine: MLCEngine | null = null;
 let loadedModel: string | null = null;
@@ -38,7 +49,13 @@ self.addEventListener("message", async (event: MessageEvent<LocalLlmWorkerReques
         return;
       }
 
+      const appConfig = await resolveWebLlmAppConfig(request.model, hasModelInCache);
+      const fromCache =
+        (await hasModelInCache(request.model, WEBLLM_APP_CONFIG)) ||
+        (await hasModelInCache(request.model, WEBLLM_LEGACY_APP_CONFIG));
+
       engine = await CreateMLCEngine(request.model, {
+        appConfig,
         initProgressCallback: (progress: InitProgressReport) => {
           post({
             id: request.id,
@@ -46,6 +63,7 @@ self.addEventListener("message", async (event: MessageEvent<LocalLlmWorkerReques
             model: request.model,
             progress: progress.progress ?? 0,
             message: progress.text ?? "Loading local model...",
+            fromCache,
           });
         },
       });
@@ -60,7 +78,9 @@ self.addEventListener("message", async (event: MessageEvent<LocalLlmWorkerReques
         loadedModel = null;
       }
 
-      await deleteModelAllInfoInCache(request.model);
+      // Clear both backends so picker / disk usage stay accurate after migration.
+      await deleteModelAllInfoInCache(request.model, WEBLLM_APP_CONFIG);
+      await deleteModelAllInfoInCache(request.model, WEBLLM_LEGACY_APP_CONFIG);
       post({ id: request.id, type: "cache-deleted", model: request.model });
       return;
     }

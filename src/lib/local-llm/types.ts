@@ -16,7 +16,8 @@ import type { ConversationMessage } from "@/modules/ai-chat/orchestrator";
  *  - `recommended`   – marks the curated "starter" model for its family
  */
 
-export const DEFAULT_WEB_LLM_MODEL = "Hermes-3-Llama-3.2-3B-q4f16_1-MLC";
+/** Fast starter (~0.9 GB VRAM). Existing users who already picked Hermes keep it via localStorage. */
+export const DEFAULT_WEB_LLM_MODEL = "Llama-3.2-1B-Instruct-q4f16_1-MLC";
 export const WEB_LLM_COMPAT_MODEL = "TinyLlama-1.1B-Chat-v1.0-q4f16_1-MLC-1k";
 export const WEB_LLM_MODEL_STORAGE_KEY = "fairpay:local-llm:model";
 
@@ -64,7 +65,8 @@ export const WEB_LLM_MODEL_LIST: readonly WebLlmModelEntry[] = [
     lowResource: true,
     contextLength: 4096,
     quantization: "q4f16_1",
-    description: "Tiny Llama for snappy replies on most laptops.",
+    description: "Fast starter — smaller download, good for most FairPay reads.",
+    recommended: true,
   },
   {
     id: "Llama-3.2-1B-Instruct-q4f32_1-MLC",
@@ -85,7 +87,6 @@ export const WEB_LLM_MODEL_LIST: readonly WebLlmModelEntry[] = [
     contextLength: 4096,
     quantization: "q4f16_1",
     description: "Balanced 3B Llama with solid reasoning on modern WebGPU.",
-    recommended: true,
   },
   {
     id: "Llama-3.2-3B-Instruct-q4f32_1-MLC",
@@ -197,7 +198,7 @@ export const WEB_LLM_MODEL_LIST: readonly WebLlmModelEntry[] = [
     lowResource: true,
     contextLength: 4096,
     quantization: "q4f16_1",
-    description: "Hermes finetune on Llama 3.2 3B – great balance.",
+    description: "Best quality for FairPay tools — larger ~1.7 GB download.",
     recommended: true,
   },
   {
@@ -679,7 +680,14 @@ export const WEB_LLM_MODEL_OPTIONS: readonly WebLlmModelOption[] = WEB_LLM_MODEL
 export type LocalLlmStatus =
   | { state: "unsupported"; reason: string }
   | { state: "idle"; model: string }
-  | { state: "loading"; model: string; progress: number; message: string }
+  | {
+      state: "loading";
+      model: string;
+      progress: number;
+      message: string;
+      /** True when weights are already on-device (GPU reload, not a network download). */
+      fromCache?: boolean;
+    }
   | { state: "ready"; model: string }
   | { state: "error"; model: string; message: string };
 
@@ -696,7 +704,14 @@ export type LocalLlmWorkerRequest =
   | { id: number; type: "delete-model-cache"; model: string };
 
 export type LocalLlmWorkerResponse =
-  | { id?: number; type: "loading"; model: string; progress: number; message: string }
+  | {
+      id?: number;
+      type: "loading";
+      model: string;
+      progress: number;
+      message: string;
+      fromCache?: boolean;
+    }
   | { id?: number; type: "ready"; model: string }
   | { id: number; type: "chunk"; delta: string }
   | { id: number; type: "response"; content: string }

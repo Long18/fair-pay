@@ -23,10 +23,13 @@ interface LoadingStatusBubbleProps {
 /** Map LocalLlmStatus to a human-readable label for the current stage. */
 function statusLabel(status: LocalLlmStatus): string {
   switch (status.state) {
-    case "loading":
-      return status.progress < 0.5
-        ? `Đang tải... ${Math.round(status.progress * 100)}%`
-        : `Đang load... ${Math.round(status.progress * 100)}%`;
+    case "loading": {
+      const pct = Math.round(status.progress * 100);
+      if (status.fromCache) {
+        return `Đang nạp từ thiết bị... ${pct}%`;
+      }
+      return `Đang tải mô hình... ${pct}%`;
+    }
     case "error":
       return "Lỗi khi tải mô hình";
     default:

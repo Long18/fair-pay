@@ -13,6 +13,7 @@ import {
   type LocalLlmWorkerResponse,
   type WebLlmModelId,
 } from "./types";
+import { WEBLLM_APP_CONFIG, WEBLLM_LEGACY_APP_CONFIG } from "./webllm-app-config";
 
 type PendingRequest = {
   resolve: (value: unknown) => void;
@@ -93,6 +94,7 @@ function ensureWorker(): Worker {
         model: message.model,
         progress: message.progress,
         message: message.message,
+        fromCache: message.fromCache,
       });
       return;
     }
@@ -219,17 +221,26 @@ export async function loadModel(model = getSelectedModel()): Promise<LocalLlmSta
 
   if (isWebLlmModelId(model)) writeStoredModel(model);
 
-  setStatus({ state: "loading", model, progress: 0, message: "Starting local model..." });
+  const fromCache = await checkModelCached(model);
+  setStatus({
+    state: "loading",
+    model,
+    progress: 0,
+    message: fromCache ? "Loading model from device..." : "Downloading local model...",
+    fromCache,
+  });
   try {
     return await postRequest<LocalLlmStatus>({ type: "load", model });
   } catch (error) {
     if (model !== WEB_LLM_COMPAT_MODEL && isStorageBufferLimitError(error)) {
       writeStoredModel(WEB_LLM_COMPAT_MODEL);
+      const compatCached = await checkModelCached(WEB_LLM_COMPAT_MODEL);
       setStatus({
         state: "loading",
         model: WEB_LLM_COMPAT_MODEL,
         progress: 0,
         message: "Device WebGPU limits are low. Loading a smaller local model...",
+        fromCache: compatCached,
       });
       try {
         return await postRequest<LocalLlmStatus>({ type: "load", model: WEB_LLM_COMPAT_MODEL });
@@ -264,11 +275,13 @@ export async function deleteSelectedModelCache(model = getSelectedModel()): Prom
 
 /**
  * Check whether a specific model's weights are already cached in the browser.
+ * Checks IndexedDB (preferred) and legacy Cache API.
  * Returns false on any error (e.g. cache API unavailable in insecure context).
  */
 export async function checkModelCached(model: string): Promise<boolean> {
   try {
-    return await hasModelInCache(model);
+    if (await hasModelInCache(model, WEBLLM_APP_CONFIG)) return true;
+    return await hasModelInCache(model, WEBLLM_LEGACY_APP_CONFIG);
   } catch {
     return false;
   }
@@ -280,7 +293,7 @@ export async function checkModelCached(model: string): Promise<boolean> {
  */
 export async function checkAllModelsCached(): Promise<Set<string>> {
   const results = await Promise.allSettled(
-    WEB_LLM_MODEL_LIST.map(async (m) => ({ id: m.id, cached: await hasModelInCache(m.id) })),
+    WEB_LLM_MODEL_LIST.map(async (m) => ({ id: m.id, cached: await checkModelCached(m.id) })),
   );
   const cached = new Set<string>();
   for (const r of results) {

@@ -21,6 +21,7 @@ import {
   buildSystemPrompt,
   FairPayChatOrchestrator,
   McpClient,
+  resolveSystemPromptTier,
   type ConversationMessage,
   type LegacyToolExecutor,
 } from "../orchestrator";
@@ -30,7 +31,6 @@ import {
   clearStore,
   deriveTitle,
   loadStore,
-  makeConversation,
   makeConversationId,
   removeConversation,
   saveStore,
@@ -81,6 +81,7 @@ export function useAiChat(): UseAiChatReturn {
   const { data: identity } = useGetIdentity<Profile>();
   const { i18n } = useTranslation();
   const language = i18n.resolvedLanguage || i18n.language;
+  const [selectedModel, setSelectedModel] = useState<WebLlmModelId>(() => getSelectedModel());
 
   const systemPrompt = useMemo(
     () =>
@@ -88,8 +89,9 @@ export function useAiChat(): UseAiChatReturn {
         userName: identity?.full_name,
         userEmail: identity?.email,
         language,
+        tier: resolveSystemPromptTier(selectedModel),
       }),
-    [identity?.full_name, identity?.email, language],
+    [identity?.full_name, identity?.email, language, selectedModel],
   );
 
   // ── Store bootstrap ───────────────────────────────────────────────────────
@@ -120,7 +122,6 @@ export function useAiChat(): UseAiChatReturn {
     state: "idle",
     model: getSelectedModel(),
   }));
-  const [selectedModel, setSelectedModel] = useState<WebLlmModelId>(() => getSelectedModel());
 
   const historyRef = useRef<ConversationMessage[]>(
     activeConversation?.history ?? [{ role: "system", content: systemPrompt }],
@@ -152,7 +153,6 @@ export function useAiChat(): UseAiChatReturn {
     void checkModelCached(s.model).then((cached) => {
       if (cached) void loadModel(s.model);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Persist store whenever messages or store changes ───────────────────────

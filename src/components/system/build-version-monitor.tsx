@@ -31,15 +31,22 @@ async function unregisterAllServiceWorkers() {
   }));
 }
 
-async function clearAllCaches() {
+async function clearAppCachesPreservingWebLlm() {
   if (!("caches" in window)) {
     return;
   }
 
   const cacheKeys = await window.caches.keys();
-  await Promise.all(cacheKeys.map(async (cacheKey) => {
-    await window.caches.delete(cacheKey);
-  }));
+  await Promise.all(
+    cacheKeys.map(async (cacheKey) => {
+      // WebLLM stores model weights under `webllm/*` Cache API scopes.
+      // Never wipe those on app update — users would re-download ~1-2 GB.
+      if (cacheKey.startsWith("webllm/")) {
+        return;
+      }
+      await window.caches.delete(cacheKey);
+    }),
+  );
 }
 
 function forceReloadToLatestBuild() {
@@ -56,7 +63,7 @@ export async function refreshToLatestBuild() {
   }
 
   try {
-    await clearAllCaches();
+    await clearAppCachesPreservingWebLlm();
   } catch {
     // Continue even if cache cleanup fails.
   }
@@ -71,7 +78,7 @@ function BuildVersionMonitorInner() {
   // Register SW with autoUpdate — it auto-activates, no user prompt needed for SW itself.
   useRegisterSW({
     immediate: true,
-    onRegisteredSW(_swUrl: string, _registration: ServiceWorkerRegistration | undefined) {
+    onRegisteredSW() {
       // SW registered successfully.
     },
     onRegisterError(error: unknown) {

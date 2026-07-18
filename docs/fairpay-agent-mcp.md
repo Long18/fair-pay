@@ -42,6 +42,10 @@ settlement, raw SQL, or table access. `fairpay_preview_expense` only creates an 
 preview. A user must open FairPay and confirm the server-rendered preview before the REST
 API can commit it.
 
+In-app chat (WebLLM) also uses legacy read tools (`get_debt_summary`, `get_debt_details`,
+`get_group_details`, `get_expenses`) via the `ai-chat` Edge Function. Settle and personal
+expense creation are guided via UI deep-links only — never agent-executed.
+
 The in-app client also hard-blocks forbidden names in `FORBIDDEN_MCP_TOOLS`
 (`src/modules/ai-chat/orchestrator/mcp-client.ts`).
 

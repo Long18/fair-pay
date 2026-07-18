@@ -19,7 +19,6 @@ import {
   RefreshCwIcon,
   StarIcon,
   Trash2Icon,
-  XIcon,
 } from "@/components/ui/icons";
 import {
   checkAllModelsCached,
@@ -35,6 +34,8 @@ import {
 } from "@/lib/local-llm/types";
 import { FAMILY_ICONS } from "@/assets/webllm-icons";
 import { cn } from "@/lib/utils";
+
+type FamilyFilter = WebLlmModelFamily | "All" | "Lightweight";
 
 interface ModelSelectDialogProps {
   open: boolean;
@@ -89,7 +90,7 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
   const { t } = useTranslation();
 
   const [search, setSearch] = useState("");
-  const [activeFamily, setActiveFamily] = useState<WebLlmModelFamily | "All">("All");
+  const [activeFamily, setActiveFamily] = useState<FamilyFilter>("Lightweight");
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [cachedModels, setCachedModels] = useState<Set<string>>(new Set());
   const [checkingCache, setCheckingCache] = useState(false);
@@ -110,10 +111,10 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
     const targetId = loadedModelId ?? selectedModel;
     const targetEntry = WEB_LLM_MODEL_LIST.find((m) => m.id === targetId);
     if (targetEntry) {
-      setActiveFamily(targetEntry.family);
+      setActiveFamily(targetEntry.lowResource ? "Lightweight" : targetEntry.family);
       setExpandedKey(baseModelKey(targetEntry));
     } else {
-      setActiveFamily("All");
+      setActiveFamily("Lightweight");
       setExpandedKey(null);
     }
 
@@ -143,12 +144,23 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
     [loadedModelId],
   );
 
-  // Filter by search + active family pill
+  // Filter by search + active family / Lightweight pill
   const filteredModels = useMemo(() => {
     const query = search.toLowerCase().trim();
     return WEB_LLM_MODEL_LIST.filter((m) => {
-      if (activeFamily !== "All" && m.family !== activeFamily) return false;
-      if (query && !m.label.toLowerCase().includes(query) && !m.id.toLowerCase().includes(query) && !m.family.toLowerCase().includes(query)) return false;
+      if (activeFamily === "Lightweight") {
+        if (!m.lowResource) return false;
+      } else if (activeFamily !== "All" && m.family !== activeFamily) {
+        return false;
+      }
+      if (
+        query &&
+        !m.label.toLowerCase().includes(query) &&
+        !m.id.toLowerCase().includes(query) &&
+        !m.family.toLowerCase().includes(query)
+      ) {
+        return false;
+      }
       return true;
     });
   }, [search, activeFamily]);
@@ -182,13 +194,6 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
   const toggleExpand = useCallback((key: string) => {
     setExpandedKey((prev) => (prev === key ? null : key));
   }, []);
-
-  // Determine CTA label
-  const ctaLabel = useMemo(() => {
-    if (loadedModelId && localLlmStatus.state === "ready")
-      return t("aiChat.modelPicker.alreadyLoaded");
-    return t("common.cancel");
-  }, [loadedModelId, localLlmStatus.state, t]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -242,6 +247,18 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
           <div className="flex flex-wrap gap-1.5">
             <button
               type="button"
+              onClick={() => setActiveFamily("Lightweight")}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                activeFamily === "Lightweight"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+              )}
+            >
+              {t("aiChat.modelPicker.lightweight")}
+            </button>
+            <button
+              type="button"
               onClick={() => setActiveFamily("All")}
               className={cn(
                 "inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
@@ -250,7 +267,7 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
                   : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground",
               )}
             >
-              All
+              {t("aiChat.modelPicker.allModels")}
             </button>
             {WEB_LLM_FAMILY_ORDER.map((family) => (
               <button
@@ -370,6 +387,11 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
                               <MonitorIcon size={10} />
                               {formatVram(variant.vramMB)}
                             </span>
+                            {variant.lowResource && (
+                              <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                                {t("aiChat.modelPicker.lowVram")}
+                              </span>
+                            )}
                             <span className="inline-flex items-center gap-1 text-muted-foreground">
                               <LayersIcon size={10} />
                               {ctxK}k ctx
@@ -383,9 +405,15 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
                             ) : isCached ? (
                               <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
                                 <DownloadIcon size={10} />
-                                Downloaded
+                                {t("aiChat.modelPicker.onDevice")}
                               </span>
-                            ) : null}
+                            ) : (
+                              <span className="text-muted-foreground">
+                                {t("aiChat.modelPicker.approxVram", {
+                                  size: formatVram(variant.vramMB),
+                                })}
+                              </span>
+                            )}
 
                             {/* Action buttons */}
                             {isLoaded ? (

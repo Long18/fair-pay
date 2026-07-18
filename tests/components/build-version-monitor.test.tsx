@@ -141,7 +141,12 @@ describe("BuildVersionMonitor", () => {
       { unregister: unregisterMock },
     ]);
     const deleteCacheMock = vi.fn().mockResolvedValue(true);
-    const cacheKeysMock = vi.fn().mockResolvedValue(["cache-v1"]);
+    const cacheKeysMock = vi.fn().mockResolvedValue([
+      "cache-v1",
+      "webllm/model",
+      "webllm/wasm",
+      "workbox-precache-v2-https://example.com/",
+    ]);
 
     vi.stubGlobal("navigator", {
       serviceWorker: { getRegistrations: getRegistrationsMock },
@@ -161,6 +166,9 @@ describe("BuildVersionMonitor", () => {
 
     expect(unregisterMock).toHaveBeenCalledTimes(1);
     expect(deleteCacheMock).toHaveBeenCalledWith("cache-v1");
+    expect(deleteCacheMock).toHaveBeenCalledWith("workbox-precache-v2-https://example.com/");
+    expect(deleteCacheMock).not.toHaveBeenCalledWith("webllm/model");
+    expect(deleteCacheMock).not.toHaveBeenCalledWith("webllm/wasm");
     expect(replaceMock).toHaveBeenCalledTimes(1);
   });
 
