@@ -9,6 +9,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+# Local pnpm content-addressable store (created if store-dir is project-local)
+.pnpm-store/
 dist
 dist-ssr
 \*.local
