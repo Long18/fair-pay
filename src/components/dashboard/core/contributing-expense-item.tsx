@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useGo } from "@refinedev/core";
 import { CategoryIcon } from "@/modules/expenses/components/category-icon";
 import { useHaptics } from "@/hooks/use-haptics";
+import { onButtonKeyDown } from "@/lib/a11y-keyboard";
 
 interface ContributingExpenseItemProps {
   id: string;
@@ -47,7 +48,10 @@ export function ContributingExpenseItem({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={() => { tap(); go({ to: `/expenses/show/${id}` }); }}
+      onKeyDown={onButtonKeyDown(() => { tap(); go({ to: `/expenses/show/${id}` }); })}
       className={cn(
         "flex items-center gap-3 py-2.5 px-3 rounded-md transition-colors cursor-pointer",
         "hover:bg-muted/50 active:bg-muted/80",

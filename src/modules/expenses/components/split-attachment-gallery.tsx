@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ImageZoomViewer } from "@/components/ui/image-zoom-viewer";
 import { EyeIcon, DownloadIcon, FileIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
+import { onButtonKeyDown } from "@/lib/a11y-keyboard";
 
 interface SplitAttachmentGalleryProps {
   attachments: Attachment[];
@@ -64,11 +65,14 @@ export const SplitAttachmentGallery = ({
             <div
               key={attachment.id}
               className="relative flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden border-2 border-border hover:border-primary transition-all group cursor-pointer"
-              onClick={() => {
-                if (isImage(attachment.mime_type)) {
-                  handleView(attachment);
-                }
-              }}
+              {...(isImage(attachment.mime_type)
+                ? {
+                    role: "button" as const,
+                    tabIndex: 0,
+                    onClick: () => handleView(attachment),
+                    onKeyDown: onButtonKeyDown(() => handleView(attachment)),
+                  }
+                : {})}
             >
               {isImage(attachment.mime_type) ? (
                 <img

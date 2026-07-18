@@ -276,10 +276,11 @@ export function DataTableFilterCombobox<TData>({
           : value && typeof value === "string"
           ? [value]
           : [];
+        const currentValueSet = new Set(currentValues);
 
         const handleSelect = (optionValue: string) => {
           if (multiple) {
-            const newValues = currentValues.includes(optionValue)
+            const newValues = currentValueSet.has(optionValue)
               ? currentValues.filter((v) => v !== optionValue)
               : [...currentValues, optionValue];
             onChange(newValues);
@@ -357,7 +358,9 @@ export function DataTableFilterCombobox<TData>({
                             <span className={cn("text-[10px]", "leading-4")}>
                               {label}
                             </span>
-                            <span
+                            <button
+                              type="button"
+                              aria-label={`Remove ${label}`}
                               className={cn(
                                 "inline-flex",
                                 "items-center",
@@ -378,7 +381,7 @@ export function DataTableFilterCombobox<TData>({
                               }}
                             >
                               <XIcon className={cn("!h-2", "!w-2")} />
-                            </span>
+                            </button>
                           </Badge>
                         ))}
                       {currentValues.length > 3 && (
@@ -440,7 +443,7 @@ export function DataTableFilterCombobox<TData>({
                             "ml-auto",
                             "h-4",
                             "w-4",
-                            currentValues.includes(option.value)
+                            currentValueSet.has(option.value)
                               ? "opacity-100"
                               : "opacity-0"
                           )}
@@ -684,7 +687,7 @@ export function DataTableFilterInput<TData>({
   renderInput,
 }: DataTableFilterInputProps<TData>) {
   const [filterValue, setFilterValue] = useState(
-    (columnFromProps.getFilterValue() as string | string[]) || ""
+    () => (columnFromProps.getFilterValue() as string | string[]) || ""
   );
 
   const [operator, setOperator] = useState<CrudOperators>(() => {
@@ -901,8 +904,9 @@ export function DataTableFilterOperatorSelect({
   const [open, setOpen] = useState(false);
 
   const operators = useMemo(() => {
+    const allowed = new Set<string>(operatorsFromProps ?? []);
     return Object.entries(CRUD_OPERATOR_LABELS).filter(([operator]) =>
-      operatorsFromProps?.includes(operator as CrudOperators)
+      allowed.has(operator)
     );
   }, [operatorsFromProps]);
 

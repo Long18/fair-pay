@@ -29,6 +29,7 @@ import { CheckIcon, CheckCircle2Icon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { PaymentStateBadge } from "@/components/ui/payment-state-badge";
 import { getOweStatusColors, getPaymentStateColors } from "@/lib/status-colors";
+import { onButtonKeyDown } from "@/lib/a11y-keyboard";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/locale-utils";
@@ -306,7 +307,10 @@ export function BalanceTable({ balances, pageSize = 10, disabled = false, showHi
                     disabled && "opacity-50 cursor-not-allowed",
                     fullySettled && `opacity-60 ${getPaymentStateColors('paid').bg}`
                   )}
+                  role="button"
+                  tabIndex={disabled ? -1 : 0}
                   onClick={() => { if (!disabled && balance.counterparty_id) { tap(); go({ to: `/profile/${balance.counterparty_id}` }); } }}
+                  onKeyDown={onButtonKeyDown(() => { if (!disabled && balance.counterparty_id) { tap(); go({ to: `/profile/${balance.counterparty_id}` }); } })}
                 >
                   <TableCell>
                     <div className="relative">

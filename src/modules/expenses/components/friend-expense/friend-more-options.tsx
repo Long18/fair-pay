@@ -255,9 +255,9 @@ export const FriendMoreOptions: React.FC<FriendMoreOptionsProps> = ({
 
         {/* Attachments */}
         <div className="rounded-xl border border-border/60 px-4 py-3 space-y-2">
-          <label className="text-sm font-medium">
+          <div className="text-sm font-medium">
             {t("expenses.attachments", { defaultValue: "Attachments" })}
-          </label>
+          </div>
           <AttachmentUpload
             attachments={attachments}
             onAttachmentsChange={onAttachmentsChange ?? (() => {})}

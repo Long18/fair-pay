@@ -91,6 +91,7 @@ import { useAdminTranslation } from "../i18n";
 import { formatDate } from "@/lib/locale-utils";
 import type { AuditLogEntry, AuditLogsResponse, AuditStats, AuditFilterOptions } from "../types";
 import { useHaptics } from "@/hooks/use-haptics";
+import { onButtonKeyDown } from "@/lib/a11y-keyboard";
 import { motion } from "framer-motion";
 import { useStaggerAnimation } from "@/hooks/ui/use-stagger-animation";
 import { AnimatedList } from "@/components/ui/animated-list";
@@ -863,7 +864,7 @@ export function AdminAuditLogs({ embedded = false }: { embedded?: boolean }) {
       {!statsLoading && stats && (stats.by_table.length > 0 || stats.by_actor.length > 0) && (
         <Collapsible>
           <CollapsibleTrigger asChild>
-            <button className="w-full flex items-center gap-3 cursor-pointer group text-left">
+            <button type="button" className="w-full flex items-center gap-3 cursor-pointer group text-left">
               <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground whitespace-nowrap">
                 Analytics
               </span>
@@ -1046,11 +1047,18 @@ export function AdminAuditLogs({ embedded = false }: { embedded?: boolean }) {
                         variants={rowVariants}
                         data-slot="table-row"
                         className="data-[state=selected]:bg-muted border-b transition-colors cursor-pointer hover:bg-accent/30 group"
+                        role="button"
+                        tabIndex={0}
                         onClick={() => {
                           tap();
                           setSelectedEntry(entry);
                           setDetailOpen(true);
                         }}
+                        onKeyDown={onButtonKeyDown(() => {
+                          tap();
+                          setSelectedEntry(entry);
+                          setDetailOpen(true);
+                        })}
                       >
                         <TableCell className="border-l-2 border-transparent group-hover:border-primary/40 transition-colors">
                           <div className="flex flex-col">

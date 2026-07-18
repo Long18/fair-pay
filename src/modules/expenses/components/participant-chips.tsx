@@ -277,10 +277,10 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
     <div className="space-y-3 overflow-x-hidden max-w-full">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium flex items-center gap-1.5">
+        <div className="text-sm font-medium flex items-center gap-1.5">
           <UsersIcon className="h-4 w-4 text-muted-foreground" />
           {t("expenses.participants")}
-        </label>
+        </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground tabular-nums">
             {selectedMemberCount}/{memberCount}
@@ -450,9 +450,9 @@ export const ParticipantChips: React.FC<ParticipantChipsProps> = ({
       {/* Pending email participants */}
       {pendingParticipants.length > 0 && (
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">
+          <div className="text-xs font-medium text-muted-foreground">
             {t("expenses.pendingInvites")}
-          </label>
+          </div>
           <div className="flex flex-wrap gap-1.5">
             {pendingParticipants.map((p) => {
               const pKey = getKey(p);

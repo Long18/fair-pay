@@ -9,6 +9,7 @@ import { ReceiptIcon, HandCoinsIcon, ActivityIcon } from "@/components/ui/icons"
 import { useHaptics } from "@/hooks/use-haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { onButtonKeyDown } from "@/lib/a11y-keyboard";
 import { SPRING_GENTLE, STAGGER_DELAY } from "@/lib/animation";
 interface ActivityFeedProps {
   items: ActivityItem[];
@@ -97,7 +98,10 @@ export const ActivityFeed = ({ items, isLoading }: ActivityFeedProps) => {
               animate={{ opacity: 1, x: 0 }}
               exit={reducedMotion ? undefined : { opacity: 0, x: -8 }}
               transition={reducedMotion ? undefined : { ...SPRING_GENTLE, delay: i * STAGGER_DELAY }}
+              role="button"
+              tabIndex={0}
               onClick={() => handleActivityClick(item)}
+              onKeyDown={onButtonKeyDown(() => handleActivityClick(item))}
               className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
             >
               <div className={`p-2 rounded-full ${

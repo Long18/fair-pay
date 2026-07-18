@@ -23,7 +23,8 @@ export function AdminFilterChips({ filters, onClearAll }: AdminFilterChipsProps)
       {filters.map((f) => (
         <Badge key={f.key} variant="secondary" className="gap-1 pr-1 font-normal">
           {f.label}
-          <button
+          <button type="button"
+            aria-label={tAdmin("common.removeFilter", { label: f.label, defaultValue: `Remove ${f.label}` })}
             onClick={f.onRemove}
             className="ml-0.5 rounded hover:bg-muted-foreground/20 p-0.5 transition-colors"
           >

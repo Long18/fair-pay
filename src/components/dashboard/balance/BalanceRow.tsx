@@ -1,6 +1,7 @@
 import { useHaptics } from "@/hooks/use-haptics";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { onButtonKeyDown } from "@/lib/a11y-keyboard";
 import { cn } from "@/lib/utils";
 import { MailIcon } from "@/components/ui/icons";
 import { UserDisplay } from "@/components/user-display";
@@ -56,7 +57,14 @@ export function BalanceRow({
   if (isPendingEmail || !counterpartyId) {
     return (
       <div
-        onClick={handleClick}
+        {...(handleClick
+          ? {
+              role: "button" as const,
+              tabIndex: 0,
+              onClick: handleClick,
+              onKeyDown: onButtonKeyDown(handleClick),
+            }
+          : {})}
         className={cn(
           "flex items-center justify-between p-4 rounded-lg border bg-card transition-colors",
           isPendingEmail && "border-amber-400/50 bg-amber-50/30 dark:bg-amber-950/20",
@@ -106,7 +114,14 @@ export function BalanceRow({
 
   return (
     <div
-      onClick={handleClick}
+      {...(handleClick
+        ? {
+            role: "button" as const,
+            tabIndex: 0,
+            onClick: handleClick,
+            onKeyDown: onButtonKeyDown(handleClick),
+          }
+        : {})}
       className={cn(
         "flex items-center p-4 rounded-lg border bg-card transition-colors",
         interactive && "cursor-pointer hover:bg-muted/50",

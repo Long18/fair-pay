@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useGo } from "@refinedev/core";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { onButtonKeyDown } from "@/lib/a11y-keyboard";
 import { formatDateShort } from "@/lib/locale-utils";
 import { getInitials } from "@/components/user-display";
 import { EnhancedActivityList } from "@/components/dashboard/activity/enhanced-activity-list";
@@ -293,10 +294,16 @@ export function ProfileOverview({
                       <tr
                         key={group.id}
                         className="border-b last:border-0 hover:bg-muted/40 cursor-pointer"
+                        role="button"
+                        tabIndex={0}
                         onClick={() => {
                           tap();
                           go({ to: `/groups/${group.id}` });
                         }}
+                        onKeyDown={onButtonKeyDown(() => {
+                          tap();
+                          go({ to: `/groups/${group.id}` });
+                        })}
                       >
                         <td className="py-3">
                           <div className="flex items-center gap-3">

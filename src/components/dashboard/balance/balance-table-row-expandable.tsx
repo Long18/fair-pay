@@ -14,6 +14,7 @@ import { useContributingExpenses } from "@/hooks/use-contributing-expenses";
 import { getOweStatusColors, getPaymentStateColors } from "@/lib/status-colors";
 import { formatCurrency } from "@/lib/locale-utils";
 import { format } from "date-fns";
+import { onButtonKeyDown } from "@/lib/a11y-keyboard";
 import { cn } from "@/lib/utils";
 import { BalanceRecentTransactionsPreview } from "./balance-recent-transactions-preview";
 
@@ -207,7 +208,10 @@ export function BalanceTableRowExpandableMobile({
     <div className="border rounded-md overflow-hidden bg-card transition-shadow hover:shadow-sm">
       {/* Main Card - Clickable to expand */}
       <div
+        role="button"
+        tabIndex={disabled ? -1 : 0}
         onClick={() => { if (!disabled) { tap(); onToggleExpand(); } }}
+        onKeyDown={onButtonKeyDown(() => { if (!disabled) { tap(); onToggleExpand(); } })}
         className={cn(
           "flex items-center justify-between p-3 cursor-pointer hover:bg-muted/30 transition-colors",
           disabled && "opacity-50 cursor-not-allowed"

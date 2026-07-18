@@ -51,7 +51,7 @@ export function QuickSettlementDialog({
   const [partialAmount, setPartialAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [paymentDate, setPaymentDate] = useState(
-    new Date().toISOString().split('T')[0]
+    () => new Date().toISOString().split('T')[0]
   );
   const [notes, setNotes] = useState('');
 
@@ -221,7 +221,7 @@ export function QuickSettlementDialog({
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...SPRING_GENTLE, delay: STAGGER_DELAY * 2 }}
         >
-          <label className="text-sm font-medium">Payment Method</label>
+          <label htmlFor="quick-settle-payment-method" className="text-sm font-medium">Payment Method</label>
           <Select
             value={paymentMethod}
             onValueChange={(v) => {
@@ -229,7 +229,7 @@ export function QuickSettlementDialog({
               setPaymentMethod(v as PaymentMethod);
             }}
           >
-            <SelectTrigger className="min-h-[44px]">
+            <SelectTrigger id="quick-settle-payment-method" className="min-h-[44px]">
               <SelectValue placeholder="Select payment method" />
             </SelectTrigger>
             <SelectContent>
@@ -249,8 +249,9 @@ export function QuickSettlementDialog({
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...SPRING_GENTLE, delay: STAGGER_DELAY * 3 }}
         >
-          <label className="text-sm font-medium">Payment Date</label>
+          <label htmlFor="quick-settle-payment-date" className="text-sm font-medium">Payment Date</label>
           <Input
+            id="quick-settle-payment-date"
             type="date"
             value={paymentDate}
             onChange={(e) => setPaymentDate(e.target.value)}
@@ -266,8 +267,9 @@ export function QuickSettlementDialog({
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...SPRING_GENTLE, delay: STAGGER_DELAY * 4 }}
         >
-          <label className="text-sm font-medium">Notes (optional)</label>
+          <label htmlFor="quick-settle-notes" className="text-sm font-medium">Notes (optional)</label>
           <Textarea
+            id="quick-settle-notes"
             placeholder="Add any notes about this payment..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}

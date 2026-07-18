@@ -60,7 +60,7 @@ function DebtItem({
   onLeave: () => void;
 }) {
   return (
-    <div
+    <li
       className={cn(
         "flex items-center gap-2 rounded-lg border p-3 transition-colors",
         isHighlighted
@@ -71,7 +71,6 @@ function DebtItem({
       onMouseLeave={onLeave}
       onFocus={onHover}
       onBlur={onLeave}
-      role="listitem"
       tabIndex={0}
     >
       <Avatar className="size-6">
@@ -98,7 +97,7 @@ function DebtItem({
       <span className="ml-auto shrink-0 text-sm font-semibold">
         {formatNumber(debt.amount)} {currency}
       </span>
-    </div>
+    </li>
   );
 }
 
@@ -141,7 +140,7 @@ export function ComparisonView({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2" role="list" aria-label={t("debts.originalDebts", "Original Debts")}>
+          <ul className="m-0 list-none space-y-2 p-0" aria-label={t("debts.originalDebts", "Original Debts")}>
             {originalDebts.map((debt, index) => (
               <DebtItem
                 key={`${debt.from_user_id}-${debt.to_user_id}`}
@@ -153,11 +152,11 @@ export function ComparisonView({
               />
             ))}
             {originalDebts.length === 0 && (
-              <p className="py-4 text-center text-sm text-muted-foreground">
+              <li className="list-none py-4 text-center text-sm text-muted-foreground">
                 {t("debts.noDebts", "No debts")}
-              </p>
+              </li>
             )}
-          </div>
+          </ul>
           <div className="mt-3 flex justify-between border-t pt-3 text-xs text-muted-foreground">
             <span>{t("debts.totalTransferred", "Total transferred")}</span>
             <span className="font-medium">
@@ -183,7 +182,7 @@ export function ComparisonView({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2" role="list" aria-label={t("debts.simplifiedDebts", "Simplified Debts")}>
+          <ul className="m-0 list-none space-y-2 p-0" aria-label={t("debts.simplifiedDebts", "Simplified Debts")}>
             {simplifiedDebts.map((debt, index) => (
               <DebtItem
                 key={`${debt.from_user_id}-${debt.to_user_id}`}
@@ -195,11 +194,11 @@ export function ComparisonView({
               />
             ))}
             {simplifiedDebts.length === 0 && (
-              <p className="py-4 text-center text-sm text-muted-foreground">
+              <li className="list-none py-4 text-center text-sm text-muted-foreground">
                 {t("debts.noDebts", "No debts")}
-              </p>
+              </li>
             )}
-          </div>
+          </ul>
           <div className="mt-3 flex justify-between border-t pt-3 text-xs text-muted-foreground">
             <span>{t("debts.totalTransferred", "Total transferred")}</span>
             <span className="font-medium">

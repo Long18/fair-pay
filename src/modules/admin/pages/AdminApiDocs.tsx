@@ -255,7 +255,7 @@ function EntryRow({
 }) {
   const { tap } = useHaptics();
   return (
-    <button
+    <button type="button"
       onClick={() => { tap(); onSelect(); }}
       style={{ contentVisibility: "auto", containIntrinsicSize: "120px" }}
       className={cn(
@@ -337,7 +337,7 @@ function CatalogPanel({ entries, filters, onFiltersChange, selectedId, onSelect,
             className="pl-8 h-8 text-sm"
           />
           {filters.search && (
-            <button
+            <button type="button"
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               onClick={() => { tap(); setFilter("search", ""); }}
               aria-label="Clear search"
@@ -413,7 +413,7 @@ function CatalogPanel({ entries, filters, onFiltersChange, selectedId, onSelect,
         <span className="text-[11px] text-muted-foreground">
           {entries.length} / {totalCount} endpoints
         </span>
-        <button
+        <button type="button"
           onClick={() => {
             tap();
             onFiltersChange({
@@ -896,14 +896,14 @@ function ExecutionTab({ entry }: { entry: ApiCatalogEntry }) {
   const { tap, warning } = useHaptics();
 
   // RPC args (JSON textarea)
-  const [rpcArgsText, setRpcArgsText] = useState(buildInitialRpcArgs(entry));
+  const [rpcArgsText, setRpcArgsText] = useState(() => buildInitialRpcArgs(entry));
   const [rpcArgsError, setRpcArgsError] = useState<string | null>(null);
   const [httpInputError, setHttpInputError] = useState<string | null>(null);
 
   // HTTP fields
   const [queryRows, setQueryRows] = useState<KVFieldRow[]>(() => buildInitialQueryRows(entry));
   const [headerRows, setHeaderRows] = useState<KVFieldRow[]>([]);
-  const [bodyText, setBodyText] = useState(buildInitialBody(entry));
+  const [bodyText, setBodyText] = useState(() => buildInitialBody(entry));
 
   // Reset when entry changes
   useEffect(() => {
@@ -1052,8 +1052,9 @@ function ExecutionTab({ entry }: { entry: ApiCatalogEntry }) {
       {/* Request editor */}
       {entry.kind === "rpc" ? (
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">RPC Arguments (JSON)</label>
+          <label htmlFor="admin-rpc-arguments" className="text-xs font-medium text-muted-foreground">RPC Arguments (JSON)</label>
           <textarea
+            id="admin-rpc-arguments"
             name="rpc-arguments"
             aria-label="RPC arguments JSON"
             value={rpcArgsText}
@@ -1094,8 +1095,9 @@ function ExecutionTab({ entry }: { entry: ApiCatalogEntry }) {
           />
           {entry.method !== "GET" && (
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Request Body (JSON)</label>
+              <label htmlFor="admin-request-body" className="text-xs font-medium text-muted-foreground">Request Body (JSON)</label>
               <textarea
+                id="admin-request-body"
                 name="request-body"
                 aria-label="Request body JSON"
                 value={bodyText}

@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { formatCurrency } from "@/lib/locale-utils";
+import { onButtonKeyDown } from "@/lib/a11y-keyboard";
 import { cn } from "@/lib/utils";
 import type { PaymentEvent, EnhancedActivityItem } from "@/types/activity";
 
@@ -401,10 +402,11 @@ const DefaultActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRowP
         ? `/payments/show/${activity.id}`
         : `/expenses/show/${activity.id}`;
 
-    const handleRowClick = (event: React.MouseEvent) => {
+    const handleRowClick = (event?: React.MouseEvent) => {
       if (
-        (event.target as HTMLElement).closest("[data-expand-control]") ||
-        (event.target as HTMLElement).closest("[data-action-menu]")
+        event &&
+        ((event.target as HTMLElement).closest("[data-expand-control]") ||
+          (event.target as HTMLElement).closest("[data-action-menu]"))
       ) {
         return;
       }
@@ -482,7 +484,10 @@ const DefaultActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRowP
     return (
       <div ref={ref} className={cn("space-y-0 card-hover-subtle", className)}>
         <div
+          role="button"
+          tabIndex={0}
           onClick={handleRowClick}
+          onKeyDown={onButtonKeyDown(handleRowClick)}
           className={cn(
             "group flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/50",
             isSettled && "border-status-success-border/50 bg-status-success-bg/20"
@@ -496,7 +501,7 @@ const DefaultActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRowP
             />
 
             {hasPaymentEvents && (
-              <button
+              <button type="button"
                 data-expand-control
                 onClick={handleExpandClick}
                 className={cn(

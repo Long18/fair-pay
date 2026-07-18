@@ -27,7 +27,7 @@ export const WeeklyEarningsChart = ({ data }: WeeklyEarningsChartProps) => {
         <CardTitle className="text-base font-semibold text-muted-foreground">
           Last 30 days
         </CardTitle>
-        <button className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-muted">
+        <button type="button" aria-label="View chart details" className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-muted">
           <svg
             width="20"
             height="20"

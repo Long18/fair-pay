@@ -126,19 +126,14 @@ export function CreateRecurringDialog({
                       {t('groups.title', 'Groups')}
                     </div>
                     {groups.map((group) => (
-                      <div
+                      <Label
                         key={group.id}
+                        htmlFor={`group-${group.id}`}
                         className="flex items-center space-x-2 rounded-lg border p-3 hover:bg-accent cursor-pointer"
-                        onClick={() => setSelectedContext(`group:${group.id}`)}
                       >
                         <RadioGroupItem value={`group:${group.id}`} id={`group-${group.id}`} />
-                        <Label
-                          htmlFor={`group-${group.id}`}
-                          className="flex-1 cursor-pointer"
-                        >
-                          {group.name}
-                        </Label>
-                      </div>
+                        <span className="flex-1">{group.name}</span>
+                      </Label>
                     ))}
                   </>
                 )}
@@ -160,19 +155,14 @@ export function CreateRecurringDialog({
                             'Friend';
 
                       return (
-                        <div
+                        <Label
                           key={friendship.id}
+                          htmlFor={`friend-${friendship.id}`}
                           className="flex items-center space-x-2 rounded-lg border p-3 hover:bg-accent cursor-pointer"
-                          onClick={() => setSelectedContext(`friend:${friendship.id}`)}
                         >
                           <RadioGroupItem value={`friend:${friendship.id}`} id={`friend-${friendship.id}`} />
-                          <Label
-                            htmlFor={`friend-${friendship.id}`}
-                            className="flex-1 cursor-pointer"
-                          >
-                            {friendName}
-                          </Label>
-                        </div>
+                          <span className="flex-1">{friendName}</span>
+                        </Label>
                       );
                     })}
                   </>

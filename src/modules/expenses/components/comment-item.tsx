@@ -106,8 +106,7 @@ export const CommentItem = memo(({
 
   const renderContent = (text: string) => {
     const mentionNames = comment.mentions
-      .map((m) => m.full_name)
-      .filter(Boolean)
+      .flatMap((m) => (m.full_name ? [m.full_name] : []))
       .sort((a, b) => b.length - a.length);
 
     const escapedNames = mentionNames.map((name) => escapeRegex(name));
@@ -173,6 +172,7 @@ export const CommentItem = memo(({
               <textarea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
+                aria-label={t("expenses.comments.editComment", { defaultValue: "Edit comment" })}
                 className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 rows={2}
                 onKeyDown={(e) => {
@@ -256,21 +256,20 @@ export const CommentItem = memo(({
           {!isReply && comment.replies && comment.replies.length > 0 && (
             <div className="mt-3 space-y-3">
               {comment.replies.map((reply) => (
-                <CommentItem
+                <CommentReplyItem
                   key={reply.id}
-                  comment={reply}
+                  reply={reply}
                   currentUserId={currentUserId}
                   currentUser={currentUser}
                   participants={participants}
-                  reactions={getReactionsForComment?.(reply.id) || []}
                   reactionTypes={reactionTypes}
-                  onToggleReaction={(rtId) => onToggleReplyReaction?.(reply.id, rtId)}
-                  onCreateAndToggleReaction={(emojiMartId, nativeEmoji, label) => onCreateAndToggleReplyReaction?.(reply.id, emojiMartId, nativeEmoji, label)}
+                  getReactionsForComment={getReactionsForComment}
+                  onToggleReplyReaction={onToggleReplyReaction}
+                  onCreateAndToggleReplyReaction={onCreateAndToggleReplyReaction}
                   onReply={onReply}
                   onUpdate={onUpdate}
                   onDelete={onDelete}
                   isSubmitting={isSubmitting}
-                  isReply
                 />
               ))}
             </div>
@@ -282,3 +281,67 @@ export const CommentItem = memo(({
 });
 
 CommentItem.displayName = "CommentItem";
+
+const EMPTY_REACTIONS: ReactionSummary[] = [];
+
+const CommentReplyItem = memo(function CommentReplyItem({
+  reply,
+  currentUserId,
+  currentUser,
+  participants,
+  reactionTypes,
+  getReactionsForComment,
+  onToggleReplyReaction,
+  onCreateAndToggleReplyReaction,
+  onReply,
+  onUpdate,
+  onDelete,
+  isSubmitting,
+}: {
+  reply: ExpenseComment;
+  currentUserId: string | undefined;
+  currentUser: CommentUser | null;
+  participants: CommentUser[];
+  reactionTypes: ReactionType[];
+  getReactionsForComment?: (commentId: string) => ReactionSummary[];
+  onToggleReplyReaction?: (commentId: string, reactionTypeId: string) => void;
+  onCreateAndToggleReplyReaction?: (
+    commentId: string,
+    emojiMartId: string,
+    nativeEmoji: string,
+    label: string,
+  ) => void;
+  onReply: (content: string, mentionedUserIds: string[]) => Promise<unknown>;
+  onUpdate: (commentId: string, content: string) => Promise<void>;
+  onDelete: (commentId: string) => Promise<void>;
+  isSubmitting: boolean;
+}) {
+  const handleToggleReaction = useCallback(
+    (rtId: string) => onToggleReplyReaction?.(reply.id, rtId),
+    [reply.id, onToggleReplyReaction],
+  );
+  const handleCreateAndToggleReaction = useCallback(
+    (emojiMartId: string, nativeEmoji: string, label: string) =>
+      onCreateAndToggleReplyReaction?.(reply.id, emojiMartId, nativeEmoji, label),
+    [reply.id, onCreateAndToggleReplyReaction],
+  );
+  const reactions = getReactionsForComment?.(reply.id) ?? EMPTY_REACTIONS;
+
+  return (
+    <CommentItem
+      comment={reply}
+      currentUserId={currentUserId}
+      currentUser={currentUser}
+      participants={participants}
+      reactions={reactions}
+      reactionTypes={reactionTypes}
+      onToggleReaction={handleToggleReaction}
+      onCreateAndToggleReaction={handleCreateAndToggleReaction}
+      onReply={onReply}
+      onUpdate={onUpdate}
+      onDelete={onDelete}
+      isSubmitting={isSubmitting}
+      isReply
+    />
+  );
+});

@@ -83,16 +83,18 @@ export const MentionProfileCard = memo(({
     <HoverCard openDelay={200} closeDelay={100} onOpenChange={handleOpenChange}>
       <HoverCardTrigger asChild>
         {children ? (
-          <span
-            role="button"
-            tabIndex={0}
-            className={cn("focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:rounded-sm", className)}
+          <button
+            type="button"
+            className={cn(
+              "inline bg-transparent p-0 m-0 border-0 font-inherit text-inherit cursor-pointer",
+              "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:rounded-sm",
+              className
+            )}
             onClick={handleViewProfile}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleViewProfile(); } }}
             aria-label={t("expenses.comments.viewProfile", { name: displayText, defaultValue: `View ${displayText}'s profile` })}
           >
             {children}
-          </span>
+          </button>
         ) : (
           <button
             type="button"

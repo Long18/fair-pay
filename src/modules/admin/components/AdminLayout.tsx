@@ -154,7 +154,6 @@ function AdminNavBar({ isMobile }: { isMobile: boolean }) {
               "border-border/30",
             ]
       )}
-      role="navigation"
       aria-label={tAdmin("nav.ariaLabel")}
     >
       {/* Left: Mobile menu + Logo */}
@@ -348,7 +347,7 @@ function MobileAdminMenu() {
           </SheetTitle>
         </SheetHeader>
 
-        <nav className="flex flex-col p-4 gap-1" role="navigation">
+        <nav className="flex flex-col p-4 gap-1">
           {visibleItems.map((item) => {
             const active = isActive(item.path, pathname);
             const Icon = item.icon;

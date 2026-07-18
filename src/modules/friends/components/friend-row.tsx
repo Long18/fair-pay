@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { UserDisplay } from "@/components/user-display";
 import { cn } from "@/lib/utils";
+import { onButtonKeyDown } from "@/lib/a11y-keyboard";
 import { MoreVerticalIcon, Trash2Icon } from "@/components/ui/icons";
 import { motion } from "framer-motion";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -65,7 +66,10 @@ export const FriendRow = ({
       {/* Primary click target - navigates to friend detail */}
       <div
         className="flex-1 min-w-0 cursor-pointer"
+        role="button"
+        tabIndex={0}
         onClick={() => { tap(); onNavigate(); }}
+        onKeyDown={onButtonKeyDown(() => { tap(); onNavigate(); })}
       >
         <UserDisplay
           user={{

@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useContributingExpenses } from "@/hooks/use-contributing-expenses";
+import { onButtonKeyDown } from "@/lib/a11y-keyboard";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/locale-utils";
@@ -245,10 +246,16 @@ function SettledRowExpandable({
           "cursor-pointer hover:bg-muted/40",
           index % 2 === 0 && "bg-muted/10"
         )}
+        role="button"
+        tabIndex={0}
         onClick={() => {
           tap();
           onToggleExpand();
         }}
+        onKeyDown={onButtonKeyDown(() => {
+          tap();
+          onToggleExpand();
+        })}
       >
         <TableCell className="py-4">
           <div className="flex min-w-0 items-center gap-3">
@@ -387,10 +394,16 @@ function SettledCardExpandable({
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
       <div
+        role="button"
+        tabIndex={0}
         onClick={() => {
           tap();
           onToggleExpand();
         }}
+        onKeyDown={onButtonKeyDown(() => {
+          tap();
+          onToggleExpand();
+        })}
         className="cursor-pointer px-4 py-4 transition-colors hover:bg-muted/20"
       >
         <div className="flex items-start justify-between gap-3">

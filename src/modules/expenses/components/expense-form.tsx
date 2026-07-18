@@ -91,6 +91,8 @@ interface ExpenseFormProps {
   onAttachmentsChange?: (attachments: AttachmentFile[]) => void;
 }
 
+const EMPTY_ATTACHMENTS: AttachmentFile[] = [];
+
 export const ExpenseForm = ({
   groupId,
   members,
@@ -99,7 +101,7 @@ export const ExpenseForm = ({
   defaultValues,
   isLoading,
   isEdit = false,
-  attachments = [],
+  attachments = EMPTY_ATTACHMENTS,
   onAttachmentsChange,
 }: ExpenseFormProps) => {
   const { t } = useTranslation();
@@ -688,7 +690,7 @@ export const ExpenseForm = ({
             <Card className="border border-border/50">
               <CardContent className="pt-6">
                 <div className="space-y-3">
-                  <label className="text-sm font-medium">Attachments</label>
+                  <div className="text-sm font-medium">Attachments</div>
                   <AttachmentUpload
                     attachments={attachments}
                     onAttachmentsChange={onAttachmentsChange || (() => {})}

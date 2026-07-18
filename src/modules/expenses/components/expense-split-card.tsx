@@ -10,6 +10,7 @@ import { formatNumber } from "@/lib/locale-utils";
 import { getPaymentStateColors } from "@/lib/status-colors";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { onButtonKeyDown } from "@/lib/a11y-keyboard";
 import { motion, AnimatePresence } from "framer-motion";
 import { useHaptics } from "@/hooks/use-haptics";
 import type { ExpenseSplit } from "@/modules/expenses/types";
@@ -113,6 +114,8 @@ export const ExpenseSplitCard = ({
           "p-4 cursor-pointer",
           "md:cursor-default" // Disable expand on desktop
         )}
+        role="button"
+        tabIndex={0}
         onClick={() => {
           // Only allow expand on mobile
           if (window.innerWidth < 768) {
@@ -120,6 +123,12 @@ export const ExpenseSplitCard = ({
             setIsExpanded(!isExpanded);
           }
         }}
+        onKeyDown={onButtonKeyDown(() => {
+          if (window.innerWidth < 768) {
+            tap();
+            setIsExpanded(!isExpanded);
+          }
+        })}
       >
         <div className="flex items-center justify-between gap-3">
           {/* User Info */}

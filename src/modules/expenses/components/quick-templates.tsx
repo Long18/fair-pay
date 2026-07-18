@@ -85,7 +85,7 @@ export const QuickTemplates: React.FC<QuickTemplatesProps> = ({
 
   return (
     <div className={cn("space-y-2 overflow-x-hidden max-w-full", className)}>
-      <label className="text-sm font-medium text-muted-foreground">{t("expenses.quickTemplates")}</label>
+      <div className="text-sm font-medium text-muted-foreground">{t("expenses.quickTemplates")}</div>
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin -mx-1 px-1">
         {templateConfigs.map((template) => {
           const description = t(template.descriptionKey);

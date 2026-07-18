@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import { vi, enUS } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 import { useReducedMotion } from "@/hooks/ui/use-reduced-motion";
+import { onButtonKeyDown } from "@/lib/a11y-keyboard";
 import { SPRING_DEFAULT, STAGGER_DELAY, ENTRANCE_Y } from "@/lib/animation";
 
 const currencyFormatterCache = new Map<string, Intl.NumberFormat>();
@@ -122,7 +123,10 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
                           transition={{ ...SPRING_DEFAULT, delay: index * STAGGER_DELAY }}
                           whileHover={reducedMotion ? undefined : { scale: 1.01 }}
                           className="p-3 rounded-lg border border-destructive/20 bg-destructive/5 cursor-pointer hover:bg-destructive/10 transition-colors"
+                          role="button"
+                          tabIndex={0}
                           onClick={handleNotificationClick}
+                          onKeyDown={onButtonKeyDown(handleNotificationClick)}
                         >
                           <div className="flex items-start gap-3">
                             <div className="p-2 rounded-lg bg-destructive/10">
@@ -172,7 +176,10 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
                           transition={{ ...SPRING_DEFAULT, delay: index * STAGGER_DELAY }}
                           whileHover={reducedMotion ? undefined : { scale: 1.01 }}
                           className="p-3 rounded-lg border hover:bg-accent cursor-pointer transition-colors"
+                          role="button"
+                          tabIndex={0}
                           onClick={handleNotificationClick}
+                          onKeyDown={onButtonKeyDown(handleNotificationClick)}
                         >
                           <div className="flex items-start gap-3">
                             <div className="p-2 rounded-lg bg-primary/10">

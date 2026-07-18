@@ -164,8 +164,9 @@ export function ApiSecretsManager() {
           {!createdSecret ? (
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium">Label (optional)</label>
+                <label htmlFor="api-secret-label" className="text-sm font-medium">Label (optional)</label>
                 <Input
+                  id="api-secret-label"
                   placeholder="e.g., Mobile App, Dashboard, Slack Bot"
                   value={newSecretLabel}
                   onChange={(e) => setNewSecretLabel(e.target.value)}
@@ -198,9 +199,10 @@ export function ApiSecretsManager() {
               </div>
 
               <div>
-                <label className="text-sm font-medium block mb-2">Secret Token</label>
+                <label htmlFor="api-secret-token" className="text-sm font-medium block mb-2">Secret Token</label>
                 <div className="flex gap-2">
                   <Input
+                    id="api-secret-token"
                     type={showSecretValue['token'] ? 'text' : 'password'}
                     value={createdSecret.secret_token}
                     readOnly
