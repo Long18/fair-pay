@@ -96,7 +96,7 @@ export const FloatingPill = React.forwardRef<HTMLButtonElement, FloatingPillProp
       "transition-all duration-200 ease-out",
       "hover:scale-105 active:scale-95",
       variant === "glass"
-        ? "hover:bg-background/85 hover:shadow-xl"
+        ? "hover:bg-card hover:shadow-xl hover:border-border"
         : variant === "primary"
         ? "hover:bg-primary hover:shadow-2xl"
         : "",

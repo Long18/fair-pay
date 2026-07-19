@@ -122,6 +122,8 @@ export function OnboardingChecklist() {
   return (
     <FloatingActionStack
       side="right"
+      // Sit above the dashboard Quick Actions FAB (same corner, stackIndex 0).
+      stackIndex={1}
       isOpen={open}
       onClose={() => setOpen(false)}
       showBackdrop={false}

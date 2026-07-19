@@ -26,6 +26,8 @@ export {
   SURFACE_GLASS_PRIMARY,
   FLOATING_SPRING,
   PILL_STAGGER_MS,
+  FAB_SLOT_HEIGHT_PX,
+  FAB_STACK_GAP_PX,
   getPillSizeClasses,
   getPillIconClasses,
   getBottomOffsetClasses,

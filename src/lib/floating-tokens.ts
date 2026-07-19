@@ -25,9 +25,12 @@ const PILL_SIZES = {
 
 export type PillSize = keyof typeof PILL_SIZES;
 
-/** Glassmorphism surface — semi-transparent + blur + subtle border. */
+/**
+ * Glassmorphism surface — opaque enough to read on light page backgrounds,
+ * with a clear border so FABs don’t disappear against white content.
+ */
 export const SURFACE_GLASS =
-  "bg-background/70 backdrop-blur-xl border border-border/40 shadow-lg";
+  "bg-card/95 backdrop-blur-xl border border-border/70 shadow-lg ring-1 ring-black/5 dark:ring-white/10";
 
 /** Glassmorphism surface — primary action variant with brand tint. */
 export const SURFACE_GLASS_PRIMARY =
@@ -63,9 +66,32 @@ export function getPillIconClasses(size: PillSize = "default"): string {
   }
 }
 
-/** Responsive bottom offset — mobile clears bottom-nav, desktop uses 1.5rem. */
-export function getBottomOffsetClasses(): string {
-  return "bottom-[calc(env(safe-area-inset-bottom)+5rem)] md:bottom-6";
+/**
+ * FloatingPill heights — keep in sync with `getPillSizeClasses`.
+ * Used to lift stacked FABs so they don't overlap on the same side.
+ */
+export const FAB_SLOT_HEIGHT_PX = {
+  sm: 40,
+  default: 48,
+  lg: 56,
+} as const;
+
+/** Vertical gap between stacked FABs on the same side (matches FloatingActionStack `gap-3`). */
+export const FAB_STACK_GAP_PX = 12;
+
+/**
+ * Responsive bottom offset — mobile clears bottom-nav, desktop uses 1.5rem.
+ *
+ * `stackIndex` lifts the stack above lower siblings on the same side
+ * (0 = bottom-most / primary FAB). Each step reserves an `lg` slot + gap
+ * so mixed-size FABs still clear each other.
+ */
+export function getBottomOffsetClasses(stackIndex = 0): string {
+  if (stackIndex <= 0) {
+    return "bottom-[calc(env(safe-area-inset-bottom)+5rem)] md:bottom-6";
+  }
+  const liftPx = stackIndex * (FAB_SLOT_HEIGHT_PX.lg + FAB_STACK_GAP_PX);
+  return `bottom-[calc(env(safe-area-inset-bottom)+5rem+${liftPx}px)] md:bottom-[calc(1.5rem+${liftPx}px)]`;
 }
 
 /** Responsive side offset. */

@@ -48,7 +48,7 @@ function FabIcon({ state }: { state: FabState }) {
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className="h-[6px] w-[6px] rounded-full bg-muted-foreground"
+          className="h-[6px] w-[6px] rounded-full bg-foreground/70"
           style={{ animation: `fabDotPulse 1.7s ease-in-out ${i * 0.25}s infinite` }}
         />
       ))}

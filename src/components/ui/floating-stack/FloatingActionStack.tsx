@@ -13,6 +13,11 @@ import {
 export interface FloatingActionStackProps {
   /** Side of the viewport. Default: "right". */
   side?: "right" | "left";
+  /**
+   * Vertical lane on the same side. `0` is the bottom-most primary FAB;
+   * higher values stack above it (avoids overlap with other FABs).
+   */
+  stackIndex?: number;
   /** The main trigger button (always visible). */
   trigger: React.ReactNode;
   /** Speed-dial content rendered above the trigger (e.g. <FloatingPillGroup>). */
@@ -46,6 +51,7 @@ export interface FloatingActionStackProps {
  */
 export function FloatingActionStack({
   side = "right",
+  stackIndex = 0,
   trigger,
   children,
   isOpen = false,
@@ -93,7 +99,7 @@ export function FloatingActionStack({
       <motion.div
         className={cn(
           "fixed",
-          getBottomOffsetClasses(),
+          getBottomOffsetClasses(stackIndex),
           getSideOffsetClasses(side),
           "flex flex-col-reverse gap-3",
           alignClasses,
