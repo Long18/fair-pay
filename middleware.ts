@@ -1,40 +1,9 @@
 import { next } from '@vercel/functions'
 
-const BOT_PATTERNS = [
-  'facebookexternalhit',
-  'Facebot',
-  'Twitterbot',
-  'LinkedInBot',
-  'WhatsApp',
-  'Slackbot',
-  'TelegramBot',
-  'Discordbot',
-  'Googlebot',
-  'bingbot',
-  'Applebot',
-  'iMessageLinkPreview',
-  'Viber',
-  'Zalo',
-  'Line',
-  'KakaoTalk',
-  'Skype',
-  'redditbot',
-  'Embedly',
-  'Quora Link Preview',
-  'Showyoubot',
-  'outbrain',
-  'pinterest',
-  'vkShare',
-  'W3C_Validator',
-]
+import { isBot } from './api/_lib/bots'
 
 const EXPENSE_SHOW_REGEX = /^\/expenses\/show\/([a-f0-9-]{36})$/i
 const DEBT_SHOW_REGEX = /^\/debts\/([a-f0-9-]{36})$/i
-
-function isBot(userAgent: string): boolean {
-  const ua = userAgent.toLowerCase()
-  return BOT_PATTERNS.some((bot) => ua.includes(bot.toLowerCase()))
-}
 
 export default function middleware(request: Request): Response {
   const url = new URL(request.url)

@@ -315,17 +315,37 @@ export function AdminOgPreview({ embedded = false }: { embedded?: boolean }) {
     clearLogs();
 
     addLog("info", `Fetching: ${trimmed}`);
+    // Must match api/_lib/bots.ts BOT_PATTERNS (facebookexternalhit)
+    const crawlerUserAgent = "facebookexternalhit/1.1";
 
     try {
-      // Fetch the HTML of the share page
+      // Do not follow redirects — share pages may 301/302, and we want THIS response's OG.
       const response = await fetch(trimmed, {
-        redirect: "follow",
-        headers: { "User-Agent": "FairPay-OG-Checker/1.0" },
+        redirect: "manual",
+        headers: { "User-Agent": crawlerUserAgent },
       });
 
+      addLog("info", `User-Agent: ${crawlerUserAgent}`);
       addLog("info", `HTTP ${response.status} ${response.statusText}`);
 
-      if (!response.ok) {
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get("location");
+        addLog(
+          "warn",
+          location
+            ? `HTTP redirect offered → ${location} (not followed; parsing this response body if any)`
+            : "HTTP redirect offered without Location (not followed)",
+        );
+      }
+
+      // opaque-redirect responses may have no body; still attempt to read
+      if (response.status === 0) {
+        addLog("error", "Opaque redirect response — cannot read body. Try a FairPay /share/ URL.");
+        setStatus("error");
+        return;
+      }
+
+      if (!response.ok && !(response.status >= 300 && response.status < 400)) {
         addLog("error", `Request failed with status ${response.status}`);
         setStatus("error");
         return;
@@ -336,6 +356,13 @@ export function AdminOgPreview({ embedded = false }: { embedded?: boolean }) {
 
       const html = await response.text();
       addLog("info", `Response size: ${(html.length / 1024).toFixed(1)} KB`);
+
+      if (/http-equiv=["']?refresh/i.test(html)) {
+        addLog(
+          "warn",
+          "HTML contains meta-refresh redirect — parsing THIS page’s OG (not following refresh target). Bots on /share/* should not receive meta-refresh after the share OG fix.",
+        );
+      }
 
       // Parse OG meta tags
       const parsed = parseOgMeta(html);
@@ -511,8 +538,12 @@ export function AdminOgPreview({ embedded = false }: { embedded?: boolean }) {
           <div className="flex flex-wrap gap-2 mt-3">
             <span className="text-xs text-muted-foreground pt-0.5">{tAdmin("ogPreview.quickTest")}</span>
             {[
-              { label: "Share Expense", path: "/api/share/expense?id=" },
-              { label: "Share Debt", path: "/api/share/debt?counterparty_id=" },
+              { label: "Share Expense", path: "/share/expenses/" },
+              { label: "Share Debt", path: "/share/debts/" },
+              { label: "Share Group", path: "/share/groups/" },
+              { label: "Share Friend", path: "/share/friends/" },
+              { label: "Share Profile", path: "/share/profiles/" },
+              { label: "Share Invite", path: "/share/invite?code=DEMO" },
               { label: "OG Expense", path: "/api/og/expense?id=" },
               { label: "OG Debt", path: "/api/og/debt?counterparty_id=" },
             ].map((item) => (

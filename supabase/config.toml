@@ -160,6 +160,14 @@ verify_jwt = false
 [functions.sepay-webhook]
 verify_jwt = false
 
+[functions.polar-checkout]
+# Authenticated checkout; JWT required (function also validates via auth.getUser()).
+verify_jwt = true
+
+[functions.polar-webhook]
+# Polar Standard Webhooks signature; no Supabase JWT.
+verify_jwt = false
+
 [auth]
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used

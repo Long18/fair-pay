@@ -60,6 +60,7 @@ export function OnboardingProvider({
       totalSteps,
       userId,
       enabled: isAuthenticated && !identityLoading,
+      syncToSupabase: true,
     });
 
   // ── Local step index ─────────────────────────────────────────────────

@@ -36,6 +36,10 @@ import {
   saveStore,
   upsertConversation,
 } from "../utils/chat-storage";
+import {
+  buildReceiptDraftPrompt,
+  extractReceiptDraftFromFilename,
+} from "../utils/receipt-ocr-stub";
 
 export type { Conversation } from "../utils/chat-storage";
 
@@ -57,6 +61,8 @@ interface UseAiChatReturn {
   selectedModel: WebLlmModelId;
   selectLocalModel: (model: WebLlmModelId) => void;
   sendMessage: (text: string) => Promise<void>;
+  /** Attach receipt image → filename OCR stub → chat prompt → preview card flow. */
+  attachReceiptImage: (file: File) => Promise<void>;
   clearPreview: () => void;
   clearChat: () => void;
   newChat: () => void;
@@ -419,6 +425,15 @@ export function useAiChat(): UseAiChatReturn {
     [conversationId, getOrchestrator, identity, localLlmStatus, pendingPreview, selectedModel],
   );
 
+  const attachReceiptImage = useCallback(
+    async (file: File) => {
+      const draft = extractReceiptDraftFromFilename(file.name);
+      const prompt = buildReceiptDraftPrompt(draft);
+      await sendMessage(prompt);
+    },
+    [sendMessage],
+  );
+
   const clearPreview = useCallback(() => {
     setPendingPreview(null);
   }, []);
@@ -454,6 +469,7 @@ export function useAiChat(): UseAiChatReturn {
     selectedModel,
     selectLocalModel,
     sendMessage,
+    attachReceiptImage,
     clearPreview,
     clearChat,
     newChat,

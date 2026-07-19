@@ -844,7 +844,7 @@ export const ProfileShowUnified = () => {
       <SharePlatformPicker
         open={shareProfileOpen}
         onOpenChange={setShareProfileOpen}
-        shareUrl={() => `${window.location.origin}/profile/${profileId}`}
+        shareUrl={() => `${window.location.origin}/share/profiles/${profileId}`}
         destinationUrl={() => `${window.location.origin}/profile/${profileId}`}
         title={profile?.full_name || "Profile"}
         text={t('profile.checkOutProfile', `Check out ${profile?.full_name}'s profile on FairPay`)}

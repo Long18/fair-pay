@@ -300,15 +300,27 @@ serve(async (req) => {
       profileMap.set(p.id, { full_name: p.full_name || 'Unknown', email: p.email || '' })
     }
 
-    // Fetch email notification settings
+    // Fetch email notification + reminder preferences
     const { data: settings } = await supabase
       .from('user_settings')
-      .select('user_id, email_notifications')
+      .select('user_id, email_notifications, reminder_preferences')
       .in('user_id', allUserIds)
 
-    const settingsMap = new Map<string, boolean>()
-    for (const s of (settings || [])) {
-      settingsMap.set(s.user_id, s.email_notifications !== false)
+    const settingsMap = new Map<string, { emailEnabled: boolean; reminderDays: number }>()
+    for (const s of (settings || []) as Array<{
+      user_id: string
+      email_notifications: boolean | null
+      reminder_preferences: { emailReminders?: boolean; reminderDays?: number } | null
+    }>) {
+      const prefs = s.reminder_preferences
+      // Skip when master email is off OR reminder prefs explicitly disabled
+      const emailEnabled =
+        s.email_notifications !== false &&
+        prefs?.emailReminders !== false
+      settingsMap.set(s.user_id, {
+        emailEnabled,
+        reminderDays: typeof prefs?.reminderDays === 'number' ? prefs.reminderDays : 3,
+      })
     }
 
     const smtp = new SMTPClient({
@@ -326,7 +338,7 @@ serve(async (req) => {
     const errors: string[] = []
 
     for (const [debtorId, debts] of byDebtor) {
-      if (settingsMap.get(debtorId) === false) {
+      if (settingsMap.get(debtorId)?.emailEnabled === false) {
         skipped++
         continue
       }
@@ -370,10 +382,133 @@ serve(async (req) => {
       }
     }
 
+    // Optional: enqueue in-app recurring-due reminders when next_occurrence is within reminder window (default 3 days)
+    let recurringEnqueued = 0
+    try {
+      const todayStart = new Date()
+      todayStart.setHours(0, 0, 0, 0)
+      const todayStr = todayStart.toISOString().slice(0, 10)
+      const maxWindowDays = 14
+      const windowEnd = new Date(todayStart.getTime() + maxWindowDays * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10)
+
+      const { data: upcomingRecurring, error: recurringError } = await supabase
+        .from('recurring_expenses')
+        .select(`
+          id,
+          next_occurrence,
+          template_expense_id,
+          expenses:template_expense_id(
+            description,
+            created_by,
+            group_id
+          )
+        `)
+        .eq('is_active', true)
+        .gte('next_occurrence', todayStr)
+        .lte('next_occurrence', windowEnd)
+        .limit(200)
+
+      if (recurringError) {
+        console.warn('recurring-due lookup failed:', recurringError.message)
+      } else if (upcomingRecurring && upcomingRecurring.length > 0) {
+        type ExpenseJoin = {
+          description: string | null
+          created_by: string
+          group_id: string | null
+        }
+
+        const rows = (upcomingRecurring as Array<{
+          id: string
+          next_occurrence: string
+          template_expense_id: string
+          expenses: ExpenseJoin | ExpenseJoin[] | null
+        }>).map((row) => {
+          const expense = Array.isArray(row.expenses) ? row.expenses[0] : row.expenses
+          return {
+            id: row.id,
+            next_occurrence: row.next_occurrence,
+            created_by: expense?.created_by ?? null,
+            group_id: expense?.group_id ?? null,
+            description: expense?.description ?? null,
+          }
+        }).filter((r) => r.created_by)
+
+        const creatorIds = Array.from(new Set(rows.map((r) => r.created_by!)))
+        const { data: creatorSettings } = await supabase
+          .from('user_settings')
+          .select('user_id, email_notifications, reminder_preferences')
+          .in('user_id', creatorIds)
+
+        const creatorPrefs = new Map<string, { emailEnabled: boolean; reminderDays: number }>()
+        for (const s of (creatorSettings || []) as Array<{
+          user_id: string
+          email_notifications: boolean | null
+          reminder_preferences: { emailReminders?: boolean; reminderDays?: number } | null
+        }>) {
+          const prefs = s.reminder_preferences
+          creatorPrefs.set(s.user_id, {
+            emailEnabled:
+              s.email_notifications !== false && prefs?.emailReminders !== false,
+            reminderDays: typeof prefs?.reminderDays === 'number' ? prefs.reminderDays : 3,
+          })
+        }
+
+        const dayMs = 24 * 60 * 60 * 1000
+        for (const row of rows) {
+          const prefs = creatorPrefs.get(row.created_by!)
+          if (prefs?.emailEnabled === false) continue
+
+          const reminderDays = prefs?.reminderDays ?? 3
+          const nextDate = new Date(`${row.next_occurrence}T00:00:00`)
+          const daysUntil = Math.round((nextDate.getTime() - todayStart.getTime()) / dayMs)
+          if (daysUntil < 0 || daysUntil > reminderDays) continue
+
+          // Dedup: skip if same recurring reminder enqueued in last 24h
+          const since = new Date(Date.now() - dayMs).toISOString()
+          const { data: existing } = await supabase
+            .from('notifications')
+            .select('id')
+            .eq('user_id', row.created_by!)
+            .eq('type', 'recurring_due_reminder')
+            .eq('related_id', row.id)
+            .gte('created_at', since)
+            .limit(1)
+
+          if (existing && existing.length > 0) continue
+
+          const title = 'Recurring expense due soon'
+          const message = `${row.description || 'A recurring expense'} is due in ${daysUntil} day(s) (${row.next_occurrence}).`
+          const link = row.group_id
+            ? `/groups/${row.group_id}`
+            : '/recurring-expenses'
+
+          const { error: insertError } = await supabase.from('notifications').insert({
+            user_id: row.created_by!,
+            type: 'recurring_due_reminder',
+            title,
+            message,
+            link,
+            related_id: row.id,
+            is_read: false,
+          })
+
+          if (insertError) {
+            console.warn('Failed to enqueue recurring-due reminder:', insertError.message)
+          } else {
+            recurringEnqueued++
+          }
+        }
+      }
+    } catch (recurringErr) {
+      console.warn('recurring-due enqueue skipped:', (recurringErr as Error).message)
+    }
+
     await smtp.close()
 
     return new Response(
-      JSON.stringify({ success: true, sent, skipped, errors }),
+      JSON.stringify({ success: true, sent, skipped, recurringEnqueued, errors }),
       { headers: getCorsHeaders() }
     )
 

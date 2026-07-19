@@ -4,6 +4,9 @@ import {
   buildDetailViewModel,
   statusBadgeVariant,
   FORBIDDEN_AGENT_OPERATION_FIELDS,
+  evaluateAgentOpsAlerts,
+  AGENT_ALERT_FAILURE_RATE_PCT,
+  AGENT_ALERT_MIN_OPS,
 } from "../pages/admin-agent-operations.utils";
 import type { AgentOperationRow, AgentOperationStatus } from "../types";
 
@@ -222,5 +225,40 @@ describe("FORBIDDEN_AGENT_OPERATION_FIELDS constant", () => {
     expect(forbidden).not.toContain("status");
     expect(forbidden).not.toContain("created_at");
     expect(forbidden).not.toContain("user_email");
+  });
+});
+
+describe("evaluateAgentOpsAlerts", () => {
+  it("returns null when metrics are healthy", () => {
+    expect(
+      evaluateAgentOpsAlerts({
+        failure_rate: 5,
+        total: 20,
+        ops_today: 2,
+        ops_last_7d: 14,
+      })
+    ).toBeNull();
+  });
+
+  it("flags high error rate when above threshold with enough volume", () => {
+    const alerts = evaluateAgentOpsAlerts({
+      failure_rate: AGENT_ALERT_FAILURE_RATE_PCT,
+      total: AGENT_ALERT_MIN_OPS,
+      ops_today: 1,
+      ops_last_7d: 7,
+    });
+    expect(alerts?.highErrorRate).toBe(true);
+    expect(alerts?.opsSpike).toBe(false);
+  });
+
+  it("flags ops spike when today exceeds 3x daily average floor", () => {
+    const alerts = evaluateAgentOpsAlerts({
+      failure_rate: 0,
+      total: 40,
+      ops_today: 30,
+      ops_last_7d: 21,
+    });
+    expect(alerts?.opsSpike).toBe(true);
+    expect(alerts?.highErrorRate).toBe(false);
   });
 });

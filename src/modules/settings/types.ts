@@ -4,6 +4,18 @@ export type Theme = 'light' | 'dark' | 'system';
 export type DateFormat = 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
 export type ProfileVisibility = 'public' | 'friends' | 'private';
 
+export type ReminderCalendarType = 'google' | 'apple' | 'outlook';
+
+export interface ReminderPreferences {
+  emailReminders: boolean;
+  email: string;
+  reminderDays: number;
+  dailyDigest: boolean;
+  weeklyDigest: boolean;
+  calendarSync: boolean;
+  calendarType: ReminderCalendarType;
+}
+
 export interface UserEmail {
   id: string;
   user_id: string;
@@ -33,6 +45,7 @@ export interface UserSettings {
   notify_on_payment_received: boolean;
   notify_on_friend_request: boolean;
   notify_on_group_invite: boolean;
+  reminder_preferences: ReminderPreferences | null;
 
   // Privacy settings
   allow_friend_requests: boolean;
@@ -62,6 +75,7 @@ export interface UserSettingsFormValues {
   notify_on_payment_received: boolean;
   notify_on_friend_request: boolean;
   notify_on_group_invite: boolean;
+  reminder_preferences?: ReminderPreferences | null;
 
   // Privacy settings
   allow_friend_requests: boolean;

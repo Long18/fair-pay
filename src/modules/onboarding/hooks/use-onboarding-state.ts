@@ -2,15 +2,27 @@ import { useState, useCallback, useRef, useEffect } from "react";
 
 import { STORAGE_KEY, APP_VERSION, getOnboardingStorageKey } from "../types";
 import type { OnboardingState } from "../types";
+import {
+  fetchOnboardingFromSupabase,
+  mergeOnboardingState,
+  persistOnboardingToSupabase,
+} from "../utils/onboarding-sync";
 
 // ─── Stable persistence helper ───────────────────────────────────────────────
 
 /**
- * Persist state to localStorage. Extracted as a standalone function
- * so callbacks can reference it without depending on React state.
+ * Persist state to localStorage (and optionally Supabase). Extracted so
+ * callbacks can reference it without depending on React state.
  */
-function persist(storageKey: string, state: OnboardingState): void {
+function persist(
+  storageKey: string,
+  state: OnboardingState,
+  sync?: { userId: string } | null,
+): void {
   persistToLocalStorage(storageKey, state);
+  if (sync?.userId) {
+    void persistOnboardingToSupabase(sync.userId, state);
+  }
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -73,7 +85,10 @@ export function resolveOnboardingStorageKey(userId?: string | null): string {
 export interface UseOnboardingStateOptions {
   /** Force show the tutorial regardless of persisted state */
   forceShow?: boolean;
-  /** Placeholder for future Supabase sync (no-op for now) */
+  /**
+   * When true and `userId` is set, merge/persist tutorial progress to
+   * `profiles.onboarding_tutorial`. localStorage remains the write-through cache.
+   */
   syncToSupabase?: boolean;
   /** Total number of steps in the current registry (for version migration) */
   totalSteps?: number;
@@ -183,6 +198,7 @@ export function useOnboardingState(options?: UseOnboardingStateOptions) {
   const totalSteps = options?.totalSteps ?? 9;
   const userId = options?.userId ?? null;
   const enabled = options?.enabled ?? true;
+  const syncToSupabase = options?.syncToSupabase ?? false;
   const storageKey = resolveOnboardingStorageKey(userId);
 
   const forceShowRef = useRef(forceShow);
@@ -199,6 +215,21 @@ export function useOnboardingState(options?: UseOnboardingStateOptions) {
   useEffect(() => {
     enabledRef.current = enabled;
   }, [enabled]);
+
+  const userIdRef = useRef(userId);
+  useEffect(() => {
+    userIdRef.current = userId;
+  }, [userId]);
+
+  const syncToSupabaseRef = useRef(syncToSupabase);
+  useEffect(() => {
+    syncToSupabaseRef.current = syncToSupabase;
+  }, [syncToSupabase]);
+
+  const syncTarget = useCallback((): { userId: string } | null => {
+    if (!syncToSupabaseRef.current || !userIdRef.current) return null;
+    return { userId: userIdRef.current };
+  }, []);
 
   const [state, setStateInternal] = useState<OnboardingState>(() => {
     if (!enabled) {
@@ -246,6 +277,28 @@ export function useOnboardingState(options?: UseOnboardingStateOptions) {
     setStateInternal(initialState);
   }, [enabled, storageKey, totalSteps]);
 
+  // Hydrate from Supabase and merge with localStorage cache.
+  useEffect(() => {
+    if (!enabled || !syncToSupabase || !userId || forceShow) return;
+
+    let cancelled = false;
+    void (async () => {
+      const remote = await fetchOnboardingFromSupabase(userId);
+      if (cancelled || !remote) return;
+
+      setStateInternal((prev) => {
+        const merged = mergeOnboardingState(prev, remote);
+        if (merged === prev) return prev;
+        persistToLocalStorage(storageKeyRef.current, merged);
+        return merged;
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, syncToSupabase, userId, forceShow, storageKey]);
+
   // Keep a ref to the latest state so callbacks don't close over stale values.
   const stateRef = useRef(state);
   useEffect(() => {
@@ -273,26 +326,29 @@ export function useOnboardingState(options?: UseOnboardingStateOptions) {
           skipped: skipped ?? false,
           skippedAtStep: skippedAtStep ?? null,
         };
-        persist(storageKeyRef.current, next);
+        persist(storageKeyRef.current, next, syncTarget());
         return next;
       });
     },
-    [],
+    [syncTarget],
   );
 
   /**
    * Update the current step progress.
    * Stable reference — does not depend on `state`.
    */
-  const updateProgress = useCallback((stepIndex: number) => {
-    if (!enabledRef.current) return;
-    setStateInternal((prev) => {
-      if (prev.lastStepIndex === stepIndex) return prev;
-      const next: OnboardingState = { ...prev, lastStepIndex: stepIndex };
-      persist(storageKeyRef.current, next);
-      return next;
-    });
-  }, []);
+  const updateProgress = useCallback(
+    (stepIndex: number) => {
+      if (!enabledRef.current) return;
+      setStateInternal((prev) => {
+        if (prev.lastStepIndex === stepIndex) return prev;
+        const next: OnboardingState = { ...prev, lastStepIndex: stepIndex };
+        persist(storageKeyRef.current, next, syncTarget());
+        return next;
+      });
+    },
+    [syncTarget],
+  );
 
   /**
    * Reset all onboarding state to fresh defaults.
@@ -301,9 +357,9 @@ export function useOnboardingState(options?: UseOnboardingStateOptions) {
   const reset = useCallback(() => {
     if (!enabledRef.current) return;
     const freshState = createFreshState(APP_VERSION);
-    persist(storageKeyRef.current, freshState);
+    persist(storageKeyRef.current, freshState, syncTarget());
     setStateInternal(freshState);
-  }, []);
+  }, [syncTarget]);
 
   return {
     state,

@@ -83,6 +83,7 @@ export const adminTranslations = {
         retention: "Retention",
         marketing: "Marketing",
         agentOperations: "Agent Ops",
+        moderation: "Moderation",
       },
       growth: {
         title: "Growth",
@@ -113,6 +114,12 @@ export const adminTranslations = {
         remindersSent: "Reminders sent (30d)",
         noData: "No data yet",
         users: "Users",
+        activationFunnel: "Activation Funnel",
+        activationCohort: "Last {{days}} days cohort",
+        activationSignups: "Signups",
+        activationFirstExpense: "First expense",
+        activationActive7d: "Active in 7d",
+        activationRate: "{{rate}}% of signups",
       },
       marketing: {
         title: "Marketing",
@@ -143,6 +150,33 @@ export const adminTranslations = {
       },
       guard: {
         accessDenied: "You do not have permission to access the admin area",
+      },
+      moderation: {
+        title: "Moderation",
+        description: "Review open content reports and take soft actions",
+        openQueue: "Open reports",
+        openCount: "{{count}} open",
+        emptyTitle: "Queue clear",
+        emptyDescription: "No open reports right now",
+        resolve: "Resolve",
+        dismiss: "Dismiss",
+        resolveTitle: "Resolve report",
+        dismissTitle: "Dismiss report",
+        actionDescription: "Action on {{type}}: {{target}}",
+        notes: "Notes",
+        notesPlaceholder: "Optional moderator notes",
+        softBan: "Soft-ban reported user (profiles.is_banned)",
+        banned: "Banned",
+        actionSuccess: "Report updated",
+        columns: {
+          target: "Target",
+          reason: "Reason",
+          reporter: "Reporter",
+        },
+        targetType: {
+          user: "User",
+          group: "Group",
+        },
       },
       toolbar: {
         searchPlaceholder: "Search...",
@@ -661,6 +695,10 @@ export const adminTranslations = {
           seconds: "{{n}}s",
           notAvailable: "N/A",
         },
+        alerts: {
+          highErrorRate: "High failure rate: {{rate}}% (min {{min}} ops)",
+          opsSpike: "Ops spike today: {{today}} (≈{{avg}}/day over 7d)",
+        },
         detail: {
           title: "Operation Details",
           externalTitle: "External submission",
@@ -1083,6 +1121,7 @@ export const adminTranslations = {
         retention: "Giữ chân",
         marketing: "Marketing",
         agentOperations: "Thao tác Agent",
+        moderation: "Kiểm duyệt",
       },
       growth: {
         title: "Tăng trưởng",
@@ -1113,6 +1152,12 @@ export const adminTranslations = {
         remindersSent: "Nhắc nhở đã gửi (30 ngày)",
         noData: "Chưa có dữ liệu",
         users: "Người dùng",
+        activationFunnel: "Phễu kích hoạt",
+        activationCohort: "Cohort {{days}} ngày gần nhất",
+        activationSignups: "Đăng ký",
+        activationFirstExpense: "Chi phí đầu tiên",
+        activationActive7d: "Hoạt động trong 7 ngày",
+        activationRate: "{{rate}}% đăng ký",
       },
       marketing: {
         title: "Marketing",
@@ -1143,6 +1188,33 @@ export const adminTranslations = {
       },
       guard: {
         accessDenied: "Bạn không có quyền truy cập trang quản trị",
+      },
+      moderation: {
+        title: "Kiểm duyệt",
+        description: "Xem báo cáo đang mở và thực hiện thao tác mềm",
+        openQueue: "Báo cáo đang mở",
+        openCount: "{{count}} đang mở",
+        emptyTitle: "Hàng đợi trống",
+        emptyDescription: "Không có báo cáo đang mở",
+        resolve: "Giải quyết",
+        dismiss: "Bỏ qua",
+        resolveTitle: "Giải quyết báo cáo",
+        dismissTitle: "Bỏ qua báo cáo",
+        actionDescription: "Thao tác trên {{type}}: {{target}}",
+        notes: "Ghi chú",
+        notesPlaceholder: "Ghi chú kiểm duyệt (tuỳ chọn)",
+        softBan: "Cấm mềm người dùng bị báo cáo (profiles.is_banned)",
+        banned: "Đã cấm",
+        actionSuccess: "Đã cập nhật báo cáo",
+        columns: {
+          target: "Đối tượng",
+          reason: "Lý do",
+          reporter: "Người báo cáo",
+        },
+        targetType: {
+          user: "Người dùng",
+          group: "Nhóm",
+        },
       },
       toolbar: {
         searchPlaceholder: "Tìm kiếm...",
@@ -1660,6 +1732,10 @@ export const adminTranslations = {
           externalApproved: "Đã duyệt",
           seconds: "{{n}}s",
           notAvailable: "N/A",
+        },
+        alerts: {
+          highErrorRate: "Tỷ lệ lỗi cao: {{rate}}% (tối thiểu {{min}} thao tác)",
+          opsSpike: "Spike hôm nay: {{today}} (≈{{avg}}/ngày trong 7 ngày)",
         },
         detail: {
           title: "Chi tiết thao tác",

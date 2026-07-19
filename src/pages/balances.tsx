@@ -29,7 +29,7 @@ import { PageContent } from "@/components/ui/page-content";
 import { PageHeader } from "@/components/ui/page-header";
 
 // UI components
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -71,6 +71,10 @@ import { Group } from "@/modules/groups/types";
 import { formatNumber } from "@/lib/locale-utils";
 import { exportEnhancedReportToCSV } from "@/lib/export/export-csv-enhanced";
 import { exportToPDF } from "@/lib/export/export-pdf";
+import { exportUserExpensesCsv } from "@/lib/export/fetch-and-export-expenses";
+import { usePlan, EXPORT_REQUIRES_PRO } from "@/modules/billing";
+import { BudgetSection, CategoriesTemplatesSection } from "@/modules/budgets";
+import { Link } from "react-router";
 
 // Icons
 import {
@@ -79,7 +83,6 @@ import {
   ArrowUpIcon,
   ArrowDownIcon,
   CheckCircle2Icon,
-  PlusIcon,
   DownloadIcon,
   FileTextIcon,
   CalendarIcon,
@@ -154,6 +157,7 @@ export const BalancesPage = () => {
   const { data: identity } = useGetIdentity<Profile>();
   const go = useGo();
   const { t } = useTranslation();
+  const { isPro } = usePlan();
   const chartsRef = useRef<HTMLDivElement>(null);
 
   // ── filter state (from reports) ────────────────────────────────────────
@@ -249,7 +253,7 @@ export const BalancesPage = () => {
   const { data: debts = [], isLoading: debtsLoading, error: debtsError, refetch } = useAggregatedDebts({
     dateRange: dateRange,
   });
-  const { totalOwedToMe, totalIOwe, netBalance, refetch: refetchBalance } = useBalance();
+  const { totalOwedToMe, totalIOwe, refetch: refetchBalance } = useBalance();
 
   // ── derived balance data ───────────────────────────────────────────────
   const sortedDebts = useMemo(() => {
@@ -331,7 +335,21 @@ export const BalancesPage = () => {
   };
 
   // ── export handlers ────────────────────────────────────────────────────
+  const ensureProExport = () => {
+    if (EXPORT_REQUIRES_PRO && !isPro) {
+      toast.message(t("billing.exportRequiresPro", "Expense export is a Pro feature"), {
+        action: {
+          label: t("billing.paywallUpgrade", "Xem gói Pro"),
+          onClick: () => go({ to: "/pricing" }),
+        },
+      });
+      return false;
+    }
+    return true;
+  };
+
   const handleExportCSV = () => {
+    if (!ensureProExport()) return;
     exportEnhancedReportToCSV(
       {
         summary: [
@@ -363,6 +381,7 @@ export const BalancesPage = () => {
   };
 
   const handleExportPDF = async () => {
+    if (!ensureProExport()) return;
     const chartElements: HTMLElement[] = [];
     if (chartsRef.current) {
       chartsRef.current.querySelectorAll("[data-chart]").forEach((el) => {
@@ -397,6 +416,28 @@ export const BalancesPage = () => {
     });
   };
 
+  const handleExportExpensesCsv = async () => {
+    if (!ensureProExport()) return;
+    if (!identity?.id) return;
+    try {
+      const count = await exportUserExpensesCsv({
+        userId: identity.id,
+        groupId: selectedGroupId,
+        startDate: format(actualDateRange.start, "yyyy-MM-dd"),
+        endDate: format(actualDateRange.end, "yyyy-MM-dd"),
+      });
+      toast.success(
+        t("reports.expensesExported", "Exported {{count}} expenses", { count }),
+      );
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : t("reports.exportError", "Failed to export expenses"),
+      );
+    }
+  };
+
   // Determine whether Top Spenders tab should be visible
   const showSpenders = !!selectedGroupId;
 
@@ -415,28 +456,59 @@ export const BalancesPage = () => {
           title={t("reports.spendingInsights", "Insights")}
           action={
             <div className="flex items-center justify-end gap-2">
-              <Button
-                onClick={handleExportCSV}
-                variant="ghost"
-                size="sm"
-                disabled={isReportsLoading || breakdown.length === 0}
-                className="gap-1.5 text-muted-foreground hover:text-foreground"
-                aria-label={t("reports.exportCSV", "Export CSV")}
-              >
-                <DownloadIcon className="h-4 w-4" />
-                <span className="hidden sm:inline text-xs">CSV</span>
-              </Button>
-              <Button
-                onClick={handleExportPDF}
-                variant="ghost"
-                size="sm"
-                disabled={isReportsLoading || breakdown.length === 0}
-                className="gap-1.5 text-muted-foreground hover:text-foreground"
-                aria-label={t("reports.exportPDF", "Export PDF")}
-              >
-                <FileTextIcon className="h-4 w-4" />
-                <span className="hidden sm:inline text-xs">PDF</span>
-              </Button>
+              {EXPORT_REQUIRES_PRO && !isPro ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 text-muted-foreground hover:text-foreground"
+                  asChild
+                >
+                  <Link to="/pricing">
+                    <DownloadIcon className="h-4 w-4" />
+                    <span className="hidden sm:inline text-xs">
+                      {t("billing.upgradeToExport", "Upgrade to export")}
+                    </span>
+                  </Link>
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    onClick={() => void handleExportExpensesCsv()}
+                    variant="ghost"
+                    size="sm"
+                    disabled={!identity?.id}
+                    className="gap-1.5 text-muted-foreground hover:text-foreground"
+                    aria-label={t("reports.exportExpensesCSV", "Export expenses CSV")}
+                  >
+                    <DownloadIcon className="h-4 w-4" />
+                    <span className="hidden sm:inline text-xs">
+                      {t("reports.exportExpensesCSV", "Expenses CSV")}
+                    </span>
+                  </Button>
+                  <Button
+                    onClick={handleExportCSV}
+                    variant="ghost"
+                    size="sm"
+                    disabled={isReportsLoading || breakdown.length === 0}
+                    className="gap-1.5 text-muted-foreground hover:text-foreground"
+                    aria-label={t("reports.exportCSV", "Export CSV")}
+                  >
+                    <DownloadIcon className="h-4 w-4" />
+                    <span className="hidden sm:inline text-xs">CSV</span>
+                  </Button>
+                  <Button
+                    onClick={handleExportPDF}
+                    variant="ghost"
+                    size="sm"
+                    disabled={isReportsLoading || breakdown.length === 0}
+                    className="gap-1.5 text-muted-foreground hover:text-foreground"
+                    aria-label={t("reports.exportPDF", "Export PDF")}
+                  >
+                    <FileTextIcon className="h-4 w-4" />
+                    <span className="hidden sm:inline text-xs">PDF</span>
+                  </Button>
+                </>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -608,6 +680,15 @@ export const BalancesPage = () => {
 
             {/* Insights panel */}
             <InsightsPanel insights={insights} isLoading={insightsLoading} />
+
+            <BudgetSection
+              actuals={breakdown.map((item) => ({
+                category: item.category,
+                amount: item.amount,
+              }))}
+            />
+
+            <CategoriesTemplatesSection />
 
             {/* Tabs – underline variant for primary, pill for nested */}
             <div ref={chartsRef}>

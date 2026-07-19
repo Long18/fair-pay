@@ -136,3 +136,45 @@ export function buildDetailViewModel(row: AgentOperationRow) {
     confirmation_used: row.confirmation_used,
   } as const;
 }
+
+// ─── Threshold alerts ─────────────────────────────────────────────────────────
+
+export const AGENT_ALERT_FAILURE_RATE_PCT = 15;
+export const AGENT_ALERT_MIN_OPS = 5;
+export const AGENT_ALERT_SPIKE_MULTIPLIER = 3;
+export const AGENT_ALERT_SPIKE_FLOOR = 10;
+
+export interface AgentOpsAlertFlags {
+  highErrorRate: boolean;
+  opsSpike: boolean;
+  failureRate: number;
+  opsToday: number;
+  dailyAvg7d: number;
+}
+
+export function evaluateAgentOpsAlerts(metrics: {
+  failure_rate: number;
+  total: number;
+  ops_today: number;
+  ops_last_7d: number;
+} | null | undefined): AgentOpsAlertFlags | null {
+  if (!metrics) return null;
+
+  const dailyAvg7d = metrics.ops_last_7d / 7;
+  const highErrorRate =
+    metrics.total >= AGENT_ALERT_MIN_OPS &&
+    metrics.failure_rate >= AGENT_ALERT_FAILURE_RATE_PCT;
+  const opsSpike =
+    metrics.ops_today >=
+    Math.max(AGENT_ALERT_SPIKE_FLOOR, dailyAvg7d * AGENT_ALERT_SPIKE_MULTIPLIER);
+
+  if (!highErrorRate && !opsSpike) return null;
+
+  return {
+    highErrorRate,
+    opsSpike,
+    failureRate: metrics.failure_rate,
+    opsToday: metrics.ops_today,
+    dailyAvg7d: Math.round(dailyAvg7d * 10) / 10,
+  };
+}

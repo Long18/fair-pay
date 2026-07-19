@@ -19,6 +19,8 @@ import {
 
 interface ChatInputProps {
   onSend: (message: string) => void;
+  /** Attach an image for receipt draft / OCR stub → expense preview flow. */
+  onAttachImage?: (file: File) => void;
   isLoading: boolean;
   disabled?: boolean;
   selectedModel: WebLlmModelId;
@@ -28,8 +30,11 @@ interface ChatInputProps {
   compact?: boolean;
 }
 
+const IMAGE_ACCEPT = "image/jpeg,image/png,image/webp,image/gif,image/heic,.jpg,.jpeg,.png,.webp,.gif";
+
 export const ChatInput = memo(function ChatInput({
   onSend,
+  onAttachImage,
   isLoading,
   disabled,
   selectedModel,
@@ -40,6 +45,7 @@ export const ChatInput = memo(function ChatInput({
   const { t } = useTranslation();
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { tap } = useHaptics();
 
   useEffect(() => {
@@ -69,6 +75,25 @@ export const ChatInput = memo(function ChatInput({
     [handleSubmit],
   );
 
+  const handleAttachClick = useCallback(() => {
+    if (disabled || isLoading || !onAttachImage) return;
+    tap();
+    fileInputRef.current?.click();
+  }, [disabled, isLoading, onAttachImage, tap]);
+
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file || !onAttachImage) return;
+      if (!file.type.startsWith("image/") && !/\.(jpe?g|png|webp|gif|heic)$/i.test(file.name)) {
+        return;
+      }
+      onAttachImage(file);
+    },
+    [onAttachImage],
+  );
+
   const modelEntry = getWebLlmModelEntry(selectedModel);
   const modelLabel = modelEntry?.label ?? selectedModel;
 
@@ -82,6 +107,7 @@ export const ChatInput = memo(function ChatInput({
           : "bg-muted-foreground/40";
 
   const canSend = !!value.trim() && !isLoading && !disabled;
+  const canAttach = Boolean(onAttachImage) && !isLoading && !disabled;
 
   return (
     <div
@@ -116,14 +142,27 @@ export const ChatInput = memo(function ChatInput({
         )}
       >
         <div className="flex min-w-0 items-center gap-1">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={IMAGE_ACCEPT}
+            className="sr-only"
+            aria-hidden
+            tabIndex={-1}
+            onChange={handleFileChange}
+          />
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            disabled
-            title={t("aiChat.comingSoon")}
-            aria-label={t("aiChat.attachComingSoon")}
-            className="h-8 w-8 shrink-0 rounded-full text-muted-foreground opacity-50"
+            disabled={!canAttach}
+            onClick={handleAttachClick}
+            title={t("aiChat.attachImage", "Attach receipt image")}
+            aria-label={t("aiChat.attachImage", "Attach receipt image")}
+            className={cn(
+              "h-8 w-8 shrink-0 rounded-full text-muted-foreground",
+              !canAttach && "opacity-50",
+            )}
           >
             <PaperclipIcon size={16} />
           </Button>

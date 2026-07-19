@@ -6,11 +6,11 @@ import { ResponsiveDialog } from "@/components/refine-ui/responsive-dialog";
 import { GroupForm } from "../components/group-form";
 import { GroupFormValues } from "../types";
 import { Profile } from "@/modules/profile/types";
-import { Friendship } from "@/modules/friends/types";
+import { FriendshipWithProfiles } from "@/modules/friends/types";
 import { toast } from "sonner";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { journeyTracking } from "@/lib/journey-tracking";
-import { usePlan, PaywallGate } from "@/modules/billing";
+import { usePlan, PaywallGate, MAX_FREE_GROUPS } from "@/modules/billing";
 
 export const GroupCreate = () => {
   const go = useGo();
@@ -38,10 +38,10 @@ export const GroupCreate = () => {
   });
 
   const groupCount = groupsCountQuery.data?.total ?? 0;
-  const isBlocked = !isPro && groupCount >= 5;
+  const isBlocked = !isPro && groupCount >= MAX_FREE_GROUPS;
 
   // Fetch all user's friends
-  const { query: allFriendsQuery } = useList<Friendship>({
+  const { query: allFriendsQuery } = useList<FriendshipWithProfiles>({
     resource: "friendships",
     filters: [
       {
@@ -65,7 +65,7 @@ export const GroupCreate = () => {
   const availableMembers = useMemo(() => {
     if (!allFriendsQuery.data?.data || !identity?.id) return [];
 
-    return allFriendsQuery.data.data.map((friendship: any) => {
+    return allFriendsQuery.data.data.map((friendship: FriendshipWithProfiles) => {
       const isUserA = friendship.user_a === identity.id;
       const friendProfile = isUserA ? friendship.user_b_profile : friendship.user_a_profile;
       const friendId = isUserA ? friendship.user_b : friendship.user_a;
@@ -124,7 +124,7 @@ export const GroupCreate = () => {
 
             try {
               await Promise.all(memberPromises);
-            } catch (error: any) {
+            } catch (error: unknown) {
               console.error("Failed to add some members:", error);
               // Continue even if some members fail (e.g., duplicates)
             }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -14,21 +14,16 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { BellIcon, MailIcon, CalendarIcon, CheckCircle2Icon, InfoIcon } from "@/components/ui/icons";
-import { useNotification } from "@refinedev/core";
+import { MailIcon, CalendarIcon, CheckCircle2Icon, InfoIcon, Loader2Icon } from "@/components/ui/icons";
+import { useGetIdentity, useNotification } from "@refinedev/core";
 import { useHaptics } from "@/hooks/use-haptics";
+import { useUserSettings } from "@/modules/settings/hooks/use-user-settings";
+import type { ReminderCalendarType, ReminderPreferences } from "@/modules/settings/types";
+import type { Profile } from "@/modules/profile/types";
+import { supabaseClient } from "@/utility/supabaseClient";
+import { getSemanticStatusColors } from "@/lib/status-colors";
 
-interface ReminderSettings {
-  emailReminders: boolean;
-  email: string;
-  reminderDays: number;
-  dailyDigest: boolean;
-  weeklyDigest: boolean;
-  calendarSync: boolean;
-  calendarType: "google" | "apple" | "outlook";
-}
-
-const DEFAULT_SETTINGS: ReminderSettings = {
+const DEFAULT_SETTINGS: ReminderPreferences = {
   emailReminders: false,
   email: "",
   reminderDays: 3,
@@ -41,56 +36,90 @@ const DEFAULT_SETTINGS: ReminderSettings = {
 const REMINDER_SETTINGS_KEY = "recurring-reminder-settings:v1";
 const LEGACY_REMINDER_SETTINGS_KEY = "recurring-reminder-settings";
 
-function loadReminderSettings(): ReminderSettings {
+function loadLocalReminderSettings(): ReminderPreferences | null {
+  if (typeof window === "undefined") return null;
   const saved =
     localStorage.getItem(REMINDER_SETTINGS_KEY) ??
     localStorage.getItem(LEGACY_REMINDER_SETTINGS_KEY);
-  if (!saved) return DEFAULT_SETTINGS;
+  if (!saved) return null;
   try {
-    const parsed = JSON.parse(saved) as ReminderSettings;
-    if (!localStorage.getItem(REMINDER_SETTINGS_KEY)) {
-      localStorage.setItem(REMINDER_SETTINGS_KEY, saved);
-      localStorage.removeItem(LEGACY_REMINDER_SETTINGS_KEY);
-    }
-    return parsed;
+    return { ...DEFAULT_SETTINGS, ...(JSON.parse(saved) as Partial<ReminderPreferences>) };
   } catch {
-    return DEFAULT_SETTINGS;
+    return null;
   }
 }
+
+function normalizePreferences(
+  prefs: ReminderPreferences | null | undefined
+): ReminderPreferences {
+  if (!prefs) return DEFAULT_SETTINGS;
+  return {
+    ...DEFAULT_SETTINGS,
+    ...prefs,
+    reminderDays: prefs.reminderDays || DEFAULT_SETTINGS.reminderDays,
+    calendarType: prefs.calendarType || DEFAULT_SETTINGS.calendarType,
+  };
+}
+
+let didAttemptLocalMigrate = false;
 
 export function ReminderSettingsComponent() {
   const { t } = useTranslation();
   const { open: notify } = useNotification();
   const { tap, success } = useHaptics();
-  const [settings, setSettings] = useState<ReminderSettings>(loadReminderSettings);
-  const [isSaving, setIsSaving] = useState(false);
+  const { data: identity } = useGetIdentity<Profile>();
+  const { settings, isLoading, isUpdating, saveSettings } = useUserSettings();
+  const [draft, setDraft] = useState<ReminderPreferences | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
 
-  const updateSetting = <K extends keyof ReminderSettings>(
+  const remoteOrLocal = settings?.reminder_preferences ?? loadLocalReminderSettings();
+  const baseline = normalizePreferences(remoteOrLocal);
+  const localSettings = draft ?? baseline;
+
+  // One-time silent migrate of localStorage → Supabase when remote is empty (no setState)
+  useEffect(() => {
+    if (didAttemptLocalMigrate || isLoading || !identity?.id) return;
+    if (settings?.reminder_preferences) {
+      didAttemptLocalMigrate = true;
+      return;
+    }
+    const fromLocal = loadLocalReminderSettings();
+    didAttemptLocalMigrate = true;
+    if (!fromLocal) return;
+    void supabaseClient
+      .from("user_settings")
+      .update({
+        reminder_preferences: fromLocal,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", identity.id)
+      .then(({ error }) => {
+        if (!error) {
+          localStorage.removeItem(REMINDER_SETTINGS_KEY);
+          localStorage.removeItem(LEGACY_REMINDER_SETTINGS_KEY);
+        }
+      });
+  }, [isLoading, identity?.id, settings?.reminder_preferences]);
+
+  const updateSetting = <K extends keyof ReminderPreferences>(
     key: K,
-    value: ReminderSettings[K]
+    value: ReminderPreferences[K]
   ) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
+    setDraft((prev) => ({ ...(prev ?? baseline), [key]: value }));
     setHasChanges(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     success();
-    setIsSaving(true);
-
-    // Save to localStorage (in production, this would be an API call)
-    localStorage.setItem(REMINDER_SETTINGS_KEY, JSON.stringify(settings));
-    localStorage.removeItem(LEGACY_REMINDER_SETTINGS_KEY);
-
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      await saveSettings({ reminder_preferences: localSettings });
+      localStorage.setItem(REMINDER_SETTINGS_KEY, JSON.stringify(localSettings));
+      localStorage.removeItem(LEGACY_REMINDER_SETTINGS_KEY);
+      setDraft(null);
       setHasChanges(false);
-      notify?.({
-        type: "success",
-        message: t("settings.saved", "Settings saved"),
-        description: t("settings.savedDescription", "Your reminder preferences have been updated"),
-      });
-    }, 500);
+    } catch {
+      // useUserSettings already notifies on error
+    }
   };
 
   const handleTestEmail = () => {
@@ -100,14 +129,24 @@ export function ReminderSettingsComponent() {
       message: t("settings.testEmailSent", "Test email sent"),
       description: t(
         "settings.testEmailDescription",
-        `A test reminder has been sent to ${settings.email}`
+        `A test reminder has been sent to ${localSettings.email}`
       ),
     });
   };
 
+  const successColors = getSemanticStatusColors("success");
+
+  if (isLoading && !settings) {
+    return (
+      <div className="flex items-center justify-center py-12 text-muted-foreground">
+        <Loader2Icon className="h-5 w-5 animate-spin mr-2" />
+        {t("common.loading", "Loading...")}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Email Reminders Card */}
       <Card className="overflow-hidden rounded-xl border shadow-sm">
         <CardHeader className="border-b bg-muted/30">
           <div className="flex items-center gap-2">
@@ -124,7 +163,6 @@ export function ReminderSettingsComponent() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Enable Email Reminders */}
           <div className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="email-reminders" className="text-base">
@@ -136,14 +174,13 @@ export function ReminderSettingsComponent() {
             </div>
             <Switch
               id="email-reminders"
-              checked={settings.emailReminders}
+              checked={localSettings.emailReminders}
               onCheckedChange={(checked) => updateSetting("emailReminders", checked)}
             />
           </div>
 
-          {settings.emailReminders && (
+          {localSettings.emailReminders && (
             <>
-              {/* Email Address */}
               <div className="space-y-2 rounded-xl border bg-muted/20 p-4">
                 <Label htmlFor="email">
                   {t("settings.emailAddress", "Email address")}
@@ -153,28 +190,27 @@ export function ReminderSettingsComponent() {
                     id="email"
                     type="email"
                     placeholder="you@example.com"
-                    value={settings.email}
+                    value={localSettings.email}
                     onChange={(e) => updateSetting("email", e.target.value)}
                   />
                   <Button
                     variant="outline"
                     className="cursor-pointer"
                     onClick={handleTestEmail}
-                    disabled={!settings.email}
+                    disabled={!localSettings.email}
                   >
                     {t("settings.test", "Test")}
                   </Button>
                 </div>
               </div>
 
-              {/* Reminder Days */}
               <div className="space-y-2">
                 <Label htmlFor="reminder-days">
                   {t("settings.reminderDays", "Send reminder")}
                 </Label>
                 <Select
-                  value={settings.reminderDays.toString()}
-                  onValueChange={(value) => updateSetting("reminderDays", parseInt(value))}
+                  value={localSettings.reminderDays.toString()}
+                  onValueChange={(value) => updateSetting("reminderDays", parseInt(value, 10))}
                 >
                   <SelectTrigger id="reminder-days">
                     <SelectValue />
@@ -196,7 +232,6 @@ export function ReminderSettingsComponent() {
                 </Select>
               </div>
 
-              {/* Daily Digest */}
               <div className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:space-x-2">
                 <div className="space-y-0.5">
                   <Label htmlFor="daily-digest" className="text-sm font-medium">
@@ -208,12 +243,11 @@ export function ReminderSettingsComponent() {
                 </div>
                 <Switch
                   id="daily-digest"
-                  checked={settings.dailyDigest}
+                  checked={localSettings.dailyDigest}
                   onCheckedChange={(checked) => updateSetting("dailyDigest", checked)}
                 />
               </div>
 
-              {/* Weekly Digest */}
               <div className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:space-x-2">
                 <div className="space-y-0.5">
                   <Label htmlFor="weekly-digest" className="text-sm font-medium">
@@ -225,7 +259,7 @@ export function ReminderSettingsComponent() {
                 </div>
                 <Switch
                   id="weekly-digest"
-                  checked={settings.weeklyDigest}
+                  checked={localSettings.weeklyDigest}
                   onCheckedChange={(checked) => updateSetting("weeklyDigest", checked)}
                 />
               </div>
@@ -244,7 +278,6 @@ export function ReminderSettingsComponent() {
         </CardContent>
       </Card>
 
-      {/* Calendar Sync Card */}
       <Card className="rounded-xl border shadow-sm">
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -259,7 +292,6 @@ export function ReminderSettingsComponent() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Enable Calendar Sync */}
           <div className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:space-x-2">
             <div className="space-y-0.5">
               <Label htmlFor="calendar-sync" className="text-base">
@@ -274,21 +306,22 @@ export function ReminderSettingsComponent() {
             </div>
             <Switch
               id="calendar-sync"
-              checked={settings.calendarSync}
+              checked={localSettings.calendarSync}
               onCheckedChange={(checked) => updateSetting("calendarSync", checked)}
             />
           </div>
 
-          {settings.calendarSync && (
+          {localSettings.calendarSync && (
             <>
-              {/* Calendar Type */}
               <div className="space-y-2">
                 <Label htmlFor="calendar-type">
                   {t("settings.calendarType", "Calendar type")}
                 </Label>
                 <Select
-                  value={settings.calendarType}
-                  onValueChange={(value: any) => updateSetting("calendarType", value)}
+                  value={localSettings.calendarType}
+                  onValueChange={(value: ReminderCalendarType) =>
+                    updateSetting("calendarType", value)
+                  }
                 >
                   <SelectTrigger id="calendar-type">
                     <SelectValue />
@@ -301,11 +334,10 @@ export function ReminderSettingsComponent() {
                 </Select>
               </div>
 
-              {/* Sync Status */}
               <div className="rounded-lg border p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <CheckCircle2Icon className="h-5 w-5 text-green-500" />
+                    <CheckCircle2Icon className={`h-5 w-5 ${successColors.icon}`} />
                     <span className="text-sm font-medium">
                       {t("settings.syncActive", "Sync Active")}
                     </span>
@@ -336,14 +368,25 @@ export function ReminderSettingsComponent() {
         </CardContent>
       </Card>
 
-      {/* Save Button */}
       {hasChanges && (
         <div className="flex justify-end gap-2 sticky bottom-4">
-          <Button variant="outline" className="cursor-pointer" onClick={() => { tap(); window.location.reload(); }}>
+          <Button
+            variant="outline"
+            className="cursor-pointer"
+            onClick={() => {
+              tap();
+              setDraft(null);
+              setHasChanges(false);
+            }}
+          >
             {t("common.cancel", "Cancel")}
           </Button>
-          <Button className="cursor-pointer" onClick={handleSave} disabled={isSaving}>
-            {isSaving ? t("common.saving", "Saving...") : t("common.save", "Save Changes")}
+          <Button
+            className="cursor-pointer"
+            onClick={() => void handleSave()}
+            disabled={isUpdating}
+          >
+            {isUpdating ? t("common.saving", "Saving...") : t("common.save", "Save Changes")}
           </Button>
         </div>
       )}

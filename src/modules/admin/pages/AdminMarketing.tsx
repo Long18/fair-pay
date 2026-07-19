@@ -100,6 +100,16 @@ interface DebtAgingSummary {
   remindersSent: number;
 }
 
+interface ActivationFunnel {
+  cohort_days: number;
+  signups: number;
+  first_expense: number;
+  active_7d: number;
+  signup_to_expense_rate: number;
+  signup_to_active_rate: number;
+  expense_to_active_rate: number;
+}
+
 // Emails types
 interface EmailStats {
   totalSent: number;
@@ -317,6 +327,34 @@ function useOnboardingFunnel(enabled: boolean) {
       }));
 
       return { steps, total, completedCount };
+    },
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
+const activationRpc = supabaseClient.rpc.bind(supabaseClient) as unknown as (
+  fn: string,
+  args?: Record<string, unknown>
+) => PromiseLike<{ data: unknown; error: Error | null }>;
+
+function useActivationFunnel(enabled: boolean, cohortDays = 30) {
+  return useQuery({
+    queryKey: ["admin", "activation-funnel", cohortDays],
+    queryFn: async () => {
+      const { data, error } = await activationRpc("admin_get_activation_funnel", {
+        p_cohort_days: cohortDays,
+      });
+      if (error) throw error;
+      return (data ?? {
+        cohort_days: cohortDays,
+        signups: 0,
+        first_expense: 0,
+        active_7d: 0,
+        signup_to_expense_rate: 0,
+        signup_to_active_rate: 0,
+        expense_to_active_rate: 0,
+      }) as ActivationFunnel;
     },
     enabled,
     staleTime: 60_000,
@@ -603,6 +641,72 @@ const FUNNEL_CARDS = [
   { key: "activeReferrers" as const, labelKey: "growth.activeReferrers", icon: ActivityIcon, intent: "success" as ThemeIntent },
 ] as const;
 
+function ActivationFunnelSection({ enabled }: { enabled: boolean }) {
+  const { tAdmin } = useAdminTranslation();
+  const { data, isLoading } = useActivationFunnel(enabled);
+  const cards = useMemo(() => [0, 1, 2], []);
+  const { containerVariants, rowVariants, animationKey } = useStaggerAnimation(cards);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          {tAdmin("retention.activationFunnel")}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {tAdmin("retention.activationCohort", { days: data?.cohort_days ?? 30 })}
+        </p>
+      </div>
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        key={animationKey}
+      >
+        <AdminMetricGrid columns={3}>
+          <motion.div variants={rowVariants} custom={0}>
+            <AdminMetricCard
+              icon={UsersIcon}
+              label={tAdmin("retention.activationSignups")}
+              value={formatNumber(data?.signups ?? 0)}
+              loading={isLoading}
+              intent="info"
+            />
+          </motion.div>
+          <motion.div variants={rowVariants} custom={1}>
+            <AdminMetricCard
+              icon={ActivityIcon}
+              label={tAdmin("retention.activationFirstExpense")}
+              value={formatNumber(data?.first_expense ?? 0)}
+              loading={isLoading}
+              intent="brand"
+              description={
+                data
+                  ? tAdmin("retention.activationRate", { rate: data.signup_to_expense_rate })
+                  : undefined
+              }
+            />
+          </motion.div>
+          <motion.div variants={rowVariants} custom={2}>
+            <AdminMetricCard
+              icon={RepeatIcon}
+              label={tAdmin("retention.activationActive7d")}
+              value={formatNumber(data?.active_7d ?? 0)}
+              loading={isLoading}
+              intent="success"
+              description={
+                data
+                  ? tAdmin("retention.activationRate", { rate: data.signup_to_active_rate })
+                  : undefined
+              }
+            />
+          </motion.div>
+        </AdminMetricGrid>
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Tab: Growth ──────────────────────────────────────────────────────
 
 function GrowthTab({ enabled, locale }: { enabled: boolean; locale: string }) {
@@ -618,6 +722,8 @@ function GrowthTab({ enabled, locale }: { enabled: boolean; locale: string }) {
 
   return (
     <div className="space-y-6">
+      <ActivationFunnelSection enabled={enabled} />
+
       {/* ── Referral Funnel ────────────────────────────────────── */}
       <div className="space-y-6">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -813,6 +919,8 @@ function RetentionTab({ enabled }: { enabled: boolean }) {
 
   return (
     <div className="space-y-6">
+      <ActivationFunnelSection enabled={enabled} />
+
       {/* ── Debt Aging Stat Cards ────────────────────────────────── */}
       <div className="space-y-6">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">

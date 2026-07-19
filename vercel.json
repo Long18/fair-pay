@@ -136,17 +136,33 @@
       "source": "/share/expenses/:id",
       "destination": "/api/share/expense?id=:id"
     },
-        {
-            "source": "/share/debts/:token",
-            "destination": "/api/share/debt?t=:token"
-        },
-        {
-            "source": "/api/(.*)",
-            "destination": "/api/$1"
-        },
-        {
-            "source": "/((?!api/|\\.well-known/).*)",
-            "destination": "/index.html"
-        }
+    {
+      "source": "/share/debts/:token",
+      "destination": "/api/share/debt?t=:token"
+    },
+    {
+      "source": "/share/groups/:id",
+      "destination": "/api/share/group?id=:id"
+    },
+    {
+      "source": "/share/friends/:id",
+      "destination": "/api/share/friend?id=:id"
+    },
+    {
+      "source": "/share/profiles/:id",
+      "destination": "/api/share/profile?id=:id"
+    },
+    {
+      "source": "/share/invite",
+      "destination": "/api/share/invite"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/((?!api/|\\.well-known/).*)",
+      "destination": "/index.html"
+    }
     ]
 }

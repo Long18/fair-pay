@@ -84,6 +84,7 @@ export const ChatPanelContent = memo(function ChatPanelContent({ onClear }: Chat
     selectedModel,
     selectLocalModel,
     sendMessage,
+    attachReceiptImage,
     clearPreview,
     clearChat,
     newChat,
@@ -438,6 +439,7 @@ export const ChatPanelContent = memo(function ChatPanelContent({ onClear }: Chat
           <div className="shrink-0 border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <ChatInput
               onSend={sendMessage}
+              onAttachImage={attachReceiptImage}
               isLoading={isLoading}
               disabled={inputDisabled}
               selectedModel={selectedModel}

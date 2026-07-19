@@ -12,7 +12,8 @@ export type NotificationType =
   | 'comment_mention'
   | 'comment_reply'
   | 'comment_reaction'
-  | 'expense_comment';
+  | 'expense_comment'
+  | 'recurring_due_reminder';
 
 export interface Notification {
   id: string;

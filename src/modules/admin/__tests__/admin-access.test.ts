@@ -11,6 +11,7 @@ describe("admin capability matrix", () => {
     expect(access.canViewTracking).toBe(true);
     expect(access.canViewAuditLogs).toBe(true);
     expect(access.canUseDevtool).toBe(true);
+    expect(access.canModerateContent).toBe(true);
   });
 
   it("gives moderators only the approved staff surface", () => {
@@ -24,6 +25,7 @@ describe("admin capability matrix", () => {
     expect(access.canManageOwnTransactions).toBe(true);
     expect(access.canViewGroups).toBe(true);
     expect(access.canManageReactions).toBe(true);
+    expect(access.canModerateContent).toBe(true);
     expect(access.canDeleteTransactions).toBe(false);
     expect(access.canManagePeople).toBe(false);
     expect(access.canManageGroups).toBe(false);

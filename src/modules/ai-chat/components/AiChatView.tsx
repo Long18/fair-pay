@@ -50,6 +50,7 @@ export const AiChatView = memo(function AiChatView() {
     selectedModel,
     selectLocalModel,
     sendMessage,
+    attachReceiptImage,
     clearChat,
     newChat,
     selectConversation,
@@ -243,6 +244,7 @@ export const AiChatView = memo(function AiChatView() {
                   )}
                   <ChatInput
                     onSend={sendMessage}
+                    onAttachImage={attachReceiptImage}
                     isLoading={isLoading}
                     disabled={inputDisabled}
                     selectedModel={selectedModel}

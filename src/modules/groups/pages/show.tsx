@@ -471,7 +471,7 @@ export const GroupShow = () => {
               {t('common.back', 'Back')}
             </Button>
             <SharePlatformPicker
-              shareUrl={() => `${window.location.origin}/groups/show/${id}`}
+              shareUrl={() => `${window.location.origin}/share/groups/${id}`}
               destinationUrl={() => `${window.location.origin}/groups/show/${id}`}
               title={group?.name || "Group"}
               text={`Check out ${group?.name} on FairPay`}
@@ -788,16 +788,32 @@ export const GroupShow = () => {
                       <CardTitle>{t('balances.title', 'Balances')}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {/* Debt Simplification Toggle */}
-                      {canToggle && allMembers.length >= 3 && balances.some(b => b.balance !== 0) && (
+                      {/* Debt Simplification / Minimize transfers CTA */}
+                      {allMembers.length >= 3 && balances.some(b => b.balance !== 0) && (
                         <div className="mb-4">
-                          <SimplifiedDebtsToggle
-                            isSimplified={useServerSimplification}
-                            onToggle={toggleSimplification}
-                            rawCount={balances.filter(b => b.balance !== 0).length}
-                            simplifiedCount={simplifiedCount}
-                            disabled={isLoadingSimplified || isUpdatingSimplification}
-                          />
+                          {canToggle ? (
+                            <SimplifiedDebtsToggle
+                              isSimplified={useServerSimplification}
+                              onToggle={toggleSimplification}
+                              rawCount={balances.filter(b => b.balance !== 0).length}
+                              simplifiedCount={simplifiedCount || balances.filter(b => b.balance !== 0).length}
+                              disabled={isLoadingSimplified || isUpdatingSimplification}
+                              isUpdating={isUpdatingSimplification}
+                            />
+                          ) : useServerSimplification ? (
+                            <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
+                              <span className="font-medium">
+                                {t("debts.minimizeTransfers", "Minimize transfers")}
+                              </span>
+                              <span className="text-muted-foreground">
+                                {" — "}
+                                {t(
+                                  "debts.minimizedActive",
+                                  "This group settles with fewer transfers."
+                                )}
+                              </span>
+                            </div>
+                          ) : null}
                         </div>
                       )}
 

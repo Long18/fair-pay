@@ -279,7 +279,7 @@ export const FriendShow = () => {
             </Button>
 
             <SharePlatformPicker
-              shareUrl={() => `${window.location.origin}/friends/${id}`}
+              shareUrl={() => `${window.location.origin}/share/friends/${id}`}
               destinationUrl={() => `${window.location.origin}/friends/${id}`}
               title={friendProfile?.full_name || "Friend"}
               text={t('friends.shareText', `Check out expenses with ${friendProfile?.full_name} on FairPay`)}

@@ -15,7 +15,7 @@ export function ReferralCard() {
   const variant = useExperiment("onboarding_invite_copy");
 
   const referralLink = code
-    ? `${window.location.origin}/register?ref=${code}`
+    ? `${window.location.origin}/share/invite?code=${code}`
     : "";
 
   const handleCopy = async () => {

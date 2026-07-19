@@ -127,12 +127,13 @@ function getSampleDestinationForTemplate(template: UtmShareTemplate | null | und
     case "debt":
       return "https://long-pay.vercel.app/share/debts/demo-token";
     case "friend":
-      return "https://long-pay.vercel.app/friends/demo-friend";
+      return "https://long-pay.vercel.app/share/friends/demo-friend";
     case "profile":
-      return "https://long-pay.vercel.app/profile/demo-profile";
+      return "https://long-pay.vercel.app/share/profiles/demo-profile";
     case "group":
+      return "https://long-pay.vercel.app/share/groups/demo-group";
     default:
-      return "https://long-pay.vercel.app/groups/show/demo-group";
+      return "https://long-pay.vercel.app/share/groups/demo-group";
   }
 }
 

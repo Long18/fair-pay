@@ -32,6 +32,7 @@ import {
   ArrowLeftIcon,
   SettingsIcon,
   TrendingUpIcon,
+  ShieldCheckIcon,
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useAdminTranslation } from "../i18n";
@@ -44,6 +45,7 @@ const NAV_ITEMS = [
   { key: "people", labelKey: "nav.people", icon: UsersIcon, path: "/admin/people", capability: "canViewPeople" },
   { key: "transactions", labelKey: "nav.transactions", icon: ReceiptIcon, path: "/admin/transactions", capability: "canViewTransactions" },
   { key: "reactions", labelKey: "nav.reactions", icon: SmilePlusIcon, path: "/admin/reactions", capability: "canManageReactions" },
+  { key: "moderation", labelKey: "nav.moderation", icon: ShieldCheckIcon, path: "/admin/moderation", capability: "canModerateContent" },
   { key: "devtool", labelKey: "nav.devtool", icon: SettingsIcon, path: "/admin/devtool", capability: "canUseDevtool" },
   { key: "marketing", labelKey: "nav.marketing", icon: TrendingUpIcon, path: "/admin/marketing", capability: "canViewGrowth" },
 ] as const;

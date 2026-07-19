@@ -54,6 +54,17 @@ export const ExpenseContextSelector = () => {
   const requestedCounterpartyId =
     searchParams.get("with") || searchParams.get("friendId");
 
+  const templateQuery = useMemo(() => {
+    const keys = ["description", "amount", "category"] as const;
+    const next = new URLSearchParams();
+    for (const key of keys) {
+      const value = searchParams.get(key);
+      if (value) next.set(key, value);
+    }
+    const qs = next.toString();
+    return qs ? `?${qs}` : "";
+  }, [searchParams]);
+
   const { query: groupsQuery } = useList({
     resource: "group_members",
     pagination: { mode: "off" },
@@ -185,16 +196,19 @@ export const ExpenseContextSelector = () => {
     if (loadingGroups || loadingFriendships) return;
     if (requestedFriendshipId) {
       go({
-        to: `/friends/${requestedFriendshipId}/expenses/create`,
+        to: `/friends/${requestedFriendshipId}/expenses/create${templateQuery}`,
         type: "replace",
       });
       return;
     }
     if (groups.length === 1 && friendships.length === 0) {
-      go({ to: `/groups/${groups[0].id}/expenses/create`, type: "replace" });
+      go({
+        to: `/groups/${groups[0].id}/expenses/create${templateQuery}`,
+        type: "replace",
+      });
     } else if (friendships.length === 1 && groups.length === 0) {
       go({
-        to: `/friends/${friendships[0].id}/expenses/create`,
+        to: `/friends/${friendships[0].id}/expenses/create${templateQuery}`,
         type: "replace",
       });
     }
@@ -205,6 +219,7 @@ export const ExpenseContextSelector = () => {
     loadingGroups,
     loadingFriendships,
     requestedFriendshipId,
+    templateQuery,
     go,
   ]);
 
@@ -229,9 +244,9 @@ export const ExpenseContextSelector = () => {
       avatarUrl: option.avatarUrl,
     });
     if (option.type === "group") {
-      go({ to: `/groups/${option.id}/expenses/create` });
+      go({ to: `/groups/${option.id}/expenses/create${templateQuery}` });
     } else {
-      go({ to: `/friends/${option.id}/expenses/create` });
+      go({ to: `/friends/${option.id}/expenses/create${templateQuery}` });
     }
   };
 

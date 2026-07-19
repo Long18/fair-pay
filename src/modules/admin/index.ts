@@ -26,3 +26,5 @@ export { AdminReactions } from "./pages/AdminReactions";
 export { AdminApiDocs } from "./pages/AdminApiDocs";
 export { AdminDevTool } from "./pages/AdminDevTool";
 export { AdminUtmDevTool } from "./pages/AdminUtmDevTool";
+export { AdminModeration } from "./pages/AdminModeration";
+export { AdminMarketing } from "./pages/AdminMarketing";

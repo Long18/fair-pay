@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useGo, useList, useGetIdentity, useOne } from "@refinedev/core";
 import { markOnboardingStep } from "@/modules/onboarding/utils/mark-step";
 import { useInstantCreate } from "@/hooks/use-instant-mutation";
-import { useParams } from "react-router";
+import { useParams, useSearchParams } from "react-router";
+import { EXPENSE_CATEGORIES } from "../lib/categories";
 import { ResponsiveDialog } from "@/components/refine-ui/responsive-dialog";
 import { ExpenseForm } from "../components/expense-form";
-import { AttachmentUpload, type AttachmentFile } from "../components/attachment-upload";
+import { type AttachmentFile } from "../components/attachment-upload";
 import { useAttachments } from "../hooks/use-attachments";
 import { useCreateRecurringExpense } from "../hooks/use-recurring-expenses";
 import { useTopTransactionPartners } from "@/hooks/analytics/use-top-transaction-partners";
@@ -22,6 +23,7 @@ import { useTrackEvent } from "@/hooks/use-track-event";
 
 export const ExpenseCreate = () => {
   const { groupId, friendshipId } = useParams<{ groupId?: string; friendshipId?: string }>();
+  const [searchParams] = useSearchParams();
   const go = useGo();
   const { data: identity } = useGetIdentity<Profile>();
   const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
@@ -32,6 +34,24 @@ export const ExpenseCreate = () => {
 
   const isGroupContext = !!groupId;
   const isFriendContext = !!friendshipId;
+
+  const templateDefaults = useMemo(() => {
+    const description = searchParams.get("description") ?? undefined;
+    const amountRaw = searchParams.get("amount");
+    const amount = amountRaw != null ? Number(amountRaw) : undefined;
+    const categoryRaw = searchParams.get("category") ?? undefined;
+    const category =
+      categoryRaw && EXPENSE_CATEGORIES.includes(categoryRaw)
+        ? categoryRaw
+        : categoryRaw
+          ? "Other"
+          : undefined;
+    return {
+      description,
+      amount: Number.isFinite(amount) ? amount : undefined,
+      category,
+    };
+  }, [searchParams]);
 
   // Fetch top transaction partners (2-3 people with most transactions)
   const topPartnerIds = useTopTransactionPartners(
@@ -398,6 +418,11 @@ export const ExpenseCreate = () => {
           topPartnerIds={topPartnerIds}
           attachments={attachments}
           onAttachmentsChange={setAttachments}
+          defaultValues={{
+            description: templateDefaults.description,
+            amount: templateDefaults.amount,
+            category: templateDefaults.category,
+          }}
         />
       )}
     </ResponsiveDialog>

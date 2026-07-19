@@ -96,6 +96,9 @@ const ExpenseCalculator = lazy(() => import("./pages/tools/expense-calculator"))
 // Pricing page
 const PricingPage = lazy(() => import("./pages/pricing"));
 
+// Recurring expenses (global list)
+const RecurringExpensesPage = lazy(() => import("./pages/recurring-expenses"));
+
 // Legal pages
 const PrivacyPage = lazy(() => import("./pages/privacy").then(m => ({ default: m.PrivacyPage })));
 const TermsPage = lazy(() => import("./pages/terms").then(m => ({ default: m.TermsPage })));
@@ -113,6 +116,7 @@ const AdminTransactions = lazy(() => import("./modules/admin/pages/AdminTransact
 const AdminReactions = lazy(() => import("./modules/admin/pages/AdminReactions").then(m => ({ default: m.AdminReactions })));
 const AdminDevTool = lazy(() => import("./modules/admin/pages/AdminDevTool").then(m => ({ default: m.AdminDevTool })));
 const AdminMarketing = lazy(() => import("./modules/admin/pages/AdminMarketing").then(m => ({ default: m.AdminMarketing })));
+const AdminModeration = lazy(() => import("./modules/admin/pages/AdminModeration").then(m => ({ default: m.AdminModeration })));
 
 // Profile Edit Redirect Component
 const ProfileEditRedirect = () => {
@@ -443,6 +447,7 @@ function App() {
                     <Route path="transactions" element={<Suspense fallback={<AdminPageSkeleton />}><AdminTransactions /></Suspense>} />
                     <Route path="audit-logs" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canViewAuditLogs"><Navigate to="/admin/devtool?tab=audit-logs" replace /></AdminCapabilityGuard></Suspense>} />
                     <Route path="reactions" element={<Suspense fallback={<AdminPageSkeleton />}><AdminReactions /></Suspense>} />
+                    <Route path="moderation" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canModerateContent"><AdminModeration /></AdminCapabilityGuard></Suspense>} />
                     <Route path="utm" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canUseDevtool"><Navigate to="/admin/devtool?tab=utm" replace /></AdminCapabilityGuard></Suspense>} />
                     <Route path="devtool" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canUseDevtool"><AdminDevTool /></AdminCapabilityGuard></Suspense>} />
                     <Route path="og-preview" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canUseDevtool"><Navigate to="/admin/devtool" replace /></AdminCapabilityGuard></Suspense>} />
@@ -554,6 +559,13 @@ function App() {
                       <Suspense fallback={<PageSkeleton />}>
                         <ErrorBoundary context="Balances Page">
                           <BalancesPage />
+                        </ErrorBoundary>
+                      </Suspense>
+                    } />
+                    <Route path="/recurring-expenses" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <ErrorBoundary context="Recurring Expenses">
+                          <RecurringExpensesPage />
                         </ErrorBoundary>
                       </Suspense>
                     } />

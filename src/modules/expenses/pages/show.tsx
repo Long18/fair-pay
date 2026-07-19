@@ -11,6 +11,7 @@ import { ExpenseSplitCard } from "../components/expense-split-card";
 import { Profile } from "@/modules/profile/types";
 import { Badge } from "@/components/ui/badge";
 import type { CommentUser } from "../types/comments";
+import { buildCommentParticipants } from "../utils/comment-helpers";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -392,29 +393,10 @@ export const ExpenseShow = () => {
   const notesCount = displayAttachments.length + (expense?.comment ? 1 : 0);
 
   // Build participants list for comment @mentions
-  const commentParticipants: CommentUser[] = useMemo(() => {
-    const users: CommentUser[] = [];
-    const seen = new Set<string>();
-    if (expense?.profiles?.id && !seen.has(expense.profiles.id)) {
-      seen.add(expense.profiles.id);
-      users.push({
-        id: expense.profiles.id,
-        full_name: expense.profiles.full_name,
-        avatar_url: expense.profiles.avatar_url || null,
-      });
-    }
-    for (const s of splits) {
-      if (s.user_id && !seen.has(s.user_id)) {
-        seen.add(s.user_id);
-        users.push({
-          id: s.user_id,
-          full_name: s.profiles?.full_name || "Unknown",
-          avatar_url: s.profiles?.avatar_url || null,
-        });
-      }
-    }
-    return users;
-  }, [expense, splits]);
+  const commentParticipants: CommentUser[] = useMemo(
+    () => buildCommentParticipants(expense, splits),
+    [expense, splits],
+  );
 
   const currentCommentUser: CommentUser | null = identity
     ? { id: identity.id, full_name: identity.full_name || "", avatar_url: identity.avatar_url || null }

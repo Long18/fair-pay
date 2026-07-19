@@ -14,7 +14,11 @@ refactors that do not change the contract are not listed.
 ## [Unreleased]
 
 ### Added
-- _Nothing yet._
+- **Webhook endpoints (scaffold)** — Database table
+  `public.public_api_webhooks` for registering outbound webhook URLs
+  (`url`, `secret`, `events`, `active`). Owner-only RLS. No HTTP
+  `/v1/webhooks` CRUD and **no delivery worker yet** (delivery TBD).
+  See `docs/features/phase5-scale.md`.
 
 ### Changed
 - _Nothing yet._

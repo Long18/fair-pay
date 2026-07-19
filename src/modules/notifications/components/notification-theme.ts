@@ -13,6 +13,7 @@ import {
   XIcon,
   MessageSquareIcon,
   AtSignIcon,
+  BellIcon,
 } from "@/components/ui/icons";
 
 type NotificationIcon = ComponentType<{ className?: string }>;
@@ -37,6 +38,7 @@ const notificationMetaByType: Record<Notification["type"], NotificationMeta> = {
   comment_reply: { icon: MessageSquareIcon, tone: "brand" },
   comment_reaction: { icon: MessageSquareIcon, tone: "accent" },
   expense_comment: { icon: MessageSquareIcon, tone: "info" },
+  recurring_due_reminder: { icon: BellIcon, tone: "warning" },
 };
 
 const defaultNotificationMeta: NotificationMeta = {

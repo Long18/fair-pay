@@ -528,6 +528,17 @@ function UserDropdown() {
           <span>{t("settings.title")}</span>
         </DropdownMenuItem>
 
+        <DropdownMenuItem
+          onClick={() => { tap(); go({ to: "/recurring-expenses" }); }}
+          data-track-id="menu:recurring-expenses"
+          data-track-event="nav_click"
+          data-track-type="menu-item"
+          data-track-category="navigation"
+        >
+          <ListIcon className="h-4 w-4" />
+          <span>{t("recurring.title", "Recurring")}</span>
+        </DropdownMenuItem>
+
         {isStaff && (
           <>
             <DropdownMenuSeparator />
