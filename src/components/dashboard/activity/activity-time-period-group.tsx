@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { AnimatedList } from "@/components/ui/animated-list";
 import { AnimatedRow } from "@/components/ui/animated-row";
+import { ItemGroup } from "@/components/ui/item";
 import { useHaptics } from "@/hooks/use-haptics";
 
 import { ChevronDownIcon, ChevronRightIcon } from "@/components/ui/icons";
@@ -10,10 +11,6 @@ import { cn } from "@/lib/utils";
 import type { TimePeriodGroup } from "@/lib/activity-grouping";
 import type { EnhancedActivityListVariant } from "./enhanced-activity-list";
 import { EnhancedActivityRow } from "./enhanced-activity-row";
-
-// =============================================
-// Component Props
-// =============================================
 
 export interface ActivityTimePeriodGroupProps {
   group: TimePeriodGroup;
@@ -26,10 +23,6 @@ export interface ActivityTimePeriodGroupProps {
   variant?: EnhancedActivityListVariant;
   className?: string;
 }
-
-// =============================================
-// Activity Time Period Group Component
-// =============================================
 
 export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = ({
   group,
@@ -45,6 +38,7 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
   const { t } = useTranslation();
   const { tap } = useHaptics();
   const hasActivities = group.activities.length > 0;
+  const isDashboard = variant === "dashboard";
   const labelByPeriod = {
     today: t("dashboard.activityFeed.time.today", "Today"),
     this_week: t("dashboard.activityFeed.time.thisWeek", "This Week"),
@@ -57,15 +51,20 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
   }
 
   return (
-    <div className={cn("space-y-3", className)}>
-      {/* Group Header */}
-      <div className="flex items-center gap-2">
-        <button type="button"
-          onClick={() => { tap(); onToggleGroup(); }}
+    <div className={cn(isDashboard ? "space-y-0" : "space-y-3", className)}>
+      <div className={cn("flex items-center gap-2", isDashboard && "px-3 py-2")}>
+        <button
+          type="button"
+          onClick={() => {
+            tap();
+            onToggleGroup();
+          }}
           className={cn(
-            "flex items-center gap-2 text-sm font-semibold text-foreground",
-            "hover:text-foreground/80 transition-colors",
-            "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md px-2 py-1"
+            "flex items-center gap-2 rounded-md px-1 py-1 transition-colors",
+            "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+            isDashboard
+              ? "text-xs font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
+              : "text-sm font-semibold text-foreground hover:text-foreground/80"
           )}
           aria-label={
             group.isCollapsed
@@ -81,18 +80,22 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
           aria-expanded={!group.isCollapsed}
         >
           {group.isCollapsed ? (
-            <ChevronRightIcon className="h-4 w-4" />
+            <ChevronRightIcon className="h-3.5 w-3.5" />
           ) : (
-            <ChevronDownIcon className="h-4 w-4" />
+            <ChevronDownIcon className="h-3.5 w-3.5" />
           )}
           <span>{labelByPeriod[group.period]}</span>
-          <span className="text-muted-foreground font-normal">
+          <span
+            className={cn(
+              "font-normal tabular-nums",
+              isDashboard ? "text-muted-foreground/80" : "text-muted-foreground"
+            )}
+          >
             ({group.activities.length})
           </span>
         </button>
       </div>
 
-      {/* Group Activities */}
       <AnimatePresence initial={false}>
         {!group.isCollapsed && (
           <motion.div
@@ -102,10 +105,11 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
             transition={{ duration: 0.3, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <AnimatedList items={group.activities} className="space-y-2">
-              {group.activities.map((activity, index) => (
-                <AnimatedRow key={activity.id} index={index}>
+            {isDashboard ? (
+              <ItemGroup className="divide-y divide-border">
+                {group.activities.map((activity) => (
                   <EnhancedActivityRow
+                    key={activity.id}
                     activity={activity}
                     currentUserId={currentUserId}
                     isExpanded={expandedActivityIds.has(activity.id)}
@@ -114,9 +118,25 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
                     showActions={showActions}
                     variant={variant}
                   />
-                </AnimatedRow>
-              ))}
-            </AnimatedList>
+                ))}
+              </ItemGroup>
+            ) : (
+              <AnimatedList items={group.activities} className="space-y-2">
+                {group.activities.map((activity, index) => (
+                  <AnimatedRow key={activity.id} index={index}>
+                    <EnhancedActivityRow
+                      activity={activity}
+                      currentUserId={currentUserId}
+                      isExpanded={expandedActivityIds.has(activity.id)}
+                      onToggleExpand={() => onToggleActivity(activity.id)}
+                      showDuplicateContext={duplicateIds.has(activity.id)}
+                      showActions={showActions}
+                      variant={variant}
+                    />
+                  </AnimatedRow>
+                ))}
+              </AnimatedList>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

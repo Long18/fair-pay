@@ -7,6 +7,15 @@ import type { TFunction } from "i18next";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item";
+import { Progress } from "@/components/ui/progress";
 import { UserAvatar, getInitials } from "@/components/user-display";
 import {
   DropdownMenu,
@@ -198,18 +207,6 @@ function getDashboardDisplayAmount(activity: EnhancedActivityItem, currentUserId
         ? "text-semantic-positive"
         : "text-semantic-negative",
   };
-}
-
-function getProgressFillClass(paymentState: EnhancedActivityItem["paymentState"]) {
-  switch (paymentState) {
-    case "paid":
-      return "bg-status-success-foreground";
-    case "partial":
-      return "bg-status-info-foreground";
-    case "unpaid":
-    default:
-      return "bg-status-warning-foreground";
-  }
 }
 
 function ActivityDetailLink({
@@ -697,63 +694,96 @@ const DashboardActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRo
     const latestPaymentEvent = activity.paymentEvents[0];
     const hasPaymentEvents = activity.type === "expense" && activity.paymentEvents.length > 0;
     const activityTimestamp = activity.activityDate || activity.date;
+    const isPartial = activity.paymentState === "partial";
+    const isExpense = activity.type === "expense";
 
     return (
       <div
         ref={ref}
-        className={cn("overflow-hidden rounded-lg border bg-card shadow-sm card-hover-subtle", className)}
+        className={cn(
+          "overflow-hidden",
+          isPartial && "border-l-2 border-status-info-foreground",
+          className
+        )}
       >
-        <button
-          type="button"
-          onClick={() => {
-            if (activity.type !== "expense") {
-              tap();
-              go({ to: `/payments/show/${activity.id}` });
-              return;
-            }
-
-            tap();
-            onToggleExpand();
-          }}
-          className={cn(
-            "group w-full text-left transition-colors hover:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-            activity.paymentState === "paid" && "bg-status-success-bg/10"
-          )}
-          aria-expanded={activity.type === "expense" ? isExpanded : undefined}
+        <Item
+          asChild
+          size="sm"
+          className="w-full rounded-none border-transparent hover:bg-muted/40"
         >
-          <div className="flex flex-col gap-4 px-4 py-4 md:flex-row md:items-start md:gap-3">
-            <div className="flex items-center gap-2 md:pt-0.5">
+          <button
+            type="button"
+            onClick={() => {
+              if (!isExpense) {
+                tap();
+                go({ to: `/payments/show/${activity.id}` });
+                return;
+              }
+
+              tap();
+              onToggleExpand();
+            }}
+            className="group text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+            aria-expanded={isExpense ? isExpanded : undefined}
+            aria-label={
+              isExpense
+                ? isExpanded
+                  ? t("dashboard.activityFeed.collapsePayments", "Collapse payment events")
+                  : t("dashboard.activityFeed.expandPayments", "Expand payment events")
+                : t("dashboard.activityFeed.openPayment", "Open payment")
+            }
+          >
+            <ItemMedia className="w-[5.25rem] flex-col items-stretch gap-1.5 self-start">
               <PaymentStateBadge
                 state={activity.paymentState}
                 percentage={activity.partialPercentage}
-                size="md"
+                size="sm"
               />
-            </div>
+              {isPartial && (
+                <Progress
+                  value={activity.settlementProgressPct}
+                  className="h-1 bg-status-info-bg [&_[data-slot=progress-indicator]]:bg-status-info-foreground"
+                  aria-label={t("dashboard.activityFeed.settlementProgress", {
+                    defaultValue: "{{pct}}% settled",
+                    pct: activity.settlementProgressPct,
+                  })}
+                />
+              )}
+            </ItemMedia>
 
-            <div className="min-w-0 flex-1">
-              <p className="text-base font-semibold leading-6 text-foreground">
-                <strong>{narrative.actor}</strong> {narrative.action}{" "}
-                <strong>{narrative.description}</strong>
-              </p>
+            <ItemContent className="min-w-0 gap-1">
+              <ItemTitle className="typography-row-title w-full max-w-full flex-wrap">
+                <span>
+                  <strong className="font-semibold text-foreground">{narrative.actor}</strong>{" "}
+                  <span className="font-normal text-muted-foreground">{narrative.action}</span>{" "}
+                  <strong className="font-semibold text-foreground">{narrative.description}</strong>
+                </span>
+              </ItemTitle>
 
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <ItemDescription className="typography-metadata !line-clamp-none flex flex-wrap items-center gap-x-1.5 gap-y-1">
                 <PayingParticipantsChips participants={activity.payingParticipants} />
 
                 {activity.payingParticipants.length > 0 && (
-                  <span className="text-muted-foreground/40">•</span>
+                  <span className="text-muted-foreground/40" aria-hidden>
+                    ·
+                  </span>
                 )}
 
                 {activity.groupName && (
                   <>
                     <span className="truncate">{activity.groupName}</span>
-                    <span className="text-muted-foreground/40">•</span>
+                    <span className="text-muted-foreground/40" aria-hidden>
+                      ·
+                    </span>
                   </>
                 )}
 
                 {latestPaymentEvent && (
                   <>
                     <span>{getMethodLabel(latestPaymentEvent.method, t)}</span>
-                    <span className="text-muted-foreground/40">•</span>
+                    <span className="text-muted-foreground/40" aria-hidden>
+                      ·
+                    </span>
                   </>
                 )}
 
@@ -761,57 +791,43 @@ const DashboardActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRo
 
                 {showDuplicateContext && activity.contextLine && (
                   <>
-                    <span className="text-muted-foreground/40">•</span>
-                    <span className="text-xs">{activity.contextLine}</span>
+                    <span className="text-muted-foreground/40" aria-hidden>
+                      ·
+                    </span>
+                    <span>{activity.contextLine}</span>
                   </>
                 )}
-              </div>
-            </div>
+              </ItemDescription>
+            </ItemContent>
 
-            <div className="flex items-center justify-between gap-3 md:flex-col md:items-end md:justify-start">
-              <p className={cn("text-lg font-bold tabular-nums", displayAmount.className)}>
+            <ItemActions className="ml-auto shrink-0 flex-col items-end gap-1 self-center sm:flex-row sm:items-center sm:gap-2">
+              <span className={cn("typography-amount-prominent", displayAmount.className)}>
                 {displayAmount.prefix}
                 {displayAmount.label}
-              </p>
-              {activity.type === "expense" ? (
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                  <span>
-                    {isExpanded
-                      ? t("dashboard.activityFeed.hideTrail", "Hide trail")
-                      : t("dashboard.activityFeed.tapRow", "Tap row")}
-                  </span>
-                  {isExpanded ? (
-                    <ChevronDownIcon className="h-4 w-4" />
-                  ) : (
-                    <ChevronRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                  )}
-                </span>
+              </span>
+              {isExpense ? (
+                isExpanded ? (
+                  <ChevronDownIcon className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronRightIcon className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                )
               ) : (
-                <span className="text-xs font-medium text-muted-foreground">
-                  {t("dashboard.activityFeed.directPayment", "Direct payment")}
-                </span>
+                <ChevronRightIcon className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
               )}
-            </div>
-          </div>
-
-          <div className="h-1.5 bg-muted/70">
-            <div
-              className={cn("h-full rounded-full transition-[width]", getProgressFillClass(activity.paymentState))}
-              style={{ width: `${activity.settlementProgressPct}%` }}
-            />
-          </div>
-        </button>
+            </ItemActions>
+          </button>
+        </Item>
 
         <AnimatePresence initial={false}>
-          {activity.type === "expense" && isExpanded && (
+          {isExpense && isExpanded && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.25, ease: "easeInOut" }}
-              className="overflow-hidden border-t bg-muted/10"
+              className="overflow-hidden border-t bg-muted/30"
             >
-              <div className="space-y-2 p-3 md:p-4">
+              <div className="space-y-2 px-3 py-3 md:px-4">
                 {hasPaymentEvents ? (
                   activity.paymentEvents.map((paymentEvent) => (
                     <DashboardPaymentTrailRow
@@ -821,7 +837,7 @@ const DashboardActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRo
                     />
                   ))
                 ) : (
-                  <div className="rounded-md border border-dashed border-border bg-background/70 px-4 py-4 text-sm text-muted-foreground">
+                  <div className="rounded-md border border-dashed border-border px-4 py-4 text-sm text-muted-foreground">
                     {t("dashboard.activityFeed.noPaymentsForExpense", "No payments yet for this expense.")}
                   </div>
                 )}

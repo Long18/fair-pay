@@ -251,7 +251,7 @@ export const Dashboard = () => {
                   )}
 
                   {activeTab === "activity" && (
-                    <div className="bg-card border rounded-lg shadow-sm overflow-hidden p-4">
+                    <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
                       <EnhancedActivityList
                         activities={activities}
                         currentUserId={identity?.id || ""}

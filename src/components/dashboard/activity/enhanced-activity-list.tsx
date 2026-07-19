@@ -10,6 +10,7 @@ import { debounce } from "@/lib/performance";
 
 import { AnimatedList } from "@/components/ui/animated-list";
 import { AnimatedRow } from "@/components/ui/animated-row";
+import { ItemGroup } from "@/components/ui/item";
 import { ActivityFilterControls, type PaymentStateFilter, type FilterCounts } from "./activity-filter-controls";
 import { ActivitySortControls, type SortOption } from "./activity-sort-controls";
 import { ActivitySummary } from "./activity-summary";
@@ -84,6 +85,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
   const [isSummaryCollapsed, setIsSummaryCollapsed] = React.useState(false);
   const [currentPage, setCurrentPage] = React.useState(1);
   const { tap } = useHaptics();
+  const isDashboard = variant === "dashboard";
 
   // Filter activities
   const filteredActivities = React.useMemo(() => {
@@ -294,7 +296,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
   // No results after filtering
   if (filteredActivities.length === 0) {
     return (
-      <div className={cn("space-y-4", className)}>
+      <div className={cn(isDashboard ? "space-y-0" : "space-y-4", className)}>
         {showSummary && (
           <ActivitySummary
             totalOwed={summaryMetrics.totalOwed}
@@ -307,18 +309,22 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
         )}
 
         {showFilters && (
-          <ActivityFilterControls
-            activeFilter={activeFilter}
-            onFilterChange={handleFilterChange}
-            counts={filterCounts}
-            compact={compactControls}
-          />
+          <div className={cn(isDashboard && "border-b border-border px-4 py-3")}>
+            <ActivityFilterControls
+              activeFilter={activeFilter}
+              onFilterChange={handleFilterChange}
+              counts={filterCounts}
+              compact={compactControls}
+            />
+          </div>
         )}
 
-        <div className="text-center py-12">
-          <ActivityIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-foreground font-medium">{t("dashboard.activityFeed.filteredEmptyTitle", "No activities match your filter")}</p>
-          <p className="text-sm text-muted-foreground mt-2">
+        <div className="px-4 py-12 text-center">
+          <ActivityIcon className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+          <p className="font-medium text-foreground">
+            {t("dashboard.activityFeed.filteredEmptyTitle", "No activities match your filter")}
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
             {t("dashboard.activityFeed.filteredEmptyDescription", "Try selecting a different filter")}
           </p>
         </div>
@@ -326,44 +332,55 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
     );
   }
 
-  return (
-    <div ref={listRef} className={cn("space-y-4", className)}>
-      {/* Summary Section */}
-      {showSummary && (
-        <ActivitySummary
-          totalOwed={summaryMetrics.totalOwed}
-          totalToReceive={summaryMetrics.totalToReceive}
-          netBalance={summaryMetrics.netBalance}
-          currency={currency}
-          isCollapsed={isSummaryCollapsed}
-          onToggleCollapse={() => setIsSummaryCollapsed(!isSummaryCollapsed)}
+  const toolbar = (showFilters || showSort) && (
+    <div
+      className={cn(
+        "flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center viewport-transition-flex",
+        isDashboard && "border-b border-border px-4 py-3"
+      )}
+    >
+      {showFilters && (
+        <ActivityFilterControls
+          activeFilter={activeFilter}
+          onFilterChange={debouncedFilterChange}
+          counts={filterCounts}
+          compact={compactControls}
         />
       )}
 
-      {/* Filter and Sort Controls */}
-      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center viewport-transition-flex">
-        {showFilters && (
-          <ActivityFilterControls
-            activeFilter={activeFilter}
-            onFilterChange={debouncedFilterChange}
-            counts={filterCounts}
-            compact={compactControls}
-          />
-        )}
+      {showSort && (
+        <ActivitySortControls
+          activeSort={activeSort}
+          onSortChange={debouncedSortChange}
+          compact={compactControls}
+        />
+      )}
+    </div>
+  );
 
-        {showSort && (
-          <ActivitySortControls
-            activeSort={activeSort}
-            onSortChange={debouncedSortChange}
-            compact={compactControls}
-          />
-        )}
-      </div>
-
-      {/* Activity List */}
-      <div className="space-y-4">
-        {showTimeGrouping && timeGroups ? (
-          // Time-grouped view
+  const activityList = (
+    <div className={cn(isDashboard ? "space-y-0" : "space-y-4")}>
+      {showTimeGrouping && timeGroups ? (
+        isDashboard ? (
+          <div className="divide-y divide-border">
+            {timeGroups.map((group) => (
+              <ActivityTimePeriodGroup
+                key={group.period}
+                group={{
+                  ...group,
+                  isCollapsed: collapsedGroupPeriods.has(group.period),
+                }}
+                currentUserId={currentUserId}
+                expandedActivityIds={expandedActivityIds}
+                onToggleActivity={handleToggleActivity}
+                onToggleGroup={() => handleToggleGroup(group.period)}
+                duplicateIds={duplicateIds}
+                showActions={showActions}
+                variant={variant}
+              />
+            ))}
+          </div>
+        ) : (
           <AnimatedList items={timeGroups} className="space-y-4">
             {timeGroups.map((group, index) => (
               <AnimatedRow key={group.period} index={index}>
@@ -383,53 +400,84 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
               </AnimatedRow>
             ))}
           </AnimatedList>
-        ) : (
-          // Flat list view
-          <AnimatedList items={visibleItems} className="space-y-2">
-            {visibleItems.map((activity, index) => (
-              <AnimatedRow key={activity.id} index={index}>
-                <EnhancedActivityRow
-                  activity={activity}
-                  currentUserId={currentUserId}
-                  isExpanded={expandedActivityIds.has(activity.id)}
-                  onToggleExpand={() => handleToggleActivity(activity.id)}
-                  showDuplicateContext={duplicateIds.has(activity.id)}
-                  showActions={showActions}
-                  variant={variant}
-                />
-              </AnimatedRow>
-            ))}
-          </AnimatedList>
-        )}
-
-        {/* Pagination or Load More */}
-        {paginationMode === "pagination" ? (
-          activitiesWithContext.length > pageSize && (
-            <div className="pt-4">
-              <PaginationControls
-                metadata={paginationMetadata}
-                onPageChange={handlePageChange}
+        )
+      ) : isDashboard ? (
+        <ItemGroup className="divide-y divide-border">
+          {visibleItems.map((activity) => (
+            <EnhancedActivityRow
+              key={activity.id}
+              activity={activity}
+              currentUserId={currentUserId}
+              isExpanded={expandedActivityIds.has(activity.id)}
+              onToggleExpand={() => handleToggleActivity(activity.id)}
+              showDuplicateContext={duplicateIds.has(activity.id)}
+              showActions={showActions}
+              variant={variant}
+            />
+          ))}
+        </ItemGroup>
+      ) : (
+        <AnimatedList items={visibleItems} className="space-y-2">
+          {visibleItems.map((activity, index) => (
+            <AnimatedRow key={activity.id} index={index}>
+              <EnhancedActivityRow
+                activity={activity}
+                currentUserId={currentUserId}
+                isExpanded={expandedActivityIds.has(activity.id)}
+                onToggleExpand={() => handleToggleActivity(activity.id)}
+                showDuplicateContext={duplicateIds.has(activity.id)}
+                showActions={showActions}
+                variant={variant}
               />
-            </div>
-          )
-        ) : (
-          hasMore && (
-            <div className="text-center pt-4">
-              <Button
-                variant="outline"
-                onClick={() => { tap(); loadMore(); }}
-                className="rounded-lg"
-              >
-                {t("dashboard.activityFeed.loadMore", {
-                  defaultValue: "Load More ({{visible}} of {{total}})",
-                  visible: visibleCount,
-                  total: progressiveTotalCount,
-                })}
-              </Button>
-            </div>
-          )
-        )}
-      </div>
+            </AnimatedRow>
+          ))}
+        </AnimatedList>
+      )}
+
+      {paginationMode === "pagination" ? (
+        activitiesWithContext.length > pageSize && (
+          <div className={cn("pt-4", isDashboard && "border-t border-border px-4 pb-4")}>
+            <PaginationControls metadata={paginationMetadata} onPageChange={handlePageChange} />
+          </div>
+        )
+      ) : (
+        hasMore && (
+          <div className="pt-4 text-center">
+            <Button
+              variant="outline"
+              onClick={() => {
+                tap();
+                loadMore();
+              }}
+              className="rounded-lg"
+            >
+              {t("dashboard.activityFeed.loadMore", {
+                defaultValue: "Load More ({{visible}} of {{total}})",
+                visible: visibleCount,
+                total: progressiveTotalCount,
+              })}
+            </Button>
+          </div>
+        )
+      )}
+    </div>
+  );
+
+  return (
+    <div ref={listRef} className={cn(isDashboard ? "space-y-0" : "space-y-4", className)}>
+      {showSummary && (
+        <ActivitySummary
+          totalOwed={summaryMetrics.totalOwed}
+          totalToReceive={summaryMetrics.totalToReceive}
+          netBalance={summaryMetrics.netBalance}
+          currency={currency}
+          isCollapsed={isSummaryCollapsed}
+          onToggleCollapse={() => setIsSummaryCollapsed(!isSummaryCollapsed)}
+        />
+      )}
+
+      {toolbar}
+      {activityList}
     </div>
   );
 };

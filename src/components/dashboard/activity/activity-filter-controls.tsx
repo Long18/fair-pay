@@ -2,13 +2,10 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { XIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/use-haptics";
-
-// =============================================
-// Types
-// =============================================
 
 export type PaymentStateFilter = "all" | "paid" | "unpaid" | "partial";
 
@@ -19,10 +16,6 @@ export interface FilterCounts {
   partial: number;
 }
 
-// =============================================
-// Component Props
-// =============================================
-
 export interface ActivityFilterControlsProps {
   activeFilter: PaymentStateFilter;
   onFilterChange: (filter: PaymentStateFilter) => void;
@@ -30,10 +23,6 @@ export interface ActivityFilterControlsProps {
   compact?: boolean;
   className?: string;
 }
-
-// =============================================
-// Activity Filter Controls Component
-// =============================================
 
 export const ActivityFilterControls: React.FC<ActivityFilterControlsProps> = ({
   activeFilter,
@@ -59,51 +48,64 @@ export const ActivityFilterControls: React.FC<ActivityFilterControlsProps> = ({
 
   return (
     <div className={cn("flex flex-wrap items-center gap-2", compact && "gap-1.5", className)}>
-      {filters.map((filter) => (
-        <button type="button"
-          key={filter.value}
-          onClick={() => { tap(); onFilterChange(filter.value); }}
-          className={cn(
-            "inline-flex items-center gap-2 rounded-full transition-all",
-            compact ? "px-3 py-1.5 text-xs sm:text-sm" : "px-4 py-2 text-sm",
-            "font-medium",
-            "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-            activeFilter === filter.value
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "bg-muted text-muted-foreground hover:bg-muted/80"
-          )}
-          aria-label={t("dashboard.activityFeed.filters.ariaLabel", {
-            defaultValue: "Filter by {{label}}",
-            label: filter.label,
-          })}
-          aria-pressed={activeFilter === filter.value}
-        >
-          <span>{filter.label}</span>
-          <Badge
-            variant={activeFilter === filter.value ? "secondary" : "outline"}
+      <ToggleGroup
+        type="single"
+        value={activeFilter}
+        onValueChange={(value) => {
+          if (!value) return;
+          tap();
+          onFilterChange(value as PaymentStateFilter);
+        }}
+        variant="outline"
+        size={compact ? "sm" : "default"}
+        className="flex-wrap gap-0 rounded-full border border-border bg-muted/40 p-0.5 shadow-none"
+        aria-label={t("dashboard.activityFeed.filters.groupLabel", "Filter activity by payment state")}
+      >
+        {filters.map((filter) => (
+          <ToggleGroupItem
+            key={filter.value}
+            value={filter.value}
+            aria-label={t("dashboard.activityFeed.filters.ariaLabel", {
+              defaultValue: "Filter by {{label}}",
+              label: filter.label,
+            })}
             className={cn(
-              "rounded-full px-2 py-0.5 text-xs font-semibold",
-              compact && "px-1.5 text-[10px]",
-              activeFilter === filter.value
-                ? "bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30"
-                : "bg-background text-foreground"
+              "gap-1.5 rounded-full border-0 px-3 shadow-none first:rounded-full last:rounded-full",
+              "data-[variant=outline]:border-0 data-[variant=outline]:first:border-0",
+              "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:hover:bg-primary/90 data-[state=on]:hover:text-primary-foreground",
+              "data-[state=off]:text-muted-foreground data-[state=off]:hover:bg-background/80 data-[state=off]:hover:text-foreground",
+              compact && "h-7 px-2.5 text-xs"
             )}
           >
-            {filter.count}
-          </Badge>
-        </button>
-      ))}
+            <span>{filter.label}</span>
+            <Badge
+              variant={activeFilter === filter.value ? "secondary" : "outline"}
+              className={cn(
+                "rounded-full px-1.5 py-0 text-[10px] font-semibold tabular-nums",
+                compact && "px-1 text-[10px]",
+                activeFilter === filter.value
+                  ? "border-primary-foreground/30 bg-primary-foreground/20 text-primary-foreground"
+                  : "border-border/60 bg-background text-muted-foreground"
+              )}
+            >
+              {filter.count}
+            </Badge>
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
 
-      {/* Reset Button - shows when filter is active */}
       {hasActiveFilters && !compact && (
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => { tap(); onFilterChange("all"); }}
+          onClick={() => {
+            tap();
+            onFilterChange("all");
+          }}
           className="h-9 rounded-full px-3"
           aria-label={t("dashboard.activityFeed.filters.reset", "Reset filters")}
         >
-          <XIcon className="h-4 w-4 mr-1" />
+          <XIcon className="mr-1 h-4 w-4" />
           <span className="text-sm">{t("dashboard.activityFeed.filters.resetButton", "Reset")}</span>
         </Button>
       )}
