@@ -7,6 +7,9 @@
 ```bash
 # Apply seed data to local database
 docker exec -i supabase_db_FairPay psql -U postgres -d postgres < supabase/seed/sample-data.sql
+
+# Guaranteed friendships/group/expenses between login accounts (admin/mod/user1/…)
+docker exec -i supabase_db_FairPay psql -U postgres -d postgres < supabase/seed/demo-login-circle.sql
 ```
 
 ## Available Seed File
@@ -81,7 +84,7 @@ The seed file path is configured in `supabase/config.toml`:
 ```toml
 [db.seed]
 enabled = true
-sql_paths = ['./seed/sample-data.sql']
+sql_paths = ['./seed/sample-data.sql', './seed/demo-login-circle.sql']
 ```
 
 ## Maintenance

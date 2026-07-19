@@ -1948,6 +1948,12 @@ END $$;
 
 COMMIT;
 
+-- API roles need table access after baseline (RLS still enforces rows).
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
+
 -- ========================================
 -- END OF BASELINE
 -- ========================================

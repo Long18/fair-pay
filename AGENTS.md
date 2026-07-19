@@ -14,7 +14,7 @@ Guidance for AI coding agents working in this repository.
 1. `pnpm install`
 2. Copy env: prefer **`.env.local`** (Vite accepts `.env` too). Minimum: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
 3. **Remote Supabase (recommended for agents):** point env at a hosted project; skip local Docker. This is the reliable cold-start path.
-4. **Local Supabase (advanced):** requires Docker Desktop. Migrations alone are incomplete — core tables live in [`supabase/baseline.sql`](supabase/baseline.sql), which is **not** applied by `pnpm supabase:start`. After start/reset, apply baseline via the project sync helpers (see `supabase/scripts/sync/sync-full.sh`) or an equivalent `psql` apply, then re-run pending migrations / seed. Prefer remote env unless you need a full local DB.
+4. **Local Supabase (advanced):** requires Docker Desktop. Migrations alone are incomplete — core tables live in [`supabase/baseline.sql`](supabase/baseline.sql), which is **not** applied by `pnpm supabase:start`. After start/reset, apply baseline (+ grants), pending migrations, then seed (`sample-data.sql` + `demo-login-circle.sql`). Prefer remote env unless you need a full local DB.
 5. `pnpm dev` → http://localhost:3000
 
 Do **not** assume `pnpm supabase:start` alone yields a usable schema on a fresh machine.
