@@ -19,8 +19,8 @@ const forbiddenObjectKeys = [
 
 describe("Phase 4 admin RPC migration security", () => {
   it("creates only the two scoped admin observability RPCs", () => {
-    expect(migration).toContain("CREATE FUNCTION public.admin_list_agent_operations");
-    expect(migration).toContain("CREATE FUNCTION public.admin_get_agent_operation_metrics");
+    expect(migration).toContain("CREATE OR REPLACE FUNCTION public.admin_list_agent_operations");
+    expect(migration).toContain("CREATE OR REPLACE FUNCTION public.admin_get_agent_operation_metrics");
     expect(migration.match(/\nSECURITY DEFINER\n/g)).toHaveLength(2);
     expect(migration.match(/SET search_path = ''/g)).toHaveLength(2);
   });

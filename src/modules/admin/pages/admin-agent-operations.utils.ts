@@ -4,7 +4,11 @@
  * triggering the react-refresh/only-export-components warning.
  */
 
-import type { AgentOperationRow, AgentOperationStatus } from "../types";
+import type {
+  AgentOperationRow,
+  AgentOperationStatus,
+  ExternalAgentSubmissionStatus,
+} from "../types";
 
 // ─── Badge variant mapping ───────────────────────────────────────────────────
 
@@ -19,8 +23,47 @@ export const STATUS_VARIANT: Record<AgentOperationStatus, BadgeVariant> = {
   expired: "secondary",
 };
 
+export const EXTERNAL_STATUS_VARIANT: Record<
+  ExternalAgentSubmissionStatus,
+  BadgeVariant
+> = {
+  pending: "outline",
+  approved: "default",
+  rejected: "destructive",
+  expired: "secondary",
+  failed: "destructive",
+};
+
 export function statusBadgeVariant(status: AgentOperationStatus): BadgeVariant {
   return STATUS_VARIANT[status];
+}
+
+export function externalStatusBadgeVariant(
+  status: ExternalAgentSubmissionStatus
+): BadgeVariant {
+  return EXTERNAL_STATUS_VARIANT[status];
+}
+
+/** Known agent source keys → stable i18n lookup keys. */
+export const KNOWN_AGENT_SOURCES = [
+  "chatgpt",
+  "external_agent",
+  "internal_mcp",
+  "internal_fairpay_agent",
+  "in_app_ai_chat",
+] as const;
+
+export type KnownAgentSource = (typeof KNOWN_AGENT_SOURCES)[number];
+
+export function normalizeAgentSource(
+  source: string | null | undefined
+): string | null {
+  const trimmed = source?.trim();
+  return trimmed ? trimmed.slice(0, 100) : null;
+}
+
+export function isKnownAgentSource(source: string): source is KnownAgentSource {
+  return (KNOWN_AGENT_SOURCES as readonly string[]).includes(source);
 }
 
 // ─── VND formatting ──────────────────────────────────────────────────────────
@@ -51,6 +94,8 @@ export const FORBIDDEN_AGENT_OPERATION_FIELDS = [
   "preview_data",
   "jwt",
   "access_token",
+  "submitted_ip_hash",
+  "user_agent",
 ] as const;
 
 // ─── Detail view model ────────────────────────────────────────────────────────
@@ -68,6 +113,7 @@ export function buildDetailViewModel(row: AgentOperationRow) {
     user_full_name: row.user_full_name,
     user_email: row.user_email,
     status: row.status,
+    source: normalizeAgentSource(row.source),
     group_id: row.group_id,
     group_name: row.group_name,
     description: row.description,

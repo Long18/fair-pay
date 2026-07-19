@@ -16,6 +16,7 @@ function makeRow(overrides: Partial<AgentOperationRow> = {}): AgentOperationRow 
     user_full_name: "Nguyễn Văn A",
     user_email: "a@example.com",
     status: "committed",
+    source: "internal_mcp",
     preview_id: "preview-uuid-1",
     group_id: "group-uuid-1",
     group_name: "Nhóm Test",
@@ -84,6 +85,7 @@ describe("buildDetailViewModel – safe field mapping", () => {
     expect(vm.user_full_name).toBe(row.user_full_name);
     expect(vm.user_email).toBe(row.user_email);
     expect(vm.status).toBe(row.status);
+    expect(vm.source).toBe(row.source);
     expect(vm.preview_id).toBe(row.preview_id);
     expect(vm.group_id).toBe(row.group_id);
     expect(vm.group_name).toBe(row.group_name);
@@ -117,6 +119,7 @@ describe("buildDetailViewModel – safe field mapping", () => {
     const row = makeRow({
       user_full_name: null,
       user_email: null,
+      source: null,
       preview_id: null,
       group_id: null,
       group_name: null,

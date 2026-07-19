@@ -263,6 +263,8 @@ export interface AgentOperationRow {
   user_full_name: string | null;
   user_email: string | null;
   status: AgentOperationStatus;
+  /** Agent channel from metadata.source (e.g. internal_mcp, in_app_ai_chat). */
+  source: string | null;
   preview_id: string | null;
   group_id: string | null;
   group_name: string | null;
@@ -288,6 +290,57 @@ export interface AgentOperationRow {
   preview_is_consumed: boolean | null;
   has_confirmation: boolean;
   confirmation_used: boolean | null;
+}
+
+export type ExternalAgentSubmissionStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "expired"
+  | "failed";
+
+/**
+ * Safe admin view of one external agent submission (ChatGPT / no-key).
+ * Deliberately excludes: submitted_ip_hash, user_agent, raw resolution/payload blobs.
+ */
+export interface ExternalAgentSubmissionRow {
+  submission_id: string;
+  source: string;
+  status: ExternalAgentSubmissionStatus;
+  target_email: string;
+  group_id: string | null;
+  group_name: string | null;
+  description: string | null;
+  total_amount: number | null;
+  currency: string | null;
+  category: string | null;
+  split_method: string | null;
+  expense_id: string | null;
+  reject_reason: string | null;
+  error_code: string | null;
+  error_message: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  rejected_by: string | null;
+  rejected_at: string | null;
+  expires_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExternalAgentSubmissionMetrics {
+  total: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+  by_source: Record<string, number>;
+}
+
+export interface AdminExternalAgentSubmissionsResponse {
+  data: ExternalAgentSubmissionRow[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 export interface AgentOperationMetrics {
