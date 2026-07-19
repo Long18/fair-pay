@@ -31,13 +31,13 @@ import { PageContainer } from '@/components/ui/page-container';
 import { PageContent } from '@/components/ui/page-content';
 import { PageHeader } from '@/components/ui/page-header';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 interface RecurringExpenseListProps {
   groupId?: string;
@@ -251,7 +251,7 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
     </div>
   );
 
-  // Standalone page — list first; analytics only in a Sheet (no page scroll for charts)
+  // Standalone page — list first; analytics in a centered dialog
   if (isStandalonePage) {
     const summaryLine =
       recurring.length === 0
@@ -273,8 +273,8 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
             )}
             action={
               <div className="flex items-center gap-2">
-                <Sheet>
-                  <SheetTrigger asChild>
+                <Dialog>
+                  <DialogTrigger asChild>
                     <Button
                       variant="outline"
                       size="sm"
@@ -283,25 +283,27 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
                     >
                       <PieChartIcon className="h-4 w-4" />
                       <span className="ml-2 hidden sm:inline">
-                        {t('analytics.insights', 'Insights')}
+                        {t('analytics.insightsLabel', 'Insights')}
                       </span>
                     </Button>
-                  </SheetTrigger>
-                  <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
-                    <SheetHeader>
-                      <SheetTitle>{t('analytics.insights', 'Insights')}</SheetTitle>
-                      <SheetDescription>
+                  </DialogTrigger>
+                  <DialogContent className="flex max-h-[90vh] w-full flex-col gap-4 overflow-hidden p-0 sm:max-w-3xl">
+                    <DialogHeader className="shrink-0 space-y-1.5 border-b border-border px-6 py-4 pr-12 text-left">
+                      <DialogTitle>
+                        {t('analytics.insightsLabel', 'Insights')}
+                      </DialogTitle>
+                      <DialogDescription>
                         {t(
                           'recurring.insightsDescription',
                           'Monthly totals and category breakdown. Close to return to your list.',
                         )}
-                      </SheetDescription>
-                    </SheetHeader>
-                    <div className="mt-4 px-1 pb-6">
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
                       <RecurringExpensesAnalytics variant="full" />
                     </div>
-                  </SheetContent>
-                </Sheet>
+                  </DialogContent>
+                </Dialog>
                 <Button variant="outline" size="sm" onClick={handleExportCalendar}>
                   <CalendarIcon className="h-4 w-4" />
                   <span className="hidden sm:inline ml-2">

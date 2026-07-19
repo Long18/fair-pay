@@ -130,11 +130,11 @@ export function RecurringQuickActions({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {t('recurring.delete.title', 'Delete Recurring Expense?')}
+              {t('recurring.deleteDialog.title', 'Delete Recurring Expense?')}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {t(
-                'recurring.delete.description',
+                'recurring.deleteDialog.description',
                 'This will permanently delete this recurring expense template. Future expenses will not be created automatically.'
               )}
             </AlertDialogDescription>

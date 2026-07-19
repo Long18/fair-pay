@@ -35,7 +35,8 @@ export function BulkCalendarExport({ expenses, disabled }: BulkCalendarExportPro
         message: t("calendar.exportedAll", "All expenses exported"),
         description: t(
           "calendar.exportedAllDescription",
-          `${expenses.filter(e => e.is_active).length} active recurring expenses exported to calendar file`
+          "{{count}} active recurring expenses exported to calendar file",
+          { count: expenses.filter((e) => e.is_active).length }
         ),
       });
     } catch (error) {

@@ -241,13 +241,18 @@ export function RecurringExpensesAnalytics({
             <div className="space-y-3">
               {categoryBreakdown.map((item) => (
                 <div key={item.category} className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="truncate flex-1">{item.category}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">
-                        {item.count} {item.count === 1 ? "expense" : "expenses"}
+                  <div className="flex min-w-0 items-center justify-between gap-2 text-sm">
+                    <span className="min-w-0 flex-1 truncate" title={item.category}>
+                      {item.category}
+                    </span>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {item.count}{" "}
+                        {item.count === 1
+                          ? t("analytics.expenseSingular", "expense")
+                          : t("analytics.expenses", "expenses")}
                       </span>
-                      <span className="font-medium min-w-[80px] text-right">
+                      <span className="min-w-[4.5rem] text-right font-medium tabular-nums">
                         {formatCurrency(item.total)}
                       </span>
                     </div>
