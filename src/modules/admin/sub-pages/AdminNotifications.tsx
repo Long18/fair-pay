@@ -1,4 +1,6 @@
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback } from "react";
+import { useDebounce } from "@/hooks/use-debounce";
+import type { CrudFilters } from "@refinedev/core";
 import { useTable } from "@refinedev/react-table";
 import { useInstantDelete, useInstantCreate, useInstantUpdate } from "@/hooks/use-instant-mutation";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -8,15 +10,7 @@ import { DataTable } from "@/components/refine-ui/data-table/data-table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { UserAvatar, UserGroupStack } from "@/components/user-display";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -29,26 +23,6 @@ import {
   CollapsibleContent,
 } from "@/components/ui/collapsible";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
   Empty,
   EmptyMedia,
   EmptyHeader,
@@ -60,396 +34,24 @@ import {
   SearchIcon,
   BellIcon,
   FilterIcon,
-  MoreHorizontalIcon,
   PlusIcon,
-  PencilIcon,
-  AlertTriangleIcon,
-  Loader2Icon,
 } from "@/components/ui/icons";
 import {
   AdminMobileCard,
   AdminMobileCards,
 } from "../components/AdminMobileCards";
 import { formatDate } from "@/lib/locale-utils";
-import { supabaseClient } from "@/utility/supabaseClient";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useAdminTranslation } from "../i18n";
-
-// ─── Types ──────────────────────────────────────────────────────────
-
-interface NotificationRow {
-  id: string;
-  user_id: string;
-  user_name: string;
-  user_avatar: string | null;
-  type: string;
-  title: string;
-  message: string;
-  is_read: boolean;
-  created_at: string;
-}
-
-// ─── Debounce Hook ──────────────────────────────────────────────────
-
-function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-  return debounced;
-}
-
-// ─── Notification Type Config ───────────────────────────────────────
-
-const NOTIFICATION_TYPES = [
-  "expense_added",
-  "expense_updated",
-  "expense_deleted",
-  "payment_received",
-  "payment_sent",
-  "group_invite",
-  "group_joined",
-  "group_left",
-  "friend_request",
-  "friend_accepted",
-  "settlement_reminder",
-] as const;
-
-function TypeBadge({ type }: { type: string }) {
-  const { tAdmin } = useAdminTranslation();
-
-  return (
-    <Badge className="bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] border-[var(--status-info-border)]">
-      {tAdmin(`notifications.types.${type}`)}
-    </Badge>
-  );
-}
-
-function ReadStatusBadge({ isRead }: { isRead: boolean }) {
-  const { tAdmin } = useAdminTranslation();
-
-  return isRead ? (
-    <Badge className="bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] border-[var(--status-success-border)]">
-      {tAdmin("status.read")}
-    </Badge>
-  ) : (
-    <Badge className="bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)] border-[var(--status-warning-border)]">
-      {tAdmin("status.unread")}
-    </Badge>
-  );
-}
-
-// ─── Delete Notification Dialog ─────────────────────────────────────
-
-function DeleteNotificationDialog({
-  notification,
-  open,
-  onOpenChange,
-  onConfirm,
-  isDeleting,
-}: {
-  notification: NotificationRow | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
-  isDeleting: boolean;
-}) {
-  const { tAdmin } = useAdminTranslation();
-
-  if (!notification) return null;
-
-  return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <div className="flex items-center gap-2">
-            <AlertTriangleIcon className="h-5 w-5 text-destructive" />
-            <AlertDialogTitle>{tAdmin("notifications.deleteTitle")}</AlertDialogTitle>
-          </div>
-          <AlertDialogDescription>
-            {tAdmin("notifications.deleteDescription", {
-              message: notification.message.slice(0, 60),
-              name: notification.user_name,
-            })}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>{tAdmin("common.cancel")}</AlertDialogCancel>
-          <AlertDialogAction
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            onClick={(e) => {
-              e.preventDefault();
-              onConfirm();
-            }}
-            disabled={isDeleting}
-          >
-            {isDeleting ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
-            {tAdmin("common.delete")}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
-
-// ─── Create Notification Dialog ─────────────────────────────────────
-
-function CreateNotificationDialog({
-  open,
-  onOpenChange,
-  onSubmit,
-  isCreating,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (data: { user_id: string; type: string; title: string; message: string }) => void;
-  isCreating: boolean;
-}) {
-  const [userId, setUserId] = useState("");
-  const [type, setType] = useState("settlement_reminder");
-  const [title, setTitle] = useState("");
-  const [message, setMessage] = useState("");
-  const { tap } = useHaptics();
-  const { tAdmin } = useAdminTranslation();
-
-  const [profiles, setProfiles] = useState<Array<{ id: string; full_name: string }>>([]);
-  useEffect(() => {
-    if (!open) return;
-    supabaseClient
-      .from("profiles")
-      .select("id, full_name")
-      .order("full_name")
-      .then(({ data }) => {
-        if (data) setProfiles(data);
-      });
-  }, [open]);
-
-  const handleSubmit = () => {
-    if (!userId || !title || !message) {
-      toast.error(tAdmin("notifications.requiredFields"));
-      return;
-    }
-    onSubmit({ user_id: userId, type, title, message });
-  };
-
-  useEffect(() => {
-    if (!open) {
-      setUserId("");
-      setType("settlement_reminder");
-      setTitle("");
-      setMessage("");
-    }
-  }, [open]);
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{tAdmin("notifications.createTitle")}</DialogTitle>
-          <DialogDescription>
-            {tAdmin("notifications.createDescription")}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4 mt-2">
-          <div className="space-y-2">
-            <Label htmlFor="notif-user">{tAdmin("notifications.recipient")}</Label>
-            <Select value={userId} onValueChange={(v) => { tap(); setUserId(v); }}>
-              <SelectTrigger id="notif-user">
-                <SelectValue placeholder={tAdmin("people.selectUser")} />
-              </SelectTrigger>
-              <SelectContent>
-                {profiles.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notif-type">{tAdmin("notifications.notificationType")}</Label>
-            <Select value={type} onValueChange={(v) => { tap(); setType(v); }}>
-              <SelectTrigger id="notif-type">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {NOTIFICATION_TYPES.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {tAdmin(`notifications.types.${t}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notif-title">{tAdmin("common.title")}</Label>
-            <Input
-              id="notif-title"
-              placeholder={tAdmin("notifications.titlePlaceholder")}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notif-message">{tAdmin("common.content")}</Label>
-            <Textarea
-              id="notif-message"
-              placeholder={tAdmin("notifications.messagePlaceholder")}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={3}
-            />
-          </div>
-        </div>
-
-        <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={() => { tap(); onOpenChange(false); }} disabled={isCreating}>
-            {tAdmin("common.cancel")}
-          </Button>
-          <Button onClick={() => { tap(); handleSubmit(); }} disabled={isCreating || !userId || !title || !message}>
-            {isCreating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
-            {tAdmin("notifications.send")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ─── Edit Notification Dialog ───────────────────────────────────────
-
-function EditNotificationDialog({
-  notification,
-  open,
-  onOpenChange,
-  onSubmit,
-  isUpdating,
-}: {
-  notification: NotificationRow | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (data: { type: string; title: string; message: string }) => void;
-  isUpdating: boolean;
-}) {
-  const [type, setType] = useState("");
-  const [title, setTitle] = useState("");
-  const [message, setMessage] = useState("");
-  const { tap } = useHaptics();
-  const { tAdmin } = useAdminTranslation();
-
-  useEffect(() => {
-    if (notification && open) {
-      setType(notification.type);
-      setTitle(notification.title);
-      setMessage(notification.message);
-    }
-  }, [notification, open]);
-
-  if (!notification) return null;
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{tAdmin("notifications.editTitle")}</DialogTitle>
-          <DialogDescription>
-            {tAdmin("notifications.editDescription", { name: notification.user_name })}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4 mt-2">
-          <div className="space-y-2">
-            <Label htmlFor="edit-notif-type">{tAdmin("notifications.notificationType")}</Label>
-            <Select value={type} onValueChange={(v) => { tap(); setType(v); }}>
-              <SelectTrigger id="edit-notif-type">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {NOTIFICATION_TYPES.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {tAdmin(`notifications.types.${t}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="edit-notif-title">{tAdmin("common.title")}</Label>
-            <Input
-              id="edit-notif-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="edit-notif-message">{tAdmin("common.content")}</Label>
-            <Textarea
-              id="edit-notif-message"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={3}
-            />
-          </div>
-        </div>
-
-        <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={() => { tap(); onOpenChange(false); }} disabled={isUpdating}>
-            {tAdmin("common.cancel")}
-          </Button>
-          <Button
-            onClick={() => { tap(); onSubmit({ type, title, message }); }}
-            disabled={isUpdating || !title || !message}
-          >
-            {isUpdating ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
-            {tAdmin("common.save")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ─── Row Actions ────────────────────────────────────────────────────
-
-function RowActions({
-  onEdit,
-  onDelete,
-}: {
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  const { tAdmin } = useAdminTranslation();
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-          <MoreHorizontalIcon className="h-4 w-4" />
-          <span className="sr-only">{tAdmin("notifications.menu")}</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={onEdit}>
-          <PencilIcon className="mr-2 h-4 w-4" />
-          {tAdmin("common.edit")}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={onDelete} className="text-destructive">
-          {tAdmin("notifications.deleteTitle")}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-// ─── Main Component ─────────────────────────────────────────────────
+import { TypeBadge, ReadStatusBadge } from "./admin-notifications/badges";
+import { NOTIFICATION_TYPES } from "./admin-notifications/constants";
+import {
+  CreateNotificationDialog,
+  DeleteNotificationDialog,
+  EditNotificationDialog,
+} from "./admin-notifications/dialogs";
+import { RowActions } from "./admin-notifications/row-actions";
+import type { NotificationRow, NotificationRecord } from "./admin-notifications/types";
 
 export function AdminNotifications() {
   const deleteMutation = useInstantDelete();
@@ -471,14 +73,15 @@ export function AdminNotifications() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createFormKey, setCreateFormKey] = useState(0);
   const [isCreating, setIsCreating] = useState(false);
 
   const [editNotification, setEditNotification] = useState<NotificationRow | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const filters = useMemo(() => {
-    const f: Array<{ field: string; operator: string; value: unknown }> = [];
+  const filters = useMemo<CrudFilters>(() => {
+    const f: CrudFilters = [];
     if (debouncedSearch) {
       f.push({ field: "message", operator: "contains", value: debouncedSearch });
     }
@@ -585,7 +188,7 @@ export function AdminNotifications() {
       },
       pagination: { pageSize: 10 },
       filters: {
-        permanent: filters as any,
+        permanent: filters,
       },
       sorters: {
         initial: [{ field: "created_at", order: "desc" }],
@@ -593,7 +196,17 @@ export function AdminNotifications() {
       syncWithLocation: false,
       queryOptions: {
         select: (data) => {
-          const transformed = data.data.map((n: any) => ({
+          type NotificationRecord = {
+            id: string;
+            user_id: string;
+            type: string;
+            title?: string | null;
+            message?: string | null;
+            is_read?: boolean | null;
+            created_at: string;
+            profiles?: { full_name?: string | null; avatar_url?: string | null } | null;
+          };
+          const transformed = (data.data as NotificationRecord[]).map((n) => ({
             id: n.id,
             user_id: n.user_id,
             user_name: n.profiles?.full_name ?? tAdmin("common.unknown"),
@@ -733,7 +346,11 @@ export function AdminNotifications() {
           <div className="flex items-center gap-2">
             <Button
               size="sm"
-              onClick={() => { tap(); setCreateDialogOpen(true); }}
+              onClick={() => {
+                tap();
+                setCreateFormKey((k) => k + 1);
+                setCreateDialogOpen(true);
+              }}
             >
               <PlusIcon className="mr-2 h-4 w-4" />
               {tAdmin("notifications.create")}
@@ -912,6 +529,7 @@ export function AdminNotifications() {
       />
 
       <CreateNotificationDialog
+        key={createFormKey}
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         onSubmit={handleCreate}

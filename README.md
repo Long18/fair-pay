@@ -53,7 +53,9 @@ VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_anon_key
 ```
 
-Local Supabase (`pnpm supabase:start`) is **optional** when using a hosted project. A cold local stack also needs [`supabase/baseline.sql`](supabase/baseline.sql) applied (migrations start from mid-history and will fail without it).## Development
+Local Supabase (`pnpm supabase:start`) is **optional** when using a hosted project. A cold local stack should use `pnpm db:local:bootstrap` (applies migrations, config seeds, then [`supabase/baseline.sql`](supabase/baseline.sql) — migrations alone start mid-history).
+
+## Development
 
 ```bash
 # Development server
