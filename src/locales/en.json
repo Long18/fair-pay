@@ -261,6 +261,19 @@
       "quickView": "Quick View",
       "bulkSettlement": "Bulk Settlement",
       "settledOn": "Settled {{date}}",
+      "settled": "Settled",
+      "paymentTrail": "Payment trail",
+      "searchPlaceholder": "Search people, expenses, groups…",
+      "searchAria": "Search activity",
+      "searchEmptyDescription": "Try a different name, expense, or group",
+      "clearFilters": "Clear filters",
+      "openPayment": "Open payment",
+      "settlementProgress": "{{pct}}% settled",
+      "insight": {
+        "youOwe": "You owe",
+        "owedToYou": "Owed to you",
+        "net": "Net"
+      },
       "filters": {
         "all": "All",
         "paid": "Paid",
@@ -268,7 +281,8 @@
         "partial": "Partial",
         "reset": "Reset filters",
         "resetButton": "Reset",
-        "ariaLabel": "Filter by {{label}}"
+        "ariaLabel": "Filter by {{label}}",
+        "groupLabel": "Filter activity by payment state"
       },
       "sort": {
         "placeholder": "Sort by...",

@@ -261,6 +261,19 @@
       "quickView": "Xem nhanh",
       "bulkSettlement": "Thanh toán hàng loạt",
       "settledOn": "Đã thanh toán {{date}}",
+      "settled": "Đã thanh toán",
+      "paymentTrail": "Lịch sử thanh toán",
+      "searchPlaceholder": "Tìm người, chi tiêu, nhóm…",
+      "searchAria": "Tìm hoạt động",
+      "searchEmptyDescription": "Thử tên khác, chi tiêu hoặc nhóm khác",
+      "clearFilters": "Xóa bộ lọc",
+      "openPayment": "Mở thanh toán",
+      "settlementProgress": "Đã thanh toán {{pct}}%",
+      "insight": {
+        "youOwe": "Bạn nợ",
+        "owedToYou": "Được nợ",
+        "net": "Net"
+      },
       "filters": {
         "all": "Tất cả",
         "paid": "Đã trả",
@@ -268,7 +281,8 @@
         "partial": "Một phần",
         "reset": "Đặt lại bộ lọc",
         "resetButton": "Đặt lại",
-        "ariaLabel": "Lọc theo {{label}}"
+        "ariaLabel": "Lọc theo {{label}}",
+        "groupLabel": "Lọc hoạt động theo trạng thái thanh toán"
       },
       "sort": {
         "placeholder": "Sắp xếp...",
