@@ -131,16 +131,19 @@ function Button({
     setRipples((prev) => prev.filter((r) => r.id !== id));
   }, []);
 
+  // Apply caller className last so position utilities (fixed/absolute/sticky)
+  // win over ripple's `relative` under tailwind-merge.
   const baseClass = cn(
-    buttonVariants({ variant, size, className }),
-    (ripple && !prefersReducedMotion) ? "relative overflow-hidden" : undefined
+    buttonVariants({ variant, size }),
+    ripple && !prefersReducedMotion ? "relative overflow-hidden" : undefined,
+    className,
   );
 
   if (asChild) {
     return (
       <Slot
         data-slot="button"
-        className={cn(buttonVariants({ variant, size, className }))}
+        className={cn(buttonVariants({ variant, size }), className)}
         {...props}
       >
         {children}

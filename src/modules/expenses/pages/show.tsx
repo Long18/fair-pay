@@ -56,6 +56,7 @@ import { RecurringExpense } from "../types/recurring";
 import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useTrackEvent } from "@/hooks/use-track-event";
+import { FloatingActionStack, FloatingPill } from "@/components/ui/floating-stack";
 
 // Helper to transform split data from RPC response
 const transformSplitData = (data: any[]) =>
@@ -775,22 +776,31 @@ export const ExpenseShow = () => {
         </div>
       </div>
 
-      {/* Desktop FAB */}
-      <Button
-        size="lg"
-        className="hidden md:flex fixed bottom-6 right-6 h-14 w-14 rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 z-50 items-center justify-center"
-        onClick={() => {
-          tap();
-          const url = expense.group_id
-            ? `/expenses/create?groupId=${expense.group_id}`
-            : expense.friendship_id
-              ? `/expenses/create?friendshipId=${expense.friendship_id}`
-              : `/expenses/create`;
-          go({ to: url });
-        }}
-      >
-        <PlusIcon className="h-6 w-6" />
-      </Button>
+      {/* Desktop FAB — floating-stack (avoids Button ripple `relative` clobbering `fixed`) */}
+      <div className="hidden md:block">
+        <FloatingActionStack
+          side="right"
+          trigger={
+            <FloatingPill
+              variant="primary"
+              size="lg"
+              ariaLabel={t("expenses.newExpense", "New expense")}
+              onClick={() => {
+                tap();
+                const url = expense.group_id
+                  ? `/expenses/create?groupId=${expense.group_id}`
+                  : expense.friendship_id
+                    ? `/expenses/create?friendshipId=${expense.friendship_id}`
+                    : `/expenses/create`;
+                go({ to: url });
+              }}
+              className="!rounded-2xl aspect-square !px-0 !min-w-14"
+            >
+              <PlusIcon className="h-6 w-6" />
+            </FloatingPill>
+          }
+        />
+      </div>
     </div>
   );
 };
