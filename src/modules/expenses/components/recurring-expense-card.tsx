@@ -251,8 +251,10 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit, compact = fa
   const sharesGrid =
     expenseSplits.length > 0 ? (
       <div className="grid grid-cols-2 gap-2 text-sm">
-        {expenseSplits.map((split: { id: string; user_id: string; computed_amount: number }) => {
-          const member = members.find(m => m.id === split.user_id);
+        {expenseSplits.map((split) => {
+          const member = split.user_id
+            ? members.find((m) => m.id === split.user_id)
+            : undefined;
           return (
             <div key={split.id} className="flex items-center justify-between px-2 py-1 rounded bg-muted/50">
               <span className="text-xs truncate flex-1">
