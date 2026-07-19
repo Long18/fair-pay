@@ -10,23 +10,31 @@ import { EmptyState } from '@/components/refine-ui/empty-state';
 import {
   RepeatIcon,
   InfoIcon,
-  ArrowLeftIcon,
   PlusIcon,
   CalendarIcon,
   PauseIcon,
   PlayIcon,
+  ChevronDownIcon,
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useGo } from '@refinedev/core';
 import { CreateRecurringDialog } from '../components/create-recurring-dialog';
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { RecurringExpensesAnalytics } from '@/components/analytics/recurring-expenses-analytics';
 import { exportAllRecurringExpensesToCalendar } from '@/lib/calendar-export';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { PageContainer } from '@/components/ui/page-container';
+import { PageContent } from '@/components/ui/page-content';
+import { PageHeader } from '@/components/ui/page-header';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 interface RecurringExpenseListProps {
   groupId?: string;
@@ -35,8 +43,8 @@ interface RecurringExpenseListProps {
 
 export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpenseListProps) {
   const { t } = useTranslation();
-  const go = useGo();
   const { tap } = useHaptics();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingRecurring, setEditingRecurring] = useState<RecurringExpense | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -47,6 +55,15 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
   });
 
   const isStandalonePage = !groupId && !friendshipId;
+
+  const statusTab =
+    searchParams.get('status') === 'paused' ? 'paused' : 'active';
+
+  const setStatusTab = (status: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('status', status === 'paused' ? 'paused' : 'active');
+    setSearchParams(next, { replace: true });
+  };
 
   const selectedItems = useMemo(
     () => recurring.filter((item) => selectedIds.has(item.id)),
@@ -98,7 +115,7 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
     }
   };
 
-  const renderSelectableCard = (item: RecurringExpense) => {
+  const renderSelectableCard = (item: RecurringExpense, compact = false) => {
     if (!isStandalonePage) {
       return (
         <RecurringExpenseCard
@@ -119,36 +136,60 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
           aria-label={t('recurring.selectItem', 'Select recurring expense')}
         />
         <div className={cn('flex-1 min-w-0', checked && 'ring-1 ring-primary/30 rounded-xl')}>
-          <RecurringExpenseCard recurring={item} onEdit={handleEdit} />
+          <RecurringExpenseCard recurring={item} onEdit={handleEdit} compact={compact} />
         </div>
       </div>
     );
   };
 
   if (isLoading) {
+    if (isStandalonePage) {
+      return (
+        <PageContainer padding="none" variant="default">
+          <PageContent>
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-64" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-32 w-full" />
+            </div>
+          </PageContent>
+        </PageContainer>
+      );
+    }
     return (
-      <div className={isStandalonePage ? "container px-4 sm:px-6 py-4 sm:py-8 max-w-4xl" : ""}>
-        <div className="space-y-4">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-32 w-full" />
-        </div>
+      <div className="space-y-4">
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-32 w-full" />
       </div>
     );
   }
 
   if (error) {
+    if (isStandalonePage) {
+      return (
+        <PageContainer padding="none" variant="default">
+          <PageContent>
+            <Alert variant="destructive">
+              <AlertDescription>
+                {t('recurring.loadError')}: {error.message}
+              </AlertDescription>
+            </Alert>
+          </PageContent>
+        </PageContainer>
+      );
+    }
     return (
-      <div className={isStandalonePage ? "container px-4 sm:px-6 py-4 sm:py-8 max-w-4xl" : ""}>
-        <Alert variant="destructive">
-          <AlertDescription>
-            {t('recurring.loadError')}: {error.message}
-          </AlertDescription>
-        </Alert>
-      </div>
+      <Alert variant="destructive">
+        <AlertDescription>
+          {t('recurring.loadError')}: {error.message}
+        </AlertDescription>
+      </Alert>
     );
   }
 
+  // Embedded list body (group/friend) — keep Alert + default tabs behavior
   const content = recurring.length === 0 ? (
     <EmptyState
       icon={<RepeatIcon />}
@@ -163,25 +204,6 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
           {t('recurring.autoCreatedInfo')}
         </AlertDescription>
       </Alert>
-
-      {isStandalonePage && selectedIds.size > 0 && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2">
-          <span className="text-xs text-muted-foreground mr-1">
-            {t('recurring.selectedCount', '{{count}} selected', { count: selectedIds.size })}
-          </span>
-          <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={handleBulkPause}>
-            <PauseIcon className="h-3.5 w-3.5" />
-            {t('recurring.pauseSelected', 'Pause')}
-          </Button>
-          <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={handleBulkResume}>
-            <PlayIcon className="h-3.5 w-3.5" />
-            {t('recurring.resumeSelected', 'Resume')}
-          </Button>
-          <Button size="sm" variant="ghost" className="h-8" onClick={() => setSelectedIds(new Set())}>
-            {t('common.clear', 'Clear')}
-          </Button>
-        </div>
-      )}
 
       <Tabs defaultValue="active" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
@@ -226,56 +248,156 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
     </div>
   );
 
-  // Standalone page mode — full page with header, analytics, and create button
+  // Standalone page mode — list-first layout matching Connections/Settings
   if (isStandalonePage) {
     return (
-      <div className="container px-4 sm:px-6 py-4 sm:py-8 max-w-4xl">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mb-4"
-          onClick={() => { tap(); go({ to: "/dashboard" }); }}
-        >
-          <ArrowLeftIcon className="h-4 w-4 mr-2" />
-          {t('common.back', 'Back')}
-        </Button>
+      <PageContainer padding="none" variant="default">
+        <PageContent>
+          <PageHeader
+            title={t('recurring.pageTitle', 'Recurring Expenses')}
+            description={t('recurring.pageDescription', 'Manage your auto-created expense schedules')}
+            action={
+              <>
+                <Button variant="outline" size="sm" onClick={handleExportCalendar}>
+                  <CalendarIcon className="h-4 w-4" />
+                  <span className="hidden sm:inline ml-2">
+                    {t('calendar.downloadICS', 'ICS')}
+                  </span>
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    tap();
+                    setShowCreateDialog(true);
+                  }}
+                >
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  {t('recurring.create.title', 'Create')}
+                </Button>
+              </>
+            }
+          />
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-muted">
-              <RepeatIcon className="h-6 w-6 text-primary" />
+          {recurring.length > 0 && (
+            <div className="space-y-2">
+              <RecurringExpensesAnalytics variant="strip" />
+              <Collapsible>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-muted-foreground">
+                    {t('analytics.insights', 'Insights')}
+                    <ChevronDownIcon className="h-3.5 w-3.5" />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-2">
+                  <RecurringExpensesAnalytics variant="full" />
+                </CollapsibleContent>
+              </Collapsible>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold">{t('recurring.pageTitle', 'Recurring Expenses')}</h1>
-              <p className="text-sm text-muted-foreground">
-                {t('recurring.pageDescription', 'Manage your auto-created expense schedules')}
-              </p>
+          )}
+
+          {recurring.length === 0 ? (
+            <EmptyState
+              icon={<RepeatIcon />}
+              title={t('recurring.noRecurring')}
+              description={t('recurring.noRecurringDescription')}
+            />
+          ) : (
+            <div className="space-y-4">
+              <Collapsible>
+                <CollapsibleTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto px-0 py-0 text-xs text-muted-foreground hover:text-foreground font-normal"
+                  >
+                    {t('recurring.howItWorks', 'How it works')}
+                    <ChevronDownIcon className="h-3 w-3 ml-1" />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                    {t('recurring.autoCreatedInfo')}
+                  </p>
+                </CollapsibleContent>
+              </Collapsible>
+
+              {selectedIds.size > 0 && (
+                <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2">
+                  <span className="text-xs text-muted-foreground mr-1">
+                    {t('recurring.selectedCount', '{{count}} selected', { count: selectedIds.size })}
+                  </span>
+                  <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={handleBulkPause}>
+                    <PauseIcon className="h-3.5 w-3.5" />
+                    {t('recurring.pauseSelected', 'Pause')}
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={handleBulkResume}>
+                    <PlayIcon className="h-3.5 w-3.5" />
+                    {t('recurring.resumeSelected', 'Resume')}
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-8" onClick={() => setSelectedIds(new Set())}>
+                    {t('common.clear', 'Clear')}
+                  </Button>
+                </div>
+              )}
+
+              <Tabs
+                value={statusTab}
+                onValueChange={(v) => {
+                  tap();
+                  setStatusTab(v);
+                }}
+                className="w-full"
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="active">
+                    {t('recurring.activeTab', { count: active.length })}
+                  </TabsTrigger>
+                  <TabsTrigger value="paused">
+                    {t('recurring.pausedTab', { count: paused.length })}
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="active" className="space-y-4 mt-4">
+                  {active.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <p className="text-sm text-muted-foreground">
+                        {t('recurring.noActiveRecurring')}
+                      </p>
+                    </div>
+                  ) : (
+                    active.map((item) => renderSelectableCard(item as RecurringExpense, true))
+                  )}
+                </TabsContent>
+
+                <TabsContent value="paused" className="space-y-4 mt-4">
+                  {paused.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <p className="text-sm text-muted-foreground">
+                        {t('recurring.noPausedRecurring')}
+                      </p>
+                    </div>
+                  ) : (
+                    paused.map((item) => renderSelectableCard(item as RecurringExpense, true))
+                  )}
+                </TabsContent>
+              </Tabs>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleExportCalendar}>
-              <CalendarIcon className="h-4 w-4 mr-2" />
-              {t('calendar.downloadICS', 'Download .ics')}
-            </Button>
-            <Button onClick={() => { tap(); setShowCreateDialog(true); }}>
-              <PlusIcon className="h-4 w-4 mr-2" />
-              {t('recurring.create.title', 'Create')}
-            </Button>
-          </div>
-        </div>
+          )}
 
-        {/* Analytics summary */}
-        <div className="mb-6">
-          <RecurringExpensesAnalytics />
-        </div>
+          <EditRecurringDialog
+            open={!!editingRecurring}
+            onOpenChange={(open) => {
+              if (!open) setEditingRecurring(null);
+            }}
+            recurring={editingRecurring}
+          />
 
-        {content}
-
-        <CreateRecurringDialog
-          open={showCreateDialog}
-          onOpenChange={setShowCreateDialog}
-        />
-      </div>
+          <CreateRecurringDialog
+            open={showCreateDialog}
+            onOpenChange={setShowCreateDialog}
+          />
+        </PageContent>
+      </PageContainer>
     );
   }
 

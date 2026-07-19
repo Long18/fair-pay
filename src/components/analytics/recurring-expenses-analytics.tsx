@@ -15,7 +15,13 @@ function formatCurrency(amount: number) {
   return vndCurrencyFormatter.format(amount);
 }
 
-export function RecurringExpensesAnalytics() {
+type RecurringExpensesAnalyticsProps = {
+  variant?: "strip" | "full";
+};
+
+export function RecurringExpensesAnalytics({
+  variant = "full",
+}: RecurringExpensesAnalyticsProps) {
   const { t } = useTranslation();
   const { recurring, active, paused } = useRecurringExpenses({});
 
@@ -129,6 +135,52 @@ export function RecurringExpensesAnalytics() {
 
   if (recurring.length === 0) {
     return null;
+  }
+
+  if (variant === "strip") {
+    const chips = [
+      {
+        key: "monthly",
+        label: t("analytics.monthlyTotal", "Monthly Total"),
+        value: formatCurrency(monthlyTotal),
+      },
+      {
+        key: "active",
+        label: t("analytics.activeExpenses", "Active"),
+        value: String(active.length),
+      },
+      {
+        key: "paused",
+        label: t("analytics.pausedExpenses", "Paused"),
+        value: String(paused.length),
+      },
+      {
+        key: "avg",
+        label: t("analytics.averageCost", "Avg Monthly Cost"),
+        value:
+          active.length > 0
+            ? formatCurrency(monthlyTotal / active.length)
+            : formatCurrency(0),
+      },
+    ] as const;
+
+    return (
+      <ul className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 list-none">
+        {chips.map((chip) => (
+          <li
+            key={chip.key}
+            className="shrink-0 rounded-lg border bg-card px-3 py-2 min-w-[7.5rem]"
+          >
+            <p className="text-[11px] text-muted-foreground leading-none mb-1">
+              {chip.label}
+            </p>
+            <p className="text-sm font-semibold tabular-nums whitespace-nowrap">
+              {chip.value}
+            </p>
+          </li>
+        ))}
+      </ul>
+    );
   }
 
   return (

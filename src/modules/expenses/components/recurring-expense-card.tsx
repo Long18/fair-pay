@@ -34,7 +34,6 @@ import {
 import { CategoryIcon } from './category-icon';
 import { PrepaidStatusBadge } from './prepaid-status-badge';
 import { PrepaidPaymentDialog } from './prepaid-payment-dialog';
-import { PrepaidPaymentHistory } from './prepaid-payment-history';
 import { MemberPrepaidBalanceList } from './member-prepaid-balance-list';
 import { MultiMemberPrepaidDialog } from './multi-member-prepaid-dialog';
 import { useState, useMemo } from 'react';
@@ -67,13 +66,16 @@ interface RecurringExpenseCardProps {
   recurring: RecurringExpense;
   onUpdate?: () => void;
   onEdit?: (recurring: RecurringExpense) => void;
+  /** When true, Member shares are collapsed by default to keep list cards shorter. */
+  compact?: boolean;
 }
 
-export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringExpenseCardProps) {
+export function RecurringExpenseCard({ recurring, onUpdate, onEdit, compact = false }: RecurringExpenseCardProps) {
   const { t, i18n } = useTranslation();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showPrepaidDialog, setShowPrepaidDialog] = useState(false);
   const [showPrepaidHistory, setShowPrepaidHistory] = useState(false);
+  const [sharesOpen, setSharesOpen] = useState(!compact);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [cycleResult, setCycleResult] = useState<ValidateRunCycleResult | null>(null);
@@ -245,6 +247,59 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
     ],
   };
 
+  const expenseSplits = template.expense_splits ?? [];
+  const sharesGrid =
+    expenseSplits.length > 0 ? (
+      <div className="grid grid-cols-2 gap-2 text-sm">
+        {expenseSplits.map((split: { id: string; user_id: string; computed_amount: number }) => {
+          const member = members.find(m => m.id === split.user_id);
+          return (
+            <div key={split.id} className="flex items-center justify-between px-2 py-1 rounded bg-muted/50">
+              <span className="text-xs truncate flex-1">
+                {member?.full_name || 'Unknown'}
+              </span>
+              <span className="text-xs font-medium ml-2">
+                {formatNumber(split.computed_amount)} {template.currency}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    ) : null;
+
+  const memberSharesSection =
+    expenseSplits.length === 0 ? null : compact ? (
+      <Collapsible open={sharesOpen} onOpenChange={setSharesOpen} className="pt-2 border-t">
+        <CollapsibleTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-between h-8 px-0 text-muted-foreground hover:text-foreground"
+            onClick={() => tap()}
+          >
+            <span className="text-xs font-medium">
+              {t('recurring.memberShares', 'Member shares per occurrence')}
+            </span>
+            <ChevronDownIcon
+              className={`h-4 w-4 transition-transform duration-200 ${
+                sharesOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-2">
+          {sharesGrid}
+        </CollapsibleContent>
+      </Collapsible>
+    ) : (
+      <div className="pt-2 border-t">
+        <p className="text-xs font-medium text-muted-foreground mb-2">
+          {t('recurring.memberShares', 'Member shares per occurrence')}
+        </p>
+        {sharesGrid}
+      </div>
+    );
+
   return (
     <>
       <SwipeableCard rightActions={swipeActions.right} className="md:[&>*:first-child]:pointer-events-auto">
@@ -372,28 +427,7 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit }: RecurringE
           </div>
 
           {/* Member Splits Section */}
-          {template.expense_splits && template.expense_splits.length > 0 && (
-            <div className="pt-2 border-t">
-              <p className="text-xs font-medium text-muted-foreground mb-2">
-                {t('recurring.memberShares', 'Member shares per occurrence')}
-              </p>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                {template.expense_splits.map((split: any) => {
-                  const member = members.find(m => m.id === split.user_id);
-                  return (
-                    <div key={split.id} className="flex items-center justify-between px-2 py-1 rounded bg-muted/50">
-                      <span className="text-xs truncate flex-1">
-                        {member?.full_name || 'Unknown'}
-                      </span>
-                      <span className="text-xs font-medium ml-2">
-                        {formatNumber(split.computed_amount)} {template.currency}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          {memberSharesSection}
 
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="space-y-1">
