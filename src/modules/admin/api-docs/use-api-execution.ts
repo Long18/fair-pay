@@ -79,6 +79,17 @@ export function useApiExecution() {
         }
       }
 
+      // Friendlier empty-error for common auth failures
+      if (!res.success && !res.error && res.status === 401) {
+        res.error = 'Unauthorized (401). Sign in as an admin, then retry.';
+      }
+      if (!res.success && !res.error && res.status === 403) {
+        res.error = 'Forbidden (403). Your session may lack admin role or the operation is blocked.';
+      }
+      if (!res.success && !res.error && res.status === 404) {
+        res.error = 'Not found (404). Catalog path may be stale — regenerate with pnpm generate:api-catalog.';
+      }
+
       setResult(res);
 
       const histEntry: ApiExecutionHistoryEntry = {
@@ -108,10 +119,13 @@ export function useApiExecution() {
 async function executeRpc(
   entry: ApiCatalogEntry,
   request: ApiExecutionRequest,
-  _signal: AbortSignal
+  signal: AbortSignal
 ): Promise<ApiExecutionResult> {
   const fnName = entry.function_name!;
   const args = request.rpc_args ?? {};
+
+  // supabase-js rpc does not accept AbortSignal; abort is enforced by the outer timeout wrapper.
+  void signal;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await supabaseClient.rpc(fnName as any, args);

@@ -207,7 +207,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     if (transport === 'rpc') {
-      const execClient = createClient(supabaseUrl, serviceKey, {
+      // Prefer the caller's JWT so RLS / auth.uid() still apply.
+      // Service role is reserved for entries that explicitly require it.
+      const useServiceRole = allowedEntry.auth_level === 'service_role'
+      const execClient = createClient(supabaseUrl, useServiceRole ? serviceKey : anonKey, {
+        global: useServiceRole
+          ? undefined
+          : { headers: { Authorization: `Bearer ${token}` } },
         auth: { autoRefreshToken: false, persistSession: false },
       })
       const { data, error } = await execClient.rpc(target as unknown as never, rpc_args ?? {})

@@ -113,6 +113,7 @@ export const DEFAULT_FILTER_STATE: ApiFilterState = {
   auth: 'all',
   risk: 'all',
   callable: 'all',
-  usedInCode: 'all', // Full catalog first
-  showAll: true,
+  usedInCode: true,
+  // Default to endpoints referenced from app code — less noise for demos
+  showAll: false,
 };

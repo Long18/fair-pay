@@ -35,7 +35,97 @@ export const catalogOverrides: Partial<Record<string, Partial<ApiCatalogEntry>>>
     callability: 'disabled',
   },
 
+  'edge-polar-webhook': {
+    description: 'Polar billing webhook. Signature-validated; not invocable from the console.',
+    callability: 'disabled',
+  },
+
   // ─── HTTP enrichments ──────────────────────────────────────────────────────
+
+  'http-api-health': {
+    description: 'Liveness check for the Vercel deployment.',
+    callability: 'direct_http',
+    response_examples: [{ status: 200, description: 'OK', body: { ok: true } }],
+  },
+
+  'http-api-share-expense': {
+    description: 'Public share payload for an expense (used by /share/expenses/:id).',
+    params: [
+      { name: 'id', type: 'uuid', required: true, example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', description: 'Expense UUID' },
+    ],
+  },
+
+  'http-api-share-debt': {
+    description: 'Public share payload for a debt token (used by /share/debts/:token).',
+    params: [
+      { name: 't', type: 'string', required: true, example: 'share-token', description: 'Debt share token' },
+    ],
+  },
+
+  'http-api-share-group': {
+    description: 'Public share payload for a group.',
+    params: [
+      { name: 'id', type: 'uuid', required: true, example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', description: 'Group UUID' },
+    ],
+  },
+
+  'http-api-share-friend': {
+    description: 'Public share payload for a friend profile.',
+    params: [
+      { name: 'id', type: 'uuid', required: true, example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', description: 'User UUID' },
+    ],
+  },
+
+  'http-api-share-profile': {
+    description: 'Public share payload for a user profile.',
+    params: [
+      { name: 'id', type: 'uuid', required: true, example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', description: 'User UUID' },
+    ],
+  },
+
+  'http-api-og-debt': {
+    description: 'Returns an Open Graph image (PNG) for a debt share card.',
+    params: [
+      { name: 't', type: 'string', required: true, example: 'share-token', description: 'Debt share token' },
+    ],
+  },
+
+  'http-api-debt-who-owes-who': {
+    description: 'Returns a simplified debt graph showing who owes whom across all users.',
+    params: [
+      { name: 'limit', type: 'integer', required: false, example: 50, description: 'Max rows' },
+    ],
+    response_examples: [
+      { status: 200, description: 'Debt matrix', body: [{ from: 'user-a', to: 'user-b', amount: 150000, currency: 'VND' }] },
+    ],
+  },
+
+  'http-api-debt-all-users-summary': {
+    description: 'Aggregate debt summary per user — total owed and total owing.',
+    params: [
+      { name: 'limit', type: 'integer', required: false, example: 50, default: 50, description: 'Page size' },
+      { name: 'offset', type: 'integer', required: false, example: 0, default: 0, description: 'Pagination offset' },
+    ],
+    response_examples: [
+      { status: 200, description: 'Summary list', body: [{ user_id: 'uuid', total_owed: 500000, total_owing: 200000 }] },
+    ],
+  },
+
+  'http-api-debt-all-users-detailed': {
+    description: 'Detailed per-user debt breakdown for admins.',
+    params: [
+      { name: 'limit', type: 'integer', required: false, example: 50, default: 50, description: 'Page size' },
+      { name: 'offset', type: 'integer', required: false, example: 0, default: 0, description: 'Pagination offset' },
+    ],
+  },
+
+  'http-api-momo-qr': {
+    description: 'Build a MoMo QR URL for a payment amount + reference.',
+    params: [
+      { name: 'amount', type: 'number', required: true, example: 50000, description: 'Amount in VND' },
+      { name: 'referenceCode', type: 'string', required: true, example: 'FP-123', description: 'Payment reference note' },
+    ],
+  },
 
   'http-api-og-expense': {
     description: 'Returns an Open Graph image (PNG) for an expense. Used for social sharing previews.',
@@ -45,20 +135,6 @@ export const catalogOverrides: Partial<Record<string, Partial<ApiCatalogEntry>>>
     response_examples: [
       { status: 200, description: 'PNG image buffer', body: '<image/png binary>' },
       { status: 400, description: 'Missing id param', body: { error: 'Missing expense id' } },
-    ],
-  },
-
-  'http-api-debt-who-owes-who': {
-    description: 'Returns a simplified debt graph showing who owes whom across all users.',
-    response_examples: [
-      { status: 200, description: 'Debt matrix', body: [{ from: 'user-a', to: 'user-b', amount: 150000, currency: 'VND' }] },
-    ],
-  },
-
-  'http-api-debt-all-users-summary': {
-    description: 'Aggregate debt summary per user — total owed and total owing.',
-    response_examples: [
-      { status: 200, description: 'Summary list', body: [{ user_id: 'uuid', total_owed: 500000, total_owing: 200000 }] },
     ],
   },
 
