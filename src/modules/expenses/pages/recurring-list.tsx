@@ -14,7 +14,7 @@ import {
   CalendarIcon,
   PauseIcon,
   PlayIcon,
-  ChevronDownIcon,
+  PieChartIcon,
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useTranslation } from 'react-i18next';
@@ -31,10 +31,13 @@ import { PageContainer } from '@/components/ui/page-container';
 import { PageContent } from '@/components/ui/page-content';
 import { PageHeader } from '@/components/ui/page-header';
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 
 interface RecurringExpenseListProps {
   groupId?: string;
@@ -248,16 +251,57 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
     </div>
   );
 
-  // Standalone page mode — list-first layout matching Connections/Settings
+  // Standalone page — list first; analytics only in a Sheet (no page scroll for charts)
   if (isStandalonePage) {
+    const summaryLine =
+      recurring.length === 0
+        ? null
+        : t(
+            'recurring.listSummary',
+            '{{active}} active · {{paused}} paused',
+            { active: active.length, paused: paused.length },
+          );
+
     return (
       <PageContainer padding="none" variant="default">
         <PageContent>
           <PageHeader
             title={t('recurring.pageTitle', 'Recurring Expenses')}
-            description={t('recurring.pageDescription', 'Manage your auto-created expense schedules')}
+            description={t(
+              'recurring.pageDescriptionListFirst',
+              'Schedules that auto-create expenses. Open Insights for totals.',
+            )}
             action={
-              <>
+              <div className="flex items-center gap-2">
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={recurring.length === 0}
+                      onClick={() => tap()}
+                    >
+                      <PieChartIcon className="h-4 w-4" />
+                      <span className="ml-2 hidden sm:inline">
+                        {t('analytics.insights', 'Insights')}
+                      </span>
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+                    <SheetHeader>
+                      <SheetTitle>{t('analytics.insights', 'Insights')}</SheetTitle>
+                      <SheetDescription>
+                        {t(
+                          'recurring.insightsDescription',
+                          'Monthly totals and category breakdown. Close to return to your list.',
+                        )}
+                      </SheetDescription>
+                    </SheetHeader>
+                    <div className="mt-4 px-1 pb-6">
+                      <RecurringExpensesAnalytics variant="full" />
+                    </div>
+                  </SheetContent>
+                </Sheet>
                 <Button variant="outline" size="sm" onClick={handleExportCalendar}>
                   <CalendarIcon className="h-4 w-4" />
                   <span className="hidden sm:inline ml-2">
@@ -274,26 +318,13 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
                   <PlusIcon className="h-4 w-4 mr-2" />
                   {t('recurring.create.title', 'Create')}
                 </Button>
-              </>
+              </div>
             }
           />
 
-          {recurring.length > 0 && (
-            <div className="space-y-2">
-              <RecurringExpensesAnalytics variant="strip" />
-              <Collapsible>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-muted-foreground">
-                    {t('analytics.insights', 'Insights')}
-                    <ChevronDownIcon className="h-3.5 w-3.5" />
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-2">
-                  <RecurringExpensesAnalytics variant="full" />
-                </CollapsibleContent>
-              </Collapsible>
-            </div>
-          )}
+          {summaryLine ? (
+            <p className="text-sm text-muted-foreground -mt-2">{summaryLine}</p>
+          ) : null}
 
           {recurring.length === 0 ? (
             <EmptyState
@@ -303,24 +334,6 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
             />
           ) : (
             <div className="space-y-4">
-              <Collapsible>
-                <CollapsibleTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto px-0 py-0 text-xs text-muted-foreground hover:text-foreground font-normal"
-                  >
-                    {t('recurring.howItWorks', 'How it works')}
-                    <ChevronDownIcon className="h-3 w-3 ml-1" />
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                    {t('recurring.autoCreatedInfo')}
-                  </p>
-                </CollapsibleContent>
-              </Collapsible>
-
               {selectedIds.size > 0 && (
                 <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2">
                   <span className="text-xs text-muted-foreground mr-1">
@@ -357,7 +370,7 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="active" className="space-y-4 mt-4">
+                <TabsContent value="active" className="space-y-3 mt-4">
                   {active.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-8 text-center">
                       <p className="text-sm text-muted-foreground">
@@ -369,7 +382,7 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
                   )}
                 </TabsContent>
 
-                <TabsContent value="paused" className="space-y-4 mt-4">
+                <TabsContent value="paused" className="space-y-3 mt-4">
                   {paused.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-8 text-center">
                       <p className="text-sm text-muted-foreground">

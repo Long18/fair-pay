@@ -429,6 +429,17 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit, compact = fa
           {/* Member Splits Section */}
           {memberSharesSection}
 
+          {compact ? (
+            <p className="text-xs text-muted-foreground">
+              {t('recurring.nextCreation')}:{' '}
+              <span className="font-medium text-foreground">
+                {format(new Date(recurring.next_occurrence), 'PP', { locale: dateLocale })}
+              </span>
+              {status.days_until_next >= 0
+                ? ` · ${t('recurring.daysRemaining', { days: status.days_until_next })}`
+                : null}
+            </p>
+          ) : (
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="space-y-1">
               <p className="text-muted-foreground">{t('recurring.nextCreation')}</p>
@@ -456,9 +467,10 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit, compact = fa
               )}
             </div>
           </div>
+          )}
 
           {/* Manual fallback for the auto-run cycle */}
-          {recurring.is_active && (
+          {recurring.is_active && !compact && (
             <div className="pt-2 border-t">
               {cycleResult?.success && !cycleResult?.alreadyExecuted ? (
                 // Successfully executed - show confirmation state
@@ -531,7 +543,7 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit, compact = fa
           )}
 
           {/* Prominent Pay Upfront Button - visible for active recurring without member prepaid */}
-          {recurring.is_active && (!memberPrepaidInfo || memberPrepaidInfo.length === 0) && (
+          {recurring.is_active && !compact && (!memberPrepaidInfo || memberPrepaidInfo.length === 0) && (
             <div className="pt-3 border-t">
               <Button
                 variant="outline"
@@ -546,7 +558,7 @@ export function RecurringExpenseCard({ recurring, onUpdate, onEdit, compact = fa
           )}
 
           {/* Per-Member Prepaid Balances Section */}
-          {memberPrepaidInfo && memberPrepaidInfo.length > 0 && (
+          {!compact && memberPrepaidInfo && memberPrepaidInfo.length > 0 && (
             <Collapsible open={showPrepaidHistory} onOpenChange={setShowPrepaidHistory}>
               <CollapsibleTrigger asChild>
                 <Button
