@@ -2,16 +2,25 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 import { Button } from "@/components/ui/button";
-import { LoadingBeam } from "@/components/ui/loading-beam";
-import { ActivityIcon } from "@/components/ui/icons";
+import { Input } from "@/components/ui/input";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { ActivityIcon, SearchIcon, XIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { cn } from "@/lib/utils";
 import { debounce } from "@/lib/performance";
+import { ActivityRowSkeleton } from "@/components/skeletons/ActivityRowSkeleton";
 
 import { AnimatedList } from "@/components/ui/animated-list";
 import { AnimatedRow } from "@/components/ui/animated-row";
 import { ItemGroup } from "@/components/ui/item";
 import { ActivityFilterControls, type PaymentStateFilter, type FilterCounts } from "./activity-filter-controls";
+import { ActivityInsightStrip } from "./activity-insight-strip";
 import { ActivitySortControls, type SortOption } from "./activity-sort-controls";
 import { ActivitySummary } from "./activity-summary";
 import { ActivityTimePeriodGroup } from "./activity-time-period-group";
@@ -84,16 +93,38 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
   const [collapsedGroupPeriods, setCollapsedGroupPeriods] = React.useState<Set<string>>(new Set());
   const [isSummaryCollapsed, setIsSummaryCollapsed] = React.useState(false);
   const [currentPage, setCurrentPage] = React.useState(1);
+  const [searchQuery, setSearchQuery] = React.useState("");
   const { tap } = useHaptics();
   const isDashboard = variant === "dashboard";
 
   // Filter activities
   const filteredActivities = React.useMemo(() => {
-    if (activeFilter === "all") {
-      return activities;
+    let next = activities;
+    if (activeFilter !== "all") {
+      next = next.filter((activity) => activity.paymentState === activeFilter);
     }
-    return activities.filter((activity) => activity.paymentState === activeFilter);
-  }, [activities, activeFilter]);
+
+    const query = searchQuery.trim().toLowerCase();
+    if (query) {
+      next = next.filter((activity) => {
+        const haystack = [
+          activity.description,
+          activity.groupName,
+          activity.contextLine,
+          ...activity.payingParticipants.map((p) => p.name),
+          activity.originalExpense?.profiles?.full_name,
+          activity.originalPayment?.from_profile?.full_name,
+          activity.originalPayment?.to_profile?.full_name,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(query);
+      });
+    }
+
+    return next;
+  }, [activities, activeFilter, searchQuery]);
 
   // Sort activities
   const sortedActivities = React.useMemo(() => {
@@ -160,7 +191,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
   // Reset page when filter/sort changes
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [activeFilter, activeSort]);
+  }, [activeFilter, activeSort, searchQuery]);
 
   const handlePageChange = React.useCallback((page: number) => {
     setCurrentPage(page);
@@ -274,8 +305,26 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
   // Loading state
   if (isLoading) {
     return (
-      <div className={cn("", className)}>
-        <LoadingBeam text={t("dashboard.activityFeed.loading", "Loading activity...")} />
+      <div className={cn(isDashboard ? "space-y-0" : "space-y-4", className)}>
+        {isDashboard ? (
+          <>
+            <div className="space-y-3 border-b border-border bg-muted/20 p-4">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-[58px] animate-pulse rounded-xl bg-muted" />
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-[64px] animate-pulse rounded-xl bg-muted" />
+                ))}
+              </div>
+            </div>
+            <ActivityRowSkeleton count={6} variant="timeline" />
+          </>
+        ) : (
+          <ActivityRowSkeleton count={5} />
+        )}
       </div>
     );
   }
@@ -283,21 +332,106 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
   // Empty state
   if (activities.length === 0) {
     return (
-      <div className={cn("text-center py-12", className)}>
-        <ActivityIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <p className="text-foreground font-medium">{t("dashboard.activityFeed.emptyTitle", "No activity yet")}</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          {t("dashboard.activityFeed.emptyDescription", "Create your first expense to get started")}
-        </p>
+      <div className={cn(className)}>
+        <Empty className="border-0 py-16">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <ActivityIcon />
+            </EmptyMedia>
+            <EmptyTitle>{t("dashboard.activityFeed.emptyTitle", "No activity yet")}</EmptyTitle>
+            <EmptyDescription>
+              {t("dashboard.activityFeed.emptyDescription", "Create your first expense to get started")}
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       </div>
     );
   }
 
-  // No results after filtering
+  const insight = isDashboard && (
+    <ActivityInsightStrip
+      totalOwed={summaryMetrics.totalOwed}
+      totalToReceive={summaryMetrics.totalToReceive}
+      netBalance={summaryMetrics.netBalance}
+      currency={currency}
+      counts={filterCounts}
+      activeFilter={activeFilter}
+      onFilterChange={debouncedFilterChange}
+    />
+  );
+
+  const toolbar = (
+    <div
+      className={cn(
+        "flex flex-col gap-3",
+        isDashboard
+          ? "sticky top-0 z-20 border-b border-border bg-card/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-card/85"
+          : "items-start justify-between sm:flex-row sm:items-center"
+      )}
+    >
+      {isDashboard ? (
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:max-w-sm">
+            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder={t(
+                "dashboard.activityFeed.searchPlaceholder",
+                "Search people, expenses, groups…"
+              )}
+              className="h-9 rounded-full border-border/80 bg-background pl-9 pr-9"
+              aria-label={t("dashboard.activityFeed.searchAria", "Search activity")}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  tap();
+                  setSearchQuery("");
+                }}
+                className="absolute right-2 top-1/2 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                aria-label={t("common.clear", "Clear")}
+              >
+                <XIcon className="size-3.5" />
+              </button>
+            )}
+          </div>
+          {showSort && (
+            <ActivitySortControls
+              activeSort={activeSort}
+              onSortChange={debouncedSortChange}
+              compact={compactControls}
+            />
+          )}
+        </div>
+      ) : (
+        <div className="flex w-full flex-col items-start justify-between gap-3 sm:flex-row sm:items-center viewport-transition-flex">
+          {showFilters && (
+            <ActivityFilterControls
+              activeFilter={activeFilter}
+              onFilterChange={debouncedFilterChange}
+              counts={filterCounts}
+              compact={compactControls}
+            />
+          )}
+          {showSort && (
+            <ActivitySortControls
+              activeSort={activeSort}
+              onSortChange={debouncedSortChange}
+              compact={compactControls}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  // No results after filtering / search
   if (filteredActivities.length === 0) {
     return (
       <div className={cn(isDashboard ? "space-y-0" : "space-y-4", className)}>
-        {showSummary && (
+        {showSummary && !isDashboard && (
           <ActivitySummary
             totalOwed={summaryMetrics.totalOwed}
             totalToReceive={summaryMetrics.totalToReceive}
@@ -307,56 +441,46 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
             onToggleCollapse={() => setIsSummaryCollapsed(!isSummaryCollapsed)}
           />
         )}
-
-        {showFilters && (
-          <div className={cn(isDashboard && "border-b border-border px-4 py-3")}>
-            <ActivityFilterControls
-              activeFilter={activeFilter}
-              onFilterChange={handleFilterChange}
-              counts={filterCounts}
-              compact={compactControls}
-            />
-          </div>
-        )}
-
-        <div className="px-4 py-12 text-center">
-          <ActivityIcon className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-          <p className="font-medium text-foreground">
-            {t("dashboard.activityFeed.filteredEmptyTitle", "No activities match your filter")}
-          </p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {t("dashboard.activityFeed.filteredEmptyDescription", "Try selecting a different filter")}
-          </p>
-        </div>
+        {insight}
+        {toolbar}
+        <Empty className="border-0 py-14">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <SearchIcon />
+            </EmptyMedia>
+            <EmptyTitle>
+              {t("dashboard.activityFeed.filteredEmptyTitle", "No activities match your filter")}
+            </EmptyTitle>
+            <EmptyDescription>
+              {searchQuery
+                ? t(
+                    "dashboard.activityFeed.searchEmptyDescription",
+                    "Try a different name, expense, or group"
+                  )
+                : t(
+                    "dashboard.activityFeed.filteredEmptyDescription",
+                    "Try selecting a different filter"
+                  )}
+            </EmptyDescription>
+          </EmptyHeader>
+          {(activeFilter !== "all" || searchQuery) && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              onClick={() => {
+                tap();
+                setSearchQuery("");
+                handleFilterChange("all");
+              }}
+            >
+              {t("dashboard.activityFeed.clearFilters", "Clear filters")}
+            </Button>
+          )}
+        </Empty>
       </div>
     );
   }
-
-  const toolbar = (showFilters || showSort) && (
-    <div
-      className={cn(
-        "flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center viewport-transition-flex",
-        isDashboard && "border-b border-border px-4 py-3"
-      )}
-    >
-      {showFilters && (
-        <ActivityFilterControls
-          activeFilter={activeFilter}
-          onFilterChange={debouncedFilterChange}
-          counts={filterCounts}
-          compact={compactControls}
-        />
-      )}
-
-      {showSort && (
-        <ActivitySortControls
-          activeSort={activeSort}
-          onSortChange={debouncedSortChange}
-          compact={compactControls}
-        />
-      )}
-    </div>
-  );
 
   const activityList = (
     <div className={cn(isDashboard ? "space-y-0" : "space-y-4")}>
@@ -402,7 +526,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
           </AnimatedList>
         )
       ) : isDashboard ? (
-        <ItemGroup className="divide-y divide-border">
+        <ItemGroup className="divide-y divide-border/70">
           {visibleItems.map((activity) => (
             <EnhancedActivityRow
               key={activity.id}
@@ -465,7 +589,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
 
   return (
     <div ref={listRef} className={cn(isDashboard ? "space-y-0" : "space-y-4", className)}>
-      {showSummary && (
+      {showSummary && !isDashboard && (
         <ActivitySummary
           totalOwed={summaryMetrics.totalOwed}
           totalToReceive={summaryMetrics.totalToReceive}
@@ -476,7 +600,8 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
         />
       )}
 
-      {toolbar}
+      {insight}
+      {(showFilters || showSort || isDashboard) && toolbar}
       {activityList}
     </div>
   );

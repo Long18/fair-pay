@@ -7,14 +7,6 @@ import type { TFunction } from "i18next";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
-} from "@/components/ui/item";
 import { Progress } from "@/components/ui/progress";
 import { UserAvatar, getInitials } from "@/components/user-display";
 import {
@@ -352,28 +344,26 @@ const DashboardPaymentTrailRow: React.FC<{
   const { t } = useTranslation();
 
   return (
-  <div className="grid gap-3 rounded-md border border-border bg-background/80 px-3 py-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-    <div className="min-w-0">
-      <p className="text-sm font-medium text-foreground">
-        <span className={cn(event.from_user_id === currentUserId && "text-semantic-negative")}>
-          {event.from_user_id === currentUserId ? t("common.you", "You") : event.from_user_name}
-        </span>
-        {" → "}
-        <span className={cn(event.to_user_id === currentUserId && "text-semantic-positive")}>
-          {event.to_user_id === currentUserId ? t("common.you", "You") : event.to_user_name}
-        </span>
-      </p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        {getMethodLabel(event.method, t)} • {formatDistanceToNow(new Date(event.created_at), { addSuffix: true })}
-      </p>
-    </div>
-
-    <div className="text-left md:text-right">
-      <p className="text-sm font-semibold tabular-nums text-foreground">
+    <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-3">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground">
+          <span className={cn(event.from_user_id === currentUserId && "text-semantic-negative")}>
+            {event.from_user_id === currentUserId ? t("common.you", "You") : event.from_user_name}
+          </span>
+          {" → "}
+          <span className={cn(event.to_user_id === currentUserId && "text-semantic-positive")}>
+            {event.to_user_id === currentUserId ? t("common.you", "You") : event.to_user_name}
+          </span>
+        </p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {getMethodLabel(event.method, t)} ·{" "}
+          {formatDistanceToNow(new Date(event.created_at), { addSuffix: true })}
+        </p>
+      </div>
+      <p className="text-sm font-semibold tabular-nums text-foreground md:text-right">
         {formatCurrency(event.amount, event.currency)}
       </p>
     </div>
-  </div>
   );
 };
 
@@ -674,6 +664,78 @@ const DefaultActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRowP
 
 DefaultActivityRow.displayName = "DefaultActivityRow";
 
+
+function getDashboardActorVisual(
+  activity: EnhancedActivityItem,
+  currentUserId: string,
+  t: TFunction
+) {
+  if (activity.type === "payment") {
+    const payment = activity.originalPayment;
+    const isViewerSender = payment?.from_user === currentUserId;
+    const profile = isViewerSender ? payment?.from_profile : payment?.from_profile;
+    const name = isViewerSender
+      ? t("common.you", "You")
+      : payment?.from_profile?.full_name || t("common.someone", "Someone");
+    return {
+      name,
+      avatar: profile?.avatar_url || payment?.from_profile?.avatar_url || null,
+    };
+  }
+
+  const latest = activity.paymentEvents[0];
+  if (latest) {
+    return {
+      name:
+        latest.from_user_id === currentUserId
+          ? t("common.you", "You")
+          : latest.from_user_name,
+      avatar: latest.from_user_avatar || null,
+    };
+  }
+
+  const participant = activity.payingParticipants[0];
+  if (participant) {
+    return { name: participant.name, avatar: participant.avatar || null };
+  }
+
+  const expenseProfile = activity.originalExpense?.profiles;
+  return {
+    name: expenseProfile?.full_name || t("common.someone", "Someone"),
+    avatar: expenseProfile?.avatar_url || null,
+  };
+}
+
+function getStatusRingClass(paymentState: EnhancedActivityItem["paymentState"]) {
+  switch (paymentState) {
+    case "paid":
+      return "ring-status-success-foreground";
+    case "partial":
+      return "ring-status-info-foreground";
+    case "unpaid":
+      return "ring-status-warning-foreground";
+    default: {
+      const _exhaustive: never = paymentState;
+      return _exhaustive;
+    }
+  }
+}
+
+function getStatusDotClass(paymentState: EnhancedActivityItem["paymentState"]) {
+  switch (paymentState) {
+    case "paid":
+      return "bg-status-success-foreground";
+    case "partial":
+      return "bg-status-info-foreground";
+    case "unpaid":
+      return "bg-status-warning-foreground";
+    default: {
+      const _exhaustive: never = paymentState;
+      return _exhaustive;
+    }
+  }
+}
+
 const DashboardActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRowProps>(
   (
     {
@@ -696,153 +758,172 @@ const DashboardActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRo
     const activityTimestamp = activity.activityDate || activity.date;
     const isPartial = activity.paymentState === "partial";
     const isExpense = activity.type === "expense";
+    const actor = getDashboardActorVisual(activity, currentUserId, t);
 
     return (
-      <div
-        ref={ref}
-        className={cn(
-          "overflow-hidden",
-          isPartial && "border-l-2 border-status-info-foreground",
-          className
-        )}
-      >
-        <Item
-          asChild
-          size="sm"
-          className="w-full rounded-none border-transparent hover:bg-muted/40"
-        >
-          <button
-            type="button"
-            onClick={() => {
-              if (!isExpense) {
-                tap();
-                go({ to: `/payments/show/${activity.id}` });
-                return;
-              }
-
+      <div ref={ref} className={cn("relative", className)}>
+        <button
+          type="button"
+          onClick={() => {
+            if (!isExpense) {
               tap();
-              onToggleExpand();
-            }}
-            className="group text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-            aria-expanded={isExpense ? isExpanded : undefined}
-            aria-label={
-              isExpense
-                ? isExpanded
-                  ? t("dashboard.activityFeed.collapsePayments", "Collapse payment events")
-                  : t("dashboard.activityFeed.expandPayments", "Expand payment events")
-                : t("dashboard.activityFeed.openPayment", "Open payment")
+              go({ to: `/payments/show/${activity.id}` });
+              return;
             }
-          >
-            <ItemMedia className="w-[5.25rem] flex-col items-stretch gap-1.5 self-start">
+            tap();
+            onToggleExpand();
+          }}
+          className={cn(
+            "group relative grid w-full grid-cols-[3rem_minmax(0,1fr)_auto] gap-3 px-4 py-3.5 text-left",
+            "transition-colors hover:bg-muted/50",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+            isExpanded && "bg-muted/30"
+          )}
+          aria-expanded={isExpense ? isExpanded : undefined}
+          aria-label={
+            isExpense
+              ? isExpanded
+                ? t("dashboard.activityFeed.collapsePayments", "Collapse payment events")
+                : t("dashboard.activityFeed.expandPayments", "Expand payment events")
+              : t("dashboard.activityFeed.openPayment", "Open payment")
+          }
+        >
+          {/* Timeline rail + avatar */}
+          <div className="relative flex justify-center pt-0.5">
+            <span
+              className="absolute top-10 bottom-[-1.15rem] left-1/2 w-px -translate-x-1/2 bg-border group-last:hidden"
+              aria-hidden
+            />
+            <span className="relative">
+              <UserAvatar
+                user={{ full_name: actor.name, avatar_url: actor.avatar }}
+                size="lg"
+                className={cn("ring-2 ring-offset-2 ring-offset-background", getStatusRingClass(activity.paymentState))}
+              />
+              <span
+                className={cn(
+                  "absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-background",
+                  getStatusDotClass(activity.paymentState)
+                )}
+                aria-hidden
+              />
+            </span>
+          </div>
+
+          {/* Narrative */}
+          <div className="min-w-0 space-y-1.5">
+            <p className="typography-row-title text-balance">
+              <span className="font-semibold text-foreground">{narrative.actor}</span>{" "}
+              <span className="font-normal text-muted-foreground">{narrative.action}</span>{" "}
+              <span className="font-semibold text-foreground">{narrative.description}</span>
+            </p>
+
+            <div className="flex flex-wrap items-center gap-1.5">
               <PaymentStateBadge
                 state={activity.paymentState}
                 percentage={activity.partialPercentage}
                 size="sm"
               />
-              {isPartial && (
+              {activity.groupName && (
+                <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                  {activity.groupName}
+                </span>
+              )}
+              {latestPaymentEvent && (
+                <span className="text-[11px] text-muted-foreground">
+                  {getMethodLabel(latestPaymentEvent.method, t)}
+                </span>
+              )}
+              <span className="text-[11px] text-muted-foreground">
+                {formatDistanceToNow(new Date(activityTimestamp), { addSuffix: true })}
+              </span>
+              {showDuplicateContext && activity.contextLine && (
+                <span className="text-[11px] text-muted-foreground">{activity.contextLine}</span>
+              )}
+            </div>
+
+            {isPartial && (
+              <div className="max-w-xs pt-0.5">
+                <div className="mb-1 flex items-center justify-between text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  <span>{t("dashboard.activityFeed.settled", "Settled")}</span>
+                  <span className="tabular-nums">{activity.settlementProgressPct}%</span>
+                </div>
                 <Progress
                   value={activity.settlementProgressPct}
-                  className="h-1 bg-status-info-bg [&_[data-slot=progress-indicator]]:bg-status-info-foreground"
-                  aria-label={t("dashboard.activityFeed.settlementProgress", {
-                    defaultValue: "{{pct}}% settled",
-                    pct: activity.settlementProgressPct,
-                  })}
+                  className="h-1.5 bg-status-info-bg [&_[data-slot=progress-indicator]]:bg-status-info-foreground"
                 />
-              )}
-            </ItemMedia>
+              </div>
+            )}
 
-            <ItemContent className="min-w-0 gap-1">
-              <ItemTitle className="typography-row-title w-full max-w-full flex-wrap">
-                <span>
-                  <strong className="font-semibold text-foreground">{narrative.actor}</strong>{" "}
-                  <span className="font-normal text-muted-foreground">{narrative.action}</span>{" "}
-                  <strong className="font-semibold text-foreground">{narrative.description}</strong>
-                </span>
-              </ItemTitle>
-
-              <ItemDescription className="typography-metadata !line-clamp-none flex flex-wrap items-center gap-x-1.5 gap-y-1">
+            {activity.payingParticipants.length > 0 && (
+              <div className="pt-0.5">
                 <PayingParticipantsChips participants={activity.payingParticipants} />
+              </div>
+            )}
+          </div>
 
-                {activity.payingParticipants.length > 0 && (
-                  <span className="text-muted-foreground/40" aria-hidden>
-                    ·
-                  </span>
-                )}
-
-                {activity.groupName && (
-                  <>
-                    <span className="truncate">{activity.groupName}</span>
-                    <span className="text-muted-foreground/40" aria-hidden>
-                      ·
-                    </span>
-                  </>
-                )}
-
-                {latestPaymentEvent && (
-                  <>
-                    <span>{getMethodLabel(latestPaymentEvent.method, t)}</span>
-                    <span className="text-muted-foreground/40" aria-hidden>
-                      ·
-                    </span>
-                  </>
-                )}
-
-                <span>{formatDistanceToNow(new Date(activityTimestamp), { addSuffix: true })}</span>
-
-                {showDuplicateContext && activity.contextLine && (
-                  <>
-                    <span className="text-muted-foreground/40" aria-hidden>
-                      ·
-                    </span>
-                    <span>{activity.contextLine}</span>
-                  </>
-                )}
-              </ItemDescription>
-            </ItemContent>
-
-            <ItemActions className="ml-auto shrink-0 flex-col items-end gap-1 self-center sm:flex-row sm:items-center sm:gap-2">
-              <span className={cn("typography-amount-prominent", displayAmount.className)}>
-                {displayAmount.prefix}
-                {displayAmount.label}
-              </span>
+          {/* Amount */}
+          <div className="flex shrink-0 flex-col items-end gap-1 self-start pt-0.5">
+            <span className={cn("typography-amount-prominent", displayAmount.className)}>
+              {displayAmount.prefix}
+              {displayAmount.label}
+            </span>
+            <span className="inline-flex size-7 items-center justify-center rounded-full text-muted-foreground transition-colors group-hover:bg-muted group-hover:text-foreground">
               {isExpense ? (
                 isExpanded ? (
-                  <ChevronDownIcon className="h-4 w-4 text-muted-foreground" />
+                  <ChevronDownIcon className="size-4" />
                 ) : (
-                  <ChevronRightIcon className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                  <ChevronRightIcon className="size-4 transition-transform group-hover:translate-x-0.5" />
                 )
               ) : (
-                <ChevronRightIcon className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                <ChevronRightIcon className="size-4 transition-transform group-hover:translate-x-0.5" />
               )}
-            </ItemActions>
-          </button>
-        </Item>
+            </span>
+          </div>
+        </button>
 
         <AnimatePresence initial={false}>
           {isExpense && isExpanded && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
-              className="overflow-hidden border-t bg-muted/30"
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="border-t border-border/70 bg-muted/25"
             >
-              <div className="space-y-2 px-3 py-3 md:px-4">
+              <div className="space-y-3 px-4 py-4 pl-[4.5rem]">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t("dashboard.activityFeed.paymentTrail", "Payment trail")}
+                </p>
+
                 {hasPaymentEvents ? (
-                  activity.paymentEvents.map((paymentEvent) => (
-                    <DashboardPaymentTrailRow
-                      key={paymentEvent.id}
-                      event={paymentEvent}
-                      currentUserId={currentUserId}
+                  <div className="relative space-y-0">
+                    <span
+                      className="absolute top-3 bottom-3 left-[11px] w-px bg-border"
+                      aria-hidden
                     />
-                  ))
+                    {activity.paymentEvents.map((paymentEvent) => (
+                      <div key={paymentEvent.id} className="relative flex gap-3 py-2">
+                        <span className="relative z-10 mt-1.5 size-2.5 shrink-0 rounded-full bg-primary ring-4 ring-muted/25" />
+                        <div className="min-w-0 flex-1 rounded-lg border border-border/80 bg-background px-3 py-2.5">
+                          <DashboardPaymentTrailRow
+                            event={paymentEvent}
+                            currentUserId={currentUserId}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <div className="rounded-md border border-dashed border-border px-4 py-4 text-sm text-muted-foreground">
-                    {t("dashboard.activityFeed.noPaymentsForExpense", "No payments yet for this expense.")}
+                  <div className="rounded-lg border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
+                    {t(
+                      "dashboard.activityFeed.noPaymentsForExpense",
+                      "No payments yet for this expense."
+                    )}
                   </div>
                 )}
 
-                <ActivityDetailLink activity={activity} className="w-full md:ml-auto md:w-auto" />
+                <ActivityDetailLink activity={activity} className="w-full sm:ml-auto sm:w-auto" />
               </div>
             </motion.div>
           )}

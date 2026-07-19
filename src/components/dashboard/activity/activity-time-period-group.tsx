@@ -51,8 +51,13 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
   }
 
   return (
-    <div className={cn(isDashboard ? "space-y-0" : "space-y-3", className)}>
-      <div className={cn("flex items-center gap-2", isDashboard && "px-3 py-2")}>
+    <section className={cn(isDashboard ? "space-y-0" : "space-y-3", className)}>
+      <div
+        className={cn(
+          "flex items-center gap-2",
+          isDashboard && "sticky top-0 z-10 border-b border-border/60 bg-card/95 px-4 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-card/80"
+        )}
+      >
         <button
           type="button"
           onClick={() => {
@@ -63,7 +68,7 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
             "flex items-center gap-2 rounded-md px-1 py-1 transition-colors",
             "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
             isDashboard
-              ? "text-xs font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
+              ? "text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground"
               : "text-sm font-semibold text-foreground hover:text-foreground/80"
           )}
           aria-label={
@@ -85,13 +90,8 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
             <ChevronDownIcon className="h-3.5 w-3.5" />
           )}
           <span>{labelByPeriod[group.period]}</span>
-          <span
-            className={cn(
-              "font-normal tabular-nums",
-              isDashboard ? "text-muted-foreground/80" : "text-muted-foreground"
-            )}
-          >
-            ({group.activities.length})
+          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
+            {group.activities.length}
           </span>
         </button>
       </div>
@@ -99,14 +99,13 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
       <AnimatePresence initial={false}>
         {!group.isCollapsed && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
           >
             {isDashboard ? (
-              <ItemGroup className="divide-y divide-border">
+              <ItemGroup className="divide-y divide-border/70">
                 {group.activities.map((activity) => (
                   <EnhancedActivityRow
                     key={activity.id}
@@ -140,6 +139,6 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </section>
   );
 };
