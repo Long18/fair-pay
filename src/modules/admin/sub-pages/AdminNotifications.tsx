@@ -196,16 +196,6 @@ export function AdminNotifications() {
       syncWithLocation: false,
       queryOptions: {
         select: (data) => {
-          type NotificationRecord = {
-            id: string;
-            user_id: string;
-            type: string;
-            title?: string | null;
-            message?: string | null;
-            is_read?: boolean | null;
-            created_at: string;
-            profiles?: { full_name?: string | null; avatar_url?: string | null } | null;
-          };
           const transformed = (data.data as NotificationRecord[]).map((n) => ({
             id: n.id,
             user_id: n.user_id,

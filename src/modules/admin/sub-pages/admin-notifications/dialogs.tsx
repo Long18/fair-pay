@@ -130,8 +130,6 @@ export function CreateNotificationDialog({
     onSubmit({ user_id: userId, type, title, message });
   };
 
-  // Form fields reset via remount key from parent when the dialog opens.
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
