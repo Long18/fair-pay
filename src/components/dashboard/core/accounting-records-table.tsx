@@ -8,6 +8,7 @@ import { useTablePagination } from "@/hooks/table/use-table-pagination";
 
 import { MoreVerticalIcon, SearchIcon, XIcon, ArrowUpIcon, ArrowDownIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
+import { matchesSearchText } from "@/lib/search-utils";
 
 const decimalFormatter = new Intl.NumberFormat('en-US', {
   style: 'decimal',
@@ -42,7 +43,7 @@ export const AccountingRecordsTable = ({ records }: AccountingRecordsTableProps)
     () =>
       records.filter((record) =>
         Object.values(record).some((value) =>
-          value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+          matchesSearchText(value.toString(), searchTerm)
         )
       ),
     [records, searchTerm]

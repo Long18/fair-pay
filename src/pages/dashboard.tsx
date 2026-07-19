@@ -112,18 +112,18 @@ export const Dashboard = () => {
   }, [identity?.id]);
 
   useEffect(() => {
-    if (!debtsLoading) {
-      const timer = setTimeout(() => {
-        setLoading(false);
+    // Show dashboard shell immediately so Balances can paint row skeletons
+    // while Supabase debts load (instead of blocking on DashboardLoadingBeam).
+    const timer = setTimeout(() => setLoading(false), 150);
+    return () => clearTimeout(timer);
+  }, []);
 
-        if (identity?.id && debts.length > 0) {
-          DashboardTracker.balanceChecked({
-            hasDebts: true,
-            debtCount: debts.length,
-          });
-        }
-      }, 300);
-      return () => clearTimeout(timer);
+  useEffect(() => {
+    if (!debtsLoading && identity?.id && debts.length > 0) {
+      DashboardTracker.balanceChecked({
+        hasDebts: true,
+        debtCount: debts.length,
+      });
     }
   }, [debtsLoading, identity?.id, debts.length]);
 
@@ -135,6 +135,7 @@ export const Dashboard = () => {
       counterparty_id: d.counterparty_id,
       counterparty_name: d.counterparty_name,
       counterparty_avatar_url: d.counterparty_avatar_url,
+      counterparty_email: d.counterparty_email,
       amount: d.amount,
       i_owe_them: d.i_owe_them,
       currency: d.currency,
@@ -245,7 +246,13 @@ export const Dashboard = () => {
                         </div>
                       )}
                       <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
-                        <BalanceTable balances={balances} disabled={!isAuthenticated} showHistory={false} showExpenseBreakdown={true} />
+                        <BalanceTable
+                          balances={balances}
+                          disabled={!isAuthenticated}
+                          showHistory={false}
+                          showExpenseBreakdown={true}
+                          isLoading={!!identity?.id && debtsLoading}
+                        />
                       </div>
                     </>
                   )}

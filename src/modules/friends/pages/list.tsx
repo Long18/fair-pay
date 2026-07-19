@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { CheckIcon, SearchIcon, XIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
+import { matchesSearchFields } from "@/lib/search-utils";
 
 export const FriendListContent = () => {
   const { t } = useTranslation();
@@ -67,12 +68,9 @@ export const FriendListContent = () => {
 
   const filteredFriends = useMemo(() => {
     if (!searchQuery.trim()) return friends;
-    const query = searchQuery.trim().toLowerCase();
-    return friends.filter((friend) => {
-      const name = friend.full_name?.toLowerCase() || "";
-      const email = friend.email?.toLowerCase() || "";
-      return name.includes(query) || email.includes(query);
-    });
+    return friends.filter((friend) =>
+      matchesSearchFields(searchQuery, friend.full_name, friend.email)
+    );
   }, [friends, searchQuery]);
 
   const acceptedFriends = filteredFriends.filter((f) => f.status === "accepted");

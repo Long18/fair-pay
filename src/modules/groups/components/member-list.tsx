@@ -9,6 +9,7 @@ import { MemberCard } from "./member-card";
 import { PaginationControls, PaginationMetadata } from "@/components/ui/pagination-controls";
 import { SearchIcon, UserPlusIcon, UsersIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
+import { matchesSearchFields } from "@/lib/search-utils";
 
 interface MemberStats {
   expense_count: number;
@@ -58,11 +59,8 @@ export const MemberList = ({
   const filteredMembers = useMemo(() => {
     if (!searchQuery.trim()) return members;
 
-    const query = searchQuery.toLowerCase();
-    return members.filter(
-      (m) =>
-        m.profile?.full_name?.toLowerCase().includes(query) ||
-        m.profile?.email?.toLowerCase().includes(query)
+    return members.filter((m) =>
+      matchesSearchFields(searchQuery, m.profile?.full_name, m.profile?.email)
     );
   }, [members, searchQuery]);
 

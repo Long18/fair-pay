@@ -14,6 +14,7 @@ import { ActivityIcon, SearchIcon, XIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { cn } from "@/lib/utils";
 import { debounce } from "@/lib/performance";
+import { matchesSearchFields } from "@/lib/search-utils";
 import { ActivityRowSkeleton } from "@/components/skeletons/ActivityRowSkeleton";
 
 import { AnimatedList } from "@/components/ui/animated-list";
@@ -104,23 +105,20 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
       next = next.filter((activity) => activity.paymentState === activeFilter);
     }
 
-    const query = searchQuery.trim().toLowerCase();
+    const query = searchQuery.trim();
     if (query) {
-      next = next.filter((activity) => {
-        const haystack = [
+      next = next.filter((activity) =>
+        matchesSearchFields(
+          query,
           activity.description,
           activity.groupName,
           activity.contextLine,
           ...activity.payingParticipants.map((p) => p.name),
           activity.originalExpense?.profiles?.full_name,
           activity.originalPayment?.from_profile?.full_name,
-          activity.originalPayment?.to_profile?.full_name,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-        return haystack.includes(query);
-      });
+          activity.originalPayment?.to_profile?.full_name
+        )
+      );
     }
 
     return next;

@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { matchesSearchText } from "@/lib/search-utils";
 
 /**
  * Filter Schema
@@ -124,9 +125,9 @@ export function useTableFilter<T>(
             return itemValue === filterValue;
 
           case "contains":
-            // Case-insensitive string contains
+            // Diacritic-insensitive string contains
             if (typeof itemValue === "string" && typeof filterValue === "string") {
-              return itemValue.toLowerCase().includes(filterValue.toLowerCase());
+              return matchesSearchText(itemValue, filterValue);
             }
             return false;
 

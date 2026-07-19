@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
+import { matchesSearchFields } from "@/lib/search-utils";
 
 /**
  * Property-Based Tests for Admin User Management
@@ -30,17 +31,10 @@ interface UserRow {
 
 /**
  * Filters user rows by a text search query against searchable fields.
- * Mirrors the AdminUsers page behavior: search by full_name (case-insensitive substring).
- * Extended to also search email, as the design spec says "Tìm kiếm theo tên hoặc email".
+ * Mirrors AdminUsers: case- and diacritic-insensitive substring on name/email.
  */
 function filterUsersBySearch(users: UserRow[], query: string): UserRow[] {
-  if (!query.trim()) return users;
-  const lowerQuery = query.toLowerCase();
-  return users.filter(
-    (u) =>
-      u.full_name.toLowerCase().includes(lowerQuery) ||
-      u.email.toLowerCase().includes(lowerQuery),
-  );
+  return users.filter((u) => matchesSearchFields(query, u.full_name, u.email));
 }
 
 /**
@@ -128,23 +122,33 @@ describe("Feature: admin-dashboard - Property 1: Data table filtering returns on
    * For any search query, all returned rows' searchable fields
    * contain the search query as a substring (case-insensitive).
    */
-  it("every filtered row contains the search query in full_name or email (case-insensitive)", () => {
+  it("every filtered row contains the search query in full_name or email (case- and diacritic-insensitive)", () => {
     fc.assert(
       fc.property(arbUserList, arbSearchQuery, (users, query) => {
         // Skip whitespace-only queries — they are treated as "no filter"
         fc.pre(query.trim().length > 0);
 
         const results = filterUsersBySearch(users, query);
-        const lowerQuery = query.toLowerCase();
 
         for (const row of results) {
-          const nameMatch = row.full_name.toLowerCase().includes(lowerQuery);
-          const emailMatch = row.email.toLowerCase().includes(lowerQuery);
-          expect(nameMatch || emailMatch).toBe(true);
+          expect(matchesSearchFields(query, row.full_name, row.email)).toBe(true);
         }
       }),
       { numRuns: 100 },
     );
+  });
+
+  it("matches Vietnamese names without requiring diacritics in the query", () => {
+    const users: UserRow[] = [
+      {
+        id: "00000000-0000-4000-8000-000000000001",
+        full_name: "Bùi Văn Phúc",
+        email: "phuc@example.com",
+        role: "user",
+      },
+    ];
+    expect(filterUsersBySearch(users, "Bui")).toEqual(users);
+    expect(filterUsersBySearch(users, "phuc")).toEqual(users);
   });
 
   /**

@@ -112,6 +112,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
+import { matchesSearchFields } from "@/lib/search-utils";
 import { buildInviteEmailPreview, normalizeInviteEmails } from "@/modules/admin/email/invite-email";
 import type { Profile } from "@/modules/profile/types";
 import type { AdminUserRow } from "../types";
@@ -1243,14 +1244,9 @@ function MergeUserDialog({
   );
 
   const sourceOptions = useMemo(() => {
-    const q = sourceSearch.trim().toLowerCase();
     return users.filter((user) => {
       if (user.id === targetUserId || user.id === identityId) return false;
-      if (!q) return true;
-      return (
-        user.full_name.toLowerCase().includes(q) ||
-        user.email.toLowerCase().includes(q)
-      );
+      return matchesSearchFields(sourceSearch, user.full_name, user.email);
     });
   }, [identityId, sourceSearch, targetUserId, users]);
 
@@ -2188,8 +2184,9 @@ function UsersTab() {
   const filteredData = useMemo(() => {
     let result = usersData ?? [];
     if (debouncedSearch) {
-      const q = debouncedSearch.toLowerCase();
-      result = result.filter((u) => u.full_name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q));
+      result = result.filter((u) =>
+        matchesSearchFields(debouncedSearch, u.full_name, u.email),
+      );
     }
     if (roleFilter !== "all") {
       result = result.filter((u) => u.role === roleFilter);
@@ -3430,7 +3427,7 @@ function FriendshipsTab() {
       sorters: { initial: [{ field: "created_at", order: "desc" }] },
       queryOptions: {
         select: (data) => {
-          const searchTerm = debouncedSearch.trim().toLowerCase();
+          const searchTerm = debouncedSearch.trim();
           const transformed = (data.data as unknown as FriendshipListRecord[]).map((f) => {
             const userA = relationOne(f.user_a_profile);
             const userB = relationOne(f.user_b_profile);
@@ -3447,11 +3444,14 @@ function FriendshipsTab() {
             };
           });
           const filtered = searchTerm
-            ? transformed.filter((friendship) => (
-                friendship.id.toLowerCase().includes(searchTerm) ||
-                friendship.user_a_name.toLowerCase().includes(searchTerm) ||
-                friendship.user_b_name.toLowerCase().includes(searchTerm)
-              ))
+            ? transformed.filter((friendship) =>
+                matchesSearchFields(
+                  searchTerm,
+                  friendship.id,
+                  friendship.user_a_name,
+                  friendship.user_b_name,
+                ),
+              )
             : transformed;
           return { ...data, data: filtered, total: searchTerm ? filtered.length : data.total };
         },

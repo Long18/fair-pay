@@ -58,8 +58,9 @@ export function BalanceRecentTransactionsPreview({
   };
 
   if (isLoading) {
+    // Fixed min-height so skeleton → content does not resize the expand panel mid-animation.
     return (
-      <div className={cn("space-y-3", className)}>
+      <div className={cn("min-h-[168px] space-y-3", className)}>
         <Skeleton className="h-3 w-36" />
         <div className="rounded-lg border bg-background p-4">
           <Skeleton className="h-5 w-44" />
@@ -71,7 +72,10 @@ export function BalanceRecentTransactionsPreview({
         </div>
         <div className="rounded-lg border bg-background">
           {[1, 2].map((row) => (
-            <div key={row} className="grid gap-3 border-b px-4 py-3 last:border-b-0 md:grid-cols-[minmax(0,1fr)_auto]">
+            <div
+              key={row}
+              className="grid gap-3 border-b px-4 py-3 last:border-b-0 md:grid-cols-[minmax(0,1fr)_auto]"
+            >
               <div>
                 <Skeleton className="h-4 w-40" />
                 <Skeleton className="mt-2 h-3 w-28" />
@@ -89,14 +93,17 @@ export function BalanceRecentTransactionsPreview({
 
   if (expenses.length === 0) {
     return (
-      <div className={cn("space-y-3", className)}>
+      <div className={cn("min-h-[120px] space-y-3", className)}>
         <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          {t("dashboard.recentWithUser", { defaultValue: "Recent with {{name}}", name: counterpartyName })}
+          {t("dashboard.recentWithUser", {
+            defaultValue: "Recent with {{name}}",
+            name: counterpartyName,
+          })}
         </div>
         <div className="rounded-lg border border-dashed bg-background/70 px-4 py-5 text-sm text-muted-foreground">
           {t("dashboard.noContributingExpenses", "No expenses found")}
         </div>
-        {onViewDetails && (
+        {onViewDetails ? (
           <Button
             variant="ghost"
             size="sm"
@@ -106,7 +113,7 @@ export function BalanceRecentTransactionsPreview({
             <span>{t("dashboard.viewFullBreakdown", "View full breakdown")}</span>
             <ArrowRightIcon className="h-4 w-4" />
           </Button>
-        )}
+        ) : null}
       </div>
     );
   }
@@ -123,9 +130,12 @@ export function BalanceRecentTransactionsPreview({
   } as const;
 
   return (
-    <div className={cn("space-y-3", className)}>
+    <div className={cn("min-h-[168px] space-y-3", className)}>
       <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-        {t("dashboard.recentWithUser", { defaultValue: "Recent with {{name}}", name: counterpartyName })}
+        {t("dashboard.recentWithUser", {
+          defaultValue: "Recent with {{name}}",
+          name: counterpartyName,
+        })}
       </div>
 
       <div className="rounded-md bg-muted/20 p-1.5">
@@ -143,27 +153,28 @@ export function BalanceRecentTransactionsPreview({
                 <PaymentStateBadge state={latestExpense.status} size="sm" />
               </div>
 
-              <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 <span className="text-xs text-muted-foreground">
                   {formatExpenseDate(latestExpense.expense_date)}
                 </span>
                 {latestExpense.group_name && (
                   <>
                     <span className="text-xs text-muted-foreground/40">·</span>
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal">
+                    <Badge variant="outline" className="h-4 px-1.5 py-0 text-[10px] font-normal">
                       {latestExpense.group_name}
                     </Badge>
                   </>
                 )}
                 <span className="text-xs text-muted-foreground/40">·</span>
-                <span className="text-xs text-muted-foreground/70 tabular-nums">
-                  {t("expense.total", "Total")}: {formatCurrency(latestExpense.amount, latestExpense.currency)}
+                <span className="text-xs tabular-nums text-muted-foreground/70">
+                  {t("expense.total", "Total")}:{" "}
+                  {formatCurrency(latestExpense.amount, latestExpense.currency)}
                 </span>
               </div>
             </div>
 
             <div className="ml-2 flex shrink-0 flex-col items-end">
-              <span className="text-[10px] text-muted-foreground mb-0.5">
+              <span className="mb-0.5 text-[10px] text-muted-foreground">
                 {t("expense.myShare", "My Share")}
               </span>
               <span className="text-base font-semibold tabular-nums md:text-lg">
@@ -189,40 +200,41 @@ export function BalanceRecentTransactionsPreview({
                 <CategoryIcon category={expense.category} size="sm" className="shrink-0" />
 
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <p className="text-sm font-medium truncate text-foreground">
+                  <div className="mb-0.5 flex items-center gap-2">
+                    <p className="truncate text-sm font-medium text-foreground">
                       {expense.description}
                     </p>
                     <PaymentStateBadge state={expense.status} size="sm" />
                   </div>
 
-                  <div className="flex items-center gap-1.5 flex-wrap">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <span className="text-xs text-muted-foreground">
                       {formatExpenseDate(expense.expense_date)}
                     </span>
                     {expense.group_name && (
                       <>
                         <span className="text-xs text-muted-foreground/40">·</span>
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal">
+                        <Badge variant="outline" className="h-4 px-1.5 py-0 text-[10px] font-normal">
                           {expense.group_name}
                         </Badge>
                       </>
                     )}
                     <span className="text-xs text-muted-foreground/40">·</span>
-                    <span className="text-xs text-muted-foreground/60 tabular-nums">
-                      {t("expense.total", "Total")}: {formatCurrency(expense.amount, expense.currency)}
+                    <span className="text-xs tabular-nums text-muted-foreground/60">
+                      {t("expense.total", "Total")}:{" "}
+                      {formatCurrency(expense.amount, expense.currency)}
                     </span>
                   </div>
                 </div>
 
                 <div className="ml-2 shrink-0 text-right">
-                  <span className="block text-[10px] text-muted-foreground mb-0.5">
+                  <span className="mb-0.5 block text-[10px] text-muted-foreground">
                     {t("expense.myShare", "My Share")}
                   </span>
                   <span className="block text-sm font-semibold tabular-nums">
                     {formatCurrency(expense.my_share, expense.currency)}
                   </span>
-                  <span className="block mt-1 text-[11px] text-muted-foreground">
+                  <span className="mt-1 block text-[11px] text-muted-foreground">
                     {statusLabels[expense.status]}
                   </span>
                 </div>
@@ -240,13 +252,16 @@ export function BalanceRecentTransactionsPreview({
               })}
             </span>
             <span className="font-medium tabular-nums text-status-success-foreground">
-              {formatCurrency(settledTotal, settledExpenses[0]?.currency || latestExpense.currency)}
+              {formatCurrency(
+                settledTotal,
+                settledExpenses[0]?.currency || latestExpense.currency
+              )}
             </span>
           </div>
         )}
       </div>
 
-      {onViewDetails && (
+      {onViewDetails ? (
         <Button
           variant="ghost"
           size="sm"
@@ -256,7 +271,7 @@ export function BalanceRecentTransactionsPreview({
           <span>{t("dashboard.viewFullBreakdown", "View full breakdown")}</span>
           <ArrowRightIcon className="h-4 w-4" />
         </Button>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -55,16 +55,23 @@ export function useStaggerAnimation(
   const rowVariants = useMemo<Variants>(
     () => ({
       hidden: { opacity: 0, y: reducedMotion ? 0 : yOffset },
-      visible: (index: number) => ({
-        opacity: 1,
-        y: 0,
-        transition: {
-          duration: reducedMotion || index >= maxStaggerCount ? 0 : rowDuration,
-          ease: [0.25, 0.1, 0.25, 1],
-        },
-      }),
+      visible: (index: number) => {
+        const cappedIndex = Math.min(Math.max(index, 0), maxStaggerCount);
+        const skipMotion = reducedMotion || index >= maxStaggerCount;
+        return {
+          opacity: 1,
+          y: 0,
+          transition: {
+            duration: skipMotion ? 0 : rowDuration,
+            // Explicit delay so nested motion.tr (inside TableBody) still queues
+            // even when staggerChildren cannot reach them through non-motion wrappers.
+            delay: skipMotion ? 0 : cappedIndex * staggerDelay,
+            ease: [0.25, 0.1, 0.25, 1],
+          },
+        };
+      },
     }),
-    [reducedMotion, yOffset, rowDuration, maxStaggerCount]
+    [reducedMotion, yOffset, rowDuration, maxStaggerCount, staggerDelay]
   );
 
   return { containerVariants, rowVariants, animationKey };

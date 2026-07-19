@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Loader2Icon, GroupIcon, PencilIcon, UsersIcon } from "@/components/ui/icons";
 import { formatDate } from "@/lib/locale-utils";
+import { matchesSearchFields } from "@/lib/search-utils";
 import { AdminPageHeader } from "../components/AdminPageHeader";
 import { AdminTabs, AdminTabsContent } from "../components/AdminTabs";
 import { useAdminTabParam } from "../hooks/use-admin-tab-param";
@@ -139,10 +140,8 @@ function ModeratorUsersTab() {
   });
 
   const visibleUsers = useMemo(() => {
-    const needle = search.trim().toLowerCase();
-    if (!needle) return data;
     return data.filter((user) =>
-      [user.full_name, user.email, user.role].some((value) => value.toLowerCase().includes(needle)),
+      matchesSearchFields(search, user.full_name, user.email, user.role),
     );
   }, [data, search]);
 
@@ -232,12 +231,8 @@ function ModeratorGroupsTab() {
   });
 
   const visibleGroups = useMemo(() => {
-    const needle = search.trim().toLowerCase();
-    if (!needle) return data;
     return data.filter((group) =>
-      [group.name, group.description ?? "", group.creator_name].some((value) =>
-        value.toLowerCase().includes(needle),
-      ),
+      matchesSearchFields(search, group.name, group.description, group.creator_name),
     );
   }, [data, search]);
 

@@ -6,6 +6,7 @@ import { Group } from "@/modules/groups/types";
 import { Friendship } from "@/modules/friends/types";
 import { SearchResult } from "./types";
 import { formatDateShort } from "@/lib/locale-utils";
+import { matchesSearchText } from "@/lib/search-utils";
 
 const RECENT_SEARCHES_KEY = "fairpay_recent_searches:v1";
 const LEGACY_RECENT_SEARCHES_KEY = "fairpay_recent_searches";
@@ -147,9 +148,8 @@ export const useGlobalSearch = (query: string) => {
         : friendship.user_a_profile;
 
       if (
-        friendProfile?.full_name
-          ?.toLowerCase()
-          .includes(query.toLowerCase())
+        friendProfile?.full_name &&
+        matchesSearchText(friendProfile.full_name, query)
       ) {
         return [
           {

@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2Icon } from "@/components/ui/icons";
+import { matchesSearchFields } from "@/lib/search-utils";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { useAdminTranslation } from "../i18n";
 
@@ -84,17 +85,13 @@ export function PostCreateConnectionsDialog({
   });
 
   const friendOptions = useMemo(() => {
-    const q = friendSearch.trim().toLowerCase();
     return profiles.filter(
-      (p) =>
-        p.id !== user?.id &&
-        (!q || p.full_name.toLowerCase().includes(q)),
+      (p) => p.id !== user?.id && matchesSearchFields(friendSearch, p.full_name),
     );
   }, [friendSearch, profiles, user?.id]);
 
   const groupOptions = useMemo(() => {
-    const q = groupSearch.trim().toLowerCase();
-    return groups.filter((g) => !q || g.name.toLowerCase().includes(q));
+    return groups.filter((g) => matchesSearchFields(groupSearch, g.name));
   }, [groupSearch, groups]);
 
   const reset = () => {

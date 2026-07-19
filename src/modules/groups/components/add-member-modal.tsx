@@ -40,6 +40,7 @@ import { Profile } from "@/modules/profile/types";
 import { Friendship } from "@/modules/friends/types";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { matchesSearchText } from "@/lib/search-utils";
 
 import { CheckIcon, ChevronsUpDownIcon, UserPlusIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -129,7 +130,7 @@ export const AddMemberModal = ({
       (friend) =>
         !existingMemberIds.has(friend.id) &&
         (!searchValue ||
-          friend.full_name?.toLowerCase().includes(searchValue.toLowerCase()))
+          matchesSearchText(friend.full_name ?? "", searchValue))
     );
   }, [friends, existingMemberIds, searchValue]);
 

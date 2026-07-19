@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "react-i18next";
 import { useHaptics } from '@/hooks/use-haptics';
 import { cn } from "@/lib/utils";
+import { matchesSearchText } from "@/lib/search-utils";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { init, SearchIndex } from "emoji-mart";
 import emojiData from "@emoji-mart/data";
@@ -164,25 +165,26 @@ export const CommentInput = memo(({
 
   // Filter participants (exclude current user)
   const filteredParticipants = useMemo(() => {
-    const lower = mentionFilter.toLowerCase();
     return participants.filter(
-      (p) => p.id !== currentUser?.id && (!lower || p.full_name.toLowerCase().includes(lower))
+      (p) =>
+        p.id !== currentUser?.id &&
+        matchesSearchText(p.full_name, mentionFilter)
     );
   }, [participants, currentUser?.id, mentionFilter]);
 
   // Filter friends (exclude current user and participants)
   const filteredFriends = useMemo(() => {
-    const lower = mentionFilter.toLowerCase();
-    return friends.filter(
-      (f) => !lower || f.full_name.toLowerCase().includes(lower)
+    return friends.filter((f) =>
+      matchesSearchText(f.full_name, mentionFilter)
     );
   }, [friends, mentionFilter]);
 
   // Filter special items
   const filteredSpecial = useMemo(() => {
     if (!mentionFilter) return specialItems;
-    const lower = mentionFilter.toLowerCase();
-    return specialItems.filter((s) => s.label.toLowerCase().includes(lower));
+    return specialItems.filter((s) =>
+      matchesSearchText(s.label, mentionFilter)
+    );
   }, [specialItems, mentionFilter]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {

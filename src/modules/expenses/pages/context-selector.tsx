@@ -13,6 +13,7 @@ import { useHaptics } from "@/hooks/use-haptics";
 import { useRecentExpenseContexts } from "@/modules/expenses/hooks/use-recent-expense-contexts";
 import { ContextItemRow } from "@/modules/expenses/components/context-item-row";
 import { Search, X } from "lucide-react";
+import { matchesSearchText } from "@/lib/search-utils";
 
 type ExpenseContextOption = {
   id: string;
@@ -168,22 +169,20 @@ export const ExpenseContextSelector = () => {
     [groupOptions, friendOptions]
   );
 
-  const normalizedSearch = search.trim().toLowerCase();
+  const trimmedSearch = search.trim();
 
   const filteredOptions = useMemo(() => {
-    if (!normalizedSearch) return allOptions;
-    return allOptions.filter((o) =>
-      o.name.toLowerCase().includes(normalizedSearch)
-    );
-  }, [allOptions, normalizedSearch]);
+    if (!trimmedSearch) return allOptions;
+    return allOptions.filter((o) => matchesSearchText(o.name, trimmedSearch));
+  }, [allOptions, trimmedSearch]);
 
   // Recents matched against current options (drops deleted/archived entries)
   const recentOptions = useMemo(() => {
-    if (normalizedSearch) return [];
+    if (trimmedSearch) return [];
     return recentAll
       .map((r) => allOptions.find((o) => o.id === r.id && o.type === r.type))
       .filter((o): o is ExpenseContextOption => !!o);
-  }, [recentAll, allOptions, normalizedSearch]);
+  }, [recentAll, allOptions, trimmedSearch]);
 
   const visibleRecents = showAllRecents
     ? recentOptions
@@ -332,7 +331,7 @@ export const ExpenseContextSelector = () => {
         {/* Scrollable list — bounded height keeps search + CTAs fixed */}
         <div className="max-h-[42vh] overflow-y-auto md:max-h-72">
           {/* No results */}
-          {normalizedSearch && filteredOptions.length === 0 && (
+          {trimmedSearch && filteredOptions.length === 0 && (
             <div className="py-8 text-center">
               <p className="text-sm font-medium">No results found</p>
               <p className="text-xs text-muted-foreground mt-0.5">
@@ -375,15 +374,15 @@ export const ExpenseContextSelector = () => {
           )}
 
           {/* All groups & friends — full list when not searching, filtered list when searching */}
-          {(!normalizedSearch || filteredOptions.length > 0) && (
+          {(!trimmedSearch || filteredOptions.length > 0) && (
             <div>
-              {!normalizedSearch && (
+              {!trimmedSearch && (
                 <p className="px-1 pb-1.5 text-xs font-medium text-muted-foreground">
                   All groups & friends
                 </p>
               )}
               <ItemGroup>
-                {(normalizedSearch ? filteredOptions : allOptions).map(
+                {(trimmedSearch ? filteredOptions : allOptions).map(
                   (option) => (
                     <ContextItemRow
                       key={`${option.type}-${option.id}`}

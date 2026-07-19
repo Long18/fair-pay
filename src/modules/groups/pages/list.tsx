@@ -31,6 +31,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Clock3Icon, Loader2Icon, LogInIcon, PlusIcon, SearchIcon } from '@/components/ui/icons';
 import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { matchesSearchFields } from '@/lib/search-utils';
 
 type FilterType = 'all' | 'active' | 'settled' | 'admin' | 'archived' | 'discover';
 type SortType = 'recent' | 'oldest' | 'name' | 'balance';
@@ -250,11 +251,8 @@ export const GroupListContent = () => {
 
     // Search
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (g) =>
-          g.name.toLowerCase().includes(query) ||
-          g.description?.toLowerCase().includes(query)
+      filtered = filtered.filter((g) =>
+        matchesSearchFields(searchQuery, g.name, g.description)
       );
     }
 
