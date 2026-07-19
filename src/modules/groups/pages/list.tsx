@@ -360,15 +360,16 @@ export const GroupListContent = () => {
     <div className="space-y-6">
       {/* Search & Filters */}
       {hasGroups && (
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="flex flex-col gap-3 rounded-xl border border-border/80 bg-card/60 p-3 sm:flex-row sm:items-center">
+          <div className="relative min-w-0 flex-1">
+            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search groups..."
+              placeholder={t("groups.searchPlaceholder", "Search groups…")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
+              className="h-9 border-border/80 bg-background pl-9"
+              aria-label={t("groups.searchPlaceholder", "Search groups…")}
             />
           </div>
 
@@ -376,16 +377,16 @@ export const GroupListContent = () => {
             value={filterType}
             onValueChange={(v) => { tap(); setFilterType(v as FilterType); }}
           >
-            <SelectTrigger className="w-full sm:w-40">
-              <SelectValue placeholder="Filter" />
+            <SelectTrigger className="h-9 w-full sm:w-40" aria-label={t("common.filter", "Filter")}>
+              <SelectValue placeholder={t("common.filter", "Filter")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Groups</SelectItem>
-              <SelectItem value="discover">Discover</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="settled">Settled</SelectItem>
-              <SelectItem value="admin">I'm Admin</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
+              <SelectItem value="all">{t("groups.filterAll", "All groups")}</SelectItem>
+              <SelectItem value="discover">{t("groups.filterDiscover", "Discover")}</SelectItem>
+              <SelectItem value="active">{t("groups.filterActive", "Active")}</SelectItem>
+              <SelectItem value="settled">{t("groups.filterSettled", "Settled")}</SelectItem>
+              <SelectItem value="admin">{t("groups.filterAdmin", "I'm admin")}</SelectItem>
+              <SelectItem value="archived">{t("groups.filterArchived", "Archived")}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -393,14 +394,14 @@ export const GroupListContent = () => {
             value={sortBy}
             onValueChange={(v) => { tap(); setSortBy(v as SortType); }}
           >
-            <SelectTrigger className="w-full sm:w-40">
-              <SelectValue placeholder="Sort" />
+            <SelectTrigger className="h-9 w-full sm:w-40" aria-label={t("groups.sortRecent", "Sort")}>
+              <SelectValue placeholder={t("groups.sortRecent", "Sort")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="recent">Most Recent</SelectItem>
-              <SelectItem value="oldest">Oldest</SelectItem>
-              <SelectItem value="name">Name</SelectItem>
-              <SelectItem value="balance">Balance</SelectItem>
+              <SelectItem value="recent">{t("groups.sortRecent", "Most recent")}</SelectItem>
+              <SelectItem value="oldest">{t("groups.sortOldest", "Oldest")}</SelectItem>
+              <SelectItem value="name">{t("groups.sortName", "Name")}</SelectItem>
+              <SelectItem value="balance">{t("groups.sortBalance", "Balance")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
