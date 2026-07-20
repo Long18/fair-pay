@@ -17,7 +17,7 @@ export function AuthBootstrapLoading() {
     >
       <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" aria-hidden />
       <p className="text-sm text-muted-foreground">
-        {t("auth.signingIn", "Signing you in…")}
+        {t("common.loading", "Loading…")}
       </p>
     </div>
   );

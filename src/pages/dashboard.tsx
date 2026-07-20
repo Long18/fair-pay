@@ -147,7 +147,7 @@ export const Dashboard = () => {
     }));
   }, [debts]);
 
-  if (identityLoading || loading) {
+  if (loading) {
     return <DashboardLoadingBeam />;
   }
 

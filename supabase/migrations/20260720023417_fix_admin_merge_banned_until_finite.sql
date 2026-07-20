@@ -1,6 +1,6 @@
 -- Follow-up: stop admin_merge_profiles writing banned_until = infinity.
 -- GoTrue cannot scan Postgres infinity into *time.Time (login server_error).
--- Companion to 20260720022854_fix_banned_until_gotrue_scan.sql.
+-- Companion to 20260720023259_fix_banned_until_gotrue_scan.sql.
 
 BEGIN;
 

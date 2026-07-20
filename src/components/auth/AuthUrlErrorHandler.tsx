@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { suggestsMergedAccountOAuthError } from "./oauth-error-message";
 
 function readHashAuthParams(): URLSearchParams {
   const raw = window.location.hash.startsWith("#")
@@ -32,20 +33,12 @@ export function AuthUrlErrorHandler() {
 
     handledRef.current = true;
 
-    const haystack = `${error ?? ""} ${description ?? ""}`.toLowerCase();
-    const suggestsMergedAccount =
-      haystack.includes("banned_until") ||
-      haystack.includes("server_error") ||
-      haystack.includes("user_banned") ||
-      haystack.includes("banned");
-
-    const message = suggestsMergedAccount
+    const message = suggestsMergedAccountOAuthError(error, description)
       ? t(
           "auth.oauthMergedAccountHint",
           "Sign-in failed. If you recently merged accounts, try signing in with your primary account email.",
         )
-      : description ||
-        t("auth.oauthError", "Sign-in failed. Please try again.");
+      : t("auth.oauthError", "Sign-in failed. Please try again.");
 
     toast.error(message);
 
