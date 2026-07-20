@@ -1,5 +1,5 @@
--- Manual / local regression checks for merged-profile re-login fix
--- (20260715000000_fix_merged_profile_relogin.sql).
+-- Manual / local regression checks for merged-profile re-login
+-- (identity transfer: secondary Google/email → canonical auth user).
 --
 -- Run against a disposable local Supabase DB as a role that can call
 -- admin_merge_profiles (or via service_role + set admin claims).
@@ -8,23 +8,21 @@
 -- Expected outcomes after a fresh merge A → B:
 --   1. profiles: only B remains; A gone
 --   2. user_emails for both emails → user_id = B
---   3. auth.users A has banned_until = finite far-future
---      (TIMESTAMPTZ '9999-12-31 23:59:59+00' — never Postgres infinity;
---      GoTrue cannot scan infinity into *time.Time)
---   4. any OTHER auth.users whose email/identity matches A's emails
---      (except B) is also banned — Google can create a different auth uid
---   5. exactly one profile_merge_transactions row for the pair
---   6. second admin_merge_profiles(A,B) returns { success: true, noop: true }
---   7. no second merge transaction row
+--   3. auth.identities that belonged to A (and other auth uids for A's emails)
+--      now have user_id = B; auth.users A is deleted (not banned)
+--   4. exactly one profile_merge_transactions row for the pair
+--   5. second admin_merge_profiles(A,B) returns { success: true, noop: true }
+--   6. no second merge transaction row
 --
 -- Sign-in / sign-up (app-level):
---   - Email B → session for B, profile B
---   - Email A (banned auth) → sign-in rejected
---   - Orphan auth session (no profiles row, email on B) →
---     get_login_account_status() returns reason=merged_into_other_account
---     and the client signs out
+--   - Email/Google for B → session for B, profile B
+--   - Google that was on A → session for B, profile B (identities claimed)
+--   - Email+password that existed only on A → password is NOT copied;
+--     use Google linked to B, or password reset / magic link on B
+--   - Leftover JWT for deleted A → get_login_account_status() returns
+--     merged_into_other_account or auth_user_missing; client signs out
 --   - Sign-up with Email A while email is on B’s user_emails and B has
---     active auth → aborted with "already linked" (if email freed in auth)
+--     active auth → aborted with "already linked"
 
 -- Example sketch (replace UUIDs):
 --
@@ -33,36 +31,9 @@
 --   'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid   -- target B
 -- );
 --
--- SELECT id, banned_until FROM auth.users
--- WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+-- SELECT user_id, provider, email FROM auth.identities
+-- WHERE email IN ('a@example.com', 'b@example.com');
+-- -- all rows should show user_id = B
 --
--- SELECT user_id, email, source FROM public.user_emails
--- WHERE user_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
--- ORDER BY email;
---
--- SELECT * FROM public.profile_merge_transactions
--- WHERE pair_low = LEAST(
---         'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
---         'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid
---       )
---   AND pair_high = GREATEST(
---         'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
---         'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid
---       );
---
--- SELECT public.admin_merge_profiles(
---   'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
---   'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid
--- );
--- -- Expect: {"success": true, "noop": true, ...}
---
--- SELECT count(*) FROM public.profile_merge_transactions
--- WHERE pair_low = LEAST(
---         'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
---         'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid
---       )
---   AND pair_high = GREATEST(
---         'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
---         'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid
---       );
--- -- Expect: 1
+-- SELECT id FROM auth.users WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+-- -- should return 0 rows

@@ -258,6 +258,7 @@ export const ExpenseShow = () => {
         t("expenses.settleAllSuccess", {
           splitsUpdated,
           alreadyPaid,
+          totalSplits: splitsUpdated + alreadyPaid,
           defaultValue: `Settled ${splitsUpdated} of ${splitsUpdated + alreadyPaid} splits. ${alreadyPaid} already paid.`,
         })
       );
@@ -294,6 +295,7 @@ export const ExpenseShow = () => {
           ? t("expenses.partialSettleSuccess", {
               userName: selectedSplit.profiles?.full_name,
               amount: formatNumber(amount),
+              currency: expense.currency,
               defaultValue: `Partial payment of ${formatNumber(amount)} ${expense.currency} from ${selectedSplit.profiles?.full_name} marked as received`,
             })
           : t("expenses.splitSettleSuccess", {
@@ -309,7 +311,10 @@ export const ExpenseShow = () => {
     } catch (error: any) {
       console.error("Error settling split:", error);
       toast.error(
-        t("expenses.splitSettleError", { defaultValue: `Failed to settle: ${error.message}` })
+        t("expenses.splitSettleError", {
+          message: error.message,
+          defaultValue: `Failed to settle: ${error.message}`,
+        })
       );
     } finally {
       setSettlingSplitId(null);

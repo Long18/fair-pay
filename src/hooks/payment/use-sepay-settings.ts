@@ -38,9 +38,9 @@ export function useSepaySettings(): UseSepaySettingsReturn {
         .from('user_settings')
         .select('sepay_config')
         .eq('user_id', identity.id)
-        .single();
+        .maybeSingle();
 
-      if (fetchError && fetchError.code !== 'PGRST116') {
+      if (fetchError) {
         throw fetchError;
       }
 
@@ -150,7 +150,7 @@ export function usePayeeSepaySettings(userId: string | undefined) {
           .from('user_settings')
           .select('sepay_config')
           .eq('user_id', userId)
-          .single();
+          .maybeSingle();
 
         if (error || !data?.sepay_config) {
           setIsConfigured(false);

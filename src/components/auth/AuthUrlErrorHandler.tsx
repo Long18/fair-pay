@@ -36,9 +36,11 @@ export function AuthUrlErrorHandler() {
     const message = suggestsMergedAccountOAuthError(error, description)
       ? t(
           "auth.oauthMergedAccountHint",
-          "Sign-in failed. If you recently merged accounts, try signing in with your primary account email.",
+          "This sign-in was linked to an account that was merged. Try again, or use another email on the same FairPay profile.",
         )
-      : t("auth.oauthError", "Sign-in failed. Please try again.");
+      : (description && description.length < 180
+          ? description
+          : t("auth.oauthError", "Sign-in failed. Please try again."));
 
     toast.error(message);
 

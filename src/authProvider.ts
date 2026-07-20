@@ -3,6 +3,11 @@ import { supabaseClient } from "./utility";
 import { AuthTracker, analyticsManager, ErrorTracker } from "./lib/analytics/index";
 import { journeyTracking } from "./lib/journey-tracking";
 import { isAnalyticsConsentGiven } from "./lib/analytics/consent-gate";
+import {
+    loginStatusSignOutMessage,
+    shouldSignOutForLoginStatus,
+    type LoginAccountStatusPayload,
+} from "./lib/auth/login-account-status";
 
 const getErrorMessage = (error: unknown): string | undefined => {
     if (error instanceof Error) return error.message;
@@ -340,6 +345,28 @@ const authProvider: AuthProvider = {
                     logout: true,
                     redirectTo: "/login",
                 };
+            }
+
+            // Orphan / deleted-auth JWT after merge (option-1 identity transfer)
+            const { data: status, error: statusError } = await supabaseClient.rpc(
+                "get_login_account_status",
+            );
+            if (statusError) {
+                console.warn("[auth] get_login_account_status failed", statusError);
+            } else if (status && typeof status === "object") {
+                const payload = status as LoginAccountStatusPayload;
+                if (shouldSignOutForLoginStatus(payload)) {
+                    await supabaseClient.auth.signOut();
+                    return {
+                        authenticated: false,
+                        error: {
+                            message: loginStatusSignOutMessage(payload),
+                            name: "MergedAccount",
+                        },
+                        logout: true,
+                        redirectTo: "/login",
+                    };
+                }
             }
         } catch (error: unknown) {
             return {
