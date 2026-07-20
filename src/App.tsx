@@ -41,6 +41,8 @@ import { ThemeProvider } from "./components/refine-ui/theme/theme-provider";
 import { ErrorBoundary } from "./components/error-boundary";
 import { BuildVersionMonitor } from "./components/system/build-version-monitor";
 import { PageSkeleton, AdminPageSkeleton } from "./components/skeletons/PageSkeleton";
+import { AuthBootstrapLoading } from "./components/auth/AuthBootstrapLoading";
+import { AuthUrlErrorHandler } from "./components/auth/AuthUrlErrorHandler";
 
 // Auth pages (critical for initial load)
 import { Login } from "./pages/login";
@@ -333,6 +335,7 @@ function App() {
                     <Route index element={
                       <Authenticated
                         key="authenticated-dashboard"
+                        loading={<AuthBootstrapLoading />}
                         fallback={<Dashboard />}
                       >
                         <Dashboard />
@@ -391,6 +394,7 @@ function App() {
                     element={
                       <Authenticated
                         key="authenticated-financial"
+                        loading={<AuthBootstrapLoading />}
                         fallback={<CatchAllNavigate to="/login" />}
                       >
                         <Layout>
@@ -431,6 +435,7 @@ function App() {
                     element={
                       <Authenticated
                         key="authenticated-admin"
+                        loading={<AuthBootstrapLoading />}
                         fallback={<CatchAllNavigate to="/login" />}
                       >
                         <Suspense fallback={<AdminPageSkeleton />}>
@@ -462,6 +467,7 @@ function App() {
                     element={
                       <Authenticated
                         key="authenticated-inner"
+                        loading={<AuthBootstrapLoading />}
                         fallback={<CatchAllNavigate to="/login" />}
                       >
                         <Layout>
@@ -599,6 +605,7 @@ function App() {
                     element={
                       <Authenticated
                         key="authenticated-outer"
+                        loading={<AuthBootstrapLoading />}
                         fallback={<Outlet />}
                       >
                         <NavigateToResource />
@@ -613,6 +620,7 @@ function App() {
                 </Routes>
 
                 <Toaster />
+                <AuthUrlErrorHandler />
                 <BuildVersionMonitor />
                 <RefineKbar />
                 <UnsavedChangesNotifier />
@@ -627,7 +635,7 @@ function App() {
                 <Suspense fallback={null}>
                   <DonationWidget />
                 </Suspense>
-                <Authenticated key="onboarding-checklist" fallback={null}>
+                <Authenticated key="onboarding-checklist" loading={null} fallback={null}>
                   <Suspense fallback={null}>
                     <OnboardingChecklistFAB />
                   </Suspense>

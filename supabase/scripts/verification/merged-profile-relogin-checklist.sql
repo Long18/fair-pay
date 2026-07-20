@@ -8,7 +8,9 @@
 -- Expected outcomes after a fresh merge A → B:
 --   1. profiles: only B remains; A gone
 --   2. user_emails for both emails → user_id = B
---   3. auth.users A has banned_until = infinity
+--   3. auth.users A has banned_until = finite far-future
+--      (TIMESTAMPTZ '9999-12-31 23:59:59+00' — never Postgres infinity;
+--      GoTrue cannot scan infinity into *time.Time)
 --   4. any OTHER auth.users whose email/identity matches A's emails
 --      (except B) is also banned — Google can create a different auth uid
 --   5. exactly one profile_merge_transactions row for the pair

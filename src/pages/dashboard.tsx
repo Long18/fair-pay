@@ -25,7 +25,7 @@ import { FloatingDecoration } from "@/components/ui/floating-decoration";
 import { CoinShape, ChartLineShape, CircleShape, HexagonShape, WalletShape } from "@/components/ui/decorative-shapes";
 
 export const Dashboard = () => {
-  const { data: identity } = useGetIdentity<Profile>();
+  const { data: identity, isLoading: identityLoading } = useGetIdentity<Profile>();
   const { t } = useTranslation();
   const { tap } = useHaptics();
   const [activeTab, setActiveTab] = usePersistedState<"balances" | "activity" | "history">("dashboard-tab", "balances");
@@ -127,7 +127,7 @@ export const Dashboard = () => {
     }
   }, [debtsLoading, identity?.id, debts.length]);
 
-  const isAuthenticated = !!identity;
+  const isGuest = !identityLoading && !identity;
 
   // Process debts for balance table (active only)
   const balances = useMemo(() => {
@@ -147,13 +147,13 @@ export const Dashboard = () => {
     }));
   }, [debts]);
 
+  if (identityLoading || loading) {
+    return <DashboardLoadingBeam />;
+  }
 
   return (
     <>
-      {loading ? (
-        <DashboardLoadingBeam />
-      ) : (
-        <PageContainer padding="none" variant="default">
+      <PageContainer padding="none" variant="default">
 
           <PageContent className="relative">
             {/* Floating Decorations */}
@@ -248,7 +248,7 @@ export const Dashboard = () => {
                       <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
                         <BalanceTable
                           balances={balances}
-                          disabled={!isAuthenticated}
+                          disabled={isGuest}
                           showHistory={false}
                           showExpenseBreakdown={true}
                           isLoading={!!identity?.id && debtsLoading}
@@ -318,9 +318,8 @@ export const Dashboard = () => {
             </div>
           </PageContent>
         </PageContainer>
-      )}
 
-      <FloatingActionButton disabled={!isAuthenticated} />
+      <FloatingActionButton disabled={isGuest} />
     </>
   );
 };

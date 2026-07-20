@@ -16,6 +16,7 @@ import { useScrolled } from "@/hooks/ui/use-scrolled";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -439,7 +440,7 @@ function MobileNavItem({ item, isActive, onClick }: MobileNavItemProps) {
 
 function UserDropdown() {
   const { t } = useTranslation();
-  const { data: identity } = useGetIdentity<Profile>();
+  const { data: identity, isLoading } = useGetIdentity<Profile>();
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
   const go = useGo();
   const authProvider = useActiveAuthProvider();
@@ -450,6 +451,10 @@ function UserDropdown() {
 
   if (!authProvider?.getIdentity) {
     return null;
+  }
+
+  if (isLoading) {
+    return <Skeleton className="h-9 w-20 rounded-md" />;
   }
 
   // Show Login button for unauthenticated users
