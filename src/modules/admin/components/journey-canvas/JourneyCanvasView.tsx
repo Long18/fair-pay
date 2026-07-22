@@ -35,8 +35,10 @@ import { JourneyNode } from "./JourneyNode";
 import { JourneySourceNode } from "./JourneySourceNode";
 import { JourneyEdge } from "./JourneyEdge";
 import { JourneyNodeDetailPanel } from "./JourneyNodeDetail";
+import { JourneySubjectBadge, type JourneySubjectUser } from "./JourneySubjectBadge";
 import { useJourneyGraph } from "./use-journey-graph";
 import { useGraphPathHighlight } from "./use-graph-path-highlight";
+import { buildFallbackGraphFromPath } from "./journey-fallback-graph";
 import { journeyPalette } from "./journey-theme";
 import type { JourneyPathStep } from "./journey-path";
 import { useAdminTranslation } from "../../i18n";
@@ -67,6 +69,7 @@ interface JourneyCanvasViewProps {
   entryLink?: string | null;
   pathSteps: JourneyPathStep[];
   activeStepIndex: number;
+  subjectUser?: JourneySubjectUser | null;
   className?: string;
 }
 
@@ -74,10 +77,11 @@ function FitViewOnLoad({ nodeCount }: { nodeCount: number }) {
   const { fitView } = useReactFlow();
 
   useEffect(() => {
-    if (nodeCount > 0) {
-      const timer = setTimeout(() => fitView({ duration: 300, padding: 0.2 }), 80);
-      return () => clearTimeout(timer);
-    }
+    if (nodeCount <= 0) return;
+    const timer = window.setTimeout(() => {
+      void fitView({ duration: 300, padding: 0.25 });
+    }, 120);
+    return () => window.clearTimeout(timer);
   }, [nodeCount, fitView]);
 
   return null;
@@ -122,7 +126,7 @@ function CanvasToolbar({
       <div className="mx-0.5 h-4 w-px bg-border/80" />
       <button
         type="button"
-        onClick={() => fitView({ duration: 300, padding: 0.2 })}
+        onClick={() => void fitView({ duration: 300, padding: 0.25 })}
         className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         title={tAdmin("journey.canvas.fitView")}
         aria-label={tAdmin("journey.canvas.fitView")}
@@ -155,10 +159,11 @@ function CanvasInner({
   entryLink,
   pathSteps,
   activeStepIndex,
+  subjectUser,
   className,
 }: JourneyCanvasViewProps) {
   const { tAdmin } = useAdminTranslation();
-  const { nodes, edges, isLoading } = useJourneyGraph({
+  const { nodes: rpcNodes, edges: rpcEdges, isLoading } = useJourneyGraph({
     userId,
     sessionId,
     fromIso,
@@ -167,6 +172,15 @@ function CanvasInner({
     sourceName,
     entryLink,
   });
+
+  const fallbackGraph = useMemo(
+    () => buildFallbackGraphFromPath(pathSteps, sourceName, entryLink),
+    [pathSteps, sourceName, entryLink],
+  );
+
+  const baseNodes = rpcNodes.length > 0 ? rpcNodes : fallbackGraph.nodes;
+  const baseEdges = rpcNodes.length > 0 ? rpcEdges : fallbackGraph.edges;
+  const hasGraph = baseNodes.length > 0;
 
   const [search, setSearch] = useState("");
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState<Node>([]);
@@ -181,25 +195,25 @@ function CanvasInner({
   } | null>(null);
 
   const filteredBase = useMemo(() => {
-    if (!search.trim()) return { nodes, edges };
+    if (!search.trim()) return { nodes: baseNodes, edges: baseEdges };
     const q = search.trim().toLowerCase();
     const matchingIds = new Set<string>();
-    for (const n of nodes) {
+    for (const n of baseNodes) {
       if (n.type === "source") continue;
       const pagePath = (n.data as { pagePath?: string }).pagePath ?? "";
       if (pagePath.toLowerCase().includes(q)) matchingIds.add(n.id);
     }
     return {
-      nodes: nodes.map((n) => ({
+      nodes: baseNodes.map((n) => ({
         ...n,
         hidden: n.type !== "source" && !matchingIds.has(n.id),
       })),
-      edges: edges.map((e) => ({
+      edges: baseEdges.map((e) => ({
         ...e,
         hidden: !matchingIds.has(e.target) && !e.source.startsWith("__source__"),
       })),
     };
-  }, [nodes, edges, search]);
+  }, [baseNodes, baseEdges, search]);
 
   const highlighted = useGraphPathHighlight(
     filteredBase.nodes,
@@ -208,10 +222,20 @@ function CanvasInner({
     activeStepIndex,
   );
 
+  const visibleNodeCount = useMemo(
+    () => highlighted.nodes.filter((node) => !node.hidden).length,
+    [highlighted.nodes],
+  );
+
+  const graphSignature = useMemo(
+    () => `${baseNodes.map((node) => node.id).join("|")}::${pathSteps.length}`,
+    [baseNodes, pathSteps.length],
+  );
+
   useEffect(() => {
     setRfNodes(highlighted.nodes);
     setRfEdges(highlighted.edges);
-  }, [highlighted.nodes, highlighted.edges, setRfNodes, setRfEdges]);
+  }, [highlighted.nodes, highlighted.edges, graphSignature, setRfNodes, setRfEdges]);
 
   const onNodeClick: NodeMouseHandler = useCallback((_event, node) => {
     if (node.type === "source") return;
@@ -226,33 +250,41 @@ function CanvasInner({
   }, []);
 
   const pageNodeCount = useMemo(
-    () => nodes.filter((node) => node.type !== "source" && !node.hidden).length,
-    [nodes],
+    () => baseNodes.filter((node) => node.type !== "source" && !node.hidden).length,
+    [baseNodes],
   );
 
   return (
-    <div className={`relative flex min-h-0 flex-1 flex-col ${className ?? ""}`}>
-      <div className="absolute left-3 top-3 z-10 w-[min(240px,calc(100%-1.5rem))]">
-        <div className="relative">
-          <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={tAdmin("journey.canvas.filterPages")}
-            className="h-8 border-border/70 bg-card/90 pl-8 text-xs backdrop-blur-md"
-          />
+    <div className={`relative flex h-full min-h-[380px] flex-col ${className ?? ""}`}>
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 p-3">
+        <div className="pointer-events-auto w-[min(240px,calc(100%-12rem))]">
+          <div className="relative">
+            <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={tAdmin("journey.canvas.filterPages")}
+              className="h-8 border-border/70 bg-card/90 pl-8 text-xs backdrop-blur-md"
+            />
+          </div>
         </div>
+        {subjectUser ? (
+          <JourneySubjectBadge user={subjectUser} className="pointer-events-auto hidden sm:flex" />
+        ) : null}
       </div>
 
-      <div className="relative min-h-0 flex-1 overflow-hidden bg-surface-overlay" data-slot="journey-canvas">
+      <div
+        className="relative h-full min-h-[380px] flex-1 overflow-hidden bg-surface-overlay"
+        data-slot="journey-canvas"
+      >
         <style>{CANVAS_STYLES}</style>
         {isLoading ? (
-          <div className="flex h-full items-center justify-center text-muted-foreground" aria-busy="true">
+          <div className="flex h-full min-h-[380px] items-center justify-center text-muted-foreground" aria-busy="true">
             <Loader2Icon className="mr-2 h-5 w-5 animate-spin" />
             {tAdmin("journey.canvas.loading")}
           </div>
-        ) : nodes.length === 0 ? (
-          <div className="flex h-full items-center justify-center">
+        ) : !hasGraph ? (
+          <div className="flex h-full min-h-[380px] items-center justify-center">
             <Empty className="min-h-[200px]">
               <EmptyMedia variant="icon">
                 <ActivityIcon className="h-5 w-5 text-muted-foreground" />
@@ -276,14 +308,12 @@ function CanvasInner({
             nodesDraggable
             snapToGrid
             snapGrid={[16, 16]}
-            fitView
-            fitViewOptions={{ padding: 0.2 }}
             minZoom={0.1}
             maxZoom={2}
             proOptions={{ hideAttribution: true }}
-            className="journey-canvas h-full w-full"
+            className="journey-canvas !h-full !w-full !min-h-[380px]"
           >
-            <FitViewOnLoad nodeCount={nodes.length} />
+            <FitViewOnLoad nodeCount={visibleNodeCount} />
             <Background
               variant={BackgroundVariant.Dots}
               gap={20}
@@ -313,8 +343,14 @@ function CanvasInner({
         )}
       </div>
 
+      {subjectUser ? (
+        <div className="px-3 pb-2 sm:hidden">
+          <JourneySubjectBadge user={subjectUser} className="w-fit" />
+        </div>
+      ) : null}
+
       <p className="sr-only" aria-live="polite">
-        {tAdmin("journey.canvas.description", { pages: pageNodeCount, edges: edges.length })}
+        {tAdmin("journey.canvas.description", { pages: pageNodeCount, edges: baseEdges.length })}
       </p>
 
       <JourneyNodeDetailPanel node={selectedNode} onClose={() => setSelectedNode(null)} />

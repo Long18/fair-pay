@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { ArrowLeftIcon, Trash2Icon } from "@/components/ui/icons";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,8 @@ const EVENT_FILTER_OPTIONS = [
 
 interface JourneyCompactToolbarProps {
   userName: string;
+  userEmail?: string | null;
+  userAvatarUrl?: string | null;
   userIgnored?: boolean;
   dateFrom: string;
   dateTo: string;
@@ -51,6 +54,8 @@ interface JourneyCompactToolbarProps {
 
 export function JourneyCompactToolbar({
   userName,
+  userEmail,
+  userAvatarUrl,
   userIgnored,
   dateFrom,
   dateTo,
@@ -63,6 +68,13 @@ export function JourneyCompactToolbar({
   onOverviewClick,
 }: JourneyCompactToolbarProps) {
   const { tAdmin } = useAdminTranslation();
+  const initials = userName
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("") || "?";
 
   return (
     <div
@@ -76,10 +88,21 @@ export function JourneyCompactToolbar({
             <span className="sr-only">{tAdmin("journey.backToPeople")}</span>
           </Link>
         </Button>
+        <Avatar className="h-9 w-9 shrink-0 ring-2 ring-primary/15">
+          <AvatarImage src={userAvatarUrl ?? undefined} alt={userName} />
+          <AvatarFallback className="text-xs font-semibold">{initials}</AvatarFallback>
+        </Avatar>
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-foreground">
-            {tAdmin("journey.titleForUser", { name: userName })}
-          </p>
+          <p className="truncate text-sm font-semibold text-foreground">{userName}</p>
+          {userEmail ? (
+            <p className="truncate text-xs text-muted-foreground" translate="no">
+              {userEmail}
+            </p>
+          ) : (
+            <p className="truncate text-xs text-muted-foreground">
+              {tAdmin("journey.titleForUser", { name: userName })}
+            </p>
+          )}
         </div>
         {userIgnored ? (
           <Badge variant="outline" className="shrink-0 text-[10px]">
@@ -129,8 +152,9 @@ export function JourneyCompactToolbar({
           </SelectContent>
         </Select>
         <Button type="button" variant="destructive" size="sm" className="h-8" onClick={onDeleteClick}>
-          <Trash2Icon className="mr-1 h-3.5 w-3.5" />
-          {tAdmin("journey.deleteData")}
+          <Trash2Icon className="h-3.5 w-3.5 sm:mr-1" />
+          <span className="hidden sm:inline">{tAdmin("journey.deleteData")}</span>
+          <span className="sr-only sm:hidden">{tAdmin("journey.deleteData")}</span>
         </Button>
       </div>
     </div>

@@ -79,7 +79,7 @@ export function JourneyEventCarousel({
 
   return (
     <Carousel
-      className={cn("w-full", className)}
+      className={cn("relative w-full px-10 sm:px-12", className)}
       opts={{ align: "center", containScroll: "trimSnaps" }}
       setApi={(api) => {
         carouselApiRef?.(api);
@@ -135,8 +135,8 @@ export function JourneyEventCarousel({
           );
         })}
       </CarouselContent>
-      <CarouselPrevious className="left-0" />
-      <CarouselNext className="right-0" />
+      <CarouselPrevious className="-left-1 h-8 w-8 border-border/80 bg-card/95 shadow-sm" />
+      <CarouselNext className="-right-1 h-8 w-8 border-border/80 bg-card/95 shadow-sm" />
     </Carousel>
   );
 }

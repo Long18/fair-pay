@@ -7,6 +7,7 @@ import { JourneyEventCarousel } from "./JourneyEventCarousel";
 import { JourneyPlaybackControls } from "./JourneyPlaybackControls";
 import { useJourneyPath } from "./use-journey-path";
 import { useJourneyPlayback } from "./use-journey-playback";
+import type { JourneySubjectUser } from "./JourneySubjectBadge";
 import type {
   UserTrackingEventRow,
   UserTrackingSessionRow,
@@ -14,6 +15,7 @@ import type {
 
 interface JourneyWorkspaceProps {
   userId: string | undefined;
+  subjectUser?: JourneySubjectUser | null;
   sessionId: string;
   fromIso: string | null;
   toIso: string | null;
@@ -32,6 +34,7 @@ interface JourneyWorkspaceProps {
 
 export function JourneyWorkspace({
   userId,
+  subjectUser,
   sessionId,
   fromIso,
   toIso,
@@ -119,7 +122,7 @@ export function JourneyWorkspace({
   );
 
   return (
-    <div className="flex min-h-[calc(100vh-10rem)] flex-col overflow-hidden rounded-lg border border-border bg-background">
+    <div className="grid min-h-[calc(100vh-11rem)] grid-rows-[auto_minmax(380px,1fr)_auto] overflow-hidden rounded-lg border border-border bg-background">
       <JourneySessionStrip
         sessions={sessions}
         total={sessionsTotal}
@@ -131,6 +134,7 @@ export function JourneyWorkspace({
 
       <JourneyCanvasView
         userId={userId}
+        subjectUser={subjectUser}
         sessionId={sessionId}
         fromIso={fromIso}
         toIso={toIso}
@@ -139,7 +143,7 @@ export function JourneyWorkspace({
         entryLink={entryLink}
         pathSteps={pathSteps}
         activeStepIndex={activeStepIndex}
-        className="min-h-[320px]"
+        className="h-full"
       />
 
       <div

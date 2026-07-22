@@ -213,6 +213,8 @@ export function AdminUserJourney() {
       <div className="flex min-h-0 flex-col gap-3">
         <JourneyCompactToolbar
           userName={user?.full_name ?? tAdmin("common.user")}
+          userEmail={user?.email}
+          userAvatarUrl={user?.avatar_url}
           userIgnored={user?.journey_tracking_ignored}
           dateFrom={dateFrom}
           dateTo={dateTo}
@@ -227,6 +229,15 @@ export function AdminUserJourney() {
 
         <JourneyWorkspace
           userId={userId}
+          subjectUser={
+            user
+              ? {
+                  fullName: user.full_name ?? tAdmin("common.user"),
+                  email: user.email,
+                  avatarUrl: user.avatar_url,
+                }
+              : null
+          }
           sessionId={resolvedSessionId}
           fromIso={fromIso}
           toIso={toIso}

@@ -86,20 +86,35 @@ export function useJourneyPlayback(): JourneyPlaybackState {
 
   useEffect(() => {
     clearTimer();
-    if (!isPlaying || stepCount <= 1 || reducedMotion) return;
+    if (!isPlaying || stepCount <= 1 || reducedMotion) {
+      return undefined;
+    }
 
-    timerRef.current = setInterval(() => {
+    const cap = stepCount - 1;
+    const intervalId = setInterval(() => {
       setActiveStepIndex((prev) => {
-        if (prev >= stepCount - 1) {
-          setIsPlaying(false);
-          return prev;
-        }
+        if (prev >= cap) return prev;
         return prev + 1;
       });
     }, STEP_MS);
+    timerRef.current = intervalId;
 
-    return clearTimer;
+    return () => {
+      clearInterval(intervalId);
+      if (timerRef.current === intervalId) {
+        timerRef.current = null;
+      }
+    };
   }, [isPlaying, stepCount, reducedMotion, clearTimer]);
+
+  useEffect(() => {
+    if (!isPlaying || stepCount <= 1 || activeStepIndex < stepCount - 1) return;
+    const timeoutId = window.setTimeout(() => {
+      setIsPlaying(false);
+      clearTimer();
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [activeStepIndex, isPlaying, stepCount, clearTimer]);
 
   useEffect(() => {
     if (stepCount <= 1 || reducedMotion || autoStartedRef.current) return;
