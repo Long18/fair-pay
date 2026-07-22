@@ -40,7 +40,7 @@ export const CircularProgress = ({
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-2xl font-bold text-gray-900">{percentage}%</span>
+        <span className="text-2xl font-bold text-foreground">{percentage}%</span>
       </div>
     </div>
   );
