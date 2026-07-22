@@ -3,6 +3,7 @@ import { supabaseClient } from "@/utility/supabaseClient";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useUndoManager } from "@/contexts/undo-manager";
+import { trackSettlementCompleted } from "@/lib/settlement-events";
 
 interface SettleAllGroupDebtsParams {
   groupId: string;
@@ -117,6 +118,11 @@ export const useSettleAllGroupDebts = () => {
       });
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["balance"] });
+      trackSettlementCompleted({
+        split_count: data.splits_settled,
+        settlement_type: "group_settle_all",
+        group_id: data.group_id,
+      });
     },
     onError: (error) => {
       toast.error(

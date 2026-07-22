@@ -113,6 +113,14 @@ class JourneyTrackingManager {
       }
     });
 
+    this.trackEvent({
+      event_name: "session_started",
+      event_category: "session",
+      page_path: this.currentPath,
+      flow_name: "session",
+      step_name: "start",
+    });
+
     this.initialized = true;
   }
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router";
 import { toast } from "sonner";
@@ -8,6 +8,7 @@ import { CheckIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { getSemanticStatusColors } from "@/lib/status-colors";
 import { usePlan, MAX_FREE_GROUPS } from "@/modules/billing";
+import { journeyTracking } from "@/lib/journey-tracking";
 import { supabaseClient } from "@/utility/supabaseClient";
 
 const successColors = getSemanticStatusColors("success");
@@ -18,9 +19,28 @@ export default function PricingPage() {
   const [searchParams] = useSearchParams();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const showSuccess = searchParams.get("status") === "success";
+  const checkoutSuccessTracked = useRef(false);
 
   useEffect(() => {
-    if (showSuccess) {
+    journeyTracking.trackEvent({
+      event_name: "pricing_page_viewed",
+      event_category: "billing",
+      page_path: window.location.pathname,
+      flow_name: "billing",
+      step_name: "pricing",
+    });
+  }, []);
+
+  useEffect(() => {
+    if (showSuccess && !checkoutSuccessTracked.current) {
+      checkoutSuccessTracked.current = true;
+      journeyTracking.trackEvent({
+        event_name: "billing_checkout_success",
+        event_category: "billing",
+        page_path: window.location.pathname,
+        flow_name: "billing",
+        step_name: "checkout-return",
+      });
       toast.success(
         t("billing.checkoutSuccess", "Thanh toán thành công! Gói Pro sẽ kích hoạt trong giây lát."),
       );
@@ -30,6 +50,13 @@ export default function PricingPage() {
   const handleUpgrade = async () => {
     if (isPro || checkoutLoading) return;
     setCheckoutLoading(true);
+    journeyTracking.trackEvent({
+      event_name: "billing_checkout_started",
+      event_category: "billing",
+      page_path: window.location.pathname,
+      flow_name: "billing",
+      step_name: "checkout",
+    });
     try {
       const { data, error } = await supabaseClient.functions.invoke("polar-checkout", {
         method: "POST",
@@ -37,6 +64,14 @@ export default function PricingPage() {
       });
 
       if (error) {
+        journeyTracking.trackEvent({
+          event_name: "billing_checkout_failed",
+          event_category: "billing",
+          page_path: window.location.pathname,
+          flow_name: "billing",
+          step_name: "checkout",
+          properties: { reason: "invoke_error" },
+        });
         toast.error(
           error.message ||
             t("billing.checkoutFailed", "Không thể mở trang thanh toán. Thử lại sau."),
@@ -47,6 +82,14 @@ export default function PricingPage() {
       const url = (data as { url?: string; error?: string } | null)?.url;
       const remoteError = (data as { error?: string } | null)?.error;
       if (!url) {
+        journeyTracking.trackEvent({
+          event_name: "billing_checkout_failed",
+          event_category: "billing",
+          page_path: window.location.pathname,
+          flow_name: "billing",
+          step_name: "checkout",
+          properties: { reason: remoteError ?? "missing_url" },
+        });
         toast.error(
           remoteError ||
             t("billing.checkoutUnavailable", "Thanh toán Pro chưa được cấu hình."),
@@ -56,6 +99,16 @@ export default function PricingPage() {
 
       window.location.href = url;
     } catch (err) {
+      journeyTracking.trackEvent({
+        event_name: "billing_checkout_failed",
+        event_category: "billing",
+        page_path: window.location.pathname,
+        flow_name: "billing",
+        step_name: "checkout",
+        properties: {
+          reason: err instanceof Error ? err.message : "unknown_error",
+        },
+      });
       toast.error(
         err instanceof Error
           ? err.message
@@ -164,6 +217,12 @@ export default function PricingPage() {
                 className="w-full mt-4"
                 disabled={isPro || isLoading || checkoutLoading}
                 onClick={() => void handleUpgrade()}
+                data-track-id="cta:billing:upgrade-pro"
+                data-track-event="cta_click"
+                data-track-type="button"
+                data-track-category="billing"
+                data-track-flow="billing"
+                data-track-step="upgrade"
               >
                 {isPro
                   ? t("billing.alreadyPro", "Đang dùng Pro")

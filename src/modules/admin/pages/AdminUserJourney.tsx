@@ -71,14 +71,23 @@ const JOURNEY_TABS = ["canvas", "timeline"] as const;
 const EVENT_FILTER_OPTIONS = [
   { value: "all", labelKey: "journey.eventOptions.allEvents" },
   { value: "page_view", labelKey: "journey.eventOptions.pageView" },
+  { value: "session_started", labelKey: "journey.eventOptions.sessionStarted" },
   { value: "nav_click", labelKey: "journey.eventOptions.navClick" },
   { value: "cta_click", labelKey: "journey.eventOptions.ctaClick" },
   { value: "form_step_view", labelKey: "journey.eventOptions.formStepView" },
   { value: "form_submit", labelKey: "journey.eventOptions.formSubmit" },
   { value: "form_success", labelKey: "journey.eventOptions.formSuccess" },
   { value: "form_error", labelKey: "journey.eventOptions.formError" },
-  { value: "auth_login", labelKey: "journey.eventOptions.authLogin" },
-  { value: "auth_register", labelKey: "journey.eventOptions.authRegister" },
+  { value: "auth_login_success", labelKey: "journey.eventOptions.authLoginSuccess" },
+  { value: "auth_signup_success", labelKey: "journey.eventOptions.authSignupSuccess" },
+  { value: "expense_create_success", labelKey: "journey.eventOptions.expenseCreateSuccess" },
+  { value: "settlement_completed", labelKey: "journey.eventOptions.settlementCompleted" },
+  { value: "share_completed", labelKey: "journey.eventOptions.shareCompleted" },
+  { value: "invite_sent", labelKey: "journey.eventOptions.inviteSent" },
+  { value: "invite_accepted", labelKey: "journey.eventOptions.inviteAccepted" },
+  { value: "dashboard_tab_changed", labelKey: "journey.eventOptions.dashboardTabChanged" },
+  { value: "ai_chat_opened", labelKey: "journey.eventOptions.aiChatOpened" },
+  { value: "billing_checkout_started", labelKey: "journey.eventOptions.billingCheckoutStarted" },
 ] as const;
 
 const DELETE_TIME_RANGE_OPTIONS = [

@@ -65,6 +65,7 @@ export const ChatThread = memo(function ChatThread({
     pendingPreview,
     localLlmStatus,
     clearPreview,
+    confirmPreview,
   } = useAiChatContext();
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -154,7 +155,7 @@ export const ChatThread = memo(function ChatThread({
           {pendingPreview && (
             <AgentConfirmationCard
               preview={pendingPreview}
-              onDone={clearPreview}
+              onDone={() => confirmPreview()}
               onCancel={clearPreview}
               onError={(err: Error) => console.error(err)}
             />

@@ -412,8 +412,9 @@ profile_opened
 ## Adding a New Event
 
 1. Pick an event name following `<area>_<object>_<action>` convention.
-2. Add it to the `JourneyEventName` union in `src/lib/journey-tracking/types.ts` (optional — tracker accepts any string).
-3. Call `track()` in the component:
+2. **Add it to the canonical allowlist** in [`src/lib/journey-tracking/allowed-events.ts`](../../src/lib/journey-tracking/allowed-events.ts) and mirror the same name in [`supabase/functions/_shared/allowed-tracking-events.ts`](../../supabase/functions/_shared/allowed-tracking-events.ts). The edge `track-client-event` function and Postgres `user_tracking_events_name_check` constraint both reject names outside this list — events not on the allowlist are silently dropped in production.
+3. Add a migration when expanding the DB check constraint (see `supabase/migrations/20260722150000_expand_tracking_event_allowlist.sql`).
+4. Call `track()` in the component:
 
 ```typescript
 const { track } = useTrackEvent();
@@ -436,7 +437,11 @@ track({
 });
 ```
 
-4. For service-level (non-React) code, use `trackEvent()` directly from `@/lib/analytics/track`.
+5. For service-level (non-React) code, use `trackEvent()` directly from `@/lib/analytics/track`.
+
+### Canonical allowlist
+
+The full list of permitted event names lives in `ALLOWED_TRACKING_EVENT_NAMES` (`allowed-events.ts`). Admin **Growth → Tracking health** compares 24h `user_tracking_events` volume against this list to surface silent (documented but never fired) events.
 
 ---
 

@@ -6,6 +6,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { XIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/use-haptics";
+import { journeyTracking } from "@/lib/journey-tracking";
 
 export type PaymentStateFilter = "all" | "paid" | "unpaid" | "partial";
 
@@ -54,7 +55,16 @@ export const ActivityFilterControls: React.FC<ActivityFilterControlsProps> = ({
         onValueChange={(value) => {
           if (!value) return;
           tap();
-          onFilterChange(value as PaymentStateFilter);
+          const nextFilter = value as PaymentStateFilter;
+          journeyTracking.trackEvent({
+            event_name: "activity_filter_changed",
+            event_category: "dashboard",
+            page_path: window.location.pathname,
+            flow_name: "dashboard-activity",
+            step_name: "filter",
+            properties: { filter: nextFilter },
+          });
+          onFilterChange(nextFilter);
         }}
         variant="outline"
         size={compact ? "sm" : "default"}

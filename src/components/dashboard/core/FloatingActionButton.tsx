@@ -14,6 +14,7 @@ import {
   PlusCircleIcon,
   UserPlusIcon,
 } from "@/components/ui/icons";
+import { journeyTracking } from "@/lib/journey-tracking";
 
 interface FloatingActionButtonProps {
   disabled?: boolean;
@@ -97,7 +98,19 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
           ariaLabel={isOpen ? t("dashboard.closeMenu") : t("dashboard.quickActions")}
           ariaExpanded={isOpen}
           ariaHasPopup="menu"
-          onClick={() => { tap(); setIsOpen(!isOpen); }}
+          onClick={() => {
+            tap();
+            if (!isOpen) {
+              journeyTracking.trackEvent({
+                event_name: "dashboard_fab_clicked",
+                event_category: "dashboard",
+                page_path: window.location.pathname,
+                flow_name: "dashboard",
+                step_name: "fab-open",
+              });
+            }
+            setIsOpen(!isOpen);
+          }}
           dataAttributes={{ "data-onboarding-target": "fab-button" }}
           data-track-id="cta:fab:toggle"
           data-track-event="cta_click"

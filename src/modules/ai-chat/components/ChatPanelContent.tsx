@@ -86,6 +86,7 @@ export const ChatPanelContent = memo(function ChatPanelContent({ onClear }: Chat
     sendMessage,
     attachReceiptImage,
     clearPreview,
+    confirmPreview,
     clearChat,
     newChat,
     selectConversation,
@@ -391,7 +392,7 @@ export const ChatPanelContent = memo(function ChatPanelContent({ onClear }: Chat
                 {pendingPreview && (
                   <AgentConfirmationCard
                     preview={pendingPreview}
-                    onDone={clearPreview}
+                    onDone={() => confirmPreview()}
                     onCancel={clearPreview}
                     onError={(err: Error) => console.error(err)}
                   />

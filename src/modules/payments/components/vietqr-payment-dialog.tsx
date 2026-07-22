@@ -5,7 +5,8 @@
  * Displays the payee's bank QR with exact amount.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { journeyTracking } from '@/lib/journey-tracking';
 import { useTranslation } from 'react-i18next';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
@@ -93,6 +94,22 @@ export function VietQRPaymentDialog({
   }, [bankInfo, amount, transferInfo]);
 
   const bank = bankInfo?.bank ? getBankByCode(bankInfo.bank) : null;
+
+  useEffect(() => {
+    if (!open) return;
+    journeyTracking.trackEvent({
+      event_name: "payment_qr_opened",
+      event_category: "payment",
+      page_path: typeof window !== "undefined" ? window.location.pathname : "/",
+      flow_name: "payment",
+      step_name: "qr_opened",
+      properties: {
+        payee_id: payeeId,
+        amount,
+        is_configured: isConfigured,
+      },
+    });
+  }, [open, payeeId, amount, isConfigured]);
 
   const handleCopyReference = () => {
     navigator.clipboard.writeText(transferInfo);

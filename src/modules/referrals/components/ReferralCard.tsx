@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { CopyIcon, ShareIcon } from "@/components/ui/icons";
 import { useMyReferralCode } from "../hooks/use-referral";
 import { useExperiment } from "@/modules/experiments";
+import { journeyTracking } from "@/lib/journey-tracking";
 
 export function ReferralCard() {
   const { t } = useTranslation();
@@ -23,6 +24,13 @@ export function ReferralCard() {
     setCopying(true);
     try {
       await navigator.clipboard.writeText(referralLink);
+      journeyTracking.trackEvent({
+        event_name: "referral_link_copied",
+        event_category: "referral",
+        page_path: window.location.pathname,
+        flow_name: "referral",
+        step_name: "copy",
+      });
       toast.success(t("referrals.copied", "Link copied!"));
     } catch {
       toast.error(t("common.error", "Error"));

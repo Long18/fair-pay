@@ -14,6 +14,7 @@ import {
 } from "@/lib/local-llm/client";
 import { type LocalLlmStatus, type WebLlmModelId } from "@/lib/local-llm/types";
 import { supabaseClient } from "@/utility/supabaseClient";
+import { journeyTracking } from "@/lib/journey-tracking";
 import type { Profile } from "@/modules/profile/types";
 import type { AgentPreviewResponse } from "@/lib/agent-api/types";
 import type { ChatMessage } from "../types";
@@ -64,6 +65,7 @@ interface UseAiChatReturn {
   /** Attach receipt image → filename OCR stub → chat prompt → preview card flow. */
   attachReceiptImage: (file: File) => Promise<void>;
   clearPreview: () => void;
+  confirmPreview: () => void;
   clearChat: () => void;
   newChat: () => void;
   selectConversation: (id: string) => void;
@@ -320,6 +322,15 @@ export function useAiChat(): UseAiChatReturn {
       setIsLoading(true);
       setError(null);
 
+      journeyTracking.trackEvent({
+        event_name: "ai_chat_message_sent",
+        event_category: "ai_chat",
+        page_path: window.location.pathname,
+        flow_name: "ai-chat",
+        step_name: "message",
+        properties: { message_length: trimmed.length },
+      });
+
       // Ensure there's an active conversation id.
       const activeId = conversationIdRef.current ?? freshConvId();
       if (!conversationIdRef.current) {
@@ -393,7 +404,19 @@ export function useAiChat(): UseAiChatReturn {
         const result = await getOrchestrator().processTurn(trimmed, historyRef.current, pendingPreview);
         historyRef.current = result.updatedHistory;
 
-        if (result.pendingPreview) setPendingPreview(result.pendingPreview);
+        if (result.pendingPreview) {
+          setPendingPreview(result.pendingPreview);
+          journeyTracking.trackEvent({
+            event_name: "ai_chat_tool_preview_shown",
+            event_category: "ai_chat",
+            page_path: window.location.pathname,
+            flow_name: "ai-chat",
+            step_name: "preview",
+            properties: {
+              preview_type: result.pendingPreview.operation_id ?? "unknown",
+            },
+          });
+        }
 
         const finalMsg: ChatMessage = {
           id: makeMessageId("assistant"),
@@ -434,9 +457,39 @@ export function useAiChat(): UseAiChatReturn {
     [sendMessage],
   );
 
-  const clearPreview = useCallback(() => {
+  const dismissPreview = useCallback(() => {
+    if (pendingPreview) {
+      journeyTracking.trackEvent({
+        event_name: "ai_chat_preview_dismissed",
+        event_category: "ai_chat",
+        page_path: window.location.pathname,
+        flow_name: "ai-chat",
+        step_name: "preview-dismiss",
+        properties: {
+          preview_type: pendingPreview.operation_id ?? "unknown",
+        },
+      });
+    }
     setPendingPreview(null);
-  }, []);
+  }, [pendingPreview]);
+
+  const confirmPreview = useCallback(() => {
+    if (pendingPreview) {
+      journeyTracking.trackEvent({
+        event_name: "ai_chat_preview_confirmed",
+        event_category: "ai_chat",
+        page_path: window.location.pathname,
+        flow_name: "ai-chat",
+        step_name: "preview-confirm",
+        properties: {
+          preview_type: pendingPreview.operation_id ?? "unknown",
+        },
+      });
+    }
+    setPendingPreview(null);
+  }, [pendingPreview]);
+
+  const clearPreview = dismissPreview;
 
   // clearChat deletes the current conversation and starts fresh.
   const clearChat = useCallback(() => {
@@ -471,6 +524,7 @@ export function useAiChat(): UseAiChatReturn {
     sendMessage,
     attachReceiptImage,
     clearPreview,
+    confirmPreview,
     clearChat,
     newChat,
     selectConversation,

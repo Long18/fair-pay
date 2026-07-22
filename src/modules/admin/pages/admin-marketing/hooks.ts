@@ -15,6 +15,7 @@ import type {
   ExperimentAssignment,
   EmailStats,
   SentEmail,
+  TrackingHealth,
 } from "./types";
 
 export function useReferralStats(enabled: boolean) {
@@ -477,6 +478,24 @@ export function useSentEmails(enabled: boolean) {
         full_name: profileMap[n.user_id]?.full_name ?? null,
         avatar_url: profileMap[n.user_id]?.avatar_url ?? null,
       })) satisfies SentEmail[];
+    },
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
+export function useTrackingHealth(enabled: boolean) {
+  return useQuery({
+    queryKey: ["admin", "tracking-health"],
+    queryFn: async () => {
+      const { data, error } = await activationRpc("admin_get_tracking_health");
+      if (error) throw error;
+      return (data ?? {
+        window_hours: 24,
+        total_events: 0,
+        distinct_events: 0,
+        events: [],
+      }) as TrackingHealth;
     },
     enabled,
     staleTime: 60_000,

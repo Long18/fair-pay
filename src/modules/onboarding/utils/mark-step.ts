@@ -1,4 +1,5 @@
 import { supabaseClient } from "@/utility/supabaseClient";
+import { journeyTracking } from "@/lib/journey-tracking";
 
 export const CHECKLIST_STEP_KEYS = [
   "profile",
@@ -48,6 +49,14 @@ export async function markOnboardingStep(
         detail: { steps, completed },
       }),
     );
+    journeyTracking.trackEvent({
+      event_name: "onboarding_step_completed",
+      event_category: "onboarding",
+      page_path: typeof window !== "undefined" ? window.location.pathname : "/",
+      flow_name: "onboarding",
+      step_name: step,
+      properties: { step, completed },
+    });
   } catch {
     // non-critical
   }

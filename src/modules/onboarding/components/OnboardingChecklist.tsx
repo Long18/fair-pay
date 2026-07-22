@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { useGetIdentity } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
@@ -100,16 +100,29 @@ export function OnboardingChecklist() {
   const [open, setOpen] = useState(false);
 
   const checklistSteps = useChecklistSteps(identity?.id);
+  const completedCount = checklistSteps.filter((s) => !!steps[s.key]).length;
+  const totalCount = checklistSteps.length;
+
+  useEffect(() => {
+    if (open) {
+      track("onboarding_checklist_viewed", { completedCount, totalCount });
+    }
+  }, [open, completedCount, totalCount, track]);
 
   if (isLoading || isCompleted) return null;
 
-  const completedCount = checklistSteps.filter((s) => !!steps[s.key]).length;
-  const totalCount = checklistSteps.length;
   const allDone = completedCount === totalCount;
   const progressValue = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
   const handleDismiss = async () => {
-    track("onboarding_checklist_skipped", { completedCount, totalCount });
+    const confirmed = window.confirm(
+      t(
+        "onboarding.checklist.dismissConfirm",
+        "Skip the getting started checklist? You can reopen it from settings.",
+      ),
+    );
+    if (!confirmed) return;
+    track("onboarding_checklist_dismissed", { completedCount, totalCount });
     await markComplete();
     setOpen(false);
   };

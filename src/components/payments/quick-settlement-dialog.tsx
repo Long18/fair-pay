@@ -263,6 +263,12 @@ export function QuickSettlementDialog({
             onValueChange={(v) => {
               tap();
               setPaymentMethod(v as PaymentMethod);
+              track({
+                eventName: 'payment_method_selected',
+                flowName: 'debt-settle',
+                stepName: 'method',
+                properties: { payment_method: v },
+              });
             }}
           >
             <SelectTrigger id="quick-settle-payment-method" className="min-h-[44px]">

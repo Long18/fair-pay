@@ -16,6 +16,7 @@ import { useEnhancedActivity } from "@/hooks/use-enhanced-activity";
 import { usePersistedState } from "@/hooks/settings/use-persisted-state";
 import { useTranslation } from "react-i18next";
 import { DashboardTracker } from "@/lib/analytics/index";
+import { journeyTracking } from "@/lib/journey-tracking";
 import { CACHE_CONFIG } from "@/lib/cache-config";
 import { WalletIcon, ActivityIcon, HistoryIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
@@ -181,7 +182,16 @@ export const Dashboard = () => {
               value={activeTab}
               onValueChange={(value) => {
                 tap();
-                setActiveTab(value as "balances" | "activity" | "history");
+                const tab = value as "balances" | "activity" | "history";
+                journeyTracking.trackEvent({
+                  event_name: "dashboard_tab_changed",
+                  event_category: "dashboard",
+                  page_path: window.location.pathname,
+                  flow_name: "dashboard",
+                  step_name: tab,
+                  properties: { tab },
+                });
+                setActiveTab(tab);
               }}
               className="gap-0"
             >

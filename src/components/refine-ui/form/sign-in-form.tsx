@@ -45,6 +45,14 @@ export const SignInForm = () => {
 
   useEffect(() => {
     journeyTracking.trackFormView("auth-login", "credentials");
+    journeyTracking.trackEvent({
+      event_name: "auth_login_started",
+      event_category: "auth",
+      page_path: window.location.pathname,
+      flow_name: "auth-login",
+      step_name: "credentials",
+      properties: { method: "email" },
+    });
   }, []);
 
   const validateEmail = (email: string): boolean => {
@@ -142,6 +150,14 @@ export const SignInForm = () => {
       step_name: "credentials",
       properties: { method: "email" },
     });
+    journeyTracking.trackEvent({
+      event_name: "auth_login_submitted",
+      event_category: "auth",
+      page_path: window.location.pathname,
+      flow_name: "auth-login",
+      step_name: "credentials",
+      properties: { method: "email" },
+    });
 
     login(
       { email, password },
@@ -155,6 +171,14 @@ export const SignInForm = () => {
             page_path: window.location.pathname,
             target_type: "form",
             target_key: "auth:login:submit",
+            flow_name: "auth-login",
+            step_name: "credentials",
+            properties: { method: "email" },
+          });
+          journeyTracking.trackEvent({
+            event_name: "auth_login_success",
+            event_category: "auth",
+            page_path: window.location.pathname,
             flow_name: "auth-login",
             step_name: "credentials",
             properties: { method: "email" },
@@ -176,6 +200,14 @@ export const SignInForm = () => {
             page_path: window.location.pathname,
             target_type: "form",
             target_key: "auth:login:submit",
+            flow_name: "auth-login",
+            step_name: "credentials",
+            properties: { method: "email", reason: "server_error" },
+          });
+          journeyTracking.trackEvent({
+            event_name: "auth_login_failed",
+            event_category: "auth",
+            page_path: window.location.pathname,
             flow_name: "auth-login",
             step_name: "credentials",
             properties: { method: "email", reason: "server_error" },

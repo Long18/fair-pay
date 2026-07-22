@@ -31,6 +31,7 @@ import { useContributingExpenses } from "@/hooks/use-contributing-expenses";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useSettleSplits } from "@/hooks/balance/use-settle-splits";
 import { formatCurrency } from "@/lib/locale-utils";
+import { journeyTracking } from "@/lib/journey-tracking";
 import { isAdmin } from "@/lib/rbac";
 import { Profile } from "@/modules/profile/types";
 import { useTranslation } from "react-i18next";
@@ -56,6 +57,18 @@ export const PersonDebtBreakdown = () => {
   useEffect(() => {
     isAdmin().then(setUserIsAdmin);
   }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    journeyTracking.trackEvent({
+      event_name: "debt_detail_opened",
+      event_category: "debt",
+      page_path: window.location.pathname,
+      flow_name: "debt-settle",
+      step_name: "detail",
+      properties: { counterparty_user_id: userId },
+    });
+  }, [userId]);
 
   const { data: identity } = useGetIdentity<Profile>();
   const myName = identity?.full_name || t("debts.you", "You");
@@ -215,6 +228,17 @@ export const PersonDebtBreakdown = () => {
   }, []);
 
   const handleSettle = useCallback(async () => {
+    journeyTracking.trackEvent({
+      event_name: "debt_settle_button_clicked",
+      event_category: "debt",
+      page_path: window.location.pathname,
+      flow_name: "debt-settle",
+      step_name: "settle-selected",
+      properties: {
+        counterparty_user_id: userId,
+        selected_count: selectedSplitIds.size,
+      },
+    });
     const amount = selectedAmount;
     const result = await settle(Array.from(selectedSplitIds), refetch);
 

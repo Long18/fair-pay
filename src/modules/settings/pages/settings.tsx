@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,6 +16,7 @@ import { useOnboarding } from '@/modules/onboarding';
 import { useHaptics } from '@/hooks/use-haptics';
 import { ReferralCard, ReferralStats } from '@/modules/referrals';
 import { usePushNotification } from '@/modules/notifications/hooks/use-push-notification';
+import { journeyTracking } from '@/lib/journey-tracking';
 
 export function SettingsPage() {
   const {
@@ -32,6 +34,16 @@ export function SettingsPage() {
   const { restart } = useOnboarding();
   const { tap } = useHaptics();
   const { state: pushState, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotification();
+
+  useEffect(() => {
+    journeyTracking.trackEvent({
+      event_name: "settings_opened",
+      event_category: "settings",
+      page_path: window.location.pathname,
+      flow_name: "settings",
+      step_name: "open",
+    });
+  }, []);
 
   if (isLoading) {
     return (

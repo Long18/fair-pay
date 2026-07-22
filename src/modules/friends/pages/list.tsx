@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { CheckIcon, SearchIcon, XIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { matchesSearchFields } from "@/lib/search-utils";
+import { journeyTracking } from "@/lib/journey-tracking";
 
 export const FriendListContent = () => {
   const { t } = useTranslation();
@@ -147,6 +148,14 @@ export const FriendListContent = () => {
   };
 
   const handleRemoveFriend = (friend: Friend) => {
+    journeyTracking.trackEvent({
+      event_name: "friend_remove_clicked",
+      event_category: "friend",
+      page_path: window.location.pathname,
+      flow_name: "friend-remove",
+      step_name: "confirm-dialog",
+      properties: { friend_user_id: friend.user_id },
+    });
     setRemovingFriend(friend);
   };
 
@@ -161,11 +170,30 @@ export const FriendListContent = () => {
       },
       {
         onSuccess: () => {
+          journeyTracking.trackEvent({
+            event_name: "friend_remove_success",
+            event_category: "friend",
+            page_path: window.location.pathname,
+            flow_name: "friend-remove",
+            step_name: "success",
+            properties: { friend_user_id: removingFriend.user_id },
+          });
           toast.success(t('friends.removeSuccess', 'Friend removed'));
           query.refetch();
           setRemovingFriend(null);
         },
         onError: (error) => {
+          journeyTracking.trackEvent({
+            event_name: "friend_remove_failed",
+            event_category: "friend",
+            page_path: window.location.pathname,
+            flow_name: "friend-remove",
+            step_name: "failed",
+            properties: {
+              friend_user_id: removingFriend.user_id,
+              reason: "server_error",
+            },
+          });
           toast.error(t('friends.removeError', `Failed to remove friend: ${error.message}`));
         },
         onSettled: () => {

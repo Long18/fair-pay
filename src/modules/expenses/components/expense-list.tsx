@@ -14,7 +14,8 @@ import {
   useExpenseFilters,
 } from "@/components/filters";
 import { PaginationControls, PaginationMetadata } from "@/components/ui/pagination-controls";
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { journeyTracking } from "@/lib/journey-tracking";
 import { useTranslation } from "react-i18next";
 import { useBulkDeleteExpenses } from "@/hooks/use-bulk-operations";
 import { BulkActionBar } from "@/components/bulk-operations/BulkActionBar";
@@ -87,6 +88,25 @@ export const ExpenseList = ({ groupId, friendshipId, members = EMPTY_MEMBERS }: 
     contextId,
     contextType: contextType as 'group' | 'friend' | undefined,
   });
+
+  const handleFiltersChange = useCallback(
+    (newFilters: Parameters<typeof updateFilters>[0]) => {
+      updateFilters(newFilters);
+      journeyTracking.trackEvent({
+        event_name: "expense_filter_applied",
+        event_category: "expense",
+        page_path: typeof window !== "undefined" ? window.location.pathname : "/",
+        flow_name: "expense_list",
+        step_name: "filter",
+        properties: {
+          filter_keys: Object.keys(newFilters),
+          group_id: groupId,
+          friendship_id: friendshipId,
+        },
+      });
+    },
+    [updateFilters, groupId, friendshipId],
+  );
 
   const { query } = useList<ExpenseWithSplits>({
     resource: "expenses",
@@ -199,7 +219,7 @@ export const ExpenseList = ({ groupId, friendshipId, members = EMPTY_MEMBERS }: 
       <div className="flex flex-col sm:flex-row gap-3">
         <ExpenseFiltersPanel
           filters={currentFilters}
-          onFiltersChange={updateFilters}
+          onFiltersChange={handleFiltersChange}
           onClearAll={clearAllFilters}
           members={members}
         />

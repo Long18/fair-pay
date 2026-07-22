@@ -10,6 +10,7 @@ import { useHaptics } from "@/hooks/use-haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { onButtonKeyDown } from "@/lib/a11y-keyboard";
+import { journeyTracking } from "@/lib/journey-tracking";
 import { SPRING_GENTLE, STAGGER_DELAY } from "@/lib/animation";
 interface ActivityFeedProps {
   items: ActivityItem[];
@@ -29,6 +30,18 @@ export const ActivityFeed = ({ items, isLoading }: ActivityFeedProps) => {
 
   const handleActivityClick = (item: ActivityItem) => {
     tap();
+    journeyTracking.trackEvent({
+      event_name: "dashboard_activity_item_clicked",
+      event_category: "dashboard",
+      page_path: typeof window !== "undefined" ? window.location.pathname : "/",
+      flow_name: "dashboard",
+      step_name: "activity_item",
+      properties: {
+        activity_type: item.type,
+        activity_id: item.id,
+        group_id: item.group_id ?? undefined,
+      },
+    });
     if (item.type === "expense") {
       go({ to: `/expenses/show/${item.id}` });
     } else if (item.group_id) {

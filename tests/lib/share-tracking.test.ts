@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildPlatformShareIntent, shareWithTracking } from "@/lib/share-tracking";
+import { appendShareRef } from "@/lib/share-ref";
 import { DEFAULT_UTM_PLATFORMS } from "@/lib/utm-config";
 
 const { trackEventMock } = vi.hoisted(() => ({
@@ -18,6 +19,12 @@ describe("share tracking helpers", () => {
   });
 
   it("tracks native share event sequence", async () => {
+    const trackedUrl = appendShareRef("https://long-pay.vercel.app/debts/123", {
+      source: "native_share",
+      medium: "social_share",
+      campaign: "debt_share",
+      content: "debt_detail_share_button",
+    });
     const nativeShare = vi.fn().mockResolvedValue(undefined);
     const result = await shareWithTracking({
       baseUrl: "https://long-pay.vercel.app/debts/123",
@@ -36,13 +43,13 @@ describe("share tracking helpers", () => {
     expect(nativeShare).toHaveBeenCalledWith({
       title: "Debt",
       text: "Open debt",
-      url: "https://long-pay.vercel.app/debts/123?utm_source=unknown&utm_medium=social_share&utm_campaign=debt_share&utm_content=debt_detail_share_button",
+      url: trackedUrl,
     });
     expect(trackEventMock.mock.calls[0][0].properties).toMatchObject({
       share_method: "native_share",
       share_platform_detection: "native_unobservable",
       share_target_observable: false,
-      utm_source: "unknown",
+      utm_source: "native_share",
     });
     expect(trackEventMock.mock.calls.map(([event]) => event.event_name)).toEqual([
       "share_button_clicked",
@@ -53,6 +60,12 @@ describe("share tracking helpers", () => {
   });
 
   it("falls back to tracked copy flow when native share is unavailable", async () => {
+    const trackedUrl = appendShareRef("/groups/show/abc", {
+      source: "copy_link",
+      medium: "copy_link",
+      campaign: "group_invite",
+      content: "copy_link_button",
+    });
     const clipboardWrite = vi.fn().mockResolvedValue(undefined);
     const result = await shareWithTracking({
       baseUrl: "/groups/show/abc",
@@ -69,24 +82,28 @@ describe("share tracking helpers", () => {
 
     expect(result).toEqual({
       status: "copied",
-      url: "/groups/show/abc?utm_source=unknown&utm_medium=copy_link&utm_campaign=group_invite&utm_content=copy_link_button",
+      url: trackedUrl,
     });
-    expect(clipboardWrite).toHaveBeenCalledWith(
-      "/groups/show/abc?utm_source=unknown&utm_medium=copy_link&utm_campaign=group_invite&utm_content=copy_link_button",
-    );
+    expect(clipboardWrite).toHaveBeenCalledWith(trackedUrl);
     expect(trackEventMock.mock.calls.some(([event]) => event.event_name === "share_completed")).toBe(true);
     const copyEvent = trackEventMock.mock.calls.find(([event]) => event.event_name === "share_copy_link_clicked")?.[0];
     expect(copyEvent.properties).toMatchObject({
       share_method: "copy_link",
       share_platform_detection: "copy_unknown",
       share_target_observable: false,
-      utm_source: "unknown",
+      utm_source: "copy_link",
       utm_medium: "copy_link",
     });
   });
 
   it("opens explicit platform share intents with platform source", async () => {
     const platform = DEFAULT_UTM_PLATFORMS.find((item) => item.platform_key === "facebook")!;
+    const trackedUrl = appendShareRef("https://long-pay.vercel.app/api/share/debt?t=abc", {
+      source: platform.source,
+      medium: platform.medium,
+      campaign: "debt_share",
+      content: "debt_detail_share_button",
+    });
     const openShareIntent = vi.fn().mockResolvedValue(undefined);
     const result = await shareWithTracking({
       shareUrl: "https://long-pay.vercel.app/api/share/debt?t=abc",
@@ -103,7 +120,8 @@ describe("share tracking helpers", () => {
     });
 
     expect(result.status).toBe("opened");
-    expect(result.url).toContain("utm_source=facebook");
+    expect(result.url).toBe(trackedUrl);
+    expect(trackedUrl).toContain("ref=");
     expect(openShareIntent).toHaveBeenCalledWith(
       expect.stringContaining("facebook.com/sharer"),
       platform,
@@ -126,13 +144,13 @@ describe("share tracking helpers", () => {
     const platform = DEFAULT_UTM_PLATFORMS.find((item) => item.platform_key === "telegram")!;
     expect(
       buildPlatformShareIntent({
-        trackedUrl: "https://long-pay.vercel.app/debts/123?utm_source=telegram",
+        trackedUrl: "https://long-pay.vercel.app/debts/123?ref=9Z",
         title: "Debt & friends",
         text: "Open now",
         platform,
       }),
     ).toBe(
-      "https://t.me/share/url?url=https%3A%2F%2Flong-pay.vercel.app%2Fdebts%2F123%3Futm_source%3Dtelegram&text=Open%20now",
+      "https://t.me/share/url?url=https%3A%2F%2Flong-pay.vercel.app%2Fdebts%2F123%3Fref%3D9Z&text=Open%20now",
     );
   });
 });

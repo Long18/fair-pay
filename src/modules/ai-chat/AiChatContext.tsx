@@ -13,6 +13,7 @@ import {
   type ReactNode,
 } from "react";
 import { useAiChat } from "./hooks/use-ai-chat";
+import { journeyTracking } from "@/lib/journey-tracking";
 
 type AiChatCtx = ReturnType<typeof useAiChat> & {
   /** True for ~1.4 s after isLoading transitions false — drives FAB "done" flash. */
@@ -45,7 +46,16 @@ export function AiChatProvider({ children }: { children: ReactNode }) {
     };
   }, [chat.isLoading, chat.messages.length]);
 
-  const openChat = useCallback(() => setChatOpen(true), []);
+  const openChat = useCallback(() => {
+    journeyTracking.trackEvent({
+      event_name: "ai_chat_opened",
+      event_category: "ai_chat",
+      page_path: window.location.pathname,
+      flow_name: "ai-chat",
+      step_name: "open",
+    });
+    setChatOpen(true);
+  }, []);
   const closeChat = useCallback(() => setChatOpen(false), []);
 
   const value = useMemo<AiChatCtx>(

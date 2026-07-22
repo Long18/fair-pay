@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { ShareIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { journeyTracking } from "@/lib/journey-tracking";
 
 interface ShareSheetProps {
   url: string;
@@ -20,6 +20,8 @@ interface ShareSheetProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
+
+type ShareMethod = "zalo" | "facebook" | "copy_link" | "download";
 
 function ZaloIcon({ className }: { className?: string }) {
   return (
@@ -63,32 +65,87 @@ export function ShareSheet({
   const dialogOpen = controlled ? open : internalOpen;
   const setDialogOpen = onOpenChange ?? setInternalOpen;
 
+  const trackMethodSelected = (method: ShareMethod) => {
+    journeyTracking.trackEvent({
+      event_name: "share_method_selected",
+      event_category: "share",
+      page_path: window.location.pathname,
+      flow_name: "share",
+      step_name: "method-picker",
+      properties: { share_method: method },
+    });
+  };
+
+  const handleDialogOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      journeyTracking.trackEvent({
+        event_name: "share_button_clicked",
+        event_category: "share",
+        page_path: window.location.pathname,
+        flow_name: "share",
+        step_name: "open-sheet",
+      });
+    }
+    setDialogOpen(nextOpen);
+  };
+
+  const completeShare = (method: ShareMethod) => {
+    journeyTracking.trackEvent({
+      event_name: "share_completed",
+      event_category: "share",
+      page_path: window.location.pathname,
+      flow_name: "share",
+      step_name: "completed",
+      properties: { share_method: method },
+    });
+    setDialogOpen(false);
+  };
+
+  const failShare = (method: ShareMethod) => {
+    journeyTracking.trackEvent({
+      event_name: "share_failed",
+      event_category: "share",
+      page_path: window.location.pathname,
+      flow_name: "share",
+      step_name: "failed",
+      properties: { share_method: method },
+    });
+  };
+
   const handleZalo = () => {
+    trackMethodSelected("zalo");
     const shareUrl = `https://zalo.me/app/social/story/index.html?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`;
     window.open(shareUrl, "_blank", "noopener,noreferrer");
-    setDialogOpen(false);
+    completeShare("zalo");
   };
 
   const handleFacebook = () => {
+    trackMethodSelected("facebook");
     const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
     window.open(shareUrl, "_blank", "noopener,noreferrer");
-    setDialogOpen(false);
+    completeShare("facebook");
   };
 
   const handleCopyLink = async () => {
+    trackMethodSelected("copy_link");
     try {
       await navigator.clipboard.writeText(url);
       toast.success(t("share.copied", "Copied!"));
-      setDialogOpen(false);
+      completeShare("copy_link");
     } catch {
+      failShare("copy_link");
       toast.error(t("common.error", "Error"));
     }
   };
 
   const handleDownloadImage = async () => {
     if (!imageUrl) return;
+    trackMethodSelected("download");
     try {
       const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status}`);
+      }
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -98,14 +155,15 @@ export function ShareSheet({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(blobUrl);
-      setDialogOpen(false);
+      completeShare("download");
     } catch {
+      failShare("download");
       toast.error(t("common.error", "Error"));
     }
   };
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+    <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
       {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
       <DialogContent className="max-w-sm gap-0 p-0">
         <DialogHeader className="px-5 pb-3 pt-5">

@@ -65,6 +65,18 @@ export interface ActivationFunnel {
   expense_to_active_rate: number;
 }
 
+export interface TrackingHealthEventCount {
+  event_name: string;
+  count: number;
+}
+
+export interface TrackingHealth {
+  window_hours: number;
+  total_events: number;
+  distinct_events: number;
+  events: TrackingHealthEventCount[];
+}
+
 export interface EmailStats {
   totalSent: number;
   sentLast7Days: number;

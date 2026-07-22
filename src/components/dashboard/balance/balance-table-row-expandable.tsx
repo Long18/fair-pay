@@ -15,6 +15,7 @@ import { useContributingExpenses } from "@/hooks/use-contributing-expenses";
 import { getOweStatusColors, getPaymentStateColors } from "@/lib/status-colors";
 import { formatCurrency } from "@/lib/locale-utils";
 import { onButtonKeyDown } from "@/lib/a11y-keyboard";
+import { journeyTracking } from "@/lib/journey-tracking";
 import { cn } from "@/lib/utils";
 import { BalanceRecentTransactionsPreview } from "./balance-recent-transactions-preview";
 import { BalanceExpandPanel } from "./balance-expand-panel";
@@ -103,12 +104,36 @@ export function BalanceTableRowExpandable({
         onClick={() => {
           if (!disabled) {
             tap();
+            journeyTracking.trackEvent({
+              event_name: "dashboard_balance_card_clicked",
+              event_category: "dashboard",
+              page_path: typeof window !== "undefined" ? window.location.pathname : "/",
+              flow_name: "dashboard",
+              step_name: "balance_card",
+              properties: {
+                counterparty_id: balance.counterparty_id ?? undefined,
+                i_owe_them: balance.i_owe_them,
+                is_fully_settled: isFullySettled,
+              },
+            });
             onToggleExpand();
           }
         }}
         onKeyDown={onButtonKeyDown(() => {
           if (!disabled) {
             tap();
+            journeyTracking.trackEvent({
+              event_name: "dashboard_balance_card_clicked",
+              event_category: "dashboard",
+              page_path: typeof window !== "undefined" ? window.location.pathname : "/",
+              flow_name: "dashboard",
+              step_name: "balance_card",
+              properties: {
+                counterparty_id: balance.counterparty_id ?? undefined,
+                i_owe_them: balance.i_owe_them,
+                is_fully_settled: isFullySettled,
+              },
+            });
             onToggleExpand();
           }
         })}
@@ -268,12 +293,36 @@ export function BalanceTableRowExpandableMobile({
         onClick={() => {
           if (!disabled) {
             tap();
+            journeyTracking.trackEvent({
+              event_name: "dashboard_balance_card_clicked",
+              event_category: "dashboard",
+              page_path: typeof window !== "undefined" ? window.location.pathname : "/",
+              flow_name: "dashboard",
+              step_name: "balance_card",
+              properties: {
+                counterparty_id: balance.counterparty_id ?? undefined,
+                i_owe_them: balance.i_owe_them,
+                is_fully_settled: isFullySettled,
+              },
+            });
             onToggleExpand();
           }
         }}
         onKeyDown={onButtonKeyDown(() => {
           if (!disabled) {
             tap();
+            journeyTracking.trackEvent({
+              event_name: "dashboard_balance_card_clicked",
+              event_category: "dashboard",
+              page_path: typeof window !== "undefined" ? window.location.pathname : "/",
+              flow_name: "dashboard",
+              step_name: "balance_card",
+              properties: {
+                counterparty_id: balance.counterparty_id ?? undefined,
+                i_owe_them: balance.i_owe_them,
+                is_fully_settled: isFullySettled,
+              },
+            });
             onToggleExpand();
           }
         })}

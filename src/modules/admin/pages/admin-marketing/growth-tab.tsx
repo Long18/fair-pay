@@ -27,6 +27,7 @@ import { useStaggerAnimation } from "@/hooks/ui/use-stagger-animation";
 import { AdminMetricCard, AdminMetricGrid } from "../../components/AdminMetricCard";
 import type { ThemeIntent } from "@/lib/theme-intents";
 import { ActivationFunnelSection } from "./activation-funnel-section";
+import { TrackingHealthSection } from "./tracking-health-section";
 import {
   useReferralStats,
   useShareActivity,
@@ -61,6 +62,7 @@ export function GrowthTab({ enabled, locale }: { enabled: boolean; locale: strin
   return (
     <div className="space-y-6">
       <ActivationFunnelSection enabled={enabled} />
+      <TrackingHealthSection enabled={enabled} />
 
       {/* ── Referral Funnel ────────────────────────────────────── */}
       <div className="space-y-6">

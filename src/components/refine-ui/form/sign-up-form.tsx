@@ -48,6 +48,14 @@ export const SignUpForm = () => {
 
   useEffect(() => {
     journeyTracking.trackFormView("auth-register", "credentials");
+    journeyTracking.trackEvent({
+      event_name: "auth_signup_started",
+      event_category: "auth",
+      page_path: window.location.pathname,
+      flow_name: "auth-register",
+      step_name: "credentials",
+      properties: { method: "email" },
+    });
   }, []);
 
   const validateEmail = (email: string): boolean => {
@@ -217,6 +225,14 @@ export const SignUpForm = () => {
             step_name: "credentials",
             properties: { method: "email" },
           });
+          journeyTracking.trackEvent({
+            event_name: "auth_signup_success",
+            event_category: "auth",
+            page_path: window.location.pathname,
+            flow_name: "auth-register",
+            step_name: "credentials",
+            properties: { method: "email" },
+          });
         },
         onError: (error: any) => {
           setIsLoading(false);
@@ -228,6 +244,14 @@ export const SignUpForm = () => {
             page_path: window.location.pathname,
             target_type: "form",
             target_key: "auth:register:submit",
+            flow_name: "auth-register",
+            step_name: "credentials",
+            properties: { method: "email", reason: "server_error" },
+          });
+          journeyTracking.trackEvent({
+            event_name: "auth_signup_failed",
+            event_category: "auth",
+            page_path: window.location.pathname,
             flow_name: "auth-register",
             step_name: "credentials",
             properties: { method: "email", reason: "server_error" },
