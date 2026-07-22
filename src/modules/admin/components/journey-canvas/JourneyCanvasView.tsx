@@ -33,9 +33,13 @@ import { JourneyNode } from "./JourneyNode";
 import { JourneySourceNode } from "./JourneySourceNode";
 import { JourneyEdge } from "./JourneyEdge";
 import { JourneyNodeDetail } from "./JourneyNodeDetail";
+import { JourneyFunnelStrip } from "./JourneyFunnelStrip";
+import { JourneyEventTimeline } from "./JourneyEventTimeline";
 import { useJourneyGraph } from "./use-journey-graph";
 import { journeyPalette } from "./journey-theme";
 import { useAdminTranslation } from "../../i18n";
+import type { UserTrackingEventRow } from "../../types";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const nodeTypes = { journey: JourneyNode, source: JourneySourceNode } as const;
 const edgeTypes = { journey: JourneyEdge } as const;
@@ -58,6 +62,10 @@ interface JourneyCanvasViewProps {
   eventNames: string[] | null;
   sourceName?: string | null;
   entryLink?: string | null;
+  events?: UserTrackingEventRow[];
+  eventsTotal?: number;
+  eventsLoading?: boolean;
+  onViewRawEvent?: (event: UserTrackingEventRow) => void;
 }
 
 function CanvasToolbar({ showMinimap, onToggleMinimap }: { showMinimap: boolean; onToggleMinimap: () => void }) {
@@ -75,16 +83,18 @@ function CanvasToolbar({ showMinimap, onToggleMinimap }: { showMinimap: boolean;
       <button
         type="button"
         onClick={() => zoomIn({ duration: 200 })}
-        className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+        className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         title={tAdmin("journey.canvas.zoomIn")}
+        aria-label={tAdmin("journey.canvas.zoomIn")}
       >
         <ZoomInIcon size={18} />
       </button>
       <button
         type="button"
         onClick={() => zoomOut({ duration: 200 })}
-        className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+        className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         title={tAdmin("journey.canvas.zoomOut")}
+        aria-label={tAdmin("journey.canvas.zoomOut")}
       >
         <ZoomOutIcon size={18} />
       </button>
@@ -92,18 +102,21 @@ function CanvasToolbar({ showMinimap, onToggleMinimap }: { showMinimap: boolean;
       <button
         type="button"
         onClick={() => fitView({ duration: 300, padding: 0.2 })}
-        className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+        className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         title={tAdmin("journey.canvas.fitView")}
+        aria-label={tAdmin("journey.canvas.fitView")}
       >
         <MaximizeIcon size={18} />
       </button>
       <button
         type="button"
         onClick={onToggleMinimap}
-        className={`flex h-9 w-9 items-center justify-center rounded-full transition-all ${
+        className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
           showMinimap ? "bg-primary/12 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
         }`}
         title={tAdmin("journey.canvas.minimap")}
+        aria-label={tAdmin("journey.canvas.minimap")}
+        aria-pressed={showMinimap}
       >
         <MapIcon size={18} />
       </button>
@@ -111,7 +124,19 @@ function CanvasToolbar({ showMinimap, onToggleMinimap }: { showMinimap: boolean;
   );
 }
 
-function CanvasInner({ userId, sessionId, fromIso, toIso, eventNames, sourceName, entryLink }: JourneyCanvasViewProps) {
+function CanvasInner({
+  userId,
+  sessionId,
+  fromIso,
+  toIso,
+  eventNames,
+  sourceName,
+  entryLink,
+  events,
+  eventsTotal,
+  eventsLoading,
+  onViewRawEvent,
+}: JourneyCanvasViewProps) {
   const { tAdmin } = useAdminTranslation();
   const { nodes, edges, isLoading } = useJourneyGraph({
     userId,
@@ -159,89 +184,127 @@ function CanvasInner({ userId, sessionId, fromIso, toIso, eventNames, sourceName
     animated: false,
   }), []);
 
-  if (isLoading) {
-    return (
-      <div className="flex h-[680px] items-center justify-center rounded-lg border bg-surface-overlay text-muted-foreground">
-        <Loader2Icon className="mr-2 h-5 w-5 animate-spin" />
-        {tAdmin("journey.canvas.loading")}
-      </div>
-    );
-  }
+  const canvasBody = (() => {
+    if (isLoading) {
+      return (
+        <div
+          className="flex h-[520px] items-center justify-center rounded-lg border bg-surface-overlay text-muted-foreground xl:h-[560px]"
+          data-slot="journey-canvas"
+          aria-busy="true"
+        >
+          <Loader2Icon className="mr-2 h-5 w-5 animate-spin" aria-hidden="true" />
+          {tAdmin("journey.canvas.loading")}
+        </div>
+      );
+    }
 
-  if (nodes.length === 0) {
+    if (nodes.length === 0) {
+      return (
+        <div
+          className="flex h-[520px] items-center justify-center rounded-lg border bg-surface-overlay xl:h-[560px]"
+          data-slot="journey-canvas"
+        >
+          <Empty className="min-h-[320px]">
+            <EmptyMedia variant="icon">
+              <ActivityIcon className="h-6 w-6 text-muted-foreground" />
+            </EmptyMedia>
+            <EmptyHeader>
+              <EmptyTitle>{tAdmin("journey.canvas.emptyTitle")}</EmptyTitle>
+              <EmptyDescription>
+                {tAdmin("journey.canvas.emptyDescription")}
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent />
+          </Empty>
+        </div>
+      );
+    }
+
     return (
-      <div className="flex h-[680px] items-center justify-center rounded-lg border bg-surface-overlay">
-        <Empty className="min-h-[320px]">
-          <EmptyMedia variant="icon">
-            <ActivityIcon className="h-6 w-6 text-muted-foreground" />
-          </EmptyMedia>
-          <EmptyHeader>
-            <EmptyTitle>{tAdmin("journey.canvas.emptyTitle")}</EmptyTitle>
-            <EmptyDescription>
-              {tAdmin("journey.canvas.emptyDescription")}
-            </EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent />
-        </Empty>
+      <div
+        className="relative h-[520px] overflow-hidden rounded-lg border bg-surface-overlay xl:h-[560px]"
+        data-slot="journey-canvas"
+      >
+        <style>{CANVAS_STYLES}</style>
+        <ReactFlow
+          nodes={rfNodes}
+          edges={rfEdges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          onNodeClick={onNodeClick}
+          defaultEdgeOptions={defaultEdgeOptions}
+          nodesDraggable={true}
+          snapToGrid={true}
+          snapGrid={[16, 16]}
+          fitView
+          fitViewOptions={{ padding: 0.2 }}
+          minZoom={0.2}
+          maxZoom={2}
+          proOptions={{ hideAttribution: true }}
+          className="journey-canvas"
+        >
+          <Background
+            variant={BackgroundVariant.Dots}
+            gap={16}
+            size={1}
+            color="color-mix(in oklch, var(--border) 50%, transparent)"
+            style={{ backgroundColor: journeyPalette.canvas }}
+          />
+          {showMinimap && (
+            <MiniMap
+              nodeColor={(node) => {
+                const d = node.data as Record<string, unknown>;
+                if (node.type === "source") return journeyPalette.source;
+                return d?.isLastSeen ? journeyPalette.highlight : journeyPalette.neutral;
+              }}
+              nodeStrokeWidth={3}
+              nodeBorderRadius={8}
+              maskColor={journeyPalette.minimapMask}
+              style={{ width: 160, height: 120 }}
+              className="!border-border/70 !bg-card/90"
+              pannable
+              zoomable
+            />
+          )}
+          <CanvasToolbar
+            showMinimap={showMinimap}
+            onToggleMinimap={() => setShowMinimap((v) => !v)}
+          />
+        </ReactFlow>
+
+        <JourneyNodeDetail
+          node={selectedNode}
+          onClose={() => setSelectedNode(null)}
+        />
       </div>
     );
-  }
+  })();
 
   return (
-    <div className="relative h-[680px] overflow-hidden rounded-lg border bg-surface-overlay">
-      <style>{CANVAS_STYLES}</style>
-      <ReactFlow
-        nodes={rfNodes}
-        edges={rfEdges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        onNodeClick={onNodeClick}
-        defaultEdgeOptions={defaultEdgeOptions}
-        nodesDraggable={true}
-        snapToGrid={true}
-        snapGrid={[16, 16]}
-        fitView
-        fitViewOptions={{ padding: 0.2 }}
-        minZoom={0.2}
-        maxZoom={2}
-        proOptions={{ hideAttribution: true }}
-        className="journey-canvas"
-      >
-        <Background
-          variant={BackgroundVariant.Dots}
-          gap={16}
-          size={1}
-          color="color-mix(in oklch, var(--border) 50%, transparent)"
-          style={{ backgroundColor: journeyPalette.canvas }}
-        />
-        {showMinimap && (
-          <MiniMap
-            nodeColor={(node) => {
-              const d = node.data as Record<string, unknown>;
-              if (node.type === "source") return journeyPalette.source;
-              return d?.isLastSeen ? journeyPalette.highlight : journeyPalette.neutral;
-            }}
-            nodeStrokeWidth={3}
-            nodeBorderRadius={8}
-            maskColor={journeyPalette.minimapMask}
-            style={{ width: 160, height: 120 }}
-            className="!border-border/70 !bg-card/90"
-            pannable
-            zoomable
-          />
-        )}
-        <CanvasToolbar
-          showMinimap={showMinimap}
-          onToggleMinimap={() => setShowMinimap((v) => !v)}
-        />
-      </ReactFlow>
+    <div className="space-y-4" data-slot="journey-canvas-layout">
+      <JourneyFunnelStrip events={events} loading={eventsLoading} />
 
-      <JourneyNodeDetail
-        node={selectedNode}
-        onClose={() => setSelectedNode(null)}
-      />
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr),320px]">
+        {canvasBody}
+
+        <Card className="min-h-[320px] xl:min-h-[560px]" data-slot="journey-timeline-sidebar">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">{tAdmin("journey.eventTimeline")}</CardTitle>
+            <CardDescription>{tAdmin("journey.canvas.timelineHint")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <JourneyEventTimeline
+              events={events}
+              total={eventsTotal}
+              loading={eventsLoading}
+              compact
+              onViewRaw={onViewRawEvent}
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

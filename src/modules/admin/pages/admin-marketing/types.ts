@@ -70,6 +70,20 @@ export interface TrackingHealthEventCount {
   count: number;
 }
 
+export interface TrackingHealthHourlyBucket {
+  hour: string;
+  label: string;
+  count: number;
+}
+
+export interface TrackingHealthTrend {
+  hourly: TrackingHealthHourlyBucket[];
+  current_total_events: number;
+  prior_total_events: number;
+  delta_absolute: number;
+  delta_percent: number | null;
+}
+
 export interface TrackingHealth {
   window_hours: number;
   total_events: number;

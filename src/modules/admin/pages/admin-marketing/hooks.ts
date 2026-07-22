@@ -16,6 +16,7 @@ import type {
   EmailStats,
   SentEmail,
   TrackingHealth,
+  TrackingHealthTrend,
 } from "./types";
 
 export function useReferralStats(enabled: boolean) {
@@ -496,6 +497,69 @@ export function useTrackingHealth(enabled: boolean) {
         distinct_events: 0,
         events: [],
       }) as TrackingHealth;
+    },
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
+export function useTrackingHealthTrend(enabled: boolean) {
+  return useQuery({
+    queryKey: ["admin", "tracking-health-trend"],
+    queryFn: async () => {
+      const now = Date.now();
+      const hourMs = 60 * 60 * 1000;
+      const currentSince = new Date(now - 24 * hourMs);
+      const priorSince = new Date(now - 48 * hourMs);
+
+      const { data, error } = await supabaseClient
+        .from("user_tracking_events")
+        .select("occurred_at")
+        .gte("occurred_at", priorSince.toISOString())
+        .order("occurred_at", { ascending: true });
+
+      if (error) throw error;
+
+      const rows = data ?? [];
+      let currentTotal = 0;
+      let priorTotal = 0;
+      const hourlyMap: Record<string, number> = {};
+
+      for (const row of rows) {
+        const occurredAt = new Date(row.occurred_at as string);
+        const t = occurredAt.getTime();
+        if (t >= currentSince.getTime()) {
+          currentTotal += 1;
+          const hourKey = occurredAt.toISOString().slice(0, 13);
+          hourlyMap[hourKey] = (hourlyMap[hourKey] ?? 0) + 1;
+        } else {
+          priorTotal += 1;
+        }
+      }
+
+      const hourly: TrackingHealthTrend["hourly"] = [];
+      for (let i = 23; i >= 0; i -= 1) {
+        const bucketTime = new Date(now - i * hourMs);
+        const hourKey = bucketTime.toISOString().slice(0, 13);
+        hourly.push({
+          hour: hourKey,
+          label: bucketTime.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
+          count: hourlyMap[hourKey] ?? 0,
+        });
+      }
+
+      const deltaAbsolute = currentTotal - priorTotal;
+      const deltaPercent = priorTotal > 0
+        ? Math.round((deltaAbsolute / priorTotal) * 1000) / 10
+        : null;
+
+      return {
+        hourly,
+        current_total_events: currentTotal,
+        prior_total_events: priorTotal,
+        delta_absolute: deltaAbsolute,
+        delta_percent: deltaPercent,
+      } satisfies TrackingHealthTrend;
     },
     enabled,
     staleTime: 60_000,

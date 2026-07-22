@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
@@ -45,13 +45,12 @@ import {
   ActivityIcon,
   ArrowLeftIcon,
   ClockIcon,
-  ExternalLinkIcon,
   Loader2Icon,
   Trash2Icon,
   UserIcon,
-  FileTextIcon,
 } from "@/components/ui/icons";
 import { JourneyCanvasView } from "../components/journey-canvas";
+import { JourneyEventTimeline } from "../components/journey-canvas/JourneyEventTimeline";
 import { AdminPageHeader } from "../components/AdminPageHeader";
 import { AdminTabs, AdminTabsContent } from "../components/AdminTabs";
 import { AdminMetricCard, AdminMetricGrid } from "../components/AdminMetricCard";
@@ -124,25 +123,6 @@ function formatAggregateLabel(rows: Array<{ name: string; count: number }>) {
   return rows.map((row) => `${row.name} (${row.count})`).join(", ");
 }
 
-function EventBadge({ eventName }: { eventName: string }) {
-  const styles: Record<string, string> = {
-    page_view: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-900",
-    nav_click: "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:border-violet-900",
-    cta_click: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-900",
-    form_submit: "bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-950 dark:text-cyan-300 dark:border-cyan-900",
-    form_success: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-900",
-    form_error: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-900",
-    auth_login: "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-900",
-    auth_register: "bg-pink-50 text-pink-700 border-pink-200 dark:bg-pink-950 dark:text-pink-300 dark:border-pink-900",
-  };
-
-  return (
-    <Badge className={styles[eventName] ?? "bg-muted text-foreground border-border"}>
-      {eventName}
-    </Badge>
-  );
-}
-
 export function AdminUserJourney() {
   const { tAdmin, locale } = useAdminTranslation();
   const { id: userId } = useParams<{ id: string }>();
@@ -211,13 +191,21 @@ export function AdminUserJourney() {
     eventFilter === "all" ? null : [eventFilter]
   ), [eventFilter]);
 
+  const resolvedSessionId = useMemo(() => {
+    if (!sessions?.data?.length) return "all";
+    if (selectedSessionId === "all") return "all";
+    return sessions.data.some((session) => session.id === selectedSessionId)
+      ? selectedSessionId
+      : "all";
+  }, [selectedSessionId, sessions]);
+
   const { data: events, isLoading: isEventsLoading } = useQuery({
-    queryKey: ["admin", "tracking-events", userId, selectedSessionId, fromIso, toIso, eventFilter],
+    queryKey: ["admin", "tracking-events", userId, resolvedSessionId, fromIso, toIso, eventFilter],
     enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await supabaseClient.rpc("admin_get_user_tracking_events", {
         p_user_id: userId,
-        p_session_id: selectedSessionId !== "all" ? selectedSessionId : null,
+        p_session_id: resolvedSessionId !== "all" ? resolvedSessionId : null,
         p_from: fromIso,
         p_to: toIso,
         p_event_names: selectedEventNames,
@@ -257,22 +245,11 @@ export function AdminUserJourney() {
     },
   });
 
-  useEffect(() => {
-    if (!sessions?.data?.length) {
-      setSelectedSessionId("all");
-      return;
-    }
-
-    if (selectedSessionId !== "all" && !sessions.data.some((session) => session.id === selectedSessionId)) {
-      setSelectedSessionId("all");
-    }
-  }, [selectedSessionId, sessions?.data]);
-
   const isLoading = isUserLoading || isOverviewLoading || isSessionsLoading || isEventsLoading;
 
   const selectedSession = useMemo(
-    () => sessions?.data.find((session) => session.id === selectedSessionId) ?? null,
-    [selectedSessionId, sessions?.data],
+    () => sessions?.data.find((session) => session.id === resolvedSessionId) ?? null,
+    [resolvedSessionId, sessions?.data],
   );
 
   return (
@@ -380,12 +357,16 @@ export function AdminUserJourney() {
           <AdminTabsContent value="canvas">
             <JourneyCanvasView
               userId={userId}
-              sessionId={selectedSessionId}
+              sessionId={resolvedSessionId}
               fromIso={fromIso}
               toIso={toIso}
               eventNames={selectedEventNames}
               sourceName={searchParams.get("source") || selectedSession?.landing_source || overview?.top_sources?.[0]?.name || null}
               entryLink={selectedSession?.entry_link ?? overview?.latest_entry_link ?? null}
+              events={events?.data}
+              eventsTotal={events?.total}
+              eventsLoading={isEventsLoading}
+              onViewRawEvent={setRawEvent}
             />
           </AdminTabsContent>
 
@@ -520,70 +501,12 @@ export function AdminUserJourney() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {isLoading && !events ? (
-                      <div className="flex items-center justify-center py-12 text-muted-foreground">
-                        <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                        {tAdmin("journey.loadingEvents")}
-                      </div>
-                    ) : events?.data?.length ? (
-                      <ScrollArea className="h-[560px] pr-3">
-                        <div className="space-y-3">
-                          {events.data.map((event) => {
-                            const entityPath = typeof event.properties?.entity_path === "string"
-                              ? event.properties.entity_path
-                              : null;
-
-                            return (
-                              <div key={event.id} className="rounded-lg border p-4">
-                                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                                  <div className="space-y-2 min-w-0">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      <EventBadge eventName={event.event_name} />
-                                      {event.target_key ? <Badge variant="outline">{event.target_key}</Badge> : null}
-                                      {event.flow_name ? <Badge variant="secondary">{event.flow_name}</Badge> : null}
-                                      {event.step_name ? <Badge variant="secondary">{event.step_name}</Badge> : null}
-                                    </div>
-                                    <p className="truncate text-sm font-medium">{event.page_path}</p>
-                                    <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-                                      <span>{tAdmin("journey.sessionShort", { value: event.session_id.slice(0, 8) })}</span>
-                                      <span>{tAdmin("journey.occurred", { value: formatDateTime(event.occurred_at, locale) })}</span>
-                                      {event.referrer_path ? <span>{tAdmin("journey.referrer", { value: event.referrer_path })}</span> : null}
-                                      {event.target_type ? <span>{tAdmin("journey.eventType", { value: event.target_type })}</span> : null}
-                                    </div>
-                                  </div>
-
-                                  <div className="flex flex-wrap gap-2">
-                                    {entityPath ? (
-                                      <Button asChild size="sm" variant="outline">
-                                        <Link to={entityPath}>
-                                          <ExternalLinkIcon className="mr-2 h-4 w-4" />
-                                          {tAdmin("journey.openEntity")}
-                                        </Link>
-                                      </Button>
-                                    ) : null}
-                                    <Button size="sm" variant="outline" onClick={() => setRawEvent(event)}>
-                                      <FileTextIcon className="mr-2 h-4 w-4" />
-                                      {tAdmin("journey.rawMetadata")}
-                                    </Button>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </ScrollArea>
-                    ) : (
-                      <Empty className="min-h-[320px]">
-                        <EmptyMedia variant="icon">
-                          <ActivityIcon className="h-6 w-6" />
-                        </EmptyMedia>
-                        <EmptyHeader>
-                          <EmptyTitle>{tAdmin("journey.noEventsTitle")}</EmptyTitle>
-                          <EmptyDescription>{tAdmin("journey.noEventsDescription")}</EmptyDescription>
-                        </EmptyHeader>
-                        <EmptyContent />
-                      </Empty>
-                    )}
+                    <JourneyEventTimeline
+                      events={events?.data}
+                      total={events?.total}
+                      loading={isLoading && !events}
+                      onViewRaw={setRawEvent}
+                    />
                   </CardContent>
                 </Card>
               </div>
