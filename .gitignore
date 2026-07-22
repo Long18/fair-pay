@@ -68,3 +68,9 @@ plans/
 docs/superpowers/
 .vercel
 .env*
+
+.agents/
+.codex/
+.cursor/
+.react-doctor/
+
