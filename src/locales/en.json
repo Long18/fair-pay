@@ -834,6 +834,10 @@
       "recordPayment": "Record Payment",
       "recording": "Recording...",
       "remaining": "{{amount}} {{currency}} remaining",
+      "remainingBalance": "Remaining balance: {{amount}} {{currency}}",
+      "payMore": "Pay more",
+      "recordedSuccess": "Payment of {{amount}} {{currency}} to {{name}} recorded!",
+      "recordFailed": "Failed to record payment: {{message}}",
       "selectMethod": "Select payment method",
       "title": "Settle with {{name}}"
     },
@@ -2075,6 +2079,24 @@
     "freeUsers": "Free users",
     "proUsers": "Pro users"
   },
+  "agent": {
+    "confirmation": {
+      "title": "Agent Expense Preview",
+      "description": "Description",
+      "total": "Total",
+      "paidBy": "Paid by",
+      "date": "Date",
+      "category": "Category",
+      "splitMethod": "Split method",
+      "splitBreakdown": "Split breakdown",
+      "totalCheck": "Total check",
+      "duplicateWarning": "⚠️ {{count}} potential duplicate(s) found.",
+      "confirming": "Confirming…",
+      "committing": "Committing…",
+      "confirmCreate": "Confirm & Create",
+      "expenseCreated": "✓ Expense created"
+    }
+  },
   "aiChat": {
     "title": "FairPay Assistant",
     "subtitle": "Local browser AI for FairPay workflows",
@@ -2086,6 +2108,7 @@
     "today": "Today",
     "welcome": "Ask about balances, groups, recent expenses, or prepare a safe expense preview.",
     "pendingPreview": "Resolve the pending preview before sending another request.",
+    "expenseCreated": "Done — I created **{{description}}** ({{amount}}) in **{{groupName}}**.",
     "load": "Load",
     "deleteModelCache": "Delete local",
     "selectModel": "Select model",

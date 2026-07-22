@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router";
-import { useGetIdentity, useGo, useOne } from "@refinedev/core";
+import { useGetIdentity, useOne } from "@refinedev/core";
+import { toast } from "sonner";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { BulkDeleteDialog } from "@/components/bulk-operations/BulkDeleteDialog";
 import { DebtBreakdownHeader } from "@/components/debts/debt-breakdown-header";
 import { DebtFilterTabs } from "@/components/debts/debt-filter-tabs";
 import { DebtMonthGroup } from "@/components/debts/debt-month-group";
 import { ExpenseBreakdownItemSelectable } from "@/components/debts/expense-breakdown-item-selectable";
+import { QuickSettlementDialog } from "@/components/payments/quick-settlement-dialog";
 import { SettlementCelebration } from "@/components/share/SettlementCelebration";
 import {
   Empty,
@@ -30,7 +32,9 @@ import { useDeleteSplits } from "@/hooks/use-delete-splits";
 import { useContributingExpenses } from "@/hooks/use-contributing-expenses";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useSettleSplits } from "@/hooks/balance/use-settle-splits";
-import { formatCurrency } from "@/lib/locale-utils";
+import { formatCurrency, formatNumber } from "@/lib/locale-utils";
+import { PaymentMethod } from "@/lib/payment-methods";
+import { useInstantCreate } from "@/hooks/use-instant-mutation";
 import { journeyTracking } from "@/lib/journey-tracking";
 import { isAdmin } from "@/lib/rbac";
 import { Profile } from "@/modules/profile/types";
@@ -44,7 +48,6 @@ function getMonthKey(dateStr: string): string {
 
 export const PersonDebtBreakdown = () => {
   const { userId } = useParams<{ userId: string }>();
-  const go = useGo();
   const { t } = useTranslation();
   const { tap, success, warning } = useHaptics();
 
@@ -54,6 +57,8 @@ export const PersonDebtBreakdown = () => {
   const [activeTab, setActiveTab] = useState<DebtFilterTab>("unsettled");
   const [celebrationOpen, setCelebrationOpen] = useState(false);
   const [celebrationAmount, setCelebrationAmount] = useState(0);
+  const [quickSettleDialogOpen, setQuickSettleDialogOpen] = useState(false);
+  const [quickSettleAmount, setQuickSettleAmount] = useState(0);
 
   useEffect(() => {
     isAdmin().then(setUserIsAdmin);
@@ -95,6 +100,7 @@ export const PersonDebtBreakdown = () => {
 
   const { settle, isSettling } = useSettleSplits();
   const { deleteSplits, isDeleting } = useDeleteSplits();
+  const createPaymentMutation = useInstantCreate();
   const prefersReducedMotion = useReducedMotion();
 
   const selectableExpenses = useMemo(() => {
@@ -284,15 +290,88 @@ export const PersonDebtBreakdown = () => {
   }, [selectableExpenses, settle, refetch, success, userId, summary?.total_they_owe]);
 
   const handleRecordPayment = useCallback(() => {
-    if (!userId || !summary) return;
-    go({
-      to: "/payments/create",
-      query: {
-        to_user: userId,
-        amount: String(summary.total_i_owe),
-      },
-    });
-  }, [go, userId, summary]);
+    if (!userId || !summary || summary.total_i_owe <= 0) return;
+    setQuickSettleAmount(summary.total_i_owe);
+    setQuickSettleDialogOpen(true);
+  }, [userId, summary]);
+
+  const handleConfirmQuickSettlement = useCallback(
+    async (data: {
+      amount: number;
+      paymentMethod: PaymentMethod;
+      paymentDate: string;
+      notes: string;
+    }) => {
+      if (!userId || !identity?.id || !counterparty?.data) return;
+
+      const owedBeforePayment = quickSettleAmount;
+
+      try {
+        await createPaymentMutation.mutateAsync({
+          resource: "payments",
+          values: {
+            from_user_id: identity.id,
+            to_user_id: userId,
+            amount: data.amount,
+            payment_date: data.paymentDate,
+            payment_method: data.paymentMethod,
+            notes: data.notes || null,
+            group_id: null,
+            created_by: identity.id,
+          },
+        });
+
+        success();
+        toast.success(
+          t("payments.quickSettle.recordedSuccess", "Payment of {{amount}} {{currency}} to {{name}} recorded!", {
+            amount: formatNumber(data.amount),
+            currency: summary?.currency ?? "₫",
+            name: counterparty.data.full_name,
+          }),
+        );
+        setQuickSettleDialogOpen(false);
+        refetch();
+
+        if (data.amount < owedBeforePayment) {
+          const remaining = owedBeforePayment - data.amount;
+          setTimeout(() => {
+            toast.info(
+              t("payments.quickSettle.remainingBalance", "Remaining balance: {{amount}} {{currency}}", {
+                amount: formatNumber(remaining),
+                currency: summary?.currency ?? "₫",
+              }),
+              {
+                action: {
+                  label: t("payments.quickSettle.payMore", "Pay more"),
+                  onClick: () => {
+                    setQuickSettleAmount(remaining);
+                    setQuickSettleDialogOpen(true);
+                  },
+                },
+              },
+            );
+          }, 1500);
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : t("common.unknownError", "Unknown error");
+        toast.error(
+          t("payments.quickSettle.recordFailed", "Failed to record payment: {{message}}", { message }),
+        );
+        throw err;
+      }
+    },
+    [
+      userId,
+      identity?.id,
+      counterparty?.data,
+      quickSettleAmount,
+      createPaymentMutation,
+      success,
+      t,
+      summary?.currency,
+      refetch,
+    ],
+  );
 
   const handleDelete = useCallback(async () => {
     const result = await deleteSplits(Array.from(selectedSplitIds));
@@ -562,6 +641,18 @@ export const PersonDebtBreakdown = () => {
         amount={celebrationAmount}
         currency={summary?.currency}
       />
+
+      {counterparty?.data && summary.total_i_owe > 0 && (
+        <QuickSettlementDialog
+          open={quickSettleDialogOpen}
+          onOpenChange={setQuickSettleDialogOpen}
+          recipientName={counterparty.data.full_name}
+          recipientId={userId}
+          amount={quickSettleAmount}
+          currency={summary.currency}
+          onConfirm={handleConfirmQuickSettlement}
+        />
+      )}
     </PageContainer>
   );
 };

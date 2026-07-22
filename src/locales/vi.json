@@ -834,6 +834,10 @@
       "recordPayment": "Ghi nhận thanh toán",
       "recording": "Đang ghi nhận...",
       "remaining": "Còn lại {{amount}} {{currency}}",
+      "remainingBalance": "Số dư còn lại: {{amount}} {{currency}}",
+      "payMore": "Thanh toán thêm",
+      "recordedSuccess": "Đã ghi nhận thanh toán {{amount}} {{currency}} cho {{name}}!",
+      "recordFailed": "Ghi nhận thanh toán thất bại: {{message}}",
       "selectMethod": "Chọn phương thức thanh toán",
       "title": "Thanh toán cho {{name}}"
     },
@@ -2075,6 +2079,24 @@
     "freeUsers": "Người dùng Free",
     "proUsers": "Người dùng Pro"
   },
+  "agent": {
+    "confirmation": {
+      "title": "Xem trước chi tiêu từ Agent",
+      "description": "Mô tả",
+      "total": "Tổng",
+      "paidBy": "Người trả",
+      "date": "Ngày",
+      "category": "Danh mục",
+      "splitMethod": "Cách chia",
+      "splitBreakdown": "Chi tiết chia",
+      "totalCheck": "Kiểm tra tổng",
+      "duplicateWarning": "⚠️ Phát hiện {{count}} khoản có thể trùng lặp.",
+      "confirming": "Đang xác nhận…",
+      "committing": "Đang tạo…",
+      "confirmCreate": "Xác nhận & Tạo",
+      "expenseCreated": "✓ Đã tạo chi tiêu"
+    }
+  },
   "aiChat": {
     "title": "Trợ lý FairPay",
     "subtitle": "AI cục bộ trên trình duyệt cho FairPay",
@@ -2086,6 +2108,7 @@
     "today": "Hôm nay",
     "welcome": "Hỏi về số dư, nhóm, chi tiêu gần đây, hoặc tạo xem trước chi tiêu.",
     "pendingPreview": "Giải quyết xem trước đang chờ trước khi gửi yêu cầu mới.",
+    "expenseCreated": "Xong — tôi đã tạo **{{description}}** ({{amount}}) trong **{{groupName}}**.",
     "load": "Tải",
     "deleteModelCache": "Xóa local",
     "selectModel": "Chọn mô hình",
