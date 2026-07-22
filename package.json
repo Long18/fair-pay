@@ -181,6 +181,7 @@
     "test": "vitest run",
     "test:agent": "vitest run tests/agent-api",
     "test:mcp": "vitest run tests/agent-mcp tests/ai-chat/mcp-client.test.ts",
+    "test:mcp-sync": "vitest run tests/lib/agent-mcp-surface-sync.test.ts",
     "test:components": "vitest run tests/integration",
     "verify": "pnpm type-check && pnpm lint && pnpm test && pnpm build",
     "i18n:check": "node scripts/check-i18n-parity.mjs",
