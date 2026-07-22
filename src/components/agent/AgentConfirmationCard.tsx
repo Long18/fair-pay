@@ -6,7 +6,7 @@
 // The confirm button calls confirm → commit atomically via the flow hook.
 // The model's tool list MUST NOT contain confirm or commit.
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { AgentPreviewResponse } from '@/lib/agent-api/types'
 import { useAgentConfirmFlow } from '@/lib/agent-api/hooks'
 import { cn } from '@/lib/utils'
@@ -26,8 +26,26 @@ function formatVnd(amount: number): string {
 }
 
 export function AgentConfirmationCard({ preview, onDone, onError, onCancel }: AgentConfirmationCardProps) {
-  const { run, step, error } = useAgentConfirmFlow({ onSuccess: onDone, onError })
+  const completedRef = useRef<{ expense_id: string; operation_id: string } | null>(null)
+  const { run, step, error } = useAgentConfirmFlow({
+    onSuccess: (result) => {
+      completedRef.current = result
+    },
+    onError,
+  })
   const [dismissed, setDismissed] = useState(false)
+
+  useEffect(() => {
+    if (step !== 'done' || !completedRef.current) return
+
+    const timer = window.setTimeout(() => {
+      const result = completedRef.current
+      completedRef.current = null
+      if (result) onDone?.(result)
+    }, 1200)
+
+    return () => window.clearTimeout(timer)
+  }, [step, onDone])
 
   const p = preview.preview
   const isLoading = step === 'confirming' || step === 'committing'
