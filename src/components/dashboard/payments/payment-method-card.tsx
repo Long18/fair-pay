@@ -19,16 +19,16 @@ export const PaymentMethodCard = ({
   const { tap } = useHaptics();
   return (
     <Card
-      className="border-gray-200 hover:border-green-300 hover:shadow-md transition-all cursor-pointer"
+      className="border-border hover:border-green-300 hover:shadow-md transition-all cursor-pointer"
       onClick={() => { tap(); onClick?.(); }}
     >
       <CardContent className="flex items-center gap-4 p-4">
-        <div className="p-3 bg-gray-100 rounded-lg">
-          <Icon className="h-6 w-6 text-gray-700" />
+        <div className="p-3 bg-muted rounded-lg">
+          <Icon className="h-6 w-6 text-foreground" />
         </div>
         <div className="flex-1">
-          <p className="text-base font-semibold text-gray-900">{title}</p>
-          <p className="text-sm text-gray-600">{description}</p>
+          <p className="text-base font-semibold text-foreground">{title}</p>
+          <p className="text-sm text-muted-foreground">{description}</p>
         </div>
       </CardContent>
     </Card>

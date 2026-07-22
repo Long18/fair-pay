@@ -96,11 +96,11 @@ export const AccountingRecordsTable = ({ records }: AccountingRecordsTableProps)
   };
 
   return (
-    <DataCard className="border-gray-200">
+    <DataCard className="border-border">
       <DataCard.Header
         className="flex flex-row items-center justify-between pb-3"
         title={
-          <div className="text-base font-semibold text-gray-900 flex items-center gap-2">
+          <div className="text-base font-semibold text-foreground flex items-center gap-2">
             <span className="text-red-500">▶</span>
             Accounting records
           </div>
@@ -108,13 +108,13 @@ export const AccountingRecordsTable = ({ records }: AccountingRecordsTableProps)
         badge={
           <div className="flex items-center gap-2">
             <div className="relative">
-              <SearchIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <SearchIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="FV/2343/123/12"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8 pr-8 h-8 w-48 text-sm border-gray-300"
+                className="pl-8 pr-8 h-8 w-48 text-sm border-border"
               />
               {searchTerm && (
                 <Button
@@ -123,12 +123,12 @@ export const AccountingRecordsTable = ({ records }: AccountingRecordsTableProps)
                   onClick={() => { tap(); setSearchTerm(""); }}
                   className="absolute right-0 top-1/2 transform -translate-y-1/2 h-8 w-8"
                 >
-                  <XIcon className="h-3 w-3 text-gray-400" />
+                  <XIcon className="h-3 w-3 text-muted-foreground" />
                 </Button>
               )}
             </div>
             <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreVerticalIcon className="h-4 w-4 text-gray-500" />
+              <MoreVerticalIcon className="h-4 w-4 text-muted-foreground" />
             </Button>
           </div>
         }
@@ -137,63 +137,63 @@ export const AccountingRecordsTable = ({ records }: AccountingRecordsTableProps)
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-gray-200">
+              <TableRow className="border-b border-border">
                 <TableHead
-                  className="text-xs font-medium text-gray-600 whitespace-nowrap cursor-pointer hover:text-gray-900"
+                  className="text-xs font-medium text-muted-foreground whitespace-nowrap cursor-pointer hover:text-foreground"
                   onClick={() => handleSort("operationDate")}
                 >
                   Operation date{getSortIcon("operationDate")}
                 </TableHead>
                 <TableHead
-                  className="text-xs font-medium text-gray-600 whitespace-nowrap cursor-pointer hover:text-gray-900"
+                  className="text-xs font-medium text-muted-foreground whitespace-nowrap cursor-pointer hover:text-foreground"
                   onClick={() => handleSort("accountingDate")}
                 >
                   Accounting date{getSortIcon("accountingDate")}
                 </TableHead>
                 <TableHead
-                  className="text-xs font-medium text-gray-600 whitespace-nowrap cursor-pointer hover:text-gray-900"
+                  className="text-xs font-medium text-muted-foreground whitespace-nowrap cursor-pointer hover:text-foreground"
                   onClick={() => handleSort("interestDate")}
                 >
                   Interest date{getSortIcon("interestDate")}
                 </TableHead>
                 <TableHead
-                  className="text-xs font-medium text-gray-600 whitespace-nowrap cursor-pointer hover:text-gray-900"
+                  className="text-xs font-medium text-muted-foreground whitespace-nowrap cursor-pointer hover:text-foreground"
                   onClick={() => handleSort("protocolDate")}
                 >
                   Protocol date{getSortIcon("protocolDate")}
                 </TableHead>
                 <TableHead
-                  className="text-xs font-medium text-gray-600 whitespace-nowrap cursor-pointer hover:text-gray-900"
+                  className="text-xs font-medium text-muted-foreground whitespace-nowrap cursor-pointer hover:text-foreground"
                   onClick={() => handleSort("documentNumber")}
                 >
                   Document no.{getSortIcon("documentNumber")}
                 </TableHead>
                 <TableHead
-                  className="text-xs font-medium text-gray-600 cursor-pointer hover:text-gray-900"
+                  className="text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground"
                   onClick={() => handleSort("operation")}
                 >
                   Operation{getSortIcon("operation")}
                 </TableHead>
                 <TableHead
-                  className="text-xs font-medium text-gray-600 cursor-pointer hover:text-gray-900"
+                  className="text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground"
                   onClick={() => handleSort("register")}
                 >
                   Register{getSortIcon("register")}
                 </TableHead>
                 <TableHead
-                  className="text-xs font-medium text-gray-600 text-right cursor-pointer hover:text-gray-900"
+                  className="text-xs font-medium text-muted-foreground text-right cursor-pointer hover:text-foreground"
                   onClick={() => handleSort("dt")}
                 >
                   Dt{getSortIcon("dt")}
                 </TableHead>
                 <TableHead
-                  className="text-xs font-medium text-gray-600 text-right cursor-pointer hover:text-gray-900"
+                  className="text-xs font-medium text-muted-foreground text-right cursor-pointer hover:text-foreground"
                   onClick={() => handleSort("ct")}
                 >
                   Ct{getSortIcon("ct")}
                 </TableHead>
                 <TableHead
-                  className="text-xs font-medium text-gray-600 cursor-pointer hover:text-gray-900"
+                  className="text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground"
                   onClick={() => handleSort("currency")}
                 >
                   Currency{getSortIcon("currency")}
@@ -203,7 +203,7 @@ export const AccountingRecordsTable = ({ records }: AccountingRecordsTableProps)
             <TableBody>
               {paginatedData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center text-sm text-gray-500 py-8">
+                  <TableCell colSpan={10} className="text-center text-sm text-muted-foreground py-8">
                     {searchTerm ? "No records found" : "No accounting records"}
                   </TableCell>
                 </TableRow>
@@ -211,22 +211,22 @@ export const AccountingRecordsTable = ({ records }: AccountingRecordsTableProps)
                 paginatedData.map((record) => (
                   <TableRow
                     key={record.id}
-                    className="border-b border-gray-100 hover:bg-gray-50"
+                    className="border-b border-border hover:bg-muted"
                   >
-                    <TableCell className="py-3 text-sm text-gray-700 whitespace-nowrap">{record.operationDate}</TableCell>
-                    <TableCell className="py-3 text-sm text-gray-700 whitespace-nowrap">{record.accountingDate}</TableCell>
-                    <TableCell className="py-3 text-sm text-gray-700 whitespace-nowrap">{record.interestDate}</TableCell>
-                    <TableCell className="py-3 text-sm text-gray-700 whitespace-nowrap">{record.protocolDate}</TableCell>
-                    <TableCell className="py-3 text-sm text-gray-700 whitespace-nowrap">{record.documentNumber}</TableCell>
-                    <TableCell className="py-3 text-sm text-gray-900">{record.operation}</TableCell>
-                    <TableCell className="py-3 text-sm text-gray-900">{record.register}</TableCell>
-                    <TableCell className="py-3 text-sm font-medium text-gray-900 text-right">
+                    <TableCell className="py-3 text-sm text-muted-foreground whitespace-nowrap">{record.operationDate}</TableCell>
+                    <TableCell className="py-3 text-sm text-muted-foreground whitespace-nowrap">{record.accountingDate}</TableCell>
+                    <TableCell className="py-3 text-sm text-muted-foreground whitespace-nowrap">{record.interestDate}</TableCell>
+                    <TableCell className="py-3 text-sm text-muted-foreground whitespace-nowrap">{record.protocolDate}</TableCell>
+                    <TableCell className="py-3 text-sm text-muted-foreground whitespace-nowrap">{record.documentNumber}</TableCell>
+                    <TableCell className="py-3 text-sm text-foreground">{record.operation}</TableCell>
+                    <TableCell className="py-3 text-sm text-foreground">{record.register}</TableCell>
+                    <TableCell className="py-3 text-sm font-medium text-foreground text-right">
                       {formatCurrency(record.dt)}
                     </TableCell>
-                    <TableCell className="py-3 text-sm font-medium text-gray-900 text-right">
+                    <TableCell className="py-3 text-sm font-medium text-foreground text-right">
                       {formatCurrency(record.ct)}
                     </TableCell>
-                    <TableCell className="py-3 text-sm text-gray-700">{record.currency}</TableCell>
+                    <TableCell className="py-3 text-sm text-muted-foreground">{record.currency}</TableCell>
                   </TableRow>
                 ))
               )}
@@ -236,7 +236,7 @@ export const AccountingRecordsTable = ({ records }: AccountingRecordsTableProps)
       </DataCard.Content>
       {totalPages > 1 && (
         <DataCard.Footer align="between">
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-muted-foreground">
             Showing {startIndex}-{endIndex} of {totalItems}
           </div>
           <div className="flex gap-2">
@@ -248,7 +248,7 @@ export const AccountingRecordsTable = ({ records }: AccountingRecordsTableProps)
             >
               Previous
             </Button>
-            <div className="flex items-center px-4 text-sm text-gray-700">
+            <div className="flex items-center px-4 text-sm text-muted-foreground">
               Page {page + 1} of {totalPages}
             </div>
             <Button

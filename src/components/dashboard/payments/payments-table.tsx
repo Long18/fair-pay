@@ -79,44 +79,44 @@ export const PaymentsTable = ({
   };
 
   return (
-    <DataCard className="border-gray-200">
+    <DataCard className="border-border">
       <DataCard.Header
         className="flex flex-row items-center justify-between pb-3"
         title={
           <div>
-            <div className="text-base font-semibold text-gray-900 flex items-center gap-2">
+            <div className="text-base font-semibold text-foreground flex items-center gap-2">
               <span className="text-red-500">▶</span>
               {title}
             </div>
             {subtitle && (
-              <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
+              <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
             )}
           </div>
         }
         badge={
           <Button variant="ghost" size="icon" className="h-8 w-8">
-            <MoreVerticalIcon className="h-4 w-4 text-gray-500" />
+            <MoreVerticalIcon className="h-4 w-4 text-muted-foreground" />
           </Button>
         }
       />
       <DataCard.Content>
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-gray-200">
+            <TableRow className="border-b border-border">
               <TableHead
-                className="text-xs font-medium text-gray-600 cursor-pointer hover:text-gray-900"
+                className="text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground"
                 onClick={() => handleSort("date")}
               >
                 Date{getSortIcon("date")}
               </TableHead>
               <TableHead
-                className="text-xs font-medium text-gray-600 cursor-pointer hover:text-gray-900"
+                className="text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground"
                 onClick={() => handleSort("title")}
               >
                 Title{getSortIcon("title")}
               </TableHead>
               <TableHead
-                className="text-xs font-medium text-gray-600 text-right cursor-pointer hover:text-gray-900"
+                className="text-xs font-medium text-muted-foreground text-right cursor-pointer hover:text-foreground"
                 onClick={() => handleSort("sum")}
               >
                 Sum{getSortIcon("sum")}
@@ -126,7 +126,7 @@ export const PaymentsTable = ({
           <TableBody>
             {paginatedData.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center text-sm text-gray-500 py-8">
+                <TableCell colSpan={3} className="text-center text-sm text-muted-foreground py-8">
                   No payments yet
                 </TableCell>
               </TableRow>
@@ -135,7 +135,7 @@ export const PaymentsTable = ({
                 {paginatedData.map((payment) => (
                   <TableRow
                     key={payment.id}
-                    className={`border-b border-gray-100 hover:bg-gray-50 ${
+                    className={`border-b border-border hover:bg-muted ${
                       payment.highlighted ? "bg-red-50" : ""
                     }`}
                   >
@@ -144,20 +144,20 @@ export const PaymentsTable = ({
                         {payment.highlighted && (
                           <div className="w-2 h-2 rounded-full bg-red-500" />
                         )}
-                        <span className="text-sm text-gray-700">{payment.date}</span>
+                        <span className="text-sm text-muted-foreground">{payment.date}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="py-3 text-sm text-gray-900">{payment.title}</TableCell>
-                    <TableCell className="py-3 text-sm font-medium text-gray-900 text-right">
+                    <TableCell className="py-3 text-sm text-foreground">{payment.title}</TableCell>
+                    <TableCell className="py-3 text-sm font-medium text-foreground text-right">
                       {formatCurrency(payment.sum)} {currency}
                     </TableCell>
                   </TableRow>
                 ))}
-                <TableRow className="border-t-2 border-gray-300">
-                  <TableCell colSpan={2} className="py-3 text-sm font-semibold text-gray-900">
+                <TableRow className="border-t-2 border-border">
+                  <TableCell colSpan={2} className="py-3 text-sm font-semibold text-foreground">
                     Total value:
                   </TableCell>
-                  <TableCell className="py-3 text-sm font-bold text-gray-900 text-right">
+                  <TableCell className="py-3 text-sm font-bold text-foreground text-right">
                     {formatCurrency(totalValue)} {currency}
                   </TableCell>
                 </TableRow>
@@ -168,7 +168,7 @@ export const PaymentsTable = ({
       </DataCard.Content>
       {totalPages > 1 && (
         <DataCard.Footer align="between">
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-muted-foreground">
             Showing {startIndex}-{endIndex} of {totalItems}
           </div>
           <div className="flex gap-2">
@@ -180,7 +180,7 @@ export const PaymentsTable = ({
             >
               Previous
             </Button>
-            <div className="flex items-center px-4 text-sm text-gray-700">
+            <div className="flex items-center px-4 text-sm text-muted-foreground">
               Page {page + 1} of {totalPages}
             </div>
             <Button

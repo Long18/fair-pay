@@ -10,9 +10,9 @@ interface PaymentCounterProps {
 export const PaymentCounter = ({ count, onShowAll }: PaymentCounterProps) => {
   const { tap } = useHaptics();
   return (
-    <Card className="border-gray-200 shadow-sm">
+    <Card className="border-border shadow-sm">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
+        <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
           <span className="text-red-500">▶</span>
           Number of payments to proceed
         </CardTitle>
@@ -26,7 +26,7 @@ export const PaymentCounter = ({ count, onShowAll }: PaymentCounterProps) => {
           <Button
             variant="link"
             onClick={() => { tap(); onShowAll?.(); }}
-            className="mt-4 text-sm text-gray-600 hover:text-gray-900"
+            className="mt-4 text-sm text-muted-foreground hover:text-foreground"
           >
             Show all
           </Button>
