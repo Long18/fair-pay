@@ -118,7 +118,6 @@ const AdminTransactions = lazy(() => import("./modules/admin/pages/AdminTransact
 const AdminReactions = lazy(() => import("./modules/admin/pages/AdminReactions").then(m => ({ default: m.AdminReactions })));
 const AdminDevTool = lazy(() => import("./modules/admin/pages/AdminDevTool").then(m => ({ default: m.AdminDevTool })));
 const AdminMarketing = lazy(() => import("./modules/admin/pages/AdminMarketing").then(m => ({ default: m.AdminMarketing })));
-const AdminModeration = lazy(() => import("./modules/admin/pages/AdminModeration").then(m => ({ default: m.AdminModeration })));
 
 // Profile Edit Redirect Component
 const ProfileEditRedirect = () => {
@@ -452,9 +451,9 @@ function App() {
                     <Route path="transactions" element={<Suspense fallback={<AdminPageSkeleton />}><AdminTransactions /></Suspense>} />
                     <Route path="audit-logs" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canViewAuditLogs"><Navigate to="/admin/devtool?tab=audit-logs" replace /></AdminCapabilityGuard></Suspense>} />
                     <Route path="reactions" element={<Suspense fallback={<AdminPageSkeleton />}><AdminReactions /></Suspense>} />
-                    <Route path="moderation" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canModerateContent"><AdminModeration /></AdminCapabilityGuard></Suspense>} />
+                    <Route path="moderation" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canModerateContent"><Navigate to="/admin/devtool?tab=moderation" replace /></AdminCapabilityGuard></Suspense>} />
                     <Route path="utm" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canUseDevtool"><Navigate to="/admin/devtool?tab=utm" replace /></AdminCapabilityGuard></Suspense>} />
-                    <Route path="devtool" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canUseDevtool"><AdminDevTool /></AdminCapabilityGuard></Suspense>} />
+                    <Route path="devtool" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canAccessDevTool"><AdminDevTool /></AdminCapabilityGuard></Suspense>} />
                     <Route path="og-preview" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canUseDevtool"><Navigate to="/admin/devtool" replace /></AdminCapabilityGuard></Suspense>} />
                     <Route path="marketing" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canViewGrowth"><AdminMarketing /></AdminCapabilityGuard></Suspense>} />
                     <Route path="growth" element={<Suspense fallback={<AdminPageSkeleton />}><AdminCapabilityGuard capability="canViewGrowth"><Navigate to="/admin/marketing?tab=growth" replace /></AdminCapabilityGuard></Suspense>} />

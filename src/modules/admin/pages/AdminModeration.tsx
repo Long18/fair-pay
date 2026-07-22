@@ -94,7 +94,7 @@ function useOpenReports() {
   });
 }
 
-export function AdminModeration() {
+export function AdminModeration({ embedded = false }: { embedded?: boolean }) {
   const { tAdmin } = useAdminTranslation();
   const queryClient = useQueryClient();
   const { data, isLoading, isError, error, refetch, isFetching } = useOpenReports();
@@ -151,6 +151,7 @@ export function AdminModeration() {
       <AdminPageHeader
         title={tAdmin("moderation.title")}
         description={tAdmin("moderation.description")}
+        density={embedded ? "section" : "page"}
         actions={
           <Button
             variant="outline"

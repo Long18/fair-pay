@@ -64,25 +64,30 @@ export function useShareActivity(locale: string, enabled: boolean) {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       const { data, error } = await supabaseClient
-        .from("user_journey_events")
-        .select("created_at, event_type")
-        .like("event_type", "share_%")
-        .gte("created_at", thirtyDaysAgo.toISOString())
-        .order("created_at", { ascending: true });
+        .from("user_tracking_events")
+        .select("occurred_at, event_name, properties")
+        .eq("event_name", "share_completed")
+        .gte("occurred_at", thirtyDaysAgo.toISOString())
+        .order("occurred_at", { ascending: true });
 
       if (error) throw error;
 
       const grouped: Record<string, { zalo: number; facebook: number; copy: number; download: number }> = {};
 
       for (const row of data ?? []) {
-        const dateKey = row.created_at.split("T")[0];
+        const dateKey = (row.occurred_at as string).split("T")[0];
         if (!grouped[dateKey]) {
           grouped[dateKey] = { zalo: 0, facebook: 0, copy: 0, download: 0 };
         }
-        const platform = row.event_type.replace("share_", "") as keyof typeof grouped[string];
-        if (platform in grouped[dateKey]) {
-          grouped[dateKey][platform] += 1;
-        }
+        const props = (row.properties ?? {}) as Record<string, unknown>;
+        const platform = String(
+          props.share_platform ?? props.share_target ?? props.share_method ?? "",
+        ).toLowerCase();
+        if (platform.includes("zalo")) grouped[dateKey].zalo += 1;
+        else if (platform.includes("facebook")) grouped[dateKey].facebook += 1;
+        else if (platform.includes("copy")) grouped[dateKey].copy += 1;
+        else if (platform.includes("download")) grouped[dateKey].download += 1;
+        else grouped[dateKey].copy += 1;
       }
 
       return Object.entries(grouped)
@@ -238,16 +243,18 @@ export function useStreakDistribution(enabled: boolean) {
       sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
       const { data, error } = await supabaseClient
-        .from("user_journey_events")
-        .select("user_id, created_at")
-        .eq("event_type", "page_view")
-        .gte("created_at", sixtyDaysAgo.toISOString());
+        .from("user_tracking_events")
+        .select("user_id, occurred_at")
+        .eq("event_name", "page_view")
+        .not("user_id", "is", null)
+        .gte("occurred_at", sixtyDaysAgo.toISOString());
 
       if (error) throw error;
 
       const userDays: Record<string, Set<string>> = {};
       for (const row of data ?? []) {
-        const day = (row.created_at as string).slice(0, 10);
+        if (!row.user_id) continue;
+        const day = (row.occurred_at as string).slice(0, 10);
         if (!userDays[row.user_id]) userDays[row.user_id] = new Set();
         userDays[row.user_id].add(day);
       }

@@ -19,6 +19,7 @@ import { useHaptics } from '@/hooks/use-haptics';
 import { motion } from 'framer-motion';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { SPRING_DEFAULT, SPRING_GENTLE, ENTRANCE_Y, STAGGER_DELAY } from '@/lib/animation';
+import { useTrackEvent } from '@/hooks/use-track-event';
 
 interface QuickSettlementDialogProps {
   open: boolean;
@@ -46,6 +47,7 @@ export function QuickSettlementDialog({
   isLoading = false,
 }: QuickSettlementDialogProps) {
   const { tap, success } = useHaptics();
+  const { track } = useTrackEvent();
   const reduced = useReducedMotion();
   const [isPartialPayment, setIsPartialPayment] = useState(false);
   const [partialAmount, setPartialAmount] = useState('');
@@ -55,17 +57,51 @@ export function QuickSettlementDialog({
   );
   const [notes, setNotes] = useState('');
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      track({
+        eventName: 'payment_options_opened',
+        flowName: 'debt-settle',
+        stepName: 'payment-options',
+      });
+    }
+    onOpenChange(nextOpen);
+  };
+
   const effectiveAmount = isPartialPayment
     ? parseFloat(partialAmount) || 0
     : amount;
 
   const handleConfirm = async () => {
-    await onConfirm({
-      amount: effectiveAmount,
-      paymentMethod,
-      paymentDate,
-      notes,
+    track({
+      eventName: 'debt_settle_submitted',
+      flowName: 'debt-settle',
+      stepName: 'submit',
+      properties: { payment_method: paymentMethod },
     });
+    try {
+      await onConfirm({
+        amount: effectiveAmount,
+        paymentMethod,
+        paymentDate,
+        notes,
+      });
+      track({
+        eventName: 'debt_settle_success',
+        flowName: 'debt-settle',
+        stepName: 'success',
+        resultStatus: 'success',
+        properties: { payment_method: paymentMethod },
+      });
+    } catch {
+      track({
+        eventName: 'debt_settle_failed',
+        flowName: 'debt-settle',
+        stepName: 'failed',
+        resultStatus: 'failed',
+      });
+      return;
+    }
 
     // Reset form
     setIsPartialPayment(false);
@@ -123,7 +159,7 @@ export function QuickSettlementDialog({
   return (
     <BottomSheet
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       title={`Settle with ${recipientName}`}
       description="Record a payment to settle your debt."
       footer={footerButtons}

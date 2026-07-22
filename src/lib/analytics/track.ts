@@ -1,8 +1,8 @@
 // src/lib/analytics/track.ts
 // Centralized event tracking helper with auto-enrichment and validation
 
-import { analyticsManager } from './instance';
 import { journeyTracking } from '@/lib/journey-tracking';
+import { isAllowedTrackingEventName } from '@/lib/journey-tracking/allowed-events';
 import { getUserDisplay } from './user-display';
 
 const SENSITIVE_FIELDS = new Set([
@@ -75,6 +75,14 @@ export function trackEvent(options: TrackEventOptions | string, extraProps?: Rec
   if (!validateEventName(eventName)) {
     if (import.meta.env.DEV) {
       console.warn(`[Analytics] Invalid event name format: "${eventName}". Expected: <area>_<object>_<action>`);
+    }
+  }
+
+  if (!isAllowedTrackingEventName(eventName)) {
+    if (import.meta.env.DEV) {
+      console.warn(
+        `[Analytics] Event "${eventName}" is not in the server allowlist and will be dropped by track-client-event.`,
+      );
     }
   }
 

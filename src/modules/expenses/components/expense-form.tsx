@@ -45,6 +45,9 @@ import { ParticipantChips } from "./participant-chips";
 import { QuickTemplates } from "./quick-templates";
 import { MarkdownEditor } from "./markdown-editor";
 import { FriendExpenseLayout } from "./friend-expense/friend-expense-layout";
+import { journeyTracking } from "@/lib/journey-tracking";
+import type { ExpenseFormStepKey } from "./expense-form-stepper";
+import { ExpenseFormStepper } from "./expense-form-stepper";
 import {
   Collapsible,
   CollapsibleContent,
@@ -153,11 +156,63 @@ export const ExpenseForm = ({
   const isRecurring = form.watch("is_recurring");
   const isLoan = form.watch("is_loan");
   const paidByUserId = form.watch("paid_by_user_id");
+  const description = form.watch("description");
   const owedStatusColors = getOweStatusColors("owed");
   const participantIdentitySignature = useMemo(
     () => participants.map((participant) => participant.user_id || participant.pending_email || "").join("|"),
     [participants]
   );
+
+  const activeFormStep = useMemo<ExpenseFormStepKey>(() => {
+    if (participants.length > 0 && isSplitValid && amount) return "review";
+    if (participants.length > 0) return "split";
+    if (description && amount) return "participants";
+    return "details";
+  }, [participants.length, isSplitValid, amount, description]);
+
+  const trackedFormStepRef = useRef<ExpenseFormStepKey | null>(null);
+  useEffect(() => {
+    if (isEdit) return;
+    if (trackedFormStepRef.current === activeFormStep) return;
+    trackedFormStepRef.current = activeFormStep;
+    journeyTracking.trackFormView("expense-create", activeFormStep);
+    if (activeFormStep === "participants" && participants.length > 0) {
+      journeyTracking.trackEvent({
+        event_name: "expense_participants_selected",
+        event_category: "expense",
+        page_path: window.location.pathname,
+        flow_name: "expense-create",
+        step_name: "participants",
+        properties: { participant_count: participants.length },
+      });
+    }
+  }, [activeFormStep, isEdit, participants.length]);
+
+  const trackedSplitMethodRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (isEdit || !splitMethod) return;
+    if (trackedSplitMethodRef.current === splitMethod) return;
+    trackedSplitMethodRef.current = splitMethod;
+    journeyTracking.trackEvent({
+      event_name: "expense_split_method_selected",
+      event_category: "expense",
+      page_path: window.location.pathname,
+      flow_name: "expense-create",
+      step_name: "split",
+      properties: { split_method: splitMethod },
+    });
+  }, [splitMethod, isEdit]);
+
+  useEffect(() => {
+    if (isEdit) return;
+    journeyTracking.trackEvent({
+      event_name: "expense_form_started",
+      event_category: "expense",
+      page_path: window.location.pathname,
+      flow_name: "expense-create",
+      step_name: "details",
+    });
+  }, [isEdit]);
 
   // Auto-select participants
   useEffect(() => {
@@ -287,6 +342,7 @@ export const ExpenseForm = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 overflow-x-hidden max-w-full">
+        {!isEdit && <ExpenseFormStepper activeStep={activeFormStep} />}
         {/* Quick Templates */}
         <QuickTemplates
           onSelectTemplate={handleTemplateSelect}

@@ -18,6 +18,8 @@ export interface AdminCapabilities {
   canViewGrowth: boolean;
   canViewRetention: boolean;
   canModerateContent: boolean;
+  /** DevTool page: full tools for admins, moderation-only surface for moderators */
+  canAccessDevTool: boolean;
 }
 
 const USER_CAPABILITIES: AdminCapabilities = {
@@ -38,6 +40,7 @@ const USER_CAPABILITIES: AdminCapabilities = {
   canViewGrowth: false,
   canViewRetention: false,
   canModerateContent: false,
+  canAccessDevTool: false,
 };
 
 const MODERATOR_CAPABILITIES: AdminCapabilities = {
@@ -58,6 +61,7 @@ const MODERATOR_CAPABILITIES: AdminCapabilities = {
   canViewGrowth: false,
   canViewRetention: false,
   canModerateContent: true,
+  canAccessDevTool: true,
 };
 
 const ADMIN_CAPABILITIES: AdminCapabilities = {
@@ -78,6 +82,7 @@ const ADMIN_CAPABILITIES: AdminCapabilities = {
   canViewGrowth: true,
   canViewRetention: true,
   canModerateContent: true,
+  canAccessDevTool: true,
 };
 
 export function normalizeAppRole(role: string | null | undefined): AppRole {

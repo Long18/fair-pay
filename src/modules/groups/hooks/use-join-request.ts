@@ -67,6 +67,14 @@ export function useJoinRequests() {
             throw error;
           }
         } else {
+          journeyTracking.trackEvent({
+            event_name: "invite_sent",
+            event_category: "group",
+            page_path: typeof window !== "undefined" ? window.location.pathname : "/",
+            flow_name: "group-join-request",
+            step_name: "request_sent",
+            properties: { group_id: groupId },
+          });
           toast.success('Join request sent! The group admin will review it.');
           requestsQuery.refetch();
         }
@@ -135,6 +143,14 @@ export function useGroupJoinRequests(groupId?: string) {
           p_request_id: requestId,
         });
         if (error) throw error;
+        journeyTracking.trackEvent({
+          event_name: "invite_accepted",
+          event_category: "group",
+          page_path: typeof window !== "undefined" ? window.location.pathname : "/",
+          flow_name: "group-join-request",
+          step_name: "approved",
+          properties: { request_id: requestId, group_id: groupId },
+        });
         toast.success('Join request approved');
         requestsQuery.refetch();
       } catch (err: any) {

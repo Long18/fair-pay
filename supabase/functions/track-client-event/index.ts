@@ -1,30 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { ALLOWED_TRACKING_EVENT_SET } from '../_shared/allowed-tracking-events.ts'
 import { getCorsHeaders } from '../_shared/cors.ts'
 
-const ALLOWED_EVENT_NAMES = new Set([
-  'page_view',
-  'nav_click',
-  'cta_click',
-  'form_step_view',
-  'form_submit',
-  'form_success',
-  'form_error',
-  'auth_login',
-  'auth_register',
-  'expense_created',
-  'payment_created',
-  'group_created',
-  'invite_sent',
-  'invite_accepted',
-  'settlement_completed',
-  'profile_viewed_from_shared_link',
-  'share_link_generated',
-  'share_button_clicked',
-  'share_copy_link_clicked',
-  'share_native_sheet_opened',
-  'share_completed',
-  'share_failed',
-])
+const ALLOWED_EVENT_NAMES = ALLOWED_TRACKING_EVENT_SET
 
 const ALLOWED_QUERY_PARAMS = new Set([
   'ref',

@@ -41,6 +41,7 @@ import { Friendship } from "@/modules/friends/types";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { matchesSearchText } from "@/lib/search-utils";
+import { journeyTracking } from "@/lib/journey-tracking";
 
 import { CheckIcon, ChevronsUpDownIcon, UserPlusIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -181,6 +182,19 @@ export const AddMemberModal = ({
       {
         onSuccess: () => {
           success();
+          journeyTracking.trackEvent({
+            event_name: "invite_sent",
+            event_category: "group",
+            page_path: window.location.pathname,
+            flow_name: "group-invite",
+            step_name: "member_added",
+            target_type: "group",
+            target_key: groupId,
+            properties: {
+              group_id: groupId,
+              invitee_user_id: formData.userId,
+            },
+          });
           toast.success(`${targetFriend.full_name} added to group`);
           setOpen(false);
           form.reset();

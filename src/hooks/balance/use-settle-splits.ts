@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { supabaseClient } from '@/utility/supabaseClient';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
-import { dispatchSettlementEvent } from '@/lib/settlement-events';
+import { dispatchSettlementEvent, trackSettlementCompleted } from '@/lib/settlement-events';
 import { useUndoManager } from '@/contexts/undo-manager';
 
 export function useSettleSplits() {
@@ -28,6 +28,10 @@ export function useSettleSplits() {
         if (error) throw error;
 
         dispatchSettlementEvent();
+        trackSettlementCompleted({
+          split_count: splitIds.length,
+          settlement_type: "batch_splits",
+        });
         onSettledRef.current?.();
 
         // Register undo — revert settlement by unsettling the splits
