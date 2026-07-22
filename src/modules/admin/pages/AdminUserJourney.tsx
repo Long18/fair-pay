@@ -363,10 +363,6 @@ export function AdminUserJourney() {
               eventNames={selectedEventNames}
               sourceName={searchParams.get("source") || selectedSession?.landing_source || overview?.top_sources?.[0]?.name || null}
               entryLink={selectedSession?.entry_link ?? overview?.latest_entry_link ?? null}
-              events={events?.data}
-              eventsTotal={events?.total}
-              eventsLoading={isEventsLoading}
-              onViewRawEvent={setRawEvent}
             />
           </AdminTabsContent>
 

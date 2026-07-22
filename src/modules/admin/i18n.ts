@@ -870,6 +870,8 @@ export const adminTranslations = {
           relativeToStart: "+{{value}} from start",
         },
         canvas: {
+          title: "Journey flow",
+          description: "{{pages}} pages · {{edges}} transitions — click a node for details",
           zoomIn: "Zoom in",
           zoomOut: "Zoom out",
           fitView: "Fit view",
@@ -1937,6 +1939,8 @@ export const adminTranslations = {
           relativeToStart: "+{{value}} từ lúc bắt đầu",
         },
         canvas: {
+          title: "Luồng journey",
+          description: "{{pages}} trang · {{edges}} chuyển tiếp — nhấn node để xem chi tiết",
           zoomIn: "Phóng to",
           zoomOut: "Thu nhỏ",
           fitView: "Fit view",

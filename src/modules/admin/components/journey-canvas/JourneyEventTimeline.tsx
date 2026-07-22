@@ -45,7 +45,6 @@ interface JourneyEventTimelineProps {
   events: UserTrackingEventRow[] | undefined;
   total?: number;
   loading?: boolean;
-  compact?: boolean;
   selectedEventId?: string | null;
   onSelectEvent?: (event: UserTrackingEventRow) => void;
   onViewRaw?: (event: UserTrackingEventRow) => void;
@@ -56,7 +55,6 @@ export function JourneyEventTimeline({
   events,
   total,
   loading,
-  compact = false,
   selectedEventId,
   onSelectEvent,
   onViewRaw,
@@ -76,7 +74,7 @@ export function JourneyEventTimeline({
     return new Date(sortedEvents[0].occurred_at).getTime();
   }, [sortedEvents]);
 
-  const scrollHeight = compact ? "h-[420px]" : "h-[560px]";
+  const scrollHeight = "max-h-[calc(100vh-280px)]";
 
   if (loading && !events) {
     return (
@@ -131,7 +129,6 @@ export function JourneyEventTimeline({
                 data-slot="journey-timeline-item"
                 data-event-id={event.id}
                 className="relative flex gap-3 pb-4"
-                role="listitem"
               >
                 <div className="flex flex-col items-center" aria-hidden="true">
                   <span
