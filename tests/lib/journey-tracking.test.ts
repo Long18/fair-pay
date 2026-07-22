@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { getTrackedElementPayload } from "@/lib/journey-tracking/dom";
 import {
   JOURNEY_STORAGE_KEYS,
@@ -134,5 +134,34 @@ describe("journey tracking helpers", () => {
     anchor.href = "/groups/create";
 
     expect(getTrackedElementPayload(anchor)).toBeNull();
+  });
+});
+
+describe("JourneyTrackingManager", () => {
+  afterEach(() => {
+    vi.resetModules();
+    vi.unstubAllEnvs();
+  });
+
+  it("does not recurse when init emits session_started", async () => {
+    vi.stubEnv("VITE_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("VITE_SUPABASE_ANON_KEY", "test-anon-key");
+
+    const localStorage = new MemoryStorage();
+    const sessionStorage = new MemoryStorage();
+    Object.defineProperty(window, "localStorage", { value: localStorage, configurable: true });
+    Object.defineProperty(window, "sessionStorage", { value: sessionStorage, configurable: true });
+
+    const { journeyTracking } = await import("@/lib/journey-tracking/manager");
+
+    expect(() => journeyTracking.init()).not.toThrow();
+    expect(() => journeyTracking.init()).not.toThrow();
+    expect(() =>
+      journeyTracking.trackEvent({
+        event_name: "page_view",
+        event_category: "navigation",
+        page_path: "/dashboard",
+      }),
+    ).not.toThrow();
   });
 });

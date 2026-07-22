@@ -69,6 +69,7 @@ function sanitizeProperties(input?: Record<string, unknown>, depth = 0): Record<
 
 class JourneyTrackingManager {
   private initialized = false;
+  private isInitializing = false;
   private queue: TrackEventInput[] = [];
   private session: JourneySessionContext | null = null;
   private flushTimer: number | null = null;
@@ -80,48 +81,54 @@ class JourneyTrackingManager {
   private lastPageView: { path: string; at: number } | null = null;
 
   init() {
-    if (this.initialized || typeof window === "undefined") return;
+    if (this.initialized || this.isInitializing || typeof window === "undefined") return;
 
-    captureAttributionFromUrl({
-      href: window.location.href,
-      referrer: document.referrer,
-    });
+    this.isInitializing = true;
 
-    this.session = bootstrapJourneySession({
-      localStorage: window.localStorage,
-      sessionStorage: window.sessionStorage,
-      href: window.location.href,
-      referrer: document.referrer,
-      locale: navigator.language,
-      userAgent: navigator.userAgent,
-    });
-    this.currentPath = sanitizeTrackingPath(window.location.href, window.location.origin);
-    this.lastPagePath = window.sessionStorage.getItem(JOURNEY_STORAGE_KEYS.lastPath);
+    try {
+      captureAttributionFromUrl({
+        href: window.location.href,
+        referrer: document.referrer,
+      });
 
-    document.addEventListener("click", this.handleDocumentClick, true);
-    window.addEventListener("pagehide", this.handlePageHide);
-    document.addEventListener("visibilitychange", this.handleVisibilityChange);
+      this.session = bootstrapJourneySession({
+        localStorage: window.localStorage,
+        sessionStorage: window.sessionStorage,
+        href: window.location.href,
+        referrer: document.referrer,
+        locale: navigator.language,
+        userAgent: navigator.userAgent,
+      });
+      this.currentPath = sanitizeTrackingPath(window.location.href, window.location.origin);
+      this.lastPagePath = window.sessionStorage.getItem(JOURNEY_STORAGE_KEYS.lastPath);
 
-    supabaseClient.auth.getSession().then(({ data }) => {
-      this.accessToken = data.session?.access_token ?? null;
-    }).catch(() => {});
+      document.addEventListener("click", this.handleDocumentClick, true);
+      window.addEventListener("pagehide", this.handlePageHide);
+      document.addEventListener("visibilitychange", this.handleVisibilityChange);
 
-    supabaseClient.auth.onAuthStateChange((_event, session) => {
-      this.accessToken = session?.access_token ?? null;
-      if (session?.user) {
-        this.currentUserId = session.user.id;
-      }
-    });
+      supabaseClient.auth.getSession().then(({ data }) => {
+        this.accessToken = data.session?.access_token ?? null;
+      }).catch(() => {});
 
-    this.trackEvent({
-      event_name: "session_started",
-      event_category: "session",
-      page_path: this.currentPath,
-      flow_name: "session",
-      step_name: "start",
-    });
+      supabaseClient.auth.onAuthStateChange((_event, session) => {
+        this.accessToken = session?.access_token ?? null;
+        if (session?.user) {
+          this.currentUserId = session.user.id;
+        }
+      });
 
-    this.initialized = true;
+      this.initialized = true;
+
+      this.trackEvent({
+        event_name: "session_started",
+        event_category: "session",
+        page_path: this.currentPath,
+        flow_name: "session",
+        step_name: "start",
+      });
+    } finally {
+      this.isInitializing = false;
+    }
   }
 
   identify(userId: string) {
