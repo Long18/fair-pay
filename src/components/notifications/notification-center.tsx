@@ -31,6 +31,17 @@ function getCurrencyFormatter(currency: string) {
   return formatter;
 }
 
+function toLocalDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function dateOnlyFromDb(value: string): string {
+  return value.split("T")[0];
+}
+
 interface NotificationCenterProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -49,20 +60,19 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
     const today = new Date();
     const sevenDaysLater = new Date(today);
     sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
+    const todayStr = toLocalDateString(today);
+    const sevenDaysStr = toLocalDateString(sevenDaysLater);
 
     return active.filter((r) => {
-      const nextDate = new Date(r.next_occurrence);
-      return nextDate >= today && nextDate <= sevenDaysLater;
+      const nextStr = dateOnlyFromDb(r.next_occurrence);
+      return nextStr >= todayStr && nextStr <= sevenDaysStr;
     });
   }, [active]);
 
   // Get overdue expenses
   const overdueExpenses = useMemo(() => {
-    const today = new Date();
-    return active.filter((r) => {
-      const nextDate = new Date(r.next_occurrence);
-      return nextDate < today;
-    });
+    const todayStr = toLocalDateString(new Date());
+    return active.filter((r) => dateOnlyFromDb(r.next_occurrence) < todayStr);
   }, [active]);
 
   const handleNotificationClick = () => {
