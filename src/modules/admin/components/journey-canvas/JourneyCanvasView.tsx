@@ -20,7 +20,6 @@ import {
   MaximizeIcon,
   MapIcon,
   ActivityIcon,
-  SearchIcon,
 } from "lucide-react";
 import {
   Empty,
@@ -30,12 +29,11 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { Input } from "@/components/ui/input";
 import { JourneyNode } from "./JourneyNode";
 import { JourneySourceNode } from "./JourneySourceNode";
 import { JourneyEdge } from "./JourneyEdge";
 import { JourneyNodeDetailPanel } from "./JourneyNodeDetail";
-import { JourneySubjectBadge, type JourneySubjectUser } from "./JourneySubjectBadge";
+import { FocusActivePathNode } from "./FocusActivePathNode";
 import { useJourneyGraph } from "./use-journey-graph";
 import { useGraphPathHighlight } from "./use-graph-path-highlight";
 import { buildFallbackGraphFromPath } from "./journey-fallback-graph";
@@ -69,22 +67,7 @@ interface JourneyCanvasViewProps {
   entryLink?: string | null;
   pathSteps: JourneyPathStep[];
   activeStepIndex: number;
-  subjectUser?: JourneySubjectUser | null;
   className?: string;
-}
-
-function FitViewOnLoad({ nodeCount }: { nodeCount: number }) {
-  const { fitView } = useReactFlow();
-
-  useEffect(() => {
-    if (nodeCount <= 0) return;
-    const timer = window.setTimeout(() => {
-      void fitView({ duration: 300, padding: 0.25 });
-    }, 120);
-    return () => window.clearTimeout(timer);
-  }, [nodeCount, fitView]);
-
-  return null;
 }
 
 function CanvasToolbar({
@@ -159,7 +142,6 @@ function CanvasInner({
   entryLink,
   pathSteps,
   activeStepIndex,
-  subjectUser,
   className,
 }: JourneyCanvasViewProps) {
   const { tAdmin } = useAdminTranslation();
@@ -182,7 +164,6 @@ function CanvasInner({
   const baseEdges = rpcNodes.length > 0 ? rpcEdges : fallbackGraph.edges;
   const hasGraph = baseNodes.length > 0;
 
-  const [search, setSearch] = useState("");
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState<Node>([]);
   const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [showMinimap, setShowMinimap] = useState(true);
@@ -194,42 +175,18 @@ function CanvasInner({
     avgDurationSeconds: number | null;
   } | null>(null);
 
-  const filteredBase = useMemo(() => {
-    if (!search.trim()) return { nodes: baseNodes, edges: baseEdges };
-    const q = search.trim().toLowerCase();
-    const matchingIds = new Set<string>();
-    for (const n of baseNodes) {
-      if (n.type === "source") continue;
-      const pagePath = (n.data as { pagePath?: string }).pagePath ?? "";
-      if (pagePath.toLowerCase().includes(q)) matchingIds.add(n.id);
-    }
-    return {
-      nodes: baseNodes.map((n) => ({
-        ...n,
-        hidden: n.type !== "source" && !matchingIds.has(n.id),
-      })),
-      edges: baseEdges.map((e) => ({
-        ...e,
-        hidden: !matchingIds.has(e.target) && !e.source.startsWith("__source__"),
-      })),
-    };
-  }, [baseNodes, baseEdges, search]);
-
   const highlighted = useGraphPathHighlight(
-    filteredBase.nodes,
-    filteredBase.edges,
+    baseNodes,
+    baseEdges,
     pathSteps,
     activeStepIndex,
   );
 
-  const visibleNodeCount = useMemo(
-    () => highlighted.nodes.filter((node) => !node.hidden).length,
-    [highlighted.nodes],
-  );
+  const activePagePath = pathSteps[activeStepIndex]?.pagePath ?? null;
 
   const graphSignature = useMemo(
-    () => `${baseNodes.map((node) => node.id).join("|")}::${pathSteps.length}`,
-    [baseNodes, pathSteps.length],
+    () => `${sessionId}::${baseNodes.map((node) => node.id).join("|")}`,
+    [sessionId, baseNodes],
   );
 
   useEffect(() => {
@@ -250,29 +207,12 @@ function CanvasInner({
   }, []);
 
   const pageNodeCount = useMemo(
-    () => baseNodes.filter((node) => node.type !== "source" && !node.hidden).length,
+    () => baseNodes.filter((node) => node.type !== "source").length,
     [baseNodes],
   );
 
   return (
     <div className={`relative flex h-full min-h-[380px] flex-col ${className ?? ""}`}>
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 p-3">
-        <div className="pointer-events-auto w-[min(240px,calc(100%-12rem))]">
-          <div className="relative">
-            <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={tAdmin("journey.canvas.filterPages")}
-              className="h-8 border-border/70 bg-card/90 pl-8 text-xs backdrop-blur-md"
-            />
-          </div>
-        </div>
-        {subjectUser ? (
-          <JourneySubjectBadge user={subjectUser} className="pointer-events-auto hidden sm:flex" />
-        ) : null}
-      </div>
-
       <div
         className="relative h-full min-h-[380px] flex-1 overflow-hidden bg-surface-overlay"
         data-slot="journey-canvas"
@@ -313,7 +253,11 @@ function CanvasInner({
             proOptions={{ hideAttribution: true }}
             className="journey-canvas !h-full !w-full !min-h-[380px]"
           >
-            <FitViewOnLoad nodeCount={visibleNodeCount} />
+            <FocusActivePathNode
+              key={graphSignature}
+              activePagePath={activePagePath}
+              activeStepIndex={activeStepIndex}
+            />
             <Background
               variant={BackgroundVariant.Dots}
               gap={20}
@@ -342,12 +286,6 @@ function CanvasInner({
           </ReactFlow>
         )}
       </div>
-
-      {subjectUser ? (
-        <div className="px-3 pb-2 sm:hidden">
-          <JourneySubjectBadge user={subjectUser} className="w-fit" />
-        </div>
-      ) : null}
 
       <p className="sr-only" aria-live="polite">
         {tAdmin("journey.canvas.description", { pages: pageNodeCount, edges: baseEdges.length })}

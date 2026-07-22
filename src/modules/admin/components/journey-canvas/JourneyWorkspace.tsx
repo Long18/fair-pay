@@ -1,13 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { CarouselApi } from "@/components/ui/carousel";
+import { useCallback, useEffect, useMemo } from "react";
 import { JourneyCanvasView } from "./JourneyCanvasView";
-import { JourneySessionStrip } from "./JourneySessionStrip";
 import { JourneyTimeScrubber } from "./JourneyTimeScrubber";
-import { JourneyEventCarousel } from "./JourneyEventCarousel";
+import { JourneyActiveEventCard } from "./JourneyActiveEventCard";
 import { JourneyPlaybackControls } from "./JourneyPlaybackControls";
 import { useJourneyPath } from "./use-journey-path";
 import { useJourneyPlayback } from "./use-journey-playback";
-import type { JourneySubjectUser } from "./JourneySubjectBadge";
 import type {
   UserTrackingEventRow,
   UserTrackingSessionRow,
@@ -15,7 +12,6 @@ import type {
 
 interface JourneyWorkspaceProps {
   userId: string | undefined;
-  subjectUser?: JourneySubjectUser | null;
   sessionId: string;
   fromIso: string | null;
   toIso: string | null;
@@ -34,20 +30,14 @@ interface JourneyWorkspaceProps {
 
 export function JourneyWorkspace({
   userId,
-  subjectUser,
   sessionId,
   fromIso,
   toIso,
   eventNames,
   sourceName,
   entryLink,
-  sessions,
-  sessionsTotal,
-  sessionsLoading,
   events,
   eventsLoading,
-  selectedSessionId,
-  onSelectSession,
   onViewRaw,
 }: JourneyWorkspaceProps) {
   const pathSteps = useJourneyPath(events);
@@ -62,8 +52,6 @@ export function JourneyWorkspace({
     stepNext,
     reset,
   } = useJourneyPlayback();
-  const carouselApiRef = useRef<CarouselApi | undefined>(undefined);
-  const [carouselApi, setCarouselApi] = useState<CarouselApi | undefined>();
 
   const sortedEvents = useMemo(
     () =>
@@ -73,7 +61,11 @@ export function JourneyWorkspace({
     [events],
   );
 
-  const activeEventId = pathSteps[activeStepIndex]?.eventId ?? sortedEvents[0]?.id ?? null;
+  const activeEvent =
+    sortedEvents.find((event) => event.id === pathSteps[activeStepIndex]?.eventId) ??
+    sortedEvents[0] ??
+    null;
+  const activeEventId = activeEvent?.id ?? null;
 
   useEffect(() => {
     setStepCount(pathSteps.length);
@@ -83,20 +75,6 @@ export function JourneyWorkspace({
   useEffect(() => {
     reset();
   }, [sessionId, fromIso, toIso, eventFilterKey, reset]);
-
-  const syncCarouselToStep = useCallback(
-    (stepIndex: number) => {
-      const eventId = pathSteps[stepIndex]?.eventId;
-      if (!eventId || !carouselApi) return;
-      const eventIndex = sortedEvents.findIndex((e) => e.id === eventId);
-      if (eventIndex >= 0) carouselApi.scrollTo(eventIndex);
-    },
-    [carouselApi, pathSteps, sortedEvents],
-  );
-
-  useEffect(() => {
-    syncCarouselToStep(activeStepIndex);
-  }, [activeStepIndex, syncCarouselToStep]);
 
   const handleScrubberIndex = useCallback(
     (eventIndex: number) => {
@@ -113,28 +91,10 @@ export function JourneyWorkspace({
     [sortedEvents, pathSteps, goToStep],
   );
 
-  const handleCarouselActive = useCallback(
-    (eventId: string) => {
-      const pathIndex = pathSteps.findIndex((s) => s.eventId === eventId);
-      if (pathIndex >= 0) goToStep(pathIndex);
-    },
-    [pathSteps, goToStep],
-  );
-
   return (
-    <div className="grid min-h-[calc(100vh-11rem)] grid-rows-[auto_minmax(380px,1fr)_auto] overflow-hidden rounded-lg border border-border bg-background">
-      <JourneySessionStrip
-        sessions={sessions}
-        total={sessionsTotal}
-        selectedSessionId={selectedSessionId}
-        loading={sessionsLoading}
-        onSelectSession={onSelectSession}
-        className="border-b border-border px-2"
-      />
-
+    <div className="grid min-h-[calc(100vh-9rem)] grid-rows-[minmax(380px,1fr)_auto] overflow-hidden rounded-lg border border-border bg-background">
       <JourneyCanvasView
         userId={userId}
-        subjectUser={subjectUser}
         sessionId={sessionId}
         fromIso={fromIso}
         toIso={toIso}
@@ -147,10 +107,10 @@ export function JourneyWorkspace({
       />
 
       <div
-        className="shrink-0 space-y-2 border-t border-border bg-card/50 px-3 py-2 sm:py-3"
+        className="shrink-0 space-y-2 border-t border-border bg-card/40 px-3 py-2"
         data-slot="journey-bottom-dock"
       >
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <JourneyPlaybackControls
             activeStepIndex={activeStepIndex}
             stepCount={stepCount}
@@ -166,16 +126,10 @@ export function JourneyWorkspace({
             className="flex-1"
           />
         </div>
-        <JourneyEventCarousel
-          events={events}
+        <JourneyActiveEventCard
+          event={activeEvent}
           loading={eventsLoading}
-          activeEventId={activeEventId}
-          onActiveEventChange={handleCarouselActive}
           onViewRaw={onViewRaw}
-          carouselApiRef={(api) => {
-            carouselApiRef.current = api;
-            setCarouselApi(api);
-          }}
         />
       </div>
     </div>

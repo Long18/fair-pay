@@ -1,9 +1,23 @@
 import { Link } from "react-router";
+import { MoreHorizontalIcon, SlidersHorizontalIcon } from "lucide-react";
 import { ArrowLeftIcon, Trash2Icon } from "@/components/ui/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -12,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAdminTranslation } from "../../i18n";
-import type { UserTrackingOverview } from "../../types";
+import type { UserTrackingSessionRow } from "../../types";
 
 const EVENT_FILTER_OPTIONS = [
   { value: "all", labelKey: "journey.eventOptions.allEvents" },
@@ -36,6 +50,16 @@ const EVENT_FILTER_OPTIONS = [
   { value: "billing_checkout_started", labelKey: "journey.eventOptions.billingCheckoutStarted" },
 ] as const;
 
+function formatSessionLabel(session: UserTrackingSessionRow, locale: string) {
+  const when = new Date(session.started_at).toLocaleString(locale, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return `${session.landing_path} · ${when}`;
+}
+
 interface JourneyCompactToolbarProps {
   userName: string;
   userEmail?: string | null;
@@ -44,10 +68,14 @@ interface JourneyCompactToolbarProps {
   dateFrom: string;
   dateTo: string;
   eventFilter: string;
-  overview: UserTrackingOverview | undefined;
+  sessions: UserTrackingSessionRow[] | undefined;
+  sessionsTotal: number;
+  selectedSessionId: string;
+  sessionsLoading?: boolean;
   onDateFromChange: (value: string) => void;
   onDateToChange: (value: string) => void;
   onEventFilterChange: (value: string) => void;
+  onSelectSession: (sessionId: string) => void;
   onDeleteClick: () => void;
   onOverviewClick: () => void;
 }
@@ -60,14 +88,18 @@ export function JourneyCompactToolbar({
   dateFrom,
   dateTo,
   eventFilter,
-  overview,
+  sessions,
+  sessionsTotal,
+  selectedSessionId,
+  sessionsLoading,
   onDateFromChange,
   onDateToChange,
   onEventFilterChange,
+  onSelectSession,
   onDeleteClick,
   onOverviewClick,
 }: JourneyCompactToolbarProps) {
-  const { tAdmin } = useAdminTranslation();
+  const { tAdmin, locale } = useAdminTranslation();
   const initials = userName
     .trim()
     .split(/\s+/)
@@ -76,87 +108,131 @@ export function JourneyCompactToolbar({
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("") || "?";
 
+  const filtersActive = eventFilter !== "all";
+
   return (
     <div
-      className="flex flex-col gap-2 border-b border-border bg-background/95 px-1 py-2 backdrop-blur-sm sm:flex-row sm:flex-wrap sm:items-center"
+      className="flex items-center gap-2 border-b border-border bg-background px-2 py-2 sm:px-3"
       data-slot="journey-compact-toolbar"
     >
-      <div className="flex min-w-0 flex-1 items-center gap-2">
-        <Button asChild variant="ghost" size="sm" className="h-8 shrink-0 px-2">
-          <Link to="/admin/people">
-            <ArrowLeftIcon className="h-4 w-4" />
-            <span className="sr-only">{tAdmin("journey.backToPeople")}</span>
-          </Link>
-        </Button>
-        <Avatar className="h-9 w-9 shrink-0 ring-2 ring-primary/15">
-          <AvatarImage src={userAvatarUrl ?? undefined} alt={userName} />
-          <AvatarFallback className="text-xs font-semibold">{initials}</AvatarFallback>
-        </Avatar>
-        <div className="min-w-0">
+      <Button asChild variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+        <Link to="/admin/people">
+          <ArrowLeftIcon className="h-4 w-4" />
+          <span className="sr-only">{tAdmin("journey.backToPeople")}</span>
+        </Link>
+      </Button>
+
+      <Avatar className="h-8 w-8 shrink-0">
+        <AvatarImage src={userAvatarUrl ?? undefined} alt={userName} />
+        <AvatarFallback className="text-[10px] font-semibold">{initials}</AvatarFallback>
+      </Avatar>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
           <p className="truncate text-sm font-semibold text-foreground">{userName}</p>
-          {userEmail ? (
-            <p className="truncate text-xs text-muted-foreground" translate="no">
-              {userEmail}
-            </p>
-          ) : (
-            <p className="truncate text-xs text-muted-foreground">
-              {tAdmin("journey.titleForUser", { name: userName })}
-            </p>
-          )}
+          {userIgnored ? (
+            <Badge variant="outline" className="shrink-0 text-[10px]">
+              {tAdmin("status.ignored")}
+            </Badge>
+          ) : null}
         </div>
-        {userIgnored ? (
-          <Badge variant="outline" className="shrink-0 text-[10px]">
-            {tAdmin("status.ignored")}
-          </Badge>
+        {userEmail ? (
+          <p className="truncate text-[11px] text-muted-foreground" translate="no">
+            {userEmail}
+          </p>
         ) : null}
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5">
-        <Badge variant="secondary" className="text-[10px] tabular-nums">
-          {tAdmin("journey.totalSessions")}: {overview?.total_sessions ?? 0}
-        </Badge>
-        <Badge variant="secondary" className="text-[10px] tabular-nums">
-          {tAdmin("journey.totalEvents")}: {overview?.total_events ?? 0}
-        </Badge>
-        <Badge variant="outline" className="max-w-[120px] truncate text-[10px]">
-          {overview?.top_sources?.[0]?.name ?? "direct"}
-        </Badge>
-        <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={onOverviewClick}>
-          {tAdmin("journey.overview.open")}
-        </Button>
-      </div>
+      <Select
+        value={selectedSessionId}
+        onValueChange={onSelectSession}
+        disabled={sessionsLoading}
+      >
+        <SelectTrigger className="h-8 w-[min(11rem,34vw)] text-xs sm:w-44">
+          <SelectValue placeholder={tAdmin("journey.sessionPlaceholder")} />
+        </SelectTrigger>
+        <SelectContent align="end">
+          <SelectItem value="all">
+            {tAdmin("journey.allSessions", { count: sessionsTotal })}
+          </SelectItem>
+          {(sessions ?? []).map((session) => (
+            <SelectItem key={session.id} value={session.id}>
+              {formatSessionLabel(session, locale)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-      <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
-        <Input
-          type="date"
-          value={dateFrom}
-          onChange={(e) => onDateFromChange(e.target.value)}
-          className="h-8 w-[130px] text-xs"
-        />
-        <Input
-          type="date"
-          value={dateTo}
-          onChange={(e) => onDateToChange(e.target.value)}
-          className="h-8 w-[130px] text-xs"
-        />
-        <Select value={eventFilter} onValueChange={onEventFilterChange}>
-          <SelectTrigger className="h-8 w-[140px] text-xs">
-            <SelectValue placeholder={tAdmin("journey.eventFilterPlaceholder")} />
-          </SelectTrigger>
-          <SelectContent>
-            {EVENT_FILTER_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {tAdmin(option.labelKey)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button type="button" variant="destructive" size="sm" className="h-8" onClick={onDeleteClick}>
-          <Trash2Icon className="h-3.5 w-3.5 sm:mr-1" />
-          <span className="hidden sm:inline">{tAdmin("journey.deleteData")}</span>
-          <span className="sr-only sm:hidden">{tAdmin("journey.deleteData")}</span>
-        </Button>
-      </div>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 shrink-0 gap-1.5 px-2.5"
+          >
+            <SlidersHorizontalIcon className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">{tAdmin("journey.filters")}</span>
+            {filtersActive ? <span className="h-1.5 w-1.5 rounded-full bg-primary" /> : null}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-72 space-y-3 p-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">{tAdmin("journey.dateRange")}</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => onDateFromChange(e.target.value)}
+                className="h-8 text-xs"
+              />
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => onDateToChange(e.target.value)}
+                className="h-8 text-xs"
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">{tAdmin("journey.eventFilterPlaceholder")}</Label>
+            <Select value={eventFilter} onValueChange={onEventFilterChange}>
+              <SelectTrigger className="h-8 w-full text-xs">
+                <SelectValue placeholder={tAdmin("journey.eventFilterPlaceholder")} />
+              </SelectTrigger>
+              <SelectContent>
+                {EVENT_FILTER_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {tAdmin(option.labelKey)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+            <MoreHorizontalIcon className="h-4 w-4" />
+            <span className="sr-only">{tAdmin("journey.moreActions")}</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={onOverviewClick}>
+            {tAdmin("journey.overview.open")}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            onClick={onDeleteClick}
+          >
+            <Trash2Icon className="mr-2 h-3.5 w-3.5" />
+            {tAdmin("journey.deleteData")}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

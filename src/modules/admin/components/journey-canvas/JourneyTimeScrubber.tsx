@@ -10,20 +10,13 @@ interface JourneyTimeScrubberProps {
   className?: string;
 }
 
-function formatTick(value: string, locale: string) {
-  return new Date(value).toLocaleTimeString(locale, {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 export function JourneyTimeScrubber({
   events,
   activeEventId,
   onSelectIndex,
   className,
 }: JourneyTimeScrubberProps) {
-  const { tAdmin, locale } = useAdminTranslation();
+  const { tAdmin } = useAdminTranslation();
   const trackRef = useRef<HTMLDivElement>(null);
 
   const sortedEvents = useMemo(
@@ -64,15 +57,7 @@ export function JourneyTimeScrubber({
     sortedEvents.length <= 1 ? 0 : (activeIndex / (sortedEvents.length - 1)) * 100;
 
   return (
-    <div className={cn("space-y-1 px-1", className)} data-slot="journey-time-scrubber">
-      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-        <span>{tAdmin("journey.scrubber.label")}</span>
-        <span className="tabular-nums">
-          {formatTick(sortedEvents[0].occurred_at, locale)}
-          {" — "}
-          {formatTick(sortedEvents[sortedEvents.length - 1].occurred_at, locale)}
-        </span>
-      </div>
+    <div className={cn("px-1", className)} data-slot="journey-time-scrubber">
       <div
         ref={trackRef}
         role="slider"
@@ -93,21 +78,16 @@ export function JourneyTimeScrubber({
           const left = sortedEvents.length <= 1 ? 50 : (index / (sortedEvents.length - 1)) * 100;
           const isActive = index === activeIndex;
           return (
-            <button
+            <div
               key={event.id}
-              type="button"
               className={cn(
-                "absolute top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border transition-transform",
+                "pointer-events-none absolute top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border transition-transform",
                 isActive
                   ? "scale-125 border-primary bg-primary"
-                  : "border-border bg-card hover:scale-110",
+                  : "border-border bg-card",
               )}
               style={{ left: `${left}%` }}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelectIndex(index);
-              }}
-              aria-label={event.event_name}
+              aria-hidden
             />
           );
         })}

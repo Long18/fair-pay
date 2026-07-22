@@ -210,7 +210,7 @@ export function AdminUserJourney() {
 
   return (
     <>
-      <div className="flex min-h-0 flex-col gap-3">
+      <div className="flex min-h-0 flex-col">
         <JourneyCompactToolbar
           userName={user?.full_name ?? tAdmin("common.user")}
           userEmail={user?.email}
@@ -219,38 +219,28 @@ export function AdminUserJourney() {
           dateFrom={dateFrom}
           dateTo={dateTo}
           eventFilter={eventFilter}
-          overview={overview}
+          sessions={sessions?.data}
+          sessionsTotal={sessions?.total ?? 0}
+          selectedSessionId={resolvedSessionId}
+          sessionsLoading={isSessionsLoading || isOverviewLoading}
           onDateFromChange={setDateFrom}
           onDateToChange={setDateTo}
           onEventFilterChange={setEventFilter}
+          onSelectSession={setSelectedSessionId}
           onDeleteClick={() => setDeleteDialogOpen(true)}
           onOverviewClick={() => setOverviewOpen(true)}
         />
 
         <JourneyWorkspace
           userId={userId}
-          subjectUser={
-            user
-              ? {
-                  fullName: user.full_name ?? tAdmin("common.user"),
-                  email: user.email,
-                  avatarUrl: user.avatar_url,
-                }
-              : null
-          }
           sessionId={resolvedSessionId}
           fromIso={fromIso}
           toIso={toIso}
           eventNames={selectedEventNames}
           sourceName={searchParams.get("source") || selectedSession?.landing_source || overview?.top_sources?.[0]?.name || null}
           entryLink={selectedSession?.entry_link ?? overview?.latest_entry_link ?? null}
-          sessions={sessions?.data}
-          sessionsTotal={sessions?.total ?? 0}
-          sessionsLoading={isSessionsLoading || isOverviewLoading}
           events={events?.data}
           eventsLoading={isEventsLoading}
-          selectedSessionId={resolvedSessionId}
-          onSelectSession={setSelectedSessionId}
           onViewRaw={setRawEvent}
         />
       </div>
