@@ -392,7 +392,7 @@ export const ChatPanelContent = memo(function ChatPanelContent({ onClear }: Chat
                 {pendingPreview && (
                   <AgentConfirmationCard
                     preview={pendingPreview}
-                    onDone={() => confirmPreview()}
+                    onDone={(result) => confirmPreview(result)}
                     onCancel={clearPreview}
                     onError={(err: Error) => console.error(err)}
                   />

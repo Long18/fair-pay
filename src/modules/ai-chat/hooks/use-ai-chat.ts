@@ -65,7 +65,7 @@ interface UseAiChatReturn {
   /** Attach receipt image → filename OCR stub → chat prompt → preview card flow. */
   attachReceiptImage: (file: File) => Promise<void>;
   clearPreview: () => void;
-  confirmPreview: () => void;
+  confirmPreview: (result?: { expense_id: string; operation_id: string }) => void;
   clearChat: () => void;
   newChat: () => void;
   selectConversation: (id: string) => void;
@@ -87,7 +87,7 @@ function freshConvId(): string {
 
 export function useAiChat(): UseAiChatReturn {
   const { data: identity } = useGetIdentity<Profile>();
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const language = i18n.resolvedLanguage || i18n.language;
   const [selectedModel, setSelectedModel] = useState<WebLlmModelId>(() => getSelectedModel());
 
@@ -473,21 +473,63 @@ export function useAiChat(): UseAiChatReturn {
     setPendingPreview(null);
   }, [pendingPreview]);
 
-  const confirmPreview = useCallback(() => {
-    if (pendingPreview) {
-      journeyTracking.trackEvent({
-        event_name: "ai_chat_preview_confirmed",
-        event_category: "ai_chat",
-        page_path: window.location.pathname,
-        flow_name: "ai-chat",
-        step_name: "preview-confirm",
-        properties: {
-          preview_type: pendingPreview.operation_id ?? "unknown",
-        },
-      });
-    }
-    setPendingPreview(null);
-  }, [pendingPreview]);
+  const confirmPreview = useCallback(
+    (result?: { expense_id: string; operation_id: string }) => {
+      const preview = pendingPreview;
+
+      if (preview) {
+        journeyTracking.trackEvent({
+          event_name: "ai_chat_preview_confirmed",
+          event_category: "ai_chat",
+          page_path: window.location.pathname,
+          flow_name: "ai-chat",
+          step_name: "preview-confirm",
+          properties: {
+            preview_type: preview.operation_id ?? "unknown",
+          },
+        });
+      }
+
+      if (result && preview) {
+        const p = preview.preview;
+        const amountLabel = new Intl.NumberFormat("vi-VN", {
+          style: "currency",
+          currency: "VND",
+          maximumFractionDigits: 0,
+        }).format(p.amount);
+        const content = t("aiChat.expenseCreated", {
+          description: p.description,
+          amount: amountLabel,
+          groupName: p.group_name,
+          defaultValue:
+            "Done — I created **{{description}}** ({{amount}}) in **{{groupName}}**.",
+        });
+
+        const confirmMsg: ChatMessage = {
+          id: makeMessageId("assistant"),
+          conversation_id: conversationIdRef.current || "local",
+          role: "assistant",
+          content,
+          metadata: {
+            mode: "action",
+            status: "success",
+            entity_type: "expense",
+            entity_id: result.expense_id,
+          },
+          created_at: new Date().toISOString(),
+        };
+
+        setMessages((prev) => [...prev, confirmMsg]);
+        historyRef.current = [
+          ...historyRef.current,
+          { role: "assistant", content },
+        ];
+      }
+
+      setPendingPreview(null);
+    },
+    [pendingPreview, t],
+  );
 
   const clearPreview = dismissPreview;
 
