@@ -55,15 +55,18 @@ export function useJourneyGraph(params: {
     const g = new Dagre.graphlib.Graph();
     g.setDefaultEdgeLabel(() => ({}));
     g.setGraph({
-      rankdir: "TB",
-      nodesep: 80,
-      ranksep: 120,
-      marginx: 40,
-      marginy: 40,
+      rankdir: "LR",
+      nodesep: 60,
+      ranksep: 140,
+      marginx: 48,
+      marginy: 48,
     });
 
+    const NODE_WIDTH = 280;
+    const NODE_HEIGHT = 150;
+
     for (const node of graphData.nodes) {
-      g.setNode(node.page_path, { width: 300, height: 130 });
+      g.setNode(node.page_path, { width: NODE_WIDTH, height: NODE_HEIGHT });
     }
 
     for (const edge of graphData.edges) {
@@ -77,7 +80,7 @@ export function useJourneyGraph(params: {
       return {
         id: n.page_path,
         type: "journey",
-        position: { x: pos.x - 150, y: pos.y - 65 },
+        position: { x: pos.x - NODE_WIDTH / 2, y: pos.y - NODE_HEIGHT / 2 },
         data: {
           pagePath: n.page_path,
           visitCount: n.visit_count,
@@ -85,6 +88,7 @@ export function useJourneyGraph(params: {
           eventTypes: n.event_types,
           avgDurationSeconds: n.avg_duration_seconds,
           isLastSeen: false,
+          pathState: "idle" as const,
         },
       };
     });
@@ -133,8 +137,8 @@ export function useJourneyGraph(params: {
         id: sourceNodeId,
         type: "source",
         position: {
-          x: rootNode.position.x + 75, // center above root (source node is ~150px wide)
-          y: rootNode.position.y - 100,
+          x: rootNode.position.x - 180,
+          y: rootNode.position.y + NODE_HEIGHT / 2 - 40,
         },
         data: {
           sourceName: sourceLabel,
