@@ -32,10 +32,12 @@ import {
   ArrowLeftIcon,
   SettingsIcon,
   TrendingUpIcon,
+  ShieldCheckIcon,
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useAdminTranslation } from "../i18n";
 import { useAdminAccess } from "../hooks/use-admin-access";
+import type { AdminCapabilities } from "../access";
 
 // ─── Nav Items Config ───────────────────────────────────────────────
 
@@ -63,6 +65,32 @@ function isActive(itemPath: string, pathname: string): boolean {
   return itemPath === "/admin"
     ? pathname === "/admin"
     : pathname.startsWith(itemPath);
+}
+
+function getNavItemLabel(
+  item: (typeof NAV_ITEMS)[number],
+  access: AdminCapabilities,
+  tAdmin: (key: string) => string,
+): string {
+  if (
+    item.key === "devtool" &&
+    access.canModerateContent &&
+    !access.canUseDevtool
+  ) {
+    return tAdmin("nav.moderation");
+  }
+  return tAdmin(item.labelKey);
+}
+
+function getNavItemIcon(item: (typeof NAV_ITEMS)[number], access: AdminCapabilities) {
+  if (
+    item.key === "devtool" &&
+    access.canModerateContent &&
+    !access.canUseDevtool
+  ) {
+    return ShieldCheckIcon;
+  }
+  return item.icon;
 }
 
 // ─── Main Layout ────────────────────────────────────────────────────
@@ -212,8 +240,8 @@ function DesktopAdminNav({ scrolled }: { scrolled: boolean }) {
       <div className="hidden md:flex items-center gap-0.5 lg:gap-1 overflow-x-auto scrollbar-none">
         {visibleItems.map((item) => {
           const active = isActive(item.path, pathname);
-          const Icon = item.icon;
-          const label = tAdmin(item.labelKey);
+          const Icon = getNavItemIcon(item, access);
+          const label = getNavItemLabel(item, access, tAdmin);
           // Show label when: item is active, OR navbar is in full (not scrolled) state
           const showLabel = active || !scrolled;
           return (
@@ -350,8 +378,8 @@ function MobileAdminMenu() {
         <nav className="flex flex-col p-4 gap-1">
           {visibleItems.map((item) => {
             const active = isActive(item.path, pathname);
-            const Icon = item.icon;
-            const label = tAdmin(item.labelKey);
+            const Icon = getNavItemIcon(item, access);
+            const label = getNavItemLabel(item, access, tAdmin);
             return (
               <Link
                 key={item.key}

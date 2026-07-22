@@ -25,6 +25,8 @@ export interface AdminTabsProps {
   className?: string;
   /** Show Select instead of TabsList below `md` */
   mobileAsSelect?: boolean;
+  /** Grid (default) or horizontal scroll when many tabs */
+  layout?: "grid" | "scroll";
   /**
    * Static Tailwind grid columns for TabsList on `sm+`.
    * Must be a full class string (Tailwind cannot see dynamic class names).
@@ -40,6 +42,7 @@ const STATIC_GRID_BY_COUNT: Record<number, string> = {
   4: "sm:grid-cols-4",
   5: "sm:grid-cols-5",
   6: "sm:grid-cols-6",
+  7: "sm:grid-cols-7",
 };
 
 export function AdminTabs({
@@ -49,13 +52,15 @@ export function AdminTabs({
   children,
   className,
   mobileAsSelect = true,
+  layout = "grid",
   listClassName,
 }: AdminTabsProps) {
   const visible = items.filter((item) => item.enabled !== false);
   const gridClass =
     listClassName ??
-    STATIC_GRID_BY_COUNT[Math.min(visible.length, 6)] ??
+    STATIC_GRID_BY_COUNT[Math.min(visible.length, 7)] ??
     "sm:grid-cols-3";
+  const useScrollLayout = layout === "scroll" || visible.length > 6;
 
   return (
     <Tabs
@@ -82,15 +87,27 @@ export function AdminTabs({
 
       <TabsList
         className={cn(
-          "grid w-full",
-          gridClass,
-          mobileAsSelect && "hidden md:grid"
+          "w-full",
+          useScrollLayout
+            ? cn(
+                "h-auto justify-start gap-1 overflow-x-auto p-1",
+                mobileAsSelect && "hidden md:flex"
+              )
+            : cn(
+                "grid",
+                gridClass,
+                mobileAsSelect && "hidden md:grid"
+              )
         )}
       >
         {visible.map((item) => {
           const Icon = item.icon;
           return (
-            <TabsTrigger key={item.value} value={item.value} className="gap-2">
+            <TabsTrigger
+              key={item.value}
+              value={item.value}
+              className={cn("gap-2", useScrollLayout && "shrink-0")}
+            >
               {Icon ? <Icon className="h-4 w-4" /> : null}
               {item.label}
             </TabsTrigger>

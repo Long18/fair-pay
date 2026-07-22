@@ -32,10 +32,20 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { Loader2Icon, ShieldCheckIcon, CheckCircle2Icon, XCircleIcon } from "@/components/ui/icons";
+import {
+  Loader2Icon,
+  ShieldCheckIcon,
+  CheckCircle2Icon,
+  XCircleIcon,
+  RefreshCwIcon,
+} from "@/components/ui/icons";
 import { formatDate } from "@/lib/locale-utils";
 import { useAdminTranslation } from "../i18n";
 import { AdminPageHeader } from "../components/AdminPageHeader";
+import {
+  AdminMobileCard,
+  AdminMobileCards,
+} from "../components/AdminMobileCards";
 
 type ReportStatus = "open" | "resolved" | "dismissed";
 type TargetType = "user" | "group";
@@ -94,6 +104,25 @@ function useOpenReports() {
   });
 }
 
+function ReportTargetBadges({
+  row,
+  tAdmin,
+}: {
+  row: ContentReportRow;
+  tAdmin: (key: string, options?: Record<string, unknown>) => string;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Badge variant="outline">
+        {tAdmin(`moderation.targetType.${row.target_type}`)}
+      </Badge>
+      {row.target_banned ? (
+        <Badge variant="destructive">{tAdmin("moderation.banned")}</Badge>
+      ) : null}
+    </div>
+  );
+}
+
 export function AdminModeration({ embedded = false }: { embedded?: boolean }) {
   const { tAdmin } = useAdminTranslation();
   const queryClient = useQueryClient();
@@ -146,123 +175,160 @@ export function AdminModeration({ embedded = false }: { embedded?: boolean }) {
 
   const rows = data?.data ?? [];
 
+  const refreshButton = (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => void refetch()}
+      disabled={isFetching}
+    >
+      {isFetching ? (
+        <Loader2Icon className="h-4 w-4 animate-spin" />
+      ) : (
+        <>
+          <RefreshCwIcon className="mr-1.5 h-4 w-4" />
+          {tAdmin("common.refresh")}
+        </>
+      )}
+    </Button>
+  );
+
+  const renderRowActions = (row: ContentReportRow) => (
+    <div className="flex flex-wrap justify-end gap-2">
+      <Button size="sm" variant="outline" onClick={() => openAction(row, "dismiss")}>
+        {tAdmin("moderation.dismiss")}
+      </Button>
+      <Button size="sm" onClick={() => openAction(row, "resolve")}>
+        <CheckCircle2Icon className="mr-1 h-4 w-4" />
+        {tAdmin("moderation.resolve")}
+      </Button>
+    </div>
+  );
+
+  const queueEmptyState = (
+    <Empty>
+      <EmptyMedia variant="icon">
+        <ShieldCheckIcon className="h-6 w-6" />
+      </EmptyMedia>
+      <EmptyHeader>
+        <EmptyTitle>{tAdmin("moderation.emptyTitle")}</EmptyTitle>
+        <EmptyDescription>{tAdmin("moderation.emptyDescription")}</EmptyDescription>
+      </EmptyHeader>
+    </Empty>
+  );
+
+  const queueErrorState = (
+    <Empty>
+      <EmptyMedia variant="icon">
+        <XCircleIcon className="h-6 w-6 text-destructive" />
+      </EmptyMedia>
+      <EmptyHeader>
+        <EmptyTitle>
+          {tAdmin("common.errorWithMessage", {
+            message: error instanceof Error ? error.message : "",
+          })}
+        </EmptyTitle>
+      </EmptyHeader>
+    </Empty>
+  );
+
+  const queueBody = isLoading ? (
+    <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
+      <Loader2Icon className="h-5 w-5 animate-spin" />
+      {tAdmin("common.loading")}
+    </div>
+  ) : isError ? (
+    queueErrorState
+  ) : rows.length === 0 ? (
+    queueEmptyState
+  ) : (
+    <>
+      <div className="md:hidden">
+        <AdminMobileCards
+          items={rows}
+          getKey={(row) => row.id}
+          renderItem={(row) => (
+            <AdminMobileCard
+              title={row.target_label}
+              description={row.reason}
+              badges={<ReportTargetBadges row={row} tAdmin={tAdmin} />}
+              meta={[
+                {
+                  label: tAdmin("moderation.columns.reporter"),
+                  value: row.reporter_name ?? row.reporter_email ?? row.reporter_id,
+                },
+                {
+                  label: tAdmin("common.createdAt"),
+                  value: formatDate(row.created_at, DATE_FORMAT),
+                },
+              ]}
+              actions={renderRowActions(row)}
+            />
+          )}
+        />
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-md border md:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{tAdmin("moderation.columns.target")}</TableHead>
+              <TableHead>{tAdmin("moderation.columns.reason")}</TableHead>
+              <TableHead>{tAdmin("moderation.columns.reporter")}</TableHead>
+              <TableHead>{tAdmin("common.createdAt")}</TableHead>
+              <TableHead className="text-right">{tAdmin("common.actions")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <TableRow key={row.id}>
+                <TableCell>
+                  <div className="flex flex-col gap-1">
+                    <ReportTargetBadges row={row} tAdmin={tAdmin} />
+                    <span className="text-sm font-medium">{row.target_label}</span>
+                  </div>
+                </TableCell>
+                <TableCell className="max-w-[240px]">
+                  <p className="line-clamp-2 text-sm">{row.reason}</p>
+                </TableCell>
+                <TableCell>
+                  <p className="text-sm">
+                    {row.reporter_name ?? row.reporter_email ?? row.reporter_id}
+                  </p>
+                </TableCell>
+                <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                  {formatDate(row.created_at, DATE_FORMAT)}
+                </TableCell>
+                <TableCell className="text-right">{renderRowActions(row)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </>
+  );
+
   return (
     <div className="flex flex-col gap-4">
-      <AdminPageHeader
-        title={tAdmin("moderation.title")}
-        description={tAdmin("moderation.description")}
-        density={embedded ? "section" : "page"}
-        actions={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void refetch()}
-            disabled={isFetching}
-          >
-            {isFetching ? (
-              <Loader2Icon className="h-4 w-4 animate-spin" />
-            ) : (
-              tAdmin("common.refresh")
-            )}
-          </Button>
-        }
-      />
+      {!embedded ? (
+        <AdminPageHeader
+          title={tAdmin("moderation.title")}
+          description={tAdmin("moderation.description")}
+          actions={refreshButton}
+        />
+      ) : null}
 
       <Card>
-        <CardHeader>
-          <CardTitle>{tAdmin("moderation.openQueue")}</CardTitle>
-          <CardDescription>
-            {tAdmin("moderation.openCount", { count: data?.total ?? 0 })}
-          </CardDescription>
+        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
+          <div className="space-y-1">
+            <CardTitle>{tAdmin("moderation.openQueue")}</CardTitle>
+            <CardDescription>
+              {tAdmin("moderation.openCount", { count: data?.total ?? 0 })}
+            </CardDescription>
+          </div>
+          {embedded ? <div className="shrink-0">{refreshButton}</div> : null}
         </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
-              <Loader2Icon className="h-5 w-5 animate-spin" />
-              {tAdmin("common.loading")}
-            </div>
-          ) : isError ? (
-            <Empty>
-              <EmptyMedia variant="icon">
-                <XCircleIcon className="h-6 w-6 text-destructive" />
-              </EmptyMedia>
-              <EmptyHeader>
-                <EmptyTitle>
-                  {tAdmin("common.errorWithMessage", {
-                    message: error instanceof Error ? error.message : "",
-                  })}
-                </EmptyTitle>
-              </EmptyHeader>
-            </Empty>
-          ) : rows.length === 0 ? (
-            <Empty>
-              <EmptyMedia variant="icon">
-                <ShieldCheckIcon className="h-6 w-6" />
-              </EmptyMedia>
-              <EmptyHeader>
-                <EmptyTitle>{tAdmin("moderation.emptyTitle")}</EmptyTitle>
-                <EmptyDescription>{tAdmin("moderation.emptyDescription")}</EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{tAdmin("moderation.columns.target")}</TableHead>
-                  <TableHead>{tAdmin("moderation.columns.reason")}</TableHead>
-                  <TableHead>{tAdmin("moderation.columns.reporter")}</TableHead>
-                  <TableHead>{tAdmin("common.createdAt")}</TableHead>
-                  <TableHead className="text-right">{tAdmin("common.actions")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">
-                            {tAdmin(`moderation.targetType.${row.target_type}`)}
-                          </Badge>
-                          {row.target_banned ? (
-                            <Badge variant="destructive">{tAdmin("moderation.banned")}</Badge>
-                          ) : null}
-                        </div>
-                        <span className="text-sm font-medium">{row.target_label}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="max-w-[240px]">
-                      <p className="text-sm line-clamp-2">{row.reason}</p>
-                    </TableCell>
-                    <TableCell>
-                      <p className="text-sm">
-                        {row.reporter_name ?? row.reporter_email ?? row.reporter_id}
-                      </p>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                      {formatDate(row.created_at, DATE_FORMAT)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openAction(row, "dismiss")}
-                        >
-                          {tAdmin("moderation.dismiss")}
-                        </Button>
-                        <Button size="sm" onClick={() => openAction(row, "resolve")}>
-                          <CheckCircle2Icon className="mr-1 h-4 w-4" />
-                          {tAdmin("moderation.resolve")}
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
+        <CardContent>{queueBody}</CardContent>
       </Card>
 
       <Dialog
