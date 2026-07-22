@@ -820,6 +820,23 @@
       "waitingForPayment": "Waiting for payment confirmation..."
     },
     "settleUp": "Settle Up",
+    "quickSettle": {
+      "amountPlaceholder": "Enter amount",
+      "amountToPay": "Amount to Pay",
+      "description": "Record a payment to settle your debt.",
+      "fullBalance": "Full balance",
+      "half": "Half ({{amount}} {{currency}})",
+      "notes": "Notes (optional)",
+      "notesPlaceholder": "Add any notes about this payment...",
+      "partialLabel": "Pay partial amount",
+      "paymentDate": "Payment Date",
+      "paymentMethod": "Payment Method",
+      "recordPayment": "Record Payment",
+      "recording": "Recording...",
+      "remaining": "{{amount}} {{currency}} remaining",
+      "selectMethod": "Select payment method",
+      "title": "Settle with {{name}}"
+    },
     "unknownFriend": "Friend",
     "vietqr": {
       "account": "Account",
@@ -1373,6 +1390,7 @@
     "settle": "Settle",
     "settleError": "Failed to settle expenses: {{message}}",
     "settleUp": "Settle Up",
+    "recordPayment": "Record payment",
     "settledExpenses": "Settled",
     "settledExpensesCount": "Settled {{count}} expenses",
     "settledOn": "Settled {{date}}",

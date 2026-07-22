@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,6 +47,7 @@ export function QuickSettlementDialog({
   onConfirm,
   isLoading = false,
 }: QuickSettlementDialogProps) {
+  const { t } = useTranslation();
   const { tap, success } = useHaptics();
   const { track } = useTrackEvent();
   const reduced = useReducedMotion();
@@ -134,7 +136,7 @@ export function QuickSettlementDialog({
         disabled={isLoading}
         className="flex-1 min-h-[44px]"
       >
-        Cancel
+        {t('common.cancel', 'Cancel')}
       </Button>
       <Button
         onClick={handleConfirm}
@@ -144,12 +146,12 @@ export function QuickSettlementDialog({
         {isLoading ? (
           <>
             <Loader2Icon className="h-4 w-4 mr-2 animate-spin" />
-            Recording...
+            {t('payments.quickSettle.recording', 'Recording...')}
           </>
         ) : (
           <>
             <CheckCircle2Icon className="h-4 w-4 mr-2" />
-            Record Payment
+            {t('payments.quickSettle.recordPayment', 'Record Payment')}
           </>
         )}
       </Button>
@@ -160,8 +162,8 @@ export function QuickSettlementDialog({
     <BottomSheet
       open={open}
       onOpenChange={handleOpenChange}
-      title={`Settle with ${recipientName}`}
-      description="Record a payment to settle your debt."
+      title={t('payments.quickSettle.title', 'Settle with {{name}}', { name: recipientName })}
+      description={t('payments.quickSettle.description', 'Record a payment to settle your debt.')}
       footer={footerButtons}
     >
       <div className="space-y-4">
@@ -173,18 +175,25 @@ export function QuickSettlementDialog({
           transition={SPRING_DEFAULT}
         >
           <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Amount to Pay</span>
+            <span className="text-sm text-muted-foreground">
+              {t('payments.quickSettle.amountToPay', 'Amount to Pay')}
+            </span>
             <div className="text-right">
               <p className="text-xl sm:text-2xl font-bold text-primary">
                 {formatNumber(isPartialPayment ? effectiveAmount : amount)}{' '}
                 {currency}
               </p>
               {!isPartialPayment && (
-                <p className="text-xs text-muted-foreground">Full balance</p>
+                <p className="text-xs text-muted-foreground">
+                  {t('payments.quickSettle.fullBalance', 'Full balance')}
+                </p>
               )}
               {isPartialPayment && effectiveAmount > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  {formatNumber(amount - effectiveAmount)} {currency} remaining
+                  {t('payments.quickSettle.remaining', '{{amount}} {{currency}} remaining', {
+                    amount: formatNumber(amount - effectiveAmount),
+                    currency,
+                  })}
                 </p>
               )}
             </div>
@@ -210,14 +219,14 @@ export function QuickSettlementDialog({
               className="h-5 w-5"
             />
             <label htmlFor="partial" className="text-sm font-medium cursor-pointer flex-1">
-              Pay partial amount
+              {t('payments.quickSettle.partialLabel', 'Pay partial amount')}
             </label>
           </div>
           {isPartialPayment && (
             <div className="ml-7 space-y-3">
               <Input
                 type="number"
-                placeholder="Enter amount"
+                placeholder={t('payments.quickSettle.amountPlaceholder', 'Enter amount')}
                 value={partialAmount}
                 onChange={(e) => setPartialAmount(e.target.value)}
                 min="1"
@@ -242,7 +251,10 @@ export function QuickSettlementDialog({
                     className="cursor-pointer hover:bg-accent transition-colors min-h-[36px] px-3 py-2"
                     onClick={() => handleQuickAmount(Math.round(amount / 2))}
                   >
-                    Half ({formatNumber(Math.round(amount / 2))} {currency})
+                    {t('payments.quickSettle.half', 'Half ({{amount}} {{currency}})', {
+                      amount: formatNumber(Math.round(amount / 2)),
+                      currency,
+                    })}
                   </Badge>
                 </div>
               )}
@@ -257,7 +269,9 @@ export function QuickSettlementDialog({
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...SPRING_GENTLE, delay: STAGGER_DELAY * 2 }}
         >
-          <label htmlFor="quick-settle-payment-method" className="text-sm font-medium">Payment Method</label>
+          <label htmlFor="quick-settle-payment-method" className="text-sm font-medium">
+            {t('payments.quickSettle.paymentMethod', 'Payment Method')}
+          </label>
           <Select
             value={paymentMethod}
             onValueChange={(v) => {
@@ -272,7 +286,7 @@ export function QuickSettlementDialog({
             }}
           >
             <SelectTrigger id="quick-settle-payment-method" className="min-h-[44px]">
-              <SelectValue placeholder="Select payment method" />
+              <SelectValue placeholder={t('payments.quickSettle.selectMethod', 'Select payment method')} />
             </SelectTrigger>
             <SelectContent>
               {Object.entries(PAYMENT_METHODS).map(([value, config]) => (
@@ -291,7 +305,9 @@ export function QuickSettlementDialog({
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...SPRING_GENTLE, delay: STAGGER_DELAY * 3 }}
         >
-          <label htmlFor="quick-settle-payment-date" className="text-sm font-medium">Payment Date</label>
+          <label htmlFor="quick-settle-payment-date" className="text-sm font-medium">
+            {t('payments.quickSettle.paymentDate', 'Payment Date')}
+          </label>
           <Input
             id="quick-settle-payment-date"
             type="date"
@@ -309,10 +325,12 @@ export function QuickSettlementDialog({
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...SPRING_GENTLE, delay: STAGGER_DELAY * 4 }}
         >
-          <label htmlFor="quick-settle-notes" className="text-sm font-medium">Notes (optional)</label>
+          <label htmlFor="quick-settle-notes" className="text-sm font-medium">
+            {t('payments.quickSettle.notes', 'Notes (optional)')}
+          </label>
           <Textarea
             id="quick-settle-notes"
-            placeholder="Add any notes about this payment..."
+            placeholder={t('payments.quickSettle.notesPlaceholder', 'Add any notes about this payment...')}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}

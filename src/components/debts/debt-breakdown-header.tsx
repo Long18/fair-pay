@@ -28,6 +28,8 @@ interface DebtBreakdownHeaderProps {
   counterpartyId: string;
   onPaymentComplete?: () => void;
   onSettleAll?: () => void;
+  isSettlingAll?: boolean;
+  onRecordPayment?: () => void;
   shareVersionSource?: string | null;
 }
 
@@ -50,6 +52,8 @@ export function DebtBreakdownHeader({
   counterpartyId,
   onPaymentComplete,
   onSettleAll,
+  isSettlingAll = false,
+  onRecordPayment,
   shareVersionSource,
 }: DebtBreakdownHeaderProps) {
   const { t } = useTranslation();
@@ -65,6 +69,7 @@ export function DebtBreakdownHeader({
     : t("debts.heroTheyOwe", "{{name}} owes you", { name: firstName });
 
   const canPayViaSePay = iOweThem && isSepayConfigured && netAmount > 0;
+  const canRecordPayment = iOweThem && totalIOwe > 0 && !canPayViaSePay && !!onRecordPayment;
   const canSettle = totalTheyOwe > 0 && !!onSettleAll;
 
   const getShareUrl = () => buildDebtShareUrl(
@@ -142,17 +147,35 @@ export function DebtBreakdownHeader({
               </Button>
             )}
 
-            {!canPayViaSePay && canSettle && (
+            {canRecordPayment && (
+              <Button
+                className="h-12 min-w-0 flex-1 rounded-xl px-3 text-sm sm:px-4"
+                onClick={() => {
+                  tap();
+                  onRecordPayment?.();
+                }}
+              >
+                <CreditCardIcon className="h-4 w-4 shrink-0" />
+                <span className="truncate">
+                  {t("debts.recordPayment", "Record payment")}
+                </span>
+              </Button>
+            )}
+
+            {!canPayViaSePay && !canRecordPayment && canSettle && (
               <Button
                 className="h-12 min-w-0 flex-1 rounded-xl px-3 text-sm sm:px-4"
                 onClick={() => {
                   tap();
                   onSettleAll?.();
                 }}
+                disabled={isSettlingAll}
               >
                 <CheckCircle2Icon className="h-4 w-4 shrink-0" />
                 <span className="truncate">
-                  {t("debts.settleUp", "Settle up")}
+                  {isSettlingAll
+                    ? t("debts.settling", "Settling…")
+                    : t("debts.settleUp", "Settle up")}
                 </span>
               </Button>
             )}
@@ -161,7 +184,7 @@ export function DebtBreakdownHeader({
               variant="outline"
               className={cn(
                 "h-12 min-w-0 rounded-xl px-3 text-sm sm:px-4",
-                canPayViaSePay || canSettle ? "flex-1" : "flex-1"
+                canPayViaSePay || canRecordPayment || canSettle ? "flex-1" : "flex-1"
               )}
               onClick={() => {
                 tap();

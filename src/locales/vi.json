@@ -820,6 +820,23 @@
       "waitingForPayment": "Waiting for payment confirmation..."
     },
     "settleUp": "Settle Up",
+    "quickSettle": {
+      "amountPlaceholder": "Nhập số tiền",
+      "amountToPay": "Số tiền thanh toán",
+      "description": "Ghi nhận khoản thanh toán để tất toán khoản nợ.",
+      "fullBalance": "Toàn bộ số dư",
+      "half": "Một nửa ({{amount}} {{currency}})",
+      "notes": "Ghi chú (tuỳ chọn)",
+      "notesPlaceholder": "Thêm ghi chú về khoản thanh toán...",
+      "partialLabel": "Thanh toán một phần",
+      "paymentDate": "Ngày thanh toán",
+      "paymentMethod": "Phương thức thanh toán",
+      "recordPayment": "Ghi nhận thanh toán",
+      "recording": "Đang ghi nhận...",
+      "remaining": "Còn lại {{amount}} {{currency}}",
+      "selectMethod": "Chọn phương thức thanh toán",
+      "title": "Thanh toán cho {{name}}"
+    },
     "unknownFriend": "Friend",
     "vietqr": {
       "account": "Account",
@@ -1373,6 +1390,7 @@
     "settle": "Settle",
     "settleError": "Failed to settle expenses: {{message}}",
     "settleUp": "Settle Up",
+    "recordPayment": "Ghi nhận thanh toán",
     "settledExpenses": "Settled",
     "settledExpensesCount": "Settled {{count}} expenses",
     "settledOn": "Settled {{date}}",

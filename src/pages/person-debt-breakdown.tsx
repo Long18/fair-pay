@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router";
-import { useGetIdentity, useOne } from "@refinedev/core";
+import { useGetIdentity, useGo, useOne } from "@refinedev/core";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { BulkDeleteDialog } from "@/components/bulk-operations/BulkDeleteDialog";
 import { DebtBreakdownHeader } from "@/components/debts/debt-breakdown-header";
@@ -44,6 +44,7 @@ function getMonthKey(dateStr: string): string {
 
 export const PersonDebtBreakdown = () => {
   const { userId } = useParams<{ userId: string }>();
+  const go = useGo();
   const { t } = useTranslation();
   const { tap, success, warning } = useHaptics();
 
@@ -248,7 +249,7 @@ export const PersonDebtBreakdown = () => {
       setCelebrationOpen(true);
       setSelectedSplitIds(new Set());
     }
-  }, [selectedSplitIds, selectedAmount, settle, refetch, success]);
+  }, [selectedSplitIds, selectedAmount, settle, refetch, success, userId]);
 
   const handleSettleAll = useCallback(async () => {
     const allSettleable = selectableExpenses.map((expense) => expense.id);
@@ -257,12 +258,41 @@ export const PersonDebtBreakdown = () => {
       return;
     }
 
+    journeyTracking.trackEvent({
+      event_name: "debt_settle_button_clicked",
+      event_category: "debt",
+      page_path: window.location.pathname,
+      flow_name: "debt-settle",
+      step_name: "settle-all",
+      properties: {
+        counterparty_user_id: userId,
+        selected_count: allSettleable.length,
+      },
+    });
+
+    const amount = summary?.total_they_owe ?? 0;
     const result = await settle(allSettleable, refetch);
 
     if (result.success) {
+      success();
+      if (amount > 0) {
+        setCelebrationAmount(amount);
+        setCelebrationOpen(true);
+      }
       setSelectedSplitIds(new Set());
     }
-  }, [selectableExpenses, settle, refetch]);
+  }, [selectableExpenses, settle, refetch, success, userId, summary?.total_they_owe]);
+
+  const handleRecordPayment = useCallback(() => {
+    if (!userId || !summary) return;
+    go({
+      to: "/payments/create",
+      query: {
+        to_user: userId,
+        amount: String(summary.total_i_owe),
+      },
+    });
+  }, [go, userId, summary]);
 
   const handleDelete = useCallback(async () => {
     const result = await deleteSplits(Array.from(selectedSplitIds));
@@ -352,6 +382,8 @@ export const PersonDebtBreakdown = () => {
           counterpartyId={userId!}
           onPaymentComplete={refetch}
           onSettleAll={handleSettleAll}
+          isSettlingAll={isSettling}
+          onRecordPayment={handleRecordPayment}
           shareVersionSource={shareVersionSource}
         />
 

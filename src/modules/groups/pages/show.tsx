@@ -357,8 +357,10 @@ export const GroupShow = () => {
           });
         }, 1500);
       }
-    } catch (error: any) {
-      toast.error(`Failed to record payment: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Failed to record payment: ${message}`);
+      throw error;
     }
   };
 
