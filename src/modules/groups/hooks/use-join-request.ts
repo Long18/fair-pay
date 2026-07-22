@@ -3,6 +3,7 @@ import { useGetIdentity, useList } from '@refinedev/core';
 import { supabaseClient } from '@/utility/supabaseClient';
 import { Profile } from '@/modules/profile/types';
 import { toast } from 'sonner';
+import { journeyTracking } from '@/lib/journey-tracking';
 
 export interface JoinRequest {
   id: string;
