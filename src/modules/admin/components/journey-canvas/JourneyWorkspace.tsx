@@ -7,7 +7,6 @@ import { useJourneyPath } from "./use-journey-path";
 import { useJourneyPlayback } from "./use-journey-playback";
 import type {
   UserTrackingEventRow,
-  UserTrackingSessionRow,
 } from "../../types";
 
 interface JourneyWorkspaceProps {
@@ -18,13 +17,8 @@ interface JourneyWorkspaceProps {
   eventNames: string[] | null;
   sourceName?: string | null;
   entryLink?: string | null;
-  sessions: UserTrackingSessionRow[] | undefined;
-  sessionsTotal: number;
-  sessionsLoading?: boolean;
   events: UserTrackingEventRow[] | undefined;
   eventsLoading?: boolean;
-  selectedSessionId: string;
-  onSelectSession: (sessionId: string) => void;
   onViewRaw: (event: UserTrackingEventRow) => void;
 }
 
@@ -110,7 +104,7 @@ export function JourneyWorkspace({
         className="shrink-0 space-y-2 border-t border-border bg-card/40 px-3 py-2"
         data-slot="journey-bottom-dock"
       >
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <JourneyPlaybackControls
             activeStepIndex={activeStepIndex}
             stepCount={stepCount}
@@ -123,14 +117,16 @@ export function JourneyWorkspace({
             events={events}
             activeEventId={activeEventId}
             onSelectIndex={handleScrubberIndex}
-            className="flex-1"
+            className="w-full sm:max-w-md"
           />
         </div>
-        <JourneyActiveEventCard
-          event={activeEvent}
-          loading={eventsLoading}
-          onViewRaw={onViewRaw}
-        />
+        <div className="flex justify-start">
+          <JourneyActiveEventCard
+            event={activeEvent}
+            loading={eventsLoading}
+            onViewRaw={onViewRaw}
+          />
+        </div>
       </div>
     </div>
   );
