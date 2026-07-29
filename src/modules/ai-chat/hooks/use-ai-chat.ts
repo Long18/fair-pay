@@ -264,6 +264,8 @@ export function useAiChat(): UseAiChatReturn {
       mcpClient,
       legacyExecutor,
       actorIdentityConfirmed: Boolean(identity?.email?.trim() || identity?.full_name?.trim()),
+      actorEmail: identity?.email ?? undefined,
+      actorName: identity?.full_name ?? undefined,
     });
 
     return orchestratorRef.current;

@@ -1,4 +1,8 @@
 import type { AgentPreviewResponse } from "@/lib/agent-api/types";
+import type {
+  ParsedExpenseContext,
+  TransactionScope,
+} from "../utils/transaction-scope";
 import type { ParsedVietnameseExpenseIntent } from "../utils/vietnamese-expense-intent";
 
 export interface AssistantToolCall {
@@ -47,17 +51,23 @@ export type LegacyToolExecutor = (
 
 export interface OrchestratorDeps {
   chatFn: AssistantChatFn;
+  /** Optional cloud LLM when local model fails (env-gated). */
+  cloudChatFn?: AssistantChatFn;
   mcpClient: McpClientInterface;
   legacyExecutor: LegacyToolExecutor;
   /** When true, orchestrator injects actor_confirmed and group transaction_type for expense tools. */
   actorIdentityConfirmed?: boolean;
+  actorEmail?: string;
+  actorName?: string;
 }
 
 export interface ProcessTurnOptions {
   /** Text shown in chat history (without machine hints). */
   displayUserText?: string;
   expenseIntent?: ParsedVietnameseExpenseIntent | null;
+  expenseContext?: ParsedExpenseContext | null;
   language?: string;
+  transactionScope?: TransactionScope;
 }
 
 export interface ProcessTurnResult {

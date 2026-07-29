@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import FairPayChatOrchestrator from "../FairPayChatOrchestrator";
 import { parseExpenseIntent } from "../../utils/vietnamese-expense-intent";
+import { parseExpenseContext } from "../../utils/transaction-scope";
 import { FAIRPAY_SYSTEM_PROMPT } from "../system-prompt";
 import type { AssistantChatFn, ConversationMessage, LegacyToolExecutor, McpClientInterface } from "../types";
 import type { AgentPreviewResponse } from "@/lib/agent-api/types";
@@ -193,12 +194,13 @@ describe("FairPayChatOrchestrator manual JSON protocol", () => {
     await orch.processTurn("Thêm giao dịch mua chuối 10.000 VND", baseHistory(), null, {
       displayUserText: "Thêm giao dịch mua chuối 10.000 VND",
       expenseIntent: intent,
+      expenseContext: parseExpenseContext("Thêm giao dịch mua chuối 10.000 VND"),
     });
 
     expect(mcpClient.callTool).toHaveBeenNthCalledWith(1, "fairpay_list_groups", {});
   });
 
-  it("returns recovery text when the model echoes the user after bootstrap", async () => {
+  it("returns guidance when the model echoes after groups are listed", async () => {
     const mcpClient: McpClientInterface = {
       callTool: vi.fn(async (name) => (name === "fairpay_list_groups" ? { groups: [] } : {})),
     };
@@ -211,15 +213,23 @@ describe("FairPayChatOrchestrator manual JSON protocol", () => {
       chatFn,
       mcpClient,
       legacyExecutor: vi.fn(async () => ({})),
+      actorIdentityConfirmed: true,
     });
 
     const result = await orch.processTurn("Thêm giao dịch mua chuối 10.000 VND", baseHistory(), null, {
       displayUserText: "Thêm giao dịch mua chuối 10.000 VND",
       expenseIntent: intent,
+      expenseContext: {
+        intent,
+        transaction_scope: "unknown",
+        wants_group_expense_override: false,
+        group_name_hint: null,
+      },
       language: "vi",
     });
 
-    expect(result.text).toContain("Hermes 3");
+    expect(chatFn).not.toHaveBeenCalled();
+    expect(result.text).toContain("tên nhóm");
     expect(result.text).not.toBe("Thêm giao dịch mua chuối 10.000 VND");
   });
 
@@ -246,7 +256,21 @@ describe("FairPayChatOrchestrator manual JSON protocol", () => {
       legacyExecutor: vi.fn(async () => ({})),
       actorIdentityConfirmed: true,
     });
-    await orch.processTurn("thêm chi tiêu", baseHistory(), null);
+    await orch.processTurn("run preview defaults check", baseHistory(), null, {
+      expenseContext: {
+        intent: {
+          looks_like_add_expense: false,
+          amount_vnd: null,
+          expense_date: null,
+          quantity: null,
+          item_description: null,
+          member_name_hint: null,
+        },
+        transaction_scope: "unknown",
+        wants_group_expense_override: false,
+        group_name_hint: null,
+      },
+    });
 
     expect(mcpClient.callTool).toHaveBeenCalledWith(
       "fairpay_preview_expense",

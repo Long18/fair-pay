@@ -12,6 +12,12 @@ import {
   shouldAutoStartExpenseWorkflow,
   type ParsedVietnameseExpenseIntent,
 } from '../utils/vietnamese-expense-intent'
+import {
+  planDebtSummaryStep,
+  planDeterministicStep,
+  type PlannerTurnState,
+} from './deterministic-planner'
+import { parseExpenseContext, effectiveTransactionScope, type ParsedExpenseContext, type TransactionScope } from '../utils/transaction-scope'
 import { FORBIDDEN_MCP_TOOLS } from './mcp-client'
 import {
   LEGACY_TOOL_NAMES,
@@ -88,11 +94,19 @@ function parseAssistantDirective(raw: string): AssistantDirective | null {
         arguments: candidate.arguments as Record<string, unknown>,
       }
     }
+
+    if (candidate.type === 'tool_call') {
+      return null
+    }
   } catch {
-    return { type: 'final', content: raw.trim() }
+    const trimmed = stripCodeFence(raw).trim()
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) return null
+    return { type: 'final', content: trimmed }
   }
 
-  return { type: 'final', content: raw.trim() }
+  const trimmed = raw.trim()
+  if (trimmed.startsWith('{') && trimmed.includes('"type"')) return null
+  return { type: 'final', content: trimmed }
 }
 
 function makeManualToolCall(directive: Extract<AssistantDirective, { type: 'tool_call' }>): AssistantToolCall {
@@ -190,6 +204,7 @@ function conversationForModel(
 
 export class FairPayChatOrchestrator {
   private readonly ambiguousMembersByGroup = new Map<string, Map<string, AmbiguousCandidate>>()
+  private turnTransactionScope: TransactionScope = 'unknown'
 
   constructor(private readonly deps: OrchestratorDeps) {}
 
@@ -200,9 +215,14 @@ export class FairPayChatOrchestrator {
     options: ProcessTurnOptions = {},
   ): Promise<ProcessTurnResult> {
     const displayUserText = options.displayUserText ?? modelUserText
+    const expenseContext: ParsedExpenseContext =
+      options.expenseContext
+      ?? parseExpenseContext(displayUserText)
     const expenseIntent: ParsedVietnameseExpenseIntent | null =
-      options.expenseIntent ?? null
+      options.expenseIntent ?? expenseContext.intent
     const language = options.language
+    this.turnTransactionScope = options.transactionScope
+      ?? effectiveTransactionScope(expenseContext)
 
     const updatedHistory: ConversationMessage[] = [
       ...history,
@@ -211,30 +231,51 @@ export class FairPayChatOrchestrator {
     let pendingPreview: AgentPreviewResponse | null = null
     let currentPreview = activePendingPreview
     let blockedPreviewReplacement = false
-    let expenseBootstrapDone = false
+    let plannerState: PlannerTurnState = {}
+    let localLlmFailures = 0
 
-    const tryExpenseBootstrap = (): AssistantToolCall | undefined => {
-      if (
-        !expenseIntent
-        || !shouldAutoStartExpenseWorkflow(expenseIntent)
-        || currentPreview
-        || expenseBootstrapDone
-      ) {
-        return undefined
-      }
-      expenseBootstrapDone = true
-      return makeManualToolCall({
-        type: 'tool_call',
-        name: 'fairpay_list_groups',
-        arguments: {},
-      })
+    const plannerOptions = {
+      language,
+      actorEmail: this.deps.actorEmail,
+      actorName: this.deps.actorName,
+      actorIdentityConfirmed: this.deps.actorIdentityConfirmed,
+      hasPendingPreview: Boolean(currentPreview),
+    }
+
+    const runPlanner = (): ReturnType<typeof planDeterministicStep> => {
+      const debt = planDebtSummaryStep(displayUserText, plannerState)
+      if (debt) return debt
+      return planDeterministicStep(expenseContext, plannerState, plannerOptions)
     }
 
     for (let round = 0; round <= MAX_TOOL_ROUNDS; round += 1) {
-      let toolCall = tryExpenseBootstrap()
+      let toolCall: AssistantToolCall | undefined
+
+      const plannerStep = runPlanner()
+      if (plannerStep?.kind === 'final') {
+        updatedHistory.push({ role: 'assistant', content: plannerStep.content })
+        return {
+          text: plannerStep.content,
+          updatedHistory,
+          pendingPreview,
+          blockedPreviewReplacement,
+        }
+      }
+      if (plannerStep?.kind === 'delegate_llm') {
+        // fall through to LLM
+      } else if (plannerStep?.kind === 'tool') {
+        toolCall = makeManualToolCall({
+          type: 'tool_call',
+          name: plannerStep.name,
+          arguments: plannerStep.arguments,
+        })
+      }
 
       if (!toolCall) {
-        const completion = await this.deps.chatFn(
+        const chatTarget = this.deps.cloudChatFn && localLlmFailures >= 2
+          ? this.deps.cloudChatFn
+          : this.deps.chatFn
+        const completion = await chatTarget(
           conversationForModel(updatedHistory, modelUserText, displayUserText),
           {
             tools: PHASE3_TOOL_DEFINITIONS,
@@ -248,6 +289,10 @@ export class FairPayChatOrchestrator {
           const directive = parseAssistantDirective(text)
 
           if (!directive) {
+            localLlmFailures += 1
+            if (this.deps.cloudChatFn && localLlmFailures < 3) {
+              continue
+            }
             const safeText = 'I could not parse the local model response safely. Please try again.'
             updatedHistory.push({ role: 'assistant', content: safeText })
             return { text: safeText, updatedHistory, pendingPreview, blockedPreviewReplacement }
@@ -255,10 +300,26 @@ export class FairPayChatOrchestrator {
 
           if (directive.type === 'final') {
             if (isEchoOfUserMessage(directive.content, displayUserText)) {
-              const bootstrap = tryExpenseBootstrap()
-              if (bootstrap) {
-                toolCall = bootstrap
-              } else {
+              localLlmFailures += 1
+              const replanned = runPlanner()
+              if (replanned?.kind === 'tool') {
+                toolCall = makeManualToolCall({
+                  type: 'tool_call',
+                  name: replanned.name,
+                  arguments: replanned.arguments,
+                })
+              } else if (
+                shouldAutoStartExpenseWorkflow(expenseIntent, this.turnTransactionScope)
+                && replanned?.kind === 'final'
+              ) {
+                updatedHistory.push({ role: 'assistant', content: replanned.content })
+                return {
+                  text: replanned.content,
+                  updatedHistory,
+                  pendingPreview,
+                  blockedPreviewReplacement,
+                }
+              } else if (!this.deps.cloudChatFn || localLlmFailures >= 3) {
                 const safeText = buildEchoRecoveryMessage(language)
                 updatedHistory.push({ role: 'assistant', content: safeText })
                 return {
@@ -267,6 +328,8 @@ export class FairPayChatOrchestrator {
                   pendingPreview,
                   blockedPreviewReplacement,
                 }
+              } else {
+                continue
               }
             } else {
               updatedHistory.push({ role: 'assistant', content: directive.content })
@@ -286,6 +349,10 @@ export class FairPayChatOrchestrator {
       if (!toolCall) continue
 
       const toolResult = await this.executeToolCall(toolCall, currentPreview)
+      plannerState = {
+        lastToolName: toolCall.function.name,
+        lastToolData: toolResult.modelData,
+      }
       if (toolResult.pendingPreview) {
         pendingPreview = toolResult.pendingPreview
         currentPreview = toolResult.pendingPreview
@@ -296,6 +363,19 @@ export class FairPayChatOrchestrator {
         { role: 'assistant', content: null, tool_calls: [toolCall] },
         { role: 'tool', tool_call_id: toolCall.id, content: toolEnvelope(toolResult.modelData) },
       )
+
+      if (pendingPreview) {
+        const doneText = language?.startsWith('vi')
+          ? 'Preview chi tiêu nhóm đã sẵn sàng — hãy xác nhận trên thẻ bên dưới.'
+          : 'Group expense preview is ready — confirm using the card below.'
+        updatedHistory.push({ role: 'assistant', content: doneText })
+        return {
+          text: doneText,
+          updatedHistory,
+          pendingPreview,
+          blockedPreviewReplacement,
+        }
+      }
     }
 
     const text = 'I could not complete this workflow safely. Please try again with fewer changes.'
@@ -313,6 +393,9 @@ export class FairPayChatOrchestrator {
       'fairpay_check_expense_duplicates',
     ])
     if (!expenseTools.has(name) || !this.deps.actorIdentityConfirmed) return args
+    if (this.turnTransactionScope === 'personal' || this.turnTransactionScope === 'loan') {
+      return args
+    }
 
     const next = { ...args }
     if (next.actor_confirmed !== true) next.actor_confirmed = true
