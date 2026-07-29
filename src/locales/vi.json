@@ -2173,6 +2173,11 @@
       "dinnerExpense": "Chuẩn bị chi phí bữa tối cho 4 người",
       "groupsAttention": "Nhóm nào cần xem xét?"
     },
+    "cloudAssist": {
+      "title": "Hỗ trợ cloud",
+      "description": "Tùy chọn dự phòng trên cloud khi mô hình trên thiết bị gặp khó. Dùng phiên FairPay của bạn trên máy chủ — chưa khả dụng.",
+      "badge": "Sắp ra mắt"
+    },
     "modelPicker": {
       "searchPlaceholder": "Tìm kiếm mô hình…",
       "noResults": "Không tìm thấy mô hình nào.",

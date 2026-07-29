@@ -2173,6 +2173,11 @@
       "dinnerExpense": "Prepare dinner expense for 4 people",
       "groupsAttention": "Which groups need attention?"
     },
+    "cloudAssist": {
+      "title": "Cloud assist",
+      "description": "Optional cloud fallback when the on-device model struggles. Uses your FairPay session on our servers — not available yet.",
+      "badge": "Coming soon"
+    },
     "modelPicker": {
       "searchPlaceholder": "Search models…",
       "noResults": "No models found.",

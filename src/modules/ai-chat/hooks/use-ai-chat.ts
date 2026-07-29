@@ -18,6 +18,7 @@ import { journeyTracking } from "@/lib/journey-tracking";
 import type { Profile } from "@/modules/profile/types";
 import type { AgentPreviewResponse } from "@/lib/agent-api/types";
 import type { ChatMessage } from "../types";
+import { createCloudOrchestratorChatFn } from "../orchestrator/cloud-orchestrator-client";
 import {
   buildSystemPrompt,
   FairPayChatOrchestrator,
@@ -261,6 +262,7 @@ export function useAiChat(): UseAiChatReturn {
 
     orchestratorRef.current = new FairPayChatOrchestrator({
       chatFn: chatFnWithStreaming,
+      cloudChatFn: createCloudOrchestratorChatFn(getAccessToken),
       mcpClient,
       legacyExecutor,
       actorIdentityConfirmed: Boolean(identity?.email?.trim() || identity?.full_name?.trim()),
