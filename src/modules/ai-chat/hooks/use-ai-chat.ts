@@ -36,6 +36,7 @@ import {
   removeConversation,
   saveStore,
   upsertConversation,
+  messagesFingerprint,
 } from "../utils/chat-storage";
 import {
   buildReceiptDraftPrompt,
@@ -138,6 +139,10 @@ export function useAiChat(): UseAiChatReturn {
   const historyRef = useRef<ConversationMessage[]>(
     activeConversation?.history ?? [{ role: "system", content: systemPrompt }],
   );
+  const messagesFingerprintRef = useRef<string | null>(null);
+  if (messagesFingerprintRef.current === null) {
+    messagesFingerprintRef.current = messagesFingerprint(messages);
+  }
   const conversationIdRef = useRef<string | null>(conversationId);
   const orchestratorRef = useRef<FairPayChatOrchestrator | null>(null);
 
@@ -177,17 +182,25 @@ export function useAiChat(): UseAiChatReturn {
 
   useEffect(() => {
     if (!conversationId || messages.length === 0) return;
+    const fingerprint = messagesFingerprint(messages);
+    const touchActivity = fingerprint !== messagesFingerprintRef.current;
+    messagesFingerprintRef.current = fingerprint;
+
+    const existing = storeRef.current.conversations.find((c) => c.id === conversationId);
     const conv: Conversation = {
       id: conversationId,
       title: deriveTitle(messages),
-      createdAt: activeConversation?.createdAt ?? new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: existing?.createdAt ?? activeConversation?.createdAt ?? new Date().toISOString(),
+      updatedAt: touchActivity
+        ? new Date().toISOString()
+        : (existing?.updatedAt ?? new Date().toISOString()),
       messages,
       history: historyRef.current,
     };
     const nextStore = upsertConversation(
       { ...storeRef.current, activeId: conversationId },
       conv,
+      { touchActivity },
     );
     setStore(nextStore);
     saveStore(nextStore);
@@ -279,6 +292,7 @@ export function useAiChat(): UseAiChatReturn {
   const selectConversation = useCallback((id: string) => {
     const conv = storeRef.current.conversations.find((c) => c.id === id);
     if (!conv) return;
+    messagesFingerprintRef.current = messagesFingerprint(conv.messages);
     setMessages(conv.messages);
     setConversationId(conv.id);
     setError(null);

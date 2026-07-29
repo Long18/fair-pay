@@ -27,7 +27,7 @@ function groupKeyFor(iso: string, now = new Date()): ConversationGroupKey {
 
 const GROUP_ORDER: ConversationGroupKey[] = ["today", "yesterday", "previous7Days", "older"];
 
-/** Group conversations by updatedAt into Today / Yesterday / 7 Days Ago / Older. */
+/** Group conversations by createdAt (start date); sort within bucket by recent activity. */
 export function groupConversations(
   conversations: Conversation[],
   now = new Date(),
@@ -36,8 +36,15 @@ export function groupConversations(
   for (const key of GROUP_ORDER) buckets.set(key, []);
 
   for (const conv of conversations) {
-    const key = groupKeyFor(conv.updatedAt || conv.createdAt, now);
+    const key = groupKeyFor(conv.createdAt || conv.updatedAt, now);
     buckets.get(key)!.push(conv);
+  }
+
+  for (const key of GROUP_ORDER) {
+    const list = buckets.get(key);
+    if (list) {
+      list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    }
   }
 
   return GROUP_ORDER.map((key) => ({

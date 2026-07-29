@@ -25,12 +25,47 @@ export interface ChatStore {
 }
 
 /** Read the store from localStorage. Runs migration from the v1 single-chat format if needed. */
+function parseConvIdTimestamp(id: string): string | null {
+  const match = /^conv-(\d+)-/.exec(id);
+  if (!match?.[1]) return null;
+  const ms = Number(match[1]);
+  if (!Number.isFinite(ms)) return null;
+  return new Date(ms).toISOString();
+}
+
+/** Ensure createdAt exists for sidebar grouping by conversation start date. */
+export function normalizeConversation(conv: Conversation): Conversation {
+  const createdAt =
+    conv.createdAt
+    || conv.updatedAt
+    || parseConvIdTimestamp(conv.id)
+    || new Date().toISOString();
+  return {
+    ...conv,
+    createdAt,
+    updatedAt: conv.updatedAt || createdAt,
+  };
+}
+
+export function normalizeStore(store: ChatStore): ChatStore {
+  return {
+    ...store,
+    conversations: store.conversations.map(normalizeConversation),
+  };
+}
+
+export function messagesFingerprint(messages: readonly ChatMessage[]): string {
+  if (messages.length === 0) return "empty";
+  const last = messages[messages.length - 1];
+  return `${messages.length}:${last.id}:${last.content.length}`;
+}
+
 export function loadStore(): ChatStore | null {
   try {
     const raw = window.localStorage.getItem(STORE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as ChatStore;
-      if (parsed && Array.isArray(parsed.conversations)) return parsed;
+      if (parsed && Array.isArray(parsed.conversations)) return normalizeStore(parsed);
     }
     // Migrate v1 → v2 if the old blob exists and v2 doesn't.
     const legacyRaw = window.localStorage.getItem(LEGACY_KEY);
@@ -98,16 +133,30 @@ export function deriveTitle(messages: ChatMessage[]): string {
   return oneLine.length > MAX_TITLE_LEN ? `${oneLine.slice(0, MAX_TITLE_LEN - 1)}…` : oneLine;
 }
 
+export interface UpsertConversationOptions {
+  /** When false, preserve the existing updatedAt (e.g. switching chats in the sidebar). */
+  touchActivity?: boolean;
+}
+
 /** Update an existing conversation in the store, or insert if missing. */
-export function upsertConversation(store: ChatStore, conv: Conversation): ChatStore {
+export function upsertConversation(
+  store: ChatStore,
+  conv: Conversation,
+  options: UpsertConversationOptions = {},
+): ChatStore {
+  const touchActivity = options.touchActivity !== false;
   const idx = store.conversations.findIndex((c) => c.id === conv.id);
   const next = store.conversations.slice();
+  const normalized = normalizeConversation(conv);
+
   if (idx === -1) {
-    next.unshift(conv);
+    next.unshift(normalized);
   } else {
-    next[idx] = conv;
+    const previous = next[idx];
+    next[idx] = touchActivity
+      ? normalized
+      : { ...normalized, updatedAt: previous.updatedAt };
   }
-  // Keep most recent first
   next.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   return { ...store, conversations: next };
 }

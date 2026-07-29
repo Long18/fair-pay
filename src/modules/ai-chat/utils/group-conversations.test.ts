@@ -15,6 +15,27 @@ function conv(partial: Partial<Conversation> & Pick<Conversation, "id" | "update
 describe("groupConversations", () => {
   const now = new Date("2026-07-17T15:00:00.000Z");
 
+  it("groups by createdAt not last activity", () => {
+    const conversations = [
+      conv({
+        id: "old-active",
+        createdAt: "2026-06-01T10:00:00.000Z",
+        updatedAt: "2026-07-17T10:00:00.000Z",
+        title: "Old thread",
+      }),
+      conv({
+        id: "new",
+        createdAt: "2026-07-17T08:00:00.000Z",
+        updatedAt: "2026-07-17T08:00:00.000Z",
+        title: "New today",
+      }),
+    ];
+
+    const groups = groupConversations(conversations, now);
+    expect(groups.find((g) => g.key === "today")?.conversations[0].id).toBe("new");
+    expect(groups.find((g) => g.key === "older")?.conversations[0].id).toBe("old-active");
+  });
+
   it("buckets into today / yesterday / previous 7 days / older", () => {
     const conversations = [
       conv({ id: "1", updatedAt: "2026-07-17T10:00:00.000Z", title: "Today" }),

@@ -33,6 +33,12 @@ const GROUP_I18N: Record<ConversationGroupKey, string> = {
   older: "aiChat.sidebar.older",
 };
 
+function formatSidebarDate(iso: string, locale: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" }).format(date);
+}
+
 export const ChatSidebar = memo(function ChatSidebar({
   conversations,
   activeId,
@@ -41,7 +47,7 @@ export const ChatSidebar = memo(function ChatSidebar({
   onNewChat,
   className,
 }: ChatSidebarProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { tap } = useHaptics();
   const [query, setQuery] = useState("");
 
@@ -116,9 +122,14 @@ export const ChatSidebar = memo(function ChatSidebar({
                               tap();
                               onSelect(conv.id);
                             }}
-                            className="min-w-0 flex-1 truncate px-2.5 py-2 text-left text-sm font-medium"
+                            className="min-w-0 flex-1 px-2.5 py-2 text-left"
                           >
-                            {conv.title || t("aiChat.title")}
+                            <span className="block truncate text-sm font-medium">
+                              {conv.title || t("aiChat.title")}
+                            </span>
+                            <span className="block truncate text-[10px] text-muted-foreground">
+                              {formatSidebarDate(conv.createdAt, i18n.language)}
+                            </span>
                           </button>
                           <button
                             type="button"
