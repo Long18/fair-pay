@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import FairPayChatOrchestrator from "../FairPayChatOrchestrator";
+import { parseExpenseIntent } from "../../utils/vietnamese-expense-intent";
 import { FAIRPAY_SYSTEM_PROMPT } from "../system-prompt";
 import type { AssistantChatFn, ConversationMessage, LegacyToolExecutor, McpClientInterface } from "../types";
 import type { AgentPreviewResponse } from "@/lib/agent-api/types";
@@ -171,6 +172,55 @@ describe("FairPayChatOrchestrator manual JSON protocol", () => {
 
     expect(mcpClient.callTool).toHaveBeenCalledTimes(1);
     expect(result.text).toBe("Which Alex should I use?");
+  });
+
+  it("bootstraps fairpay_list_groups without LLM when expense intent is detected", async () => {
+    const mcpClient: McpClientInterface = {
+      callTool: vi.fn(async (name) => (name === "fairpay_list_groups" ? { groups: [] } : {})),
+    };
+    const chatFn = vi
+      .fn<AssistantChatFn>()
+      .mockResolvedValue(completion(JSON.stringify({ type: "final", content: "Đã tải nhóm." })));
+    const intent = parseExpenseIntent("Thêm giao dịch mua chuối 10.000 VND");
+
+    const orch = new FairPayChatOrchestrator({
+      chatFn,
+      mcpClient,
+      legacyExecutor: vi.fn(async () => ({})),
+      actorIdentityConfirmed: true,
+    });
+
+    await orch.processTurn("Thêm giao dịch mua chuối 10.000 VND", baseHistory(), null, {
+      displayUserText: "Thêm giao dịch mua chuối 10.000 VND",
+      expenseIntent: intent,
+    });
+
+    expect(mcpClient.callTool).toHaveBeenNthCalledWith(1, "fairpay_list_groups", {});
+  });
+
+  it("returns recovery text when the model echoes the user after bootstrap", async () => {
+    const mcpClient: McpClientInterface = {
+      callTool: vi.fn(async (name) => (name === "fairpay_list_groups" ? { groups: [] } : {})),
+    };
+    const chatFn = vi
+      .fn<AssistantChatFn>()
+      .mockResolvedValue(completion("Thêm giao dịch mua chuối 10.000 VND"));
+    const intent = parseExpenseIntent("Thêm giao dịch mua chuối 10.000 VND");
+
+    const orch = new FairPayChatOrchestrator({
+      chatFn,
+      mcpClient,
+      legacyExecutor: vi.fn(async () => ({})),
+    });
+
+    const result = await orch.processTurn("Thêm giao dịch mua chuối 10.000 VND", baseHistory(), null, {
+      displayUserText: "Thêm giao dịch mua chuối 10.000 VND",
+      expenseIntent: intent,
+      language: "vi",
+    });
+
+    expect(result.text).toContain("Hermes 3");
+    expect(result.text).not.toBe("Thêm giao dịch mua chuối 10.000 VND");
   });
 
   it("injects actor_confirmed and group transaction_type when identity is confirmed in session", async () => {

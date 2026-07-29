@@ -87,6 +87,111 @@ function parseMemberHint(text: string): string | null {
   return name.length >= 2 ? name : null;
 }
 
+const ADD_EXPENSE_EN_RE =
+  /\b(add|create|record|log)\b[\s\S]{0,40}\b(transaction|expense)\b/i;
+
+const DATE_ISO_RE = /\b(?:dated|date)\s+(\d{4}-\d{2}-\d{2})\b/i;
+
+const EN_TOTAL_AMOUNT_RE = /\btotal\s+amount\s*=\s*([\d,]+)/i;
+const EN_UNIT_PRICE_RE = /\bunit\s+price\s*=\s*([\d,]+)/i;
+const EN_QUANTITY_RE = /\bquantity\s*=\s*(\d+)/i;
+const EN_PARTY_RE = /\b(?:buyer\/party|party|with)\s+(?:is\s+)?['"]([^'"]+)['"]/i;
+const EN_ITEM_RE = /\bitem\s+(?:purchased\s+)?is\s+(.+?)(?=,|\s+quantity|\s+unit|\s+total|$)/i;
+
+function parseEnglishExpenseFields(text: string): Partial<ParsedVietnameseExpenseIntent> {
+  const trimmed = text.trim();
+  const partial: Partial<ParsedVietnameseExpenseIntent> = {};
+
+  if (ADD_EXPENSE_EN_RE.test(trimmed)) {
+    partial.looks_like_add_expense = true;
+  }
+
+  const iso = DATE_ISO_RE.exec(trimmed);
+  if (iso?.[1]) partial.expense_date = iso[1];
+
+  const total = EN_TOTAL_AMOUNT_RE.exec(trimmed) ?? EN_UNIT_PRICE_RE.exec(trimmed);
+  if (total?.[1]) {
+    const parsed = normalizeAmountToken(total[1]);
+    if (parsed !== null) partial.amount_vnd = parsed;
+  }
+
+  const qty = EN_QUANTITY_RE.exec(trimmed);
+  if (qty?.[1]) partial.quantity = Number(qty[1]);
+
+  const party = EN_PARTY_RE.exec(trimmed);
+  if (party?.[1]) partial.member_name_hint = party[1].trim();
+
+  const item = EN_ITEM_RE.exec(trimmed);
+  if (item?.[1]) {
+    const desc = item[1].trim();
+    if (desc.length >= 2) partial.item_description = desc.slice(0, 120);
+  }
+
+  return partial;
+}
+
+function mergeExpenseIntent(
+  base: ParsedVietnameseExpenseIntent,
+  extra: Partial<ParsedVietnameseExpenseIntent>,
+): ParsedVietnameseExpenseIntent {
+  return {
+    looks_like_add_expense: base.looks_like_add_expense || extra.looks_like_add_expense === true,
+    amount_vnd: extra.amount_vnd ?? base.amount_vnd,
+    expense_date: extra.expense_date ?? base.expense_date,
+    quantity: extra.quantity ?? base.quantity,
+    item_description: extra.item_description ?? base.item_description,
+    member_name_hint: extra.member_name_hint ?? base.member_name_hint,
+  };
+}
+
+export function parseExpenseIntent(text: string): ParsedVietnameseExpenseIntent {
+  return mergeExpenseIntent(parseVietnameseExpenseIntent(text), parseEnglishExpenseFields(text));
+}
+
+export function shouldAutoStartExpenseWorkflow(
+  intent: ParsedVietnameseExpenseIntent,
+): boolean {
+  return intent.looks_like_add_expense || intent.amount_vnd !== null;
+}
+
+function normalizeForEchoCompare(value: string): string {
+  return value
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/[“”"']/g, "")
+    .trim();
+}
+
+/** True when the model parrots the user instead of using tools / JSON contract. */
+export function isEchoOfUserMessage(assistantText: string, userText: string): boolean {
+  const assistant = normalizeForEchoCompare(assistantText);
+  const user = normalizeForEchoCompare(userText);
+  if (!assistant || !user) return false;
+  if (assistant === user) return true;
+  if (user.length >= 12 && assistant.includes(user)) return true;
+  if (assistant.length >= 12 && user.includes(assistant) && assistant.length / user.length >= 0.85) {
+    return true;
+  }
+  return false;
+}
+
+export function buildEchoRecoveryMessage(language?: string): string {
+  const vi = (language ?? "").toLowerCase().startsWith("vi");
+  if (vi) {
+    return (
+      "Mình không thể xử lý yêu cầu này với mô hình hiện tại (thường gặp với Llama 1B). " +
+      "Hãy chọn **Hermes 3 · Llama 3.2 3B** trong bộ chọn model, rồi gửi lại kèm **tên nhóm** " +
+      "(ví dụ: «Thêm chi tiêu nhóm Du lịch, 10.000 VND, mua chuối»). Chi tiêu nhóm cần thành viên Tuyến trong nhóm đó."
+    );
+  }
+  return (
+    "I could not process this with the current local model (common on Llama 1B). " +
+    "Switch to **Hermes 3 · Llama 3.2 3B**, then retry with a **group name** " +
+    '(e.g. "Add expense to Trip group: 10,000 VND, 1 banana, split with Tuyến").'
+  );
+}
+
 export function parseVietnameseExpenseIntent(text: string): ParsedVietnameseExpenseIntent {
   const trimmed = text.trim();
   return {

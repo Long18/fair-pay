@@ -1,4 +1,5 @@
 import type { AgentPreviewResponse } from "@/lib/agent-api/types";
+import type { ParsedVietnameseExpenseIntent } from "../utils/vietnamese-expense-intent";
 
 export interface AssistantToolCall {
   id: string;
@@ -50,6 +51,13 @@ export interface OrchestratorDeps {
   legacyExecutor: LegacyToolExecutor;
   /** When true, orchestrator injects actor_confirmed and group transaction_type for expense tools. */
   actorIdentityConfirmed?: boolean;
+}
+
+export interface ProcessTurnOptions {
+  /** Text shown in chat history (without machine hints). */
+  displayUserText?: string;
+  expenseIntent?: ParsedVietnameseExpenseIntent | null;
+  language?: string;
 }
 
 export interface ProcessTurnResult {

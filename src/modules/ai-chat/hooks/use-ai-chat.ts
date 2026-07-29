@@ -43,7 +43,7 @@ import {
 } from "../utils/receipt-ocr-stub";
 import {
   appendExpenseIntentToUserMessage,
-  parseVietnameseExpenseIntent,
+  parseExpenseIntent,
 } from "../utils/vietnamese-expense-intent";
 
 export type { Conversation } from "../utils/chat-storage";
@@ -410,12 +410,17 @@ export function useAiChat(): UseAiChatReturn {
       };
 
       try {
-        const expenseIntent = parseVietnameseExpenseIntent(trimmed);
+        const expenseIntent = parseExpenseIntent(trimmed);
         const orchestratorUserText = appendExpenseIntentToUserMessage(trimmed, expenseIntent);
         const result = await getOrchestrator().processTurn(
           orchestratorUserText,
           historyRef.current,
           pendingPreview,
+          {
+            displayUserText: trimmed,
+            expenseIntent,
+            language,
+          },
         );
         historyRef.current = result.updatedHistory;
 
@@ -460,7 +465,7 @@ export function useAiChat(): UseAiChatReturn {
         setIsLoading(false);
       }
     },
-    [conversationId, getOrchestrator, identity, localLlmStatus, pendingPreview, selectedModel],
+    [conversationId, getOrchestrator, identity, language, localLlmStatus, pendingPreview, selectedModel],
   );
 
   const attachReceiptImage = useCallback(

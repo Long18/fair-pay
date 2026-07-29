@@ -3,8 +3,15 @@ import type {
   AssistantToolCall,
   ConversationMessage,
   OrchestratorDeps,
+  ProcessTurnOptions,
   ProcessTurnResult,
 } from './types'
+import {
+  buildEchoRecoveryMessage,
+  isEchoOfUserMessage,
+  shouldAutoStartExpenseWorkflow,
+  type ParsedVietnameseExpenseIntent,
+} from '../utils/vietnamese-expense-intent'
 import { FORBIDDEN_MCP_TOOLS } from './mcp-client'
 import {
   LEGACY_TOOL_NAMES,
@@ -165,53 +172,118 @@ function previewModelData(result: AgentPreviewResponse): Record<string, unknown>
   }
 }
 
+function conversationForModel(
+  messages: readonly ConversationMessage[],
+  modelUserText: string,
+  displayUserText: string,
+): ConversationMessage[] {
+  if (modelUserText === displayUserText) return [...messages]
+  const copy = [...messages]
+  for (let i = copy.length - 1; i >= 0; i -= 1) {
+    if (copy[i].role === 'user') {
+      copy[i] = { ...copy[i], content: modelUserText }
+      return copy
+    }
+  }
+  return copy
+}
+
 export class FairPayChatOrchestrator {
   private readonly ambiguousMembersByGroup = new Map<string, Map<string, AmbiguousCandidate>>()
 
   constructor(private readonly deps: OrchestratorDeps) {}
 
   async processTurn(
-    userText: string,
+    modelUserText: string,
     history: readonly ConversationMessage[],
     activePendingPreview: AgentPreviewResponse | null,
+    options: ProcessTurnOptions = {},
   ): Promise<ProcessTurnResult> {
+    const displayUserText = options.displayUserText ?? modelUserText
+    const expenseIntent: ParsedVietnameseExpenseIntent | null =
+      options.expenseIntent ?? null
+    const language = options.language
+
     const updatedHistory: ConversationMessage[] = [
       ...history,
-      { role: 'user', content: userText },
+      { role: 'user', content: displayUserText },
     ]
     let pendingPreview: AgentPreviewResponse | null = null
     let currentPreview = activePendingPreview
     let blockedPreviewReplacement = false
+    let expenseBootstrapDone = false
+
+    const tryExpenseBootstrap = (): AssistantToolCall | undefined => {
+      if (
+        !expenseIntent
+        || !shouldAutoStartExpenseWorkflow(expenseIntent)
+        || currentPreview
+        || expenseBootstrapDone
+      ) {
+        return undefined
+      }
+      expenseBootstrapDone = true
+      return makeManualToolCall({
+        type: 'tool_call',
+        name: 'fairpay_list_groups',
+        arguments: {},
+      })
+    }
 
     for (let round = 0; round <= MAX_TOOL_ROUNDS; round += 1) {
-      const completion = await this.deps.chatFn(updatedHistory, {
-        tools: PHASE3_TOOL_DEFINITIONS,
-        model: AI_MODEL,
-      })
-      let toolCall = completion.message?.tool_calls?.[0]
+      let toolCall = tryExpenseBootstrap()
 
       if (!toolCall) {
-        const text = completion.message?.content ?? completion.text ?? ''
-        const directive = parseAssistantDirective(text)
+        const completion = await this.deps.chatFn(
+          conversationForModel(updatedHistory, modelUserText, displayUserText),
+          {
+            tools: PHASE3_TOOL_DEFINITIONS,
+            model: AI_MODEL,
+          },
+        )
+        toolCall = completion.message?.tool_calls?.[0]
 
-        if (!directive) {
-          const safeText = 'I could not parse the local model response safely. Please try again.'
-          updatedHistory.push({ role: 'assistant', content: safeText })
-          return { text: safeText, updatedHistory, pendingPreview, blockedPreviewReplacement }
-        }
+        if (!toolCall) {
+          const text = completion.message?.content ?? completion.text ?? ''
+          const directive = parseAssistantDirective(text)
 
-        if (directive.type === 'final') {
-          updatedHistory.push({ role: 'assistant', content: directive.content })
-          return {
-            text: directive.content,
-            updatedHistory,
-            pendingPreview,
-            blockedPreviewReplacement,
+          if (!directive) {
+            const safeText = 'I could not parse the local model response safely. Please try again.'
+            updatedHistory.push({ role: 'assistant', content: safeText })
+            return { text: safeText, updatedHistory, pendingPreview, blockedPreviewReplacement }
+          }
+
+          if (directive.type === 'final') {
+            if (isEchoOfUserMessage(directive.content, displayUserText)) {
+              const bootstrap = tryExpenseBootstrap()
+              if (bootstrap) {
+                toolCall = bootstrap
+              } else {
+                const safeText = buildEchoRecoveryMessage(language)
+                updatedHistory.push({ role: 'assistant', content: safeText })
+                return {
+                  text: safeText,
+                  updatedHistory,
+                  pendingPreview,
+                  blockedPreviewReplacement,
+                }
+              }
+            } else {
+              updatedHistory.push({ role: 'assistant', content: directive.content })
+              return {
+                text: directive.content,
+                updatedHistory,
+                pendingPreview,
+                blockedPreviewReplacement,
+              }
+            }
+          } else {
+            toolCall = makeManualToolCall(directive)
           }
         }
-
-        toolCall = makeManualToolCall(directive)
       }
+
+      if (!toolCall) continue
 
       const toolResult = await this.executeToolCall(toolCall, currentPreview)
       if (toolResult.pendingPreview) {
