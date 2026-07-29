@@ -43,8 +43,11 @@ import {
   extractReceiptDraftFromFilename,
 } from "../utils/receipt-ocr-stub";
 import {
+  parseExpenseContext,
+  effectiveTransactionScope,
+} from "../utils/transaction-scope";
+import {
   appendExpenseIntentToUserMessage,
-  parseExpenseIntent,
 } from "../utils/vietnamese-expense-intent";
 
 export type { Conversation } from "../utils/chat-storage";
@@ -424,15 +427,22 @@ export function useAiChat(): UseAiChatReturn {
       };
 
       try {
-        const expenseIntent = parseExpenseIntent(trimmed);
-        const orchestratorUserText = appendExpenseIntentToUserMessage(trimmed, expenseIntent);
+        const expenseContext = parseExpenseContext(trimmed);
+        const scope = effectiveTransactionScope(expenseContext);
+        const orchestratorUserText = appendExpenseIntentToUserMessage(
+          trimmed,
+          expenseContext.intent,
+          scope,
+        );
         const result = await getOrchestrator().processTurn(
           orchestratorUserText,
           historyRef.current,
           pendingPreview,
           {
             displayUserText: trimmed,
-            expenseIntent,
+            expenseIntent: expenseContext.intent,
+            expenseContext,
+            transactionScope: scope,
             language,
           },
         );

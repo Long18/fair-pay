@@ -3,6 +3,8 @@
  * Reduces mistakes like reading "10.000" as 1.000 or re-asking for quantity.
  */
 
+import type { TransactionScope } from "./transaction-scope";
+
 export interface ParsedVietnameseExpenseIntent {
   looks_like_add_expense: boolean;
   amount_vnd: number | null;
@@ -150,7 +152,9 @@ export function parseExpenseIntent(text: string): ParsedVietnameseExpenseIntent 
 
 export function shouldAutoStartExpenseWorkflow(
   intent: ParsedVietnameseExpenseIntent,
+  scope: TransactionScope = "unknown",
 ): boolean {
+  if (scope === "personal" || scope === "loan") return false;
   return intent.looks_like_add_expense || intent.amount_vnd !== null;
 }
 
@@ -180,15 +184,17 @@ export function buildEchoRecoveryMessage(language?: string): string {
   const vi = (language ?? "").toLowerCase().startsWith("vi");
   if (vi) {
     return (
-      "Mình không thể xử lý yêu cầu này với mô hình hiện tại (thường gặp với Llama 1B). " +
-      "Hãy chọn **Hermes 3 · Llama 3.2 3B** trong bộ chọn model, rồi gửi lại kèm **tên nhóm** " +
-      "(ví dụ: «Thêm chi tiêu nhóm Du lịch, 10.000 VND, mua chuối»). Chi tiêu nhóm cần thành viên Tuyến trong nhóm đó."
+      "Mình chưa xử lý được yêu cầu này. Với **chi tiêu nhóm**, hãy gửi lại kèm **tên nhóm** " +
+      "(ví dụ: «Thêm chi tiêu nhóm Du lịch, 10.000 VND, mua chuối»). " +
+      "Nếu là **chi tiêu cá nhân / vay (loan)**, dùng mục **Bạn bè** trong FairPay — agent chỉ preview chi tiêu nhóm. " +
+      "Nếu dùng model local rất nhỏ (1B), thử **Hermes 3 · Llama 3.2 3B** hoặc gửi lại câu ngắn hơn."
     );
   }
   return (
-    "I could not process this with the current local model (common on Llama 1B). " +
-    "Switch to **Hermes 3 · Llama 3.2 3B**, then retry with a **group name** " +
-    '(e.g. "Add expense to Trip group: 10,000 VND, 1 banana, split with Tuyến").'
+    "I could not finish this request. For **group expenses**, retry with a **group name** " +
+    '(e.g. "Add expense to Trip group: 10,000 VND, bananas"). ' +
+    "For **personal or loan** expenses, use **Friends** in FairPay — the agent only previews group expenses. " +
+    "On very small local models (1B), try **Hermes 3 · Llama 3.2 3B** or a shorter message."
   );
 }
 
@@ -224,13 +230,17 @@ export function intentHasStructuredHints(intent: ParsedVietnameseExpenseIntent):
 export function appendExpenseIntentToUserMessage(
   userText: string,
   intent: ParsedVietnameseExpenseIntent,
+  scope: TransactionScope = "unknown",
 ): string {
   if (!intentHasStructuredHints(intent)) return userText;
-  const payload = {
+  const payload: Record<string, unknown> = {
     ...intent,
+    transaction_scope: scope,
     note:
       "amount_vnd is integer VND (10.000 VND => 10000). For line-item expenses, use amount_vnd as the total; quantity is descriptive only unless user asked per-unit pricing.",
-    default_transaction_type: "group",
   };
+  if (scope === "group" || scope === "unknown") {
+    payload.default_transaction_type = "group";
+  }
   return `${userText.trim()}\n\n[FairPay parsed hints — use when consistent with the user message]\n${JSON.stringify(payload)}`;
 }
