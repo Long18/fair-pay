@@ -231,6 +231,23 @@ export class FairPayChatOrchestrator {
     return { text, updatedHistory, pendingPreview, blockedPreviewReplacement }
   }
 
+  private applySessionWorkflowDefaults(
+    name: string,
+    args: Record<string, unknown>,
+  ): Record<string, unknown> {
+    const expenseTools = new Set([
+      'fairpay_preview_expense',
+      'fairpay_resolve_expense_context',
+      'fairpay_check_expense_duplicates',
+    ])
+    if (!expenseTools.has(name) || !this.deps.actorIdentityConfirmed) return args
+
+    const next = { ...args }
+    if (next.actor_confirmed !== true) next.actor_confirmed = true
+    if (next.transaction_type === undefined) next.transaction_type = 'group'
+    return next
+  }
+
   private async executeToolCall(
     toolCall: AssistantToolCall,
     activePreview: AgentPreviewResponse | null,
@@ -240,7 +257,8 @@ export class FairPayChatOrchestrator {
     blockedPreviewReplacement: boolean
   }> {
     const name = toolCall.function.name
-    const args = parseArgs(toolCall.function.arguments)
+    let args = parseArgs(toolCall.function.arguments)
+    args = this.applySessionWorkflowDefaults(name, args)
 
     if (FORBIDDEN_MCP_TOOLS.has(name)) {
       return {

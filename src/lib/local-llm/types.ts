@@ -16,8 +16,8 @@ import type { ConversationMessage } from "@/modules/ai-chat/orchestrator";
  *  - `recommended`   – marks the curated "starter" model for its family
  */
 
-/** Fast starter (~0.9 GB VRAM). Existing users who already picked Hermes keep it via localStorage. */
-export const DEFAULT_WEB_LLM_MODEL = "Llama-3.2-1B-Instruct-q4f16_1-MLC";
+/** Default for expense tool workflows (~2.2 GB VRAM). Users on 1B keep prior choice via localStorage. */
+export const DEFAULT_WEB_LLM_MODEL = "Hermes-3-Llama-3.2-3B-q4f16_1-MLC";
 export const WEB_LLM_COMPAT_MODEL = "TinyLlama-1.1B-Chat-v1.0-q4f16_1-MLC-1k";
 export const WEB_LLM_MODEL_STORAGE_KEY = "fairpay:local-llm:model";
 
@@ -65,8 +65,7 @@ export const WEB_LLM_MODEL_LIST: readonly WebLlmModelEntry[] = [
     lowResource: true,
     contextLength: 4096,
     quantization: "q4f16_1",
-    description: "Fast starter — smaller download, good for most FairPay reads.",
-    recommended: true,
+    description: "Lightweight reads only — switch to Hermes 3B for adding expenses.",
   },
   {
     id: "Llama-3.2-1B-Instruct-q4f32_1-MLC",
@@ -634,6 +633,15 @@ export function isWebLlmModelId(model: string): model is WebLlmModelId {
 
 export function getWebLlmModelEntry(id: string): WebLlmModelEntry | undefined {
   return WEB_LLM_MODEL_LIST.find((m) => m.id === id);
+}
+
+/** Models below this quality bar often fail JSON tool calls for expense preview. */
+export function isWeakExpenseChatModel(modelId: string): boolean {
+  const entry = getWebLlmModelEntry(modelId);
+  if (!entry) return false;
+  if (entry.family === "TinyLlama" || entry.family === "SmolLM2") return true;
+  if (entry.lowResource && entry.vramMB <= 1500) return true;
+  return false;
 }
 
 /**

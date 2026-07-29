@@ -41,6 +41,10 @@ import {
   buildReceiptDraftPrompt,
   extractReceiptDraftFromFilename,
 } from "../utils/receipt-ocr-stub";
+import {
+  appendExpenseIntentToUserMessage,
+  parseVietnameseExpenseIntent,
+} from "../utils/vietnamese-expense-intent";
 
 export type { Conversation } from "../utils/chat-storage";
 
@@ -141,6 +145,10 @@ export function useAiChat(): UseAiChatReturn {
     conversationIdRef.current = conversationId;
   }, [conversationId]);
 
+  useEffect(() => {
+    orchestratorRef.current = null;
+  }, [identity?.email, identity?.full_name]);
+
   // Keep the system message in sync with the latest identity and language.
   useEffect(() => {
     const history = historyRef.current;
@@ -239,10 +247,11 @@ export function useAiChat(): UseAiChatReturn {
       chatFn: chatFnWithStreaming,
       mcpClient,
       legacyExecutor,
+      actorIdentityConfirmed: Boolean(identity?.email?.trim() || identity?.full_name?.trim()),
     });
 
     return orchestratorRef.current;
-  }, [getAccessToken]);
+  }, [getAccessToken, identity?.email, identity?.full_name]);
 
   const selectLocalModel = useCallback((model: WebLlmModelId) => {
     setError(null);
@@ -401,7 +410,13 @@ export function useAiChat(): UseAiChatReturn {
       };
 
       try {
-        const result = await getOrchestrator().processTurn(trimmed, historyRef.current, pendingPreview);
+        const expenseIntent = parseVietnameseExpenseIntent(trimmed);
+        const orchestratorUserText = appendExpenseIntentToUserMessage(trimmed, expenseIntent);
+        const result = await getOrchestrator().processTurn(
+          orchestratorUserText,
+          historyRef.current,
+          pendingPreview,
+        );
         historyRef.current = result.updatedHistory;
 
         if (result.pendingPreview) {

@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/icons";
 import { ChatHistoryDialog } from "./ChatHistoryDialog";
 import { loadModel } from "@/lib/local-llm/client";
-import { type WebLlmModelId } from "@/lib/local-llm/types";
+import { isWeakExpenseChatModel, type WebLlmModelId } from "@/lib/local-llm/types";
 import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/use-haptics";
 import type { Profile } from "@/modules/profile/types";
@@ -225,6 +225,11 @@ export const ChatPanelContent = memo(function ChatPanelContent({ onClear }: Chat
       setTimeout(() => { tap(); void sendMessage(prompt); }, 150);
     },
     [sendMessage, tap],
+  );
+
+  const showWeakModelWarning = useMemo(
+    () => isWeakExpenseChatModel(selectedModel),
+    [selectedModel],
   );
 
   const showInsightsDot = insightsState === "ready" && activeTab !== "insights";
@@ -438,6 +443,24 @@ export const ChatPanelContent = memo(function ChatPanelContent({ onClear }: Chat
           </div>
 
           <div className="shrink-0 border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            {showWeakModelWarning && (
+              <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-950 dark:text-amber-100">
+                <p className="font-medium">{t("aiChat.weakModelWarning.title")}</p>
+                <p className="mt-0.5 text-[11px] opacity-90">{t("aiChat.weakModelWarning.body")}</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2 h-7 text-xs"
+                  onClick={() => {
+                    tap();
+                    setModelDialogOpen(true);
+                  }}
+                >
+                  {t("aiChat.weakModelWarning.action")}
+                </Button>
+              </div>
+            )}
             <ChatInput
               onSend={sendMessage}
               onAttachImage={attachReceiptImage}

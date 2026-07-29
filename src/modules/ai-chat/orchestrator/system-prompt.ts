@@ -48,7 +48,7 @@ function buildIdentitySection(userName?: string, userEmail?: string): string {
   );
   if (hasName) lines.push(`- Name: ${userName!.trim()}`);
   if (hasEmail) lines.push(`- Email: ${userEmail!.trim()}`);
-  lines.push("- Treat this identity as the confirmed FairPay identity for this session.");
+  lines.push("- Treat this identity as the confirmed FairPay identity for this session (actor_confirmed=true for expense tools).");
   return lines.join("\n");
 }
 
@@ -72,6 +72,21 @@ const DEEP_LINKS = `UI GUIDANCE (no write tools for these)
 - Personal or 1-on-1 expenses: tell the user to use Friends / Connections in FairPay. Agent-created personal transactions are not supported.
 - Admin / staff actions: refuse; not available in chat.`;
 
+const PARSED_HINTS_POLICY = `PARSED USER HINTS
+- User messages may end with a block: [FairPay parsed hints — ...] followed by JSON.
+- When present, treat amount_vnd as the integer VND total (e.g. 10.000 VND in Vietnamese formatting => amount_vnd 10000, NOT 1000).
+- Use expense_date, quantity, item_description, and member_name_hint when resolving fairpay_resolve_expense_context and fairpay_preview_expense.
+- If member_name_hint is set, pass display_name in payer/participants refs and call fairpay_list_group_members after choosing group_id.
+- Do NOT re-ask for quantity when amount_vnd is already the total for the purchase unless the user explicitly wants per-unit pricing.
+- Chat can only create group expenses (transaction_type "group"). If the user wants personal/1-on-1 only, explain they must use Friends in FairPay — do not loop asking for quantity.`;
+
+const VIETNAMESE_EXPENSE_EXAMPLES = `VIETNAMESE EXPENSE EXAMPLES (group only)
+User: "Thêm giao dịch ngày 28/07/2026 với Tuyến mua chuối 10.000 Vnd"
+1) {"type":"tool_call","name":"fairpay_list_groups","arguments":{}}
+2) {"type":"tool_call","name":"fairpay_resolve_expense_context","arguments":{"actor_confirmed":true,"transaction_type":"group","group_id":"<uuid>","payer":{"display_name":"<actor>"},"participants":[{"display_name":"<actor>"},{"display_name":"Tuyến"}]}}
+3) {"type":"tool_call","name":"fairpay_preview_expense","arguments":{"actor_confirmed":true,"transaction_type":"group","group_id":"<uuid>","description":"mua chuối","amount":10000,"expense_date":"2026-07-28",...}}
+Use amount 10000 for "10.000 Vnd". After preview, tell the user to confirm the card in the UI.`;
+
 const SHARED_RULES = `Rules:
 - Do not call confirm or commit tools. Never call confirm or commit. Expense confirmation and commit are controlled only by the FairPay UI. Never call settle or payment tools.
 - If a preview is pending, do not create another. Ask the user to confirm or cancel the card.
@@ -83,13 +98,14 @@ const SHARED_RULES = `Rules:
 function buildCompactToolsSection(): string {
   return `TOOLS (prefer one tool call at a time)
 - fairpay_list_groups: user's groups (need group_id)
+- fairpay_resolve_expense_context: preflight group/payer/participants before preview
+- fairpay_list_group_members: members of a group (needs group_id)
 - get_debt_summary: who owes whom / net balances
 - get_debt_details: expense-level debt vs one counterparty (needs counterparty_id from summary)
 - get_group_details: one group — members + recent expenses (needs group_id)
 - get_expenses: recent expenses (optional group_id)
-- fairpay_list_group_members: members of a group (needs group_id)
 - fairpay_get_me: identity only if missing above or user asks "who am I"
-- fairpay_preview_expense: group expense preview only after identity, group, payer, participants, amount, and split are known. Then user confirms in UI.
+- fairpay_preview_expense: group expense preview only after resolve context is ready. User confirms in UI.
 
 Example first reply for "how much do I owe?":
 {"type":"tool_call","name":"get_debt_summary","arguments":{}}`;
@@ -135,6 +151,10 @@ ${TOOL_FIRST_POLICY}
 ${toolsSection}
 
 ${DEEP_LINKS}
+
+${PARSED_HINTS_POLICY}
+
+${VIETNAMESE_EXPENSE_EXAMPLES}
 
 ${SHARED_RULES}`;
 }

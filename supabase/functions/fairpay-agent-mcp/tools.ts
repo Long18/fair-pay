@@ -220,6 +220,47 @@ function normalize(value: unknown): string {
   return typeof value === 'string' ? value.normalize('NFKC').trim().toLowerCase().replace(/\s+/g, ' ') : ''
 }
 
+const VIETNAMESE_DIACRITICS: Record<string, string> = {
+  à: 'a', á: 'a', ả: 'a', ã: 'a', ạ: 'a',
+  ă: 'a', ằ: 'a', ắ: 'a', ẳ: 'a', ẵ: 'a', ặ: 'a',
+  â: 'a', ầ: 'a', ấ: 'a', ẩ: 'a', ẫ: 'a', ậ: 'a',
+  è: 'e', é: 'e', ẻ: 'e', ẽ: 'e', ẹ: 'e',
+  ê: 'e', ề: 'e', ế: 'e', ể: 'e', ễ: 'e', ệ: 'e',
+  ì: 'i', í: 'i', ỉ: 'i', ĩ: 'i', ị: 'i',
+  ò: 'o', ó: 'o', ỏ: 'o', õ: 'o', ọ: 'o',
+  ô: 'o', ồ: 'o', ố: 'o', ổ: 'o', ỗ: 'o', ộ: 'o',
+  ơ: 'o', ờ: 'o', ớ: 'o', ở: 'o', ỡ: 'o', ợ: 'o',
+  ù: 'u', ú: 'u', ủ: 'u', ũ: 'u', ụ: 'u',
+  ư: 'u', ừ: 'u', ứ: 'u', ử: 'u', ữ: 'u', ự: 'u',
+  ỳ: 'y', ý: 'y', ỷ: 'y', ỹ: 'y', ỵ: 'y',
+  đ: 'd',
+}
+
+function foldVietnamese(value: string): string {
+  return [...value.normalize('NFC').toLowerCase()]
+    .map((char) => VIETNAMESE_DIACRITICS[char] ?? char)
+    .join('')
+}
+
+function memberDisplayNameMatches(requested: string, memberFullName: string): boolean {
+  const req = normalize(requested)
+  const full = normalize(memberFullName)
+  if (!req || !full) return false
+  if (req === full) return true
+
+  const reqFold = foldVietnamese(req)
+  const fullFold = foldVietnamese(full)
+  if (reqFold === fullFold) return true
+
+  const tokens = full.split(' ')
+  const tokensFold = fullFold.split(' ')
+  if (tokens.includes(req) || tokensFold.includes(reqFold)) return true
+
+  if (req.length >= 2 && (full.includes(req) || fullFold.includes(reqFold))) return true
+
+  return false
+}
+
 function actorKey(value: unknown): { email?: string; display_name?: string } {
   const obj = typeof value === 'object' && value !== null && !Array.isArray(value)
     ? value as Record<string, unknown>
@@ -236,8 +277,10 @@ function resolveMembers(refs: unknown, members: Array<Record<string, unknown>>) 
     const actor = actorKey(ref)
     const matches = members.filter((member) => {
       const email = typeof member.email === 'string' ? member.email.toLowerCase() : ''
-      const fullName = normalize(member.full_name)
-      return (actor.email && email === actor.email) || (actor.display_name && fullName === normalize(actor.display_name))
+      const fullName = typeof member.full_name === 'string' ? member.full_name : ''
+      if (actor.email && email === actor.email) return true
+      if (actor.display_name && memberDisplayNameMatches(actor.display_name, fullName)) return true
+      return false
     })
     return {
       requested: actor,

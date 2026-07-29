@@ -48,6 +48,8 @@ export interface OrchestratorDeps {
   chatFn: AssistantChatFn;
   mcpClient: McpClientInterface;
   legacyExecutor: LegacyToolExecutor;
+  /** When true, orchestrator injects actor_confirmed and group transaction_type for expense tools. */
+  actorIdentityConfirmed?: boolean;
 }
 
 export interface ProcessTurnResult {

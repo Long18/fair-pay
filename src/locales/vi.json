@@ -2106,7 +2106,12 @@
     "noPreviousChats": "Chưa có cuộc trò chuyện nào",
     "deleteChat": "Xóa",
     "today": "Hôm nay",
-    "welcome": "Hỏi về số dư, nhóm, chi tiêu gần đây, hoặc tạo xem trước chi tiêu.",
+    "welcome": "Hỏi về số dư, nhóm, chi tiêu gần đây, hoặc tạo xem trước chi tiêu nhóm.",
+    "weakModelWarning": {
+      "title": "Mô hình hiện tại khó tạo chi tiêu qua chat",
+      "body": "Hãy chọn Hermes 3 · Llama 3.2 3B (hoặc lớn hơn) để thêm giao dịch bằng tiếng Việt ổn định hơn.",
+      "action": "Đổi mô hình"
+    },
     "pendingPreview": "Giải quyết xem trước đang chờ trước khi gửi yêu cầu mới.",
     "expenseCreated": "Xong — tôi đã tạo **{{description}}** ({{amount}}) trong **{{groupName}}**.",
     "load": "Tải",

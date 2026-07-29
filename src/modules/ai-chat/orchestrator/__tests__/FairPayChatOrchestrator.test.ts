@@ -172,4 +172,39 @@ describe("FairPayChatOrchestrator manual JSON protocol", () => {
     expect(mcpClient.callTool).toHaveBeenCalledTimes(1);
     expect(result.text).toBe("Which Alex should I use?");
   });
+
+  it("injects actor_confirmed and group transaction_type when identity is confirmed in session", async () => {
+    const mcpClient: McpClientInterface = {
+      callTool: vi.fn(async () => makePreview()),
+    };
+    const chatFn = vi
+      .fn<AssistantChatFn>()
+      .mockResolvedValueOnce(
+        completion(
+          JSON.stringify({
+            type: "tool_call",
+            name: "fairpay_preview_expense",
+            arguments: { group_id: "group-1", description: "chuối", amount: 10000 },
+          }),
+        ),
+      )
+      .mockResolvedValueOnce(completion(JSON.stringify({ type: "final", content: "Preview ready." })));
+
+    const orch = new FairPayChatOrchestrator({
+      chatFn,
+      mcpClient,
+      legacyExecutor: vi.fn(async () => ({})),
+      actorIdentityConfirmed: true,
+    });
+    await orch.processTurn("thêm chi tiêu", baseHistory(), null);
+
+    expect(mcpClient.callTool).toHaveBeenCalledWith(
+      "fairpay_preview_expense",
+      expect.objectContaining({
+        actor_confirmed: true,
+        transaction_type: "group",
+        group_id: "group-1",
+      }),
+    );
+  });
 });

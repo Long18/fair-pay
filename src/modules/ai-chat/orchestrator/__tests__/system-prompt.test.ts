@@ -30,6 +30,7 @@ describe("buildSystemPrompt", () => {
 
     expect(prompt).toContain("get_debt_details");
     expect(prompt).toContain("get_group_details");
+    expect(prompt).toContain("fairpay_resolve_expense_context");
     expect(prompt).toContain("/payments/create");
     expect(prompt).toContain("prefer one tool call");
     expect(prompt).toContain("Long");
@@ -40,6 +41,8 @@ describe("buildSystemPrompt", () => {
     const prompt = buildSystemPrompt({ tier: "full", language: "vi" });
 
     expect(prompt).toContain("fairpay_resolve_expense_context");
+    expect(prompt).toContain("10.000 Vnd");
+    expect(prompt).toContain("PARSED USER HINTS");
     expect(prompt).toContain("fairpay_check_expense_duplicates");
     expect(prompt).toContain("Vietnamese");
     expect(prompt).toContain("get_debt_details");

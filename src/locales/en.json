@@ -2106,7 +2106,12 @@
     "noPreviousChats": "No previous chats",
     "deleteChat": "Delete",
     "today": "Today",
-    "welcome": "Ask about balances, groups, recent expenses, or prepare a safe expense preview.",
+    "welcome": "Ask about balances, groups, recent expenses, or prepare a safe group expense preview.",
+    "weakModelWarning": {
+      "title": "This model struggles with expense chat",
+      "body": "Switch to Hermes 3 · Llama 3.2 3B (or larger) for reliable Vietnamese expense previews.",
+      "action": "Change model"
+    },
     "pendingPreview": "Resolve the pending preview before sending another request.",
     "expenseCreated": "Done — I created **{{description}}** ({{amount}}) in **{{groupName}}**.",
     "load": "Load",

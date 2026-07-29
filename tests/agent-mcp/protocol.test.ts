@@ -246,6 +246,33 @@ describe('FairPay MCP resolveExpenseContext', () => {
     expect((result as { payer: { candidates: unknown[] } }).payer.candidates).toHaveLength(1)
   })
 
+  it('resolves partial display names (e.g. Tuyến vs full name)', async () => {
+    const request = vi.fn(async (method: string, path: string) => {
+      if (path === '/v1/me') return me
+      if (path === '/v1/groups') return { groups: [group] }
+      if (path === '/v1/groups/g1/members') {
+        return {
+          members: [
+            { member_id: 'm1', user_id: 'u1', full_name: 'Alice', email: 'a@example.com' },
+            { member_id: 'm3', user_id: 'u3', full_name: 'Nguyễn Văn Tuyến', email: 'tuyen@example.com' },
+          ],
+        }
+      }
+      return { ok: true }
+    })
+    const execute = createMcpToolExecutor({ request })
+    const result = await execute('fairpay_resolve_expense_context', {
+      actor_confirmed: true,
+      transaction_type: 'group',
+      group_id: 'g1',
+      payer: { email: 'a@example.com' },
+      participants: [{ email: 'a@example.com' }, { display_name: 'Tuyến' }],
+    })
+    expect(result).toMatchObject({ status: 'ready' })
+    const participants = (result as { participants: Array<{ status: string }> }).participants
+    expect(participants[1]?.status).toBe('resolved')
+  })
+
   it('returns needs_clarification for unresolved members', async () => {
     const { execute } = transportWithContext()
     const result = await execute('fairpay_resolve_expense_context', {
