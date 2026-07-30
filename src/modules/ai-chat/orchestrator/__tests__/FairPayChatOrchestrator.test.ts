@@ -49,16 +49,18 @@ function orchestrator(
 
 describe("FairPayChatOrchestrator manual JSON protocol", () => {
   it("executes a valid manual tool call and continues to a final response", async () => {
-    const legacyExecutor = vi.fn<LegacyToolExecutor>(async () => ({ total: 120000 }));
+    const mcpClient: McpClientInterface = {
+      callTool: vi.fn(async () => ({ groups: [{ id: "g1", name: "Trip" }] })),
+    };
     const chatFn = vi
       .fn<AssistantChatFn>()
-      .mockResolvedValueOnce(completion(JSON.stringify({ type: "tool_call", name: "get_debt_summary", arguments: {} })))
-      .mockResolvedValueOnce(completion(JSON.stringify({ type: "final", content: "You have one open balance." })));
+      .mockResolvedValueOnce(completion(JSON.stringify({ type: "tool_call", name: "fairpay_list_groups", arguments: {} })))
+      .mockResolvedValueOnce(completion(JSON.stringify({ type: "final", content: "You have one group." })));
 
-    const result = await orchestrator(chatFn, { legacyExecutor }).processTurn("Who owes me?", baseHistory(), null);
+    const result = await orchestrator(chatFn, { mcpClient }).processTurn("hello", baseHistory(), null);
 
-    expect(legacyExecutor).toHaveBeenCalledWith("get_debt_summary", {});
-    expect(result.text).toBe("You have one open balance.");
+    expect(mcpClient.callTool).toHaveBeenCalledWith("fairpay_list_groups", {});
+    expect(result.text).toBe("You have one group.");
   });
 
   it("treats plain text model output as a final response", async () => {
@@ -99,12 +101,43 @@ describe("FairPayChatOrchestrator manual JSON protocol", () => {
     expect(result.text).toBe("I can help with that.");
   });
 
+  it("answers Vietnamese debt queries without LLM", async () => {
+    const legacyExecutor = vi.fn<LegacyToolExecutor>(async () => ([
+      { counterparty_name: "Tuyến", amount: 50000, currency: "VND", i_owe_them: false },
+    ]));
+    const chatFn = vi.fn<AssistantChatFn>();
+
+    const result = await orchestrator(chatFn, { legacyExecutor }).processTurn(
+      "Có những ai đang nợ tôi khoảng nào?",
+      baseHistory(),
+      null,
+      { language: "vi" },
+    );
+
+    expect(chatFn).not.toHaveBeenCalled();
+    expect(legacyExecutor).toHaveBeenCalledWith("get_debt_summary", {});
+    expect(result.text).toContain("Tuyến nợ bạn");
+  });
+
+  it("coerces tool_call JSON missing arguments to empty object", async () => {
+    const legacyExecutor = vi.fn<LegacyToolExecutor>(async () => ({ total: 120000 }));
+    const chatFn = vi
+      .fn<AssistantChatFn>()
+      .mockResolvedValueOnce(completion(JSON.stringify({ type: "tool_call", name: "get_debt_summary" })))
+      .mockResolvedValueOnce(completion(JSON.stringify({ type: "final", content: "You have one open balance." })));
+
+    const result = await orchestrator(chatFn, { legacyExecutor }).processTurn("hello", baseHistory(), null);
+
+    expect(legacyExecutor).toHaveBeenCalledWith("get_debt_summary", {});
+    expect(result.text).toBe("You have one open balance.");
+  });
+
   it("does not treat invalid tool-call JSON as a final response", async () => {
     const mcpClient: McpClientInterface = { callTool: vi.fn() };
     const legacyExecutor = vi.fn<LegacyToolExecutor>();
 
     const result = await orchestrator(
-      async () => completion(JSON.stringify({ type: "tool_call", name: "get_debt_summary" })),
+      async () => completion(JSON.stringify({ type: "tool_call", name: 123 })),
       { mcpClient, legacyExecutor },
     ).processTurn("hello", baseHistory(), null);
 

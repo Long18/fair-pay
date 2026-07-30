@@ -12,6 +12,7 @@ import {
   shouldAutoStartExpenseWorkflow,
   type ParsedVietnameseExpenseIntent,
 } from '../utils/vietnamese-expense-intent'
+import { extractDirectiveJson, normalizeModelOutput } from '../utils/normalize-model-output'
 import {
   planDebtSummaryStep,
   planDeterministicStep,
@@ -50,21 +51,13 @@ function parseArgs(raw: string): Record<string, unknown> {
   }
 }
 
-function stripCodeFence(value: string): string {
-  const trimmed = value.trim()
-  if (!trimmed.startsWith('```')) return trimmed
-  return trimmed
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```$/i, '')
-    .trim()
-}
-
-
 function parseAssistantDirective(raw: string): AssistantDirective | null {
-  if (!raw.trim()) return { type: 'final', content: '' }
+  const normalized = normalizeModelOutput(raw)
+  const jsonText = extractDirectiveJson(raw) ?? normalized
+  if (!jsonText.trim()) return { type: 'final', content: '' }
 
   try {
-    const parsed = JSON.parse(stripCodeFence(raw))
+    const parsed = JSON.parse(jsonText)
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
 
     const candidate = parsed as Record<string, unknown>
@@ -81,30 +74,31 @@ function parseAssistantDirective(raw: string): AssistantDirective | null {
       }
     }
 
-    if (
-      candidate.type === 'tool_call' &&
-      typeof candidate.name === 'string' &&
-      candidate.arguments &&
-      typeof candidate.arguments === 'object' &&
-      !Array.isArray(candidate.arguments)
-    ) {
-      return {
-        type: 'tool_call',
-        name: candidate.name,
-        arguments: candidate.arguments as Record<string, unknown>,
+    if (candidate.type === 'tool_call' && typeof candidate.name === 'string') {
+      const args = candidate.arguments
+      if (args === undefined || args === null) {
+        return { type: 'tool_call', name: candidate.name, arguments: {} }
       }
+      if (typeof args === 'object' && !Array.isArray(args)) {
+        return {
+          type: 'tool_call',
+          name: candidate.name,
+          arguments: args as Record<string, unknown>,
+        }
+      }
+      return null
     }
 
     if (candidate.type === 'tool_call') {
       return null
     }
   } catch {
-    const trimmed = stripCodeFence(raw).trim()
+    const trimmed = normalized.trim()
     if (trimmed.startsWith('{') || trimmed.startsWith('[')) return null
     return { type: 'final', content: trimmed }
   }
 
-  const trimmed = raw.trim()
+  const trimmed = normalized.trim()
   if (trimmed.startsWith('{') && trimmed.includes('"type"')) return null
   return { type: 'final', content: trimmed }
 }
@@ -243,7 +237,7 @@ export class FairPayChatOrchestrator {
     }
 
     const runPlanner = (): ReturnType<typeof planDeterministicStep> => {
-      const debt = planDebtSummaryStep(displayUserText, plannerState)
+      const debt = planDebtSummaryStep(displayUserText, plannerState, { language })
       if (debt) return debt
       return planDeterministicStep(expenseContext, plannerState, plannerOptions)
     }

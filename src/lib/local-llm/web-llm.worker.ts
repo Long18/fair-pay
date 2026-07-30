@@ -32,11 +32,25 @@ function errorMessage(error: unknown): string {
 }
 
 function normalizeMessages({ messages }: LocalLlmChatRequest) {
-  return messages.map((message) => ({
-    role: message.role,
-    content: message.content ?? "",
-    ...(message.tool_call_id ? { tool_call_id: message.tool_call_id } : {}),
-  }));
+  return messages.map((message) => {
+    if (message.role === "assistant" && message.tool_calls?.length) {
+      const calls = message.tool_calls
+        .map((tc) => `[Called ${tc.function.name}(${tc.function.arguments})]`)
+        .join(" ");
+      return { role: "assistant" as const, content: calls };
+    }
+    if (message.role === "tool" && message.tool_call_id) {
+      return {
+        role: "user" as const,
+        content: `[Tool result: ${message.content ?? ""}]`,
+      };
+    }
+    return {
+      role: message.role,
+      content: message.content ?? "",
+      ...(message.tool_call_id ? { tool_call_id: message.tool_call_id } : {}),
+    };
+  });
 }
 
 self.addEventListener("message", async (event: MessageEvent<LocalLlmWorkerRequest>) => {
@@ -92,7 +106,7 @@ self.addEventListener("message", async (event: MessageEvent<LocalLlmWorkerReques
     const chunks = await engine.chat.completions.create({
       messages: normalizeMessages(request.payload) as never,
       temperature: 0.1,
-      max_tokens: 700,
+      max_tokens: 1200,
       stream: true,
     });
 

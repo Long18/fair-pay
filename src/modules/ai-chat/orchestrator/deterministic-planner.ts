@@ -1,4 +1,5 @@
 import type { ParsedVietnameseExpenseIntent } from "../utils/vietnamese-expense-intent";
+import { formatDebtSummaryResponse } from "../utils/format-debt-summary";
 import {
   buildMissingGroupNameMessage,
   buildPersonalOrLoanGuidance,
@@ -145,16 +146,21 @@ function buildPreviewArgs(
 }
 
 function looksLikeDebtQuery(text: string): boolean {
-  return /\b(nợ|no|debt|balance|ai\s*nợ|who\s*owes)\b/i.test(text);
+  // Avoid bare `no` — it matches substrings like "another". No \b for Vietnamese.
+  return /(?:nợ|đang\s+nợ|ai\s+đang\s+nợ|ai\s+nợ|\bdebt\b|\bbalance\b|who\s+owes|how much.*owe)/i.test(text);
 }
 
 export function planDebtSummaryStep(
   displayUserText: string,
   state?: PlannerTurnState,
+  options?: { language?: string },
 ): PlannerDecision | null {
   if (!looksLikeDebtQuery(displayUserText)) return null;
   if (state?.lastToolName === "get_debt_summary") {
-    return { kind: "delegate_llm" };
+    return {
+      kind: "final",
+      content: formatDebtSummaryResponse(state.lastToolData, options?.language),
+    };
   }
   return { kind: "tool", name: "get_debt_summary", arguments: {} };
 }

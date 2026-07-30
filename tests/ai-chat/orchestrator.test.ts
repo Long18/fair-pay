@@ -65,6 +65,26 @@ function initialHistory(): ConversationMessage[] {
   return [{ role: 'system', content: FAIRPAY_SYSTEM_PROMPT }]
 }
 
+/** Bypass deterministic expense planner so tests can drive tools via mocked LLM output. */
+function llmDrivenTurnOptions() {
+  return {
+    expenseContext: {
+      intent: {
+        looks_like_add_expense: false,
+        amount_vnd: null,
+        expense_date: null,
+        quantity: null,
+        item_description: null,
+        member_name_hint: null,
+      },
+      transaction_scope: 'unknown' as const,
+      wants_group_expense_override: false,
+      group_name_hint: null,
+    },
+    transactionScope: 'unknown' as const,
+  }
+}
+
 // ── Basic turn processing ──────────────────────────────────────────────────
 
 describe('FairPayChatOrchestrator — basic turns', () => {
@@ -257,7 +277,7 @@ describe('FairPayChatOrchestrator — pending preview lifecycle', () => {
     })
     const orch = new FairPayChatOrchestrator(deps)
 
-    const result = await orch.processTurn('Add lunch 150k', initialHistory(), null)
+    const result = await orch.processTurn('Add lunch 150k', initialHistory(), null, llmDrivenTurnOptions())
 
     expect(result.pendingPreview).toMatchObject({ preview_id: 'prev-uuid-1' })
     expect(result.blockedPreviewReplacement).toBe(false)
@@ -291,31 +311,25 @@ describe('FairPayChatOrchestrator — pending preview lifecycle', () => {
     })
     const orch = new FairPayChatOrchestrator(deps)
 
-    const result = await orch.processTurn('Add expense', initialHistory(), null)
+    const result = await orch.processTurn('Add expense', initialHistory(), null, llmDrivenTurnOptions())
 
     expect(result.blockedPreviewReplacement).toBe(false)
   })
 
   it('gives the model only a compact summary of the preview, not the full object', async () => {
     const preview = mockPreviewResponse()
-    let modelSawToolResult: string | undefined
-
     const chatFn: AssistantChatFn = vi.fn()
       .mockResolvedValueOnce(toolCompletion('fairpay_preview_expense', { actor_confirmed: true, transaction_type: 'group', group_id: 'g1' }))
-      .mockImplementation(async (msgs) => {
-        const toolMsg = [...msgs].reverse().find((m) => m.role === 'tool')
-        if (toolMsg && toolMsg.role === 'tool') {
-          modelSawToolResult = toolMsg.content
-        }
-        return textCompletion('Preview ready.')
-      })
     const orch = new FairPayChatOrchestrator(
       makeDeps({ chatFn, mcpClient: { callTool: vi.fn().mockResolvedValue(preview) } }),
     )
-    await orch.processTurn('Add expense', initialHistory(), null)
+    const result = await orch.processTurn('Add expense', initialHistory(), null, llmDrivenTurnOptions())
 
-    // Model should see only the compact summary
-    const parsed = JSON.parse(modelSawToolResult!) as { trust: string; data: Record<string, unknown> }
+    const toolMessage = result.updatedHistory.find((message) => message.role === 'tool')
+    expect(toolMessage?.content).toBeTruthy()
+
+    // Tool envelope stored in history uses only the compact summary
+    const parsed = JSON.parse(toolMessage!.content!) as { trust: string; data: Record<string, unknown> }
     expect(parsed.trust).toMatch(/UNTRUSTED_TOOL_DATA/)
     expect(parsed.data).toHaveProperty('preview_id')
     expect(parsed.data).toHaveProperty('status', 'preview_ready')
@@ -334,7 +348,7 @@ describe('FairPayChatOrchestrator — pending preview lifecycle', () => {
       },
     })
     const orch = new FairPayChatOrchestrator(deps)
-    const result = await orch.processTurn('Add expense', initialHistory(), null)
+    const result = await orch.processTurn('Add expense', initialHistory(), null, llmDrivenTurnOptions())
 
     expect(result.pendingPreview).toBeNull()
     expect(result.blockedPreviewReplacement).toBe(false)
@@ -434,7 +448,7 @@ describe('FairPayChatOrchestrator — expense context guard', () => {
     const mcpCallTool = vi.fn().mockResolvedValue(mockPreviewResponse())
     const orch = new FairPayChatOrchestrator(makeDeps({ chatFn, mcpClient: { callTool: mcpCallTool } }))
 
-    const result = await orch.processTurn('Add expense', initialHistory(), null)
+    const result = await orch.processTurn('Add expense', initialHistory(), null, llmDrivenTurnOptions())
     const toolMessage = result.updatedHistory.findLast((message) => message.role === 'tool')
     const envelope = toolMessage?.role === 'tool' ? JSON.parse(toolMessage.content) : null
 
