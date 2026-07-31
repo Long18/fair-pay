@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "@refinedev/react-hook-form";
+import type { FieldErrors } from "react-hook-form";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -93,6 +94,8 @@ interface ExpenseFormProps {
   isEdit?: boolean;
   attachments?: AttachmentFile[];
   onAttachmentsChange?: (attachments: AttachmentFile[]) => void;
+  attachmentUploadHint?: string;
+  isAttachmentUploading?: boolean;
 }
 
 const EMPTY_ATTACHMENTS: AttachmentFile[] = [];
@@ -107,6 +110,8 @@ export const ExpenseForm = ({
   isEdit = false,
   attachments = EMPTY_ATTACHMENTS,
   onAttachmentsChange,
+  attachmentUploadHint,
+  isAttachmentUploading = false,
 }: ExpenseFormProps) => {
   const { t } = useTranslation();
   const { tap } = useHaptics();
@@ -140,7 +145,9 @@ export const ExpenseForm = ({
     totalSplit,
   } = useSplitCalculation(defaultValues?.splits);
 
-  const [showAdvanced, setShowAdvanced] = useState(!!defaultValues?.comment || (attachments && attachments.length > 0));
+  const [showAdvanced, setShowAdvanced] = useState(
+    isEdit || !!defaultValues?.comment || (attachments && attachments.length > 0),
+  );
   const [showComment, setShowComment] = useState(!!defaultValues?.comment);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [amountExpressionState, setAmountExpressionState] = useState<AmountExpressionState>({
@@ -258,13 +265,20 @@ export const ExpenseForm = ({
   }, [amount, splitMethod, participants.length, participantIdentitySignature, recalculate, isLoan, isFriendContext, paidByUserId, setSplitValue]);
 
   const handleFormSubmit = (data: ExpenseFormSchema) => {
-    if (amountExpressionState.status !== "valid" || (amountExpressionState.value ?? 0) <= 0) {
+    const resolvedAmount = amountExpressionState.value ?? data.amount;
+
+    if (amountExpressionState.status !== "valid" || resolvedAmount <= 0) {
       toast.error("Enter a valid amount before saving this expense.");
       return;
     }
 
     if (hasBlockingExactSplitExpressions) {
       toast.error("Complete any in-progress split amounts before saving.");
+      return;
+    }
+
+    if (!isSplitValid) {
+      toast.error("Add at least one participant with a valid split before saving.");
       return;
     }
 
@@ -285,12 +299,22 @@ export const ExpenseForm = ({
 
     const formValues: ExpenseFormValues = {
       ...data,
+      amount: resolvedAmount,
       context_type: groupId ? "group" : "friend",
       group_id: groupId,
       is_loan: isLoan && isFriendContext ? true : false,
       splits: validSplits,
     };
     onSubmit(formValues);
+  };
+
+  const handleFormInvalid = (errors: FieldErrors<ExpenseFormSchema>) => {
+    const firstError = Object.values(errors).find((error) => error?.message);
+    toast.error(
+      typeof firstError?.message === "string"
+        ? firstError.message
+        : "Please fix the highlighted fields before saving.",
+    );
   };
 
   const handleTemplateSelect = (template: {
@@ -315,7 +339,7 @@ export const ExpenseForm = ({
     return (
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit(handleFormSubmit)}
+          onSubmit={form.handleSubmit(handleFormSubmit, handleFormInvalid)}
           className="space-y-4 overflow-x-hidden max-w-full"
         >
           <FriendExpenseLayout
@@ -345,7 +369,7 @@ export const ExpenseForm = ({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 overflow-x-hidden max-w-full">
+      <form onSubmit={form.handleSubmit(handleFormSubmit, handleFormInvalid)} className="space-y-4 overflow-x-hidden max-w-full">
         {!isEdit && <ExpenseFormStepper activeStep={activeFormStep} />}
         {/* Quick Templates */}
         <QuickTemplates
@@ -746,12 +770,21 @@ export const ExpenseForm = ({
               </CardContent>
             </Card>
 
-            {/* Attachments — create flow only; edit page handles uploads separately */}
-            {!isEdit && (
+            {/* Attachments */}
             <Card className="border border-border/50">
               <CardContent className="pt-6">
                 <div className="space-y-3">
-                  <div className="text-sm font-medium">Attachments</div>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-sm font-medium">Attachments</div>
+                    {isAttachmentUploading && (
+                      <Badge variant="secondary" className="text-xs">
+                        Uploading…
+                      </Badge>
+                    )}
+                  </div>
+                  {attachmentUploadHint && (
+                    <p className="text-xs text-muted-foreground">{attachmentUploadHint}</p>
+                  )}
                   <AttachmentUpload
                     attachments={attachments}
                     onAttachmentsChange={onAttachmentsChange || (() => {})}
@@ -759,7 +792,6 @@ export const ExpenseForm = ({
                 </div>
               </CardContent>
             </Card>
-            )}
 
             {/* Comment - Simple expandable */}
             <Card className="border border-border/50">
@@ -812,13 +844,7 @@ export const ExpenseForm = ({
         <Button
           type="submit"
           className="w-full h-12 font-medium text-base"
-          disabled={
-            isLoading ||
-            !isSplitValid ||
-            amountExpressionState.status !== "valid" ||
-            (amountExpressionState.value ?? 0) <= 0 ||
-            hasBlockingExactSplitExpressions
-          }
+          disabled={isLoading}
         >
           {isLoading ? (
             <>

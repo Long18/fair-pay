@@ -1,10 +1,9 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useGo, useList, useGetIdentity, useOne } from "@refinedev/core";
-import { useInstantUpdate } from "@/hooks/use-instant-mutation";
 import { useParams } from "react-router";
 import { ResponsiveDialog } from "@/components/refine-ui/responsive-dialog";
 import { ExpenseForm } from "../components/expense-form";
-import { AttachmentUpload, type AttachmentFile } from "../components/attachment-upload";
+import { type AttachmentFile } from "../components/attachment-upload";
 import { AttachmentList } from "../components/attachment-list";
 import { useAttachments } from "../hooks/use-attachments";
 import { useUpdateRecurringExpense, useDeleteRecurringExpense } from "../hooks/use-recurring-expenses";
@@ -15,11 +14,7 @@ import { GroupMember } from "@/modules/groups/types";
 import { Friendship } from "@/modules/friends/types";
 import { toast } from "sonner";
 import { supabaseClient } from "@/utility/supabaseClient";
-import { Separator } from "@/components/ui/separator";
 import { useTrackEvent } from "@/hooks/use-track-event";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Loader2Icon } from "@/components/ui/icons";
 
 const toNumber = (value: unknown): number => {
   const parsed = Number(value);
@@ -34,6 +29,7 @@ export const ExpenseEdit = () => {
   const [existingSplits, setExistingSplits] = useState<any[]>([]);
   const [existingAttachments, setExistingAttachments] = useState<Attachment[]>([]);
   const [recurringExpense, setRecurringExpense] = useState<RecurringExpense | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { uploadAttachments, isUploading } = useAttachments();
   const { updateRecurring } = useUpdateRecurringExpense();
   const { deleteRecurring } = useDeleteRecurringExpense();
@@ -50,7 +46,6 @@ export const ExpenseEdit = () => {
   const expense: any = expenseQuery.data?.data;
   const isGroupContext = !!expense?.group_id;
   const isFriendContext = !!expense?.friendship_id;
-  const contextId = expense?.group_id || expense?.friendship_id;
 
   // Fetch existing splits (with settlement status)
   useEffect(() => {
@@ -176,9 +171,7 @@ export const ExpenseEdit = () => {
     },
   });
 
-  const { mutate: updateExpense, mutation: updateExpenseMutation } = useInstantUpdate();
   const { track } = useTrackEvent();
-  const isSaving = updateExpenseMutation.isPending;
 
   const refreshExistingAttachments = useCallback(async () => {
     if (!id) return;
@@ -245,7 +238,6 @@ export const ExpenseEdit = () => {
 
     if (isFriendContext && friendshipQuery.data?.data) {
       const friendship: any = friendshipQuery.data.data;
-      // Use user_a/user_b (not user_a_id/user_b_id) - Supabase returns column names directly
       const userAId = friendship.user_a || friendship.user_a_id;
       const userBId = friendship.user_b || friendship.user_b_id;
       const isUserA = userAId === identity?.id;
@@ -286,7 +278,7 @@ export const ExpenseEdit = () => {
           avatar_url: friendProfile?.avatar_url || null,
         };
       })
-      .filter((friend) => friend.id !== undefined && friend.id !== null); // Filter out invalid friends
+      .filter((friend) => friend.id !== undefined && friend.id !== null);
   }, [allFriendsQuery.data, identity]);
 
   // Combine members + friends for group context (remove duplicates)
@@ -295,7 +287,6 @@ export const ExpenseEdit = () => {
     const combined: { id: string; full_name: string; avatar_url?: string | null }[] = [];
 
     if (isGroupContext) {
-      // Add all group members first
       members.forEach(m => {
         if (m.id && !seenIds.has(m.id)) {
           combined.push(m);
@@ -303,7 +294,6 @@ export const ExpenseEdit = () => {
         }
       });
 
-      // Add friends who are not already in the group
       allFriends.forEach(f => {
         if (f.id && !seenIds.has(f.id)) {
           combined.push(f);
@@ -314,121 +304,148 @@ export const ExpenseEdit = () => {
       return combined;
     }
 
-    // In friend context: just the 2 people in the friendship (filter out invalid)
     return members.filter(m => m.id !== undefined && m.id !== null);
   }, [isGroupContext, members, allFriends]);
 
   const handleSubmit = async (values: ExpenseFormValues) => {
-    const { splits, is_recurring, recurring, split_method, context_type, group_id, friendship_id, is_loan, ...expenseData } = values;
+    if (!id || !identity?.id) {
+      toast.error("Missing expense context. Please reload and try again.");
+      return;
+    }
 
-    track({ eventName: 'expense_edit_submitted', expenseId: id });
-    updateExpense(
-      {
-        resource: "expenses",
-        id: id!,
-        values: expenseData,
-      },
-      {
-        onSuccess: async () => {
-          // Delete existing splits
-          await supabaseClient
-            .from("expense_splits")
-            .delete()
-            .eq("expense_id", id!);
+    const {
+      splits,
+      is_recurring,
+      recurring,
+      split_method,
+      context_type,
+      group_id,
+      friendship_id,
+      is_loan,
+      ...expenseData
+    } = values;
 
-          // Create new splits, preserving settlement status for existing participants
-          const splitPromises = splits.map((split) => {
-            // Find if this user had a split before (to preserve settlement status)
-            const existingSplit = existingSplits.find(es => es.user_id === split.user_id);
-            const isPayer = split.user_id === values.paid_by_user_id;
+    setIsSubmitting(true);
+    track({ eventName: "expense_edit_submitted", expenseId: id });
 
-            // Determine settlement status
-            let isSettled = false;
-            let settledAmount = 0;
-            let settledAt = null;
+    try {
+      const { error: expenseError } = await supabaseClient
+        .from("expenses")
+        .update({
+          description: expenseData.description,
+          amount: expenseData.amount,
+          currency: expenseData.currency,
+          category: expenseData.category || null,
+          expense_date: expenseData.expense_date,
+          paid_by_user_id: expenseData.paid_by_user_id,
+          comment: expenseData.comment || null,
+        })
+        .eq("id", id);
 
-            if (isPayer) {
-              // Auto-settle the payer's own split
-              isSettled = true;
-              settledAmount = split.computed_amount;
-              settledAt = new Date().toISOString();
-            } else if (existingSplit) {
-              // Preserve existing settlement status for non-payers
-              isSettled = existingSplit.is_settled;
-              settledAmount = existingSplit.settled_amount;
-              settledAt = existingSplit.settled_at;
-            }
-
-            return supabaseClient
-              .from("expense_splits")
-              .insert({
-                expense_id: id!,
-                user_id: split.user_id,
-                split_method: values.split_method,
-                split_value: split.split_value,
-                computed_amount: split.computed_amount,
-                is_settled: isSettled,
-                settled_amount: settledAmount,
-                settled_at: settledAt,
-              });
-          });
-
-          await Promise.all(splitPromises);
-
-          // Upload any remaining attachments (e.g. retries after a partial failure)
-          if (attachments.length > 0 && identity?.id) {
-            const files = attachments.map((attachment) => attachment.file);
-            const uploaded = await uploadAttachments(files, id!, identity.id);
-            if (uploaded.length > 0) {
-              await refreshExistingAttachments();
-              setAttachments([]);
-            }
-          }
-
-          // Handle recurring expense updates
-          try {
-            if (is_recurring && recurring) {
-              if (recurringExpense) {
-                // Update existing recurring expense
-                await updateRecurring(recurringExpense.id, {
-                  frequency: recurring.frequency,
-                  interval: recurring.interval,
-                  end_date: recurring.end_date,
-                });
-              } else {
-                // Create new recurring expense
-                await supabaseClient
-                  .from("recurring_expenses")
-                  .insert({
-                    template_expense_id: id!,
-                    frequency: recurring.frequency,
-                    interval: recurring.interval,
-                    next_occurrence: recurring.start_date.toISOString().split('T')[0],
-                    end_date: recurring.end_date ? recurring.end_date.toISOString().split('T')[0] : null,
-                    is_active: true,
-                  });
-              }
-            } else if (!is_recurring && recurringExpense) {
-              // Delete recurring expense if toggled off
-              await deleteRecurring(recurringExpense.id);
-            }
-          } catch (error) {
-            console.error("Error handling recurring expense:", error);
-            toast.error("Expense updated but failed to update recurring schedule");
-          }
-
-          track({ eventName: 'expense_edit_success', expenseId: id, resultStatus: 'success' });
-          toast.success("Expense updated successfully");
-
-          // Navigate back to expense detail
-          go({ to: `/expenses/show/${id}` });
-        },
-        onError: (error) => {
-          track({ eventName: 'expense_edit_failed', expenseId: id, resultStatus: 'failed' });
-          toast.error(`Failed to update expense: ${error.message}`);
-        },
+      if (expenseError) {
+        throw new Error(expenseError.message);
       }
-    );
+
+      const { error: deleteSplitsError } = await supabaseClient
+        .from("expense_splits")
+        .delete()
+        .eq("expense_id", id);
+
+      if (deleteSplitsError) {
+        throw new Error(deleteSplitsError.message);
+      }
+
+      const splitResults = await Promise.all(
+        splits.map((split) => {
+          const existingSplit = existingSplits.find((es) => es.user_id === split.user_id);
+          const isPayer = split.user_id === values.paid_by_user_id;
+
+          let isSettled = false;
+          let settledAmount = 0;
+          let settledAt = null;
+
+          if (isPayer) {
+            isSettled = true;
+            settledAmount = split.computed_amount;
+            settledAt = new Date().toISOString();
+          } else if (existingSplit) {
+            isSettled = existingSplit.is_settled;
+            settledAmount = existingSplit.settled_amount;
+            settledAt = existingSplit.settled_at;
+          }
+
+          return supabaseClient.from("expense_splits").insert({
+            expense_id: id,
+            user_id: split.user_id,
+            split_method: values.split_method,
+            split_value: split.split_value,
+            computed_amount: split.computed_amount,
+            is_settled: isSettled,
+            settled_amount: settledAmount,
+            settled_at: settledAt,
+          });
+        }),
+      );
+
+      const failedSplit = splitResults.find((result) => result.error);
+      if (failedSplit?.error) {
+        throw new Error(failedSplit.error.message);
+      }
+
+      if (attachments.length > 0) {
+        const uploaded = await uploadAttachments(
+          attachments.map((attachment) => attachment.file),
+          id,
+          identity.id,
+        );
+        if (uploaded.length > 0) {
+          await refreshExistingAttachments();
+          setAttachments([]);
+        }
+      }
+
+      try {
+        if (is_recurring && recurring) {
+          if (recurringExpense) {
+            await updateRecurring(recurringExpense.id, {
+              frequency: recurring.frequency,
+              interval: recurring.interval,
+              end_date: recurring.end_date,
+            });
+          } else {
+            const { error: recurringError } = await supabaseClient
+              .from("recurring_expenses")
+              .insert({
+                template_expense_id: id,
+                frequency: recurring.frequency,
+                interval: recurring.interval,
+                next_occurrence: recurring.start_date.toISOString().split("T")[0],
+                end_date: recurring.end_date ? recurring.end_date.toISOString().split("T")[0] : null,
+                is_active: true,
+              });
+
+            if (recurringError) {
+              throw recurringError;
+            }
+          }
+        } else if (!is_recurring && recurringExpense) {
+          await deleteRecurring(recurringExpense.id);
+        }
+      } catch (error) {
+        console.error("Error handling recurring expense:", error);
+        toast.error("Expense updated but failed to update recurring schedule");
+      }
+
+      track({ eventName: "expense_edit_success", expenseId: id, resultStatus: "success" });
+      toast.success("Expense updated successfully");
+      go({ to: `/expenses/show/${id}` });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to update expense";
+      track({ eventName: "expense_edit_failed", expenseId: id, resultStatus: "failed" });
+      toast.error(`Failed to update expense: ${message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {
@@ -449,10 +466,8 @@ export const ExpenseEdit = () => {
     );
   }
 
-  // Prepare initial values for form
-  // Detect loan pattern: friend context + 2 splits + payer has 0 amount
   const isExistingLoan = (() => {
-    if (expense.context_type !== 'friend' || existingSplits.length !== 2) return false;
+    if (expense.context_type !== "friend" || existingSplits.length !== 2) return false;
     const payerSplit = existingSplits.find((s: any) => s.user_id === expense.paid_by_user_id);
     const borrowerSplit = existingSplits.find((s: any) => s.user_id !== expense.paid_by_user_id);
     if (!payerSplit || !borrowerSplit) return false;
@@ -475,7 +490,7 @@ export const ExpenseEdit = () => {
       interval: recurringExpense.interval,
       start_date: new Date(recurringExpense.next_occurrence),
       end_date: recurringExpense.end_date ? new Date(recurringExpense.end_date) : null,
-      notify_before_days: 0, // Default value
+      notify_before_days: 0,
     } : undefined,
     splits: existingSplits.map((split: any) => ({
       user_id: split.user_id,
@@ -492,60 +507,40 @@ export const ExpenseEdit = () => {
       className="sm:max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden"
     >
       <div className="space-y-6 overflow-x-hidden max-w-full">
-        <Card className="border border-border/50">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <CardTitle className="text-base">Receipts &amp; Attachments</CardTitle>
-                <CardDescription>
-                  Photos upload immediately when selected — no need to save the expense first.
-                </CardDescription>
-              </div>
-              {isUploading && (
-                <Badge variant="secondary" className="gap-1.5 shrink-0">
-                  <Loader2Icon className="h-3.5 w-3.5 animate-spin" />
-                  Uploading…
-                </Badge>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <AttachmentUpload
-              attachments={attachments}
-              onAttachmentsChange={handleAttachmentsChange}
-            />
-            {existingAttachments.length > 0 && (
-              <>
-                <Separator />
-                <div>
-                  <h3 className="text-sm font-semibold mb-1">
-                    Saved receipts ({existingAttachments.length})
-                  </h3>
-                  <p className="text-xs text-muted-foreground mb-4">
-                    Previously uploaded receipts for this expense
-                  </p>
-                  <AttachmentList
-                    attachments={existingAttachments}
-                    canDelete={true}
-                    onDelete={(attachmentId) => {
-                      setExistingAttachments((prev) => prev.filter((attachment) => attachment.id !== attachmentId));
-                    }}
-                  />
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
         <ExpenseForm
+          key={id}
           groupId={expense.group_id || undefined}
           members={allAvailableMembers}
           currentUserId={identity.id}
           onSubmit={handleSubmit}
-          isLoading={isSaving || isUploading}
+          isLoading={isSubmitting || isUploading}
           defaultValues={defaultValues}
           isEdit={true}
+          attachments={attachments}
+          onAttachmentsChange={handleAttachmentsChange}
+          attachmentUploadHint="Photos upload immediately when selected — no need to save the expense first."
+          isAttachmentUploading={isUploading}
         />
+
+        {existingAttachments.length > 0 && (
+          <div className="space-y-4 -mt-2">
+            <div>
+              <h3 className="text-sm font-semibold mb-1">
+                Existing Receipts ({existingAttachments.length})
+              </h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                Previously uploaded receipts
+              </p>
+              <AttachmentList
+                attachments={existingAttachments}
+                canDelete={true}
+                onDelete={(attachmentId) => {
+                  setExistingAttachments((prev) => prev.filter((attachment) => attachment.id !== attachmentId));
+                }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </ResponsiveDialog>
   );

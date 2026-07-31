@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { ParticipantSplit } from "../types";
 
 export interface SplitCalculation {
@@ -16,6 +16,24 @@ export const useSplitCalculation = (initialSplits?: ParticipantSplit[]): SplitCa
   const [participants, setParticipants] = useState<ParticipantSplit[]>(initialSplits || []);
   const [lastAmount, setLastAmount] = useState<number>(0);
   const [lastMethod, setLastMethod] = useState<'equal' | 'exact' | 'percentage'>('equal');
+  const hydratedSplitsRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!initialSplits || initialSplits.length === 0) {
+      return;
+    }
+
+    const signature = initialSplits
+      .map((split) => `${split.user_id || split.pending_email || ""}:${split.computed_amount ?? ""}`)
+      .join("|");
+
+    if (hydratedSplitsRef.current === signature) {
+      return;
+    }
+
+    hydratedSplitsRef.current = signature;
+    setParticipants(initialSplits);
+  }, [initialSplits]);
 
   const addParticipant = useCallback((userId: string) => {
     if (!userId) {
