@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useGo, useList, useGetIdentity, useOne } from "@refinedev/core";
 import { useInstantUpdate } from "@/hooks/use-instant-mutation";
 import { useParams } from "react-router";
@@ -17,6 +17,14 @@ import { toast } from "sonner";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { Separator } from "@/components/ui/separator";
 import { useTrackEvent } from "@/hooks/use-track-event";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Loader2Icon } from "@/components/ui/icons";
+
+const toNumber = (value: unknown): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
 
 export const ExpenseEdit = () => {
   const { id } = useParams<{ id: string }>();
@@ -26,7 +34,7 @@ export const ExpenseEdit = () => {
   const [existingSplits, setExistingSplits] = useState<any[]>([]);
   const [existingAttachments, setExistingAttachments] = useState<Attachment[]>([]);
   const [recurringExpense, setRecurringExpense] = useState<RecurringExpense | null>(null);
-  const { uploadAttachments, deleteAttachment } = useAttachments();
+  const { uploadAttachments, isUploading } = useAttachments();
   const { updateRecurring } = useUpdateRecurringExpense();
   const { deleteRecurring } = useDeleteRecurringExpense();
 
@@ -170,6 +178,60 @@ export const ExpenseEdit = () => {
 
   const updateMutation = useInstantUpdate();
   const { track } = useTrackEvent();
+  const isSaving = updateMutation.isPending;
+
+  const refreshExistingAttachments = useCallback(async () => {
+    if (!id) return;
+
+    const { data, error } = await supabaseClient
+      .from("attachments")
+      .select("*")
+      .eq("expense_id", id);
+
+    if (error) {
+      console.error("Error fetching attachments:", error);
+      return;
+    }
+
+    setExistingAttachments(data || []);
+  }, [id]);
+
+  const handleAttachmentsChange = useCallback(
+    async (newAttachments: AttachmentFile[]) => {
+      const previousFiles = new Set(attachments.map((attachment) => attachment.file));
+      const newlyAdded = newAttachments.filter((attachment) => !previousFiles.has(attachment.file));
+      setAttachments(newAttachments);
+
+      if (newlyAdded.length === 0 || !identity?.id || !id) {
+        return;
+      }
+
+      const uploaded = await uploadAttachments(
+        newlyAdded.map((attachment) => attachment.file),
+        id,
+        identity.id,
+      );
+
+      await refreshExistingAttachments();
+
+      if (uploaded.length === newlyAdded.length) {
+        setAttachments((current) =>
+          current.filter((attachment) => !newlyAdded.some((added) => added.file === attachment.file)),
+        );
+        return;
+      }
+
+      if (uploaded.length > 0) {
+        toast.warning(
+          `Uploaded ${uploaded.length} of ${newlyAdded.length} file(s). Failed files remain below — try again.`,
+        );
+        return;
+      }
+
+      toast.error("Failed to upload receipt. Check your connection and try again.");
+    },
+    [attachments, identity, id, uploadAttachments, refreshExistingAttachments],
+  );
 
   // Determine members based on context (group members or friendship participants)
   const members = useMemo(() => {
@@ -313,10 +375,14 @@ export const ExpenseEdit = () => {
 
           await Promise.all(splitPromises);
 
-          // Upload new attachments if any
+          // Upload any remaining attachments (e.g. retries after a partial failure)
           if (attachments.length > 0 && identity?.id) {
-            const files = attachments.map(a => a.file);
-            await uploadAttachments(files, id!, identity.id);
+            const files = attachments.map((attachment) => attachment.file);
+            const uploaded = await uploadAttachments(files, id!, identity.id);
+            if (uploaded.length > 0) {
+              await refreshExistingAttachments();
+              setAttachments([]);
+            }
           }
 
           // Handle recurring expense updates
@@ -395,7 +461,7 @@ export const ExpenseEdit = () => {
 
   const defaultValues: Partial<ExpenseFormValues> = {
     description: expense.description,
-    amount: expense.amount,
+    amount: toNumber(expense.amount),
     currency: expense.currency || "VND",
     category: expense.category,
     expense_date: expense.expense_date,
@@ -413,8 +479,8 @@ export const ExpenseEdit = () => {
     } : undefined,
     splits: existingSplits.map((split: any) => ({
       user_id: split.user_id,
-      split_value: split.split_value,
-      computed_amount: split.computed_amount,
+      split_value: toNumber(split.split_value),
+      computed_amount: toNumber(split.computed_amount),
     })),
   };
 
@@ -426,34 +492,60 @@ export const ExpenseEdit = () => {
       className="sm:max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden"
     >
       <div className="space-y-6 overflow-x-hidden max-w-full">
+        <Card className="border border-border/50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <CardTitle className="text-base">Receipts &amp; Attachments</CardTitle>
+                <CardDescription>
+                  Photos upload immediately when selected — no need to save the expense first.
+                </CardDescription>
+              </div>
+              {isUploading && (
+                <Badge variant="secondary" className="gap-1.5 shrink-0">
+                  <Loader2Icon className="h-3.5 w-3.5 animate-spin" />
+                  Uploading…
+                </Badge>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <AttachmentUpload
+              attachments={attachments}
+              onAttachmentsChange={handleAttachmentsChange}
+            />
+            {existingAttachments.length > 0 && (
+              <>
+                <Separator />
+                <div>
+                  <h3 className="text-sm font-semibold mb-1">
+                    Saved receipts ({existingAttachments.length})
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Previously uploaded receipts for this expense
+                  </p>
+                  <AttachmentList
+                    attachments={existingAttachments}
+                    canDelete={true}
+                    onDelete={(attachmentId) => {
+                      setExistingAttachments((prev) => prev.filter((attachment) => attachment.id !== attachmentId));
+                    }}
+                  />
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
         <ExpenseForm
           groupId={expense.group_id || undefined}
           members={allAvailableMembers}
           currentUserId={identity.id}
           onSubmit={handleSubmit}
-          isLoading={false}
+          isLoading={isSaving || isUploading}
           defaultValues={defaultValues}
           isEdit={true}
-          attachments={attachments}
-          onAttachmentsChange={setAttachments}
         />
-
-        {/* Existing Receipts - Show outside form for edit mode */}
-        {existingAttachments.length > 0 && (
-          <div className="space-y-4 -mt-2">
-            <div>
-              <h3 className="text-sm font-semibold mb-1">Existing Receipts ({existingAttachments.length})</h3>
-              <p className="text-xs text-muted-foreground mb-4">Previously uploaded receipts</p>
-              <AttachmentList
-                attachments={existingAttachments}
-                canDelete={true}
-                onDelete={(attachmentId) => {
-                  setExistingAttachments(prev => prev.filter(a => a.id !== attachmentId));
-                }}
-              />
-            </div>
-          </div>
-        )}
       </div>
     </ResponsiveDialog>
   );

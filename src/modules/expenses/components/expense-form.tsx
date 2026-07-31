@@ -4,6 +4,7 @@ import { useHaptics } from "@/hooks/use-haptics";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -61,7 +62,7 @@ import {
 
 const expenseSchema = z.object({
   description: z.string().min(1, "Description is required").max(200),
-  amount: z.number().positive("Amount must be positive"),
+  amount: z.coerce.number().positive("Amount must be positive"),
   currency: z.string(),
   category: z.string().optional(),
   expense_date: z.string(),
@@ -258,10 +259,12 @@ export const ExpenseForm = ({
 
   const handleFormSubmit = (data: ExpenseFormSchema) => {
     if (amountExpressionState.status !== "valid" || (amountExpressionState.value ?? 0) <= 0) {
+      toast.error("Enter a valid amount before saving this expense.");
       return;
     }
 
     if (hasBlockingExactSplitExpressions) {
+      toast.error("Complete any in-progress split amounts before saving.");
       return;
     }
 
@@ -276,6 +279,7 @@ export const ExpenseForm = ({
 
     if (validSplits.length === 0) {
       console.error('[ExpenseForm] No valid splits to submit');
+      toast.error("Add at least one participant with a valid split before saving.");
       return;
     }
 
@@ -742,7 +746,8 @@ export const ExpenseForm = ({
               </CardContent>
             </Card>
 
-            {/* Attachments */}
+            {/* Attachments — create flow only; edit page handles uploads separately */}
+            {!isEdit && (
             <Card className="border border-border/50">
               <CardContent className="pt-6">
                 <div className="space-y-3">
@@ -754,6 +759,7 @@ export const ExpenseForm = ({
                 </div>
               </CardContent>
             </Card>
+            )}
 
             {/* Comment - Simple expandable */}
             <Card className="border border-border/50">
