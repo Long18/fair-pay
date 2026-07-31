@@ -62,7 +62,7 @@ import {
 
 const expenseSchema = z.object({
   description: z.string().min(1, "Description is required").max(200),
-  amount: z.coerce.number().positive("Amount must be positive"),
+  amount: z.number().positive("Amount must be positive"),
   currency: z.string(),
   category: z.string().optional(),
   expense_date: z.string(),

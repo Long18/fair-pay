@@ -176,9 +176,9 @@ export const ExpenseEdit = () => {
     },
   });
 
-  const updateMutation = useInstantUpdate();
+  const { mutate: updateExpense, mutation: updateExpenseMutation } = useInstantUpdate();
   const { track } = useTrackEvent();
-  const isSaving = updateMutation.isPending;
+  const isSaving = updateExpenseMutation.isPending;
 
   const refreshExistingAttachments = useCallback(async () => {
     if (!id) return;
@@ -322,7 +322,7 @@ export const ExpenseEdit = () => {
     const { splits, is_recurring, recurring, split_method, context_type, group_id, friendship_id, is_loan, ...expenseData } = values;
 
     track({ eventName: 'expense_edit_submitted', expenseId: id });
-    updateMutation.mutate(
+    updateExpense(
       {
         resource: "expenses",
         id: id!,
