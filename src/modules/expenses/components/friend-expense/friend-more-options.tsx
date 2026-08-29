@@ -8,7 +8,6 @@ import {
   FormItem,
   FormLabel,
   FormControl,
-  FormDescription,
   FormMessage,
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,6 @@ import {
   ChevronDownIcon,
   RepeatIcon,
   MessageSquareIcon,
-  HandCoinsIcon,
   CheckIcon,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
@@ -73,9 +71,9 @@ export const FriendMoreOptions: React.FC<FriendMoreOptionsProps> = ({
   const { tap } = useHaptics();
 
   const splitLabels: Record<string, string> = {
-    equal: t("expenses.splitEqualShort", { defaultValue: "Equal" }),
-    exact: t("expenses.splitExactShort", { defaultValue: "Exact" }),
-    percentage: t("expenses.splitPercentShort", { defaultValue: "%" }),
+    equal: t("expenses.splitEqualShort"),
+    exact: t("expenses.splitExactShort"),
+    percentage: t("expenses.splitPercentShort"),
   };
 
   return (
@@ -94,7 +92,7 @@ export const FriendMoreOptions: React.FC<FriendMoreOptionsProps> = ({
             {isLoan && (
               <img src={loanModeIcon} alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
             )}
-            {t("expenses.moreOptions", { defaultValue: "More options" })}
+            {t("expenses.moreOptions")}
             {isLoan && (
               <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-400 text-amber-700 dark:text-amber-300">
                 {t("expenses.loanToggle")}
@@ -121,7 +119,7 @@ export const FriendMoreOptions: React.FC<FriendMoreOptionsProps> = ({
             name="expense_date"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs">{t("expenses.date", { defaultValue: "Date" })}</FormLabel>
+                <FormLabel className="text-xs">{t("expenses.date")}</FormLabel>
                 <FormControl>
                   <QuickDatePicker value={field.value} onChange={field.onChange} />
                 </FormControl>
@@ -134,18 +132,18 @@ export const FriendMoreOptions: React.FC<FriendMoreOptionsProps> = ({
             name="paid_by_user_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs">{t("expenses.paidBy", { defaultValue: "Paid by" })}</FormLabel>
+                <FormLabel className="text-xs">
+                  {isLoan ? t("expenses.lender") : t("expenses.paidBy")}
+                </FormLabel>
                 <FormControl>
                   <select
                     {...field}
                     className="w-full h-10 px-3 text-sm border border-input rounded-lg bg-background"
-                    aria-label={t("expenses.paidBy", { defaultValue: "Paid by" })}
+                    aria-label={isLoan ? t("expenses.lender") : t("expenses.paidBy")}
                   >
                     {members.map((m) => (
                       <option key={m.id} value={m.id}>
-                        {m.id === currentUserId
-                          ? t("common.you", { defaultValue: "You" })
-                          : m.full_name}
+                        {m.id === currentUserId ? t("common.you") : m.full_name}
                       </option>
                     ))}
                   </select>
@@ -156,17 +154,18 @@ export const FriendMoreOptions: React.FC<FriendMoreOptionsProps> = ({
           />
         </div>
 
-        {/* Split method */}
+        {/* Split method — hidden in loan mode (always 100% to borrower) */}
+        {!isLoan && (
         <FormField
           control={control}
           name="split_method"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-xs">{t("expenses.splitMethod", { defaultValue: "Split method" })}</FormLabel>
+              <FormLabel className="text-xs">{t("expenses.splitMethod")}</FormLabel>
               <FormControl>
                 <div
                   role="radiogroup"
-                  aria-label={t("expenses.splitMethod", { defaultValue: "Split method" })}
+                  aria-label={t("expenses.splitMethod")}
                   className="flex gap-2"
                 >
                   {(["equal", "exact", "percentage"] as const).map((method) => (
@@ -181,6 +180,7 @@ export const FriendMoreOptions: React.FC<FriendMoreOptionsProps> = ({
                     >
                       <input
                         type="radio"
+                        name="split_method"
                         className="sr-only"
                         value={method}
                         checked={field.value === method}
@@ -196,32 +196,13 @@ export const FriendMoreOptions: React.FC<FriendMoreOptionsProps> = ({
             </FormItem>
           )}
         />
+        )}
 
-        {/* Loan toggle */}
-        <FormField
-          control={control}
-          name="is_loan"
-          render={({ field }) => (
-            <FormItem className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
-              <div className="space-y-0.5">
-                <FormLabel className="flex items-center gap-2 text-sm">
-                  <HandCoinsIcon className="h-4 w-4" aria-hidden="true" />
-                  {t("expenses.loanToggle")}
-                </FormLabel>
-                <FormDescription className="text-xs">
-                  {t("expenses.loanToggleDescription")}
-                </FormDescription>
-              </div>
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={(v) => { tap(); field.onChange(v); }}
-                  aria-label={t("expenses.loanToggle")}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+        {isLoan && (
+          <p className="text-xs text-muted-foreground px-1">
+            {t("expenses.loanDirectionHint")}
+          </p>
+        )}
 
         {/* Recurring */}
         <FormField
@@ -232,13 +213,13 @@ export const FriendMoreOptions: React.FC<FriendMoreOptionsProps> = ({
               <div className="flex items-center justify-between">
                 <FormLabel className="flex items-center gap-2 text-sm">
                   <RepeatIcon className="h-4 w-4" aria-hidden="true" />
-                  {t("expenses.recurringExpense", { defaultValue: "Recurring expense" })}
+                  {t("expenses.recurringExpense")}
                 </FormLabel>
                 <FormControl>
                   <Switch
                     checked={field.value}
                     onCheckedChange={(v) => { tap(); field.onChange(v); }}
-                    aria-label={t("expenses.recurringExpense", { defaultValue: "Recurring expense" })}
+                    aria-label={t("expenses.recurringExpense")}
                   />
                 </FormControl>
               </div>
@@ -256,7 +237,7 @@ export const FriendMoreOptions: React.FC<FriendMoreOptionsProps> = ({
         {/* Attachments */}
         <div className="rounded-xl border border-border/60 px-4 py-3 space-y-2">
           <div className="text-sm font-medium">
-            {t("expenses.attachments", { defaultValue: "Attachments" })}
+            {t("expenses.attachments")}
           </div>
           <AttachmentUpload
             attachments={attachments}
@@ -280,7 +261,7 @@ export const FriendMoreOptions: React.FC<FriendMoreOptionsProps> = ({
                 <div className="flex items-center gap-2">
                   <MessageSquareIcon className="h-4 w-4" aria-hidden="true" />
                   <span className="text-sm font-medium">
-                    {t("expenses.addComment", { defaultValue: "Add comment" })}
+                    {t("expenses.addComment")}
                   </span>
                 </div>
                 <ChevronDownIcon
@@ -299,9 +280,7 @@ export const FriendMoreOptions: React.FC<FriendMoreOptionsProps> = ({
                       <MarkdownEditor
                         value={field.value ?? ""}
                         onChange={field.onChange}
-                        placeholder={t("expenses.commentPlaceholder", {
-                          defaultValue: "Add any notes or details...",
-                        })}
+                        placeholder={t("expenses.commentPlaceholder")}
                         minHeight="min-h-[100px]"
                       />
                     </FormControl>

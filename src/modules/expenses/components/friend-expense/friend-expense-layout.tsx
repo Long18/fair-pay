@@ -21,6 +21,7 @@ import {
 import { FriendSplitPreview } from "./friend-split-preview";
 import { FriendQuickPicks } from "./friend-quick-picks";
 import { FriendMoreOptions } from "./friend-more-options";
+import { FriendLoanSection } from "./friend-loan-section";
 import { OutcomeSubmitButton } from "./outcome-submit-button";
 
 interface Member {
@@ -92,7 +93,7 @@ export const FriendExpenseLayout: React.FC<FriendExpenseLayoutProps> = ({
   const paidByUserId = watch("paid_by_user_id");
 
   const friend = members.find((m) => m.id !== currentUserId);
-  const friendName = friend?.full_name ?? t("expenses.friend", { defaultValue: "Friend" });
+  const friendName = friend?.full_name ?? t("expenses.friend");
   const payerIsCurrentUser = paidByUserId === currentUserId;
 
   const debtor = members.find((m) => m.id !== paidByUserId);
@@ -112,15 +113,13 @@ export const FriendExpenseLayout: React.FC<FriendExpenseLayoutProps> = ({
     !amountIsValid ||
     hasBlockingExactSplitExpressions;
 
-  const subtitleText = payerIsCurrentUser
-    ? t("expenses.friendSubtitleYouPaid", {
-        defaultValue: "You paid · split with {{name}}",
-        name: friendName,
-      })
-    : t("expenses.friendSubtitleTheyPaid", {
-        defaultValue: "{{name}} paid · split between you",
-        name: friendName,
-      });
+  const subtitleText = isLoan
+    ? payerIsCurrentUser
+      ? t("expenses.friendSubtitleYouLent", { name: friendName })
+      : t("expenses.friendSubtitleTheyLent", { name: friendName })
+    : payerIsCurrentUser
+      ? t("expenses.friendSubtitleYouPaid", { name: friendName })
+      : t("expenses.friendSubtitleTheyPaid", { name: friendName });
 
   return (
     <div className="space-y-4 overflow-x-hidden max-w-full">
@@ -155,7 +154,7 @@ export const FriendExpenseLayout: React.FC<FriendExpenseLayoutProps> = ({
         <div className="relative z-10 p-4 space-y-3 pr-24">
           {/* Amount label */}
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            {t("expenses.totalAmount", { defaultValue: "Total amount" })}
+            {t("expenses.totalAmount")}
           </p>
 
           {/* Amount + currency row */}
@@ -174,7 +173,7 @@ export const FriendExpenseLayout: React.FC<FriendExpenseLayoutProps> = ({
                         currency={currency}
                         placeholder="0"
                         className="h-14 text-3xl font-bold border-0 bg-transparent shadow-none px-0 focus-visible:ring-0 tabular-nums"
-                        aria-label={t("expenses.amount", { defaultValue: "Amount" })}
+                        aria-label={t("expenses.amount")}
                       />
                     </FormControl>
                     <FormMessage />
@@ -192,7 +191,7 @@ export const FriendExpenseLayout: React.FC<FriendExpenseLayoutProps> = ({
                     <select
                       {...field}
                       className="h-9 px-2 text-sm font-semibold border border-input/60 rounded-lg bg-background/70 text-muted-foreground cursor-pointer"
-                      aria-label={t("expenses.currency", { defaultValue: "Currency" })}
+                      aria-label={t("expenses.currency")}
                     >
                       <option value="VND">VND</option>
                       <option value="USD">USD</option>
@@ -212,15 +211,13 @@ export const FriendExpenseLayout: React.FC<FriendExpenseLayoutProps> = ({
         name="description"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="sr-only">{t("expenses.description", { defaultValue: "Description" })}</FormLabel>
+            <FormLabel className="sr-only">{t("expenses.description")}</FormLabel>
             <FormControl>
               <Input
                 {...field}
-                placeholder={t("expenses.descriptionPlaceholder", {
-                  defaultValue: "e.g. Coffee at Highlands",
-                })}
+                placeholder={t("expenses.descriptionPlaceholder")}
                 className="h-11"
-                aria-label={t("expenses.description", { defaultValue: "Description" })}
+                aria-label={t("expenses.description")}
               />
             </FormControl>
             <FormMessage />
@@ -233,6 +230,13 @@ export const FriendExpenseLayout: React.FC<FriendExpenseLayoutProps> = ({
         selected={selectedTemplate}
         onSelect={handleTemplateSelect}
         onMore={() => setShowAdvanced(true)}
+      />
+
+      {/* Loan toggle + direction (1-on-1) */}
+      <FriendLoanSection
+        members={members}
+        currentUserId={currentUserId}
+        isLoan={isLoan}
       />
 
       {/* Two-person split preview */}
@@ -270,8 +274,10 @@ export const FriendExpenseLayout: React.FC<FriendExpenseLayoutProps> = ({
         disabled={isSubmitDisabled}
         debtorOwes={debtorOwes}
         debtorName={debtor?.full_name}
+        counterpartyName={friendName}
         currency={currency}
         payerIsCurrentUser={payerIsCurrentUser}
+        isLoan={isLoan}
         hasAmount={amountExpressionState.status !== "empty"}
         amountIsValid={amountIsValid}
         isSplitValid={isSplitValid}

@@ -13,8 +13,10 @@ interface OutcomeSubmitButtonProps {
   // Outcome data
   debtorOwes: number;
   debtorName?: string;
+  counterpartyName?: string;
   currency: string;
   payerIsCurrentUser: boolean;
+  isLoan?: boolean;
   // Validation hints (drive the inline message)
   hasAmount: boolean;
   amountIsValid: boolean;
@@ -28,8 +30,10 @@ export const OutcomeSubmitButton: React.FC<OutcomeSubmitButtonProps> = ({
   disabled,
   debtorOwes,
   debtorName,
+  counterpartyName,
   currency,
   payerIsCurrentUser,
+  isLoan = false,
   hasAmount,
   amountIsValid,
   isSplitValid,
@@ -38,32 +42,45 @@ export const OutcomeSubmitButton: React.FC<OutcomeSubmitButtonProps> = ({
   const { t } = useTranslation();
   const sym = symbolFor(currency);
 
-  const baseLabel = isEdit
-    ? t("expenses.updateExpense", { defaultValue: "Update expense" })
-    : t("expenses.createExpense", { defaultValue: "Create expense" });
+  const baseLabel = isEdit ? t("expenses.updateExpense") : t("expenses.createExpense");
 
   let outcomeLine: string | null = null;
   if (!hasAmount) {
-    outcomeLine = t("expenses.enterAmountToContinue", { defaultValue: "Enter amount to continue" });
+    outcomeLine = t("expenses.enterAmountToContinue");
   } else if (!amountIsValid) {
-    outcomeLine = t("expenses.fixAmount", { defaultValue: "Fix amount" });
+    outcomeLine = t("expenses.fixAmount");
   } else if (!isSplitValid) {
-    outcomeLine = t("expenses.fixSplit", { defaultValue: "Fix split amount" });
-  } else if (debtorOwes > 0 && debtorName) {
-    const friendShort = debtorName.split(" ").slice(-1)[0] || debtorName;
-    outcomeLine = payerIsCurrentUser
-      ? t("expenses.outcomeOwesYou", {
-          defaultValue: "{{name}} owes you {{amount}}{{sym}}",
-          name: friendShort,
-          amount: formatNumber(debtorOwes),
-          sym,
-        })
-      : t("expenses.outcomeYouOwe", {
-          defaultValue: "You owe {{name}} {{amount}}{{sym}}",
-          name: friendShort,
-          amount: formatNumber(debtorOwes),
-          sym,
-        });
+    outcomeLine = t("expenses.fixSplit");
+  } else if (debtorOwes > 0 && (debtorName || counterpartyName)) {
+    const friendShort = (isLoan ? counterpartyName : debtorName)?.split(" ").slice(-1)[0]
+      || counterpartyName
+      || debtorName
+      || "";
+    if (isLoan) {
+      outcomeLine = payerIsCurrentUser
+        ? t("expenses.outcomeYouLent", {
+            name: friendShort,
+            amount: formatNumber(debtorOwes),
+            sym,
+          })
+        : t("expenses.outcomeTheyLent", {
+            name: friendShort,
+            amount: formatNumber(debtorOwes),
+            sym,
+          });
+    } else {
+      outcomeLine = payerIsCurrentUser
+        ? t("expenses.outcomeOwesYou", {
+            name: friendShort,
+            amount: formatNumber(debtorOwes),
+            sym,
+          })
+        : t("expenses.outcomeYouOwe", {
+            name: friendShort,
+            amount: formatNumber(debtorOwes),
+            sym,
+          });
+    }
   }
 
   return (
@@ -79,9 +96,7 @@ export const OutcomeSubmitButton: React.FC<OutcomeSubmitButtonProps> = ({
       {isLoading ? (
         <span className="flex items-center">
           <span className="animate-spin mr-2" aria-hidden="true">⏳</span>
-          {isEdit
-            ? t("expenses.updating", { defaultValue: "Updating..." })
-            : t("expenses.creating", { defaultValue: "Creating..." })}
+          {isEdit ? t("expenses.updating") : t("expenses.creating")}
         </span>
       ) : (
         <>

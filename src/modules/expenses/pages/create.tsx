@@ -20,8 +20,10 @@ import { successConfirmation } from "@/assets/expense-friend";
 import { ExpenseTracker, ErrorTracker } from "@/lib/analytics/index";
 import { journeyTracking } from "@/lib/journey-tracking";
 import { useTrackEvent } from "@/hooks/use-track-event";
+import { useTranslation } from "react-i18next";
 
 export const ExpenseCreate = () => {
+  const { t } = useTranslation();
   const { groupId, friendshipId } = useParams<{ groupId?: string; friendshipId?: string }>();
   const [searchParams] = useSearchParams();
   const go = useGo();
@@ -46,10 +48,12 @@ export const ExpenseCreate = () => {
         : categoryRaw
           ? "Other"
           : undefined;
+    const isLoan = searchParams.get("loan") === "1";
     return {
       description,
       amount: Number.isFinite(amount) ? amount : undefined,
       category,
+      is_loan: isLoan || undefined,
     };
   }, [searchParams]);
 
@@ -123,12 +127,12 @@ export const ExpenseCreate = () => {
       const friendMembers = [
         {
           id: identity!.id,
-          full_name: "You",
+          full_name: t("common.you"),
           avatar_url: identity!.avatar_url || null,
         },
         {
           id: friendId,
-          full_name: friendProfile?.full_name || "Friend",
+          full_name: friendProfile?.full_name || t("expenses.friend"),
           avatar_url: friendProfile?.avatar_url || null,
         },
       ].filter(m => m.id !== undefined && m.id !== null); // Ensure valid IDs
@@ -142,7 +146,7 @@ export const ExpenseCreate = () => {
     }
 
     return [];
-  }, [isGroupContext, isFriendContext, membersQuery.data, friendshipQuery.data, identity]);
+  }, [isGroupContext, isFriendContext, membersQuery.data, friendshipQuery.data, identity, t]);
 
   // For group context: only group members. For friend context: the 2 people in the friendship.
   const availableMembers = useMemo(() => {
@@ -422,6 +426,7 @@ export const ExpenseCreate = () => {
             description: templateDefaults.description,
             amount: templateDefaults.amount,
             category: templateDefaults.category,
+            is_loan: templateDefaults.is_loan,
           }}
         />
       )}
