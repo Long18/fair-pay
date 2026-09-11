@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -28,5 +28,21 @@ describe("allowed tracking events sync", () => {
     const clientNames = [...ALLOWED_TRACKING_EVENT_NAMES];
 
     expect(edgeNames.sort()).toEqual(clientNames.sort());
+  });
+
+  it("keeps the latest DB check constraint aligned with the client allowlist", () => {
+    const migrationsDir = join(__dirname, "../../supabase/migrations");
+    const files = readdirSync(migrationsDir)
+      .filter((name) => name.endsWith("_expand_user_tracking_event_allowlist.sql"))
+      .sort();
+    const latest = files.at(-1);
+    expect(latest).toBeTruthy();
+
+    const sql = readFileSync(join(migrationsDir, latest!), "utf8");
+    const block = sql.match(/event_name IN \(([\s\S]*?)\)/)?.[1];
+    expect(block).toBeTruthy();
+
+    const sqlNames = [...block!.matchAll(/'([^']+)'/g)].map(([, name]) => name);
+    expect(sqlNames.sort()).toEqual([...ALLOWED_TRACKING_EVENT_NAMES].sort());
   });
 });

@@ -9,6 +9,7 @@ import {
   toTrackingSessionPayload,
 } from "./session";
 import type { JourneySessionContext, TrackEventInput, TrackingRequestPayload } from "./types";
+import { sendTrackingEventsWithSplitRetry } from "./flush";
 import { sanitizeTrackingPath } from "./url";
 
 const BLOCKED_PROPERTY_KEYS = new Set([
@@ -263,13 +264,19 @@ class JourneyTrackingManager {
 
     try {
       if (options.preferBeacon && this.trySendBeacon(payload)) {
-        this.isFlushing = false;
         return;
       }
 
-      await this.sendWithFetch(payload);
+      const { dropped } = await sendTrackingEventsWithSplitRetry(events, (batch) =>
+        this.sendWithFetch({ ...payload, events: batch }),
+      );
+      if (dropped.length > 0) {
+        console.warn(
+          "[JourneyTracking] Dropped events that failed to persist",
+          dropped.map((event) => event.event_name),
+        );
+      }
     } catch (error) {
-      this.queue = [...events, ...this.queue].slice(-MAX_QUEUE_SIZE);
       console.warn("[JourneyTracking] Failed to flush events", error);
     } finally {
       this.isFlushing = false;

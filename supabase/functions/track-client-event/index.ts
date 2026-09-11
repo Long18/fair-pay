@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { ALLOWED_TRACKING_EVENT_SET } from '../_shared/allowed-tracking-events.ts'
 import { getCorsHeaders } from '../_shared/cors.ts'
+import { insertRowsWithFallback } from './insert-with-fallback.ts'
 
 const ALLOWED_EVENT_NAMES = ALLOWED_TRACKING_EVENT_SET
 
@@ -543,12 +544,17 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    const { error: insertError } = await serviceClient
-      .from('user_tracking_events')
-      .insert(sanitizedEvents)
+    const { accepted, rejectedNames } = await insertRowsWithFallback(
+      sanitizedEvents,
+      (batch) => serviceClient.from('user_tracking_events').insert(batch),
+      (row) => serviceClient.from('user_tracking_events').insert(row),
+    )
 
-    if (insertError) {
-      console.error('Failed to insert journey events', insertError)
+    if (rejectedNames.length > 0) {
+      console.error('Dropped journey events that failed to persist', rejectedNames)
+    }
+
+    if (accepted === 0) {
       return new Response(JSON.stringify({ error: 'Failed to store events' }), {
         status: 500,
         headers: getCorsHeaders(),
@@ -571,7 +577,8 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({
       success: true,
       session_id: sessionId,
-      accepted: sanitizedEvents.length,
+      accepted,
+      dropped: rejectedNames,
       user_id: userId,
     }), {
       status: 200,
