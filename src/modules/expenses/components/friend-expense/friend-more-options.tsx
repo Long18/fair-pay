@@ -30,10 +30,19 @@ import { MarkdownEditor } from "../markdown-editor";
 import { RecurringExpenseForm } from "../recurring-expense-form";
 import { QuickDatePicker } from "../quick-date-picker";
 import { loanModeIcon } from "@/assets/expense-friend";
+import { FriendSplitEditor } from "./friend-split-editor";
 
 interface Member {
   id: string;
   full_name: string;
+  avatar_url?: string | null;
+}
+
+interface Participant {
+  user_id?: string;
+  pending_email?: string;
+  split_value?: number | null;
+  computed_amount: number;
 }
 
 interface FriendMoreOptionsProps {
@@ -43,6 +52,12 @@ interface FriendMoreOptionsProps {
   isLoan: boolean;
   isRecurring: boolean;
   splitMethod: "equal" | "exact" | "percentage";
+  participants: Participant[];
+  amount?: number;
+  currency: string;
+  totalSplit: number;
+  onSplitValueChange: (userId: string, value: number) => void;
+  onExpressionStateChange?: (hasBlockingIssue: boolean) => void;
   // Advanced section state
   showAdvanced: boolean;
   onShowAdvancedChange: (v: boolean) => void;
@@ -60,6 +75,12 @@ export const FriendMoreOptions: React.FC<FriendMoreOptionsProps> = ({
   isLoan,
   isRecurring,
   splitMethod,
+  participants,
+  amount,
+  currency,
+  totalSplit,
+  onSplitValueChange,
+  onExpressionStateChange,
   showAdvanced,
   onShowAdvancedChange,
   showComment,
@@ -184,7 +205,11 @@ export const FriendMoreOptions: React.FC<FriendMoreOptionsProps> = ({
                         className="sr-only"
                         value={method}
                         checked={field.value === method}
-                        onChange={() => { tap(); field.onChange(method); }}
+                        onChange={() => {
+                          tap();
+                          field.onChange(method);
+                          if (method !== "equal") onShowAdvancedChange(true);
+                        }}
                         aria-label={splitLabels[method]}
                       />
                       {field.value === method && <CheckIcon className="h-3.5 w-3.5" aria-hidden="true" />}
@@ -196,6 +221,20 @@ export const FriendMoreOptions: React.FC<FriendMoreOptionsProps> = ({
             </FormItem>
           )}
         />
+        )}
+
+        {!isLoan && (splitMethod === "exact" || splitMethod === "percentage") && (
+          <FriendSplitEditor
+            members={members}
+            currentUserId={currentUserId}
+            participants={participants}
+            splitMethod={splitMethod}
+            amount={amount}
+            currency={currency}
+            totalSplit={totalSplit}
+            onSplitValueChange={onSplitValueChange}
+            onExpressionStateChange={onExpressionStateChange}
+          />
         )}
 
         {isLoan && (

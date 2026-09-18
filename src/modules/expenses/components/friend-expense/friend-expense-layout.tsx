@@ -33,6 +33,7 @@ interface Member {
 interface Participant {
   user_id?: string;
   pending_email?: string;
+  split_value?: number | null;
   computed_amount: number;
 }
 
@@ -43,6 +44,8 @@ interface FriendExpenseLayoutProps {
   participants: Participant[];
   isSplitValid: boolean;
   totalSplit: number;
+  onSplitValueChange: (userId: string, value: number) => void;
+  onExpressionStateChange?: (hasBlockingIssue: boolean) => void;
   // Amount expression
   amountExpressionState: AmountExpressionState;
   setAmountExpressionState: (state: AmountExpressionState) => void;
@@ -68,6 +71,9 @@ export const FriendExpenseLayout: React.FC<FriendExpenseLayoutProps> = ({
   currentUserId,
   participants,
   isSplitValid,
+  totalSplit,
+  onSplitValueChange,
+  onExpressionStateChange,
   amountExpressionState,
   setAmountExpressionState,
   hasBlockingExactSplitExpressions,
@@ -108,10 +114,17 @@ export const FriendExpenseLayout: React.FC<FriendExpenseLayoutProps> = ({
     amountExpressionState.status === "valid" &&
     (amountExpressionState.value ?? 0) > 0;
 
+  const isCustomSplitBalanced =
+    isLoan ||
+    splitMethod === "equal" ||
+    !amount ||
+    Math.abs(totalSplit - amount) <= 1;
+
   const isSubmitDisabled =
     !isSplitValid ||
     !amountIsValid ||
-    hasBlockingExactSplitExpressions;
+    hasBlockingExactSplitExpressions ||
+    !isCustomSplitBalanced;
 
   const subtitleText = isLoan
     ? payerIsCurrentUser
@@ -259,6 +272,12 @@ export const FriendExpenseLayout: React.FC<FriendExpenseLayoutProps> = ({
         isLoan={isLoan}
         isRecurring={isRecurring}
         splitMethod={splitMethod}
+        participants={participants}
+        amount={amount}
+        currency={currency}
+        totalSplit={totalSplit}
+        onSplitValueChange={onSplitValueChange}
+        onExpressionStateChange={onExpressionStateChange}
         showAdvanced={showAdvanced}
         onShowAdvancedChange={setShowAdvanced}
         showComment={showComment}
@@ -280,7 +299,7 @@ export const FriendExpenseLayout: React.FC<FriendExpenseLayoutProps> = ({
         isLoan={isLoan}
         hasAmount={amountExpressionState.status !== "empty"}
         amountIsValid={amountIsValid}
-        isSplitValid={isSplitValid}
+        isSplitValid={isSplitValid && isCustomSplitBalanced}
       />
     </div>
   );
