@@ -172,15 +172,16 @@ export const FriendSplitEditor: React.FC<FriendSplitEditorProps> = ({
     if (rawValue === undefined) return;
 
     const parsedValue = parseMoneyExpression(rawValue);
-    if (parsedValue.status !== "valid" || parsedValue.value === undefined || parsedValue.value < 0) {
+    const resolvedValue = parsedValue.value;
+    if (parsedValue.status !== "valid" || resolvedValue === undefined || resolvedValue < 0) {
       return;
     }
 
     setManualValues((prev) => ({
       ...prev,
-      [userId]: Number.isInteger(parsedValue.value)
-        ? formatNumber(parsedValue.value)
-        : String(parsedValue.value),
+      [userId]: Number.isInteger(resolvedValue)
+        ? formatNumber(resolvedValue)
+        : String(resolvedValue),
     }));
   };
 
