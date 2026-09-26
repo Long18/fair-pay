@@ -19,6 +19,11 @@ type UseUsersTabActionsParams = {
   deleteUser: AdminUserRow | null;
   setDeleteUser: Dispatch<SetStateAction<AdminUserRow | null>>;
   setDeleteDialogOpen: Dispatch<SetStateAction<boolean>>;
+  accountActionUser: AdminUserRow | null;
+  accountActionMode: "deactivate" | "reactivate" | null;
+  setAccountActionUser: Dispatch<SetStateAction<AdminUserRow | null>>;
+  setAccountActionMode: Dispatch<SetStateAction<"deactivate" | "reactivate" | null>>;
+  setAccountActionDialogOpen: Dispatch<SetStateAction<boolean>>;
   setCreateDialogOpen: Dispatch<SetStateAction<boolean>>;
   setMergeSourceUser: Dispatch<SetStateAction<AdminUserRow | null>>;
   setMergeDialogOpen: Dispatch<SetStateAction<boolean>>;
@@ -37,6 +42,11 @@ export function useUsersTabActions({
   deleteUser,
   setDeleteUser,
   setDeleteDialogOpen,
+  accountActionUser,
+  accountActionMode,
+  setAccountActionUser,
+  setAccountActionMode,
+  setAccountActionDialogOpen,
   setCreateDialogOpen,
   setMergeSourceUser,
   setMergeDialogOpen,
@@ -47,6 +57,7 @@ export function useUsersTabActions({
   const queryClient = useQueryClient();
 
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isAccountActioning, setIsAccountActioning] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isMerging, setIsMerging] = useState(false);
@@ -101,6 +112,55 @@ export function useUsersTabActions({
       }
     })();
   }, [identityId, queryClient, tAdmin]);
+
+  const handleAccountAction = useCallback(async () => {
+    if (!accountActionUser || !accountActionMode) return;
+    setIsAccountActioning(true);
+    try {
+      const rpc =
+        accountActionMode === "deactivate"
+          ? "admin_deactivate_profile"
+          : "admin_reactivate_profile";
+      const { error } = await supabaseClient.rpc(rpc, {
+        p_user_id: accountActionUser.id,
+      });
+      if (error) throw error;
+      toast.success(
+        accountActionMode === "deactivate"
+          ? tAdmin("people.success.userDeactivated", { name: accountActionUser.full_name })
+          : tAdmin("people.success.userReactivated", { name: accountActionUser.full_name }),
+      );
+      setAccountActionDialogOpen(false);
+      setAccountActionUser(null);
+      setAccountActionMode(null);
+      if (selectedUser?.id === accountActionUser.id) {
+        setSelectedUser({
+          ...accountActionUser,
+          deactivated_at:
+            accountActionMode === "deactivate" ? new Date().toISOString() : null,
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    } catch (err: unknown) {
+      const fallback =
+        accountActionMode === "deactivate"
+          ? tAdmin("people.errors.deactivateUserFailed")
+          : tAdmin("people.errors.reactivateUserFailed");
+      toast.error(tAdmin("common.errorWithMessage", { message: getErrorMessage(err, fallback) }));
+    } finally {
+      setIsAccountActioning(false);
+    }
+  }, [
+    accountActionMode,
+    accountActionUser,
+    queryClient,
+    selectedUser,
+    setAccountActionDialogOpen,
+    setAccountActionMode,
+    setAccountActionUser,
+    setSelectedUser,
+    tAdmin,
+  ]);
 
   const handleDeleteUser = useCallback(async () => {
     if (!deleteUser) return;
@@ -349,6 +409,8 @@ export function useUsersTabActions({
 
   return {
     isDeleting,
+    isAccountActioning,
+    handleAccountAction,
     isCreating,
     isUpdating,
     isMerging,

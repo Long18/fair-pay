@@ -14,6 +14,7 @@ export function shouldSignOutForLoginStatus(
     return (
       status.reason === "merged_into_other_account" ||
       status.reason === "auth_user_missing" ||
+      status.reason === "account_deactivated" ||
       status.reason === "unauthenticated"
     );
   }
@@ -39,6 +40,13 @@ export function loginStatusSignOutMessage(
     return translate(
       "auth.oauthMergedAccountHint",
       "This email was merged into another account. Sign in again with a linked Google account.",
+    );
+  }
+
+  if (status.reason === "account_deactivated") {
+    return translate(
+      "auth.accountDeactivated",
+      "This account has been deactivated. Contact your administrator if you need access again.",
     );
   }
 

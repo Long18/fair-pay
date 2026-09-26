@@ -76,6 +76,10 @@ export function UsersTab() {
   const [deleteUser, setDeleteUser] = useState<AdminUserRow | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
+  const [accountActionUser, setAccountActionUser] = useState<AdminUserRow | null>(null);
+  const [accountActionMode, setAccountActionMode] = useState<"deactivate" | "reactivate" | null>(null);
+  const [accountActionDialogOpen, setAccountActionDialogOpen] = useState(false);
+
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [postCreateUser, setPostCreateUser] = useState<PostCreateUserRef | null>(null);
   const [postCreateOpen, setPostCreateOpen] = useState(false);
@@ -88,6 +92,8 @@ export function UsersTab() {
 
   const {
     isDeleting,
+    isAccountActioning,
+    handleAccountAction,
     isCreating,
     isUpdating,
     isMerging,
@@ -114,6 +120,11 @@ export function UsersTab() {
     deleteUser,
     setDeleteUser,
     setDeleteDialogOpen,
+    accountActionUser,
+    accountActionMode,
+    setAccountActionUser,
+    setAccountActionMode,
+    setAccountActionDialogOpen,
     setCreateDialogOpen,
     setMergeSourceUser,
     setMergeDialogOpen,
@@ -126,7 +137,10 @@ export function UsersTab() {
     queryFn: async () => {
       const { data, error } = await supabaseClient.rpc("get_admin_users");
       if (error) throw error;
-      return (data ?? []) as AdminUserRow[];
+      return ((data ?? []) as AdminUserRow[]).map((row) => ({
+        ...row,
+        deactivated_at: row.deactivated_at ?? null,
+      }));
     },
     staleTime: 30_000,
   });
@@ -159,6 +173,18 @@ export function UsersTab() {
     onToggleJourneyTracking: (user) => { tap(); void handleToggleJourneyTracking(user); },
     onEdit: (user) => { tap(); setEditUser(user); setEditDialogOpen(true); },
     onMerge: (user) => { warning(); setMergeSourceUser(user); setMergeDialogOpen(true); },
+    onDeactivate: (user) => {
+      warning();
+      setAccountActionUser(user);
+      setAccountActionMode("deactivate");
+      setAccountActionDialogOpen(true);
+    },
+    onReactivate: (user) => {
+      tap();
+      setAccountActionUser(user);
+      setAccountActionMode("reactivate");
+      setAccountActionDialogOpen(true);
+    },
     onDelete: (user) => { warning(); setDeleteUser(user); setDeleteDialogOpen(true); },
   }), [go, handleToggleJourneyTracking, tap, warning]);
 
@@ -417,8 +443,57 @@ export function UsersTab() {
           setMergeSourceUser(selectedUser);
           setMergeDialogOpen(true);
         }}
+        onDeactivate={() => {
+          if (!selectedUser) return;
+          warning();
+          setDetailOpen(false);
+          setAccountActionUser(selectedUser);
+          setAccountActionMode("deactivate");
+          setAccountActionDialogOpen(true);
+        }}
+        onReactivate={() => {
+          if (!selectedUser) return;
+          tap();
+          setDetailOpen(false);
+          setAccountActionUser(selectedUser);
+          setAccountActionMode("reactivate");
+          setAccountActionDialogOpen(true);
+        }}
         onDelete={() => { setDetailOpen(false); setDeleteUser(selectedUser); setDeleteDialogOpen(true); }}
         isSelf={identity?.id === selectedUser?.id}
+      />
+      <DeleteConfirmDialog
+        title={
+          accountActionMode === "reactivate"
+            ? tAdmin("people.reactivateAccountTitle")
+            : tAdmin("people.deactivateAccountTitle")
+        }
+        description={
+          accountActionMode === "reactivate"
+            ? tAdmin("people.reactivateAccountDescription", {
+                name: accountActionUser?.full_name ?? "",
+              })
+            : tAdmin("people.deactivateAccountDescription", {
+                name: accountActionUser?.full_name ?? "",
+                email: accountActionUser?.email ?? "",
+              })
+        }
+        open={accountActionDialogOpen}
+        onOpenChange={(o) => {
+          if (!o && !isAccountActioning) {
+            setAccountActionDialogOpen(false);
+            setAccountActionUser(null);
+            setAccountActionMode(null);
+          }
+        }}
+        onConfirm={handleAccountAction}
+        isDeleting={isAccountActioning}
+        confirmLabel={
+          accountActionMode === "reactivate"
+            ? tAdmin("people.reactivateAccount")
+            : tAdmin("people.deactivateAccount")
+        }
+        confirmDestructive={accountActionMode !== "reactivate"}
       />
       <DeleteConfirmDialog
         title={tAdmin("people.deleteUserTitle")}

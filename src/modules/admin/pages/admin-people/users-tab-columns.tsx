@@ -21,6 +21,8 @@ export function createUsersTabColumns({
   onToggleJourneyTracking,
   onEdit,
   onMerge,
+  onDeactivate,
+  onReactivate,
   onDelete,
 }: CreateUsersTabColumnsParams): ColumnDef<AdminUserRow>[] {
   return [
@@ -41,6 +43,11 @@ export function createUsersTabColumns({
       cell: ({ row }) => (
         <div className="flex items-center gap-2 min-w-0">
           <span className="truncate">{row.original.full_name}</span>
+          {row.original.deactivated_at ? (
+            <Badge variant="outline" className="shrink-0 text-[10px]">
+              {tAdmin("people.accountDeactivated")}
+            </Badge>
+          ) : null}
           <UserGroupStack userId={row.original.id} size="xs" />
         </div>
       ),
@@ -71,6 +78,19 @@ export function createUsersTabColumns({
       cell: ({ row }) => (
         <Badge variant={row.original.role === "admin" ? "default" : "secondary"}>
           {formatSystemRole(row.original.role, tAdmin("common.user"))}
+        </Badge>
+      ),
+    },
+    {
+      id: "deactivated_at",
+      header: tAdmin("people.accountStatus"),
+      accessorFn: (row) => row.deactivated_at,
+      size: 120,
+      cell: ({ row }) => (
+        <Badge variant={row.original.deactivated_at ? "outline" : "secondary"}>
+          {row.original.deactivated_at
+            ? tAdmin("people.accountDeactivated")
+            : tAdmin("people.accountActive")}
         </Badge>
       ),
     },
@@ -119,6 +139,8 @@ export function createUsersTabColumns({
           onToggleJourneyTracking={onToggleJourneyTracking}
           onEdit={onEdit}
           onMerge={onMerge}
+          onDeactivate={onDeactivate}
+          onReactivate={onReactivate}
           onDelete={onDelete}
         />
       ),

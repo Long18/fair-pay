@@ -25,6 +25,8 @@ export function UsersMobileList({
   onToggleJourneyTracking,
   onEdit,
   onMerge,
+  onDeactivate,
+  onReactivate,
   onDelete,
 }: UsersMobileListProps) {
   const { tAdmin } = useAdminTranslation();
@@ -66,6 +68,8 @@ export function UsersMobileList({
               onToggleJourneyTracking={onToggleJourneyTracking}
               onEdit={onEdit}
               onMerge={onMerge}
+              onDeactivate={onDeactivate}
+              onReactivate={onReactivate}
               onDelete={onDelete}
             />
           }

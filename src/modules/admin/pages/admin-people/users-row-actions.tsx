@@ -14,6 +14,8 @@ import {
   Trash2Icon,
   EyeIcon,
   EyeOffIcon,
+  ArchiveIcon,
+  ArchiveRestoreIcon,
 } from "@/components/ui/icons";
 import type { AdminUserRow } from "../../types";
 import { useAdminTranslation } from "../../i18n";
@@ -24,6 +26,8 @@ export type UsersRowActionHandlers = {
   onToggleJourneyTracking: (user: AdminUserRow) => void;
   onEdit: (user: AdminUserRow) => void;
   onMerge: (user: AdminUserRow) => void;
+  onDeactivate: (user: AdminUserRow) => void;
+  onReactivate: (user: AdminUserRow) => void;
   onDelete: (user: AdminUserRow) => void;
 };
 
@@ -42,6 +46,8 @@ export function UsersRowActions({
   onToggleJourneyTracking,
   onEdit,
   onMerge,
+  onDeactivate,
+  onReactivate,
   onDelete,
 }: UsersRowActionsProps) {
   const { tAdmin } = useAdminTranslation();
@@ -99,6 +105,17 @@ export function UsersRowActions({
           <UsersIcon className="mr-2 h-4 w-4" />
           {isSelf ? tAdmin("people.cannotMergeSelf") : tAdmin("people.mergeProfile")}
         </DropdownMenuItem>
+        {user.deactivated_at ? (
+          <DropdownMenuItem onClick={() => onReactivate(user)} disabled={isSelf}>
+            <ArchiveRestoreIcon className="mr-2 h-4 w-4" />
+            {tAdmin("people.reactivateAccount")}
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem onClick={() => onDeactivate(user)} disabled={isSelf}>
+            <ArchiveIcon className="mr-2 h-4 w-4" />
+            {isSelf ? tAdmin("people.cannotDeactivateSelf") : tAdmin("people.deactivateAccount")}
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => onDelete(user)}

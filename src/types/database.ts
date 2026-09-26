@@ -1503,6 +1503,8 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          deactivated_at: string | null
+          deactivated_by: string | null
           email: string
           full_name: string
           id: string
@@ -1511,6 +1513,8 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
           email: string
           full_name: string
           id?: string
@@ -1519,6 +1523,8 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
           email?: string
           full_name?: string
           id?: string
@@ -2425,6 +2431,14 @@ export type Database = {
           id: string
           role: string
         }[]
+      }
+      admin_deactivate_profile: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
+      admin_reactivate_profile: {
+        Args: { p_user_id: string }
+        Returns: Json
       }
       admin_delete_user_tracking: {
         Args: { p_time_range?: string; p_user_id: string }

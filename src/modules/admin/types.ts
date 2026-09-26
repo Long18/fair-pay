@@ -31,6 +31,7 @@ export interface AdminUserRow {
   created_at: string;
   journey_tracking_ignored: boolean;
   has_auth_account: boolean;
+  deactivated_at: string | null;
 }
 
 export interface AuditLogEntry {

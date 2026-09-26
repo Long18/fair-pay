@@ -28,6 +28,8 @@ import {
   EyeOffIcon,
   ShieldIcon,
   ShieldOffIcon,
+  ArchiveIcon,
+  ArchiveRestoreIcon,
 } from "@/components/ui/icons";
 import { formatDate } from "@/lib/locale-utils";
 import type { AdminUserRow } from "../../types";
@@ -45,6 +47,8 @@ export function UserDetailDialog({
   onToggleRole,
   onToggleJourneyTracking,
   onDelete,
+  onDeactivate,
+  onReactivate,
   onMerge,
   onViewJourney,
   onSetPrimaryEmail,
@@ -62,6 +66,8 @@ export function UserDetailDialog({
   onToggleRole: () => void;
   onToggleJourneyTracking: () => void;
   onDelete: () => void;
+  onDeactivate: () => void;
+  onReactivate: () => void;
   onMerge: () => void;
   onViewJourney: () => void;
   onSetPrimaryEmail: (emailId: string) => void;
@@ -359,6 +365,22 @@ export function UserDetailDialog({
                       </Badge>
                     }
                   />
+                  <DetailRow
+                    label={tAdmin("people.accountStatus")}
+                    value={
+                      <Badge variant={user.deactivated_at ? "outline" : "secondary"}>
+                        {user.deactivated_at
+                          ? tAdmin("people.accountDeactivated")
+                          : tAdmin("people.accountActive")}
+                      </Badge>
+                    }
+                  />
+                  {user.deactivated_at ? (
+                    <DetailRow
+                      label={tAdmin("people.deactivateAccount")}
+                      value={formatDate(user.deactivated_at)}
+                    />
+                  ) : null}
                   <DetailRow label={tAdmin("common.createdAt")} value={formatDate(user.created_at)} />
                   <DetailRow label="ID" value={<span className="text-xs font-mono">{user.id}</span>} />
                 </div>
@@ -397,6 +419,17 @@ export function UserDetailDialog({
                     <UsersIcon className="mr-2 h-4 w-4" />
                     {tAdmin("people.mergeProfile")}
                   </Button>
+                  {user.deactivated_at ? (
+                    <Button size="sm" variant="outline" onClick={onReactivate} disabled={isSelf}>
+                      <ArchiveRestoreIcon className="mr-2 h-4 w-4" />
+                      {tAdmin("people.reactivateAccount")}
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={onDeactivate} disabled={isSelf}>
+                      <ArchiveIcon className="mr-2 h-4 w-4" />
+                      {tAdmin("people.deactivateAccount")}
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="destructive"

@@ -18,6 +18,8 @@ export function DeleteConfirmDialog({
   onOpenChange,
   onConfirm,
   isDeleting,
+  confirmLabel,
+  confirmDestructive = true,
 }: {
   title: string;
   description: string;
@@ -25,6 +27,8 @@ export function DeleteConfirmDialog({
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
   isDeleting: boolean;
+  confirmLabel?: string;
+  confirmDestructive?: boolean;
 }) {
   const { tAdmin } = useAdminTranslation();
 
@@ -41,12 +45,16 @@ export function DeleteConfirmDialog({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isDeleting}>{tAdmin("common.cancel")}</AlertDialogCancel>
           <AlertDialogAction
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            className={
+              confirmDestructive
+                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                : undefined
+            }
             onClick={(e) => { e.preventDefault(); onConfirm(); }}
             disabled={isDeleting}
           >
             {isDeleting ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
-            {tAdmin("common.delete")}
+            {confirmLabel ?? tAdmin("common.delete")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

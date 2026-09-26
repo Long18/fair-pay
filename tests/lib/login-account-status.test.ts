@@ -21,6 +21,12 @@ describe("shouldSignOutForLoginStatus", () => {
     ).toBe(true);
   });
 
+  it("signs out deactivated accounts", () => {
+    expect(
+      shouldSignOutForLoginStatus({ ok: false, reason: "account_deactivated" }),
+    ).toBe(true);
+  });
+
   it("keeps live profile sessions", () => {
     expect(
       shouldSignOutForLoginStatus({ ok: true, has_profile: true }),
