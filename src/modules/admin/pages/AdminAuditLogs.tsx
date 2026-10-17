@@ -1,4 +1,8 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
+import {
+  AUDIT_PREVIEW_ENTITY_HINTS,
+  AUDIT_PREVIEW_ENTRY,
+} from "./admin-audit-logs/audit-preview.fixture";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -91,6 +95,15 @@ export function AdminAuditLogs({ embedded = false }: { embedded?: boolean }) {
 
   const revertMutation = useRevertAuditEntry();
   const { tap, warning } = useHaptics();
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("auditPreview") === "1") {
+      setSelectedEntry(AUDIT_PREVIEW_ENTRY);
+      setDetailOpen(true);
+    }
+  }, []);
 
   // ─── Data fetching ──────────────────────────────────────────────
 
@@ -571,7 +584,14 @@ export function AdminAuditLogs({ embedded = false }: { embedded?: boolean }) {
       </Card>
 
       {/* Detail Dialog */}
-      <AuditDetailDialog entry={selectedEntry} open={detailOpen} onOpenChange={setDetailOpen} />
+      <AuditDetailDialog
+        entry={selectedEntry}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        entityHints={
+          selectedEntry?.id === AUDIT_PREVIEW_ENTRY.id ? AUDIT_PREVIEW_ENTITY_HINTS : undefined
+        }
+      />
 
       {/* Revert Dialog */}
       <RevertAuditDialog

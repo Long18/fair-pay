@@ -1,9 +1,52 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useAdminTranslation } from "../../i18n";
+import { AuditCompactChangeList, type CompactChange } from "./audit-compact-change-list";
+import { AuditSettleChangesView } from "./audit-settle-changes-view";
+import { isSettlementAuditPayload } from "./audit-settlement-payload";
+import type { AuditEntityMaps } from "./use-audit-entities";
 
-export function DiffView({ oldData, newData }: { oldData: Record<string, unknown> | null; newData: Record<string, unknown> | null }) {
+const FIELD_LABELS: Record<string, string> = {
+  actor_id: "Actor",
+  settlement_id: "Settlement",
+  split_ids: "Splits",
+  splits: "Split states (before)",
+  splits_updated: "Splits updated",
+  total_amount: "Total amount",
+  counterparty_ids: "Counterparties",
+  group_ids: "Groups",
+  group_id: "Group",
+  user_id: "Member",
+  expense_id: "Expense",
+  currency: "Currency",
+};
+
+function fieldLabel(key: string): string {
+  return FIELD_LABELS[key] ?? key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+type ChangeType = "added" | "removed" | "changed" | "unchanged";
+
+export function DiffView({
+  oldData,
+  newData,
+  entities,
+  isLoadingEntities,
+  actorId,
+}: {
+  oldData: Record<string, unknown> | null;
+  newData: Record<string, unknown> | null;
+  entities: AuditEntityMaps;
+  isLoadingEntities: boolean;
+  actorId?: string | null;
+}) {
   const { tAdmin } = useAdminTranslation();
-  const changes = useMemo(() => {
+  const [showUnchanged, setShowUnchanged] = useState(false);
+
+  const currency =
+    (newData?.currency as string | undefined) ??
+    (oldData?.currency as string | undefined);
+
+  const changes = useMemo((): CompactChange[] => {
     if (!oldData && !newData) return [];
 
     const allKeys = new Set([
@@ -11,12 +54,7 @@ export function DiffView({ oldData, newData }: { oldData: Record<string, unknown
       ...Object.keys(newData ?? {}),
     ]);
 
-    const result: Array<{
-      key: string;
-      oldVal: unknown;
-      newVal: unknown;
-      type: "added" | "removed" | "changed" | "unchanged";
-    }> = [];
+    const result: CompactChange[] = [];
 
     for (const key of allKeys) {
       const oldVal = oldData?.[key];
@@ -24,71 +62,52 @@ export function DiffView({ oldData, newData }: { oldData: Record<string, unknown
       const oldStr = JSON.stringify(oldVal);
       const newStr = JSON.stringify(newVal);
 
-      if (oldVal === undefined) {
-        result.push({ key, oldVal, newVal, type: "added" });
-      } else if (newVal === undefined) {
-        result.push({ key, oldVal, newVal, type: "removed" });
-      } else if (oldStr !== newStr) {
-        result.push({ key, oldVal, newVal, type: "changed" });
-      } else {
-        result.push({ key, oldVal, newVal, type: "unchanged" });
-      }
+      let type: ChangeType;
+      if (oldVal === undefined) type = "added";
+      else if (newVal === undefined) type = "removed";
+      else if (oldStr !== newStr) type = "changed";
+      else type = "unchanged";
+
+      result.push({ key, label: fieldLabel(key), oldVal, newVal, type });
     }
 
-    // Sort: changed first, then added, removed, unchanged
-    const order = { changed: 0, added: 1, removed: 2, unchanged: 3 };
+    const order: Record<ChangeType, number> = { changed: 0, added: 1, removed: 2, unchanged: 3 };
     result.sort((a, b) => order[a.type] - order[b.type]);
     return result;
   }, [oldData, newData]);
 
   if (changes.length === 0) {
-    return <p className="text-sm text-muted-foreground text-center py-4">{tAdmin("auditLogs.noDetailData")}</p>;
+    return (
+      <p className="text-sm text-muted-foreground text-center py-4">
+        {tAdmin("auditLogs.noDetailData")}
+      </p>
+    );
   }
 
-  const formatVal = (v: unknown) => {
-    if (v === undefined || v === null) return "—";
-    if (typeof v === "object") return JSON.stringify(v, null, 2);
-    return String(v);
-  };
+  const settlement = isSettlementAuditPayload(oldData, newData);
+
+  if (settlement) {
+    return (
+      <AuditSettleChangesView
+        oldData={oldData}
+        newData={newData}
+        entities={entities}
+        isLoadingEntities={isLoadingEntities}
+        actorId={actorId}
+      />
+    );
+  }
 
   return (
-    <div className="space-y-1">
-      {changes.map(({ key, oldVal, newVal, type }) => (
-        <div
-          key={key}
-          className={`flex items-start gap-2 rounded-md px-2 py-1 text-xs font-mono ${
-            type === "added"
-              ? "bg-[var(--status-success-bg)]"
-              : type === "removed"
-                ? "bg-[var(--status-error-bg)]"
-                : type === "changed"
-                  ? "bg-[var(--status-warning-bg)]"
-                  : "bg-transparent"
-          }`}
-        >
-          <span className="w-1.5 shrink-0 mt-0.5">
-            {type === "added" && <span className="text-[var(--status-success-foreground)]">+</span>}
-            {type === "removed" && <span className="text-[var(--status-error-foreground)]">−</span>}
-            {type === "changed" && <span className="text-[var(--status-warning-foreground)]">~</span>}
-          </span>
-          <span className="text-muted-foreground min-w-[100px] shrink-0">{key}:</span>
-          <div className="flex-1 min-w-0">
-            {type === "changed" ? (
-              <div className="space-y-0.5">
-                <div className="text-[var(--status-error-foreground)] line-through break-all">{formatVal(oldVal)}</div>
-                <div className="text-[var(--status-success-foreground)] break-all">{formatVal(newVal)}</div>
-              </div>
-            ) : type === "removed" ? (
-              <span className="text-[var(--status-error-foreground)] break-all">{formatVal(oldVal)}</span>
-            ) : type === "added" ? (
-              <span className="text-[var(--status-success-foreground)] break-all">{formatVal(newVal)}</span>
-            ) : (
-              <span className="text-muted-foreground break-all">{formatVal(newVal)}</span>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
+    <AuditCompactChangeList
+      changes={changes}
+      showUnchanged={showUnchanged}
+      onShowUnchangedChange={setShowUnchanged}
+      entities={entities}
+      currency={currency}
+      isLoadingEntities={isLoadingEntities}
+      oldData={oldData}
+      newData={newData}
+    />
   );
 }
-

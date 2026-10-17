@@ -253,12 +253,16 @@ export const SignInForm = () => {
           setIsLoading(false);
           setDevSignInRole(null);
           const fallback = `Dev sign-in as ${role} failed. Ensure local Supabase has test users seeded.`;
-          const message =
+          let message =
             error instanceof Error
               ? error.message
               : (typeof error === "object" && error !== null && "message" in error && typeof (error as { message: unknown }).message === "string"
                   ? (error as { message: string }).message
                   : fallback);
+          if (/failed to fetch/i.test(message)) {
+            message =
+              "Cannot reach Supabase (Failed to fetch). For local dev: run `supabase start` (or `supabase stop && supabase start` if the DB container exited).";
+          }
           setError(message);
         },
       }

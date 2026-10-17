@@ -118,6 +118,13 @@ const AdminTransactions = lazy(() => import("./modules/admin/pages/AdminTransact
 const AdminReactions = lazy(() => import("./modules/admin/pages/AdminReactions").then(m => ({ default: m.AdminReactions })));
 const AdminDevTool = lazy(() => import("./modules/admin/pages/AdminDevTool").then(m => ({ default: m.AdminDevTool })));
 const AdminMarketing = lazy(() => import("./modules/admin/pages/AdminMarketing").then(m => ({ default: m.AdminMarketing })));
+const AuditDetailPreviewPage = import.meta.env.DEV
+  ? lazy(() =>
+      import("./modules/admin/pages/admin-audit-logs/AuditDetailPreviewPage").then((m) => ({
+        default: m.AuditDetailPreviewPage,
+      })),
+    )
+  : null;
 
 // Profile Edit Redirect Component
 const ProfileEditRedirect = () => {
@@ -369,6 +376,16 @@ function App() {
                         <ExpenseCalculator />
                       </Suspense>
                     } />
+                    {AuditDetailPreviewPage ? (
+                      <Route
+                        path="/__dev/audit-detail-preview"
+                        element={
+                          <Suspense fallback={null}>
+                            <AuditDetailPreviewPage />
+                          </Suspense>
+                        }
+                      />
+                    ) : null}
 
                     {/* Pricing page - public */}
                     <Route path="/pricing" element={
