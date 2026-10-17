@@ -24,39 +24,37 @@ export function AdminMarketing() {
   }
 
   return (
-    <div className="space-y-6">
-      <AdminPageHeader
-        title={tAdmin("marketing.title")}
-        description={tAdmin("marketing.subtitle")}
-      />
+    <AdminTabs
+      value={activeTab}
+      onValueChange={setActiveTab}
+      header={
+        <AdminPageHeader
+          title={tAdmin("marketing.title")}
+          description={tAdmin("marketing.subtitle")}
+        />
+      }
+      items={[
+        { value: "growth", label: tAdmin("marketing.tabGrowth") },
+        { value: "retention", label: tAdmin("marketing.tabRetention") },
+        { value: "emails", label: tAdmin("marketing.tabEmails") },
+        { value: "experiments", label: tAdmin("marketing.tabExperiments") },
+      ]}
+    >
+      <AdminTabsContent value="growth">
+        <GrowthTab enabled={canViewGrowth && activeTab === "growth"} locale={locale} />
+      </AdminTabsContent>
 
-      <AdminTabs
-        value={activeTab}
-        onValueChange={setActiveTab}
-        listClassName="sm:grid-cols-4"
-        items={[
-          { value: "growth", label: tAdmin("marketing.tabGrowth") },
-          { value: "retention", label: tAdmin("marketing.tabRetention") },
-          { value: "emails", label: tAdmin("marketing.tabEmails") },
-          { value: "experiments", label: tAdmin("marketing.tabExperiments") },
-        ]}
-      >
-        <AdminTabsContent value="growth" className="mt-6">
-          <GrowthTab enabled={canViewGrowth && activeTab === "growth"} locale={locale} />
-        </AdminTabsContent>
+      <AdminTabsContent value="retention">
+        <RetentionTab enabled={canViewGrowth && activeTab === "retention"} />
+      </AdminTabsContent>
 
-        <AdminTabsContent value="retention" className="mt-6">
-          <RetentionTab enabled={canViewGrowth && activeTab === "retention"} />
-        </AdminTabsContent>
+      <AdminTabsContent value="emails">
+        <EmailsTab enabled={canViewGrowth && activeTab === "emails"} />
+      </AdminTabsContent>
 
-        <AdminTabsContent value="emails" className="mt-6">
-          <EmailsTab enabled={canViewGrowth && activeTab === "emails"} />
-        </AdminTabsContent>
-
-        <AdminTabsContent value="experiments" className="mt-6">
-          <ExperimentsTab enabled={canViewGrowth && activeTab === "experiments"} />
-        </AdminTabsContent>
-      </AdminTabs>
-    </div>
+      <AdminTabsContent value="experiments">
+        <ExperimentsTab enabled={canViewGrowth && activeTab === "experiments"} />
+      </AdminTabsContent>
+    </AdminTabs>
   );
 }

@@ -21,6 +21,25 @@ export interface AdminMetricCardProps {
   className?: string;
 }
 
+/** Card root resets the default `py-6 gap-6` so the content padding is the only padding. */
+const CARD_RESET = "gap-0 py-0";
+
+function TrendBadge({ trend, className }: { trend: NonNullable<AdminMetricCardProps["trend"]>; className?: string }) {
+  return (
+    <Badge
+      variant={trend.positive ? "default" : "destructive"}
+      className={cn("mt-1 gap-1 text-[10px]", className)}
+    >
+      {trend.positive ? (
+        <TrendingUpIcon className="size-3" aria-hidden />
+      ) : (
+        <TrendingDownIcon className="size-3" aria-hidden />
+      )}
+      {trend.value}
+    </Badge>
+  );
+}
+
 export function AdminMetricCard({
   label,
   value,
@@ -38,20 +57,20 @@ export function AdminMetricCard({
 
   if (resolvedVariant === "plain") {
     return (
-      <Card className={cn(className)}>
-        <CardContent className="p-4 space-y-1">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <Card className={cn(CARD_RESET, className)}>
+        <CardContent className="space-y-0.5 p-3">
+          <p className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             {label}
           </p>
           {loading ? (
-            <Skeleton className="h-8 w-20" />
+            <Skeleton className="h-7 w-20" />
           ) : (
-            <p className="text-2xl font-semibold tabular-nums tracking-tight">
+            <p className="text-xl font-semibold tabular-nums tracking-tight">
               {value}
             </p>
           )}
           {description ? (
-            <p className="text-xs text-muted-foreground">{description}</p>
+            <p className="truncate text-xs text-muted-foreground">{description}</p>
           ) : null}
         </CardContent>
       </Card>
@@ -60,10 +79,10 @@ export function AdminMetricCard({
 
   if (resolvedVariant === "compact") {
     return (
-      <Card className={cn(className)}>
+      <Card className={cn(CARD_RESET, className)}>
         <CardContent className="flex items-start justify-between gap-3 p-3">
           <div className="min-w-0 space-y-0.5">
-            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className="truncate text-xs text-muted-foreground">{label}</p>
             {loading ? (
               <Skeleton className="h-6 w-16" />
             ) : (
@@ -71,24 +90,15 @@ export function AdminMetricCard({
                 {value}
               </p>
             )}
-            {trend ? (
-              <Badge
-                variant={trend.positive ? "default" : "destructive"}
-                className="mt-1 gap-1 text-[10px]"
-              >
-                {trend.positive ? (
-                  <TrendingUpIcon className="size-3" aria-hidden />
-                ) : (
-                  <TrendingDownIcon className="size-3" aria-hidden />
-                )}
-                {trend.value}
-              </Badge>
+            {description ? (
+              <p className="truncate text-[11px] text-muted-foreground">{description}</p>
             ) : null}
+            {trend ? <TrendBadge trend={trend} /> : null}
           </div>
           {Icon ? (
             <div
               className={cn(
-                "flex size-9 shrink-0 items-center justify-center rounded-lg border",
+                "flex size-8 shrink-0 items-center justify-center rounded-lg border",
                 tones?.surface ?? "bg-muted"
               )}
               aria-hidden
@@ -107,32 +117,36 @@ export function AdminMetricCard({
     return (
       <Card
         className={cn(
+          CARD_RESET,
           "overflow-hidden border border-l-4 shadow-xs",
           leftBorder,
           className
         )}
       >
-        <CardContent className="flex items-center gap-3 p-4">
+        <CardContent className="flex items-center gap-2.5 p-3">
           {Icon ? (
             <div
               className={cn(
-                "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
                 tones?.surface ?? "bg-muted"
               )}
               aria-hidden
             >
-              <Icon className={cn("h-5 w-5", tones?.icon ?? "text-foreground")} />
+              <Icon className={cn("h-4 w-4", tones?.icon ?? "text-foreground")} />
             </div>
           ) : null}
           <div className="min-w-0 space-y-0.5">
-            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className="truncate text-xs text-muted-foreground">{label}</p>
             {loading ? (
-              <Skeleton className="h-7 w-16" />
+              <Skeleton className="h-6 w-16" />
             ) : (
-              <p className="text-2xl font-bold tabular-nums leading-none">
+              <p className="text-xl font-bold tabular-nums leading-none">
                 {value}
               </p>
             )}
+            {description ? (
+              <p className="truncate text-[11px] text-muted-foreground">{description}</p>
+            ) : null}
           </div>
         </CardContent>
       </Card>
@@ -141,41 +155,29 @@ export function AdminMetricCard({
 
   // muted (default) — SimpleStatCard-compatible
   return (
-    <Card className={cn(className)}>
-      <CardContent className="flex items-center gap-3 p-4">
+    <Card className={cn(CARD_RESET, className)}>
+      <CardContent className="flex items-center gap-2.5 p-3">
         {Icon ? (
           <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted"
             aria-hidden
           >
-            <Icon className="h-5 w-5 text-muted-foreground" />
+            <Icon className="h-4 w-4 text-muted-foreground" />
           </div>
         ) : null}
         <div className="min-w-0 space-y-0.5">
-          <p className="text-xs text-muted-foreground">{label}</p>
+          <p className="truncate text-xs text-muted-foreground">{label}</p>
           {loading ? (
-            <Skeleton className="h-7 w-16" />
+            <Skeleton className="h-6 w-16" />
           ) : (
-            <p className="text-2xl font-semibold tabular-nums leading-none">
+            <p className="text-xl font-semibold tabular-nums leading-none">
               {value}
             </p>
           )}
           {description ? (
-            <p className="text-xs text-muted-foreground">{description}</p>
+            <p className="truncate text-[11px] text-muted-foreground">{description}</p>
           ) : null}
-          {trend ? (
-            <Badge
-              variant={trend.positive ? "default" : "destructive"}
-              className="mt-1 gap-1 text-xs"
-            >
-              {trend.positive ? (
-                <TrendingUpIcon className="size-3" aria-hidden />
-              ) : (
-                <TrendingDownIcon className="size-3" aria-hidden />
-              )}
-              {trend.value}
-            </Badge>
-          ) : null}
+          {trend ? <TrendBadge trend={trend} className="text-xs" /> : null}
         </div>
       </CardContent>
     </Card>
@@ -194,7 +196,7 @@ export function AdminMetricGrid({
   return (
     <div
       className={cn(
-        "grid gap-4",
+        "grid gap-3",
         columns === 2 && "grid-cols-1 sm:grid-cols-2",
         columns === 3 && "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
         columns === 4 && "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",

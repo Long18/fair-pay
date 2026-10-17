@@ -19,7 +19,7 @@ export function AdminFilterChips({ filters, onClearAll }: AdminFilterChipsProps)
 
   if (filters.length === 0) return null;
   return (
-    <div className="flex flex-wrap items-center gap-1.5 pb-3">
+    <div className="flex flex-wrap items-center gap-1.5">
       {filters.map((f) => (
         <Badge key={f.key} variant="secondary" className="gap-1 pr-1 font-normal">
           {f.label}

@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect, useRef } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useGetIdentity, useGo } from "@refinedev/core";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -9,31 +9,19 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   getFilteredRowModel,
-  flexRender,
   type SortingState,
 } from "@tanstack/react-table";
-import { AnimatedList } from "@/components/ui/animated-list";
-import { AnimatedRow } from "@/components/ui/animated-row";
 import { supabaseClient } from "@/utility/supabaseClient";
-import { getCommonStyles } from "@/components/refine-ui/data-table/data-table";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Label } from "@/components/ui/label";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  UsersIcon,
-  UserPlusIcon,
-  PlusIcon,
-  ChevronDownIcon,
-} from "@/components/ui/icons";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { UsersIcon, PlusIcon, ActivityIcon, PencilIcon } from "@/components/ui/icons";
 import { matchesSearchFields } from "@/lib/search-utils";
 import type { Profile } from "@/modules/profile/types";
 import type { AdminUserRow } from "../../types";
@@ -41,23 +29,28 @@ import { AdminPageToolbar } from "../../components/AdminPageToolbar";
 import { AdminFilterChips } from "../../components/AdminFilterChips";
 import { AdminTableSkeleton } from "../../components/AdminTableSkeleton";
 import { AdminEmptyState } from "../../components/AdminEmptyState";
+import { AdminMasterDetail } from "../../components/AdminMasterDetail";
 import {
   PostCreateConnectionsDialog,
   type PostCreateUserRef,
 } from "../../components/PostCreateConnectionsDialog";
-import { AdminMobilePagination } from "../../components/AdminMobileCards";
 import { useAdminTranslation } from "../../i18n";
-import { formatSystemRole } from "./utils";
-import { UserDetailDialog } from "./user-detail-dialog";
+import { formatSystemRole, PEOPLE_DEFAULT_PAGE_SIZE } from "./utils";
+import { UserDetailPanel } from "./user-detail-dialog";
 import { DeleteConfirmDialog } from "./delete-confirm-dialog";
 import { MergeUserDialog } from "./merge-user-dialog";
 import { CreateUserDialog } from "./create-user-dialog";
 import { EditUserDialog } from "./edit-user-dialog";
-import { NewRegistrationCard } from "./new-registration-card";
+import { NewRegistrationsPopover } from "./new-registration-card";
 import { createUsersTabColumns, NEW_REG_DAYS } from "./users-tab-columns";
 import { UsersMobileList } from "./users-mobile-list";
 import { useUsersTabActions } from "./use-users-tab-actions";
 import type { UsersRowActionHandlers } from "./users-row-actions";
+import { PeopleTable } from "./people-table";
+import { PeoplePagination } from "./people-pagination";
+
+const SYSTEM_ROLES = ["admin", "moderator", "user"] as const;
+type SystemRole = (typeof SYSTEM_ROLES)[number];
 
 export function UsersTab() {
   const { tAdmin } = useAdminTranslation();
@@ -69,6 +62,7 @@ export function UsersTab() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const [selectedUser, setSelectedUser] = useState<AdminUserRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -145,6 +139,12 @@ export function UsersTab() {
     staleTime: 30_000,
   });
 
+  // The pane stays open beside the list, so prefer the freshest row over the click-time snapshot.
+  const detailUser = useMemo(() => {
+    if (!selectedUser) return null;
+    return usersData?.find((u) => u.id === selectedUser.id) ?? selectedUser;
+  }, [selectedUser, usersData]);
+
   const newRegistrations = useMemo(() => {
     if (!usersData) return [];
     const cutoff = new Date();
@@ -167,8 +167,14 @@ export function UsersTab() {
     return result;
   }, [usersData, debouncedSearch, roleFilter]);
 
+  const openDetail = useCallback((user: AdminUserRow) => {
+    tap();
+    setSelectedUser(user);
+    setDetailOpen(true);
+  }, [tap]);
+
   const rowActions = useMemo<UsersRowActionHandlers>(() => ({
-    onViewDetail: (user) => { tap(); setSelectedUser(user); setDetailOpen(true); },
+    onViewDetail: openDetail,
     onViewJourney: (user) => { tap(); go({ to: `/admin/people/${user.id}/journey` }); },
     onToggleJourneyTracking: (user) => { tap(); void handleToggleJourneyTracking(user); },
     onEdit: (user) => { tap(); setEditUser(user); setEditDialogOpen(true); },
@@ -186,7 +192,7 @@ export function UsersTab() {
       setAccountActionDialogOpen(true);
     },
     onDelete: (user) => { warning(); setDeleteUser(user); setDeleteDialogOpen(true); },
-  }), [go, handleToggleJourneyTracking, tap, warning]);
+  }), [go, handleToggleJourneyTracking, openDetail, tap, warning]);
 
   const columns = useMemo(
     () => createUsersTabColumns({
@@ -201,11 +207,6 @@ export function UsersTab() {
   const [columnPinning, setColumnPinning] = useState<{ left?: string[]; right?: string[] }>({
     right: ["actions"],
   });
-  const usersScrollRef = useRef<HTMLDivElement>(null);
-  const [usersTableOverflow, setUsersTableOverflow] = useState({
-    horizontal: false,
-    vertical: false,
-  });
 
   const reactTable = useReactTable({
     data: filteredData,
@@ -218,249 +219,162 @@ export function UsersTab() {
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    initialState: { pagination: { pageSize: 10 } },
+    initialState: { pagination: { pageSize: PEOPLE_DEFAULT_PAGE_SIZE } },
   });
-
-  useEffect(() => {
-    const checkOverflow = () => {
-      const container = usersScrollRef.current;
-      const tableEl = container?.querySelector("table");
-      if (!tableEl || !container) return;
-      setUsersTableOverflow({
-        horizontal: tableEl.offsetWidth > container.clientWidth,
-        vertical: tableEl.offsetHeight > container.clientHeight,
-      });
-    };
-    checkOverflow();
-    window.addEventListener("resize", checkOverflow);
-    const timeoutId = setTimeout(checkOverflow, 100);
-    return () => {
-      window.removeEventListener("resize", checkOverflow);
-      clearTimeout(timeoutId);
-    };
-  }, [filteredData]);
 
   const clearFilters = useCallback(() => { setSearch(""); setRoleFilter("all"); }, []);
   const hasActiveFilters = search !== "" || roleFilter !== "all";
   const isEmptyResult = !isLoading && reactTable.getRowModel().rows.length === 0;
   const visibleUsers = reactTable.getRowModel().rows.map((row) => row.original);
+  const { pageIndex, pageSize } = reactTable.getState().pagination;
+  const userLabel = tAdmin("common.user");
+
+  const roleFilterContent = (
+    <div className="space-y-1.5">
+      <Label htmlFor="people-role-filter" className="text-xs text-muted-foreground">
+        {tAdmin("common.role")}
+      </Label>
+      <Select
+        value={roleFilter}
+        onValueChange={(value) => { tap(); setRoleFilter(value); setFilterOpen(false); }}
+      >
+        <SelectTrigger id="people-role-filter" className="w-full">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">{tAdmin("layout.people.allRoles")}</SelectItem>
+          {SYSTEM_ROLES.map((role) => (
+            <SelectItem key={role} value={role}>
+              {formatSystemRole(role, userLabel)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
+  const master = (
+    <div className="flex min-w-0 flex-col gap-3">
+      <AdminPageToolbar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder={tAdmin("people.userSearchPlaceholder")}
+        filterCount={roleFilter !== "all" ? 1 : 0}
+        filterContent={roleFilterContent}
+        filterOpen={filterOpen}
+        onFilterOpenChange={setFilterOpen}
+        actions={
+          <>
+            {!isLoading ? (
+              <NewRegistrationsPopover users={newRegistrations} onSelect={openDetail} />
+            ) : null}
+            <Button size="sm" className="h-10 sm:h-9" onClick={() => { tap(); setCreateDialogOpen(true); }}>
+              <PlusIcon className="mr-1.5 h-4 w-4" />
+              {tAdmin("people.createUserSubmit")}
+            </Button>
+          </>
+        }
+      />
+      <AdminFilterChips
+        filters={[
+          ...(roleFilter !== "all"
+            ? [{ key: "role", label: tAdmin("people.roleFilter", { role: formatSystemRole(roleFilter as SystemRole, userLabel) }), onRemove: () => { tap(); setRoleFilter("all"); } }]
+            : []),
+        ]}
+        onClearAll={() => { tap(); clearFilters(); }}
+      />
+
+      {isLoading ? (
+        <AdminTableSkeleton rows={7} columns={6} />
+      ) : isEmptyResult && hasActiveFilters ? (
+        <AdminEmptyState
+          icon={<UsersIcon className="h-8 w-8" />}
+          title={tAdmin("people.noUsersTitle")}
+          description={tAdmin("people.noUsersDescription")}
+          action={{ label: tAdmin("common.clearFilters"), onClick: clearFilters }}
+          className="min-h-[200px] py-6"
+        />
+      ) : (
+        <>
+          <PeopleTable
+            table={reactTable}
+            offset={roleFilter !== "all" ? "17.75rem" : "15.5rem"}
+            getRowId={(user) => user.id}
+            emptyLabel={tAdmin("common.noData")}
+            selectedId={detailOpen ? detailUser?.id : null}
+            onRowClick={openDetail}
+          />
+          <div className="md:hidden">
+            <UsersMobileList
+              users={visibleUsers}
+              identityId={identity?.id}
+              onCardClick={openDetail}
+              {...rowActions}
+            />
+          </div>
+        </>
+      )}
+
+      {!isLoading && visibleUsers.length > 0 && (
+        <PeoplePagination
+          page={pageIndex + 1}
+          pageCount={reactTable.getPageCount()}
+          pageSize={pageSize}
+          total={filteredData.length}
+          onPageChange={(page) => reactTable.setPageIndex(page - 1)}
+          onPageSizeChange={(size) => reactTable.setPageSize(size)}
+        />
+      )}
+    </div>
+  );
 
   return (
     <>
-      <div className="space-y-4">
-        {!isLoading && newRegistrations.length > 0 && (
-          <Collapsible defaultOpen>
-            <Card>
-              <CardHeader className="pb-3">
-                <CollapsibleTrigger className="flex w-full items-center justify-between [&[data-state=open]>svg]:rotate-180">
-                  <div className="flex items-center gap-2">
-                    <UserPlusIcon className="h-4 w-4 text-[var(--status-success-foreground)]" />
-                    <CardTitle className="text-base">{tAdmin("people.newRegistrationsTitle")}</CardTitle>
-                    <Badge variant="secondary" className="bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] text-xs">
-                      {newRegistrations.length}
-                    </Badge>
-                  </div>
-                  <ChevronDownIcon className="h-4 w-4 text-muted-foreground transition-transform duration-200" />
-                </CollapsibleTrigger>
-                <CardDescription>{tAdmin("people.newRegistrationsDescription", { days: NEW_REG_DAYS })}</CardDescription>
-              </CardHeader>
-              <CollapsibleContent>
-                <CardContent className="pt-0">
-                  <AnimatedList items={newRegistrations}>
-                    {newRegistrations.map((user, index) => (
-                      <AnimatedRow key={user.id} index={index}>
-                        <NewRegistrationCard
-                          user={user}
-                          onViewDetail={() => {
-                            setSelectedUser(user);
-                            setDetailOpen(true);
-                          }}
-                        />
-                      </AnimatedRow>
-                    ))}
-                  </AnimatedList>
-                </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
-        )}
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <div>
-              <CardTitle>{tAdmin("people.usersCardTitle")}</CardTitle>
-              <CardDescription>{tAdmin("people.usersCardDescription")}</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <AdminPageToolbar
-              search={search}
-              onSearchChange={setSearch}
-              searchPlaceholder={tAdmin("people.userSearchPlaceholder")}
-              filterCount={roleFilter !== "all" ? 1 : 0}
-              onFilterToggle={() => {}}
-              actions={
-                <Button size="sm" onClick={() => { tap(); setCreateDialogOpen(true); }}>
-                  <PlusIcon className="mr-2 h-4 w-4" />
-                  {tAdmin("people.createUserSubmit")}
-                </Button>
-              }
-            />
-            <AdminFilterChips
-              filters={[
-                ...(roleFilter !== "all"
-                  ? [{ key: "role", label: tAdmin("people.roleFilter", { role: formatSystemRole(roleFilter as "admin" | "moderator" | "user", tAdmin("common.user")) }), onRemove: () => { tap(); setRoleFilter("all"); } }]
-                  : []),
-              ]}
-              onClearAll={() => { tap(); clearFilters(); }}
-            />
-
-            {isLoading ? (
-              <AdminTableSkeleton rows={7} columns={6} />
-            ) : isEmptyResult && hasActiveFilters ? (
-              <AdminEmptyState
-                icon={<UsersIcon className="h-8 w-8" />}
-                title={tAdmin("people.noUsersTitle")}
-                description={tAdmin("people.noUsersDescription")}
-                action={{ label: tAdmin("common.clearFilters"), onClick: clearFilters }}
-              />
-            ) : (
-              <>
-                <div ref={usersScrollRef} className="hidden overflow-x-auto rounded-md border md:block">
-                  <Table containerClassName="overflow-visible" style={{ tableLayout: "fixed", width: "max-content", minWidth: "100%" }}>
-                    <TableHeader>
-                      {reactTable.getHeaderGroups().map((headerGroup) => (
-                        <TableRow key={headerGroup.id}>
-                          {headerGroup.headers.map((header) => (
-                            <TableHead
-                              key={header.id}
-                              style={getCommonStyles({
-                                column: header.column,
-                                isOverflowing: usersTableOverflow,
-                              })}
-                            >
-                              {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                            </TableHead>
-                          ))}
-                        </TableRow>
-                      ))}
-                    </TableHeader>
-                    <TableBody>
-                      {reactTable.getRowModel().rows.length ? (
-                        reactTable.getRowModel().rows.map((row) => (
-                          <TableRow key={row.original?.id ?? row.id}>
-                            {row.getVisibleCells().map((cell) => (
-                              <TableCell
-                                key={cell.id}
-                                style={getCommonStyles({
-                                  column: cell.column,
-                                  isOverflowing: usersTableOverflow,
-                                })}
-                              >
-                                <div className="truncate">{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow><TableCell colSpan={columns.length} className="h-24 text-center">{tAdmin("common.noData")}</TableCell></TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-
-                <div className="md:hidden">
-                  <UsersMobileList
-                    users={visibleUsers}
-                    identityId={identity?.id}
-                    onCardClick={(user) => { tap(); setSelectedUser(user); setDetailOpen(true); }}
-                    {...rowActions}
-                  />
-                </div>
-              </>
-            )}
-
-            {!isLoading && reactTable.getRowModel().rows.length > 0 && (
-              <div className="hidden items-center justify-between md:flex">
-                <p className="text-sm text-muted-foreground">{tAdmin("common.pageCount", { page: reactTable.getState().pagination.pageIndex + 1, total: reactTable.getPageCount() })}</p>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => reactTable.previousPage()} disabled={!reactTable.getCanPreviousPage()}>{tAdmin("common.previous")}</Button>
-                  <Button variant="outline" size="sm" onClick={() => reactTable.nextPage()} disabled={!reactTable.getCanNextPage()}>{tAdmin("common.next")}</Button>
-                </div>
-              </div>
-            )}
-            {!isLoading && reactTable.getRowModel().rows.length > 0 && (
-              <div className="md:hidden">
-                <AdminMobilePagination
-                  summary={tAdmin("common.pageCount", { page: reactTable.getState().pagination.pageIndex + 1, total: reactTable.getPageCount() })}
-                  previousLabel={tAdmin("common.previous")}
-                  nextLabel={tAdmin("common.next")}
-                  canPrevious={reactTable.getCanPreviousPage()}
-                  canNext={reactTable.getCanNextPage()}
-                  onPrevious={() => reactTable.previousPage()}
-                  onNext={() => reactTable.nextPage()}
-                />
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <UserDetailDialog
-        user={selectedUser}
-        open={detailOpen}
+      <AdminMasterDetail
+        id="people-users"
+        master={master}
+        open={detailOpen && !!detailUser}
         onOpenChange={setDetailOpen}
-        onViewJourney={() => {
-          if (!selectedUser) return;
-          tap();
-          setDetailOpen(false);
-          go({ to: `/admin/people/${selectedUser.id}/journey` });
-        }}
-        onSetPrimaryEmail={(emailId) => {
-          if (selectedUser) void handleSetPrimaryEmail(selectedUser, emailId);
-        }}
-        onAddEmail={(email, makePrimary) => {
-          if (!selectedUser) return Promise.resolve();
-          return handleAddEmail(selectedUser, email, makePrimary);
-        }}
-        onRemoveEmail={(emailId) => {
-          if (!selectedUser) return;
-          void handleRemoveEmail(selectedUser, emailId);
-        }}
-        isAddingEmail={isAddingEmail}
-        settingPrimaryEmailId={settingPrimaryEmailId}
-        removingEmailId={removingEmailId}
-        onToggleJourneyTracking={() => {
-          if (!selectedUser) return;
-          void handleToggleJourneyTracking(selectedUser);
-        }}
-        onEdit={() => { setDetailOpen(false); setEditUser(selectedUser); setEditDialogOpen(true); }}
-        onToggleRole={() => { if (selectedUser) handleToggleRole(selectedUser); }}
-        onMerge={() => {
-          if (!selectedUser) return;
-          warning();
-          setDetailOpen(false);
-          setMergeSourceUser(selectedUser);
-          setMergeDialogOpen(true);
-        }}
-        onDeactivate={() => {
-          if (!selectedUser) return;
-          warning();
-          setDetailOpen(false);
-          setAccountActionUser(selectedUser);
-          setAccountActionMode("deactivate");
-          setAccountActionDialogOpen(true);
-        }}
-        onReactivate={() => {
-          if (!selectedUser) return;
-          tap();
-          setDetailOpen(false);
-          setAccountActionUser(selectedUser);
-          setAccountActionMode("reactivate");
-          setAccountActionDialogOpen(true);
-        }}
-        onDelete={() => { setDetailOpen(false); setDeleteUser(selectedUser); setDeleteDialogOpen(true); }}
-        isSelf={identity?.id === selectedUser?.id}
+        title={detailUser?.full_name ?? ""}
+        description={detailUser ? <span translate="no">{detailUser.email}</span> : undefined}
+        footer={
+          detailUser ? (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => rowActions.onViewJourney(detailUser)}
+              >
+                <ActivityIcon className="mr-1.5 h-4 w-4" />
+                {tAdmin("people.viewJourney")}
+              </Button>
+              <Button size="sm" onClick={() => rowActions.onEdit(detailUser)}>
+                <PencilIcon className="mr-1.5 h-4 w-4" />
+                {tAdmin("common.edit")}
+              </Button>
+            </>
+          ) : undefined
+        }
+        detail={
+          detailUser ? (
+            <UserDetailPanel
+              user={detailUser}
+              onSetPrimaryEmail={(emailId) => { void handleSetPrimaryEmail(detailUser, emailId); }}
+              onAddEmail={(email, makePrimary) => handleAddEmail(detailUser, email, makePrimary)}
+              onRemoveEmail={(emailId) => { void handleRemoveEmail(detailUser, emailId); }}
+              isAddingEmail={isAddingEmail}
+              settingPrimaryEmailId={settingPrimaryEmailId}
+              removingEmailId={removingEmailId}
+              onToggleJourneyTracking={() => { void handleToggleJourneyTracking(detailUser); }}
+              onToggleRole={() => handleToggleRole(detailUser)}
+              onMerge={() => { setDetailOpen(false); rowActions.onMerge(detailUser); }}
+              onDeactivate={() => rowActions.onDeactivate(detailUser)}
+              onReactivate={() => rowActions.onReactivate(detailUser)}
+              onDelete={() => { setDetailOpen(false); rowActions.onDelete(detailUser); }}
+              isSelf={identity?.id === detailUser.id}
+            />
+          ) : null
+        }
       />
       <DeleteConfirmDialog
         title={

@@ -1,6 +1,5 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LoadingBeam } from "@/components/ui/loading-beam";
 import {
@@ -10,11 +9,16 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { ActivityIcon, TrendingDownIcon, TrendingUpIcon } from "@/components/ui/icons";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ALLOWED_TRACKING_EVENT_NAMES } from "@/lib/journey-tracking/allowed-events";
 import { formatNumber } from "@/lib/locale-utils";
 import { cn } from "@/lib/utils";
 import { useAdminTranslation } from "../../i18n";
 import { useTrackingHealth, useTrackingHealthTrend } from "./hooks";
+import { PANEL_BODY_HEIGHT, PanelCard, PanelEmpty } from "./panel-card";
+
+type TrackingView = "trend" | "top" | "silent";
 
 function DeltaBadge({
   deltaAbsolute,
@@ -37,18 +41,19 @@ function DeltaBadge({
         isDown && "border-status-warning-border text-status-warning",
       )}
       aria-label={tAdmin("marketing.trackingHealth.vsPrior24h")}
+      title={tAdmin("marketing.trackingHealth.vsPrior24h")}
     >
       <Icon className="h-3 w-3" aria-hidden="true" />
       {deltaAbsolute > 0 ? "+" : ""}
       {formatNumber(deltaAbsolute)}
       {deltaPercent !== null ? ` (${deltaPercent > 0 ? "+" : ""}${deltaPercent}%)` : ""}
-      <span className="text-muted-foreground">{tAdmin("marketing.trackingHealth.vsPrior24h")}</span>
     </Badge>
   );
 }
 
-export function TrackingHealthSection({ enabled }: { enabled: boolean }) {
+export function TrackingHealthSection({ enabled, className }: { enabled: boolean; className?: string }) {
   const { tAdmin } = useAdminTranslation();
+  const [view, setView] = useState<TrackingView>("trend");
   const { data, isLoading, isError } = useTrackingHealth(enabled);
   const { data: trend, isLoading: trendLoading } = useTrackingHealthTrend(enabled);
 
@@ -76,112 +81,129 @@ export function TrackingHealthSection({ enabled }: { enabled: boolean }) {
   );
 
   return (
-    <Card data-slot="tracking-health" role="region" aria-label={tAdmin("marketing.trackingHealth.title")}>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <ActivityIcon className="h-4 w-4" aria-hidden="true" />
-          {tAdmin("marketing.trackingHealth.title")}
-        </CardTitle>
-        <CardDescription>{tAdmin("marketing.trackingHealth.description")}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <PanelCard
+      data-slot="tracking-health"
+      role="region"
+      aria-label={tAdmin("marketing.trackingHealth.title")}
+      className={className}
+      title={tAdmin("marketing.trackingHealth.title")}
+      description={tAdmin("marketing.trackingHealth.description")}
+      action={
+        trend && !trendLoading ? (
+          <DeltaBadge deltaAbsolute={trend.delta_absolute} deltaPercent={trend.delta_percent} />
+        ) : null
+      }
+    >
+      <div className={PANEL_BODY_HEIGHT}>
         {isLoading ? (
-          <LoadingBeam className="h-20" />
+          <LoadingBeam className="h-full" />
         ) : isError ? (
-          <p className="text-sm text-muted-foreground">{tAdmin("marketing.trackingHealth.loadError")}</p>
+          <PanelEmpty>{tAdmin("marketing.trackingHealth.loadError")}</PanelEmpty>
         ) : (
-          <>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary" className="tabular-nums">
-                {formatNumber(data?.total_events ?? 0)} {tAdmin("marketing.trackingHealth.events")}
-              </Badge>
-              <Badge variant="outline" className="tabular-nums">
-                {formatNumber(data?.distinct_events ?? 0)} {tAdmin("marketing.trackingHealth.distinctNames")}
-              </Badge>
-              {trend && !trendLoading ? (
-                <DeltaBadge
-                  deltaAbsolute={trend.delta_absolute}
-                  deltaPercent={trend.delta_percent}
-                />
-              ) : null}
+          <Tabs value={view} onValueChange={(v) => setView(v as TrackingView)} className="h-full gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <TabsList className="h-7">
+                <TabsTrigger value="trend" className="px-2 text-xs">
+                  {tAdmin("layout.insights.marketing.trackingTrendTab")}
+                </TabsTrigger>
+                <TabsTrigger value="top" className="px-2 text-xs">
+                  {tAdmin("marketing.trackingHealth.topEvents")}
+                </TabsTrigger>
+                <TabsTrigger value="silent" className="px-2 text-xs">
+                  {tAdmin("layout.insights.marketing.trackingSilentTab")}
+                  {silentAllowlist.length > 0 ? (
+                    <span className="tabular-nums text-muted-foreground">{silentAllowlist.length}</span>
+                  ) : null}
+                </TabsTrigger>
+              </TabsList>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums">
+                <span>
+                  <span className="font-semibold text-foreground">{formatNumber(data?.total_events ?? 0)}</span>{" "}
+                  {tAdmin("marketing.trackingHealth.events")}
+                </span>
+                <span aria-hidden>·</span>
+                <span>
+                  <span className="font-semibold text-foreground">{formatNumber(data?.distinct_events ?? 0)}</span>{" "}
+                  {tAdmin("marketing.trackingHealth.distinctNames")}
+                </span>
+              </div>
             </div>
 
-            {trend && trend.hourly.length > 0 ? (
-              <div className="space-y-2" data-slot="tracking-health-trend">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  {tAdmin("marketing.trackingHealth.trendTitle")}
-                </p>
-                <ChartContainer config={chartConfig} className="aspect-[3/1] h-[120px] w-full">
-                  <AreaChart data={trend.hourly} accessibilityLayer>
-                    <CartesianGrid vertical={false} />
-                    <XAxis
-                      dataKey="label"
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={8}
-                      interval="preserveStartEnd"
-                      minTickGap={24}
-                    />
-                    <YAxis hide domain={[0, "auto"]} />
-                    <ChartTooltip
-                      cursor={false}
-                      content={<ChartTooltipContent indicator="line" />}
-                    />
-                    <Area
-                      dataKey="count"
-                      type="monotone"
-                      fill="var(--color-count)"
-                      fillOpacity={0.25}
-                      stroke="var(--color-count)"
-                      strokeWidth={2}
-                    />
-                  </AreaChart>
-                </ChartContainer>
-                <p className="text-xs text-muted-foreground">
-                  {tAdmin("marketing.trackingHealth.priorPeriod", {
-                    count: trend.prior_total_events,
-                  })}
-                </p>
-              </div>
-            ) : trendLoading ? (
-              <LoadingBeam className="h-[120px]" />
-            ) : null}
-
-            {topEvents.length > 0 ? (
-              <div className="space-y-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  {tAdmin("marketing.trackingHealth.topEvents")}
-                </p>
-                <ul className="space-y-1 text-sm" role="list">
-                  {topEvents.map((row) => (
-                    <li key={row.event_name} className="flex items-center justify-between gap-3">
-                      <span className="truncate font-mono text-xs">{row.event_name}</span>
-                      <span className="tabular-nums text-muted-foreground">{formatNumber(row.count)}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">{tAdmin("marketing.trackingHealth.noEvents")}</p>
-            )}
-
-            {silentAllowlist.length > 0 ? (
-              <div className="space-y-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  {tAdmin("marketing.trackingHealth.silentAllowlist")}
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {silentAllowlist.map((name) => (
-                    <Badge key={name} variant="outline" className="font-mono text-[10px]">
-                      {name}
-                    </Badge>
-                  ))}
+            <TabsContent value="trend" className="min-h-0" data-slot="tracking-health-trend">
+              {trend && trend.hourly.length > 0 ? (
+                <div className="flex h-full flex-col gap-1">
+                  <ChartContainer config={chartConfig} className="aspect-auto min-h-0 w-full flex-1">
+                    <AreaChart data={trend.hourly} accessibilityLayer margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+                      <CartesianGrid vertical={false} />
+                      <XAxis
+                        dataKey="label"
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={6}
+                        interval="preserveStartEnd"
+                        minTickGap={24}
+                      />
+                      <YAxis hide domain={[0, "auto"]} />
+                      <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
+                      <Area
+                        dataKey="count"
+                        type="monotone"
+                        fill="var(--color-count)"
+                        fillOpacity={0.25}
+                        stroke="var(--color-count)"
+                        strokeWidth={2}
+                      />
+                    </AreaChart>
+                  </ChartContainer>
+                  <p className="text-[11px] text-muted-foreground">
+                    {tAdmin("marketing.trackingHealth.priorPeriod", { count: trend.prior_total_events })}
+                  </p>
                 </div>
-              </div>
-            ) : null}
-          </>
+              ) : trendLoading ? (
+                <LoadingBeam className="h-full py-4" />
+              ) : (
+                <PanelEmpty>{tAdmin("marketing.trackingHealth.noEvents")}</PanelEmpty>
+              )}
+            </TabsContent>
+
+            <TabsContent value="top" className="min-h-0">
+              {topEvents.length > 0 ? (
+                <ScrollArea className="h-full pr-2">
+                  <ul className="space-y-1 text-sm" role="list">
+                    {topEvents.map((row) => (
+                      <li key={row.event_name} className="flex items-center justify-between gap-3">
+                        <span className="truncate font-mono text-xs">{row.event_name}</span>
+                        <span className="tabular-nums text-muted-foreground">{formatNumber(row.count)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </ScrollArea>
+              ) : (
+                <PanelEmpty>{tAdmin("marketing.trackingHealth.noEvents")}</PanelEmpty>
+              )}
+            </TabsContent>
+
+            <TabsContent value="silent" className="min-h-0">
+              {silentAllowlist.length > 0 ? (
+                <ScrollArea className="h-full pr-2">
+                  <p className="mb-1.5 text-[11px] text-muted-foreground">
+                    {tAdmin("marketing.trackingHealth.silentAllowlist")}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {silentAllowlist.map((name) => (
+                      <Badge key={name} variant="outline" className="font-mono text-[10px]">
+                        {name}
+                      </Badge>
+                    ))}
+                  </div>
+                </ScrollArea>
+              ) : (
+                <PanelEmpty>{tAdmin("common.noData")}</PanelEmpty>
+              )}
+            </TabsContent>
+          </Tabs>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </PanelCard>
   );
 }

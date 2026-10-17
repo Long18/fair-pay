@@ -12,7 +12,7 @@ interface AdminEmptyStateProps {
 
 export function AdminEmptyState({ icon, title, description, action, className }: AdminEmptyStateProps) {
   return (
-    <div className={cn("flex flex-col items-center justify-center py-16 gap-3 text-center", className)}>
+    <div className={cn("flex flex-col items-center justify-center py-10 gap-3 text-center", className)}>
       <div className="rounded-full bg-muted p-4 text-muted-foreground">
         {icon}
       </div>

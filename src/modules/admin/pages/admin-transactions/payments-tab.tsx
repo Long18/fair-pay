@@ -6,9 +6,6 @@ import { useInstantCreate, useInstantUpdate, useInstantDelete } from "@/hooks/us
 import type { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
 
-import { DataTable } from "@/components/refine-ui/data-table/data-table";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,18 +16,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Collapsible,
-  CollapsibleContent,
-} from "@/components/ui/collapsible";
-import { Label } from "@/components/ui/label";
 import {
   Empty,
   EmptyMedia,
@@ -47,6 +32,7 @@ import {
 } from "@/components/ui/icons";
 import { AdminPageToolbar } from "@/modules/admin/components/AdminPageToolbar";
 import { AdminFilterChips } from "@/modules/admin/components/AdminFilterChips";
+import { AdminMasterDetail } from "@/modules/admin/components/AdminMasterDetail";
 import { formatDate, formatNumber } from "@/lib/locale-utils";
 import type { Profile } from "@/modules/profile/types";
 import {
@@ -57,8 +43,11 @@ import {
 import { useHaptics } from "@/hooks/use-haptics";
 import { useAdminTranslation } from "../../i18n";
 import { DeleteConfirmDialog } from "./shared-ui";
-import { PaymentDetailDialog } from "./payment-detail-dialog";
+import { PaymentDetailFooter, PaymentDetailPanel } from "./payment-detail-panel";
 import { CreatePaymentDialog, EditPaymentDialog } from "./payment-form-dialogs";
+import { FilterPopoverForm, type FilterField } from "./filter-form";
+import { RefineDataGrid, RefineDataGridPager } from "./refine-data-grid";
+import { DEFAULT_PAGE_SIZE, tableOffset } from "./grid-config";
 import { relationOne } from "./helpers";
 import type {
   GroupOption,
@@ -114,6 +103,12 @@ export function PaymentsTab({ moderatorMode }: { moderatorMode: boolean }) {
     return f;
   }, [debouncedSearch, groupFilter, senderFilter, receiverFilter, dateFrom, dateTo, identity, moderatorMode]);
 
+  const openDetail = useCallback((payment: PaymentRow) => {
+    tap();
+    setSelectedPayment(payment);
+    setDetailOpen(true);
+  }, [tap]);
+
   const columns = useMemo<ColumnDef<PaymentRow>[]>(() => [
     {
       id: "from_user", header: tAdmin("transactions.payments.sender"), accessorKey: "from_user_name", size: 180, enableSorting: false,
@@ -162,12 +157,12 @@ export function PaymentsTab({ moderatorMode }: { moderatorMode: boolean }) {
       ),
     },
     {
-      id: "actions", header: "", size: 50, enableSorting: false,
+      id: "actions", header: "", size: 48, enableSorting: false,
       cell: ({ row }) => (
         <DropdownMenu>
-          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontalIcon className="h-4 w-4" /></Button></DropdownMenuTrigger>
+          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" aria-label={tAdmin("common.actions")}><MoreHorizontalIcon className="h-4 w-4" /></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => { tap(); setSelectedPayment(row.original); setDetailOpen(true); }}>{tAdmin("common.details")}</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => openDetail(row.original)}>{tAdmin("common.details")}</DropdownMenuItem>
             <DropdownMenuItem onClick={() => { tap(); setEditPayment(row.original); setEditDialogOpen(true); }}><PencilIcon className="mr-2 h-4 w-4" />{tAdmin("common.edit")}</DropdownMenuItem>
             {!moderatorMode ? (
               <>
@@ -179,7 +174,7 @@ export function PaymentsTab({ moderatorMode }: { moderatorMode: boolean }) {
         </DropdownMenu>
       ),
     },
-  ], [moderatorMode, tap, tAdmin, warning]);
+  ], [moderatorMode, openDetail, tap, tAdmin, warning]);
 
   const table = useTable<PaymentRow>({
     columns,
@@ -188,7 +183,7 @@ export function PaymentsTab({ moderatorMode }: { moderatorMode: boolean }) {
       meta: {
         select: "*, from:profiles!payments_from_user_fkey(full_name, avatar_url), to:profiles!payments_to_user_fkey(full_name, avatar_url), groups(name), friendships(id, user_a, user_b, user_a_profile:profiles!user_a(full_name), user_b_profile:profiles!user_b(full_name))",
       },
-      pagination: { pageSize: 10 },
+      pagination: { pageSize: DEFAULT_PAGE_SIZE },
       filters: { permanent: filters },
       sorters: { initial: [{ field: "payment_date", order: "desc" }] },
       syncWithLocation: false,
@@ -241,7 +236,7 @@ export function PaymentsTab({ moderatorMode }: { moderatorMode: boolean }) {
 
   const handleCreate = useCallback((data: PaymentFormPayload) => {
     if (!identity?.id) {
-      toast.error(tAdmin("common.errorWithMessage", { message: "Missing admin identity" }));
+      toast.error(tAdmin("common.errorWithMessage", { message: tAdmin("layout.transactions.missingIdentity") }));
       return;
     }
     setIsCreating(true);
@@ -298,132 +293,148 @@ export function PaymentsTab({ moderatorMode }: { moderatorMode: boolean }) {
   const hasActiveFilters = search !== "" || groupFilter !== "all" || senderFilter !== "all" || receiverFilter !== "all" || dateFrom !== "" || dateTo !== "";
   const isEmptyResult = !table.refineCore.tableQuery.isLoading && table.reactTable.getRowModel().rows.length === 0;
   const visiblePayments = table.reactTable.getRowModel().rows.map((row) => row.original);
+  const isDetailVisible = detailOpen && selectedPayment !== null;
+
+  const profileName = (id: string) => profiles.find((p) => p.id === id)?.full_name ?? id;
+  const filterChips = [
+    ...(groupFilter !== "all" ? [{ key: "group", label: tAdmin("transactions.filterChips.group", { value: groups.find((g) => g.id === groupFilter)?.name ?? groupFilter }), onRemove: () => { tap(); setGroupFilter("all"); } }] : []),
+    ...(senderFilter !== "all" ? [{ key: "sender", label: tAdmin("transactions.filterChips.sender", { value: profileName(senderFilter) }), onRemove: () => { tap(); setSenderFilter("all"); } }] : []),
+    ...(receiverFilter !== "all" ? [{ key: "receiver", label: tAdmin("transactions.filterChips.receiver", { value: profileName(receiverFilter) }), onRemove: () => { tap(); setReceiverFilter("all"); } }] : []),
+    ...(dateFrom !== "" ? [{ key: "dateFrom", label: tAdmin("transactions.filterChips.dateFrom", { value: dateFrom }), onRemove: () => setDateFrom("") }] : []),
+    ...(dateTo !== "" ? [{ key: "dateTo", label: tAdmin("transactions.filterChips.dateTo", { value: dateTo }), onRemove: () => setDateTo("") }] : []),
+  ];
+
+  const profileOptions = [{ value: "all", label: tAdmin("common.all") }, ...profiles.map((p) => ({ value: p.id, label: p.full_name }))];
+  const filterFields: FilterField[] = [
+    { kind: "date", key: "dateFrom", label: tAdmin("common.fromDate"), value: dateFrom, onChange: setDateFrom },
+    { kind: "date", key: "dateTo", label: tAdmin("common.toDate"), value: dateTo, onChange: setDateTo },
+    { kind: "select", key: "sender", label: tAdmin("transactions.payments.sender"), value: senderFilter, onChange: (v) => { tap(); setSenderFilter(v); }, options: profileOptions },
+    { kind: "select", key: "receiver", label: tAdmin("transactions.payments.receiver"), value: receiverFilter, onChange: (v) => { tap(); setReceiverFilter(v); }, options: profileOptions },
+    {
+      kind: "select", key: "group", label: tAdmin("common.group"), value: groupFilter, onChange: (v) => { tap(); setGroupFilter(v); },
+      options: [{ value: "all", label: tAdmin("transactions.expenses.allGroups") }, ...groups.map((g) => ({ value: g.id, label: g.name }))],
+    },
+  ];
+
+  const contextBadgeClass = (contextType: string) => contextType === "group"
+    ? "bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] border-[var(--status-info-border)]"
+    : "bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] border-[var(--status-success-border)]";
+
+  const master = (
+    <div className="flex h-full min-h-0 flex-col gap-3">
+      <AdminPageToolbar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder={tAdmin("transactions.payments.searchPlaceholder")}
+        filterCount={[groupFilter !== "all", senderFilter !== "all", receiverFilter !== "all", dateFrom !== "", dateTo !== ""].filter(Boolean).length}
+        filterOpen={showFilters}
+        onFilterOpenChange={setShowFilters}
+        filterContent={
+          <FilterPopoverForm
+            fields={filterFields}
+            onClear={clearFilters}
+            onDone={() => setShowFilters(false)}
+            canClear={hasActiveFilters}
+          />
+        }
+        actions={
+          <Button size="sm" onClick={() => { tap(); setCreateDialogOpen(true); }}>
+            <PlusIcon className="mr-2 h-4 w-4" />
+            {tAdmin("transactions.payments.create")}
+          </Button>
+        }
+      />
+      <AdminFilterChips filters={filterChips} onClearAll={clearFilters} />
+      {isEmptyResult && hasActiveFilters ? (
+        <Empty className="min-h-[200px] rounded-md border"><EmptyMedia variant="icon"><CreditCardIcon className="h-6 w-6" /></EmptyMedia><EmptyHeader><EmptyTitle>{tAdmin("transactions.payments.noResultsTitle")}</EmptyTitle><EmptyDescription>{tAdmin("transactions.payments.noResultsDescription")}</EmptyDescription></EmptyHeader><EmptyContent><Button variant="outline" size="sm" onClick={clearFilters}>{tAdmin("common.clearFilters")}</Button></EmptyContent></Empty>
+      ) : (
+        <>
+          <div className="hidden min-h-0 flex-col gap-2 md:flex">
+            <RefineDataGrid
+              table={table}
+              selectedId={isDetailVisible ? selectedPayment.id : null}
+              onRowClick={openDetail}
+              offset={tableOffset(filterChips.length > 0)}
+            />
+            {visiblePayments.length > 0 ? <RefineDataGridPager table={table} /> : null}
+          </div>
+          <div className="space-y-3 md:hidden">
+            <AdminMobileCards
+              items={visiblePayments}
+              getKey={(payment) => payment.id}
+              renderItem={(payment) => (
+                <AdminMobileCard
+                  title={`${payment.from_user_name} → ${payment.to_user_name}`}
+                  description={formatDate(payment.payment_date)}
+                  leading={<CreditCardIcon className="mt-1 h-5 w-5 text-primary" />}
+                  badges={
+                    <Badge className={contextBadgeClass(payment.context_type)}>
+                      {payment.context_type === "group" ? tAdmin("context.group") : tAdmin("context.friends")}
+                    </Badge>
+                  }
+                  meta={[
+                    { label: tAdmin("common.amount"), value: <span className="font-mono tabular-nums">{formatNumber(payment.amount)} {payment.currency}</span> },
+                    { label: tAdmin("transactions.expenses.context"), value: payment.group_name ?? payment.friendship_name ?? tAdmin("context.friends") },
+                    { label: tAdmin("transactions.payments.note"), value: payment.note || "—" },
+                    { label: tAdmin("layout.transactions.id"), value: <span className="font-mono text-xs">{payment.id.slice(0, 8)}</span> },
+                  ]}
+                  actions={
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-9 w-9 cursor-pointer" aria-label={tAdmin("common.actions")}><MoreHorizontalIcon className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openDetail(payment)}>{tAdmin("common.details")}</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { tap(); setEditPayment(payment); setEditDialogOpen(true); }}><PencilIcon className="mr-2 h-4 w-4" />{tAdmin("common.edit")}</DropdownMenuItem>
+                        {!moderatorMode ? (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => { warning(); setDeletePayment(payment); setDeleteDialogOpen(true); }} className="text-destructive">{tAdmin("common.delete")}</DropdownMenuItem>
+                          </>
+                        ) : null}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  }
+                  onClick={() => openDetail(payment)}
+                  ariaLabel={`${payment.from_user_name} ${payment.to_user_name}`}
+                />
+              )}
+            />
+            {visiblePayments.length > 0 && (
+              <AdminMobilePagination
+                summary={tAdmin("common.pageCount", { page: table.refineCore.currentPage, total: table.refineCore.pageCount })}
+                previousLabel={tAdmin("common.previous")}
+                nextLabel={tAdmin("common.next")}
+                canPrevious={table.refineCore.currentPage > 1}
+                canNext={table.refineCore.currentPage < table.refineCore.pageCount}
+                onPrevious={() => table.refineCore.setCurrentPage(table.refineCore.currentPage - 1)}
+                onNext={() => table.refineCore.setCurrentPage(table.refineCore.currentPage + 1)}
+              />
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
 
   return (
     <>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <div><CardTitle>{tAdmin("transactions.payments.cardTitle")}</CardTitle><CardDescription>{tAdmin("transactions.payments.cardDescription")}</CardDescription></div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <AdminPageToolbar
-            search={search}
-            onSearchChange={setSearch}
-            searchPlaceholder={tAdmin("transactions.payments.searchPlaceholder")}
-            filterCount={[groupFilter !== "all", senderFilter !== "all", receiverFilter !== "all", dateFrom !== "", dateTo !== ""].filter(Boolean).length}
-            onFilterToggle={() => setShowFilters((v) => !v)}
-            actions={
-              <Button size="sm" onClick={() => { tap(); setCreateDialogOpen(true); }}>
-                <PlusIcon className="mr-2 h-4 w-4" />
-                {tAdmin("transactions.payments.create")}
-              </Button>
-            }
-          />
-          <AdminFilterChips
-            filters={[
-              ...(groupFilter !== "all" ? [{ key: "group", label: tAdmin("transactions.filterChips.group", { value: groups.find((g) => g.id === groupFilter)?.name ?? groupFilter }), onRemove: () => { tap(); setGroupFilter("all"); } }] : []),
-              ...(senderFilter !== "all" ? [{ key: "sender", label: tAdmin("transactions.filterChips.sender", { value: profiles.find((p) => p.id === senderFilter)?.full_name ?? senderFilter }), onRemove: () => { tap(); setSenderFilter("all"); } }] : []),
-              ...(receiverFilter !== "all" ? [{ key: "receiver", label: tAdmin("transactions.filterChips.receiver", { value: profiles.find((p) => p.id === receiverFilter)?.full_name ?? receiverFilter }), onRemove: () => { tap(); setReceiverFilter("all"); } }] : []),
-              ...(dateFrom !== "" ? [{ key: "dateFrom", label: tAdmin("transactions.filterChips.dateFrom", { value: dateFrom }), onRemove: () => setDateFrom("") }] : []),
-              ...(dateTo !== "" ? [{ key: "dateTo", label: tAdmin("transactions.filterChips.dateTo", { value: dateTo }), onRemove: () => setDateTo("") }] : []),
-            ]}
-            onClearAll={clearFilters}
-          />
-          <Collapsible open={showFilters} onOpenChange={setShowFilters}>
-            <CollapsibleContent>
-              <div className="flex items-end gap-3 flex-wrap pb-2">
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">{tAdmin("common.fromDate")}</Label><Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" /></div>
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">{tAdmin("common.toDate")}</Label><Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" /></div>
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">{tAdmin("common.group")}</Label>
-                  <Select value={groupFilter} onValueChange={(v) => { tap(); setGroupFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder={tAdmin("transactions.expenses.allGroups")} /></SelectTrigger>
-                    <SelectContent><SelectItem value="all">{tAdmin("transactions.expenses.allGroups")}</SelectItem>{groups.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">{tAdmin("transactions.payments.sender")}</Label>
-                  <Select value={senderFilter} onValueChange={(v) => { tap(); setSenderFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder={tAdmin("common.all")} /></SelectTrigger>
-                    <SelectContent><SelectItem value="all">{tAdmin("common.all")}</SelectItem>{profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">{tAdmin("transactions.payments.receiver")}</Label>
-                  <Select value={receiverFilter} onValueChange={(v) => { tap(); setReceiverFilter(v); }}><SelectTrigger className="w-[160px]"><SelectValue placeholder={tAdmin("common.all")} /></SelectTrigger>
-                    <SelectContent><SelectItem value="all">{tAdmin("common.all")}</SelectItem>{profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-          {isEmptyResult && hasActiveFilters ? (
-            <Empty className="min-h-[400px]"><EmptyMedia variant="icon"><CreditCardIcon className="h-6 w-6" /></EmptyMedia><EmptyHeader><EmptyTitle>{tAdmin("transactions.payments.noResultsTitle")}</EmptyTitle><EmptyDescription>{tAdmin("transactions.payments.noResultsDescription")}</EmptyDescription></EmptyHeader><EmptyContent><Button variant="outline" onClick={clearFilters}>{tAdmin("common.clearFilters")}</Button></EmptyContent></Empty>
-          ) : (
-            <>
-              <div className="hidden md:block">
-                <DataTable table={table} />
-              </div>
-              <div className="space-y-3 md:hidden">
-                <AdminMobileCards
-                  items={visiblePayments}
-                  getKey={(payment) => payment.id}
-                  renderItem={(payment) => (
-                    <AdminMobileCard
-                      title={`${payment.from_user_name} -> ${payment.to_user_name}`}
-                      description={formatDate(payment.payment_date)}
-                      leading={<CreditCardIcon className="mt-1 h-5 w-5 text-primary" />}
-                      badges={
-                        <Badge className={payment.context_type === "group"
-                          ? "bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] border-[var(--status-info-border)]"
-                          : "bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] border-[var(--status-success-border)]"
-                        }>
-                          {payment.context_type === "group" ? tAdmin("context.group") : tAdmin("context.friends")}
-                        </Badge>
-                      }
-                      meta={[
-                        { label: tAdmin("common.amount"), value: <span className="font-mono tabular-nums">{formatNumber(payment.amount)} {payment.currency}</span> },
-                        { label: tAdmin("transactions.expenses.context"), value: payment.group_name ?? payment.friendship_name ?? tAdmin("context.friends") },
-                        { label: tAdmin("transactions.payments.note"), value: payment.note || "—" },
-                        { label: "ID", value: <span className="font-mono text-xs">{payment.id.slice(0, 8)}</span> },
-                      ]}
-                      actions={
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-9 w-9 cursor-pointer"><MoreHorizontalIcon className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => { tap(); setSelectedPayment(payment); setDetailOpen(true); }}>{tAdmin("common.details")}</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => { tap(); setEditPayment(payment); setEditDialogOpen(true); }}><PencilIcon className="mr-2 h-4 w-4" />{tAdmin("common.edit")}</DropdownMenuItem>
-                            {!moderatorMode ? (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => { warning(); setDeletePayment(payment); setDeleteDialogOpen(true); }} className="text-destructive">{tAdmin("common.delete")}</DropdownMenuItem>
-                              </>
-                            ) : null}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      }
-                      onClick={() => { tap(); setSelectedPayment(payment); setDetailOpen(true); }}
-                      ariaLabel={`${payment.from_user_name} ${payment.to_user_name}`}
-                    />
-                  )}
-                />
-                {visiblePayments.length > 0 && (
-                  <AdminMobilePagination
-                    summary={tAdmin("common.pageCount", { page: table.refineCore.currentPage, total: table.refineCore.pageCount })}
-                    previousLabel={tAdmin("common.previous")}
-                    nextLabel={tAdmin("common.next")}
-                    canPrevious={table.refineCore.currentPage > 1}
-                    canNext={table.refineCore.currentPage < table.refineCore.pageCount}
-                    onPrevious={() => table.refineCore.setCurrentPage(table.refineCore.currentPage - 1)}
-                    onNext={() => table.refineCore.setCurrentPage(table.refineCore.currentPage + 1)}
-                  />
-                )}
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+        <AdminMasterDetail
+          id="tx-payments"
+          open={isDetailVisible}
+          onOpenChange={setDetailOpen}
+          size="md"
+          title={tAdmin("transactions.payments.detailTitle")}
+          description={selectedPayment ? formatDate(selectedPayment.payment_date) : undefined}
+          footer={selectedPayment ? (
+            <PaymentDetailFooter
+              canDelete={!moderatorMode}
+              onEdit={() => { setDetailOpen(false); setEditPayment(selectedPayment); setEditDialogOpen(true); }}
+              onDelete={() => { setDetailOpen(false); setDeletePayment(selectedPayment); setDeleteDialogOpen(true); }}
+            />
+          ) : undefined}
+          master={master}
+          detail={selectedPayment ? <PaymentDetailPanel payment={selectedPayment} /> : null}
+        />
 
-      <PaymentDetailDialog payment={selectedPayment} open={detailOpen} onOpenChange={setDetailOpen}
-        onEdit={() => { setDetailOpen(false); setEditPayment(selectedPayment); setEditDialogOpen(true); }}
-        onDelete={() => { setDetailOpen(false); setDeletePayment(selectedPayment); setDeleteDialogOpen(true); }}
-        canDelete={!moderatorMode}
-      />
       {!moderatorMode ? <DeleteConfirmDialog title={tAdmin("transactions.payments.deleteTitle")} description={tAdmin("transactions.payments.deleteDescription", { amount: formatNumber(deletePayment?.amount ?? 0), currency: deletePayment?.currency ?? "VND", from: deletePayment?.from_user_name ?? "", to: deletePayment?.to_user_name ?? "" })}
         open={deleteDialogOpen} onOpenChange={(o) => { if (!o && !isDeleting) { setDeleteDialogOpen(false); setDeletePayment(null); } }} onConfirm={handleDelete} isDeleting={isDeleting}
       /> : null}

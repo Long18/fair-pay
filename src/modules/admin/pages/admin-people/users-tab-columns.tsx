@@ -66,7 +66,7 @@ export function createUsersTabColumns({
             </div>
             {extra.length > 0 && (
               <p className="text-xs text-muted-foreground/70 truncate" translate="no">
-                +{extra.length} {extra.length === 1 ? "more" : "more"}
+                {tAdmin("layout.people.moreEmails", { count: extra.length })}
               </p>
             )}
           </div>

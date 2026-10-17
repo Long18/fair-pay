@@ -24,7 +24,7 @@ export function CatalogList({
 
   if (entries.length === 0) {
     return (
-      <div className="p-8 text-center">
+      <div className="p-6 text-center">
         <p className="text-sm text-muted-foreground">{t("adminApiDocs.empty.noResults")}</p>
         <p className="text-xs text-muted-foreground mt-1">{t("adminApiDocs.empty.noResultsDesc")}</p>
       </div>
@@ -45,7 +45,7 @@ export function CatalogList({
               onSelect(entry);
             }}
             className={cn(
-              "w-full text-left px-3 py-3 flex flex-col gap-1.5 transition-colors",
+              "w-full text-left px-3 py-2.5 flex flex-col gap-1 transition-colors",
               "hover:bg-accent/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
               selected && "bg-primary/8 border-l-2 border-l-primary"
             )}

@@ -33,10 +33,13 @@ import {
   SettingsIcon,
   TrendingUpIcon,
   ShieldCheckIcon,
+  Rows3Icon,
+  Rows4Icon,
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useAdminTranslation } from "../i18n";
 import { useAdminAccess } from "../hooks/use-admin-access";
+import { useAdminDensity } from "../hooks/use-admin-density";
 import type { AdminCapabilities } from "../access";
 
 // ─── Nav Items Config ───────────────────────────────────────────────
@@ -97,27 +100,29 @@ function getNavItemIcon(item: (typeof NAV_ITEMS)[number], access: AdminCapabilit
 
 export function AdminLayout() {
   const isMobile = useIsMobile();
+  const { density } = useAdminDensity();
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div
+      data-admin-density={density}
+      className="flex min-h-screen flex-col [--admin-nav-h:3.5rem] md:[--admin-nav-h:4rem]"
+    >
       <AdminNavBar isMobile={isMobile} />
       <main
         className={cn(
           "@container/main",
-          "container",
           "mx-auto",
           "relative",
           "w-full",
+          "max-w-[1680px]",
           "flex",
           "flex-col",
           "flex-1",
-          "px-2",
-          "pt-16",
-          "md:pt-20",
+          "px-3",
           "md:px-4",
           "lg:px-6",
-          "lg:pt-24",
-          "pb-6",
+          "pt-[calc(var(--admin-nav-h)+0.75rem)]",
+          "pb-4",
           "viewport-transition"
         )}
       >
@@ -300,6 +305,7 @@ function AdminActions() {
 
   return (
     <div className="flex items-center gap-1 md:gap-2">
+      <AdminDensityToggle />
       <div className="hidden sm:block">
         <ThemeSelector className="h-9 w-9 md:h-10 md:w-10" />
       </div>
@@ -330,6 +336,37 @@ function AdminActions() {
         </TooltipContent>
       </Tooltip>
     </div>
+  );
+}
+
+// ─── Density Toggle ─────────────────────────────────────────────────
+
+function AdminDensityToggle() {
+  const { tAdmin } = useAdminTranslation();
+  const { density, setDensity } = useAdminDensity();
+  const compact = density === "compact";
+  const label = `${tAdmin("layout.shell.density")}: ${
+    compact ? tAdmin("layout.shell.densityCompact") : tAdmin("layout.shell.densityComfortable")
+  }`;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hidden h-9 w-9 md:inline-flex md:h-10 md:w-10"
+          aria-label={label}
+          aria-pressed={compact}
+          onClick={() => setDensity(compact ? "comfortable" : "compact")}
+        >
+          {compact ? <Rows4Icon className="h-4 w-4" /> : <Rows3Icon className="h-4 w-4" />}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">
+        <span className="text-xs">{label}</span>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 

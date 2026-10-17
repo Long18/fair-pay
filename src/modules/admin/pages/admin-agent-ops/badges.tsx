@@ -11,6 +11,7 @@ import {
   isKnownAgentSource,
   normalizeAgentSource,
 } from "../admin-agent-operations.utils";
+import type { AgentOpsFeed } from "./constants";
 
 export function useAgentSourceLabel() {
   const { tAdmin } = useAdminTranslation();
@@ -27,6 +28,16 @@ export function useAgentSourceLabel() {
     },
     [tAdmin]
   );
+}
+
+export function useStatusLabel(feed: AgentOpsFeed) {
+  const { tAdmin } = useAdminTranslation();
+  return (status: string) =>
+    feed === "external"
+      ? tAdmin(
+          `agentOperations.externalStatus.${status}` as `agentOperations.externalStatus.${ExternalAgentSubmissionStatus}`
+        )
+      : tAdmin(`agentOperations.status.${status}` as `agentOperations.status.${AgentOperationStatus}`);
 }
 
 export function AgentSourceBadge({ source }: { source: string | null | undefined }) {

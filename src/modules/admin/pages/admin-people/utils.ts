@@ -5,6 +5,9 @@ export type RelationOne<T> = T | T[] | null | undefined;
 
 export const ADMIN_PEOPLE_RENDER_TIME = Date.now();
 
+export const PEOPLE_PAGE_SIZES = [10, 25, 50] as const;
+export const PEOPLE_DEFAULT_PAGE_SIZE = 25;
+
 export function formatSystemRole(role: "admin" | "moderator" | "user", userLabel: string) {
   if (role === "admin") return "Admin";
   if (role === "moderator") return "Moderator";

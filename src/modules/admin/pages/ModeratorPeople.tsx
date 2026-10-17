@@ -3,7 +3,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { useAdminTranslation } from "../i18n";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -14,9 +13,14 @@ import { Loader2Icon, GroupIcon, PencilIcon, UsersIcon } from "@/components/ui/i
 import { formatDate } from "@/lib/locale-utils";
 import { matchesSearchFields } from "@/lib/search-utils";
 import { AdminPageHeader } from "../components/AdminPageHeader";
+import { AdminPageToolbar } from "../components/AdminPageToolbar";
 import { AdminTabs, AdminTabsContent } from "../components/AdminTabs";
 import { useAdminTabParam } from "../hooks/use-admin-tab-param";
 import { useHaptics } from "@/hooks/use-haptics";
+import { formatSystemRole, relationOne, type RelationOne } from "./admin-people/utils";
+
+const MODERATOR_LIST_CLASS =
+  "max-h-[calc(100dvh-14rem)] min-h-[12rem] divide-y overflow-y-auto rounded-md border";
 
 type ModeratorUserRow = {
   id: string;
@@ -25,6 +29,16 @@ type ModeratorUserRow = {
   avatar_url: string | null;
   role: "admin" | "moderator" | "user";
   created_at: string;
+};
+
+type ModeratorGroupRecord = {
+  id: string;
+  name: string;
+  description: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  is_archived: boolean | null;
+  profiles: RelationOne<{ full_name: string | null }>;
 };
 
 type ModeratorGroupRow = {
@@ -36,17 +50,6 @@ type ModeratorGroupRow = {
   is_archived: boolean;
   created_at: string;
 };
-
-function roleLabel(role: ModeratorUserRow["role"], userLabel: string) {
-  switch (role) {
-    case "admin":
-      return "Admin";
-    case "moderator":
-      return "Moderator";
-    default:
-      return userLabel;
-  }
-}
 
 function EditProfileBasicsDialog({
   user,
@@ -147,53 +150,47 @@ function ModeratorUsersTab() {
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>{tAdmin("people.usersTab")}</CardTitle>
-          <CardDescription>{tAdmin("people.usersCardDescription")}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder={tAdmin("people.userSearchPlaceholder")}
-          />
-          {isLoading ? (
-            <div className="flex justify-center py-10">
-              <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {visibleUsers.map((user) => (
-                <div key={user.id} className="flex items-center justify-between gap-3 rounded-lg border p-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={user.avatar_url ?? undefined} alt={user.full_name} />
-                      <AvatarFallback>{user.full_name?.[0]?.toUpperCase() ?? "?"}</AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{user.full_name}</p>
-                      <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                      {roleLabel(user.role, tAdmin("common.user"))}
-                    </Badge>
-                    <Button size="sm" variant="outline" onClick={() => setEditingUser(user)}>
-                      <PencilIcon className="mr-2 h-4 w-4" />
-                      {tAdmin("common.edit")}
-                    </Button>
+      <div className="flex min-w-0 flex-col gap-3">
+        <AdminPageToolbar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder={tAdmin("people.userSearchPlaceholder")}
+        />
+        {isLoading ? (
+          <div className="flex justify-center py-10">
+            <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <div className={MODERATOR_LIST_CLASS}>
+            {visibleUsers.map((user) => (
+              <div key={user.id} className="flex items-center justify-between gap-3 px-3 py-2">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user.avatar_url ?? undefined} alt={user.full_name} />
+                    <AvatarFallback className="text-xs">{user.full_name?.[0]?.toUpperCase() ?? "?"}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{user.full_name}</p>
+                    <p className="truncate text-xs text-muted-foreground" translate="no">{user.email}</p>
                   </div>
                 </div>
-              ))}
-              {visibleUsers.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">{tAdmin("common.noData")}</p>
-              ) : null}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Badge variant={user.role === "admin" ? "default" : "secondary"}>
+                    {formatSystemRole(user.role, tAdmin("common.user"))}
+                  </Badge>
+                  <Button size="sm" variant="outline" className="h-8" onClick={() => setEditingUser(user)}>
+                    <PencilIcon className="mr-1.5 h-4 w-4" />
+                    {tAdmin("common.edit")}
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {visibleUsers.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">{tAdmin("common.noData")}</p>
+            ) : null}
+          </div>
+        )}
+      </div>
       <EditProfileBasicsDialog
         key={editingUser?.id ?? "moderator-edit-empty"}
         user={editingUser}
@@ -218,12 +215,12 @@ function ModeratorGroupsTab() {
         .select("id, name, description, avatar_url, created_at, is_archived, profiles!groups_created_by_fkey(full_name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []).map((group: any) => ({
+      return ((data ?? []) as unknown as ModeratorGroupRecord[]).map((group) => ({
         id: group.id,
         name: group.name,
         description: group.description,
         avatar_url: group.avatar_url,
-        creator_name: group.profiles?.full_name ?? tAdmin("common.unknown"),
+        creator_name: relationOne(group.profiles)?.full_name ?? tAdmin("common.unknown"),
         is_archived: group.is_archived ?? false,
         created_at: group.created_at,
       })) as ModeratorGroupRow[];
@@ -237,49 +234,43 @@ function ModeratorGroupsTab() {
   }, [data, search]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{tAdmin("people.groupsTab")}</CardTitle>
-        <CardDescription>{tAdmin("people.groupsCardDescription")}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder={tAdmin("people.groupSearchPlaceholder")}
-        />
-        {isLoading ? (
-          <div className="flex justify-center py-10">
-            <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {visibleGroups.map((group) => (
-              <div key={group.id} className="flex items-center justify-between gap-3 rounded-lg border p-3">
-                <div className="flex min-w-0 items-center gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={group.avatar_url ?? undefined} alt={group.name} />
-                    <AvatarFallback>{group.name?.[0]?.toUpperCase() ?? "?"}</AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{group.name}</p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {group.creator_name} · {formatDate(group.created_at)}
-                    </p>
-                  </div>
+    <div className="flex min-w-0 flex-col gap-3">
+      <AdminPageToolbar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder={tAdmin("people.groupSearchPlaceholder")}
+      />
+      {isLoading ? (
+        <div className="flex justify-center py-10">
+          <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <div className={MODERATOR_LIST_CLASS}>
+          {visibleGroups.map((group) => (
+            <div key={group.id} className="flex items-center justify-between gap-3 px-3 py-2">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={group.avatar_url ?? undefined} alt={group.name} />
+                  <AvatarFallback className="text-xs">{group.name?.[0]?.toUpperCase() ?? "?"}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{group.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {group.creator_name} · {formatDate(group.created_at)}
+                  </p>
                 </div>
-                {group.is_archived ? (
-                  <Badge variant="outline">{tAdmin("status.archived")}</Badge>
-                ) : null}
               </div>
-            ))}
-            {visibleGroups.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">{tAdmin("common.noData")}</p>
-            ) : null}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              {group.is_archived ? (
+                <Badge variant="outline">{tAdmin("status.archived")}</Badge>
+              ) : null}
+            </div>
+          ))}
+          {visibleGroups.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">{tAdmin("common.noData")}</p>
+          ) : null}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -296,27 +287,26 @@ export function ModeratorPeople() {
   };
 
   return (
-    <div className="space-y-6">
-      <AdminPageHeader
-        title={tAdmin("people.title")}
-        description={tAdmin("people.subtitle")}
-      />
-      <AdminTabs
-        value={activeTab}
-        onValueChange={handleTabChange}
-        listClassName="sm:grid-cols-2"
-        items={[
-          { value: "users", label: tAdmin("people.usersTab"), icon: UsersIcon },
-          { value: "groups", label: tAdmin("people.groupsTab"), icon: GroupIcon },
-        ]}
-      >
-        <AdminTabsContent value="users" className="mt-4">
-          <ModeratorUsersTab />
-        </AdminTabsContent>
-        <AdminTabsContent value="groups" className="mt-4">
-          <ModeratorGroupsTab />
-        </AdminTabsContent>
-      </AdminTabs>
-    </div>
+    <AdminTabs
+      value={activeTab}
+      onValueChange={handleTabChange}
+      header={
+        <AdminPageHeader
+          title={tAdmin("people.title")}
+          description={tAdmin("people.subtitle")}
+        />
+      }
+      items={[
+        { value: "users", label: tAdmin("people.usersTab"), icon: UsersIcon },
+        { value: "groups", label: tAdmin("people.groupsTab"), icon: GroupIcon },
+      ]}
+    >
+      <AdminTabsContent value="users">
+        <ModeratorUsersTab />
+      </AdminTabsContent>
+      <AdminTabsContent value="groups">
+        <ModeratorGroupsTab />
+      </AdminTabsContent>
+    </AdminTabs>
   );
 }

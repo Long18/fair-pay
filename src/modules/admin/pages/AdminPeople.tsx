@@ -34,35 +34,34 @@ export function AdminPeople() {
   };
 
   return (
-    <div className="space-y-6">
-      <AdminPageHeader
-        title={tAdmin("people.title")}
-        description={tAdmin("people.subtitle")}
-      />
-      <AdminTabs
-        value={activeTab}
-        onValueChange={handleTabChange}
-        listClassName="sm:grid-cols-4"
-        items={[
-          { value: "users", label: tAdmin("people.usersTab"), icon: UsersIcon },
-          { value: "groups", label: tAdmin("people.groupsTab"), icon: GroupIcon },
-          { value: "friendships", label: tAdmin("people.friendshipsTab"), icon: HeartHandshakeIcon },
-          { value: "invite", label: tAdmin("people.inviteTab"), icon: MailIcon },
-        ]}
-      >
-        <AdminTabsContent value="users" className="mt-4">
-          <UsersTab />
-        </AdminTabsContent>
-        <AdminTabsContent value="groups" className="mt-4">
-          <GroupsTab />
-        </AdminTabsContent>
-        <AdminTabsContent value="friendships" className="mt-4">
-          <FriendshipsTab />
-        </AdminTabsContent>
-        <AdminTabsContent value="invite" className="mt-4">
-          <InviteFriendsTab />
-        </AdminTabsContent>
-      </AdminTabs>
-    </div>
+    <AdminTabs
+      value={activeTab}
+      onValueChange={handleTabChange}
+      header={
+        <AdminPageHeader
+          title={tAdmin("people.title")}
+          description={tAdmin("people.subtitle")}
+        />
+      }
+      items={[
+        { value: "users", label: tAdmin("people.usersTab"), icon: UsersIcon },
+        { value: "groups", label: tAdmin("people.groupsTab"), icon: GroupIcon },
+        { value: "friendships", label: tAdmin("people.friendshipsTab"), icon: HeartHandshakeIcon },
+        { value: "invite", label: tAdmin("people.inviteTab"), icon: MailIcon },
+      ]}
+    >
+      <AdminTabsContent value="users">
+        <UsersTab />
+      </AdminTabsContent>
+      <AdminTabsContent value="groups">
+        <GroupsTab />
+      </AdminTabsContent>
+      <AdminTabsContent value="friendships">
+        <FriendshipsTab />
+      </AdminTabsContent>
+      <AdminTabsContent value="invite">
+        <InviteFriendsTab />
+      </AdminTabsContent>
+    </AdminTabs>
   );
 }

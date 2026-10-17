@@ -86,7 +86,7 @@ export function JourneyWorkspace({
   );
 
   return (
-    <div className="grid min-h-[calc(100vh-9rem)] grid-rows-[minmax(380px,1fr)_auto] overflow-hidden rounded-lg border border-border bg-background">
+    <div className="grid min-h-[calc(100dvh-var(--admin-nav-h)-5.5rem)] grid-rows-[minmax(380px,1fr)_auto] overflow-hidden rounded-lg border border-border bg-background">
       <JourneyCanvasView
         userId={userId}
         sessionId={sessionId}

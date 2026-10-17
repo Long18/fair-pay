@@ -1,57 +1,38 @@
 import { useMemo, useState, useCallback } from "react";
-import { useDebounce } from "@/hooks/use-debounce";
-import type { CrudFilters } from "@refinedev/core";
 import { useTable } from "@refinedev/react-table";
 import { useInstantDelete, useInstantCreate, useInstantUpdate } from "@/hooks/use-instant-mutation";
 import type { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
 
-import { DataTable } from "@/components/refine-ui/data-table/data-table";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { UserAvatar, UserGroupStack } from "@/components/user-display";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Collapsible,
-  CollapsibleContent,
-} from "@/components/ui/collapsible";
-import {
-  Empty,
-  EmptyMedia,
-  EmptyHeader,
-  EmptyTitle,
-  EmptyDescription,
-  EmptyContent,
-} from "@/components/ui/empty";
-import {
-  SearchIcon,
-  BellIcon,
-  FilterIcon,
-  PlusIcon,
-} from "@/components/ui/icons";
-import {
-  AdminMobileCard,
-  AdminMobileCards,
-} from "../components/AdminMobileCards";
+import { PlusIcon } from "@/components/ui/icons";
+import { AdminPageToolbar } from "../components/AdminPageToolbar";
+import { AdminFilterChips } from "../components/AdminFilterChips";
+import { AdminMasterDetail } from "../components/AdminMasterDetail";
 import { formatDate } from "@/lib/locale-utils";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useAdminTranslation } from "../i18n";
+import { FilterPopoverForm } from "../pages/admin-transactions/filter-form";
+import { RefineDataGrid, RefineDataGridPager } from "../pages/admin-transactions/refine-data-grid";
+import { DEFAULT_PAGE_SIZE, tableOffset } from "../pages/admin-transactions/grid-config";
 import { TypeBadge, ReadStatusBadge } from "./admin-notifications/badges";
-import { NOTIFICATION_TYPES } from "./admin-notifications/constants";
 import {
   CreateNotificationDialog,
   DeleteNotificationDialog,
   EditNotificationDialog,
 } from "./admin-notifications/dialogs";
+import {
+  NotificationDetailFooter,
+  NotificationDetailPanel,
+} from "./admin-notifications/notification-detail-panel";
+import {
+  NotificationMobileList,
+  NotificationsEmptyState,
+} from "./admin-notifications/notification-list-parts";
 import { RowActions } from "./admin-notifications/row-actions";
 import type { NotificationRow, NotificationRecord } from "./admin-notifications/types";
+import { useNotificationFilters } from "./admin-notifications/use-notification-filters";
 
 export function AdminNotifications() {
   const deleteMutation = useInstantDelete();
@@ -60,13 +41,17 @@ export function AdminNotifications() {
   const { tap, success, warning } = useHaptics();
   const { tAdmin } = useAdminTranslation();
 
-  const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 300);
-  const [showFilters, setShowFilters] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [readFilter, setReadFilter] = useState<string>("all");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const {
+    search,
+    setSearch,
+    showFilters,
+    setShowFilters,
+    filters,
+    filterChips,
+    filterFields,
+    clearFilters,
+    hasActiveFilters,
+  } = useNotificationFilters();
 
   const [deleteNotification, setDeleteNotification] = useState<NotificationRow | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -80,25 +65,14 @@ export function AdminNotifications() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const filters = useMemo<CrudFilters>(() => {
-    const f: CrudFilters = [];
-    if (debouncedSearch) {
-      f.push({ field: "message", operator: "contains", value: debouncedSearch });
-    }
-    if (typeFilter !== "all") {
-      f.push({ field: "type", operator: "eq", value: typeFilter });
-    }
-    if (readFilter !== "all") {
-      f.push({ field: "is_read", operator: "eq", value: readFilter === "read" });
-    }
-    if (dateFrom) {
-      f.push({ field: "created_at", operator: "gte", value: dateFrom });
-    }
-    if (dateTo) {
-      f.push({ field: "created_at", operator: "lte", value: dateTo + "T23:59:59" });
-    }
-    return f;
-  }, [debouncedSearch, typeFilter, readFilter, dateFrom, dateTo]);
+  const [selectedNotification, setSelectedNotification] = useState<NotificationRow | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+
+  const openDetail = useCallback((notification: NotificationRow) => {
+    tap();
+    setSelectedNotification(notification);
+    setDetailOpen(true);
+  }, [tap]);
 
   const columns = useMemo<ColumnDef<NotificationRow>[]>(
     () => [
@@ -134,10 +108,10 @@ export function AdminNotifications() {
         id: "message",
         header: tAdmin("common.content"),
         accessorKey: "message",
-        size: 250,
+        size: 280,
         enableSorting: false,
         cell: ({ getValue }) => (
-          <span className="text-sm truncate block max-w-[250px]" title={getValue() as string}>
+          <span className="block truncate text-sm" title={getValue() as string}>
             {getValue() as string}
           </span>
         ),
@@ -160,7 +134,7 @@ export function AdminNotifications() {
       {
         id: "actions",
         header: "",
-        size: 50,
+        size: 48,
         enableSorting: false,
         cell: ({ row }) => (
           <RowActions
@@ -186,7 +160,7 @@ export function AdminNotifications() {
       meta: {
         select: "*, profiles!notifications_user_id_fkey(full_name, avatar_url)",
       },
-      pagination: { pageSize: 10 },
+      pagination: { pageSize: DEFAULT_PAGE_SIZE },
       filters: {
         permanent: filters,
       },
@@ -213,22 +187,6 @@ export function AdminNotifications() {
     },
   });
 
-  const clearFilters = useCallback(() => {
-    tap();
-    setSearch("");
-    setTypeFilter("all");
-    setReadFilter("all");
-    setDateFrom("");
-    setDateTo("");
-  }, [tap]);
-
-  const hasActiveFilters =
-    search !== "" ||
-    typeFilter !== "all" ||
-    readFilter !== "all" ||
-    dateFrom !== "" ||
-    dateTo !== "";
-
   const isEmptyResult =
     !table.refineCore.tableQuery.isLoading &&
     table.reactTable.getRowModel().rows.length === 0;
@@ -245,6 +203,7 @@ export function AdminNotifications() {
       {
         onSuccess: () => {
           toast.success(tAdmin("notifications.deleted"));
+          if (selectedNotification?.id === deleteNotification.id) setDetailOpen(false);
           setDeleteDialogOpen(false);
           setDeleteNotification(null);
           setIsDeleting(false);
@@ -256,7 +215,7 @@ export function AdminNotifications() {
         },
       },
     );
-  }, [deleteNotification, deleteMutation, table.refineCore.tableQuery, warning, tAdmin]);
+  }, [deleteNotification, deleteMutation, selectedNotification, table.refineCore.tableQuery, warning, tAdmin]);
 
   const handleCreate = useCallback(
     (data: { user_id: string; type: string; title: string; message: string }) => {
@@ -323,187 +282,95 @@ export function AdminNotifications() {
     [editNotification, updateMutation, table.refineCore.tableQuery, success, tAdmin],
   );
 
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div>
-            <CardTitle>{tAdmin("notifications.title")}</CardTitle>
-            <CardDescription>
-              {tAdmin("notifications.description")}
-            </CardDescription>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              onClick={() => {
-                tap();
-                setCreateFormKey((k) => k + 1);
-                setCreateDialogOpen(true);
-              }}
-            >
-              <PlusIcon className="mr-2 h-4 w-4" />
-              {tAdmin("notifications.create")}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => { tap(); setShowFilters((v) => !v); }}
-            >
-              <FilterIcon className="mr-2 h-4 w-4" />
-              {tAdmin("common.filter")}
-            </Button>
-          </div>
-        </CardHeader>
+  const visibleNotifications = table.reactTable.getRowModel().rows.map((row) => row.original);
+  const isDetailVisible = detailOpen && selectedNotification !== null;
+  const openEdit = (notification: NotificationRow) => {
+    setEditNotification(notification);
+    setEditDialogOpen(true);
+  };
+  const openDelete = (notification: NotificationRow) => {
+    setDeleteNotification(notification);
+    setDeleteDialogOpen(true);
+  };
 
-        <CardContent className="p-0">
-          <div className="relative max-w-sm">
-            <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder={tAdmin("notifications.searchPlaceholder")}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
+  const master = (
+    <div className="flex h-full min-h-0 flex-col gap-3">
+      <AdminPageToolbar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder={tAdmin("notifications.searchPlaceholder")}
+        filterCount={filterChips.length}
+        filterOpen={showFilters}
+        onFilterOpenChange={setShowFilters}
+        filterContent={
+          <FilterPopoverForm
+            fields={filterFields}
+            onClear={clearFilters}
+            onDone={() => setShowFilters(false)}
+            canClear={hasActiveFilters}
+          />
+        }
+        actions={
+          <Button
+            size="sm"
+            onClick={() => {
+              tap();
+              setCreateFormKey((k) => k + 1);
+              setCreateDialogOpen(true);
+            }}
+          >
+            <PlusIcon className="mr-2 h-4 w-4" />
+            {tAdmin("notifications.create")}
+          </Button>
+        }
+      />
+      <AdminFilterChips filters={filterChips} onClearAll={clearFilters} />
+
+      {isEmptyResult ? (
+        <NotificationsEmptyState hasActiveFilters={hasActiveFilters} onClearFilters={clearFilters} />
+      ) : (
+        <>
+          <div className="hidden min-h-0 flex-col gap-2 md:flex">
+            <RefineDataGrid
+              table={table}
+              selectedId={isDetailVisible ? selectedNotification.id : null}
+              onRowClick={openDetail}
+              offset={tableOffset(filterChips.length > 0)}
             />
+            {visibleNotifications.length > 0 ? <RefineDataGridPager table={table} /> : null}
           </div>
+          <NotificationMobileList
+            items={visibleNotifications}
+            currentPage={table.refineCore.currentPage}
+            pageCount={table.refineCore.pageCount}
+            onPageChange={table.refineCore.setCurrentPage}
+            onOpen={openDetail}
+            onEdit={openEdit}
+            onDelete={openDelete}
+          />
+        </>
+      )}
+    </div>
+  );
 
-          <Collapsible open={showFilters} onOpenChange={setShowFilters}>
-            <CollapsibleContent>
-              <div className="flex items-end gap-3 flex-wrap pb-2">
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">{tAdmin("notifications.notificationType")}</label>
-                  <Select value={typeFilter} onValueChange={(v) => { tap(); setTypeFilter(v); }}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder={tAdmin("common.all")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{tAdmin("common.all")}</SelectItem>
-                      {NOTIFICATION_TYPES.map((t) => (
-                        <SelectItem key={t} value={t}>
-                          {tAdmin(`notifications.types.${t}`)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">{tAdmin("common.status")}</label>
-                  <Select value={readFilter} onValueChange={(v) => { tap(); setReadFilter(v); }}>
-                    <SelectTrigger className="w-[160px]">
-                      <SelectValue placeholder={tAdmin("common.all")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{tAdmin("common.all")}</SelectItem>
-                      <SelectItem value="read">{tAdmin("status.read")}</SelectItem>
-                      <SelectItem value="unread">{tAdmin("status.unread")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">{tAdmin("common.fromDate")}</label>
-                  <Input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                    className="w-[150px]"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">{tAdmin("common.toDate")}</label>
-                  <Input
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    className="w-[150px]"
-                  />
-                </div>
-
-                {hasActiveFilters && (
-                  <Button variant="ghost" size="sm" onClick={clearFilters}>
-                    {tAdmin("common.clearFilters")}
-                  </Button>
-                )}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-
-          {isEmptyResult ? (
-            <Empty className="min-h-[400px]">
-              <EmptyMedia variant="icon">
-                <BellIcon className="h-6 w-6" />
-              </EmptyMedia>
-              <EmptyHeader>
-                <EmptyTitle>{tAdmin("notifications.noResultsTitle")}</EmptyTitle>
-                <EmptyDescription>
-                  {hasActiveFilters
-                    ? tAdmin("notifications.noResultsFiltered")
-                    : tAdmin("notifications.noResultsEmpty")}
-                </EmptyDescription>
-              </EmptyHeader>
-              {hasActiveFilters && (
-                <EmptyContent>
-                  <Button variant="outline" onClick={clearFilters}>
-                    {tAdmin("common.clearFilters")}
-                  </Button>
-                </EmptyContent>
-              )}
-            </Empty>
-          ) : (
-            <>
-              <div className="hidden md:block">
-                <DataTable table={table} />
-              </div>
-              <div className="space-y-3 md:hidden">
-                <AdminMobileCards
-                  items={table.reactTable.getRowModel().rows.map((row) => row.original)}
-                  getKey={(notification) => notification.id}
-                  renderItem={(notification) => (
-                    <AdminMobileCard
-                      title={notification.title || notification.message}
-                      description={notification.user_name}
-                      leading={
-                        <UserAvatar
-                          user={{
-                            full_name: notification.user_name,
-                            avatar_url: notification.user_avatar,
-                          }}
-                          size="md"
-                        />
-                      }
-                      badges={
-                        <>
-                          <TypeBadge type={notification.type} />
-                          <ReadStatusBadge isRead={notification.is_read} />
-                        </>
-                      }
-                      meta={[
-                        {
-                          label: tAdmin("common.createdAt"),
-                          value: formatDate(notification.created_at),
-                        },
-                      ]}
-                      actions={
-                        <RowActions
-                          onEdit={() => {
-                            setEditNotification(notification);
-                            setEditDialogOpen(true);
-                          }}
-                          onDelete={() => {
-                            setDeleteNotification(notification);
-                            setDeleteDialogOpen(true);
-                          }}
-                        />
-                      }
-                    />
-                  )}
-                />
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+  return (
+    <>
+        <AdminMasterDetail
+          id="tx-notifications"
+          open={isDetailVisible}
+          onOpenChange={setDetailOpen}
+          size="md"
+          title={selectedNotification?.title || tAdmin("layout.transactions.notificationDetailTitle")}
+          description={selectedNotification ? formatDate(selectedNotification.created_at) : undefined}
+          footer={selectedNotification ? (
+            <NotificationDetailFooter
+              onEdit={() => { setDetailOpen(false); openEdit(selectedNotification); }}
+              onDelete={() => openDelete(selectedNotification)}
+            />
+          ) : undefined}
+          master={master}
+          detail={selectedNotification ? <NotificationDetailPanel notification={selectedNotification} /> : null}
+        />
 
       <DeleteNotificationDialog
         notification={deleteNotification}
@@ -538,6 +405,6 @@ export function AdminNotifications() {
         onSubmit={handleEdit}
         isUpdating={isUpdating}
       />
-    </div>
+    </>
   );
 }

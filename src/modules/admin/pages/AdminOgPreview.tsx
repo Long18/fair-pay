@@ -1,10 +1,15 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
@@ -14,273 +19,140 @@ import {
 import {
   SearchIcon,
   Loader2Icon,
-  CheckCircle2Icon,
-  XCircleIcon,
-  AlertTriangleIcon,
   CopyIcon,
   ExternalLinkIcon,
   ImageIcon,
   RefreshCwIcon,
   TrashIcon,
-  GlobeIcon,
   EyeIcon,
+  ChevronDownIcon,
+  CodeIcon,
 } from "@/components/ui/icons";
 import { useAdminTranslation } from "../i18n";
 import { AdminPageHeader } from "../components/AdminPageHeader";
+import {
+  createLog,
+  isValidUrl,
+  parseOgMeta,
+  type CheckStatus,
+  type LogEntry,
+  type OgMeta,
+} from "./admin-og-preview/helpers";
+import {
+  ConsoleLines,
+  FacebookPreview,
+  MetaTagList,
+  OgImagePreview,
+  StatusBadge,
+  TwitterPreview,
+} from "./admin-og-preview/parts";
 
-// ─── Types ──────────────────────────────────────────────────────────
+type ResultTab = "social" | "checks";
 
-interface OgMeta {
-  title: string | null;
-  description: string | null;
-  image: string | null;
-  imageWidth: string | null;
-  imageHeight: string | null;
-  url: string | null;
-  siteName: string | null;
-  type: string | null;
-  twitterCard: string | null;
-  twitterTitle: string | null;
-  twitterDescription: string | null;
-  twitterImage: string | null;
-}
+const QUICK_LINKS = [
+  { label: "Share Expense", path: "/share/expenses/" },
+  { label: "Share Debt", path: "/share/debts/" },
+  { label: "Share Group", path: "/share/groups/" },
+  { label: "Share Friend", path: "/share/friends/" },
+  { label: "Share Profile", path: "/share/profiles/" },
+  { label: "Share Invite", path: "/share/invite?code=DEMO" },
+  { label: "OG Expense", path: "/api/og/expense?id=" },
+  { label: "OG Debt", path: "/api/og/debt?counterparty_id=" },
+];
 
-interface LogEntry {
-  id: number;
-  timestamp: Date;
-  level: "info" | "success" | "warn" | "error";
-  message: string;
-}
-
-type CheckStatus = "idle" | "loading" | "success" | "error";
-
-// ─── Helpers ────────────────────────────────────────────────────────
-
-let logIdCounter = 0;
-
-function createLog(level: LogEntry["level"], message: string): LogEntry {
-  return { id: ++logIdCounter, timestamp: new Date(), level, message };
-}
-
-function formatTime(date: Date): string {
-  return date.toLocaleTimeString("en-US", {
-    hour12: false,
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
-
-
-function decodeHtmlEntities(str: string): string {
-  return str
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
-}
-
-function parseOgMeta(html: string): OgMeta {
-  const get = (property: string): string | null => {
-    // Match both property="..." and name="..." patterns
-    const patterns = [
-      new RegExp(`<meta[^>]+property=["']${property}["'][^>]+content=["']([^"']*)["']`, "i"),
-      new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]+property=["']${property}["']`, "i"),
-      new RegExp(`<meta[^>]+name=["']${property}["'][^>]+content=["']([^"']*)["']`, "i"),
-      new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]+name=["']${property}["']`, "i"),
-    ];
-    for (const re of patterns) {
-      const match = html.match(re);
-      if (match?.[1]) return decodeHtmlEntities(match[1]);
-    }
-    return null;
-  };
-
-  return {
-    title: get("og:title"),
-    description: get("og:description"),
-    image: get("og:image"),
-    imageWidth: get("og:image:width"),
-    imageHeight: get("og:image:height"),
-    url: get("og:url"),
-    siteName: get("og:site_name"),
-    type: get("og:type"),
-    twitterCard: get("twitter:card"),
-    twitterTitle: get("twitter:title"),
-    twitterDescription: get("twitter:description"),
-    twitterImage: get("twitter:image"),
-  };
-}
-
-function isValidUrl(str: string): boolean {
-  try {
-    const url = new URL(str);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-// ─── Sub-components ─────────────────────────────────────────────────
-
-function StatusBadge({ status }: { status: CheckStatus }) {
-  switch (status) {
-    case "loading":
-      return (
-        <Badge variant="outline" className="gap-1.5 bg-[var(--status-info-bg)] text-[var(--status-info-foreground)] border-[var(--status-info-bg)]">
-          <Loader2Icon className="h-3 w-3 animate-spin" />
-          Checking…
-        </Badge>
-      );
-    case "success":
-      return (
-        <Badge variant="outline" className="gap-1.5 bg-[var(--status-success-bg)] text-[var(--status-success-foreground)] border-[var(--status-success-bg)]">
-          <CheckCircle2Icon className="h-3 w-3" />
-          Valid
-        </Badge>
-      );
-    case "error":
-      return (
-        <Badge variant="outline" className="gap-1.5 bg-[var(--status-error-bg)] text-[var(--status-error-foreground)] border-[var(--status-error-bg)]">
-          <XCircleIcon className="h-3 w-3" />
-          Error
-        </Badge>
-      );
-    default:
-      return null;
-  }
-}
-
-function MetaRow({ label, value, warn }: { label: string; value: string | null; warn?: boolean }) {
+function IconAction({
+  label,
+  onClick,
+  disabled,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  children: ReactNode;
+}) {
   return (
-    <div className="flex items-start gap-3 py-2 border-b border-border/40 last:border-0">
-      <span className="text-xs font-mono text-muted-foreground w-36 shrink-0 pt-0.5">{label}</span>
-      {value ? (
-        <span className={cn("text-sm break-all", warn && "text-[var(--status-warning-foreground)]")}>
-          {value}
-        </span>
-      ) : (
-        <span className="text-sm text-muted-foreground/50 italic flex items-center gap-1">
-          <AlertTriangleIcon className="h-3 w-3 text-[var(--status-warning-foreground)]" />
-          Missing
-        </span>
-      )}
-    </div>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          onClick={onClick}
+          disabled={disabled}
+          aria-label={label}
+        >
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
   );
 }
 
-function OgImagePreview({ src, alt }: { src: string; alt: string }) {
+function MetaPanel({
+  meta,
+  status,
+  copied,
+  onCopyMeta,
+}: {
+  meta: OgMeta | null;
+  status: CheckStatus;
+  copied: boolean;
+  onCopyMeta: () => void;
+}) {
   const { tAdmin } = useAdminTranslation();
-  const [loaded, setLoaded] = useState(false);
-  const [error, setError] = useState(false);
 
   return (
-    <div className="relative w-full aspect-[1200/630] rounded-lg overflow-hidden border border-border bg-muted/30">
-      {!loaded && !error && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" />
+    <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border bg-card">
+      <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b px-3">
+        <h3 className="flex items-center gap-2 text-sm font-semibold">
+          <CodeIcon className="h-4 w-4 text-muted-foreground" />
+          {tAdmin("ogPreview.metaTags")}
+        </h3>
+        <div className="flex items-center gap-1">
+          <StatusBadge status={status} />
+          {meta?.imageWidth && meta.imageHeight ? (
+            <Badge variant="secondary" className="font-mono text-xs">
+              {meta.imageWidth}×{meta.imageHeight}
+            </Badge>
+          ) : null}
+          {meta?.image ? (
+            <IconAction label={tAdmin("ogPreview.openImage")} onClick={() => window.open(meta.image!, "_blank")}>
+              <ExternalLinkIcon className="h-3.5 w-3.5" />
+            </IconAction>
+          ) : null}
+          {meta ? (
+            <IconAction
+              label={copied ? tAdmin("ogPreview.copied") : tAdmin("ogPreview.copyMeta")}
+              onClick={onCopyMeta}
+            >
+              <CopyIcon className={cn("h-3.5 w-3.5", copied && "text-[var(--status-success-foreground)]")} />
+            </IconAction>
+          ) : null}
         </div>
-      )}
-      {error ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
-          <XCircleIcon className="h-8 w-8" />
-          <span className="text-sm">{tAdmin("ogPreview.failedImage")}</span>
-        </div>
-      ) : (
-        <img
-          src={src}
-          alt={alt}
-          className={cn(
-            "w-full h-full object-cover transition-opacity duration-300",
-            loaded ? "opacity-100" : "opacity-0"
-          )}
-          onLoad={() => setLoaded(true)}
-          onError={() => setError(true)}
-        />
-      )}
-    </div>
-  );
-}
-
-function LogLevelIcon({ level }: { level: LogEntry["level"] }) {
-  switch (level) {
-    case "success":
-      return <CheckCircle2Icon className="h-3.5 w-3.5 text-[var(--status-success-foreground)] shrink-0" />;
-    case "warn":
-      return <AlertTriangleIcon className="h-3.5 w-3.5 text-[var(--status-warning-foreground)] shrink-0" />;
-    case "error":
-      return <XCircleIcon className="h-3.5 w-3.5 text-[var(--status-error-foreground)] shrink-0" />;
-    default:
-      return <GlobeIcon className="h-3.5 w-3.5 text-[var(--status-info-foreground)] shrink-0" />;
-  }
-}
-
-
-// ─── Social Preview Cards ───────────────────────────────────────────
-
-function FacebookPreview({ meta }: { meta: OgMeta }) {
-  const { tAdmin } = useAdminTranslation();
-  return (
-    <div className="rounded-lg border border-border overflow-hidden bg-card max-w-md">
-      {meta.image && (
-        <div className="aspect-[1200/630] bg-muted">
-          <img
-            src={meta.image}
-            alt="OG Preview"
-            className="w-full h-full object-cover"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-          />
-        </div>
-      )}
-      <div className="px-3 py-2.5 space-y-0.5 border-t border-border/40">
-        <p className="text-[11px] text-muted-foreground uppercase tracking-wide truncate">
-          {meta.siteName || new URL(meta.url || "https://example.com").hostname}
-        </p>
-        <p className="text-sm font-semibold text-foreground line-clamp-2 leading-snug">
-          {meta.title || tAdmin("ogPreview.noTitle")}
-        </p>
-        {meta.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2">{meta.description}</p>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3">
+        {meta ? (
+          <div className="space-y-3">
+            {meta.image ? (
+              <div className="mx-auto max-w-md">
+                <OgImagePreview src={meta.image} alt={meta.title || "OG Image"} />
+              </div>
+            ) : null}
+            <MetaTagList meta={meta} />
+          </div>
+        ) : (
+          <div className="flex h-full min-h-40 flex-col items-center justify-center gap-2 text-center">
+            <ImageIcon className="h-6 w-6 text-muted-foreground/40" />
+            <p className="text-sm font-medium">{tAdmin("layout.devtoolTools.og.emptyTitle")}</p>
+            <p className="max-w-xs text-xs text-muted-foreground">{tAdmin("ogPreview.pasteUrlPrompt")}</p>
+          </div>
         )}
       </div>
-    </div>
+    </section>
   );
 }
-
-function TwitterPreview({ meta }: { meta: OgMeta }) {
-  const { tAdmin } = useAdminTranslation();
-  const title = meta.twitterTitle || meta.title;
-  const description = meta.twitterDescription || meta.description;
-  const image = meta.twitterImage || meta.image;
-
-  return (
-    <div className="rounded-xl border border-border overflow-hidden bg-card max-w-md">
-      {image && (
-        <div className="aspect-[2/1] bg-muted">
-          <img
-            src={image}
-            alt="Twitter Preview"
-            className="w-full h-full object-cover"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-          />
-        </div>
-      )}
-      <div className="px-3 py-2.5 space-y-0.5">
-        <p className="text-sm font-semibold text-foreground line-clamp-1">{title || tAdmin("ogPreview.noTitle")}</p>
-        {description && (
-          <p className="text-xs text-muted-foreground line-clamp-2">{description}</p>
-        )}
-        <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
-          <GlobeIcon className="h-3 w-3" />
-          {meta.url ? new URL(meta.url).hostname : "example.com"}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ─── Main Component ─────────────────────────────────────────────────
 
 export function AdminOgPreview({ embedded = false }: { embedded?: boolean }) {
   const { tAdmin } = useAdminTranslation();
@@ -289,16 +161,21 @@ export function AdminOgPreview({ embedded = false }: { embedded?: boolean }) {
   const [meta, setMeta] = useState<OgMeta | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [copied, setCopied] = useState(false);
-  const logEndRef = useRef<HTMLDivElement>(null);
+  const [resultTab, setResultTab] = useState<ResultTab>("checks");
+  const logScrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const addLog = useCallback((level: LogEntry["level"], message: string) => {
     setLogs((prev) => [...prev, createLog(level, message)]);
-    // Auto-scroll handled by useEffect below
   }, []);
 
   const clearLogs = useCallback(() => {
     setLogs([]);
+  }, []);
+
+  const finish = useCallback((next: "success" | "error") => {
+    setStatus(next);
+    setResultTab(next === "success" ? "social" : "checks");
   }, []);
 
   const handleCheck = useCallback(async () => {
@@ -307,12 +184,14 @@ export function AdminOgPreview({ embedded = false }: { embedded?: boolean }) {
 
     if (!isValidUrl(trimmed)) {
       addLog("error", `Invalid URL: "${trimmed}". Must start with http:// or https://`);
+      setResultTab("checks");
       return;
     }
 
     setStatus("loading");
     setMeta(null);
     clearLogs();
+    setResultTab("checks");
 
     addLog("info", `Fetching: ${trimmed}`);
     // Must match api/_lib/bots.ts BOT_PATTERNS (facebookexternalhit)
@@ -341,13 +220,13 @@ export function AdminOgPreview({ embedded = false }: { embedded?: boolean }) {
       // opaque-redirect responses may have no body; still attempt to read
       if (response.status === 0) {
         addLog("error", "Opaque redirect response — cannot read body. Try a FairPay /share/ URL.");
-        setStatus("error");
+        finish("error");
         return;
       }
 
       if (!response.ok && !(response.status >= 300 && response.status < 400)) {
         addLog("error", `Request failed with status ${response.status}`);
-        setStatus("error");
+        finish("error");
         return;
       }
 
@@ -440,7 +319,7 @@ export function AdminOgPreview({ embedded = false }: { embedded?: boolean }) {
         addLog("success", "All OG meta tags look good ✓");
       }
 
-      setStatus("success");
+      finish("success");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
       addLog("error", `Fetch failed: ${message}`);
@@ -449,9 +328,9 @@ export function AdminOgPreview({ embedded = false }: { embedded?: boolean }) {
         addLog("info", "Tip: CORS errors are common for external URLs. Try with a FairPay share link.");
       }
 
-      setStatus("error");
+      finish("error");
     }
-  }, [url, addLog, clearLogs]);
+  }, [url, addLog, clearLogs, finish]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -474,290 +353,144 @@ export function AdminOgPreview({ embedded = false }: { embedded?: boolean }) {
     setTimeout(() => setCopied(false), 2000);
   }, [meta]);
 
-  // Auto-scroll logs
-  const scrollToBottom = useCallback(() => {
-    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
-
-  // Scroll when logs change
   const prevLogCount = useRef(0);
   useEffect(() => {
     if (logs.length !== prevLogCount.current) {
       prevLogCount.current = logs.length;
-      requestAnimationFrame(scrollToBottom);
+      requestAnimationFrame(() => {
+        const el = logScrollRef.current;
+        el?.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+      });
     }
-  }, [logs.length, scrollToBottom]);
+  }, [logs.length]);
 
   return (
-    <div className="space-y-6">
-      <AdminPageHeader
-        title={tAdmin("ogPreview.title")}
-        description={tAdmin("ogPreview.subtitle")}
-        density={embedded ? "section" : "page"}
-      />
+    <TooltipProvider>
+      <div className="space-y-3">
+        {!embedded ? (
+          <AdminPageHeader title={tAdmin("ogPreview.title")} description={tAdmin("ogPreview.subtitle")} />
+        ) : null}
 
-      {/* ── URL Input ───────────────────────────────────────────── */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                ref={inputRef}
-                type="url"
-                placeholder="https://long-pay.vercel.app/api/share/expense?id=..."
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="pl-10 h-11 font-mono text-sm"
-                aria-label="URL to check"
-              />
-            </div>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={handleCheck}
-                    disabled={status === "loading" || !url.trim()}
-                    className="h-11 px-5 gap-2"
-                  >
-                    {status === "loading" ? (
-                      <Loader2Icon className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <EyeIcon className="h-4 w-4" />
-                    )}
-                    <span className="hidden sm:inline">{tAdmin("ogPreview.check")}</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{tAdmin("ogPreview.check")}</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+        <div className="flex gap-2">
+          <div className="relative min-w-0 flex-1">
+            <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              ref={inputRef}
+              type="url"
+              placeholder="https://long-pay.vercel.app/api/share/expense?id=..."
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="h-9 pl-9 font-mono text-sm"
+              aria-label="URL to check"
+            />
           </div>
+          <Button
+            onClick={handleCheck}
+            disabled={status === "loading" || !url.trim()}
+            className="h-9 gap-2 px-4"
+            aria-label={tAdmin("ogPreview.check")}
+          >
+            {status === "loading" ? (
+              <Loader2Icon className="h-4 w-4 animate-spin" />
+            ) : (
+              <EyeIcon className="h-4 w-4" />
+            )}
+            <span className="hidden sm:inline">{tAdmin("ogPreview.check")}</span>
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-9 gap-1.5 px-3">
+                <span className="hidden md:inline">{tAdmin("layout.devtoolTools.og.quickTest")}</span>
+                <span className="md:hidden" aria-hidden="true">/share</span>
+                <ChevronDownIcon className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              {QUICK_LINKS.map((item) => (
+                <DropdownMenuItem
+                  key={item.path}
+                  onSelect={() => {
+                    setUrl(`${window.location.origin}${item.path}`);
+                    requestAnimationFrame(() => inputRef.current?.focus());
+                  }}
+                  className="flex-col items-start gap-0"
+                >
+                  <span className="text-sm">{item.label}</span>
+                  <span className="font-mono text-[11px] text-muted-foreground">{item.path}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
-          {/* Quick links */}
-          <div className="flex flex-wrap gap-2 mt-3">
-            <span className="text-xs text-muted-foreground pt-0.5">{tAdmin("ogPreview.quickTest")}</span>
-            {[
-              { label: "Share Expense", path: "/share/expenses/" },
-              { label: "Share Debt", path: "/share/debts/" },
-              { label: "Share Group", path: "/share/groups/" },
-              { label: "Share Friend", path: "/share/friends/" },
-              { label: "Share Profile", path: "/share/profiles/" },
-              { label: "Share Invite", path: "/share/invite?code=DEMO" },
-              { label: "OG Expense", path: "/api/og/expense?id=" },
-              { label: "OG Debt", path: "/api/og/debt?counterparty_id=" },
-            ].map((item) => (
-              <button
-                key={item.path}
-                type="button"
-                className="text-xs text-primary hover:underline underline-offset-2"
-                onClick={() => {
-                  const base = window.location.origin;
-                  setUrl(`${base}${item.path}`);
-                  inputRef.current?.focus();
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+        <div className="grid gap-3 lg:h-[calc(100dvh-var(--admin-nav-h)-12rem)] lg:min-h-[28rem] lg:grid-cols-2">
+          <MetaPanel meta={meta} status={status} copied={copied} onCopyMeta={handleCopyMeta} />
 
-      {/* ── Results ─────────────────────────────────────────────── */}
-      {meta && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left: OG Image + Meta Tags */}
-          <div className="space-y-4">
-            {/* OG Image */}
-            {meta.image && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <ImageIcon className="h-4 w-4" />
-                      OG Image
-                    </CardTitle>
-                    <div className="flex items-center gap-1">
-                      {meta.imageWidth && meta.imageHeight && (
-                        <Badge variant="secondary" className="text-xs font-mono">
-                          {meta.imageWidth}×{meta.imageHeight}
-                        </Badge>
-                      )}
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => window.open(meta.image!, "_blank")}
-                            >
-                              <ExternalLinkIcon className="h-3.5 w-3.5" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>{tAdmin("ogPreview.openImage")}</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+          <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border bg-card">
+            <Tabs
+              value={resultTab}
+              onValueChange={(value) => setResultTab(value as ResultTab)}
+              className="min-h-0 flex-1 gap-0"
+            >
+              <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b px-3">
+                <TabsList className="h-8">
+                  <TabsTrigger value="social" className="px-2.5 text-xs" disabled={!meta}>
+                    {tAdmin("layout.devtoolTools.og.tabSocial")}
+                  </TabsTrigger>
+                  <TabsTrigger value="checks" className="px-2.5 font-mono text-xs">
+                    <span className="text-zinc-400" aria-hidden="true">❯</span>
+                    {tAdmin("ogPreview.console")}
+                    {logs.length > 0 ? (
+                      <Badge variant="secondary" className="h-4 px-1 font-mono text-[10px]">
+                        {logs.length}
+                      </Badge>
+                    ) : null}
+                  </TabsTrigger>
+                </TabsList>
+                <div className="flex items-center gap-1">
+                  {status !== "idle" ? (
+                    <IconAction
+                      label={tAdmin("ogPreview.recheck")}
+                      onClick={handleCheck}
+                      disabled={status === "loading"}
+                    >
+                      <RefreshCwIcon className="h-3.5 w-3.5" />
+                    </IconAction>
+                  ) : null}
+                  {logs.length > 0 ? (
+                    <IconAction label={tAdmin("ogPreview.clearLogs")} onClick={clearLogs}>
+                      <TrashIcon className="h-3.5 w-3.5" />
+                    </IconAction>
+                  ) : null}
+                </div>
+              </div>
+              <TabsContent value="social" className="min-h-0 overflow-y-auto overscroll-contain p-3">
+                {meta ? (
+                  <div className="grid gap-4 2xl:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-medium text-muted-foreground">Facebook / Open Graph</p>
+                      <FacebookPreview meta={meta} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-medium text-muted-foreground">Twitter / X</p>
+                      <TwitterPreview meta={meta} />
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <OgImagePreview src={meta.image} alt={meta.title || "OG Image"} />
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Meta Tags */}
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">{tAdmin("ogPreview.metaTags")}</CardTitle>
-                  <div className="flex items-center gap-2">
-                    <StatusBadge status={status} />
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={handleCopyMeta}
-                          >
-                            <CopyIcon className={cn("h-3.5 w-3.5", copied && "text-[var(--status-success-foreground)]")} />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>{copied ? tAdmin("ogPreview.copied") : tAdmin("ogPreview.copyMeta")}</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
+                ) : null}
+              </TabsContent>
+              <TabsContent value="checks" className="flex min-h-0 flex-col">
+                <div
+                  ref={logScrollRef}
+                  className="h-64 min-h-0 flex-1 overflow-y-auto overscroll-contain bg-zinc-950 p-3 font-mono text-xs leading-relaxed text-zinc-100 lg:h-auto dark:bg-zinc-950/80"
+                >
+                  <ConsoleLines logs={logs} emptyLabel={tAdmin("ogPreview.pasteUrlPrompt")} />
                 </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="divide-y divide-border/40">
-                  <MetaRow label="og:title" value={meta.title} />
-                  <MetaRow label="og:description" value={meta.description} />
-                  <MetaRow label="og:image" value={meta.image} />
-                  <MetaRow label="og:image:width" value={meta.imageWidth} />
-                  <MetaRow label="og:image:height" value={meta.imageHeight} />
-                  <MetaRow label="og:url" value={meta.url} />
-                  <MetaRow label="og:site_name" value={meta.siteName} />
-                  <MetaRow label="og:type" value={meta.type} />
-                  <MetaRow label="twitter:card" value={meta.twitterCard} />
-                  <MetaRow label="twitter:title" value={meta.twitterTitle} />
-                  <MetaRow label="twitter:description" value={meta.twitterDescription} />
-                  <MetaRow label="twitter:image" value={meta.twitterImage} />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right: Social Previews */}
-          <div className="space-y-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Facebook / Open Graph</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <FacebookPreview meta={meta} />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Twitter / X</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <TwitterPreview meta={meta} />
-              </CardContent>
-            </Card>
-          </div>
+              </TabsContent>
+            </Tabs>
+          </section>
         </div>
-      )}
-
-      {/* ── Terminal / Log Panel ─────────────────────────────────── */}
-      <Card className="overflow-hidden">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2 font-mono">
-              <span className="text-zinc-400">❯</span>
-              {tAdmin("ogPreview.console")}
-              {logs.length > 0 && (
-                <Badge variant="secondary" className="text-xs font-mono ml-1">
-                  {logs.length}
-                </Badge>
-              )}
-            </CardTitle>
-            <div className="flex items-center gap-1">
-              {status !== "idle" && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={handleCheck}
-                        disabled={status === "loading"}
-                      >
-                        <RefreshCwIcon className="h-3.5 w-3.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>{tAdmin("ogPreview.recheck")}</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-              {logs.length > 0 && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={clearLogs}
-                      >
-                        <TrashIcon className="h-3.5 w-3.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>{tAdmin("ogPreview.clearLogs")}</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <ScrollArea className="h-64 w-full">
-            <div className="bg-zinc-950 dark:bg-zinc-950/80 text-zinc-100 font-mono text-xs leading-relaxed p-4 min-h-full">
-              {logs.length === 0 ? (
-                <div className="flex items-center justify-center h-48 text-zinc-500">
-                  <span>{tAdmin("ogPreview.pasteUrlPrompt")}</span>
-                </div>
-              ) : (
-                logs.map((log) => (
-                  <div key={log.id} className="flex items-start gap-2 py-0.5 hover:bg-zinc-900/50 px-1 -mx-1 rounded">
-                    <span className="text-zinc-600 shrink-0 select-none">{formatTime(log.timestamp)}</span>
-                    <LogLevelIcon level={log.level} />
-                    <span
-                      className={cn(
-                        "break-all",
-                        log.level === "success" && "text-[var(--status-success-foreground)]",
-                        log.level === "warn" && "text-[var(--status-warning-foreground)]",
-                        log.level === "error" && "text-[var(--status-error-foreground)]",
-                        log.level === "info" && "text-zinc-300"
-                      )}
-                    >
-                      {log.message}
-                    </span>
-                  </div>
-                ))
-              )}
-              <div ref={logEndRef} />
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }

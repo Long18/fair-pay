@@ -1274,3 +1274,12 @@ html:lang(vi) {
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+/* Admin compact density (toggle in admin navbar) */
+[data-admin-density="compact"] [data-slot="table-head"] {
+  height: 2rem;
+}
+[data-admin-density="compact"] [data-slot="table-cell"] {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}

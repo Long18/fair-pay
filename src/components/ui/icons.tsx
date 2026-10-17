@@ -128,6 +128,8 @@ import {
   ZoomOut,
   RotateCcw,
   SlidersHorizontal,
+  Rows3,
+  Rows4,
   Layers,
   BookOpen,
   Shield,
@@ -991,6 +993,10 @@ export const Undo2Icon: React.FC<IconProps> = ({ size = 24, ...props }) => (
 );
 
 export const SlidersHorizontalIcon = SlidersHorizontal;
+
+export const Rows3Icon = Rows3;
+
+export const Rows4Icon = Rows4;
 
 export const LayersIcon: React.FC<IconProps> = ({ size = 24, ...props }) => (
   <Layers size={size} {...props} />

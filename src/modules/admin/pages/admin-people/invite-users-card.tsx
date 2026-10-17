@@ -62,42 +62,35 @@ export function InviteUsersCard({
   }, [inviteEmails, inviterName, success, tAdmin, tap, warning]);
 
   return (
-    <Card className="overflow-hidden rounded-xl border shadow-sm">
-      <CardHeader className="border-b bg-muted/30">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex size-9 items-center justify-center rounded-lg border bg-background text-primary">
-                <MailIcon className="h-4 w-4" />
-              </span>
-              <CardTitle>{tAdmin("people.inviteTitle")}</CardTitle>
-            </div>
-            <CardDescription>
-              {tAdmin("people.inviteDescription")}
-            </CardDescription>
-          </div>
-          <Badge variant="secondary" className="w-fit">
-            {tAdmin("common.preview")}
-          </Badge>
+    <Card className="gap-0 overflow-hidden rounded-xl border py-0 shadow-sm">
+      <CardHeader className="flex flex-row items-center gap-2.5 border-b bg-muted/30 px-4 py-3">
+        <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background text-primary">
+          <MailIcon className="h-4 w-4" />
+        </span>
+        <div className="min-w-0">
+          <CardTitle className="text-base">{tAdmin("people.inviteTitle")}</CardTitle>
+          <CardDescription className="line-clamp-1 text-xs">
+            {tAdmin("people.inviteDescription")}
+          </CardDescription>
         </div>
       </CardHeader>
-      <CardContent className="grid gap-0 p-0 lg:grid-cols-[380px_minmax(0,1fr)]">
-        <div className="space-y-4 border-b bg-muted/10 p-4 lg:border-b-0 lg:border-r">
-          <div className="space-y-2">
+      <CardContent className="grid gap-0 p-0 lg:grid-cols-[360px_minmax(0,1fr)]">
+        <div className="space-y-3 border-b bg-muted/10 p-3 lg:border-b-0 lg:border-r">
+          <div className="space-y-1.5">
             <Label htmlFor="invite-emails">{tAdmin("people.inviteRecipients")}</Label>
             <Textarea
               id="invite-emails"
               value={emailInput}
               onChange={(event) => setEmailInput(event.target.value)}
               placeholder="friend@example.com, teammate@example.com"
-              className="min-h-32 resize-none rounded-xl font-mono text-sm"
+              className="min-h-28 resize-none rounded-lg font-mono text-sm"
             />
             <p className="text-xs text-muted-foreground">
               {tAdmin("people.inviteHelp")}
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2 rounded-xl border bg-background p-3">
+          <div className="flex max-h-40 flex-wrap gap-1.5 overflow-y-auto rounded-lg border bg-background p-2.5">
             {inviteEmails.length ? (
               inviteEmails.map((email) => (
                 <Badge key={email} variant="outline" className="max-w-full rounded-md font-normal">
@@ -128,22 +121,24 @@ export function InviteUsersCard({
         </div>
 
         <div className="min-w-0 bg-slate-100 dark:bg-slate-950/40">
-          <div className="flex items-center justify-between gap-3 border-b bg-background px-4 py-3">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium">{invitePreview.subject}</p>
-              <p className="truncate text-xs text-muted-foreground">{invitePreview.previewText}</p>
+          <div className="space-y-1.5 border-b bg-background px-4 py-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{invitePreview.subject}</p>
+                <p className="truncate text-xs text-muted-foreground">{invitePreview.previewText}</p>
+              </div>
+              <Badge variant="outline" className="shrink-0">
+                {tAdmin("common.preview")}
+              </Badge>
             </div>
-            <Badge variant="outline" className="shrink-0">
-              {tAdmin("common.preview")}
-            </Badge>
+            <div className="grid grid-cols-[56px_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-xs">
+              <span className="text-muted-foreground">{tAdmin("common.from")}</span>
+              <span className="truncate">{tAdmin("people.emailSender")}</span>
+              <span className="text-muted-foreground">{tAdmin("common.to")}</span>
+              <span className="truncate">{inviteEmails.length ? inviteEmails.join(", ") : "email@example.com"}</span>
+            </div>
           </div>
-          <div className="grid gap-3 border-b bg-background px-4 py-3 text-sm sm:grid-cols-[72px_minmax(0,1fr)]">
-            <span className="text-muted-foreground">{tAdmin("common.from")}</span>
-            <span className="truncate">{tAdmin("people.emailSender")}</span>
-            <span className="text-muted-foreground">{tAdmin("common.to")}</span>
-            <span className="truncate">{inviteEmails.length ? inviteEmails.join(", ") : "email@example.com"}</span>
-          </div>
-          <div className="h-[460px] p-3">
+          <div className="h-[420px] p-3 lg:h-[calc(100dvh-var(--admin-nav-h)-15rem)] lg:min-h-[360px]">
             <div className="mx-auto h-full max-w-[640px] overflow-hidden rounded-2xl border bg-white shadow-xl ring-1 ring-slate-900/5">
               <div className="flex h-9 items-center justify-between border-b bg-slate-50 px-3">
                 <div className="flex items-center gap-1.5" aria-hidden="true">
@@ -156,7 +151,7 @@ export function InviteUsersCard({
                 <MailIcon className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
               </div>
               <iframe
-                title="FairPay invite email preview"
+                title={tAdmin("layout.people.invitePreviewFrame")}
                 srcDoc={invitePreview.html}
                 sandbox=""
                 className="h-[calc(100%-2.25rem)] w-full bg-white"

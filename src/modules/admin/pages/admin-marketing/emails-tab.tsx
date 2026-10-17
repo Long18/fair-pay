@@ -7,7 +7,6 @@ import {
   CartesianGrid,
 } from "recharts";
 import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { LoadingBeam } from "@/components/ui/loading-beam";
 import {
   ChartContainer,
@@ -17,10 +16,12 @@ import {
 } from "@/components/ui/chart";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   UsersIcon,
   ActivityIcon,
-  ArrowLeftIcon,
+  ChevronRightIcon,
   RepeatIcon,
   MailIcon,
 } from "@/components/ui/icons";
@@ -31,8 +32,161 @@ import { cn } from "@/lib/utils";
 import { AdminMetricCard } from "../../components/AdminMetricCard";
 import type { UserEmailGroup, TypeEmailGroup, DayEmailPoint } from "./types";
 import { useEmailStats, useSentEmails } from "./hooks";
+import { PanelCard, PanelEmpty } from "./panel-card";
+import { EmailDrilldownSheet } from "./emails-detail";
 
 type EmailViewMode = "users" | "types" | "timeline";
+
+const VIEW_MODES: { value: EmailViewMode; labelKey: string; icon: typeof UsersIcon }[] = [
+  { value: "users", labelKey: "layout.insights.marketing.byUser", icon: UsersIcon },
+  { value: "types", labelKey: "layout.insights.marketing.byType", icon: MailIcon },
+  { value: "timeline", labelKey: "layout.insights.marketing.timeline", icon: ActivityIcon },
+];
+
+const LIST_HEIGHT = "h-[340px]";
+
+function ListSkeleton() {
+  return (
+    <div className="divide-y">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-2.5 px-4 py-2">
+          <div className="h-7 w-7 shrink-0 rounded-full bg-muted animate-pulse" />
+          <div className="h-3 w-32 flex-1 rounded bg-muted animate-pulse" />
+          <div className="h-5 w-10 rounded bg-muted animate-pulse" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function UsersView({
+  groups,
+  selectedId,
+  onSelect,
+}: {
+  groups: UserEmailGroup[];
+  selectedId: string | null;
+  onSelect: (group: UserEmailGroup) => void;
+}) {
+  const { tAdmin } = useAdminTranslation();
+  return (
+    <ScrollArea className={LIST_HEIGHT}>
+      <div className="divide-y">
+        {groups.map((group, i) => {
+          const initials = (group.full_name ?? group.user_id).charAt(0).toUpperCase();
+          const selected = selectedId === group.user_id;
+          return (
+            <motion.button
+              key={group.user_id}
+              type="button"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(i, 12) * 0.03 }}
+              onClick={() => onSelect(group)}
+              aria-pressed={selected}
+              className={cn(
+                "group flex w-full cursor-pointer items-center gap-2.5 px-4 py-2 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+                selected && "bg-primary/5 hover:bg-primary/10",
+              )}
+            >
+              <Avatar className="h-7 w-7 shrink-0">
+                {group.avatar_url && <AvatarImage src={group.avatar_url} />}
+                <AvatarFallback className="text-[11px]">{initials}</AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium leading-tight">{group.full_name ?? group.user_id}</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {tAdmin("layout.insights.marketing.lastSent", {
+                    date: new Date(group.lastSent).toLocaleDateString(),
+                  })}
+                </p>
+              </div>
+              <Badge variant="secondary" className="tabular-nums">{group.emails.length}</Badge>
+              <ChevronRightIcon
+                className={cn(
+                  "h-4 w-4 text-muted-foreground transition-opacity",
+                  selected ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+                )}
+                aria-hidden
+              />
+            </motion.button>
+          );
+        })}
+      </div>
+    </ScrollArea>
+  );
+}
+
+function TypesView({
+  groups,
+  selectedType,
+  onSelect,
+}: {
+  groups: TypeEmailGroup[];
+  selectedType: string | null;
+  onSelect: (type: string) => void;
+}) {
+  const { tAdmin } = useAdminTranslation();
+  return (
+    <ScrollArea className={LIST_HEIGHT}>
+      <div className="grid gap-2 px-4 py-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {groups.map((group, i) => (
+          <motion.button
+            key={group.type}
+            type="button"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: Math.min(i, 12) * 0.04 }}
+            onClick={() => onSelect(group.type)}
+            aria-pressed={selectedType === group.type}
+            className={cn(
+              "group flex cursor-pointer flex-col gap-1 rounded-lg border bg-card p-3 text-left transition-all hover:border-primary/50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              selectedType === group.type && "border-primary/60 bg-primary/5",
+            )}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <Badge variant="secondary" className="truncate font-mono text-xs">{group.type}</Badge>
+              <ChevronRightIcon className="h-3.5 w-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
+            </div>
+            <p className="text-xl font-semibold tabular-nums leading-tight">{formatNumber(group.count)}</p>
+            <p className="text-[11px] text-muted-foreground">
+              {tAdmin("layout.insights.marketing.lastSent", {
+                date: new Date(group.lastSent).toLocaleDateString(),
+              })}
+            </p>
+          </motion.button>
+        ))}
+      </div>
+    </ScrollArea>
+  );
+}
+
+function TimelineView({ data }: { data: DayEmailPoint[] }) {
+  const { tAdmin } = useAdminTranslation();
+  const config = useMemo(
+    () =>
+      ({
+        count: { label: tAdmin("layout.insights.marketing.emailsSentLabel"), color: "var(--chart-1)" },
+      }) satisfies ChartConfig,
+    [tAdmin],
+  );
+  return (
+    <div className={cn(LIST_HEIGHT, "flex flex-col gap-1 px-4")}>
+      <p className="text-[11px] text-muted-foreground">
+        {tAdmin("layout.insights.marketing.timelineDescription")}
+      </p>
+      <ChartContainer config={config} className="aspect-auto min-h-0 w-full flex-1">
+        <RechartsBarChart data={data} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+          <CartesianGrid vertical={false} />
+          <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={6} interval="preserveStartEnd" />
+          <YAxis tickLine={false} axisLine={false} tickMargin={4} width={30} allowDecimals={false} />
+          <ChartTooltip content={<ChartTooltipContent />} />
+          <Bar dataKey="count" fill="var(--color-count)" radius={[4, 4, 0, 0]} />
+        </RechartsBarChart>
+      </ChartContainer>
+    </div>
+  );
+}
 
 export function EmailsTab({ enabled }: { enabled: boolean }) {
   const { tAdmin } = useAdminTranslation();
@@ -88,102 +242,12 @@ export function EmailsTab({ enabled }: { enabled: boolean }) {
       }));
   }, [sentEmails]);
 
-  const timelineChartConfig = useMemo(() => ({
-    count: { label: "Emails sent", color: "var(--chart-1)" },
-  }) satisfies ChartConfig, []);
+  const isEmpty =
+    viewMode === "users" ? !groupedByUser.length : viewMode === "types" ? !groupedByType.length : !timelineData.length;
 
-  // ── User detail view ──
-  if (selectedUser) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setSelectedUser(null)} className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <ArrowLeftIcon className="h-4 w-4" aria-hidden="true" />
-            Back
-          </button>
-          <span className="text-muted-foreground">/</span>
-          <Avatar className="h-5 w-5">
-            {selectedUser.avatar_url && <AvatarImage src={selectedUser.avatar_url} />}
-            <AvatarFallback className="text-xs">{(selectedUser.full_name ?? "?").charAt(0)}</AvatarFallback>
-          </Avatar>
-          <span className="text-sm font-medium">{selectedUser.full_name ?? selectedUser.user_id}</span>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <AdminMetricCard icon={MailIcon} label="Total emails" value={selectedUser.emails.length} loading={false} />
-          <AdminMetricCard icon={ActivityIcon} label="Last sent" value={new Date(selectedUser.lastSent).toLocaleDateString()} loading={false} />
-        </div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Email History</CardTitle>
-            <CardDescription>All emails sent to {selectedUser.full_name ?? selectedUser.user_id}</CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y">
-              {selectedUser.emails.map((email, i) => (
-                <motion.div key={email.id} initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }} className="flex items-center gap-3 px-6 py-3">
-                  <Badge variant="secondary" className="text-xs font-mono shrink-0">{email.type}</Badge>
-                  <div className="flex-1" />
-                  <span className="text-xs text-muted-foreground tabular-nums shrink-0">
-                    {new Date(email.email_sent_at).toLocaleString(undefined, { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-                  </span>
-                </motion.div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // ── Type detail view ──
-  if (selectedType) {
-    const typeEmails = sentEmails?.filter((e) => e.type === selectedType) ?? [];
-    const typeCount = groupedByType.find((g) => g.type === selectedType)?.count ?? 0;
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setSelectedType(null)} className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <ArrowLeftIcon className="h-4 w-4" aria-hidden="true" />
-            Back
-          </button>
-          <span className="text-muted-foreground">/</span>
-          <Badge variant="secondary" className="font-mono">{selectedType}</Badge>
-        </div>
-        <AdminMetricCard icon={MailIcon} label="Total sent" value={formatNumber(typeCount)} loading={false} />
-        <Card>
-          <CardHeader>
-            <CardTitle>Recipients</CardTitle>
-            <CardDescription>{typeCount} emails of type <span className="font-mono">{selectedType}</span></CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y">
-              {typeEmails.map((email, i) => {
-                const initials = (email.full_name ?? email.user_id).charAt(0).toUpperCase();
-                return (
-                  <motion.div key={email.id} initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }} className="flex items-center gap-3 px-6 py-3">
-                    <Avatar className="h-7 w-7 shrink-0">
-                      {email.avatar_url && <AvatarImage src={email.avatar_url} />}
-                      <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-                    </Avatar>
-                    <p className="flex-1 text-sm font-medium truncate">{email.full_name ?? email.user_id}</p>
-                    <span className="text-xs text-muted-foreground tabular-nums shrink-0">
-                      {new Date(email.email_sent_at).toLocaleDateString(undefined, { day: "2-digit", month: "2-digit", year: "numeric" })}
-                    </span>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // ── Main list view ──
   return (
-    <div className="space-y-6">
-      {/* Stat cards */}
-      <motion.div className="grid grid-cols-1 sm:grid-cols-3 gap-4" variants={containerVariants} initial="hidden" animate="visible" key={animationKey}>
+    <div className="space-y-3">
+      <motion.div className="grid grid-cols-1 gap-3 sm:grid-cols-3" variants={containerVariants} initial="hidden" animate="visible" key={animationKey}>
         <motion.div variants={rowVariants} custom={0}>
           <AdminMetricCard icon={MailIcon} label={tAdmin("marketing.emailsSent")} value={formatNumber(emailStats?.totalSent ?? 0)} loading={statsLoading} />
         </motion.div>
@@ -195,146 +259,71 @@ export function EmailsTab({ enabled }: { enabled: boolean }) {
         </motion.div>
       </motion.div>
 
-      {/* View switcher */}
-      <div className="flex flex-col gap-3 rounded-xl border bg-card p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="font-semibold">{tAdmin("marketing.recentEmailsTitle")}</h3>
-        <div className="flex w-full rounded-xl border bg-muted/40 p-1 gap-1 sm:w-auto">
-          {(["users", "types", "timeline"] as const).map((mode) => (
-            <button
-              key={mode}
-              onClick={() => setViewMode(mode)}
-              type="button"
-              className={cn(
-                "inline-flex min-h-9 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:flex-none",
-                viewMode === mode ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {mode === "users" ? <UsersIcon className="h-3.5 w-3.5" aria-hidden="true" /> : mode === "types" ? <MailIcon className="h-3.5 w-3.5" aria-hidden="true" /> : <ActivityIcon className="h-3.5 w-3.5" aria-hidden="true" />}
-              {mode === "users" ? "By User" : mode === "types" ? "By Type" : "Timeline"}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* By User */}
-      {viewMode === "users" && (
-        <Card>
-          <CardContent className="p-0">
-            {emailsLoading ? (
-              <div className="divide-y">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 px-6 py-3">
-                    <div className="h-8 w-8 rounded-full bg-muted animate-pulse shrink-0" />
-                    <div className="flex-1 space-y-1.5"><div className="h-3 w-32 bg-muted rounded animate-pulse" /></div>
-                    <div className="h-6 w-16 bg-muted rounded animate-pulse" />
-                  </div>
-                ))}
-              </div>
-            ) : !groupedByUser.length ? (
-              <p className="px-6 py-8 text-center text-sm text-muted-foreground">{tAdmin("marketing.noEmailsSent")}</p>
-            ) : (
-              <div className="divide-y">
-                {groupedByUser.map((group, i) => {
-                  const initials = (group.full_name ?? group.user_id).charAt(0).toUpperCase();
-                  return (
-                    <motion.button
-                      key={group.user_id}
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.03 }}
-                      onClick={() => setSelectedUser(group)}
-                      className="group flex w-full cursor-pointer items-center gap-3 px-6 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <Avatar className="h-8 w-8 shrink-0">
-                        {group.avatar_url && <AvatarImage src={group.avatar_url} />}
-                        <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{group.full_name ?? group.user_id}</p>
-                        <p className="text-xs text-muted-foreground">Last: {new Date(group.lastSent).toLocaleDateString()}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="tabular-nums">{group.emails.length}</Badge>
-                        <span className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity text-sm">→</span>
-                      </div>
-                    </motion.button>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* By Type */}
-      {viewMode === "types" && (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {emailsLoading ? (
-            Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i} className="p-5 space-y-3">
-                <div className="h-4 w-28 bg-muted rounded animate-pulse" />
-                <div className="h-8 w-14 bg-muted rounded animate-pulse" />
-              </Card>
-            ))
-          ) : !groupedByType.length ? (
-            <Card className="col-span-3">
-              <CardContent className="py-8 text-center">
-                <p className="text-sm text-muted-foreground">{tAdmin("marketing.noEmailsSent")}</p>
-              </CardContent>
-            </Card>
+      <PanelCard
+        title={tAdmin("marketing.recentEmailsTitle")}
+        contentClassName="px-0"
+        action={
+          <ToggleGroup
+            type="single"
+            size="sm"
+            variant="outline"
+            value={viewMode}
+            onValueChange={(v) => v && setViewMode(v as EmailViewMode)}
+            aria-label={tAdmin("layout.insights.marketing.viewMode")}
+          >
+            {VIEW_MODES.map((mode) => {
+              const Icon = mode.icon;
+              return (
+                <ToggleGroupItem key={mode.value} value={mode.value} className="h-7 gap-1.5 px-2 text-xs" aria-label={tAdmin(mode.labelKey)}>
+                  <Icon className="h-3.5 w-3.5" aria-hidden />
+                  <span className="hidden sm:inline">{tAdmin(mode.labelKey)}</span>
+                </ToggleGroupItem>
+              );
+            })}
+          </ToggleGroup>
+        }
+      >
+        {emailsLoading ? (
+          viewMode === "timeline" ? (
+            <LoadingBeam className={LIST_HEIGHT} />
           ) : (
-            groupedByType.map((group, i) => (
-              <motion.div key={group.type} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <Card
-                  className="group cursor-pointer rounded-lg transition-all hover:border-primary/50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  onClick={() => setSelectedType(group.type)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") setSelectedType(group.type);
-                  }}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <CardContent className="p-5">
-                    <div className="flex items-start justify-between mb-3">
-                      <Badge variant="secondary" className="font-mono text-xs">{group.type}</Badge>
-                      <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-                    </div>
-                    <p className="text-2xl font-semibold tabular-nums">{formatNumber(group.count)}</p>
-                    <p className="text-xs text-muted-foreground mt-1">Last: {new Date(group.lastSent).toLocaleDateString()}</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))
-          )}
-        </div>
-      )}
+            <ListSkeleton />
+          )
+        ) : isEmpty ? (
+          <PanelEmpty>{tAdmin("marketing.noEmailsSent")}</PanelEmpty>
+        ) : viewMode === "users" ? (
+          <UsersView
+            groups={groupedByUser}
+            selectedId={selectedUser?.user_id ?? null}
+            onSelect={(group) => {
+              setSelectedType(null);
+              setSelectedUser(group);
+            }}
+          />
+        ) : viewMode === "types" ? (
+          <TypesView
+            groups={groupedByType}
+            selectedType={selectedType}
+            onSelect={(type) => {
+              setSelectedUser(null);
+              setSelectedType(type);
+            }}
+          />
+        ) : (
+          <TimelineView data={timelineData} />
+        )}
+      </PanelCard>
 
-      {/* Timeline */}
-      {viewMode === "timeline" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Email Timeline</CardTitle>
-            <CardDescription>Daily send volume (last 50 emails)</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {emailsLoading ? (
-              <LoadingBeam className="py-8" />
-            ) : !timelineData.length ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">{tAdmin("marketing.noEmailsSent")}</p>
-            ) : (
-              <ChartContainer config={timelineChartConfig} className="h-[280px] w-full">
-                <RechartsBarChart data={timelineData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={6} interval="preserveStartEnd" />
-                  <YAxis tickLine={false} axisLine={false} tickMargin={4} width={30} allowDecimals={false} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="count" fill="var(--color-count)" radius={[4, 4, 0, 0]} />
-                </RechartsBarChart>
-              </ChartContainer>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      <EmailDrilldownSheet
+        selectedUser={selectedUser}
+        selectedType={selectedType}
+        sentEmails={sentEmails}
+        typeCount={groupedByType.find((g) => g.type === selectedType)?.count ?? 0}
+        onClose={() => {
+          setSelectedUser(null);
+          setSelectedType(null);
+        }}
+      />
     </div>
   );
 }

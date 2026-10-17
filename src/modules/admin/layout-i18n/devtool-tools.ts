@@ -1,0 +1,63 @@
+/** Mounted under `admin.layout.devtoolTools.*` (email, share links, OG preview). */
+export const devtoolToolsLayoutTranslations = {
+  en: {
+    email: {
+      tabRecipients: "Recipients",
+      tabPreview: "Preview",
+      tabResults: "Last send",
+      statQueue: "Queue",
+      statTotal: "Total debt",
+      aboutList: "About this list",
+      previewEmptyTitle: "No recipients selected",
+      previewEmptyBody: "Tick recipients on the Recipients tab to preview their exact emails here.",
+      goToRecipients: "Choose recipients",
+      resultsEmptyTitle: "Nothing sent yet",
+      resultsEmptyBody: "Results of single and bulk sends in this session show up here.",
+      emailTab: "Email",
+      breakdownTab: "Breakdown",
+    },
+    utm: {
+      about: "About share links",
+      tabTraffic: "Traffic",
+      tabContent: "Content",
+      tabSignups: "Signups",
+      tabConversion: "Conversion",
+      dimensionFilters: "Dimension filters",
+    },
+    og: {
+      quickTest: "Quick test",
+      tabSocial: "Social cards",
+      emptyTitle: "No metadata yet",
+    },
+  },
+  vi: {
+    email: {
+      tabRecipients: "Người nhận",
+      tabPreview: "Xem trước",
+      tabResults: "Lần gửi gần nhất",
+      statQueue: "Hàng đợi",
+      statTotal: "Tổng nợ",
+      aboutList: "Về danh sách này",
+      previewEmptyTitle: "Chưa chọn người nhận",
+      previewEmptyBody: "Đánh dấu người nhận ở tab Người nhận để xem trước đúng nội dung email tại đây.",
+      goToRecipients: "Chọn người nhận",
+      resultsEmptyTitle: "Chưa gửi email nào",
+      resultsEmptyBody: "Kết quả gửi lẻ và gửi hàng loạt trong phiên này sẽ hiện ở đây.",
+      emailTab: "Email",
+      breakdownTab: "Chi tiết nợ",
+    },
+    utm: {
+      about: "Về link chia sẻ",
+      tabTraffic: "Lưu lượng",
+      tabContent: "Nội dung",
+      tabSignups: "Đăng ký",
+      tabConversion: "Chuyển đổi",
+      dimensionFilters: "Lọc theo chiều dữ liệu",
+    },
+    og: {
+      quickTest: "Thử nhanh",
+      tabSocial: "Thẻ mạng xã hội",
+      emptyTitle: "Chưa có metadata",
+    },
+  },
+} as const;

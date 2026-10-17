@@ -1,16 +1,192 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import {
   UsersIcon,
   ActivityIcon,
+  ChevronRightIcon,
 } from "@/components/ui/icons";
 import { useAdminTranslation } from "../../i18n";
 import { formatNumber } from "@/lib/locale-utils";
+import { cn } from "@/lib/utils";
+import { AdminDetailSheet } from "../../components/AdminDetailSheet";
 import { AdminMetricCard } from "../../components/AdminMetricCard";
 import type { Experiment } from "./types";
 import { useExperiments, useExperimentAssignments } from "./hooks";
+import { PanelCard, PanelEmpty } from "./panel-card";
+
+type VariantSummary = Array<{ variant: string; count: number; pct: number }>;
+
+function ExperimentDetail({
+  experiment,
+  variants,
+  totalAssignments,
+  loading,
+}: {
+  experiment: Experiment;
+  variants: VariantSummary;
+  totalAssignments: number;
+  loading: boolean;
+}) {
+  const { tAdmin } = useAdminTranslation();
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <AdminMetricCard variant="compact" icon={ActivityIcon} label={tAdmin("marketing.experimentAssignments")} value={formatNumber(totalAssignments)} loading={loading} />
+        <AdminMetricCard variant="compact" icon={UsersIcon} label={tAdmin("marketing.experimentVariants")} value={experiment.variants.length} />
+      </div>
+
+      <section className="space-y-2">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {tAdmin("layout.insights.marketing.variantDistribution")}
+        </p>
+        {variants.length === 0 ? (
+          <p className="rounded-md border border-dashed py-6 text-center text-sm text-muted-foreground">
+            {tAdmin("layout.insights.marketing.noAssignments")}
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {variants.map((v) => (
+              <div key={v.variant} className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm">
+                  <Badge variant="outline" className="px-2 font-mono text-xs">{v.variant}</Badge>
+                  <div className="flex items-center gap-3 text-right">
+                    <span className="tabular-nums text-muted-foreground">
+                      {tAdmin("overview.usersCount", { count: v.count })}
+                    </span>
+                    <span className="w-10 text-right font-bold tabular-nums">{v.pct}%</span>
+                  </div>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <motion.div
+                    className="h-full w-full origin-left rounded-full bg-primary"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: v.pct / 100 }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-2">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {tAdmin("layout.insights.marketing.experimentDetails")}
+        </p>
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-md border p-3 text-sm">
+          <div className="col-span-2">
+            <dt className="mb-0.5 text-xs text-muted-foreground">{tAdmin("marketing.experimentKey")}</dt>
+            <dd className="break-all font-mono text-sm font-semibold">{experiment.key}</dd>
+          </div>
+          <div>
+            <dt className="mb-0.5 text-xs text-muted-foreground">{tAdmin("marketing.experimentDescription")}</dt>
+            <dd>{experiment.description ?? "—"}</dd>
+          </div>
+          <div>
+            <dt className="mb-0.5 text-xs text-muted-foreground">{tAdmin("common.createdAt")}</dt>
+            <dd>{new Date(experiment.created_at).toLocaleDateString()}</dd>
+          </div>
+          <div className="col-span-2">
+            <dt className="mb-1 text-xs text-muted-foreground">{tAdmin("layout.insights.marketing.allVariants")}</dt>
+            <dd className="flex flex-wrap gap-1">
+              {experiment.variants.map((v) => (
+                <Badge key={v} variant="secondary" className="font-mono text-xs">{v}</Badge>
+              ))}
+            </dd>
+          </div>
+        </dl>
+      </section>
+    </div>
+  );
+}
+
+function ExperimentTile({
+  experiment,
+  total,
+  variants,
+  index,
+  selected,
+  onSelect,
+}: {
+  experiment: Experiment;
+  total: number;
+  variants: VariantSummary;
+  index: number;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const { tAdmin } = useAdminTranslation();
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05, duration: 0.25 }}
+    >
+      <Card
+        role="button"
+        tabIndex={0}
+        aria-pressed={selected}
+        onClick={onSelect}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onSelect();
+          }
+        }}
+        className={cn(
+          "group h-full cursor-pointer gap-2 p-3 transition-all duration-200 hover:border-primary/50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          selected && "border-primary/60 bg-primary/5",
+        )}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate font-mono text-sm font-semibold">{experiment.key}</p>
+            <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+              {experiment.description ?? tAdmin("layout.insights.marketing.noDescription")}
+            </p>
+          </div>
+          <Badge variant={experiment.is_active ? "default" : "outline"} className="shrink-0 text-xs">
+            {experiment.is_active ? tAdmin("status.active") : tAdmin("status.inactive")}
+          </Badge>
+        </div>
+        {variants.length > 0 ? (
+          <div className="space-y-1">
+            {variants.map((v) => (
+              <div key={v.variant} className="flex items-center gap-2">
+                <span className="w-16 shrink-0 truncate font-mono text-xs text-muted-foreground">{v.variant}</span>
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                  <motion.div
+                    className="h-full w-full origin-left rounded-full bg-primary"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: v.pct / 100 }}
+                    transition={{ duration: 0.5, delay: index * 0.05 + 0.2 }}
+                  />
+                </div>
+                <span className="w-8 text-right text-xs tabular-nums text-muted-foreground">{v.pct}%</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-1">
+            {experiment.variants.map((v) => (
+              <Badge key={v} variant="outline" className="font-mono text-xs">{v}</Badge>
+            ))}
+          </div>
+        )}
+        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+          <span>
+            {tAdmin("layout.insights.marketing.usersAssigned", { count: total })} ·{" "}
+            {tAdmin("layout.insights.marketing.variantsCount", { count: experiment.variants.length })}
+          </span>
+          <ChevronRightIcon className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
+        </div>
+      </Card>
+    </motion.div>
+  );
+}
 
 export function ExperimentsTab({ enabled }: { enabled: boolean }) {
   const { tAdmin } = useAdminTranslation();
@@ -28,7 +204,7 @@ export function ExperimentsTab({ enabled }: { enabled: boolean }) {
   }, [assignments]);
 
   const variantSummary = useMemo(() => {
-    const result: Record<string, Array<{ variant: string; count: number; pct: number }>> = {};
+    const result: Record<string, VariantSummary> = {};
     const perExp: Record<string, Record<string, number>> = {};
     for (const a of assignments ?? []) {
       if (!perExp[a.experiment_key]) perExp[a.experiment_key] = {};
@@ -47,207 +223,71 @@ export function ExperimentsTab({ enabled }: { enabled: boolean }) {
 
   const isLoading = experimentsLoading || assignmentsLoading;
 
-  // ── Detail view ──
-  if (selectedExp) {
-    const variants = variantSummary[selectedExp.key] ?? [];
-    const totalAssignments = assignmentCounts[selectedExp.key] ?? 0;
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-2">
-          <button type="button"
-            onClick={() => setSelectedExp(null)}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            ← {tAdmin("common.back") ?? "Back"}
-          </button>
-          <span className="text-muted-foreground">/</span>
-          <span className="text-sm font-mono font-medium">{selectedExp.key}</span>
-          <Badge variant={selectedExp.is_active ? "default" : "outline"} className="text-xs ml-1">
-            {selectedExp.is_active ? tAdmin("status.active") : tAdmin("status.inactive")}
-          </Badge>
-        </div>
-
-        <div className="grid sm:grid-cols-3 gap-4">
-          <AdminMetricCard icon={ActivityIcon} label={tAdmin("marketing.experimentAssignments")} value={formatNumber(totalAssignments)} loading={isLoading} />
-          <AdminMetricCard icon={UsersIcon} label={tAdmin("marketing.experimentVariants")} value={selectedExp.variants.length} loading={false} />
-          <Card className="p-5">
-            <div className="flex flex-col gap-1.5">
-              <span className="text-xs text-muted-foreground">{tAdmin("marketing.experimentKey")}</span>
-              <span className="font-mono text-sm font-semibold break-all">{selectedExp.key}</span>
-              <span className="text-xs text-muted-foreground mt-1">
-                {new Date(selectedExp.created_at).toLocaleDateString()}
-              </span>
-            </div>
-          </Card>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Variant Distribution</CardTitle>
-            <CardDescription>
-              {selectedExp.description ?? selectedExp.key} · {formatNumber(totalAssignments)} users assigned
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {variants.length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">No assignments yet — experiment awaiting users</p>
-            ) : (
-              <div className="space-y-5">
-                {variants.map((v) => (
-                  <div key={v.variant} className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="font-mono text-xs px-2">{v.variant}</Badge>
-                      </div>
-                      <div className="flex items-center gap-3 text-right">
-                        <span className="text-muted-foreground tabular-nums">{formatNumber(v.count)} users</span>
-                        <span className="font-bold tabular-nums w-10 text-right">{v.pct}%</span>
-                      </div>
-                    </div>
-                    <div className="h-3 w-full rounded-full bg-muted overflow-hidden">
-                      <motion.div
-                        className="h-full w-full origin-left rounded-full bg-primary"
-                        initial={{ scaleX: 0 }}
-                        animate={{ scaleX: v.pct / 100 }}
-                        transition={{ duration: 0.6, ease: "easeOut" }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Experiment Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
-              <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Description</p>
-                <p>{selectedExp.description ?? "—"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Created</p>
-                <p>{new Date(selectedExp.created_at).toLocaleDateString()}</p>
-              </div>
-              <div className="col-span-2">
-                <p className="text-xs text-muted-foreground mb-1">All variants</p>
-                <div className="flex flex-wrap gap-1">
-                  {selectedExp.variants.map((v) => (
-                    <Badge key={v} variant="secondary" className="font-mono text-xs">{v}</Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // ── List view ──
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="font-semibold">{tAdmin("marketing.experimentsTitle")}</h3>
-          <p className="text-sm text-muted-foreground mt-0.5">{tAdmin("marketing.experimentsSubtitle")}</p>
-        </div>
-        <Badge variant="secondary">{experiments?.length ?? 0} experiments</Badge>
-      </div>
-
-      {isLoading ? (
-        <div className="grid sm:grid-cols-2 gap-4">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <Card key={i} className="p-5 space-y-3">
-              <div className="h-4 w-32 bg-muted rounded animate-pulse" />
-              <div className="h-3 w-48 bg-muted rounded animate-pulse" />
-              <div className="h-2 w-full bg-muted rounded animate-pulse mt-4" />
-            </Card>
-          ))}
-        </div>
-      ) : !experiments?.length ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground text-sm">{tAdmin("marketing.noExperiments")}</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid sm:grid-cols-2 gap-4">
-          {experiments.map((exp, index) => {
-            const total = assignmentCounts[exp.key] ?? 0;
-            const variants = variantSummary[exp.key] ?? [];
-            return (
-              <motion.div
+    <>
+      <PanelCard
+        title={tAdmin("marketing.experimentsTitle")}
+        description={tAdmin("marketing.experimentsSubtitle")}
+        action={
+          <Badge variant="secondary" className="tabular-nums">
+            {tAdmin("layout.insights.marketing.experimentsCount", { count: experiments?.length ?? 0 })}
+          </Badge>
+        }
+      >
+        {isLoading ? (
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="space-y-2 rounded-xl border p-3">
+                <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+                <div className="h-3 w-48 rounded bg-muted animate-pulse" />
+                <div className="mt-3 h-2 w-full rounded bg-muted animate-pulse" />
+              </div>
+            ))}
+          </div>
+        ) : !experiments?.length ? (
+          <PanelEmpty>{tAdmin("marketing.noExperiments")}</PanelEmpty>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {experiments.map((exp, index) => (
+              <ExperimentTile
                 key={exp.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.06, duration: 0.25 }}
-              >
-                <Card
-                  className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all duration-200 group"
-                  onClick={() => setSelectedExp(exp)}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-mono text-sm font-semibold truncate">{exp.key}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                          {exp.description ?? "No description"}
-                        </p>
-                      </div>
-                      <Badge variant={exp.is_active ? "default" : "outline"} className="shrink-0 text-xs">
-                        {exp.is_active ? tAdmin("status.active") : tAdmin("status.inactive")}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0 space-y-3">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{formatNumber(total)} users assigned</span>
-                      <span>{exp.variants.length} variants</span>
-                    </div>
-                    {variants.length > 0 ? (
-                      <div className="space-y-1.5">
-                        {variants.map((v) => (
-                          <div key={v.variant} className="flex items-center gap-2">
-                            <span className="text-xs font-mono w-16 shrink-0 text-muted-foreground truncate">{v.variant}</span>
-                            <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                              <motion.div
-                                className="h-full w-full origin-left bg-primary rounded-full"
-                                initial={{ scaleX: 0 }}
-                                animate={{ scaleX: v.pct / 100 }}
-                                transition={{ duration: 0.5, delay: index * 0.06 + 0.2 }}
-                              />
-                            </div>
-                            <span className="text-xs tabular-nums text-muted-foreground w-8 text-right">{v.pct}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex flex-wrap gap-1">
-                        {exp.variants.map((v) => (
-                          <Badge key={v} variant="outline" className="text-xs font-mono">{v}</Badge>
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between pt-1">
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(exp.created_at).toLocaleDateString()}
-                      </span>
-                      <span className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                        View details →
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
-    </div>
+                experiment={exp}
+                total={assignmentCounts[exp.key] ?? 0}
+                variants={variantSummary[exp.key] ?? []}
+                index={index}
+                selected={selectedExp?.id === exp.id}
+                onSelect={() => setSelectedExp(exp)}
+              />
+            ))}
+          </div>
+        )}
+      </PanelCard>
+
+      <AdminDetailSheet
+        open={selectedExp !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedExp(null);
+        }}
+        title={<span className="font-mono">{selectedExp?.key}</span>}
+        description={selectedExp?.description ?? undefined}
+        headerActions={
+          selectedExp ? (
+            <Badge variant={selectedExp.is_active ? "default" : "outline"} className="text-xs">
+              {selectedExp.is_active ? tAdmin("status.active") : tAdmin("status.inactive")}
+            </Badge>
+          ) : null
+        }
+        size="md"
+      >
+        {selectedExp ? (
+          <ExperimentDetail
+            experiment={selectedExp}
+            variants={variantSummary[selectedExp.key] ?? []}
+            totalAssignments={assignmentCounts[selectedExp.key] ?? 0}
+            loading={isLoading}
+          />
+        ) : null}
+      </AdminDetailSheet>
+    </>
   );
 }

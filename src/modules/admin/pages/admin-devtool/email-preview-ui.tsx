@@ -29,12 +29,17 @@ export function EmailPreviewViewportToggle({
   tAdmin: AdminT;
 }) {
   return (
-    <div className="inline-flex rounded-xl border bg-muted/40 p-1 shadow-xs">
+    <div
+      role="group"
+      aria-label={tAdmin("devtool.previewViewport")}
+      className="inline-flex rounded-lg border bg-muted/40 p-0.5"
+    >
       <Button
         type="button"
         size="sm"
         variant={value === "desktop" ? "secondary" : "ghost"}
-        className="h-9 cursor-pointer rounded-lg"
+        className="h-7 cursor-pointer rounded-md px-2 text-xs"
+        aria-pressed={value === "desktop"}
         onClick={() => onChange("desktop")}
       >
         <MonitorIcon className="mr-1.5 h-4 w-4" aria-hidden="true" />
@@ -44,7 +49,8 @@ export function EmailPreviewViewportToggle({
         type="button"
         size="sm"
         variant={value === "mobile" ? "secondary" : "ghost"}
-        className="h-9 cursor-pointer rounded-lg"
+        className="h-7 cursor-pointer rounded-md px-2 text-xs"
+        aria-pressed={value === "mobile"}
         onClick={() => onChange("mobile")}
       >
         <MailIcon className="mr-1.5 h-4 w-4" aria-hidden="true" />
@@ -59,21 +65,25 @@ export function EmailPreviewFrame({
   title,
   viewport,
   tall = false,
+  fill = false,
 }: {
   html: string;
   title: string;
   viewport: PreviewViewport;
   tall?: boolean;
+  /** Stretch the iframe to the parent's height (parent must be a flex column) */
+  fill?: boolean;
 }) {
   return (
-    <div className="flex min-h-0 flex-1 overflow-auto rounded-2xl border bg-slate-100 p-3 shadow-inner dark:bg-slate-950/40 sm:p-5">
+    <div className="flex min-h-0 flex-1 overflow-auto rounded-xl border bg-slate-100 p-2 shadow-inner dark:bg-slate-950/40 sm:p-3">
       <div
         className={cn(
-          "mx-auto w-full overflow-hidden rounded-2xl border bg-white shadow-xl ring-1 ring-slate-900/5 transition-[max-width] duration-200",
-          viewport === "desktop" ? "max-w-[640px]" : "max-w-[390px]"
+          "mx-auto w-full overflow-hidden rounded-xl border bg-white shadow-lg ring-1 ring-slate-900/5 transition-[max-width] duration-200",
+          viewport === "desktop" ? "max-w-[640px]" : "max-w-[390px]",
+          fill && "flex flex-col"
         )}
       >
-        <div className="flex h-9 items-center justify-between border-b bg-slate-50 px-3">
+        <div className="flex h-8 shrink-0 items-center justify-between border-b bg-slate-50 px-3">
           <div className="flex items-center gap-1.5" aria-hidden="true">
             <span className="size-2.5 rounded-full bg-status-error" />
             <span className="size-2.5 rounded-full bg-status-warning" />
@@ -89,7 +99,11 @@ export function EmailPreviewFrame({
           sandbox=""
           className={cn(
             "block w-full bg-white",
-            tall ? "h-[min(68dvh,760px)] min-h-[420px]" : "h-[min(58dvh,640px)] min-h-[320px]"
+            fill
+              ? "min-h-[22rem] flex-1"
+              : tall
+                ? "h-[min(68dvh,760px)] min-h-[420px]"
+                : "h-[min(58dvh,640px)] min-h-[320px]"
           )}
         />
       </div>
@@ -138,7 +152,7 @@ export function SendResultCard({ result }: { result: EmailSendResult | null }) {
   return (
     <div
       className={cn(
-        "rounded-lg border p-3 text-sm",
+        "rounded-lg border px-3 py-2.5 text-sm",
         hasErrors
           ? "border-[var(--status-warning-bg)] bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)]"
           : "border-[var(--status-success-bg)] bg-[var(--status-success-bg)] text-[var(--status-success-foreground)]"
@@ -238,7 +252,7 @@ export function ScheduledSendBanner({
   return (
     <div
       className={cn(
-        "rounded-lg border p-3 shadow-sm",
+        "rounded-lg border px-3 py-2.5",
         state.phase === "cancelled"
           ? "border-border bg-muted/40"
           : state.phase === "done" && state.failed
@@ -250,8 +264,8 @@ export function ScheduledSendBanner({
       role="status"
       aria-live="polite"
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 space-y-1">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 space-y-0.5">
           <div className="flex items-center gap-2 font-medium">
             {state.phase === "sending" ? (
               <Loader2Icon className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
@@ -264,7 +278,15 @@ export function ScheduledSendBanner({
             )}
             <span className="text-sm">{title}</span>
           </div>
-          <p className="text-xs leading-5 text-muted-foreground">{description}</p>
+          <p className="text-xs leading-5 text-muted-foreground">
+            {description}
+            {(state.phase === "undo" || state.phase === "waiting") && secondsLeft > 0 ? (
+              <span className="tabular-nums">
+                {" · "}
+                {tAdmin("devtool.countdownSeconds", { seconds: secondsLeft })}
+              </span>
+            ) : null}
+          </p>
         </div>
         {canCancel ? (
           <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={onCancel}>
@@ -274,12 +296,7 @@ export function ScheduledSendBanner({
         ) : null}
       </div>
       {state.phase !== "cancelled" ? (
-        <Progress value={state.phase === "undo" ? 0 : progressValue} className="mt-3 h-1.5" />
-      ) : null}
-      {(state.phase === "undo" || state.phase === "waiting") && secondsLeft > 0 ? (
-        <p className="mt-2 text-xs tabular-nums text-muted-foreground">
-          {tAdmin("devtool.countdownSeconds", { seconds: secondsLeft })}
-        </p>
+        <Progress value={state.phase === "undo" ? 0 : progressValue} className="mt-2 h-1" />
       ) : null}
     </div>
   );

@@ -22,26 +22,29 @@ export function AdminPageHeader({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between",
+        "flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between",
         className
       )}
     >
-      <div className="min-w-0 flex-1 space-y-1">
+      <div className="min-w-0 flex-1">
         <TitleTag
           className={cn(
+            "truncate font-semibold tracking-tight",
             density === "page"
-              ? "typography-page-title text-2xl font-semibold tracking-tight"
-              : "text-base font-semibold tracking-tight"
+              ? "typography-page-title text-xl"
+              : "text-base"
           )}
         >
           {title}
         </TitleTag>
         {description ? (
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <p className="line-clamp-1 text-xs text-muted-foreground sm:text-sm">
+            {description}
+          </p>
         ) : null}
       </div>
       {actions ? (
-        <div className="flex shrink-0 items-center gap-2">{actions}</div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
       ) : null}
     </div>
   );

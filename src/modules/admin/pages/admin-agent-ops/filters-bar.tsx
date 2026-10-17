@@ -8,25 +8,56 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RefreshCwIcon } from "@/components/ui/icons";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { XIcon } from "@/components/ui/icons";
 import { useAdminTranslation } from "../../i18n";
-import { cn } from "@/lib/utils";
-import type {
-  AgentOperationStatus,
-  ExternalAgentSubmissionStatus,
-} from "../../types";
 import {
   STATUS_VALUES,
   EXTERNAL_STATUS_VALUES,
   type AgentOpsFeed,
 } from "./constants";
-import { useAgentSourceLabel } from "./badges";
+import { useAgentSourceLabel, useStatusLabel } from "./badges";
 
-export function FiltersBar({
+/** Segmented External / In-app switch for the toolbar. */
+export function AgentOpsFeedToggle({
   feed,
   onFeedChange,
-  search,
-  onSearchChange,
+}: {
+  feed: AgentOpsFeed;
+  onFeedChange: (v: AgentOpsFeed) => void;
+}) {
+  const { tAdmin } = useAdminTranslation();
+  return (
+    <ToggleGroup
+      type="single"
+      variant="outline"
+      size="sm"
+      value={feed}
+      onValueChange={(v) => {
+        if (v) onFeedChange(v as AgentOpsFeed);
+      }}
+      aria-label={tAdmin("layout.devtool.feed")}
+      className="h-10 sm:h-9"
+    >
+      <ToggleGroupItem
+        value="external"
+        className="h-full px-3 text-xs data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+      >
+        {tAdmin("agentOperations.feed.external")}
+      </ToggleGroupItem>
+      <ToggleGroupItem
+        value="operations"
+        className="h-full px-3 text-xs data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+      >
+        {tAdmin("agentOperations.feed.operations")}
+      </ToggleGroupItem>
+    </ToggleGroup>
+  );
+}
+
+/** Filter form rendered in the toolbar filter popover. */
+export function AgentOpsFilterFields({
+  feed,
   status,
   onStatusChange,
   source,
@@ -35,13 +66,11 @@ export function FiltersBar({
   onDateFromChange,
   dateTo,
   onDateToChange,
-  onRefresh,
-  isFetching,
+  filterCount,
+  onClear,
+  onDone,
 }: {
   feed: AgentOpsFeed;
-  onFeedChange: (v: AgentOpsFeed) => void;
-  search: string;
-  onSearchChange: (v: string) => void;
   status: string;
   onStatusChange: (v: string) => void;
   source: string;
@@ -50,123 +79,93 @@ export function FiltersBar({
   onDateFromChange: (v: string) => void;
   dateTo: string;
   onDateToChange: (v: string) => void;
-  onRefresh: () => void;
-  isFetching: boolean;
+  filterCount: number;
+  onClear: () => void;
+  onDone: () => void;
 }) {
   const { tAdmin } = useAdminTranslation();
   const sourceLabel = useAgentSourceLabel();
+  const statusLabel = useStatusLabel(feed);
+  const statuses = feed === "external" ? EXTERNAL_STATUS_VALUES : STATUS_VALUES;
 
   return (
-    <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end">
-      <div className="min-w-[180px]">
-        <Label className="text-xs text-muted-foreground">
-          {tAdmin("agentOperations.columns.agent")}
-        </Label>
-        <Select value={feed} onValueChange={(v) => onFeedChange(v as AgentOpsFeed)}>
-          <SelectTrigger className="mt-1">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="external">
-              {tAdmin("agentOperations.feed.external")}
-            </SelectItem>
-            <SelectItem value="operations">
-              {tAdmin("agentOperations.feed.operations")}
-            </SelectItem>
-          </SelectContent>
-        </Select>
+    <>
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-sm font-semibold">{tAdmin("layout.shell.filters")}</p>
+        {filterCount > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs text-muted-foreground"
+            onClick={() => {
+              onClear();
+              onDone();
+            }}
+          >
+            <XIcon className="mr-1 h-3 w-3" />
+            {tAdmin("common.clearAll")}
+          </Button>
+        )}
       </div>
-      <div className="flex-1 min-w-[180px]">
-        <Label className="text-xs text-muted-foreground">
-          {tAdmin("common.search")}
-        </Label>
-        <Input
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder={tAdmin("agentOperations.searchPlaceholder")}
-          className="mt-1"
-        />
-      </div>
-      <div className="min-w-[160px]">
-        <Label className="text-xs text-muted-foreground">
-          {tAdmin("common.status")}
-        </Label>
-        <Select value={status} onValueChange={onStatusChange}>
-          <SelectTrigger className="mt-1">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{tAdmin("agentOperations.allStatuses")}</SelectItem>
-            {feed === "external"
-              ? EXTERNAL_STATUS_VALUES.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {tAdmin(
-                      `agentOperations.externalStatus.${s}` as `agentOperations.externalStatus.${ExternalAgentSubmissionStatus}`
-                    )}
-                  </SelectItem>
-                ))
-              : STATUS_VALUES.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {tAdmin(
-                      `agentOperations.status.${s}` as `agentOperations.status.${AgentOperationStatus}`
-                    )}
-                  </SelectItem>
-                ))}
-          </SelectContent>
-        </Select>
-      </div>
-      {feed === "external" ? (
-        <div className="min-w-[160px]">
-          <Label className="text-xs text-muted-foreground">
-            {tAdmin("agentOperations.columns.agent")}
-          </Label>
-          <Select value={source} onValueChange={onSourceChange}>
-            <SelectTrigger className="mt-1">
+      <div className="grid grid-cols-2 gap-3">
+        <div className={feed === "external" ? "space-y-1.5" : "col-span-2 space-y-1.5"}>
+          <Label className="text-xs text-muted-foreground">{tAdmin("common.status")}</Label>
+          <Select value={status} onValueChange={onStatusChange}>
+            <SelectTrigger className="h-8 w-full text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{tAdmin("agentOperations.allSources")}</SelectItem>
-              {(["chatgpt", "external_agent"] as const).map((s) => (
+              <SelectItem value="all">{tAdmin("agentOperations.allStatuses")}</SelectItem>
+              {statuses.map((s) => (
                 <SelectItem key={s} value={s}>
-                  {sourceLabel(s)}
+                  {statusLabel(s)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-      ) : null}
-      <div>
-        <Label className="text-xs text-muted-foreground">
-          {tAdmin("common.fromDate")}
-        </Label>
-        <Input
-          type="date"
-          value={dateFrom}
-          onChange={(e) => onDateFromChange(e.target.value)}
-          className="mt-1"
-        />
+        {feed === "external" ? (
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">
+              {tAdmin("agentOperations.columns.agent")}
+            </Label>
+            <Select value={source} onValueChange={onSourceChange}>
+              <SelectTrigger className="h-8 w-full text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{tAdmin("agentOperations.allSources")}</SelectItem>
+                {(["chatgpt", "external_agent"] as const).map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {sourceLabel(s)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null}
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">{tAdmin("common.fromDate")}</Label>
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => onDateFromChange(e.target.value)}
+            className="h-8 text-xs"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">{tAdmin("common.toDate")}</Label>
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => onDateToChange(e.target.value)}
+            className="h-8 text-xs"
+          />
+        </div>
       </div>
-      <div>
-        <Label className="text-xs text-muted-foreground">
-          {tAdmin("common.toDate")}
-        </Label>
-        <Input
-          type="date"
-          value={dateTo}
-          onChange={(e) => onDateToChange(e.target.value)}
-          className="mt-1"
-        />
-      </div>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={onRefresh}
-        aria-label={tAdmin("common.refresh")}
-        disabled={isFetching}
-      >
-        <RefreshCwIcon className={cn("h-4 w-4 mr-2", isFetching && "animate-spin")} />
-        {tAdmin("common.refresh")}
+      <Button size="sm" className="mt-3 h-8 w-full text-xs" onClick={onDone}>
+        {tAdmin("layout.devtool.applyFilters")}
       </Button>
-    </div>
+    </>
   );
 }

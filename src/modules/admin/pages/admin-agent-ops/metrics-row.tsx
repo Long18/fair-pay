@@ -1,10 +1,6 @@
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  Loader2Icon,
-  AlertTriangleIcon,
-} from "@/components/ui/icons";
+import { AlertTriangleIcon } from "@/components/ui/icons";
+import { cn } from "@/lib/utils";
 import { useAdminTranslation } from "../../i18n";
-import { AdminMetricCard, AdminMetricGrid } from "../../components/AdminMetricCard";
 import type {
   AgentOperationMetrics,
   ExternalAgentSubmissionMetrics,
@@ -15,57 +11,56 @@ import {
 } from "../admin-agent-operations.utils";
 import type { AgentOpsFeed } from "./constants";
 
-export function MetricsRow({
-  feed,
-  operationMetrics,
-  externalMetrics,
-  isLoading,
+function StatChip({
+  label,
+  value,
+  tone,
+  className,
 }: {
+  label: string;
+  value: string | number;
+  tone?: "danger";
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border bg-card px-2 text-xs",
+        tone === "danger" && "border-destructive/40 text-destructive",
+        className
+      )}
+    >
+      <span className={tone === "danger" ? "opacity-80" : "text-muted-foreground"}>{label}</span>
+      <span className="font-semibold tabular-nums">{value}</span>
+    </span>
+  );
+}
+
+interface MetricsProps {
   feed: AgentOpsFeed;
   operationMetrics: AgentOperationMetrics | undefined;
   externalMetrics: ExternalAgentSubmissionMetrics | undefined;
   isLoading: boolean;
-}) {
+}
+
+/** Inline stat chips for the toolbar `meta` slot (and a mobile row). */
+export function AgentOpsMetricChips({
+  feed,
+  operationMetrics,
+  externalMetrics,
+  isLoading,
+}: MetricsProps) {
   const { tAdmin } = useAdminTranslation();
-  const alerts = evaluateAgentOpsAlerts(operationMetrics);
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-        <Loader2Icon className="h-4 w-4 animate-spin" />
-        {tAdmin("common.loading")}
-      </div>
+      <>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <span key={i} className="h-7 w-20 shrink-0 animate-pulse rounded-md bg-muted" />
+        ))}
+      </>
     );
   }
-
-  const alertBanners = alerts ? (
-      <div className="flex flex-col gap-2">
-        {alerts.highErrorRate ? (
-          <Alert variant="destructive">
-            <AlertTriangleIcon />
-            <AlertTitle>{tAdmin("agentOperations.metrics.failed")}</AlertTitle>
-            <AlertDescription>
-              {tAdmin("agentOperations.alerts.highErrorRate", {
-                rate: alerts.failureRate,
-                min: AGENT_ALERT_MIN_OPS,
-              })}
-            </AlertDescription>
-          </Alert>
-        ) : null}
-        {alerts.opsSpike ? (
-          <Alert>
-            <AlertTriangleIcon />
-            <AlertTitle>{tAdmin("agentOperations.metrics.today")}</AlertTitle>
-            <AlertDescription>
-              {tAdmin("agentOperations.alerts.opsSpike", {
-                today: alerts.opsToday,
-                avg: alerts.dailyAvg7d,
-              })}
-            </AlertDescription>
-          </Alert>
-        ) : null}
-      </div>
-    ) : null;
 
   if (feed === "external") {
     if (!externalMetrics) return null;
@@ -74,29 +69,14 @@ export function MetricsRow({
     )[0];
     return (
       <>
-        {alertBanners}
-        <AdminMetricGrid columns={3} className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-          <AdminMetricCard
-            variant="plain"
-            label={tAdmin("agentOperations.metrics.externalTotal")}
-            value={externalMetrics.total}
-          />
-          <AdminMetricCard
-            variant="plain"
-            label={tAdmin("agentOperations.metrics.externalPending")}
-            value={externalMetrics.pending}
-          />
-          <AdminMetricCard
-            variant="plain"
-            label={tAdmin("agentOperations.metrics.externalApproved")}
-            value={externalMetrics.approved}
-          />
-          <AdminMetricCard
-            variant="plain"
-            label={tAdmin("agentOperations.columns.agent")}
-            value={topSource?.[0] ?? tAdmin("agentOperations.sources.unknown")}
-          />
-        </AdminMetricGrid>
+        <StatChip label={tAdmin("agentOperations.metrics.externalTotal")} value={externalMetrics.total} />
+        <StatChip label={tAdmin("agentOperations.metrics.externalPending")} value={externalMetrics.pending} />
+        <StatChip label={tAdmin("agentOperations.metrics.externalApproved")} value={externalMetrics.approved} />
+        <StatChip
+          label={tAdmin("agentOperations.columns.agent")}
+          value={topSource?.[0] ?? tAdmin("agentOperations.sources.unknown")}
+          className="hidden xl:inline-flex"
+        />
       </>
     );
   }
@@ -108,42 +88,68 @@ export function MetricsRow({
     p95 == null
       ? tAdmin("agentOperations.metrics.notAvailable")
       : tAdmin("agentOperations.metrics.seconds", { n: p95 });
+  const failed = operationMetrics.by_status?.failed ?? 0;
 
   return (
     <>
-      {alertBanners}
-      <AdminMetricGrid columns={3} className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-        <AdminMetricCard
-          variant="plain"
-          label={tAdmin("agentOperations.metrics.total")}
-          value={operationMetrics.total}
-        />
-        <AdminMetricCard
-          variant="plain"
-          label={tAdmin("agentOperations.metrics.committed")}
-          value={operationMetrics.by_status?.committed ?? 0}
-        />
-        <AdminMetricCard
-          variant="plain"
-          label={tAdmin("agentOperations.metrics.failed")}
-          value={operationMetrics.by_status?.failed ?? 0}
-        />
-        <AdminMetricCard
-          variant="plain"
-          label={tAdmin("agentOperations.metrics.completionRate")}
-          value={`${operationMetrics.completion_rate}%`}
-        />
-        <AdminMetricCard
-          variant="plain"
-          label={tAdmin("agentOperations.metrics.activePreviews")}
-          value={operationMetrics.active_previews}
-        />
-        <AdminMetricCard
-          variant="plain"
-          label={tAdmin("agentOperations.metrics.p95CommitTime")}
-          value={p95Display}
-        />
-      </AdminMetricGrid>
+      <StatChip label={tAdmin("agentOperations.metrics.total")} value={operationMetrics.total} />
+      <StatChip label={tAdmin("agentOperations.metrics.committed")} value={operationMetrics.by_status?.committed ?? 0} />
+      <StatChip
+        label={tAdmin("agentOperations.metrics.failed")}
+        value={failed}
+        tone={failed > 0 ? "danger" : undefined}
+      />
+      <StatChip label={tAdmin("agentOperations.metrics.completionRate")} value={`${operationMetrics.completion_rate}%`} />
+      <StatChip
+        label={tAdmin("agentOperations.metrics.activePreviews")}
+        value={operationMetrics.active_previews}
+        className="hidden xl:inline-flex"
+      />
+      <StatChip
+        label={tAdmin("agentOperations.metrics.p95CommitTime")}
+        value={p95Display}
+        className="hidden xl:inline-flex"
+      />
     </>
+  );
+}
+
+/** Slim one-line alert banners; render nothing when no threshold is crossed. */
+export function AgentOpsAlerts({
+  operationMetrics,
+}: {
+  operationMetrics: AgentOperationMetrics | undefined;
+}) {
+  const { tAdmin } = useAdminTranslation();
+  const alerts = evaluateAgentOpsAlerts(operationMetrics);
+  if (!alerts || (!alerts.highErrorRate && !alerts.opsSpike)) return null;
+
+  return (
+    <div role="status" className="flex flex-col gap-1.5">
+      {alerts.highErrorRate ? (
+        <p className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-1.5 text-xs text-destructive">
+          <AlertTriangleIcon className="h-3.5 w-3.5 shrink-0" />
+          <span className="font-semibold">{tAdmin("layout.devtool.alertFailureShort")}</span>
+          <span className="truncate opacity-90">
+            {tAdmin("agentOperations.alerts.highErrorRate", {
+              rate: alerts.failureRate,
+              min: AGENT_ALERT_MIN_OPS,
+            })}
+          </span>
+        </p>
+      ) : null}
+      {alerts.opsSpike ? (
+        <p className="flex items-center gap-2 rounded-md border border-[var(--status-warning-foreground)]/40 bg-[var(--status-warning-foreground)]/5 px-3 py-1.5 text-xs">
+          <AlertTriangleIcon className="h-3.5 w-3.5 shrink-0 text-[var(--status-warning-foreground)]" />
+          <span className="font-semibold">{tAdmin("layout.devtool.alertSpikeShort")}</span>
+          <span className="truncate text-muted-foreground">
+            {tAdmin("agentOperations.alerts.opsSpike", {
+              today: alerts.opsToday,
+              avg: alerts.dailyAvg7d,
+            })}
+          </span>
+        </p>
+      ) : null}
+    </div>
   );
 }

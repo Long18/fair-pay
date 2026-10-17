@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useGetIdentity, type CrudFilters } from "@refinedev/core";
 import { useInstantUpdate, useInstantDelete } from "@/hooks/use-instant-mutation";
@@ -6,8 +6,6 @@ import { useHaptics } from "@/hooks/use-haptics";
 import { useTable } from "@refinedev/react-table";
 import { type ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
-import { DataTable } from "@/components/refine-ui/data-table/data-table";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -31,17 +29,111 @@ import type { Profile } from "@/modules/profile/types";
 import { AdminPageToolbar } from "../../components/AdminPageToolbar";
 import { AdminTableSkeleton } from "../../components/AdminTableSkeleton";
 import { AdminEmptyState } from "../../components/AdminEmptyState";
-import {
-  AdminMobileCard,
-  AdminMobileCards,
-  AdminMobilePagination,
-} from "../../components/AdminMobileCards";
+import { AdminMobileCard, AdminMobileCards } from "../../components/AdminMobileCards";
+import { AdminMasterDetail } from "../../components/AdminMasterDetail";
 import { useAdminTranslation } from "../../i18n";
 import type { GroupRow, GroupListRecord } from "./types";
-import { GroupDetailDialog } from "./group-detail-dialog";
+import { GroupDetailPanel } from "./group-detail-dialog";
 import { DeleteConfirmDialog } from "./delete-confirm-dialog";
 import { EditGroupDialog } from "./edit-group-dialog";
 import { CreateGroupSheet } from "./create-group-sheet";
+import { PeopleTable } from "./people-table";
+import { PeoplePagination } from "./people-pagination";
+import { PEOPLE_DEFAULT_PAGE_SIZE } from "./utils";
+
+type GroupRowActionHandlers = {
+  onViewDetail: (group: GroupRow) => void;
+  onEdit: (group: GroupRow) => void;
+  onArchiveToggle: (group: GroupRow) => void;
+  onDelete: (group: GroupRow) => void;
+};
+
+function GroupRowActions({
+  group,
+  isArchiving,
+  compact = false,
+  onViewDetail,
+  onEdit,
+  onArchiveToggle,
+  onDelete,
+}: GroupRowActionHandlers & { group: GroupRow; isArchiving: boolean; compact?: boolean }) {
+  const { tAdmin } = useAdminTranslation();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={compact ? "h-8 w-8" : "h-9 w-9 cursor-pointer"}
+          aria-label={tAdmin("common.actions")}
+        >
+          <MoreHorizontalIcon className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => onViewDetail(group)}>{tAdmin("common.details")}</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onEdit(group)}>
+          <PencilIcon className="mr-2 h-4 w-4" />{tAdmin("people.editGroup")}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onArchiveToggle(group)} disabled={isArchiving}>
+          {group.is_archived ? (
+            <><ArchiveRestoreIcon className="mr-2 h-4 w-4" />{tAdmin("people.restore")}</>
+          ) : (
+            <><ArchiveIcon className="mr-2 h-4 w-4" />{tAdmin("people.archive")}</>
+          )}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => onDelete(group)} className="text-destructive">
+          {tAdmin("people.deleteGroup")}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function GroupsMobileList({
+  groups,
+  isArchiving,
+  ...rowActions
+}: GroupRowActionHandlers & { groups: GroupRow[]; isArchiving: boolean }) {
+  const { tAdmin } = useAdminTranslation();
+
+  return (
+    <AdminMobileCards
+      items={groups}
+      getKey={(group) => group.id}
+      renderItem={(group) => (
+        <AdminMobileCard
+          title={group.name}
+          description={group.description || tAdmin("people.createdBy", { name: group.creator_name, date: formatDate(group.created_at) })}
+          leading={
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={group.avatar_url ?? undefined} alt={group.name} />
+              <AvatarFallback className="text-sm bg-primary/10 text-primary">
+                {group.name?.[0]?.toUpperCase() ?? "?"}
+              </AvatarFallback>
+            </Avatar>
+          }
+          badges={group.is_archived ? (
+            <Badge className="bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)] text-xs">
+              {tAdmin("status.archived")}
+            </Badge>
+          ) : undefined}
+          meta={[
+            { label: tAdmin("common.members"), value: group.member_count },
+            { label: tAdmin("people.totalExpenses"), value: <span className="font-mono tabular-nums">{formatNumber(group.total_expenses)}</span> },
+            { label: tAdmin("people.creator"), value: group.creator_name },
+            { label: tAdmin("common.createdAt"), value: formatDate(group.created_at) },
+          ]}
+          actions={<GroupRowActions group={group} isArchiving={isArchiving} {...rowActions} />}
+          onClick={() => rowActions.onViewDetail(group)}
+          ariaLabel={group.name}
+        />
+      )}
+    />
+  );
+}
 
 export function GroupsTab() {
   const { tAdmin } = useAdminTranslation();
@@ -53,7 +145,7 @@ export function GroupsTab() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
 
-  // Detail dialog
+  // Detail pane
   const [selectedGroup, setSelectedGroup] = useState<GroupRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
@@ -78,6 +170,15 @@ export function GroupsTab() {
     if (debouncedSearch) f.push({ field: "name", operator: "contains", value: debouncedSearch });
     return f;
   }, [debouncedSearch]);
+
+  // Columns are needed to build the table, but the archive handler needs the table's refetch.
+  const archiveToggleRef = useRef<(group: GroupRow) => void>(() => {});
+  const rowActions = useMemo<GroupRowActionHandlers>(() => ({
+    onViewDetail: (group) => { tap(); setSelectedGroup(group); setDetailOpen(true); },
+    onEdit: (group) => { tap(); setEditGroup(group); setEditDialogOpen(true); },
+    onArchiveToggle: (group) => archiveToggleRef.current(group),
+    onDelete: (group) => { warning(); setDeleteGroup(group); setDeleteDialogOpen(true); },
+  }), [tap, warning]);
 
   const columns = useMemo<ColumnDef<GroupRow>[]>(() => [
     {
@@ -133,36 +234,18 @@ export function GroupsTab() {
     {
       id: "actions", header: "", size: 50, enableSorting: false,
       cell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontalIcon className="h-4 w-4" /></Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => { tap(); setSelectedGroup(row.original); setDetailOpen(true); }}>{tAdmin("common.details")}</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { tap(); setEditGroup(row.original); setEditDialogOpen(true); }}>
-              <PencilIcon className="mr-2 h-4 w-4" />{tAdmin("people.editGroup")}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleArchiveToggle(row.original)} disabled={isArchiving}>
-              {row.original.is_archived ? (
-                <><ArchiveRestoreIcon className="mr-2 h-4 w-4" />{tAdmin("people.restore")}</>
-              ) : (
-                <><ArchiveIcon className="mr-2 h-4 w-4" />{tAdmin("people.archive")}</>
-              )}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => { warning(); setDeleteGroup(row.original); setDeleteDialogOpen(true); }} className="text-destructive">{tAdmin("people.deleteGroup")}</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <GroupRowActions group={row.original} isArchiving={isArchiving} compact {...rowActions} />
       ),
     },
-  ], [isArchiving, tAdmin, tap, warning]);
+  ], [isArchiving, rowActions, tAdmin]);
 
   const table = useTable<GroupRow>({
     columns,
+    initialState: { columnPinning: { right: ["actions"] } },
     refineCoreProps: {
       resource: "groups",
       meta: { select: "*, profiles!groups_created_by_fkey(full_name, avatar_url), group_members(count)" },
-      pagination: { pageSize: 10 },
+      pagination: { pageSize: PEOPLE_DEFAULT_PAGE_SIZE },
       filters: { permanent: filters },
       sorters: { initial: [{ field: "created_at", order: "desc" }] },
       queryOptions: {
@@ -238,7 +321,6 @@ export function GroupsTab() {
             : tAdmin("people.success.groupRestored", { name: group.name }));
           setIsArchiving(false);
           table.refineCore.tableQuery.refetch();
-          // Also refresh detail dialog if open
           if (detailOpen && selectedGroup?.id === group.id) {
             setSelectedGroup({ ...group, is_archived: newArchived });
           }
@@ -248,126 +330,96 @@ export function GroupsTab() {
     );
   }, [detailOpen, identity?.id, selectedGroup, table.refineCore.tableQuery, tAdmin, updateMutation]);
 
+  useEffect(() => {
+    archiveToggleRef.current = handleArchiveToggle;
+  }, [handleArchiveToggle]);
+
   const clearFilters = useCallback(() => setSearch(""), []);
   const hasActiveFilters = search !== "";
-  const isEmptyResult = !table.refineCore.tableQuery.isLoading && table.reactTable.getRowModel().rows.length === 0;
+  const isTableLoading = table.refineCore.tableQuery.isLoading;
+  const isEmptyResult = !isTableLoading && table.reactTable.getRowModel().rows.length === 0;
   const visibleGroups = table.reactTable.getRowModel().rows.map((row) => row.original);
+  const detailGroup = visibleGroups.find((g) => g.id === selectedGroup?.id) ?? selectedGroup;
+
+  const detailShell = detailGroup
+    ? {
+        title: detailGroup.name,
+        description: tAdmin("people.createdBy", { name: detailGroup.creator_name, date: formatDate(detailGroup.created_at) }),
+        footer: (
+          <Button size="sm" onClick={() => rowActions.onEdit(detailGroup)}>
+            <PencilIcon className="mr-1.5 h-4 w-4" />
+            {tAdmin("people.editGroup")}
+          </Button>
+        ),
+        detail: (
+          <GroupDetailPanel
+            group={detailGroup}
+            onDelete={() => { setDetailOpen(false); rowActions.onDelete(detailGroup); }}
+            onArchiveToggle={() => handleArchiveToggle(detailGroup)}
+          />
+        ),
+      }
+    : { title: "", detail: null };
+
+  const master = (
+    <div className="flex min-w-0 flex-col gap-3">
+      <AdminPageToolbar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder={tAdmin("people.groupSearchPlaceholder")}
+        actions={
+          <Button size="sm" className="h-10 sm:h-9" onClick={() => { tap(); setCreateGroupOpen(true); }}>
+            <PlusIcon className="mr-1.5 h-4 w-4" />
+            {tAdmin("people.createGroupSubmit")}
+          </Button>
+        }
+      />
+      {isTableLoading ? (
+        <AdminTableSkeleton rows={7} columns={6} />
+      ) : isEmptyResult && hasActiveFilters ? (
+        <AdminEmptyState
+          icon={<GroupIcon className="h-8 w-8" />}
+          title={tAdmin("people.noGroupsTitle")}
+          description={tAdmin("people.noGroupsDescription")}
+          action={{ label: tAdmin("common.clearFilters"), onClick: clearFilters }}
+          className="min-h-[200px] py-6"
+        />
+      ) : (
+        <>
+          <PeopleTable
+            table={table.reactTable}
+            offset="15.5rem"
+            getRowId={(group) => group.id}
+            emptyLabel={tAdmin("common.noData")}
+            selectedId={detailOpen ? detailGroup?.id : null}
+            onRowClick={rowActions.onViewDetail}
+          />
+          <div className="md:hidden">
+            <GroupsMobileList groups={visibleGroups} isArchiving={isArchiving} {...rowActions} />
+          </div>
+        </>
+      )}
+      {!isTableLoading && visibleGroups.length > 0 && (
+        <PeoplePagination
+          page={table.refineCore.currentPage}
+          pageCount={table.refineCore.pageCount}
+          pageSize={table.refineCore.pageSize}
+          total={table.refineCore.tableQuery.data?.total}
+          onPageChange={(page) => table.refineCore.setCurrentPage(page)}
+          onPageSizeChange={(size) => { table.refineCore.setPageSize(size); table.refineCore.setCurrentPage(1); }}
+        />
+      )}
+    </div>
+  );
 
   return (
     <>
-
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div>
-            <CardTitle>{tAdmin("people.groupsCardTitle")}</CardTitle>
-            <CardDescription>{tAdmin("people.groupsCardDescription")}</CardDescription>
-          </div>
-          <Button size="sm" onClick={() => { tap(); setCreateGroupOpen(true); }}>
-            <PlusIcon className="mr-2 h-4 w-4" />
-            {tAdmin("people.createGroupSubmit")}
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <AdminPageToolbar
-            search={search}
-            onSearchChange={setSearch}
-            searchPlaceholder={tAdmin("people.groupSearchPlaceholder")}
-          />
-          {table.refineCore.tableQuery.isLoading ? (
-            <AdminTableSkeleton rows={7} columns={6} />
-          ) : isEmptyResult && hasActiveFilters ? (
-            <AdminEmptyState
-              icon={<GroupIcon className="h-8 w-8" />}
-              title={tAdmin("people.noGroupsTitle")}
-              description={tAdmin("people.noGroupsDescription")}
-              action={{ label: tAdmin("common.clearFilters"), onClick: clearFilters }}
-            />
-          ) : (
-            <>
-              <div className="hidden md:block">
-                <DataTable table={table} />
-              </div>
-              <div className="space-y-3 md:hidden">
-                <AdminMobileCards
-                  items={visibleGroups}
-                  getKey={(group) => group.id}
-                  renderItem={(group) => (
-                    <AdminMobileCard
-                      title={group.name}
-                      description={group.description || tAdmin("people.createdBy", { name: group.creator_name, date: formatDate(group.created_at) })}
-                      leading={
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={group.avatar_url ?? undefined} alt={group.name} />
-                          <AvatarFallback className="text-sm bg-primary/10 text-primary">
-                            {group.name?.[0]?.toUpperCase() ?? "?"}
-                          </AvatarFallback>
-                        </Avatar>
-                      }
-                      badges={group.is_archived ? (
-                        <Badge className="bg-[var(--status-warning-bg)] text-[var(--status-warning-foreground)] text-xs">
-                          {tAdmin("status.archived")}
-                        </Badge>
-                      ) : undefined}
-                      meta={[
-                        { label: tAdmin("common.members"), value: group.member_count },
-                        { label: tAdmin("people.totalExpenses"), value: <span className="font-mono tabular-nums">{formatNumber(group.total_expenses)}</span> },
-                        { label: tAdmin("people.creator"), value: group.creator_name },
-                        { label: tAdmin("common.createdAt"), value: formatDate(group.created_at) },
-                      ]}
-                      actions={
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-9 w-9 cursor-pointer">
-                              <MoreHorizontalIcon className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => { tap(); setSelectedGroup(group); setDetailOpen(true); }}>{tAdmin("common.details")}</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => { tap(); setEditGroup(group); setEditDialogOpen(true); }}>
-                              <PencilIcon className="mr-2 h-4 w-4" />{tAdmin("people.editGroup")}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleArchiveToggle(group)}>
-                              {group.is_archived ? (
-                                <><ArchiveRestoreIcon className="mr-2 h-4 w-4" />{tAdmin("people.restore")}</>
-                              ) : (
-                                <><ArchiveIcon className="mr-2 h-4 w-4" />{tAdmin("people.archive")}</>
-                              )}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => { warning(); setDeleteGroup(group); setDeleteDialogOpen(true); }} className="text-destructive">{tAdmin("people.deleteGroup")}</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      }
-                      onClick={() => { tap(); setSelectedGroup(group); setDetailOpen(true); }}
-                      ariaLabel={group.name}
-                    />
-                  )}
-                />
-                {visibleGroups.length > 0 && (
-                  <AdminMobilePagination
-                    summary={tAdmin("common.pageCount", { page: table.refineCore.currentPage, total: table.refineCore.pageCount })}
-                    previousLabel={tAdmin("common.previous")}
-                    nextLabel={tAdmin("common.next")}
-                    canPrevious={table.refineCore.currentPage > 1}
-                    canNext={table.refineCore.currentPage < table.refineCore.pageCount}
-                    onPrevious={() => table.refineCore.setCurrentPage(table.refineCore.currentPage - 1)}
-                    onNext={() => table.refineCore.setCurrentPage(table.refineCore.currentPage + 1)}
-                  />
-                )}
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      <GroupDetailDialog
-        group={selectedGroup}
-        open={detailOpen}
+      <AdminMasterDetail
+        id="people-groups"
+        master={master}
+        open={detailOpen && !!detailGroup}
         onOpenChange={setDetailOpen}
-        onEdit={() => { setDetailOpen(false); setEditGroup(selectedGroup); setEditDialogOpen(true); }}
-        onDelete={() => { setDetailOpen(false); setDeleteGroup(selectedGroup); setDeleteDialogOpen(true); }}
-        onArchiveToggle={() => { if (selectedGroup) handleArchiveToggle(selectedGroup); }}
+        {...detailShell}
       />
       <DeleteConfirmDialog
         title={tAdmin("people.deleteGroupTitle")}

@@ -1,10 +1,12 @@
 import { useTranslation } from "react-i18next";
 import type { TOptions } from "i18next";
 import { useCallback } from "react";
+import { adminLayoutTranslations } from "./layout-i18n";
 
 export const adminTranslations = {
   en: {
     admin: {
+      layout: adminLayoutTranslations.en,
       common: {
         admin: "Admin",
         add: "Add",
@@ -1177,6 +1179,7 @@ export const adminTranslations = {
   },
   vi: {
     admin: {
+      layout: adminLayoutTranslations.vi,
       common: {
         admin: "Admin",
         add: "Thêm",

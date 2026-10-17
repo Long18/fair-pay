@@ -1,17 +1,26 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  EyeIcon,
+  HistoryIcon,
+  InfoIcon,
   Loader2Icon,
   RefreshCwIcon,
+  UsersIcon,
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
+import { cn } from "@/lib/utils";
+import { AdminEmptyState } from "../../components/AdminEmptyState";
 import { AdminPageHeader } from "../../components/AdminPageHeader";
 import { buildReminderEmailPreview } from "@/modules/admin/email/reminder-email";
 import { useAdminTranslation } from "../../i18n";
 import { EmailDebtorsPanel } from "./email-debtors-panel";
-import { EmailPreviewDialogs } from "./email-preview-dialogs";
+import { EmailConfirmBulkDialog } from "./email-preview-dialogs";
+import { EmailBulkPreviewPanel } from "./email-preview-panels";
 import { ScheduledSendBanner, SendResultCard } from "./email-preview-ui";
 import {
   attachUserEmails,
@@ -29,6 +38,7 @@ import {
   waitMs,
 } from "./helpers";
 import type {
+  AdminT,
   DebtReminderRow,
   EmailSendResult,
   PreviewViewport,
@@ -40,6 +50,118 @@ import {
   UNDO_DELAY_MAX_MS,
   UNDO_DELAY_MIN_MS,
 } from "./types";
+
+type EmailToolTab = "recipients" | "preview" | "results";
+
+function StatChip({ label, value, help }: { label: string; value: ReactNode; help?: string }) {
+  return (
+    <div className="inline-flex h-8 items-center gap-1.5 rounded-md border bg-muted/30 px-2.5 text-xs">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-semibold tabular-nums text-foreground">{value}</span>
+      {help ? (
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="-mr-1 rounded-sm p-0.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              aria-label={help}
+            >
+              <InfoIcon className="h-3.5 w-3.5" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-72 p-3 text-xs text-muted-foreground">
+            {help}
+          </PopoverContent>
+        </Popover>
+      ) : null}
+    </div>
+  );
+}
+
+function EmailToolTabsBar({
+  tAdmin,
+  isLoading,
+  debtorsCount,
+  selectedCount,
+  sendResult,
+  pendingQueueCount,
+  totalDebtAll,
+  onRefresh,
+}: {
+  tAdmin: AdminT;
+  isLoading: boolean;
+  debtorsCount: number;
+  selectedCount: number;
+  sendResult: EmailSendResult | null;
+  pendingQueueCount: number | null;
+  totalDebtAll: number;
+  onRefresh: () => void;
+}) {
+  const sendResultHasErrors = sendResult
+    ? (sendResult.errors?.length || 0) > 0 || sendResult.success === false
+    : false;
+
+  return (
+    <div className="flex min-w-0 flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <TabsList className="max-w-full justify-start overflow-x-auto scrollbar-none">
+        <TabsTrigger value="recipients" className="flex-none px-3 text-xs sm:text-sm">
+          <UsersIcon className="h-4 w-4" aria-hidden="true" />
+          {tAdmin("layout.devtoolTools.email.tabRecipients")}
+          <Badge variant="secondary" className="h-5 px-1.5 text-[10px] tabular-nums">
+            {isLoading ? "…" : debtorsCount}
+          </Badge>
+        </TabsTrigger>
+        <TabsTrigger value="preview" className="flex-none px-3 text-xs sm:text-sm">
+          <EyeIcon className="h-4 w-4" aria-hidden="true" />
+          {tAdmin("layout.devtoolTools.email.tabPreview")}
+          {selectedCount ? (
+            <Badge className="h-5 px-1.5 text-[10px] tabular-nums">{selectedCount}</Badge>
+          ) : null}
+        </TabsTrigger>
+        <TabsTrigger value="results" className="flex-none px-3 text-xs sm:text-sm">
+          <HistoryIcon className="h-4 w-4" aria-hidden="true" />
+          {tAdmin("layout.devtoolTools.email.tabResults")}
+          {sendResult ? (
+            <span
+              className={cn(
+                "size-2 rounded-full",
+                sendResultHasErrors ? "bg-status-warning" : "bg-status-success"
+              )}
+              aria-hidden="true"
+            />
+          ) : null}
+        </TabsTrigger>
+      </TabsList>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <StatChip
+          label={tAdmin("layout.devtoolTools.email.statQueue")}
+          value={pendingQueueCount ?? "—"}
+          help={tAdmin("devtool.pendingQueueHelp")}
+        />
+        <StatChip
+          label={tAdmin("layout.devtoolTools.email.statTotal")}
+          value={debtorsCount ? formatCurrency(totalDebtAll) : "—"}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8"
+          onClick={onRefresh}
+          disabled={isLoading}
+          aria-label={tAdmin("common.refresh")}
+        >
+          {isLoading ? (
+            <Loader2Icon className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCwIcon className="h-4 w-4" />
+          )}
+          <span className="ml-1.5 hidden sm:inline">{tAdmin("common.refresh")}</span>
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export function AdminEmailDevTools({ embedded = false }: { embedded?: boolean }) {
   const { tAdmin } = useAdminTranslation();
@@ -53,7 +175,7 @@ export function AdminEmailDevTools({ embedded = false }: { embedded?: boolean })
   const [sendingUserId, setSendingUserId] = useState<string | null>(null);
   const [previewRow, setPreviewRow] = useState<DebtReminderRow | null>(null);
   const [previewViewport, setPreviewViewport] = useState<PreviewViewport>("desktop");
-  const [bulkPreviewOpen, setBulkPreviewOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<EmailToolTab>("recipients");
   const [bulkPreviewFocusUserId, setBulkPreviewFocusUserId] = useState<string | null>(null);
   const [bulkPreviewViewport, setBulkPreviewViewport] = useState<PreviewViewport>("desktop");
   const [confirmBulkOpen, setConfirmBulkOpen] = useState(false);
@@ -437,124 +559,124 @@ export function AdminEmailDevTools({ embedded = false }: { embedded?: boolean })
   const openBulkPreview = useCallback(() => {
     if (!selectedRows.length) return;
     setBulkPreviewFocusUserId(selectedRows[0].user_id);
-    setBulkPreviewOpen(true);
+    setActiveTab("preview");
     tap();
   }, [selectedRows, tap]);
 
   return (
-    <div className="space-y-6">
-      <AdminPageHeader
-        title={tAdmin("devtool.title")}
-        description={tAdmin("devtool.subtitle")}
-        density={embedded ? "section" : "page"}
-        actions={
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              tap();
-              refresh();
-            }}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCwIcon className="mr-2 h-4 w-4" />
-            )}
-            {tAdmin("common.refresh")}
-          </Button>
-        }
-      />
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Card className="shadow-none">
-          <CardHeader className="space-y-1 p-4 pb-3">
-            <CardDescription className="text-xs">{tAdmin("devtool.pendingQueue")}</CardDescription>
-            <CardTitle className="text-xl tabular-nums">{pendingQueueCount ?? "—"}</CardTitle>
-            <p className="text-[11px] leading-4 text-muted-foreground">
-              {tAdmin("devtool.pendingQueueHelp")}
-            </p>
-          </CardHeader>
-          {pendingQueueError && (
-            <CardContent className="px-4 pb-3 pt-0">
-              <p className="text-sm text-[var(--status-warning-foreground)]">{pendingQueueError}</p>
-            </CardContent>
-          )}
-        </Card>
-
-        <Card className="shadow-none">
-          <CardHeader className="space-y-1 p-4 pb-3">
-            <CardDescription className="text-xs">{tAdmin("devtool.debtorsWithEmail")}</CardDescription>
-            <CardTitle className="text-xl tabular-nums">{debtors.length}</CardTitle>
-          </CardHeader>
-        </Card>
-
-        <Card className="shadow-none">
-          <CardHeader className="space-y-1 p-4 pb-3">
-            <CardDescription className="text-xs">{tAdmin("devtool.totalDebtAll")}</CardDescription>
-            <CardTitle className="text-xl tabular-nums text-balance">
-              {debtors.length ? formatCurrency(totalDebtAll) : "—"}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
-
-      {scheduledSend ? (
-        <ScheduledSendBanner
-          state={scheduledSend}
-          nowMs={nowMs}
-          onCancel={cancelScheduledSend}
-          tAdmin={tAdmin}
+    <div className="space-y-3">
+      {!embedded ? (
+        <AdminPageHeader
+          title={tAdmin("devtool.title")}
+          description={tAdmin("devtool.subtitle")}
         />
       ) : null}
 
-      <SendResultCard result={sendResult} />
-      <EmailDebtorsPanel
-        tAdmin={tAdmin}
-        tap={tap}
-        isLoading={isLoading}
-        isBusy={isBusy}
-        isBulkScheduling={isBulkScheduling}
-        sendingUserId={sendingUserId}
-        debtorsLength={debtors.length}
-        groupFilter={groupFilter}
-        setGroupFilter={setGroupFilter}
-        setSelectedUserIds={setSelectedUserIds}
-        groupOptions={groupOptions}
-        selectedRows={selectedRows}
-        visibleDebtors={visibleDebtors}
-        totalDebtSelected={totalDebtSelected}
-        allSelected={allSelected}
-        someSelected={someSelected}
-        selectedUserIdSet={selectedUserIdSet}
-        recipientSelections={recipientSelections}
-        setRecipientSelections={setRecipientSelections}
-        openBulkPreview={openBulkPreview}
-        setConfirmBulkOpen={setConfirmBulkOpen}
-        setPreviewRow={setPreviewRow}
-        handleRemindOne={handleRemindOne}
-      />
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          tap();
+          setActiveTab(value as EmailToolTab);
+        }}
+        className="gap-3"
+      >
+        <EmailToolTabsBar
+          tAdmin={tAdmin}
+          isLoading={isLoading}
+          debtorsCount={debtors.length}
+          selectedCount={selectedRows.length}
+          sendResult={sendResult}
+          pendingQueueCount={pendingQueueCount}
+          totalDebtAll={totalDebtAll}
+          onRefresh={() => {
+            tap();
+            refresh();
+          }}
+        />
 
-      <EmailPreviewDialogs
+        {pendingQueueError ? (
+          <p className="text-xs text-[var(--status-warning-foreground)]">{pendingQueueError}</p>
+        ) : null}
+
+        {scheduledSend ? (
+          <ScheduledSendBanner
+            state={scheduledSend}
+            nowMs={nowMs}
+            onCancel={cancelScheduledSend}
+            tAdmin={tAdmin}
+          />
+        ) : null}
+
+        <TabsContent value="recipients">
+          <EmailDebtorsPanel
+            tAdmin={tAdmin}
+            tap={tap}
+            isLoading={isLoading}
+            isBusy={isBusy}
+            isBulkScheduling={isBulkScheduling}
+            sendingUserId={sendingUserId}
+            debtorsLength={debtors.length}
+            groupFilter={groupFilter}
+            setGroupFilter={setGroupFilter}
+            setSelectedUserIds={setSelectedUserIds}
+            groupOptions={groupOptions}
+            selectedRows={selectedRows}
+            visibleDebtors={visibleDebtors}
+            totalDebtSelected={totalDebtSelected}
+            allSelected={allSelected}
+            someSelected={someSelected}
+            selectedUserIdSet={selectedUserIdSet}
+            recipientSelections={recipientSelections}
+            setRecipientSelections={setRecipientSelections}
+            openBulkPreview={openBulkPreview}
+            setConfirmBulkOpen={setConfirmBulkOpen}
+            previewRow={previewRow}
+            setPreviewRow={setPreviewRow}
+            previewEmail={previewEmail}
+            previewViewport={previewViewport}
+            setPreviewViewport={setPreviewViewport}
+            handleRemindOne={handleRemindOne}
+          />
+        </TabsContent>
+
+        <TabsContent value="preview">
+          <EmailBulkPreviewPanel
+            tAdmin={tAdmin}
+            selectedRows={selectedRows}
+            focusRow={effectiveBulkFocusRow}
+            setFocusUserId={setBulkPreviewFocusUserId}
+            viewport={bulkPreviewViewport}
+            setViewport={setBulkPreviewViewport}
+            email={bulkPreviewEmail}
+            recipientSelections={recipientSelections}
+            isBusy={isBusy}
+            onConfirm={() => {
+              tap();
+              setConfirmBulkOpen(true);
+            }}
+            onGoToRecipients={() => setActiveTab("recipients")}
+          />
+        </TabsContent>
+
+        <TabsContent value="results">
+          {sendResult ? (
+            <SendResultCard result={sendResult} />
+          ) : (
+            <AdminEmptyState
+              icon={<HistoryIcon className="h-5 w-5" />}
+              title={tAdmin("layout.devtoolTools.email.resultsEmptyTitle")}
+              description={tAdmin("layout.devtoolTools.email.resultsEmptyBody")}
+              className="rounded-lg border border-dashed py-6"
+            />
+          )}
+        </TabsContent>
+      </Tabs>
+
+      <EmailConfirmBulkDialog
         tAdmin={tAdmin}
-        isBusy={isBusy}
         sendingUserId={sendingUserId}
-        previewRow={previewRow}
-        setPreviewRow={setPreviewRow}
-        previewViewport={previewViewport}
-        setPreviewViewport={setPreviewViewport}
-        previewEmail={previewEmail}
-        recipientSelections={recipientSelections}
-        handleRemindOne={handleRemindOne}
-        bulkPreviewOpen={bulkPreviewOpen}
-        setBulkPreviewOpen={setBulkPreviewOpen}
         selectedRows={selectedRows}
-        effectiveBulkFocusRow={effectiveBulkFocusRow}
-        setBulkPreviewFocusUserId={setBulkPreviewFocusUserId}
-        bulkPreviewViewport={bulkPreviewViewport}
-        setBulkPreviewViewport={setBulkPreviewViewport}
-        bulkPreviewEmail={bulkPreviewEmail}
+        recipientSelections={recipientSelections}
         confirmBulkOpen={confirmBulkOpen}
         setConfirmBulkOpen={setConfirmBulkOpen}
         handleRemindSelected={handleRemindSelected}

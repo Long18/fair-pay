@@ -19,13 +19,13 @@ export function DetailPane({ entry, t }: { entry: ApiCatalogEntry; t: TFn }) {
   const { tap } = useHaptics();
 
   return (
-    <Card className="h-full min-h-0 flex flex-col overflow-hidden">
-      <CardHeader className="border-b pb-3 shrink-0 space-y-2">
+    <Card className="h-full min-h-0 flex flex-col gap-0 overflow-hidden py-0 hover:shadow-sm">
+      <CardHeader className="border-b px-4 py-3 shrink-0 [.border-b]:pb-3">
         <div className="flex items-start gap-2 flex-wrap">
           <MethodBadge entry={entry} large />
           <div className="min-w-0 flex-1">
             <CardTitle className="text-base font-mono truncate">{displayName(entry)}</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{friendlySummary(entry)}</p>
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{friendlySummary(entry)}</p>
           </div>
         </div>
       </CardHeader>
@@ -38,7 +38,7 @@ export function DetailPane({ entry, t }: { entry: ApiCatalogEntry; t: TFn }) {
         }}
         className="flex flex-col flex-1 min-h-0 overflow-hidden"
       >
-        <TabsList className="shrink-0 mx-4 mt-3 justify-start h-9 w-fit">
+        <TabsList className="shrink-0 mx-4 mt-2.5 justify-start h-8 w-fit">
           <TabsTrigger value="docs" className="text-xs">
             <BookOpenIcon className="w-3 h-3 mr-1.5" />
             {t("adminApiDocs.docsTab")}
@@ -54,13 +54,13 @@ export function DetailPane({ entry, t }: { entry: ApiCatalogEntry; t: TFn }) {
         </TabsList>
 
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
-          <TabsContent value="docs" className="p-4 mt-0">
+          <TabsContent value="docs" className="p-3 mt-0">
             <DocsPanel entry={entry} t={t} />
           </TabsContent>
-          <TabsContent value="try" className="p-4 mt-0">
+          <TabsContent value="try" className="p-3 mt-0">
             <TryPanel key={entry.id} entry={entry} t={t} />
           </TabsContent>
-          <TabsContent value="code" className="p-4 mt-0">
+          <TabsContent value="code" className="p-3 mt-0">
             <CodePanel entry={entry} t={t} />
           </TabsContent>
         </div>
@@ -71,9 +71,9 @@ export function DetailPane({ entry, t }: { entry: ApiCatalogEntry; t: TFn }) {
 
 export function EmptyPane({ t }: { t: TFn }) {
   return (
-    <Card className="h-full flex items-center justify-center min-h-[20rem]">
-      <CardContent className="text-center py-12 max-w-sm">
-        <CodeIcon className="w-12 h-12 mx-auto mb-4 text-muted-foreground/40" />
+    <Card className="h-full flex items-center justify-center min-h-[12rem] py-0 hover:shadow-sm">
+      <CardContent className="text-center py-8 max-w-sm">
+        <CodeIcon className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
         <p className="text-base font-medium">{t("adminApiDocs.noSelectionTitle")}</p>
         <p className="text-sm text-muted-foreground mt-2">{t("adminApiDocs.noSelectionBody")}</p>
         <p className="text-xs text-muted-foreground mt-3">{t("adminApiDocs.pickHint")}</p>

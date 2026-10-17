@@ -22,15 +22,16 @@ export function AdminTransactions() {
   const [activeTab, setActiveTab] = useAdminTabParam("expenses", validTabs);
 
   return (
-    <div className="space-y-6">
-      <AdminPageHeader
-        title={tAdmin("transactions.title")}
-        description={tAdmin("transactions.subtitle")}
-      />
+    <div className="space-y-4">
       <AdminTabs
         value={activeTab}
         onValueChange={setActiveTab}
-        listClassName={isModerator ? "sm:grid-cols-2" : "sm:grid-cols-3"}
+        header={
+          <AdminPageHeader
+            title={tAdmin("transactions.title")}
+            description={tAdmin("transactions.subtitle")}
+          />
+        }
         items={[
           {
             value: "expenses",
@@ -50,14 +51,14 @@ export function AdminTransactions() {
           },
         ]}
       >
-        <AdminTabsContent value="expenses" className="mt-4">
+        <AdminTabsContent value="expenses">
           <ExpensesTab moderatorMode={isModerator} />
         </AdminTabsContent>
-        <AdminTabsContent value="payments" className="mt-4">
+        <AdminTabsContent value="payments">
           <PaymentsTab moderatorMode={isModerator} />
         </AdminTabsContent>
         {!isModerator ? (
-          <AdminTabsContent value="notifications" className="mt-4">
+          <AdminTabsContent value="notifications">
             <AdminNotifications />
           </AdminTabsContent>
         ) : null}
