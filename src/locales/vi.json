@@ -346,7 +346,88 @@
     },
     "contributingExpenses": "Contributing Expenses",
     "errorLoadingDebts": "Không tải được khoản nợ. Vui lòng thử lại.",
-    "viewAllExpenses": "View all {{count}} expenses"
+    "viewAllExpenses": "View all {{count}} expenses",
+    "pond": {
+      "hint": "Chạm mặt nước để thêm vịt · Bật cho ăn để gợn sóng & cá",
+      "hintMobile": "Chạm mặt nước để thêm vịt",
+      "feedMode": "Chạm bất kỳ đâu để cho vịt ăn",
+      "modes": {
+        "pond": "ao",
+        "sheep": "cừu",
+        "beach": "bãi",
+        "rocks": "đá",
+        "magnify": "phóng",
+        "ocean": "biển",
+        "soccer": "bóng",
+        "papaya": "đu đủ",
+        "frog": "ếch",
+        "meadow": "đồng",
+        "bench": "ghế"
+      },
+      "sims": {
+        "sheep": {
+          "stuck1": "be be!",
+          "stuck2": "cứu với!",
+          "stuck3": "ứ...",
+          "stuck4": "ôi không",
+          "stuck5": "sao lại là mình",
+          "struggle1": "beeee!!",
+          "struggle2": "hự!",
+          "struggle3": "sắp được rồi..!",
+          "struggle4": "cố lên!",
+          "struggle5": "thêm chút nữa..!",
+          "thought1": "nhìn cỏ từ trên cao là thế này sao",
+          "thought2": "mình từng mơ về cái hàng rào này",
+          "thought3": "bộ lông nặng hơn ngày xưa rồi",
+          "thought4": "có khi hàng rào mới là ý nghĩa",
+          "thought5": "ngày xưa mình nhảy qua dễ lắm",
+          "thought6": "mây có bao giờ bị mắc kẹt không nhỉ",
+          "thought7": "đây là ẩn dụ đúng không",
+          "thought8": "mấy con cừu khác nhảy trông dễ ghê"
+        },
+        "magnify": {
+          "zapped": "{{count}} con bị thiêu"
+        },
+        "meadow": {
+          "label": "Thả một chú cừu xuống đồng cỏ",
+          "instructions": "Nhấp vào cỏ hoặc một chú cừu để thêm cừu. Kéo cừu để di chuyển; thả lên con khác để xếp chồng. Phím mũi tên di chuyển điểm đáp, G nhấc cừu gần đó, Enter hoặc Space để thêm/thả, Escape để buông.",
+          "dropped": "Một chú cừu vừa đáp xuống đồng cỏ. Hiện có {{count}} chú cừu.",
+          "full": "Đồng cỏ đã đầy cừu rồi.",
+          "emptyPatch": "Hãy chọn một khoảng cỏ trống."
+        },
+        "soccer": {
+          "goal": "VÀO!",
+          "vs": "vs"
+        },
+        "bench": {
+          "ariaLabel": "Công viên nhìn từ trên cao lúc chiều muộn: một người đàn ông hút thuốc trên ghế đá bên hồ, mọi người dạo trên lối đi, một chiếc thuyền chèo qua mặt nước và các gia đình picnic trên bãi cỏ.",
+          "musings": [
+            "thôi được. năm phút nữa thôi",
+            "để quên cà phê trên quầy rồi",
+            "con vịt đó có hẹn ở đâu thì phải",
+            "bỏ năm 2019. cả năm 2021 nữa",
+            "mấy giờ rồi? thôi khỏi nói",
+            "đáng lẽ phải mang áo khoác",
+            "hôm nay trời đẹp",
+            "con rùa hay hòn đá vậy?",
+            "chắc phải gọi cho mẹ",
+            "ừ. biết rồi. có hại",
+            "điếu cuối đấy. chắc vậy",
+            "cứ ngồi đi",
+            "về nhà đi đường vòng vậy",
+            "chưa ăn trưa nữa"
+          ],
+          "replies": [
+            "cần gì không?",
+            "đợi chút",
+            "ồ, chào",
+            "còn chỗ, ngồi đi",
+            "có bật lửa không?",
+            "quay lại rồi à?"
+          ]
+        }
+      }
+    }
   },
   "groups": {
     "title": "Nhóm",

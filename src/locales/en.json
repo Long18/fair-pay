@@ -346,7 +346,88 @@
     },
     "contributingExpenses": "Contributing Expenses",
     "errorLoadingDebts": "Failed to load debts. Please try again.",
-    "viewAllExpenses": "View all {{count}} expenses"
+    "viewAllExpenses": "View all {{count}} expenses",
+    "pond": {
+      "hint": "Tap water to add a duck · Use feed for ripples & fish",
+      "hintMobile": "Tap water to add a duck",
+      "feedMode": "Tap anywhere to feed the ducks",
+      "modes": {
+        "pond": "pond",
+        "sheep": "sheep",
+        "beach": "beach",
+        "rocks": "rocks",
+        "magnify": "magnify",
+        "ocean": "ocean",
+        "soccer": "soccer",
+        "papaya": "papaya",
+        "frog": "frog",
+        "meadow": "meadow",
+        "bench": "bench"
+      },
+      "sims": {
+        "sheep": {
+          "stuck1": "baa!",
+          "stuck2": "help!",
+          "stuck3": "ugh...",
+          "stuck4": "oh no",
+          "stuck5": "why me",
+          "struggle1": "baaaa!!",
+          "struggle2": "ngh!",
+          "struggle3": "almost..!",
+          "struggle4": "c'mon!",
+          "struggle5": "one more..!",
+          "thought1": "is this what grass feels like from above",
+          "thought2": "i had a dream about this fence",
+          "thought3": "the wool weighs more than it used to",
+          "thought4": "maybe the fence is the point",
+          "thought5": "i used to clear this easily",
+          "thought6": "do the clouds ever get stuck",
+          "thought7": "this is a metaphor isn't it",
+          "thought8": "the other sheep make it look easy"
+        },
+        "magnify": {
+          "zapped": "{{count}} zapped"
+        },
+        "meadow": {
+          "label": "Drop a sheep into the meadow",
+          "instructions": "Click grass or an existing sheep to add a sheep. Drag a sheep to move it; drop it onto another to stack them. Arrow keys move the landing marker, G picks up a nearby sheep, Enter or Space adds or drops one, and Escape releases it.",
+          "dropped": "A sheep dropped into the meadow. {{count}} sheep are here now.",
+          "full": "The meadow is full of sheep.",
+          "emptyPatch": "Choose an empty patch of grass."
+        },
+        "soccer": {
+          "goal": "GOAL",
+          "vs": "vs"
+        },
+        "bench": {
+          "ariaLabel": "Central Park from above on a late afternoon: a man smokes on a bench by the pond while people walk the paths, a rowboat crosses the water and families picnic on the lawn.",
+          "musings": [
+            "alright. five more minutes",
+            "left my coffee on the counter",
+            "that duck's got somewhere to be",
+            "i quit in 2019. also in 2021",
+            "what time is it? actually don't tell me",
+            "should've brought a jacket",
+            "nice out today",
+            "is that a turtle or a rock?",
+            "i should call my mother",
+            "yeah. i know. bad for me",
+            "this is my last one. probably",
+            "go ahead, sit down",
+            "i'll take the long way home",
+            "haven't had lunch yet"
+          ],
+          "replies": [
+            "you need something?",
+            "give me a minute",
+            "oh, hey",
+            "there's room, sit down",
+            "got a light?",
+            "back already?"
+          ]
+        }
+      }
+    }
   },
   "groups": {
     "title": "Groups",

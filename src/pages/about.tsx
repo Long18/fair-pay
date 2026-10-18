@@ -78,7 +78,7 @@ export const AboutPage = () => {
   }, []);
 
   return (
-    <div className="container mx-auto py-6 px-4 max-w-4xl">
+    <div className="container mx-auto max-w-4xl px-4 py-6">
       <h1 className="sr-only">About FairPay - Split Expenses Fairly</h1>
       <AboutUs />
     </div>

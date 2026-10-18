@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useMemo, useRef } from 'react';
 import { useGetIdentity } from "@refinedev/core";
 import { useHaptics } from "@/hooks/use-haptics";
 import { Profile } from "@/modules/profile/types";
@@ -24,6 +24,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { FloatingDecoration } from "@/components/ui/floating-decoration";
 import { CoinShape, ChartLineShape, CircleShape, HexagonShape, WalletShape } from "@/components/ui/decorative-shapes";
+
+const DashboardPond = lazy(() =>
+  import("@/components/pond-hero").then((m) => ({ default: m.DashboardPond })),
+);
 
 export const Dashboard = () => {
   const { data: identity, isLoading: identityLoading } = useGetIdentity<Profile>();
@@ -264,6 +268,9 @@ export const Dashboard = () => {
                           isLoading={!!identity?.id && debtsLoading}
                         />
                       </div>
+                      <Suspense fallback={null}>
+                        <DashboardPond className="mt-8 border-t border-border/40 pt-8 md:mt-10 md:pt-10" />
+                      </Suspense>
                     </>
                   )}
 

@@ -238,6 +238,11 @@ export default defineConfig({
                 assetFileNames: 'assets/[name]-[hash].[ext]',
                 manualChunks(id: string) {
                     if (id.includes('node_modules')) {
+                        // pnpm peer-suffixed paths (e.g. `@react-three+fiber@x_react-dom@y`) would match the
+                        // react-dom check below and drag three.js into the eager vendor chunk.
+                        if (/[\\/]node_modules[\\/](three|@react-three[\\/][^\\/]+|postprocessing|n8ao|maath)[\\/]/.test(id)) {
+                            return undefined;
+                        }
                         if (id.includes('react-dom') || id.includes('react-router') || id.match(/\/react\//) ) {
                             return 'vendor-react';
                         }
