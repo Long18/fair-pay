@@ -1,0 +1,32 @@
+{
+  "name": "@fairpay/emails",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "FairPay transactional email templates (React Email) shared by admin preview and Supabase Edge",
+  "exports": {
+    ".": "./src/index.ts",
+    "./edge": "./src/edge-entry.ts",
+    "./content/*": "./src/content/*"
+  },
+  "scripts": {
+    "dev": "email dev --dir templates --port 3030",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@react-email/render": "2.1.1",
+    "react-email": "6.11.5"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@react-email/ui": "6.11.5",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "typescript": "^6.0.3"
+  }
+}

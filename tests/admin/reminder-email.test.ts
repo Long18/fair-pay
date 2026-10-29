@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { buildReminderEmailPreview } from "@/modules/admin/email/reminder-email";
 
 describe("admin reminder email helpers", () => {
-  it("renders who owes whom with responsive email-safe markup", () => {
-    const preview = buildReminderEmailPreview({
+  it("renders who owes whom with responsive email-safe markup", async () => {
+    const preview = await buildReminderEmailPreview({
       userName: "Long",
       title: "Nhắc thanh toán công nợ",
       message: "Long, bạn đang có 4.868 ₫ cần thanh toán trên FairPay.",
@@ -51,8 +51,8 @@ describe("admin reminder email helpers", () => {
     expect(preview.text).toContain("Bún bò cuối tuần");
   });
 
-  it("escapes user-controlled reminder fields and does not emit raw MIME boundaries", () => {
-    const preview = buildReminderEmailPreview({
+  it("escapes user-controlled reminder fields and does not emit raw MIME boundaries", async () => {
+    const preview = await buildReminderEmailPreview({
       userName: "<script>alert(1)</script>",
       title: "Nhắc <bad>",
       message: "Pay <now>",
@@ -73,8 +73,8 @@ describe("admin reminder email helpers", () => {
     expect(preview.html).not.toContain("--attachment");
   });
 
-  it("renders hero imagery and grouped debt sections with avatar fallback plus accessible alt text", () => {
-    const preview = buildReminderEmailPreview({
+  it("renders hero imagery and grouped debt sections with avatar fallback plus accessible alt text", async () => {
+    const preview = await buildReminderEmailPreview({
       userName: "Long",
       title: "Nhắc thanh toán công nợ",
       message: "Long, bạn đang có 9.000 ₫ cần thanh toán trên FairPay.",
@@ -127,8 +127,8 @@ describe("admin reminder email helpers", () => {
     expect(preview.text).toContain("Storage tháng 5");
   });
 
-  it("uses register CTA for placeholder recipients", () => {
-    const preview = buildReminderEmailPreview({
+  it("uses register CTA for placeholder recipients", async () => {
+    const preview = await buildReminderEmailPreview({
       userName: "Placeholder",
       title: "Nhắc thanh toán công nợ",
       message: "Bạn còn nợ.",
@@ -148,8 +148,8 @@ describe("admin reminder email helpers", () => {
     expect(preview.text).toContain("Create your FairPay account: https://long-pay.vercel.app/register");
   });
 
-  it("keeps legacy debt-only notifications readable when group data is absent", () => {
-    const preview = buildReminderEmailPreview({
+  it("keeps legacy debt-only notifications readable when group data is absent", async () => {
+    const preview = await buildReminderEmailPreview({
       userName: "Legacy",
       title: "Nhắc thanh toán công nợ",
       message: "Bạn còn nợ.",

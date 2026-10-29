@@ -4,8 +4,8 @@ import { buildInviteEmailPreview } from "@/modules/admin/email/invite-email";
 import { buildReminderEmailPreview } from "@/modules/admin/email/reminder-email";
 
 describe("admin email HTML previews", () => {
-  it("renders invite email with a clear CTA and no empty panel marker", () => {
-    const preview = buildInviteEmailPreview({
+  it("renders invite email with a clear CTA and no empty panel marker", async () => {
+    const preview = await buildInviteEmailPreview({
       emails: ["noreply.long.fairpay@gmail.com"],
       inviterName: "Long",
       appUrl: "https://long-pay.vercel.app",
@@ -17,8 +17,8 @@ describe("admin email HTML previews", () => {
     expect(preview.html).not.toContain("undefined");
   });
 
-  it("renders debt reminder email with CTA pointing to /balances (deeplink)", () => {
-    const preview = buildReminderEmailPreview({
+  it("renders debt reminder email with CTA pointing to /balances (deeplink)", async () => {
+    const preview = await buildReminderEmailPreview({
       userName: "Test Debtor",
       title: "Payment debt reminder",
       message: "Please settle your FairPay balance.",
@@ -69,8 +69,8 @@ describe("admin email HTML previews", () => {
     expect(preview.html).not.toContain("undefined");
   });
 
-  it("renders reminder email for non-auth user with /register CTA", () => {
-    const preview = buildReminderEmailPreview({
+  it("renders reminder email for non-auth user with /register CTA", async () => {
+    const preview = await buildReminderEmailPreview({
       userName: "Guest",
       title: "You owe money",
       message: "Pay up",

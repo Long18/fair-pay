@@ -7,7 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Loader2Icon, MailIcon, SendIcon } from "@/components/ui/icons";
-import { buildInviteEmailPreview, normalizeInviteEmails } from "@/modules/admin/email/invite-email";
+import {
+  buildInviteEmailPreview,
+  normalizeInviteEmails,
+  type InviteEmailPreviewInput,
+} from "@/modules/admin/email/invite-email";
+import { useRenderedEmail } from "@/modules/admin/email/use-rendered-email";
 import { useAdminTranslation } from "../../i18n";
 import { sendInviteEmails } from "./utils";
 
@@ -22,14 +27,11 @@ export function InviteUsersCard({
   const [isSendingInvite, setIsSendingInvite] = useState(false);
 
   const inviteEmails = useMemo(() => normalizeInviteEmails(emailInput), [emailInput]);
-  const invitePreview = useMemo(
-    () => buildInviteEmailPreview({
-      emails: inviteEmails,
-      inviterName,
-      appUrl: window.location.origin,
-    }),
-    [inviteEmails, inviterName],
+  const invitePreviewInput = useMemo<InviteEmailPreviewInput>(
+    () => ({ emails: [], inviterName, appUrl: window.location.origin }),
+    [inviterName],
   );
+  const invitePreview = useRenderedEmail(invitePreviewInput, buildInviteEmailPreview);
   const invalidEmailCount = useMemo(() => {
     if (!emailInput.trim()) return 0;
     const rawItems = emailInput.split(/[\s,;]+/).filter(Boolean);
@@ -124,8 +126,8 @@ export function InviteUsersCard({
           <div className="space-y-1.5 border-b bg-background px-4 py-2.5">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{invitePreview.subject}</p>
-                <p className="truncate text-xs text-muted-foreground">{invitePreview.previewText}</p>
+                <p className="truncate text-sm font-medium">{invitePreview?.subject ?? "…"}</p>
+                <p className="truncate text-xs text-muted-foreground">{invitePreview?.previewText ?? ""}</p>
               </div>
               <Badge variant="outline" className="shrink-0">
                 {tAdmin("common.preview")}
@@ -152,7 +154,7 @@ export function InviteUsersCard({
               </div>
               <iframe
                 title={tAdmin("layout.people.invitePreviewFrame")}
-                srcDoc={invitePreview.html}
+                srcDoc={invitePreview?.html ?? ""}
                 sandbox=""
                 className="h-[calc(100%-2.25rem)] w-full bg-white"
               />

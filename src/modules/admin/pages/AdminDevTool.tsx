@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { lazy, Suspense, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router";
 import { AdminOgPreview } from "./AdminOgPreview";
 import { AdminUtmDevTool } from "./AdminUtmDevTool";
@@ -9,6 +9,8 @@ import { AdminModeration } from "./AdminModeration";
 import {
   BookOpenIcon,
   EyeIcon,
+  FileTextIcon,
+  Loader2Icon,
   MailIcon,
   PieChartIcon,
   ScrollTextIcon,
@@ -23,6 +25,10 @@ import { useAdminTranslation } from "../i18n";
 import { AdminEmailDevTools } from "./admin-devtool/email-dev-tools";
 import type { AdminCapabilities } from "../access";
 
+const AdminEmailTemplateEditor = lazy(() =>
+  import("./admin-devtool/email-template-editor").then((module) => ({ default: module.AdminEmailTemplateEditor }))
+);
+
 /** Per-tab URL state (e.g. the audit `entry` pane) that must not leak into other tabs */
 const TAB_SCOPED_PARAMS = ["entry"] as const;
 
@@ -36,6 +42,12 @@ function renderTab(tab: string, access: AdminCapabilities, isApiDocsEnabled: boo
       return access.canModerateContent ? <AdminModeration embedded /> : null;
     case "email":
       return access.canUseDevtool ? <AdminEmailDevTools embedded /> : null;
+    case "email-templates":
+      return access.canUseDevtool ? (
+        <Suspense fallback={<Loader2Icon className="mx-auto my-12 h-5 w-5 animate-spin text-muted-foreground" />}>
+          <AdminEmailTemplateEditor />
+        </Suspense>
+      ) : null;
     case "utm":
       return access.canUseDevtool ? <AdminUtmDevTool embedded /> : null;
     case "og-preview":
@@ -83,6 +95,13 @@ export function AdminDevTool() {
         value: "email",
         label: tAdmin("devtool.debtTab"),
         icon: MailIcon,
+        enabled: access.canUseDevtool,
+        group: tools,
+      },
+      {
+        value: "email-templates",
+        label: tAdmin("devtool.tabs.emailTemplates"),
+        icon: FileTextIcon,
         enabled: access.canUseDevtool,
         group: tools,
       },

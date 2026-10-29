@@ -12,8 +12,8 @@ describe("admin invite email helpers", () => {
     ).toEqual(["alice@example.com", "bob@example.com", "carol@example.com"]);
   });
 
-  it("builds a bilingual FairPay invite preview for a Gmail-like surface", () => {
-    const preview = buildInviteEmailPreview({
+  it("builds a bilingual FairPay invite preview for a Gmail-like surface", async () => {
+    const preview = await buildInviteEmailPreview({
       emails: ["friend@example.com"],
       inviterName: "Long",
       appUrl: "https://long-pay.vercel.app",
@@ -28,8 +28,8 @@ describe("admin invite email helpers", () => {
     expect(preview.html).toContain('class="cta-link"');
   });
 
-  it("escapes user-controlled invite fields in the generated html", () => {
-    const preview = buildInviteEmailPreview({
+  it("escapes user-controlled invite fields in the generated html", async () => {
+    const preview = await buildInviteEmailPreview({
       emails: ["friend@example.com"],
       inviterName: "<script>alert(1)</script>",
       appUrl: "https://long-pay.vercel.app?next=<bad>",

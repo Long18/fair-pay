@@ -16,7 +16,8 @@ import { useHaptics } from "@/hooks/use-haptics";
 import { cn } from "@/lib/utils";
 import { AdminEmptyState } from "../../components/AdminEmptyState";
 import { AdminPageHeader } from "../../components/AdminPageHeader";
-import { buildReminderEmailPreview } from "@/modules/admin/email/reminder-email";
+import { buildReminderEmailPreview, type ReminderEmailPreviewInput } from "@/modules/admin/email/reminder-email";
+import { useRenderedEmail } from "@/modules/admin/email/use-rendered-email";
 import { useAdminTranslation } from "../../i18n";
 import { EmailDebtorsPanel } from "./email-debtors-panel";
 import { EmailConfirmBulkDialog } from "./email-preview-dialogs";
@@ -186,9 +187,9 @@ export function AdminEmailDevTools({ embedded = false }: { embedded?: boolean })
   const bulkAbortRef = useRef<AbortController | null>(null);
   const dismissTimerRef = useRef<number | null>(null);
 
-  const previewEmail = useMemo(() => {
+  const previewEmailInput = useMemo<ReminderEmailPreviewInput | null>(() => {
     if (!previewRow) return null;
-    return buildReminderEmailPreview({
+    return {
       userName: previewRow.full_name,
       title: tAdmin("devtool.messageTitle"),
       message: buildReminderMessage(previewRow, tAdmin),
@@ -198,8 +199,9 @@ export function AdminEmailDevTools({ embedded = false }: { embedded?: boolean })
       hasAuthAccount: previewRow.has_auth_account,
       appUrl: typeof window !== "undefined" ? window.location.origin : undefined,
       link: previewRow.has_auth_account ? "/dashboard" : "/register",
-    });
+    };
   }, [previewRow, tAdmin]);
+  const previewEmail = useRenderedEmail(previewEmailInput, buildReminderEmailPreview);
 
   const groupOptions = useMemo(() => {
     const options = new Map<string, string>();
@@ -237,9 +239,9 @@ export function AdminEmailDevTools({ embedded = false }: { embedded?: boolean })
 
   const effectiveBulkFocusRow = bulkFocusRow ?? selectedRows[0] ?? null;
 
-  const bulkPreviewEmail = useMemo(() => {
+  const bulkPreviewEmailInput = useMemo<ReminderEmailPreviewInput | null>(() => {
     if (!effectiveBulkFocusRow) return null;
-    return buildReminderEmailPreview({
+    return {
       userName: effectiveBulkFocusRow.full_name,
       title: tAdmin("devtool.messageTitle"),
       message: buildReminderMessage(effectiveBulkFocusRow, tAdmin),
@@ -249,8 +251,9 @@ export function AdminEmailDevTools({ embedded = false }: { embedded?: boolean })
       hasAuthAccount: effectiveBulkFocusRow.has_auth_account,
       appUrl: typeof window !== "undefined" ? window.location.origin : undefined,
       link: effectiveBulkFocusRow.has_auth_account ? "/dashboard" : "/register",
-    });
+    };
   }, [effectiveBulkFocusRow, tAdmin]);
+  const bulkPreviewEmail = useRenderedEmail(bulkPreviewEmailInput, buildReminderEmailPreview);
 
   const allSelected = visibleDebtors.length > 0 && selectedRows.length === visibleDebtors.length;
   const someSelected = selectedRows.length > 0 && !allSelected;

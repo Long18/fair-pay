@@ -1,6 +1,14 @@
+packages:
+  - emails
+
 allowBuilds:
   '@sentry/cli': true
   core-js: true
   esbuild: true
   msw: true
   sharp: true
+
+minimumReleaseAgeExclude:
+  - '@react-email/editor@1.7.16'
+  - '@react-email/ui@6.11.5'
+  - react-email@6.11.5

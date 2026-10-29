@@ -1,0 +1,19 @@
+{
+  "subject": "[FairPay] Payment reminder: {{title}}",
+  "eyebrow": "FairPay Reminder",
+  "heading": "Nhắc thanh toán rõ ràng",
+  "subheadingAuth": "Mở FairPay để xem chi tiết và settle up khi sẵn sàng.",
+  "subheadingGuest": "Tạo tài khoản để xem đầy đủ chi tiết công nợ được mời qua email.",
+  "greetingHtml": "<p>Xin chào / Hello, <strong>{{userName}}</strong></p><p>Bạn có <strong>1 thông báo mới / 1 new notification</strong>.</p>",
+  "notificationLabel": "Nhắc thanh toán / Payment reminder",
+  "viewLinkAuth": "Xem chi tiết / View",
+  "viewLinkGuest": "Tạo tài khoản để xem / Create account to view",
+  "breakdownLabel": "Chi tiết công nợ / Debt breakdown",
+  "breakdownTitle": "Tổng cần trả sau bù trừ: {{total}}",
+  "breakdownGroupNote": "Các section bên dưới là các khoản chưa settle theo group; subtotal có thể khác tổng chính thức sau bù trừ.",
+  "breakdownLegacyNote": "Các khoản bên dưới được nhóm theo người bạn cần thanh toán.",
+  "ctaLabelAuth": "Xem số dư / View balances",
+  "ctaLabelGuest": "Tạo tài khoản để xem chi tiết / Create account to view",
+  "heroAlt": "FairPay debt reminder overview",
+  "footerHtml": "<p>Để tắt email thông báo, vào <strong>Cài đặt → Thông báo</strong>.<br>To disable email notifications, go to <strong>Settings → Notifications</strong>.<br>© 2026 FairPay</p>"
+}

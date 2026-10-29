@@ -2,6 +2,12 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
 import { buildEmailPanel, buildEmailShell } from '../_shared/email-design-system.ts'
+import {
+  renderDebtReminderEmail,
+  renderInviteEmail,
+  type ReminderDebtBreakdownItem,
+  type ReminderGroupBreakdownItem,
+} from '../_shared/transactional-email.bundle.mjs'
 // NOTE: send-email-notifications is invoked server-side (admin worker / cron)
 // and does not strictly need CORS. Use the shared helper anyway so origin
 // handling stays consistent across functions (defense-in-depth).
@@ -677,65 +683,64 @@ function buildEmailHtml(
   })
 }
 
-function buildInviteTitle(inviterName: string): string {
-  return `${inviterName} mời bạn sử dụng FairPay`
+async function buildInviteEmailParts(inviterName: string, appUrl: string): Promise<EmailParts> {
+  const { subject, text, html } = await renderInviteEmail({ inviterName, appUrl })
+  return { subject, text, html }
 }
 
-function buildInviteSubject(): string {
-  return '[FairPay] You are invited to FairPay'
-}
-
-function buildInviteText(inviterName: string, appUrl: string): string {
-  return [
-    'Xin chào,',
-    '',
-    `${inviterName} mời bạn sử dụng FairPay để chia tiền nhóm, theo dõi ai nợ ai, và settle up rõ ràng hơn.`,
-    '',
-    `Bắt đầu với FairPay: ${appUrl}`,
-    '',
-    'FairPay - Chia sẻ chi phí thông minh',
-  ].join('\n')
-}
-
-function buildInviteEmailHtml(inviterName: string, appUrl: string): string {
-  const title = buildInviteTitle(inviterName)
-  const previewText = 'Chia tiền nhóm, theo dõi ai nợ ai, và settle up rõ ràng hơn cùng FairPay.'
-  const safeInviterName = escapeHtml(inviterName)
-  const safeAppUrl = escapeHtml(appUrl)
-
-  const bodyHtml = `
-    <p style="margin:0 0 14px;font-size:16px;line-height:1.7;color:#0f172a;">Xin chào,</p>
-    <p style="margin:0;font-size:15px;line-height:1.8;color:#475569;">
-      ${safeInviterName} mời bạn vào FairPay để chia tiền nhóm, theo dõi ai nợ ai, và settle up rõ ràng sau mỗi chuyến đi, bữa ăn, hoặc nhóm bạn.
-    </p>
-    ${buildEmailPanel({
-      label: 'Invite block',
-      title: 'Bạn có thể dùng FairPay để',
-      description: 'Split bill nhanh, xem công nợ theo thời gian thực, và nhận nhắc thanh toán qua email hoặc thông báo trong app.',
-      tone: 'invite',
-      marker: 'invite-benefits',
-    })}
-    <p style="margin:18px 0 0;font-size:12px;line-height:1.7;color:#94a3b8;text-align:center;">Nếu nút không hoạt động, mở liên kết này: <a href="${safeAppUrl}" style="color:#4f46e5;text-decoration:none;">${safeAppUrl}</a></p>`
-
-  return buildEmailShell({
-    title,
-    previewText,
-    eyebrow: 'FairPay Invite',
-    heading: 'Chia tiền nhóm không còn rối',
-    subheading: `${inviterName} vừa mời bạn vào FairPay.`,
-    bodyHtml,
-    ctaHref: appUrl,
-    ctaLabel: 'Bắt đầu với FairPay',
-    tone: 'invite',
-  })
-}
-
-function buildInviteEmailParts(inviterName: string, appUrl: string): EmailParts {
+function toReminderDebtItem(debt: DebtBreakdownItem): ReminderDebtBreakdownItem {
   return {
-    subject: buildInviteSubject(),
-    text: buildInviteText(inviterName, appUrl),
-    html: buildInviteEmailHtml(inviterName, appUrl),
+    counterpartyName: debt.counterparty_name,
+    counterpartyEmail: debt.counterparty_email,
+    amount: debt.amount,
+    currency: debt.currency,
+    transactions: debt.transactions.map((transaction) => ({
+      description: transaction.description,
+      amount: transaction.amount,
+      currency: transaction.currency,
+      expenseDate: transaction.expense_date,
+    })),
   }
+}
+
+function toReminderGroupItem(group: GroupBreakdownItem): ReminderGroupBreakdownItem {
+  return {
+    groupId: group.group_id,
+    groupName: group.group_name,
+    groupAvatarUrl: group.group_avatar_url,
+    subtotalAmount: group.subtotal_amount,
+    currency: group.currency,
+    counterparties: group.counterparties.map(toReminderDebtItem),
+  }
+}
+
+/**
+ * Admin debt reminders render with the same React Email template the admin previews. Only used when
+ * the recipient's batch is reminders-only; mixed batches still go through the digest layout.
+ */
+async function buildDedicatedReminderParts(
+  userName: string,
+  notifications: QueueRow[],
+  appUrl: string
+): Promise<EmailParts | null> {
+  if (!notifications.every((n) => n.notification_type === 'settlement_reminder')) return null
+
+  const latest = [...notifications].sort((a, b) => b.created_at.localeCompare(a.created_at))[0]
+  const context = normalizeReminderEmailContext(latest?.email_context)
+  if (!latest || !context) return null
+
+  const { subject, text, html } = await renderDebtReminderEmail({
+    userName,
+    title: latest.title,
+    message: latest.message,
+    totalAmount: context.total_amount,
+    debtBreakdown: context.debt_breakdown.map(toReminderDebtItem),
+    groupBreakdown: context.group_breakdown.map(toReminderGroupItem),
+    hasAuthAccount: latest.has_auth_account !== false,
+    appUrl,
+    link: latest.link ?? undefined,
+  })
+  return { subject, text, html }
 }
 
 async function sendInviteEmails(
@@ -747,7 +752,7 @@ async function sendInviteEmails(
   appUrl: string
 ): Promise<ProcessingResult> {
   const result: ProcessingResult = { sent: 0, failed: 0, skipped: 0, errors: [] }
-  const inviteEmail = buildInviteEmailParts(inviterName, appUrl)
+  const inviteEmail = await buildInviteEmailParts(inviterName, appUrl)
 
   for (const email of emails) {
     try {
@@ -930,18 +935,22 @@ serve(async (req) => {
       }
 
       try {
-        const html    = buildEmailHtml(user_name || 'there', notifs, appUrl)
-        const content = buildEmailText(user_name || 'there', notifs, appUrl)
-        const subject = buildSubject(notifs.length, notifs)
+        const recipientName = user_name || 'there'
+        const reminder = await buildDedicatedReminderParts(recipientName, notifs, appUrl)
+        const email: EmailParts = reminder ?? {
+          html: buildEmailHtml(recipientName, notifs, appUrl),
+          text: buildEmailText(recipientName, notifs, appUrl),
+          subject: buildSubject(notifs.length, notifs),
+        }
 
         await sendHtmlEmail(smtp, {
           fromName: smtpFromName,
           fromEmail: smtpFromEmail,
           to: user_email,
-          subject,
-          html,
-          text: content,
-          tag: 'notification-digest',
+          subject: email.subject,
+          html: email.html,
+          text: email.text,
+          tag: reminder ? 'debt-reminder' : 'notification-digest',
         })
 
         for (const notif of notifs) successfulNotificationIds.add(notif.notification_id)
