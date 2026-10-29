@@ -2,6 +2,7 @@ import { act, render } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { JourneyTrackingBridge } from "@/lib/journey-tracking/bridge";
+import { resetConsentCacheForTests, writeConsentState } from "@/lib/analytics/consent-gate";
 
 const { trackingSpy, useGetIdentityMock } = vi.hoisted(() => ({
   trackingSpy: {
@@ -20,9 +21,20 @@ vi.mock("@refinedev/core", () => ({
   useGetIdentity: useGetIdentityMock,
 }));
 
+function renderBridge(initialEntry: string) {
+  const router = createMemoryRouter(
+    [{ path: "*", element: <JourneyTrackingBridge /> }],
+    { initialEntries: [initialEntry] },
+  );
+  render(<RouterProvider router={router} />);
+  return router;
+}
+
 describe("JourneyTrackingBridge", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
+    resetConsentCacheForTests();
     useGetIdentityMock.mockReturnValue({
       data: { id: "user-123" },
       isLoading: false,
@@ -33,14 +45,10 @@ describe("JourneyTrackingBridge", () => {
   });
 
   it("initializes tracking, identifies the user, and emits page views on route changes", async () => {
+    writeConsentState({ preferences: true, experience: true, marketing: true });
     document.title = "Dashboard";
 
-    const router = createMemoryRouter(
-      [{ path: "*", element: <JourneyTrackingBridge /> }],
-      { initialEntries: ["/dashboard?tab=groups"] },
-    );
-
-    render(<RouterProvider router={router} />);
+    const router = renderBridge("/dashboard?tab=groups");
 
     expect(trackingSpy.init).toHaveBeenCalledTimes(1);
     expect(trackingSpy.identify).toHaveBeenCalledWith("user-123");
@@ -55,5 +63,22 @@ describe("JourneyTrackingBridge", () => {
       "/groups/create?utm_source=invite",
       "Create Group",
     );
+  });
+
+  it("stays silent until experience consent is granted", () => {
+    document.title = "Dashboard";
+    renderBridge("/dashboard");
+
+    expect(trackingSpy.init).not.toHaveBeenCalled();
+    expect(trackingSpy.identify).not.toHaveBeenCalled();
+    expect(trackingSpy.pageView).not.toHaveBeenCalled();
+
+    act(() => {
+      writeConsentState({ preferences: true, experience: true, marketing: false });
+    });
+
+    expect(trackingSpy.init).toHaveBeenCalledTimes(1);
+    expect(trackingSpy.identify).toHaveBeenCalledWith("user-123");
+    expect(trackingSpy.pageView).toHaveBeenCalledWith("/dashboard", "Dashboard");
   });
 });

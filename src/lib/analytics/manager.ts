@@ -1,5 +1,6 @@
 import { currentBuildInfo } from "../build-info";
 import { getAttributionEventProperties } from "../utm";
+import { isExperienceConsentGiven, isMarketingConsentGiven } from './consent-gate';
 import { getUserDisplay } from './user-display';
 import type { AnalyticsProvider, AnalyticsConfig, AnalyticsEvent } from './types';
 
@@ -56,6 +57,8 @@ export class AnalyticsManager {
     }
 
     trackEvent(event: AnalyticsEvent): void {
+        if (!isExperienceConsentGiven()) return;
+
         if (!this.config.enabled) {
             if (this.config.debug) {
                 console.log('[AnalyticsManager] Event:', event);
@@ -83,7 +86,7 @@ export class AnalyticsManager {
     }
 
     pageView(path: string, title?: string): void {
-        if (!this.config.enabled) return;
+        if (!this.config.enabled || !isExperienceConsentGiven()) return;
 
         for (const [name, provider] of this.providers.entries()) {
             try {
@@ -98,7 +101,7 @@ export class AnalyticsManager {
     setUser(userId: string, properties?: Record<string, any>): void {
         this.userId = userId;
 
-        if (!this.config.enabled) return;
+        if (!this.config.enabled || !isExperienceConsentGiven()) return;
 
         for (const [name, provider] of this.providers.entries()) {
             try {
@@ -139,7 +142,7 @@ export class AnalyticsManager {
         const userDisplay = getUserDisplay();
         return {
             ...event,
-            ...getAttributionEventProperties(),
+            ...(isMarketingConsentGiven() ? getAttributionEventProperties() : {}),
             timestamp: event.timestamp || Date.now(),
             userId: this.userId,
             sessionId: this.sessionId,

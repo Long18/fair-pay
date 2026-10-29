@@ -29,6 +29,24 @@ vi.mock('@/utility/supabaseClient', () => ({
   },
 }));
 
+// Node 22+ ships an experimental global `localStorage` that shadows jsdom's and is
+// undefined unless `--localstorage-file` is passed.
+class MemoryStorage implements Storage {
+  private store = new Map<string, string>();
+  get length() { return this.store.size; }
+  clear() { this.store.clear(); }
+  getItem(key: string) { return this.store.get(key) ?? null; }
+  key(index: number) { return Array.from(this.store.keys())[index] ?? null; }
+  removeItem(key: string) { this.store.delete(key); }
+  setItem(key: string, value: string) { this.store.set(key, String(value)); }
+}
+
+for (const name of ['localStorage', 'sessionStorage'] as const) {
+  if (typeof globalThis[name]?.clear !== 'function') {
+    Object.defineProperty(globalThis, name, { configurable: true, value: new MemoryStorage() });
+  }
+}
+
 // Cleanup after each test
 afterEach(() => {
   cleanup();

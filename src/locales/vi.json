@@ -1963,10 +1963,6 @@
     "codeTab": "Code",
     "scrollListHint": "Cuộn danh sách"
   },
-  "tracking": {
-    "notice": "Chúng tôi sử dụng cookie và công nghệ theo dõi để cải thiện trải nghiệm của bạn trên ứng dụng này.",
-    "ok": "Đã hiểu"
-  },
   "undo": {
     "created": "Đã tạo. Hoàn tác?",
     "updated": "Đã lưu thay đổi. Hoàn tác?",
@@ -2355,10 +2351,21 @@
     "openingDescription": "Thêm sự kiện trong tab mới"
   },
   "consent": {
-    "accept": "Đồng ý",
-    "message": "Chúng tôi sử dụng cookie và công nghệ theo dõi để cải thiện trải nghiệm của bạn trên ứng dụng này.",
+    "categories": {
+      "experience": "Nâng cao chất lượng dịch vụ và cá nhân hóa trải nghiệm",
+      "marketing": "Cung cấp thông tin tính năng, ưu đãi và nội dung phù hợp với sở thích của bạn",
+      "preferences": "Ghi nhớ cài đặt và tùy chọn cá nhân"
+    },
+    "categoriesTitle": "Danh sách Cookies",
+    "categoriesWarning": "Việc từ chối một số loại cookie có thể ảnh hưởng đến hoạt động của một số chức năng. Cookie đăng nhập luôn được bật.",
+    "confirm": "Xác nhận",
+    "confirmAll": "Xác nhận tất cả",
+    "intro": "Cookies được sử dụng nhằm ghi nhận các thiết lập cần thiết để FairPay hoạt động ổn định và giúp việc chia tiền thuận tiện hơn.",
+    "manage": "Quản lý cookie",
+    "policyLinkText": "Chính sách quyền riêng tư",
+    "policyPrefix": "Tìm hiểu thêm tại",
     "reject": "Từ chối",
-    "title": "Quyền riêng tư & cookie"
+    "title": "Cookie & trải nghiệm FairPay"
   },
   "contact": {
     "account": {

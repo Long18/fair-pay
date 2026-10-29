@@ -1,3 +1,4 @@
+import { isExperienceConsentGiven } from "@/lib/analytics/consent-gate";
 import { currentBuildInfo } from "@/lib/build-info";
 import { captureAttributionFromUrl, getAttributionEventProperties, getCurrentAttributionContext } from "@/lib/utm";
 import { supabaseClient } from "@/utility/supabaseClient";
@@ -83,6 +84,7 @@ class JourneyTrackingManager {
 
   init() {
     if (this.initialized || this.isInitializing || typeof window === "undefined") return;
+    if (!isExperienceConsentGiven()) return;
 
     this.isInitializing = true;
 
@@ -158,6 +160,7 @@ class JourneyTrackingManager {
   }
 
   pageView(path: string, title?: string) {
+    if (!isExperienceConsentGiven()) return;
     this.init();
     captureAttributionFromUrl({
       href: window.location.href,
@@ -192,6 +195,7 @@ class JourneyTrackingManager {
   }
 
   trackEvent(input: TrackEventInput) {
+    if (!isExperienceConsentGiven()) return;
     this.init();
     const pagePath = sanitizeTrackingPath(input.page_path, window.location.origin);
     const referrerPath = input.referrer_path === undefined
@@ -247,6 +251,10 @@ class JourneyTrackingManager {
 
   async flush(options: { preferBeacon: boolean }) {
     if (this.isFlushing || !this.session || this.queue.length === 0) return;
+    if (!isExperienceConsentGiven()) {
+      this.queue = [];
+      return;
+    }
 
     if (this.flushTimer !== null) {
       window.clearTimeout(this.flushTimer);

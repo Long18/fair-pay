@@ -1,3 +1,4 @@
+import { isExperienceConsentGiven } from './analytics/consent-gate';
 import { currentBuildInfo } from './build-info';
 import { getAttributionEventProperties } from './utm';
 
@@ -47,7 +48,7 @@ class Analytics {
    * Call this once in your app entry point
    */
   init() {
-    if (this.isInitialized || this.provider === 'none') return;
+    if (this.isInitialized || this.provider === 'none' || !isExperienceConsentGiven()) return;
 
     switch (this.provider) {
       case 'ga4':
@@ -99,6 +100,8 @@ class Analytics {
    * Track a custom event
    */
   track(event: AnalyticsEvent) {
+    if (!isExperienceConsentGiven()) return;
+    this.init();
     if (!this.isInitialized || this.provider === 'none') {
       return;
     }

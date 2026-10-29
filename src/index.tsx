@@ -1,7 +1,5 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { inject } from "@vercel/analytics";
-
 import "./i18n";
 import { initSentry } from "./lib/sentry";
 import { analytics } from "./lib/analytics";
@@ -10,12 +8,8 @@ import { measureWebVitals } from "./lib/performance";
 import { captureAttributionFromUrl } from "./lib/utm";
 import App from "./App";
 
+// No-op until the user grants marketing consent.
 captureAttributionFromUrl();
-
-// Initialize Vercel Web Analytics (tracks page views and Web Vitals)
-if (import.meta.env.PROD && import.meta.env.VITE_ENABLE_VERCEL_ANALYTICS === "true") {
-  inject();
-}
 
 // Initialize Sentry (only in production with DSN configured)
 initSentry();

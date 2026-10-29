@@ -1,3 +1,4 @@
+import { isMarketingConsentGiven } from "@/lib/analytics/consent-gate";
 import { SHARE_REF_PARAM, getShareRefPropertiesFromUrl, parseShareRef } from "@/lib/share-ref";
 
 export const UTM_PARAM_KEYS = [
@@ -373,7 +374,32 @@ function shouldUpdateLastTouch(candidate: AttributionTouch, existing: Attributio
   return true;
 }
 
+const EMPTY_ATTRIBUTION_CONTEXT: AttributionContext = { first_touch: null, last_touch: null };
+
+/**
+ * Browser persistence (default localStorage + cookie) requires marketing consent.
+ * Callers that inject their own storage/cookie adapters own that decision.
+ */
+function isPersistenceBlocked(options: Pick<CaptureAttributionOptions, "storage" | "cookie">) {
+  return options.storage === undefined && options.cookie === undefined && !isMarketingConsentGiven();
+}
+
+export function clearAttributionStorage() {
+  for (const key of Object.values(ATTRIBUTION_STORAGE_KEYS)) {
+    try {
+      if (typeof window !== "undefined") window.localStorage.removeItem(key);
+    } catch {
+      // Storage can be unavailable in private browsing or strict browser settings.
+    }
+    if (typeof document !== "undefined") {
+      document.cookie = `${key}=; Path=/; Max-Age=0; SameSite=Lax`;
+    }
+  }
+}
+
 export function captureAttributionFromUrl(options: CaptureAttributionOptions = {}): AttributionContext {
+  if (isPersistenceBlocked(options)) return EMPTY_ATTRIBUTION_CONTEXT;
+
   const storage = options.storage === undefined ? getDefaultStorage() : options.storage;
   const cookie = options.cookie === undefined ? buildBrowserCookieAdapter() : options.cookie;
   const href = options.href ?? (typeof window !== "undefined" ? window.location.href : DEFAULT_ORIGIN);
@@ -400,6 +426,8 @@ export function captureAttributionFromUrl(options: CaptureAttributionOptions = {
 }
 
 export function getCurrentAttributionContext(options: Pick<CaptureAttributionOptions, "storage" | "cookie"> = {}): AttributionContext {
+  if (isPersistenceBlocked(options)) return EMPTY_ATTRIBUTION_CONTEXT;
+
   const storage = options.storage === undefined ? getDefaultStorage() : options.storage;
   const cookie = options.cookie === undefined ? buildBrowserCookieAdapter() : options.cookie;
 

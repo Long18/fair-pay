@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { resetConsentCacheForTests, writeConsentState } from "@/lib/analytics/consent-gate";
 import {
   ATTRIBUTION_STORAGE_KEYS,
   buildTrackedUrl,
@@ -104,6 +105,35 @@ describe("buildTrackedUrl", () => {
     expect(
       getCanonicalDestinationPath("/api/share/debt?t=abc&utm_source=facebook&utm_medium=social_share"),
     ).toBe("/api/share/debt?t=abc");
+  });
+});
+
+describe("attribution consent gate", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    resetConsentCacheForTests();
+  });
+
+  it("does not persist to browser storage without marketing consent", () => {
+    const context = captureAttributionFromUrl({
+      href: "https://long-pay.vercel.app/?utm_source=facebook&utm_medium=social_share",
+      referrer: "",
+    });
+
+    expect(context).toEqual({ first_touch: null, last_touch: null });
+    expect(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.firstTouch)).toBeNull();
+    expect(getAttributionEventProperties()).toEqual({});
+  });
+
+  it("persists once marketing consent is granted", () => {
+    writeConsentState({ preferences: true, experience: false, marketing: true });
+
+    captureAttributionFromUrl({
+      href: "https://long-pay.vercel.app/?utm_source=facebook&utm_medium=social_share",
+      referrer: "",
+    });
+
+    expect(getCurrentAttributionContext().first_touch?.utm_source).toBe("facebook");
   });
 });
 

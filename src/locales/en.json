@@ -1963,10 +1963,6 @@
     "codeTab": "Code",
     "scrollListHint": "Scroll the list"
   },
-  "tracking": {
-    "notice": "We use cookies and tracking technology to improve your experience on this app.",
-    "ok": "Got it"
-  },
   "undo": {
     "created": "Item created. Undo?",
     "updated": "Changes saved. Undo?",
@@ -2355,10 +2351,21 @@
     "openingDescription": "Add the event in the new tab"
   },
   "consent": {
-    "accept": "Accept",
-    "message": "We use analytics to improve your experience. You can accept or decline non-essential tracking.",
+    "categories": {
+      "experience": "Improve service quality and personalize your experience",
+      "marketing": "Show features, offers and content that match your interests",
+      "preferences": "Remember your settings and personal preferences"
+    },
+    "categoriesTitle": "Cookie list",
+    "categoriesWarning": "Declining some cookies may affect how some features work. Sign-in cookies are always on.",
+    "confirm": "Confirm",
+    "confirmAll": "Accept all",
+    "intro": "Cookies remember the settings FairPay needs to run reliably and help make splitting expenses smoother.",
+    "manage": "Manage cookies",
+    "policyLinkText": "Privacy Policy",
+    "policyPrefix": "Learn more in our",
     "reject": "Decline",
-    "title": "Cookie preferences"
+    "title": "Cookies & your FairPay experience"
   },
   "contact": {
     "account": {

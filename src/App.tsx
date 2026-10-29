@@ -27,8 +27,8 @@ import { useSmoothScroll } from "./hooks/use-smooth-scroll";
 import { UndoManagerProvider } from "./contexts/undo-manager";
 import { analyticsManager } from "./lib/analytics/instance";
 import { JourneyTrackingBridge } from "./lib/journey-tracking";
-import { TrackingNoticeBanner } from "./components/tracking-consent-banner";
-import { ConsentBanner } from "./components/consent/ConsentBanner";
+import { ConsentModal } from "./components/consent/ConsentModal";
+import { useConsent } from "./hooks/use-consent";
 import { ScrollToTop } from "./components/ui/scroll-to-top";
 import { SpeculationRules } from "./components/speculation-rules";
 
@@ -141,6 +141,11 @@ const ProfileEditRedirect = () => {
 
 const isVercelAnalyticsEnabled =
   import.meta.env.PROD && import.meta.env.VITE_ENABLE_VERCEL_ANALYTICS === "true";
+
+const ConsentedVercelAnalytics = () => {
+  const { isExperienceAllowed } = useConsent();
+  return isExperienceAllowed ? <Analytics /> : null;
+};
 
 // Analytics initializer component to set user identity
 const AnalyticsInitializer = memo(() => {
@@ -644,9 +649,8 @@ function App() {
                 <SpeculationRules />
                 <JourneyTrackingBridge />
                 <AnalyticsInitializer />
-                {isVercelAnalyticsEnabled ? <Analytics /> : null}
-                <TrackingNoticeBanner />
-                <ConsentBanner />
+                {isVercelAnalyticsEnabled ? <ConsentedVercelAnalytics /> : null}
+                <ConsentModal />
                 <ScrollToTop />
                 <Suspense fallback={null}>
                   <DonationWidget />

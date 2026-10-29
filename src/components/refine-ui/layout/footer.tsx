@@ -1,9 +1,11 @@
+import { useConsent } from "@/hooks/use-consent";
 import { currentBuildInfo } from "@/lib/build-info";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 export const Footer = () => {
   const { t } = useTranslation();
+  const { openConsentModal } = useConsent();
 
   return (
     <footer
@@ -58,6 +60,14 @@ export const Footer = () => {
           >
             {t('footer.terms', 'Terms of Service')}
           </a>
+          <span className="text-muted-foreground">•</span>
+          <button
+            type="button"
+            onClick={openConsentModal}
+            className="text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
+          >
+            {t('consent.manage', 'Manage cookies')}
+          </button>
         </nav>
       </div>
     </footer>

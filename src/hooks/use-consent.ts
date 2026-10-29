@@ -1,66 +1,91 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
+import {
+  clearConsentState,
+  readConsentState,
+  subscribeConsent,
+  writeConsentState,
+  type ConsentChoices,
+  type ConsentState,
+} from '@/lib/analytics/consent-gate'
+import { clearAttributionStorage } from '@/lib/utm'
 
-export type ConsentCategory = 'necessary' | 'analytics'
-export type ConsentStatus = 'pending' | 'accepted' | 'rejected'
+export type { ConsentCategory, ConsentChoices, ConsentDecision, ConsentState } from '@/lib/analytics/consent-gate'
 
-interface ConsentState {
-  analytics: ConsentStatus
-  timestamp: string | null
+export const DEFAULT_CONSENT_CHOICES: ConsentChoices = {
+  preferences: true,
+  experience: true,
+  marketing: true,
 }
 
-const CONSENT_STORAGE_KEY = 'fairpay-consent:v1'
-const LEGACY_CONSENT_STORAGE_KEY = 'fairpay-consent'
-
-function getStoredConsent(): ConsentState {
-  try {
-    const stored =
-      localStorage.getItem(CONSENT_STORAGE_KEY) ??
-      localStorage.getItem(LEGACY_CONSENT_STORAGE_KEY)
-    if (stored) {
-      const parsed = JSON.parse(stored) as ConsentState
-      if (!localStorage.getItem(CONSENT_STORAGE_KEY)) {
-        localStorage.setItem(CONSENT_STORAGE_KEY, stored)
-        localStorage.removeItem(LEGACY_CONSENT_STORAGE_KEY)
-      }
-      return parsed
-    }
-  } catch {}
-  return { analytics: 'pending', timestamp: null }
+const REJECT_ALL_CHOICES: ConsentChoices = {
+  preferences: false,
+  experience: false,
+  marketing: false,
 }
 
-function storeConsent(state: ConsentState): void {
-  localStorage.setItem(CONSENT_STORAGE_KEY, JSON.stringify(state))
+const manageListeners = new Set<() => void>()
+let isManageOpen = false
+
+function setManageOpen(open: boolean) {
+  if (isManageOpen === open) return
+  isManageOpen = open
+  for (const listener of manageListeners) listener()
+}
+
+function subscribeManage(listener: () => void) {
+  manageListeners.add(listener)
+  return () => {
+    manageListeners.delete(listener)
+  }
+}
+
+const getManageOpen = () => isManageOpen
+const getServerConsent = () => null
+const getServerManageOpen = () => false
+
+export function toConsentChoices(state: ConsentState | null): ConsentChoices {
+  if (!state) return DEFAULT_CONSENT_CHOICES
+  return {
+    preferences: state.preferences === 'accepted',
+    experience: state.experience === 'accepted',
+    marketing: state.marketing === 'accepted',
+  }
 }
 
 export function useConsent() {
-  const [consent, setConsent] = useState<ConsentState>(getStoredConsent)
+  const consent = useSyncExternalStore(subscribeConsent, readConsentState, getServerConsent)
+  const manageOpen = useSyncExternalStore(subscribeManage, getManageOpen, getServerManageOpen)
 
-  const acceptAnalytics = useCallback(() => {
-    const newState: ConsentState = { analytics: 'accepted', timestamp: new Date().toISOString() }
-    storeConsent(newState)
-    setConsent(newState)
+  const confirmChoices = useCallback((choices: ConsentChoices) => {
+    writeConsentState(choices)
+    if (!choices.marketing) clearAttributionStorage()
+    setManageOpen(false)
   }, [])
 
-  const rejectAnalytics = useCallback(() => {
-    const newState: ConsentState = { analytics: 'rejected', timestamp: new Date().toISOString() }
-    storeConsent(newState)
-    setConsent(newState)
-  }, [])
-
+  const rejectAll = useCallback(() => confirmChoices(REJECT_ALL_CHOICES), [confirmChoices])
+  const acceptAll = useCallback(() => confirmChoices(DEFAULT_CONSENT_CHOICES), [confirmChoices])
+  const openConsentModal = useCallback(() => setManageOpen(true), [])
+  const closeConsentModal = useCallback(() => setManageOpen(false), [])
   const resetConsent = useCallback(() => {
-    localStorage.removeItem(CONSENT_STORAGE_KEY)
-    setConsent({ analytics: 'pending', timestamp: null })
+    clearConsentState()
+    setManageOpen(false)
   }, [])
 
-  const isAnalyticsAllowed = consent.analytics === 'accepted'
-  const isConsentPending = consent.analytics === 'pending'
+  const isConsentPending = consent === null
 
   return {
     consent,
-    isAnalyticsAllowed,
+    choices: toConsentChoices(consent),
     isConsentPending,
-    acceptAnalytics,
-    rejectAnalytics,
+    isConsentModalOpen: isConsentPending || manageOpen,
+    isAnalyticsAllowed: consent?.experience === 'accepted',
+    isExperienceAllowed: consent?.experience === 'accepted',
+    isMarketingAllowed: consent?.marketing === 'accepted',
+    confirmChoices,
+    acceptAll,
+    rejectAll,
+    openConsentModal,
+    closeConsentModal,
     resetConsent,
   }
 }
