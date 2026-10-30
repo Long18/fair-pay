@@ -18,6 +18,7 @@ export interface ReminderDebtTransaction {
 }
 
 export interface ReminderDebtBreakdownItem {
+  counterpartyKey?: string | null;
   counterpartyName: string;
   counterpartyEmail?: string | null;
   amount: number;

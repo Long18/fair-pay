@@ -237,6 +237,31 @@ export function normalizeReminderRequests(body: ReminderRequest): Required<Remin
     .slice(0, 100)
 }
 
+/** Server-stamped sender + snapshot time so recipients can tell who asked FairPay to remind them. */
+export function stampReminderEmailContext(
+  emailContext: unknown,
+  meta: { senderDisplayName: string | null; computedAt: string }
+): Record<string, unknown> | null {
+  if (!emailContext || typeof emailContext !== 'object' || Array.isArray(emailContext)) return null
+  const context = emailContext as Record<string, unknown>
+  return {
+    ...context,
+    sender_display_name: meta.senderDisplayName || null,
+    computed_at: typeof context.computed_at === 'string' && context.computed_at ? context.computed_at : meta.computedAt,
+  }
+}
+
+async function resolveSenderDisplayName(
+  adminClient: ReturnType<typeof createClient>,
+  user: { id: string; user_metadata?: Record<string, unknown> }
+): Promise<string | null> {
+  const { data } = await adminClient.from('profiles').select('full_name').eq('id', user.id).maybeSingle()
+  const profileName = (data as { full_name?: string | null } | null)?.full_name?.trim()
+  if (profileName) return profileName
+  const metadataName = user.user_metadata?.full_name
+  return typeof metadataName === 'string' && metadataName.trim() ? metadataName.trim() : null
+}
+
 async function handleSendReminder(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, error: 'Method not allowed' })
@@ -263,6 +288,9 @@ async function handleSendReminder(req: VercelRequest, res: VercelResponse) {
     auth: { autoRefreshToken: false, persistSession: false },
   })
 
+  const senderDisplayName = await resolveSenderDisplayName(adminClient, user)
+  const computedAt = new Date().toISOString()
+
   const { data, error } = await adminClient
     .from('notifications')
     .insert(
@@ -273,7 +301,7 @@ async function handleSendReminder(req: VercelRequest, res: VercelResponse) {
         message: r.message,
         link: r.link || '/dashboard',
         recipient_emails: normalizeRecipientEmails(r.recipient_emails),
-        email_context: r.email_context || null,
+        email_context: stampReminderEmailContext(r.email_context, { senderDisplayName, computedAt }),
         is_read: false,
       }))
     )

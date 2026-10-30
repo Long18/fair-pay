@@ -159,6 +159,45 @@ export async function fetchEmailOverview(): Promise<EmailOverviewResponse> {
   return readApiResponse<EmailOverviewResponse>(response);
 }
 
+export function getRowCurrencies(row: DebtReminderRow): string[] {
+  const currencies = new Set<string>();
+  for (const item of row.debt_breakdown) currencies.add(item.currency || "VND");
+  for (const group of row.group_breakdown) {
+    currencies.add(group.currency || "VND");
+    for (const item of group.counterparties) currencies.add(item.currency || "VND");
+  }
+  return Array.from(currencies);
+}
+
+/** Reminder emails support exactly one currency per recipient. */
+export function partitionReminderRowsByCurrency(rows: DebtReminderRow[]): {
+  eligible: DebtReminderRow[];
+  excluded: DebtReminderRow[];
+} {
+  return rows.reduce<{ eligible: DebtReminderRow[]; excluded: DebtReminderRow[] }>(
+    (acc, row) => {
+      (getRowCurrencies(row).length > 1 ? acc.excluded : acc.eligible).push(row);
+      return acc;
+    },
+    { eligible: [], excluded: [] }
+  );
+}
+
+export function buildReminderContextMeta(row: DebtReminderRow, now: Date = new Date()) {
+  const primaryGroup = row.group_breakdown
+    .filter((group) => group.group_id)
+    .reduce<GroupBreakdownRow | null>(
+      (best, group) => (!best || group.subtotal_amount > best.subtotal_amount ? group : best),
+      null
+    );
+
+  return {
+    primary_currency: getRowCurrencies(row)[0] ?? "VND",
+    primary_group_name: primaryGroup?.group_name ?? null,
+    computed_at: now.toISOString(),
+  };
+}
+
 export async function createReminderNotifications(
   rows: DebtReminderRow[],
   tAdmin: AdminT,
@@ -179,6 +218,7 @@ export async function createReminderNotifications(
         link: row.has_auth_account ? "/dashboard" : "/register",
         recipient_emails: recipientResolver?.(row),
         email_context: {
+          ...buildReminderContextMeta(row),
           total_amount: row.total_i_owe,
           debt_breakdown: row.debt_breakdown.map((item) => ({
             counterparty_key: item.counterparty_key,
@@ -484,6 +524,7 @@ export function formatRecipientEmails(
 
 export function toReminderDebtBreakdown(items: DebtBreakdownRow[]): ReminderDebtBreakdownItem[] {
   return items.map((item) => ({
+    counterpartyKey: item.counterparty_key,
     counterpartyName: item.counterparty_name,
     counterpartyEmail: item.counterparty_email,
     amount: item.amount,

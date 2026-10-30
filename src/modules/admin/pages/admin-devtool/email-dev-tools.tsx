@@ -32,6 +32,7 @@ import {
   getSelectedRecipientEmails,
   isAbortError,
   normalizeDebtRows,
+  partitionReminderRowsByCurrency,
   randomBetweenMs,
   sendEmailForNotificationIds,
   toReminderDebtBreakdown,
@@ -330,6 +331,11 @@ export function AdminEmailDevTools({ embedded = false }: { embedded?: boolean })
   const handleRemindOne = useCallback(
     async (row: DebtReminderRow) => {
       tap();
+      if (partitionReminderRowsByCurrency([row]).excluded.length) {
+        warning();
+        toast.error(tAdmin("devtool.multiCurrencyBlocked", { name: row.full_name }));
+        return;
+      }
       setSendingUserId(row.user_id);
       try {
         const ids = await createReminderNotifications(
@@ -364,9 +370,17 @@ export function AdminEmailDevTools({ embedded = false }: { embedded?: boolean })
     tap();
     setConfirmBulkOpen(false);
 
-    const rows = selectedRows.map((row) => row);
+    const { eligible: rows, excluded } = partitionReminderRowsByCurrency(selectedRows);
+    const excludedSuffix = excluded.length
+      ? tAdmin("devtool.excludedMultiCurrency", { count: excluded.length })
+      : "";
     const selectionsSnapshot = { ...recipientSelections };
     setSelectedUserIds([]);
+    if (!rows.length) {
+      warning();
+      toast.error(`${tAdmin("devtool.sentMany", { count: 0 })}${excludedSuffix}`);
+      return;
+    }
 
     if (dismissTimerRef.current !== null) {
       window.clearTimeout(dismissTimerRef.current);
@@ -495,7 +509,7 @@ export function AdminEmailDevTools({ embedded = false }: { embedded?: boolean })
       });
       if (failed === 0) {
         success();
-        toast.success(tAdmin("devtool.sentMany", { count: sent || rows.length }));
+        toast.success(`${tAdmin("devtool.sentMany", { count: rows.length })}${excludedSuffix}`);
       } else {
         warning();
         toast.error(tAdmin("devtool.sentManyPartial", { sent, failed, total: rows.length }));
