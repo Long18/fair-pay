@@ -1,15 +1,11 @@
 {
   "subject": "{{inviterName}} mời bạn sử dụng FairPay",
   "previewText": "Chia tiền nhóm, theo dõi ai nợ ai, và settle up rõ ràng hơn cùng FairPay.",
-  "eyebrow": "FairPay Invite",
   "heading": "Chia tiền nhóm không còn rối",
-  "subheading": "{{inviterName}} vừa mời bạn vào FairPay.",
-  "bodyHtml": "<p>Xin chào,</p><p>{{inviterName}} mời bạn vào FairPay để chia tiền nhóm, theo dõi ai nợ ai, và settle up rõ ràng sau mỗi chuyến đi, bữa ăn, hoặc nhóm bạn.</p>",
-  "panelLabel": "Vì sao FairPay / Why FairPay",
-  "panelTitle": "Bạn có thể dùng FairPay để",
-  "panelDescription": "Split bill nhanh, xem công nợ theo thời gian thực, và nhận nhắc thanh toán qua email hoặc thông báo trong app.",
+  "bodyHtml": "<p>Xin chào,</p><p>{{inviterName}} mời bạn vào FairPay để chia tiền nhóm, theo dõi ai nợ ai, và settle up rõ ràng sau mỗi chuyến đi, bữa ăn, hoặc nhóm bạn.</p><p>Bạn có thể dùng FairPay để chia hóa đơn nhanh, xem công nợ theo thời gian thực, và nhận nhắc thanh toán qua email hoặc thông báo trong app.</p>",
   "ctaLabel": "Bắt đầu với FairPay",
   "fallbackLinkLabel": "Nếu nút không hoạt động, mở liên kết này:",
-  "footerHtml": "<p>You are receiving this because you have a FairPay account or were invited to FairPay.<br>To manage email notifications, open <strong>Settings → Notifications</strong>.</p>",
+  "footer": "Bạn nhận email này vì có tài khoản FairPay hoặc được mời vào FairPay. Tắt email này: Cài đặt → Thông báo",
+  "copyright": "© {{year}} FairPay",
   "textSignature": "FairPay - Chia sẻ chi phí thông minh"
 }

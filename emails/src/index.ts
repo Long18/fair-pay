@@ -1,4 +1,5 @@
-export { InviteEmail, defaultInviteContent, resolveInviteEmail } from "./invite-email";
+export { InviteEmail } from "./invite-email";
+export { defaultInviteContent, resolveInviteEmail } from "./resolve-invite";
 export { DebtReminderEmail, DebtReminderEmailView } from "./debt-reminder-email";
 export { renderInviteEmail } from "./render-invite";
 export { renderDebtReminderEmail, renderDebtReminderViewModel } from "./render-debt-reminder";

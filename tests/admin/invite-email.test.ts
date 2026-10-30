@@ -12,7 +12,7 @@ describe("admin invite email helpers", () => {
     ).toEqual(["alice@example.com", "bob@example.com", "carol@example.com"]);
   });
 
-  it("builds a bilingual FairPay invite preview for a Gmail-like surface", async () => {
+  it("builds a Vietnamese FairPay invite preview on the transactional shell", async () => {
     const preview = await buildInviteEmailPreview({
       emails: ["friend@example.com"],
       inviterName: "Long",
@@ -23,9 +23,13 @@ describe("admin invite email helpers", () => {
     expect(preview.previewText).toContain("Chia tiền nhóm");
     expect(preview.html).toContain("https://long-pay.vercel.app");
     expect(preview.html).toContain("Bắt đầu với FairPay");
-    expect(preview.html).toContain('data-email-shell="fairpay-pastel"');
-    expect(preview.html).toContain('data-email-block="invite-benefits"');
+    expect(preview.html).toContain('data-email-shell="fairpay-transactional"');
+    expect(preview.html).toContain('data-email-block="invite-body"');
+    expect(preview.html).toContain("chia hóa đơn nhanh");
     expect(preview.html).toContain('class="cta-link"');
+    expect(preview.html).toContain("Bạn nhận email này vì có tài khoản FairPay hoặc được mời vào FairPay.");
+    expect(preview.html).not.toContain("<img");
+    expect(preview.html).not.toMatch(/Why FairPay|You are receiving/);
   });
 
   it("escapes user-controlled invite fields in the generated html", async () => {

@@ -33,8 +33,12 @@ describe("reminder email snapshots", () => {
 });
 
 describe("invite email", () => {
-  it("renders stable HTML until it moves to the transactional shell", async () => {
-    const email = await renderInviteEmail({ inviterName: "Long", appUrl: "https://long-pay.vercel.app" });
+  it("renders stable HTML on the transactional shell", async () => {
+    const email = await renderInviteEmail({
+      inviterName: "Long",
+      appUrl: "https://long-pay.vercel.app",
+      now: new Date("2026-10-30T04:00:00.000Z"),
+    });
     expect(email.html).toMatchSnapshot("invite-html");
     expect(email.text).toMatchSnapshot("invite-text");
   });

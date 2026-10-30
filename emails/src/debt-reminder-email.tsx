@@ -12,7 +12,6 @@ export function DebtReminderEmail(input: DebtReminderEmailInput) {
 export function DebtReminderEmailView({ vm }: { vm: ReminderViewModel }) {
   return (
     <FairPayShell
-      variant="transactional"
       title={vm.subject}
       previewText={vm.preheader}
       ctaHref={vm.cta.href}

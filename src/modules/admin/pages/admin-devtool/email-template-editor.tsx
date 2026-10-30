@@ -35,7 +35,7 @@ const TEMPLATES: Record<TemplateId, { file: string; defaults: TemplateContent; p
   invite: {
     file: "invite.static.json",
     defaults: { ...defaultInviteContent },
-    placeholders: ["inviterName", "appUrl"],
+    placeholders: ["inviterName", "appUrl", "year"],
   },
   "debt-reminder": {
     file: "debt-reminder.static.json",

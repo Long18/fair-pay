@@ -1,15 +1,19 @@
 import { render, toPlainText } from "@react-email/render";
-import { InviteEmail, resolveInviteEmail } from "./invite-email";
+import { InviteEmail } from "./invite-email";
+import { resolveInviteEmail } from "./resolve-invite";
 import type { InviteEmailInput, RenderedEmail } from "./types";
-import { fillTemplate } from "./utils";
 
 export async function renderInviteEmail(input: InviteEmailInput): Promise<RenderedEmail> {
-  const { appUrl, content, tokens, subject, previewText, bodyHtml } = resolveInviteEmail(input);
+  const { appUrl, content, subject, previewText, heading, bodyHtml, ctaLabel, footer } = resolveInviteEmail(input);
   const html = await render(<InviteEmail {...input} />);
   const text = [
+    heading,
+    "",
     toPlainText(bodyHtml, { wordwrap: false }),
     "",
-    `${fillTemplate(content.ctaLabel, tokens)}: ${appUrl}`,
+    `${ctaLabel}: ${appUrl}`,
+    "",
+    footer,
     "",
     content.textSignature,
   ].join("\n");

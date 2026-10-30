@@ -10,9 +10,11 @@ React Email templates for the **Invite users by email** and **Debt reminder** em
 emails/
   src/
     content/*.static.json   static copy (edited in the admin Email templates tab)
-    components/             FairPay shell, panel, rich text, debt breakdown
+    components/             transactional shell + footer, rich text
+    reminder-view-model.ts  pure TS: per-person lines, totals, copy, CTA, plain text (shared with Edge)
+    fixtures.ts             reminder fixtures F1–F12 (tests, editor, previews)
     invite-email.tsx        <InviteEmail />
-    debt-reminder-email.tsx <DebtReminderEmail />
+    debt-reminder-email.tsx <DebtReminderEmail /> rendered from the view model
     render-*.tsx            render() + plain-text builders → { subject, previewText, html, text }
     edge-entry.ts           entry for the Supabase Edge bundle
   templates/                default exports for `email dev`
@@ -23,7 +25,7 @@ emails/
 | Task | Command |
 |------|---------|
 | Live preview server (React Email UI, port 3030) | `pnpm email:dev` |
-| Static HTML previews in `/tmp/fairpay-email-previews` | `pnpm email:previews` |
+| Static HTML + text previews of every fixture in `tmp/email-previews/` (gitignored) | `pnpm email:previews` |
 | Rebuild the Edge bundle after any change in `emails/src` | `pnpm email:build` |
 | Verify the committed bundle is fresh (CI) | `node scripts/bundle-transactional-emails.mjs --check` |
 
@@ -40,10 +42,10 @@ Drafts are kept in the browser's localStorage until reset; nothing is written to
 
 `{{token}}` placeholders are filled at render time. Values are HTML-escaped inside `*Html` fields.
 
-- Invite: `{{inviterName}}`, `{{appUrl}}`
-- Debt reminder: `{{userName}}`, `{{title}}`, `{{message}}`, `{{total}}`
+- Invite: `{{inviterName}}`, `{{appUrl}}`, `{{year}}`
+- Debt reminder: `{{total}}`, `{{counterpartyCount}}`, `{{namesPreview}}`, `{{asOf}}`, `{{userName}}`, `{{senderName}}`, `{{groupName}}`, `{{n}}`, `{{year}}`
 
-Dynamic parts (group cards, counterparties, transactions, CTA targets) live in the components, not in the editable copy.
+Copy is Vietnamese only. The debt reminder never shows the in-app `title`/`message`; per-person lines, sorting, overflow and CTA targets come from `reminder-view-model.ts`, not from the editable copy.
 
 ## Edge bundle notes
 

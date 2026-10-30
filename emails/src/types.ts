@@ -1,5 +1,3 @@
-export type EmailTone = "default" | "invite" | "reminder" | "lifecycle" | "warning";
-
 export interface RenderedEmail {
   subject: string;
   previewText: string;
@@ -36,16 +34,12 @@ export interface ReminderGroupBreakdownItem {
 export interface InviteEmailContent {
   subject: string;
   previewText: string;
-  eyebrow: string;
   heading: string;
-  subheading: string;
   bodyHtml: string;
-  panelLabel: string;
-  panelTitle: string;
-  panelDescription: string;
   ctaLabel: string;
   fallbackLinkLabel: string;
-  footerHtml: string;
+  footer: string;
+  copyright: string;
   textSignature: string;
 }
 
@@ -144,6 +138,7 @@ export interface InviteEmailInput {
   inviterName?: string | null;
   appUrl?: string;
   content?: Partial<InviteEmailContent>;
+  now?: Date;
 }
 
 export type DebtReminderEmailContent = DebtReminderCopy;
