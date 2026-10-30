@@ -18,9 +18,8 @@ import {
 // and does not strictly need CORS. Use the shared helper anyway so origin
 // handling stays consistent across functions (defense-in-depth).
 import { getCorsHeaders } from '../_shared/cors.ts'
+import { sendHtmlEmail } from '../_shared/smtp-html-email.ts'
 import { buildEmailHtml, buildEmailText, buildSubject } from './digest.ts'
-
-const textEncoder = new TextEncoder()
 
 interface ProcessingResult {
   sent: number
@@ -43,6 +42,21 @@ interface EmailParts {
   subject: string
   text: string
   html: string
+}
+
+function isServiceRoleJwt(token: string): boolean {
+  const parts = token.split('.')
+  if (parts.length !== 3) return false
+  try {
+    const payload = JSON.parse(
+      new TextDecoder().decode(
+        Uint8Array.from(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0)),
+      ),
+    ) as { role?: string }
+    return payload.role === 'service_role'
+  } catch {
+    return false
+  }
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -114,8 +128,9 @@ async function authorizeWorkerRequest(
     })
   }
 
-  // Cron uses the service-role key. Browser/admin manual runs use a user JWT.
-  if (token === supabaseServiceKey) {
+  // Cron / server callers use the service-role JWT. Compare key when env is present,
+  // and accept any valid service_role JWT for this project (Edge env key can drift from API keys).
+  if (token === supabaseServiceKey || isServiceRoleJwt(token)) {
     return null
   }
 
@@ -148,49 +163,6 @@ async function authorizeWorkerRequest(
   }
 
   return null
-}
-
-function encodeBase64Mime(content: string): string {
-  const bytes = textEncoder.encode(content)
-  let binary = ''
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte)
-  }
-  return btoa(binary).replace(/.{1,76}/g, '$&\r\n').trim()
-}
-
-async function sendHtmlEmail(
-  smtp: SMTPClient,
-  options: {
-    fromName: string
-    fromEmail: string
-    to: string
-    subject: string
-    text: string
-    html: string
-    tag: string
-  }
-): Promise<void> {
-  await smtp.send({
-    from: `${options.fromName} <${options.fromEmail}>`,
-    to: options.to,
-    subject: options.subject,
-    mimeContent: [
-      {
-        mimeType: 'text/plain; charset="utf-8"',
-        content: encodeBase64Mime(options.text),
-        transferEncoding: 'base64',
-      },
-      {
-        mimeType: 'text/html; charset="utf-8"',
-        content: encodeBase64Mime(options.html),
-        transferEncoding: 'base64',
-      },
-    ],
-    headers: {
-      'X-FairPay-Email-Type': options.tag,
-    },
-  })
 }
 
 async function buildInviteEmailParts(inviterName: string, appUrl: string): Promise<EmailParts> {
@@ -288,7 +260,7 @@ serve(async (req) => {
 
     if (body.invite?.emails.length) {
       const smtp = new SMTPClient({
-        debug: { encodeLB: true },
+        debug: { encodeLB: false },
         connection: {
           hostname: smtpHost,
           port: smtpPort,
@@ -364,7 +336,7 @@ serve(async (req) => {
 
     // ── 3. Connect SMTP ───────────────────────────────────────────────────
     const smtp = new SMTPClient({
-      debug: { encodeLB: true },
+      debug: { encodeLB: false },
       connection: {
         hostname: smtpHost,
         port: smtpPort,

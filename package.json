@@ -199,7 +199,8 @@
     "generate:api-catalog": "tsx scripts/generate-api-catalog.ts",
     "email:dev": "pnpm --filter @fairpay/emails dev",
     "email:build": "node scripts/bundle-transactional-emails.mjs",
-    "email:previews": "tsx --tsconfig emails/tsconfig.json scripts/generate-email-previews.ts"
+    "email:previews": "tsx --tsconfig emails/tsconfig.json scripts/generate-email-previews.ts",
+    "deploy:email-worker": "node scripts/deploy-send-email-notifications.mjs"
   },
   "browserslist": {
     "production": [

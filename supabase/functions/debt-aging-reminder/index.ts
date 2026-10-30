@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
 import { getCorsHeaders, handleCorsPreflightIfNeeded } from '../_shared/cors.ts'
 import { buildEmailPanel, buildEmailShell } from '../_shared/email-design-system.ts'
+import { sendHtmlEmail } from '../_shared/smtp-html-email.ts'
 
 /**
  * Debt Aging Reminder Edge Function
@@ -15,8 +16,6 @@ import { buildEmailPanel, buildEmailShell } from '../_shared/email-design-system
  *   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
  */
 
-const textEncoder = new TextEncoder()
-
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')
@@ -24,15 +23,6 @@ function escapeHtml(text: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;')
-}
-
-function encodeBase64Mime(content: string): string {
-  const bytes = textEncoder.encode(content)
-  let binary = ''
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte)
-  }
-  return btoa(binary).replace(/.{1,76}/g, '$&\r\n').trim()
 }
 
 function joinAppUrl(appUrl: string, link: string): string {
@@ -67,40 +57,6 @@ interface AgingDebtRow {
   expense_description: string
   expense_date: string
   days_old: number
-}
-
-async function sendHtmlEmail(
-  smtp: SMTPClient,
-  options: {
-    fromName: string
-    fromEmail: string
-    to: string
-    subject: string
-    text: string
-    html: string
-    tag: string
-  }
-): Promise<void> {
-  await smtp.send({
-    from: `${options.fromName} <${options.fromEmail}>`,
-    to: options.to,
-    subject: options.subject,
-    mimeContent: [
-      {
-        mimeType: 'text/plain; charset="utf-8"',
-        content: encodeBase64Mime(options.text),
-        transferEncoding: 'base64',
-      },
-      {
-        mimeType: 'text/html; charset="utf-8"',
-        content: encodeBase64Mime(options.html),
-        transferEncoding: 'base64',
-      },
-    ],
-    headers: {
-      'X-FairPay-Email-Type': options.tag,
-    },
-  })
 }
 
 interface DebtEntry {

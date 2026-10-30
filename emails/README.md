@@ -34,7 +34,9 @@ emails/
 1. Open **Admin → DevTool → Email templates**, pick a template.
 2. Edit `*Html` fields in the embedded [React Email editor](https://react.email/docs/editor/overview) (select text for the bubble menu, `/` for blocks) and the plain text fields. The live preview uses the same renderer as real sends.
 3. **Download JSON** (or Copy JSON) and save it over `emails/src/content/<file>`.
-4. Run `pnpm email:build` and commit the content file together with `supabase/functions/_shared/transactional-email.bundle.*`, then deploy the `send-email-notifications` function.
+4. Run `pnpm email:build` and commit the content file together with `supabase/functions/_shared/transactional-email.bundle.*`, then deploy the Edge worker to project `nowtovakbozjjkdsjmtd`:
+   - **Cursor + Supabase MCP (recommended):** add `.cursor/mcp.json` with the [Supabase MCP URL](https://supabase.com/docs/guides/getting-started/mcp) scoped to this project, then `agent mcp enable supabase` and `agent mcp login supabase`. Ask the agent to call `deploy_edge_function` with the full `send-email-notifications` sources (never partial/stub uploads).
+   - **CLI / script:** `pnpm deploy:email-worker` (needs `SUPABASE_ACCESS_TOKEN` from [Account → Access Tokens](https://supabase.com/dashboard/account/tokens)) or `pnpm exec supabase functions deploy send-email-notifications --project-ref nowtovakbozjjkdsjmtd` after `supabase login`.
 
 Drafts are kept in the browser's localStorage until reset; nothing is written to the database.
 
