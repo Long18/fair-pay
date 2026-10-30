@@ -43,6 +43,7 @@ import { BuildVersionMonitor } from "./components/system/build-version-monitor";
 import { PageSkeleton, AdminPageSkeleton } from "./components/skeletons/PageSkeleton";
 import { AuthBootstrapLoading } from "./components/auth/AuthBootstrapLoading";
 import { AuthUrlErrorHandler } from "./components/auth/AuthUrlErrorHandler";
+import { EmailCtaLandingTracker } from "./components/analytics/EmailCtaLandingTracker";
 
 // Auth pages (critical for initial load)
 import { Login } from "./pages/login";
@@ -642,6 +643,7 @@ function App() {
 
                 <Toaster />
                 <AuthUrlErrorHandler />
+                <EmailCtaLandingTracker />
                 <BuildVersionMonitor />
                 <RefineKbar />
                 <UnsavedChangesNotifier />
