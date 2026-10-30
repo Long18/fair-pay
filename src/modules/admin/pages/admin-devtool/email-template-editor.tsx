@@ -5,7 +5,7 @@ import {
   cleanEditorHtml,
   defaultDebtReminderContent,
   defaultInviteContent,
-  sampleReminderInput,
+  renderableReminderFixtures,
   type RenderedEmail,
 } from "@fairpay/emails";
 import { toast } from "sonner";
@@ -25,6 +25,7 @@ import { EmailPreviewFrame, EmailPreviewViewportToggle } from "./email-preview-u
 import type { PreviewViewport } from "./types";
 
 type TemplateId = "invite" | "debt-reminder";
+type RecipientVariant = "registered" | "guest";
 type TemplateContent = Record<string, string>;
 type Drafts = Record<TemplateId, TemplateContent>;
 
@@ -45,6 +46,15 @@ const TEMPLATES: Record<TemplateId, { file: string; defaults: TemplateContent; p
 
 const isRichField = (key: string) => key.endsWith("Html");
 
+/** Drops keys that no longer exist in the repo copy so old drafts cannot leak obsolete fields. */
+function mergeKnownFields(defaults: TemplateContent, stored: TemplateContent | undefined): TemplateContent {
+  const merged = { ...defaults };
+  for (const key of Object.keys(defaults)) {
+    if (typeof stored?.[key] === "string") merged[key] = stored[key];
+  }
+  return merged;
+}
+
 function readStoredDrafts(): Drafts {
   const defaults: Drafts = { invite: TEMPLATES.invite.defaults, "debt-reminder": TEMPLATES["debt-reminder"].defaults };
   try {
@@ -52,8 +62,8 @@ function readStoredDrafts(): Drafts {
     if (!raw) return defaults;
     const stored = JSON.parse(raw) as Partial<Drafts>;
     return {
-      invite: { ...defaults.invite, ...stored.invite },
-      "debt-reminder": { ...defaults["debt-reminder"], ...stored["debt-reminder"] },
+      invite: mergeKnownFields(defaults.invite, stored.invite),
+      "debt-reminder": mergeKnownFields(defaults["debt-reminder"], stored["debt-reminder"]),
     };
   } catch {
     return defaults;
@@ -64,17 +74,30 @@ function serializeContent(content: TemplateContent): string {
   return `${JSON.stringify(content, null, 2)}\n`;
 }
 
+const DEFAULT_FIXTURE_ID = "F2";
+
 interface PreviewRequest {
   template: TemplateId;
   content: TemplateContent;
   appUrl: string;
+  fixtureId: string;
+  recipientVariant: RecipientVariant;
 }
 
-function renderTemplatePreview({ template, content, appUrl }: PreviewRequest): Promise<RenderedEmail> {
+function renderTemplatePreview({ template, content, appUrl, fixtureId, recipientVariant }: PreviewRequest): Promise<RenderedEmail> {
   if (template === "invite") {
     return buildInviteEmailPreview({ emails: [], inviterName: "Long", appUrl, content });
   }
-  return buildReminderEmailPreview({ ...sampleReminderInput, appUrl, content });
+  const fixture =
+    renderableReminderFixtures.find((item) => item.id === fixtureId) ??
+    renderableReminderFixtures.find((item) => item.id === DEFAULT_FIXTURE_ID);
+  if (!fixture) throw new Error(`Missing reminder fixture ${fixtureId}`);
+  return buildReminderEmailPreview({
+    ...fixture.input,
+    recipient: { ...fixture.input.recipient, hasAccount: recipientVariant === "registered" },
+    appUrl,
+    content,
+  });
 }
 
 export function AdminEmailTemplateEditor() {
@@ -84,6 +107,8 @@ export function AdminEmailTemplateEditor() {
   const [richField, setRichField] = useState<string | null>(null);
   const [viewport, setViewport] = useState<PreviewViewport>("desktop");
   const [editorEpoch, setEditorEpoch] = useState(0);
+  const [fixtureId, setFixtureId] = useState(DEFAULT_FIXTURE_ID);
+  const [recipientVariant, setRecipientVariant] = useState<RecipientVariant>("registered");
 
   const { file, defaults, placeholders } = TEMPLATES[template];
   const content = drafts[template];
@@ -109,8 +134,8 @@ export function AdminEmailTemplateEditor() {
   }, []);
 
   const previewRequest = useMemo<PreviewRequest>(
-    () => ({ template, content, appUrl: window.location.origin }),
-    [template, content],
+    () => ({ template, content, appUrl: window.location.origin, fixtureId, recipientVariant }),
+    [template, content, fixtureId, recipientVariant],
   );
   const deferredRequest = useDeferredValue(previewRequest);
   const preview = useRenderedEmail(deferredRequest, renderTemplatePreview);
@@ -182,6 +207,16 @@ export function AdminEmailTemplateEditor() {
             {isEdited ? <Badge variant="secondary">{tAdmin("layout.devtoolTools.emailTemplates.edited")}</Badge> : null}
           </div>
 
+          {template === "debt-reminder" ? (
+            <ReminderPreviewControls
+              fixtureId={fixtureId}
+              onFixtureChange={setFixtureId}
+              recipientVariant={recipientVariant}
+              onRecipientVariantChange={setRecipientVariant}
+              tAdmin={tAdmin}
+            />
+          ) : null}
+
           <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
             <span>{tAdmin("layout.devtoolTools.emailTemplates.placeholders")}:</span>
             {placeholders.map((token) => (
@@ -192,34 +227,34 @@ export function AdminEmailTemplateEditor() {
           </div>
 
           {activeRichField ? (
-          <div className="space-y-2 rounded-lg border p-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm font-medium">{tAdmin("layout.devtoolTools.emailTemplates.richContent")}</p>
-              <div className="flex flex-wrap gap-1" role="group" aria-label={tAdmin("layout.devtoolTools.emailTemplates.richContent")}>
-                {richFields.map((key) => (
-                  <Button
-                    key={key}
-                    type="button"
-                    size="sm"
-                    variant={key === activeRichField ? "secondary" : "ghost"}
-                    className="h-7 px-2 font-mono text-xs"
-                    aria-pressed={key === activeRichField}
-                    onClick={() => setRichField(key)}
-                  >
-                    {key}
-                  </Button>
-                ))}
+            <div className="space-y-2 rounded-lg border p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-medium">{tAdmin("layout.devtoolTools.emailTemplates.richContent")}</p>
+                <div className="flex flex-wrap gap-1" role="group" aria-label={tAdmin("layout.devtoolTools.emailTemplates.richContent")}>
+                  {richFields.map((key) => (
+                    <Button
+                      key={key}
+                      type="button"
+                      size="sm"
+                      variant={key === activeRichField ? "secondary" : "ghost"}
+                      className="h-7 px-2 font-mono text-xs"
+                      aria-pressed={key === activeRichField}
+                      onClick={() => setRichField(key)}
+                    >
+                      {key}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">{tAdmin("layout.devtoolTools.emailTemplates.richHint")}</p>
+              <div className="min-h-40 rounded-md border bg-white p-3 text-slate-900">
+                <EmailEditor
+                  key={`${template}:${activeRichField}:${editorEpoch}`}
+                  content={content[activeRichField] ?? ""}
+                  onUpdate={(ref) => updateField(template, activeRichField, cleanEditorHtml(ref.editor?.getHTML() ?? ""))}
+                />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">{tAdmin("layout.devtoolTools.emailTemplates.richHint")}</p>
-            <div className="min-h-40 rounded-md border bg-white p-3 text-slate-900">
-              <EmailEditor
-                key={`${template}:${activeRichField}:${editorEpoch}`}
-                content={content[activeRichField] ?? ""}
-                onUpdate={(ref) => updateField(template, activeRichField, cleanEditorHtml(ref.editor?.getHTML() ?? ""))}
-              />
-            </div>
-          </div>
           ) : null}
 
           <div className="space-y-3 rounded-lg border p-3">
@@ -271,6 +306,62 @@ export function AdminEmailTemplateEditor() {
             tall
           />
         </section>
+      </div>
+    </div>
+  );
+}
+
+function ReminderPreviewControls({
+  fixtureId,
+  onFixtureChange,
+  recipientVariant,
+  onRecipientVariantChange,
+  tAdmin,
+}: {
+  fixtureId: string;
+  onFixtureChange: (id: string) => void;
+  recipientVariant: RecipientVariant;
+  onRecipientVariantChange: (variant: RecipientVariant) => void;
+  tAdmin: ReturnType<typeof useAdminTranslation>["tAdmin"];
+}) {
+  const variants: Array<{ id: RecipientVariant; label: string }> = [
+    { id: "registered", label: tAdmin("layout.devtoolTools.emailTemplates.recipientRegistered") },
+    { id: "guest", label: tAdmin("layout.devtoolTools.emailTemplates.recipientGuest") },
+  ];
+
+  return (
+    <div className="flex flex-wrap items-end gap-3">
+      <div className="min-w-[14rem] flex-1 space-y-1.5">
+        <Label htmlFor="email-template-fixture">{tAdmin("layout.devtoolTools.emailTemplates.fixture")}</Label>
+        <Select value={fixtureId} onValueChange={onFixtureChange}>
+          <SelectTrigger id="email-template-fixture">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {renderableReminderFixtures.map((fixture) => (
+              <SelectItem key={fixture.id} value={fixture.id}>
+                {fixture.id} · {fixture.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-1.5">
+        <p className="text-sm font-medium">{tAdmin("layout.devtoolTools.emailTemplates.recipient")}</p>
+        <div className="flex gap-1" role="group" aria-label={tAdmin("layout.devtoolTools.emailTemplates.recipient")}>
+          {variants.map((variant) => (
+            <Button
+              key={variant.id}
+              type="button"
+              size="sm"
+              variant={variant.id === recipientVariant ? "secondary" : "outline"}
+              aria-pressed={variant.id === recipientVariant}
+              onClick={() => onRecipientVariantChange(variant.id)}
+            >
+              {variant.label}
+            </Button>
+          ))}
+        </div>
       </div>
     </div>
   );

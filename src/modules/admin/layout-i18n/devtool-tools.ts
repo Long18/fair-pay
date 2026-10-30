@@ -48,6 +48,10 @@ export const devtoolToolsLayoutTranslations = {
       copyFailed: "Could not copy to clipboard",
       exportHint: "Save as emails/src/content/{{file}}, then run pnpm email:build so Supabase Edge sends the same copy.",
       previewFrame: "Email template preview",
+      fixture: "Sample data",
+      recipient: "Recipient",
+      recipientRegistered: "Registered",
+      recipientGuest: "Guest (no account)",
     },
   },
   vi: {
@@ -98,6 +102,10 @@ export const devtoolToolsLayoutTranslations = {
       copyFailed: "Không sao chép được vào clipboard",
       exportHint: "Lưu thành emails/src/content/{{file}}, rồi chạy pnpm email:build để Supabase Edge gửi đúng nội dung này.",
       previewFrame: "Xem trước mẫu email",
+      fixture: "Dữ liệu mẫu",
+      recipient: "Người nhận",
+      recipientRegistered: "Đã có tài khoản",
+      recipientGuest: "Khách (chưa có tài khoản)",
     },
   },
 } as const;
