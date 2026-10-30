@@ -3,11 +3,23 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
 import { buildEmailPanel, buildEmailShell } from '../_shared/email-design-system.ts'
 import {
-  renderDebtReminderEmail,
+  buildReminderViewModel,
+  renderDebtReminderViewModel,
   renderInviteEmail,
-  type ReminderDebtBreakdownItem,
-  type ReminderGroupBreakdownItem,
 } from '../_shared/transactional-email.bundle.mjs'
+import {
+  normalizeReminderEmailContext,
+  shouldMarkSent,
+  splitRecipientBatch,
+  toReminderContextInput,
+  type BatchOutcome,
+  type DebtBreakdownItem,
+  type DebtTransaction,
+  type GroupBreakdownItem,
+  type QueueRow,
+  type ReminderBatch,
+  type ReminderEmailContext,
+} from './routing.ts'
 // NOTE: send-email-notifications is invoked server-side (admin worker / cron)
 // and does not strictly need CORS. Use the shared helper anyway so origin
 // handling stays consistent across functions (defense-in-depth).
@@ -34,58 +46,13 @@ const NOTIF_LABELS: Record<string, { vi: string; en: string }> = {
   settlement_reminder:  { vi: 'Nhắc thanh toán',             en: 'Payment reminder' },
 }
 
-interface QueueRow {
-  notification_id: string
-  user_id: string
-  user_email: string
-  user_name: string
-  has_auth_account: boolean
-  notification_type: string
-  title: string
-  message: string
-  link: string | null
-  created_at: string
-  email_context: unknown | null
-}
-
-interface DebtTransaction {
-  expense_id: string
-  description: string
-  amount: number
-  currency: string
-  expense_date: string | null
-}
-
-interface DebtBreakdownItem {
-  counterparty_key: string
-  counterparty_name: string
-  counterparty_email: string | null
-  amount: number
-  currency: string
-  direction: 'user_owes_counterparty'
-  transactions: DebtTransaction[]
-}
-
-interface GroupBreakdownItem {
-  group_id: string | null
-  group_name: string
-  group_avatar_url: string | null
-  subtotal_amount: number
-  currency: string
-  counterparties: DebtBreakdownItem[]
-}
-
-interface ReminderEmailContext {
-  total_amount: number
-  debt_breakdown: DebtBreakdownItem[]
-  group_breakdown: GroupBreakdownItem[]
-}
-
 interface ProcessingResult {
   sent: number
   failed: number
   skipped: number
   errors: string[]
+  skip_reasons?: Record<string, number>
+  warnings?: Record<string, number>
 }
 
 interface WorkerRequest {
@@ -247,94 +214,6 @@ function formatDate(value: string | null): string {
   if (Number.isNaN(date.getTime())) return ''
 
   return dateFormatter.format(date)
-}
-
-function normalizeDebtTransactions(value: unknown, fallbackCurrency: string): DebtTransaction[] {
-  if (!Array.isArray(value)) return []
-
-  return value.reduce<DebtTransaction[]>((acc, transaction) => {
-    const tx = transaction as Record<string, unknown>
-    const expenseId = String(tx.expense_id || '')
-    const amount = Number(tx.amount || 0)
-    if (expenseId && amount > 0) {
-      acc.push({
-        expense_id: expenseId,
-        description: String(tx.description || 'Chi phí'),
-        amount,
-        currency: String(tx.currency || fallbackCurrency),
-        expense_date: tx.expense_date ? String(tx.expense_date) : null,
-      })
-    }
-    return acc
-  }, [])
-}
-
-function normalizeDebtBreakdownItems(value: unknown): DebtBreakdownItem[] {
-  if (!Array.isArray(value)) return []
-
-  return value.reduce<DebtBreakdownItem[]>((acc, item) => {
-    const debt = item as Record<string, unknown>
-    const currency = String(debt.currency || 'VND')
-    const counterpartyKey = String(debt.counterparty_key || '')
-    const amount = Number(debt.amount || 0)
-
-    if (counterpartyKey && amount > 0) {
-      acc.push({
-        counterparty_key: counterpartyKey,
-        counterparty_name: String(debt.counterparty_name || 'Không rõ'),
-        counterparty_email: debt.counterparty_email ? String(debt.counterparty_email) : null,
-        amount,
-        currency,
-        direction: 'user_owes_counterparty' as const,
-        transactions: normalizeDebtTransactions(debt.transactions, currency),
-      })
-    }
-    return acc
-  }, [])
-}
-
-function normalizeGroupBreakdownItems(value: unknown): GroupBreakdownItem[] {
-  if (!Array.isArray(value)) return []
-
-  return value.reduce<GroupBreakdownItem[]>((acc, item) => {
-    const group = item as Record<string, unknown>
-    const currency = String(group.currency || 'VND')
-    const subtotalAmount = Number(group.subtotal_amount || 0)
-    const counterparties = normalizeDebtBreakdownItems(group.counterparties)
-
-    if (subtotalAmount > 0 && counterparties.length > 0) {
-      acc.push({
-        group_id: group.group_id ? String(group.group_id) : null,
-        group_name: String(group.group_name || 'Direct / Ngoài group'),
-        group_avatar_url: group.group_avatar_url ? String(group.group_avatar_url) : null,
-        subtotal_amount: subtotalAmount,
-        currency,
-        counterparties,
-      })
-    }
-    return acc
-  }, [])
-}
-
-function normalizeReminderEmailContext(value: unknown): ReminderEmailContext | null {
-  if (!value || typeof value !== 'object') return null
-
-  const raw = value as Record<string, unknown>
-  const debtBreakdown = normalizeDebtBreakdownItems(raw.debt_breakdown)
-  const groupBreakdown = normalizeGroupBreakdownItems(raw.group_breakdown)
-
-  if (!debtBreakdown.length && !groupBreakdown.length) return null
-
-  const totalAmount = Number(raw.total_amount || 0)
-  return {
-    total_amount: totalAmount > 0
-      ? totalAmount
-      : debtBreakdown.length
-        ? debtBreakdown.reduce((sum, item) => sum + item.amount, 0)
-        : groupBreakdown.reduce((sum, item) => sum + item.subtotal_amount, 0),
-    debt_breakdown: debtBreakdown,
-    group_breakdown: groupBreakdown,
-  }
 }
 
 function buildSubject(count: number, notifications: QueueRow[]): string {
@@ -688,61 +567,6 @@ async function buildInviteEmailParts(inviterName: string, appUrl: string): Promi
   return { subject, text, html }
 }
 
-function toReminderDebtItem(debt: DebtBreakdownItem): ReminderDebtBreakdownItem {
-  return {
-    counterpartyName: debt.counterparty_name,
-    counterpartyEmail: debt.counterparty_email,
-    amount: debt.amount,
-    currency: debt.currency,
-    transactions: debt.transactions.map((transaction) => ({
-      description: transaction.description,
-      amount: transaction.amount,
-      currency: transaction.currency,
-      expenseDate: transaction.expense_date,
-    })),
-  }
-}
-
-function toReminderGroupItem(group: GroupBreakdownItem): ReminderGroupBreakdownItem {
-  return {
-    groupId: group.group_id,
-    groupName: group.group_name,
-    groupAvatarUrl: group.group_avatar_url,
-    subtotalAmount: group.subtotal_amount,
-    currency: group.currency,
-    counterparties: group.counterparties.map(toReminderDebtItem),
-  }
-}
-
-/**
- * Admin debt reminders render with the same React Email template the admin previews. Only used when
- * the recipient's batch is reminders-only; mixed batches still go through the digest layout.
- */
-async function buildDedicatedReminderParts(
-  userName: string,
-  notifications: QueueRow[],
-  appUrl: string
-): Promise<EmailParts | null> {
-  if (!notifications.every((n) => n.notification_type === 'settlement_reminder')) return null
-
-  const latest = [...notifications].sort((a, b) => b.created_at.localeCompare(a.created_at))[0]
-  const context = normalizeReminderEmailContext(latest?.email_context)
-  if (!latest || !context) return null
-
-  const { subject, text, html } = await renderDebtReminderEmail({
-    userName,
-    title: latest.title,
-    message: latest.message,
-    totalAmount: context.total_amount,
-    debtBreakdown: context.debt_breakdown.map(toReminderDebtItem),
-    groupBreakdown: context.group_breakdown.map(toReminderGroupItem),
-    hasAuthAccount: latest.has_auth_account !== false,
-    appUrl,
-    link: latest.link ?? undefined,
-  })
-  return { subject, text, html }
-}
-
 async function sendInviteEmails(
   smtp: SMTPClient,
   fromName: string,
@@ -782,10 +606,12 @@ async function sendInviteEmails(
  * Send Email Notifications Edge Function
  *
  * Called via cron every 5 minutes (set up via pg_cron + pg_net, see migration).
- * For each user with unsent notifications:
- *   1. Groups all pending notifications into a single digest email
- *   2. Sends via SMTP (denomailer), with a short gap between recipients
- *   3. Marks notifications with email_sent_at timestamp
+ * For each recipient with unsent notifications:
+ *   1. Settlement reminders with an email_context snapshot are merged into one reminder email
+ *      (newest snapshot wins) and skipped when multi-currency, empty, or already settled
+ *   2. Everything else (plus reminders without a snapshot) goes into one digest email
+ *   3. Sends via SMTP (denomailer), with a short gap between emails
+ *   4. Marks notifications with email_sent_at when sent or skipped; failed sends stay queued
  *
  * Timing (enforced by get_email_notification_queue, admin bypass via p_include_recent):
  *   - Batch window: notifications wait 30 minutes before email (accumulate into one digest)
@@ -916,53 +742,129 @@ serve(async (req) => {
       },
     })
 
-    const result: ProcessingResult = { sent: 0, failed: 0, skipped: 0, errors: [] }
+    const skipReasons: Record<string, number> = {}
+    const warningCounts: Record<string, number> = {}
+    const result: ProcessingResult = { sent: 0, failed: 0, skipped: 0, errors: [], skip_reasons: skipReasons, warnings: warningCounts }
     const successfulNotificationIds = new Set<string>()
     const failedNotificationIds = new Set<string>()
 
-    // ── 4. Send digest per selected recipient (spaced to avoid SMTP blast) ─
-    // Admin bulk UI staggers 60–90s between recipients client-side.
-    // This short gap is a safety net when multiple digests share one worker run.
-    const recipientGroups = Array.from(byRecipient.values())
-    const interSendDelayMs = 5_000
+    const recordOutcome = (rows: QueueRow[], outcome: BatchOutcome) => {
+      const target = shouldMarkSent(outcome) ? successfulNotificationIds : failedNotificationIds
+      for (const row of rows) target.add(row.notification_id)
+    }
+    const countReason = (bucket: Record<string, number>, reason: string) => {
+      bucket[reason] = (bucket[reason] ?? 0) + 1
+    }
 
-    for (let i = 0; i < recipientGroups.length; i++) {
-      const notifs = recipientGroups[i]
-      const { user_email, user_name } = notifs[0]
+    // One user can have several recipient emails; check their live balance once.
+    const liveDebtByUser = new Map<string, Promise<number | null>>()
+    const getLiveTotalIOwe = (userId: string) => {
+      let pending = liveDebtByUser.get(userId)
+      if (!pending) {
+        pending = (async () => {
+          const { data, error } = await supabase.rpc('get_user_balance', { p_user_id: userId })
+          if (error) {
+            console.warn(`warn:stale_check_failed ${userId}: ${error.message}`)
+            return null
+          }
+          const row = (Array.isArray(data) ? data[0] : data) as { total_i_owe?: number } | null
+          return row ? Number(row.total_i_owe ?? 0) : 0
+        })()
+        liveDebtByUser.set(userId, pending)
+      }
+      return pending
+    }
 
-      if (i > 0) {
-        await new Promise((resolve) => setTimeout(resolve, interSendDelayMs))
+    const sendReminderBatch = async (batch: ReminderBatch): Promise<BatchOutcome> => {
+      const { latest } = batch
+      const vm = buildReminderViewModel({
+        context: toReminderContextInput(batch.context),
+        recipient: { name: latest.user_name, hasAccount: latest.has_auth_account !== false },
+        appUrl,
+        notificationCreatedAt: latest.created_at,
+      })
+
+      for (const warning of vm.warnings) {
+        countReason(warningCounts, `warn:${warning.type}`)
+        console.warn(`warn:${warning.type} ${latest.user_email}: snapshot=${warning.snapshotMinor} computed=${warning.computedMinor}`)
       }
 
+      let skipReason: string | null = vm.status === 'skip' ? `skipped:${vm.reason}` : null
+      if (!skipReason) {
+        const liveTotal = await getLiveTotalIOwe(latest.user_id)
+        if (liveTotal !== null && liveTotal <= 0) skipReason = 'skipped:stale'
+      }
+      if (skipReason) {
+        result.skipped++
+        countReason(skipReasons, skipReason)
+        console.log(`${skipReason} ${latest.user_email} — ${batch.rows.length} reminder(s)`)
+        return 'skipped'
+      }
+
+      const email = await renderDebtReminderViewModel(vm)
+      await sendHtmlEmail(smtp, {
+        fromName: smtpFromName,
+        fromEmail: smtpFromEmail,
+        to: latest.user_email,
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
+        tag: 'debt-reminder',
+      })
+      result.sent++
+      console.log(`✓ reminder ${latest.user_email} — ${batch.rows.length} reminder(s) merged`)
+      return 'sent'
+    }
+
+    const sendDigestBatch = async (rows: QueueRow[]): Promise<BatchOutcome> => {
+      const { user_email, user_name } = rows[0]
+      const recipientName = user_name || 'bạn'
+      await sendHtmlEmail(smtp, {
+        fromName: smtpFromName,
+        fromEmail: smtpFromEmail,
+        to: user_email,
+        subject: buildSubject(rows.length, rows),
+        html: buildEmailHtml(recipientName, rows, appUrl),
+        text: buildEmailText(recipientName, rows, appUrl),
+        tag: 'notification-digest',
+      })
+      result.sent++
+      console.log(`✓ digest ${user_email} — ${rows.length} notification(s)`)
+      return 'sent'
+    }
+
+    const runBatch = async (rows: QueueRow[], send: () => Promise<BatchOutcome>) => {
       try {
-        const recipientName = user_name || 'there'
-        const reminder = await buildDedicatedReminderParts(recipientName, notifs, appUrl)
-        const email: EmailParts = reminder ?? {
-          html: buildEmailHtml(recipientName, notifs, appUrl),
-          text: buildEmailText(recipientName, notifs, appUrl),
-          subject: buildSubject(notifs.length, notifs),
-        }
-
-        await sendHtmlEmail(smtp, {
-          fromName: smtpFromName,
-          fromEmail: smtpFromEmail,
-          to: user_email,
-          subject: email.subject,
-          html: email.html,
-          text: email.text,
-          tag: reminder ? 'debt-reminder' : 'notification-digest',
-        })
-
-        for (const notif of notifs) successfulNotificationIds.add(notif.notification_id)
-        result.sent++
-        console.log(`✓ ${user_email} — ${notifs.length} notification(s)`)
+        recordOutcome(rows, await send())
       } catch (err) {
-        const msg = `Send failed for ${user_email}: ${(err as Error).message}`
+        const msg = `Send failed for ${rows[0].user_email}: ${(err as Error).message}`
         console.error(msg)
         result.failed++
-        for (const notif of notifs) failedNotificationIds.add(notif.notification_id)
         result.errors.push(msg)
-        // Continue to next recipient — one failure should not block others
+        recordOutcome(rows, 'failed')
+      }
+    }
+
+    // ── 4. Per recipient: reminder email (if any) then digest (spaced to avoid SMTP blast) ─
+    // Admin bulk UI staggers 60–90s between recipients client-side.
+    // This short gap is a safety net when multiple emails share one worker run.
+    const recipientGroups = Array.from(byRecipient.values())
+    const interSendDelayMs = 5_000
+    let sendsAttempted = 0
+    const pace = async () => {
+      if (sendsAttempted++ > 0) await new Promise((resolve) => setTimeout(resolve, interSendDelayMs))
+    }
+
+    for (const notifs of recipientGroups) {
+      const { reminder, digestRows } = splitRecipientBatch(notifs)
+
+      if (reminder) {
+        await pace()
+        await runBatch(reminder.rows, () => sendReminderBatch(reminder))
+      }
+      if (digestRows.length) {
+        await pace()
+        await runBatch(digestRows, () => sendDigestBatch(digestRows))
       }
     }
 
