@@ -72,6 +72,97 @@ export interface DebtReminderEmailContent {
   footerHtml: string;
 }
 
+/** Vietnamese-only copy for the per-person debt reminder (`debt-reminder.static.json`). */
+export interface DebtReminderCopy {
+  subject: string;
+  preheader: string;
+  greeting: string;
+  greetingNoName: string;
+  guestTrustLine: string;
+  guestTrustFallback: string;
+  totalLabel: string;
+  totalMeta: string;
+  plainTextSummary: string;
+  overflow: string;
+  groupHintMore: string;
+  unnamedCounterparty: string;
+  ctaRegistered: string;
+  ctaGuest: string;
+  ctaGuestFallback: string;
+  footerRegistered: string;
+  footerGuest: string;
+  footerGuestFallback: string;
+  copyright: string;
+  digestReminderBadge: string;
+  digestReminderLink: string;
+}
+
+/** Snapshot captured at enqueue (`notifications.email_context`), camelCased. All new fields are optional for old rows. */
+export interface ReminderContextInput {
+  totalAmount?: number | null;
+  debtBreakdown?: ReminderDebtBreakdownItem[];
+  groupBreakdown?: ReminderGroupBreakdownItem[];
+  primaryCurrency?: string | null;
+  senderDisplayName?: string | null;
+  primaryGroupName?: string | null;
+  computedAt?: string | null;
+}
+
+export interface BuildReminderViewModelInput {
+  context: ReminderContextInput;
+  recipient: { name?: string | null; hasAccount: boolean };
+  appUrl?: string;
+  notificationCreatedAt?: string | null;
+  /** True only when `/register` honors `next` and claims the invited email (Phase 0 V4 + V5). */
+  guestCtaSupportsNext?: boolean;
+  content?: Partial<DebtReminderCopy>;
+  now?: Date;
+}
+
+export interface ReminderViewModelLine {
+  key: string;
+  name: string;
+  amountMinor: number;
+  amountLabel: string;
+  groupHint: string | null;
+  maskedEmail: string | null;
+}
+
+export type ReminderSkipReason = "multi_currency" | "zero_total";
+
+export interface ReminderTotalMismatchWarning {
+  type: "total_mismatch";
+  snapshotMinor: number;
+  computedMinor: number;
+}
+
+export interface ReminderViewModel {
+  status: "ok" | "skip";
+  reason?: ReminderSkipReason;
+  currency: string;
+  totalAmountMinor: number;
+  totalAmount: number;
+  totalLabel: string;
+  counterpartyCount: number;
+  lines: ReminderViewModelLine[];
+  overflowCount: number;
+  overflowLabel: string | null;
+  namesPreview: string;
+  asOfLabel: string;
+  year: string;
+  subject: string;
+  preheader: string;
+  greeting: string;
+  trustLine: string | null;
+  totalHeading: string;
+  totalMeta: string;
+  cta: { href: string; label: string };
+  footer: string;
+  copyright: string;
+  variant: "registered" | "guest";
+  warnings: ReminderTotalMismatchWarning[];
+}
+
 export interface InviteEmailInput {
   inviterName?: string | null;
   appUrl?: string;
@@ -93,3 +184,6 @@ export interface DebtReminderEmailInput {
 
 export declare function renderInviteEmail(input: InviteEmailInput): Promise<RenderedEmail>;
 export declare function renderDebtReminderEmail(input: DebtReminderEmailInput): Promise<RenderedEmail>;
+export declare function buildReminderViewModel(input: BuildReminderViewModelInput): ReminderViewModel;
+export declare function formatReminderPlainText(vm: ReminderViewModel, content?: Partial<DebtReminderCopy>): string;
+export declare const defaultDebtReminderCopy: DebtReminderCopy;

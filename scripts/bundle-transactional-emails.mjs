@@ -65,6 +65,9 @@ const declarations = [
   "",
   "export declare function renderInviteEmail(input: InviteEmailInput): Promise<RenderedEmail>;",
   "export declare function renderDebtReminderEmail(input: DebtReminderEmailInput): Promise<RenderedEmail>;",
+  "export declare function buildReminderViewModel(input: BuildReminderViewModelInput): ReminderViewModel;",
+  "export declare function formatReminderPlainText(vm: ReminderViewModel, content?: Partial<DebtReminderCopy>): string;",
+  "export declare const defaultDebtReminderCopy: DebtReminderCopy;",
   "",
 ].join("\n");
 

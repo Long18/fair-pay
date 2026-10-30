@@ -1,0 +1,23 @@
+{
+  "subject": "FairPay: Còn {{total}} chưa settle với {{counterpartyCount}} người",
+  "preheader": "{{namesPreview}} · Tính đến {{asOf}}",
+  "greeting": "Xin chào {{userName}},",
+  "greetingNoName": "Xin chào,",
+  "guestTrustLine": "{{senderName}} dùng FairPay để chia chi phí nhóm {{groupName}}.",
+  "guestTrustFallback": "Bạn được thêm vào một nhóm chia chi phí trên FairPay.",
+  "totalLabel": "Tổng cần settle",
+  "totalMeta": "với {{counterpartyCount}} người · Tính đến {{asOf}}",
+  "plainTextSummary": "Còn {{total}} chưa settle với {{counterpartyCount}} người (tính đến {{asOf}}).",
+  "overflow": "và {{n}} người khác — xem đầy đủ trong FairPay",
+  "groupHintMore": "+{{n}} nhóm",
+  "unnamedCounterparty": "Thành viên FairPay",
+  "ctaRegistered": "Xem số dư & thanh toán",
+  "ctaGuest": "Tạo tài khoản & xem chi tiết",
+  "ctaGuestFallback": "Tạo tài khoản FairPay",
+  "footerRegistered": "Tắt email này: Cài đặt → Thông báo",
+  "footerGuest": "Bạn nhận email này vì {{senderName}} đã thêm email của bạn vào một nhóm trên FairPay.",
+  "footerGuestFallback": "Bạn nhận email này vì email của bạn đã được thêm vào một nhóm trên FairPay.",
+  "copyright": "© {{year}} FairPay",
+  "digestReminderBadge": "Nhắc thanh toán",
+  "digestReminderLink": "Xem số dư →"
+}
