@@ -3,9 +3,9 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "rea
 import { EmailEditor } from "@react-email/editor";
 import {
   cleanEditorHtml,
-  DebtReminderEmail,
   defaultDebtReminderContent,
   defaultInviteContent,
+  sampleReminderInput,
   type RenderedEmail,
 } from "@fairpay/emails";
 import { toast } from "sonner";
@@ -39,7 +39,7 @@ const TEMPLATES: Record<TemplateId, { file: string; defaults: TemplateContent; p
   "debt-reminder": {
     file: "debt-reminder.static.json",
     defaults: { ...defaultDebtReminderContent },
-    placeholders: ["userName", "title", "message", "total"],
+    placeholders: ["total", "counterpartyCount", "namesPreview", "asOf", "userName", "senderName", "groupName", "n", "year"],
   },
 };
 
@@ -74,7 +74,7 @@ function renderTemplatePreview({ template, content, appUrl }: PreviewRequest): P
   if (template === "invite") {
     return buildInviteEmailPreview({ emails: [], inviterName: "Long", appUrl, content });
   }
-  return buildReminderEmailPreview({ ...DebtReminderEmail.PreviewProps, appUrl, content });
+  return buildReminderEmailPreview({ ...sampleReminderInput, appUrl, content });
 }
 
 export function AdminEmailTemplateEditor() {
@@ -191,6 +191,7 @@ export function AdminEmailTemplateEditor() {
             ))}
           </div>
 
+          {activeRichField ? (
           <div className="space-y-2 rounded-lg border p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-medium">{tAdmin("layout.devtoolTools.emailTemplates.richContent")}</p>
@@ -219,6 +220,7 @@ export function AdminEmailTemplateEditor() {
               />
             </div>
           </div>
+          ) : null}
 
           <div className="space-y-3 rounded-lg border p-3">
             <p className="text-sm font-medium">{tAdmin("layout.devtoolTools.emailTemplates.textFields")}</p>

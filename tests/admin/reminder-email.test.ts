@@ -1,170 +1,65 @@
 import { describe, expect, it } from "vitest";
 
+import { reminderFixtures } from "@fairpay/emails";
 import { buildReminderEmailPreview } from "@/modules/admin/email/reminder-email";
 
-describe("admin reminder email helpers", () => {
-  it("renders who owes whom with responsive email-safe markup", async () => {
-    const preview = await buildReminderEmailPreview({
-      userName: "Long",
-      title: "Nhắc thanh toán công nợ",
-      message: "Long, bạn đang có 4.868 ₫ cần thanh toán trên FairPay.",
-      appUrl: "https://long-pay.vercel.app/",
-      link: "/dashboard",
-      totalAmount: 4868,
-      debtBreakdown: [
-        {
-          counterpartyName: "Lê A",
-          counterpartyEmail: "a@example.com",
-          amount: 4868,
-          currency: "VND",
-          transactions: [
-            {
-              description: "Bún bò cuối tuần",
-              amount: 3000,
-              currency: "VND",
-              expenseDate: "2026-04-25",
-            },
-            {
-              description: "Cà phê nhóm",
-              amount: 1868,
-              currency: "VND",
-              expenseDate: "2026-04-24",
-            },
-          ],
-        },
-      ],
-    });
+const F2 = reminderFixtures.find((fixture) => fixture.id === "F2")!.input;
 
-    expect(preview.html).toContain("Chi tiết công nợ / Debt breakdown");
-    expect(preview.html).toContain("Lê A");
-    expect(preview.html).toContain("a@example.com");
-    expect(preview.html).toContain("Bún bò cuối tuần");
-    expect(preview.html).toContain("Cà phê nhóm");
-    expect(preview.html).toContain("https://long-pay.vercel.app/dashboard");
-    expect(preview.html).toContain("@media only screen and (max-width: 640px)");
-    expect(preview.html).toContain('class="email-body"');
+describe("admin reminder email helpers", () => {
+  it("renders the per-person layout with one CTA and no legacy blocks", async () => {
+    const preview = await buildReminderEmailPreview(F2);
+
+    expect(preview.subject).toBe("FairPay: Còn 850.000\u00a0₫ chưa settle với 3 người");
+    expect(preview.html).toContain('data-email-shell="fairpay-transactional"');
+    expect(preview.html).toContain('data-email-block="counterparty-list"');
+    expect(preview.html).toContain("Minh Tuấn");
+    expect(preview.html).toContain("Chi phí sinh hoạt Q2");
+    expect(preview.html).toContain("Tổng cần settle");
     expect(preview.html).toContain('class="cta-link"');
-    expect(preview.html).toContain('data-email-shell="fairpay-pastel"');
-    expect(preview.html).toContain('data-email-block="notification-card"');
-    expect(preview.html).toContain('data-email-block="debt-summary"');
-    expect(preview.text).toContain("You owe Lê A");
-    expect(preview.text).toContain("Bún bò cuối tuần");
+    expect(preview.html).toContain("https://long-pay.vercel.app/balances?src=email_reminder");
+    expect(preview.html).toContain("@media only screen and (max-width: 640px)");
+
+    expect(preview.html).not.toContain("<img");
+    expect(preview.html).not.toContain("/groups/");
+    expect(preview.html).not.toContain('data-email-block="notification-card"');
+    expect(preview.html).not.toContain(" / ");
+    expect(preview.html.match(/<a\s/g)).toHaveLength(1);
   });
 
-  it("escapes user-controlled reminder fields and does not emit raw MIME boundaries", async () => {
+  it("shows the total exactly once in the visible body", async () => {
+    const preview = await buildReminderEmailPreview(F2);
+    const body = preview.html.slice(preview.html.indexOf('data-email-block="wordmark"'));
+    expect(body.split("850.000").length - 1).toBe(1);
+  });
+
+  it("escapes user-controlled names", async () => {
     const preview = await buildReminderEmailPreview({
-      userName: "<script>alert(1)</script>",
-      title: "Nhắc <bad>",
-      message: "Pay <now>",
-      debtBreakdown: [
-        {
-          counterpartyName: "<img src=x>",
-          amount: 1000,
-          currency: "VND",
-        },
-      ],
+      recipient: { name: "<script>alert(1)</script>", hasAccount: true },
+      context: {
+        debtBreakdown: [{ counterpartyKey: "x", counterpartyName: "<img src=x>", amount: 1000, currency: "VND" }],
+      },
     });
 
     expect(preview.html).not.toContain("<script>");
     expect(preview.html).not.toContain("<img src=x>");
     expect(preview.html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
     expect(preview.html).toContain("&lt;img src=x&gt;");
-    expect(preview.html).not.toContain("--message");
-    expect(preview.html).not.toContain("--attachment");
   });
 
-  it("renders hero imagery and grouped debt sections with avatar fallback plus accessible alt text", async () => {
-    const preview = await buildReminderEmailPreview({
-      userName: "Long",
-      title: "Nhắc thanh toán công nợ",
-      message: "Long, bạn đang có 9.000 ₫ cần thanh toán trên FairPay.",
-      totalAmount: 9000,
-      groupBreakdown: [
-        {
-          groupId: "icloud",
-          groupName: "iCloud",
-          groupAvatarUrl: "https://cdn.example.com/icloud.png",
-          subtotalAmount: 5000,
-          currency: "VND",
-          counterparties: [
-            {
-              counterpartyName: "An",
-              amount: 5000,
-              currency: "VND",
-              transactions: [{ description: "Storage tháng 5", amount: 5000, currency: "VND" }],
-            },
-          ],
-        },
-        {
-          groupId: "youtube",
-          groupName: "YouTube Premium",
-          subtotalAmount: 4000,
-          currency: "VND",
-          counterparties: [
-            {
-              counterpartyName: "Bình",
-              amount: 4000,
-              currency: "VND",
-            },
-          ],
-        },
-      ],
-    });
+  it("uses the guest trust line, register CTA and guest footer", async () => {
+    const preview = await buildReminderEmailPreview(reminderFixtures.find((fixture) => fixture.id === "F3")!.input);
 
-    expect(preview.html).toContain("/assets/email/debt-reminder-hero.jpg");
-    expect(preview.html).toContain('alt="FairPay debt reminder overview"');
-    expect(preview.html).toContain('height="140"');
-    expect(preview.html).toContain("height:140px");
-    expect(preview.html).toContain('alt="iCloud"');
-    expect(preview.html).toContain("YouTube Premium");
-    expect(preview.html).toContain("YP");
-    expect(preview.html).toContain('data-email-block="group-debt-card"');
-    expect(preview.html).toContain('class="group-header-table"');
-    expect(preview.html).toContain('class="group-header-amount"');
-    expect(preview.html).toContain("Tổng cần trả sau bù trừ");
-    expect(preview.html).toContain("subtotal có thể khác tổng chính thức sau bù trừ");
-    expect(preview.text).toContain("iCloud");
-    expect(preview.text).toContain("Storage tháng 5");
+    expect(preview.html).toContain("Long dùng FairPay để chia chi phí nhóm Chuyến Đà Nẵng 2026.");
+    expect(preview.html).toContain("Tạo tài khoản FairPay");
+    expect(preview.html).toContain("https://long-pay.vercel.app/register?src=email_reminder");
+    expect(preview.html).not.toContain("/balances");
+    expect(preview.html).toContain("Bạn nhận email này vì Long đã thêm email của bạn vào một nhóm trên FairPay.");
+    expect(preview.text).toContain("Tạo tài khoản FairPay: https://long-pay.vercel.app/register?src=email_reminder");
   });
 
-  it("uses register CTA for placeholder recipients", async () => {
-    const preview = await buildReminderEmailPreview({
-      userName: "Placeholder",
-      title: "Nhắc thanh toán công nợ",
-      message: "Bạn còn nợ.",
-      hasAuthAccount: false,
-      totalAmount: 1000,
-      debtBreakdown: [
-        {
-          counterpartyName: "An",
-          amount: 1000,
-          currency: "VND",
-        },
-      ],
-    });
-
-    expect(preview.html).toContain("Tạo tài khoản để xem chi tiết / Create account to view");
-    expect(preview.html).toContain("https://long-pay.vercel.app/register");
-    expect(preview.text).toContain("Create your FairPay account: https://long-pay.vercel.app/register");
-  });
-
-  it("keeps legacy debt-only notifications readable when group data is absent", async () => {
-    const preview = await buildReminderEmailPreview({
-      userName: "Legacy",
-      title: "Nhắc thanh toán công nợ",
-      message: "Bạn còn nợ.",
-      totalAmount: 1200,
-      debtBreakdown: [
-        {
-          counterpartyName: "An",
-          amount: 1200,
-          currency: "VND",
-        },
-      ],
-    });
-
-    expect(preview.html).toContain("Các khoản bên dưới được nhóm theo người bạn cần thanh toán.");
-    expect(preview.html).toContain("An");
-    expect(preview.html).not.toContain("subtotal có thể khác tổng chính thức sau bù trừ");
+  it("renders the overflow line after the top 5", async () => {
+    const preview = await buildReminderEmailPreview(reminderFixtures.find((fixture) => fixture.id === "F4")!.input);
+    expect(preview.html).toContain("và 2 người khác — xem đầy đủ trong FairPay");
+    expect(preview.html).not.toContain("Gia Huy");
   });
 });

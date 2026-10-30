@@ -1,6 +1,7 @@
 import { supabaseClient } from "@/utility/supabaseClient";
 import type {
   ReminderDebtBreakdownItem,
+  ReminderEmailPreviewInput,
   ReminderGroupBreakdownItem,
 } from "@/modules/admin/email/reminder-email";
 import type {
@@ -195,6 +196,23 @@ export function buildReminderContextMeta(row: DebtReminderRow, now: Date = new D
     primary_currency: getRowCurrencies(row)[0] ?? "VND",
     primary_group_name: primaryGroup?.group_name ?? null,
     computed_at: now.toISOString(),
+  };
+}
+
+/** Same snapshot the worker renders from, for in-admin previews. */
+export function toReminderEmailInput(row: DebtReminderRow, appUrl?: string): ReminderEmailPreviewInput {
+  const meta = buildReminderContextMeta(row);
+  return {
+    recipient: { name: row.full_name, hasAccount: row.has_auth_account },
+    appUrl,
+    context: {
+      totalAmount: row.total_i_owe,
+      debtBreakdown: toReminderDebtBreakdown(row.debt_breakdown),
+      groupBreakdown: toReminderGroupBreakdown(row.group_breakdown),
+      primaryCurrency: meta.primary_currency,
+      primaryGroupName: meta.primary_group_name,
+      computedAt: meta.computed_at,
+    },
   };
 }
 

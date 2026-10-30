@@ -25,7 +25,6 @@ import { EmailBulkPreviewPanel } from "./email-preview-panels";
 import { ScheduledSendBanner, SendResultCard } from "./email-preview-ui";
 import {
   attachUserEmails,
-  buildReminderMessage,
   createReminderNotifications,
   fetchEmailOverview,
   formatCurrency,
@@ -35,8 +34,7 @@ import {
   partitionReminderRowsByCurrency,
   randomBetweenMs,
   sendEmailForNotificationIds,
-  toReminderDebtBreakdown,
-  toReminderGroupBreakdown,
+  toReminderEmailInput,
   waitMs,
 } from "./helpers";
 import type {
@@ -190,18 +188,8 @@ export function AdminEmailDevTools({ embedded = false }: { embedded?: boolean })
 
   const previewEmailInput = useMemo<ReminderEmailPreviewInput | null>(() => {
     if (!previewRow) return null;
-    return {
-      userName: previewRow.full_name,
-      title: tAdmin("devtool.messageTitle"),
-      message: buildReminderMessage(previewRow, tAdmin),
-      debtBreakdown: toReminderDebtBreakdown(previewRow.debt_breakdown),
-      groupBreakdown: toReminderGroupBreakdown(previewRow.group_breakdown),
-      totalAmount: previewRow.total_i_owe,
-      hasAuthAccount: previewRow.has_auth_account,
-      appUrl: typeof window !== "undefined" ? window.location.origin : undefined,
-      link: previewRow.has_auth_account ? "/dashboard" : "/register",
-    };
-  }, [previewRow, tAdmin]);
+    return toReminderEmailInput(previewRow, typeof window !== "undefined" ? window.location.origin : undefined);
+  }, [previewRow]);
   const previewEmail = useRenderedEmail(previewEmailInput, buildReminderEmailPreview);
 
   const groupOptions = useMemo(() => {
@@ -242,18 +230,8 @@ export function AdminEmailDevTools({ embedded = false }: { embedded?: boolean })
 
   const bulkPreviewEmailInput = useMemo<ReminderEmailPreviewInput | null>(() => {
     if (!effectiveBulkFocusRow) return null;
-    return {
-      userName: effectiveBulkFocusRow.full_name,
-      title: tAdmin("devtool.messageTitle"),
-      message: buildReminderMessage(effectiveBulkFocusRow, tAdmin),
-      debtBreakdown: toReminderDebtBreakdown(effectiveBulkFocusRow.debt_breakdown),
-      groupBreakdown: toReminderGroupBreakdown(effectiveBulkFocusRow.group_breakdown),
-      totalAmount: effectiveBulkFocusRow.total_i_owe,
-      hasAuthAccount: effectiveBulkFocusRow.has_auth_account,
-      appUrl: typeof window !== "undefined" ? window.location.origin : undefined,
-      link: effectiveBulkFocusRow.has_auth_account ? "/dashboard" : "/register",
-    };
-  }, [effectiveBulkFocusRow, tAdmin]);
+    return toReminderEmailInput(effectiveBulkFocusRow, typeof window !== "undefined" ? window.location.origin : undefined);
+  }, [effectiveBulkFocusRow]);
   const bulkPreviewEmail = useRenderedEmail(bulkPreviewEmailInput, buildReminderEmailPreview);
 
   const allSelected = visibleDebtors.length > 0 && selectedRows.length === visibleDebtors.length;

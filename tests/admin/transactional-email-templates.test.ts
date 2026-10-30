@@ -31,29 +31,29 @@ describe("React Email transactional templates", () => {
     expect(cleanEditorHtml(raw)).toBe("<p>Xin chào</p>");
   });
 
-  it("renders the debt reminder subject, CTA and grouped breakdown from one template", async () => {
+  it("renders the debt reminder subject, CTA and per-person lines from one view model", async () => {
     const email = await renderDebtReminderEmail({
-      userName: "An",
-      title: "Nhắc thanh toán",
-      message: "Bạn còn nợ.",
-      totalAmount: 5000,
+      recipient: { name: "An", hasAccount: true },
       appUrl: "https://long-pay.vercel.app",
-      groupBreakdown: [
-        {
-          groupId: "g-1",
-          groupName: "Trip",
-          subtotalAmount: 5000,
-          currency: "VND",
-          counterparties: [{ counterpartyName: "Bình", amount: 5000, currency: "VND" }],
-        },
-      ],
+      context: {
+        totalAmount: 5000,
+        groupBreakdown: [
+          {
+            groupId: "g-1",
+            groupName: "Trip",
+            subtotalAmount: 5000,
+            currency: "VND",
+            counterparties: [{ counterpartyName: "Bình", amount: 5000, currency: "VND" }],
+          },
+        ],
+      },
     });
 
-    expect(email.subject).toBe("[FairPay] Payment reminder: Nhắc thanh toán");
-    expect(email.html).toContain("https://long-pay.vercel.app/groups/g-1");
+    expect(email.subject).toBe("FairPay: Còn 5.000\u00a0₫ chưa settle với 1 người");
+    expect(email.previewText).toMatch(/^Bình · Tính đến \d\d:\d\d \d\d\/\d\d$/);
     expect(email.html).toContain('class="cta-link"');
-    expect(email.html).toContain("Xem số dư / View balances");
-    expect(email.text).toContain("You owe Bình");
+    expect(email.html).toContain("Xem số dư &amp; thanh toán");
+    expect(email.text).toContain("- Bình: 5.000\u00a0₫ (Trip)");
   });
 
   it("keeps the committed Supabase Edge bundle in sync with emails/src", () => {

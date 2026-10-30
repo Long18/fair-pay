@@ -1,4 +1,4 @@
-import debtReminderCopy from "./content/debt-reminder.copy.json";
+import debtReminderCopy from "./content/debt-reminder.static.json";
 import type {
   BuildReminderViewModelInput,
   DebtReminderCopy,
@@ -42,16 +42,18 @@ export function formatMoneyMinor(amountMinor: number, currency: string): string 
   return formatter.format(amountMinor / 10 ** fractionDigits(currency)).replace(/[\s\u202f]/g, NBSP);
 }
 
+const asOfFormatter = new Intl.DateTimeFormat("vi-VN", {
+  timeZone: REMINDER_TIME_ZONE,
+  hour: "2-digit",
+  minute: "2-digit",
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour12: false,
+});
+
 export function formatAsOf(date: Date): { label: string; year: string } {
-  const parts = new Intl.DateTimeFormat("vi-VN", {
-    timeZone: REMINDER_TIME_ZONE,
-    hour: "2-digit",
-    minute: "2-digit",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour12: false,
-  }).formatToParts(date);
+  const parts = asOfFormatter.formatToParts(date);
   const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? "";
   const hour = part("hour") === "24" ? "00" : part("hour");
   return { label: `${hour}:${part("minute")} ${part("day")}/${part("month")}`, year: part("year") };

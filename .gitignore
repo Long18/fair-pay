@@ -74,3 +74,6 @@ docs/superpowers/
 .cursor/
 .react-doctor/
 
+
+# Local email previews (pnpm email:previews)
+tmp/

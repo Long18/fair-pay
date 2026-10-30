@@ -17,66 +17,31 @@ describe("admin email HTML previews", () => {
     expect(preview.html).not.toContain("undefined");
   });
 
-  it("renders debt reminder email with CTA pointing to /balances (deeplink)", async () => {
+  it("renders debt reminder email with a /balances CTA and group as a hint, not a link", async () => {
+    const counterparty = { counterpartyKey: "u-long", counterpartyName: "Long", amount: 250000, currency: "VND" };
     const preview = await buildReminderEmailPreview({
-      userName: "Test Debtor",
-      title: "Payment debt reminder",
-      message: "Please settle your FairPay balance.",
-      totalAmount: 250000,
-      hasAuthAccount: true,
+      recipient: { name: "Test Debtor", hasAccount: true },
       appUrl: "https://long-pay.vercel.app",
-      link: "/dashboard",
-      debtBreakdown: [
-        {
-          counterpartyName: "Long",
-          amount: 250000,
-          currency: "VND",
-          transactions: [
-            {
-              description: "Dinner",
-              expenseDate: "2026-06-28",
-              amount: 250000,
-              currency: "VND",
-            },
-          ],
-        },
-      ],
-      groupBreakdown: [
-        {
-          groupId: "abc-123",
-          groupName: "Trip group",
-          subtotalAmount: 250000,
-          currency: "VND",
-          counterparties: [
-            {
-              counterpartyName: "Long",
-              amount: 250000,
-              currency: "VND",
-              transactions: [],
-            },
-          ],
-        },
-      ],
+      context: {
+        totalAmount: 250000,
+        debtBreakdown: [counterparty],
+        groupBreakdown: [{ groupId: "abc-123", groupName: "Trip group", subtotalAmount: 250000, currency: "VND", counterparties: [counterparty] }],
+      },
     });
 
     expect(preview.html).toContain("Test Debtor");
     expect(preview.html).toContain("250.000");
     expect(preview.html).toContain("Trip group");
-    // Smart CTA deeplink: reminder emails always go to /balances
-    expect(preview.html).toContain("https://long-pay.vercel.app/balances");
-    // Group header deeplink to specific group page
-    expect(preview.html).toContain("https://long-pay.vercel.app/groups/abc-123");
+    expect(preview.html).toContain("https://long-pay.vercel.app/balances?src=email_reminder");
+    expect(preview.html).not.toContain("/groups/abc-123");
     expect(preview.html).not.toContain("undefined");
   });
 
   it("renders reminder email for non-auth user with /register CTA", async () => {
     const preview = await buildReminderEmailPreview({
-      userName: "Guest",
-      title: "You owe money",
-      message: "Pay up",
-      totalAmount: 100000,
-      hasAuthAccount: false,
+      recipient: { name: "Guest", hasAccount: false },
       appUrl: "https://long-pay.vercel.app",
+      context: { debtBreakdown: [{ counterpartyName: "Long", amount: 100000, currency: "VND" }] },
     });
 
     expect(preview.html).toContain("https://long-pay.vercel.app/register");

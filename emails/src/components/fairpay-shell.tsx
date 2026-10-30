@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 import { Body, Button, Container, Head, Heading, Html, Preview, Section, Text } from "react-email";
-import { FONT_STACK, RESPONSIVE_CSS, toneMap } from "../tokens";
+import { FONT_STACK, RESPONSIVE_CSS, TRANSACTIONAL_COLORS, TRANSACTIONAL_RESPONSIVE_CSS, toneMap } from "../tokens";
 import type { EmailTone } from "../types";
 import { RichText } from "./rich-text";
 
-interface FairPayShellProps {
+interface LegacyShellProps {
+  variant?: "legacy";
   title: string;
   previewText: string;
   eyebrow: string;
@@ -18,12 +19,121 @@ interface FairPayShellProps {
   children: ReactNode;
 }
 
+interface TransactionalShellProps {
+  variant: "transactional";
+  title: string;
+  previewText: string;
+  ctaHref: string;
+  ctaLabel: string;
+  /** Rendered under the CTA divider; use `TransactionalFooter`. */
+  footer: ReactNode;
+  children: ReactNode;
+}
+
+type FairPayShellProps = LegacyShellProps | TransactionalShellProps;
+
 const footerTagStyles = {
   p: "margin:0;font-size:11px;line-height:1.8;color:#94a3b8;",
   strong: "color:#64748b;",
 };
 
-export function FairPayShell({
+export function FairPayShell(props: FairPayShellProps) {
+  return props.variant === "transactional" ? <TransactionalShell {...props} /> : <LegacyShell {...props} />;
+}
+
+function EmailDocument({
+  title,
+  previewText,
+  css,
+  children,
+}: {
+  title: string;
+  previewText: string;
+  css: string;
+  children: ReactNode;
+}) {
+  return (
+    <Html lang="vi">
+      <Head>
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <meta name="color-scheme" content="light" />
+        <meta name="supported-color-schemes" content="light" />
+        <title>{title}</title>
+        <style dangerouslySetInnerHTML={{ __html: css }} />
+      </Head>
+      <Preview useTitleTag={false}>{previewText}</Preview>
+      {children}
+    </Html>
+  );
+}
+
+function TransactionalShell({ title, previewText, ctaHref, ctaLabel, footer, children }: TransactionalShellProps) {
+  const colors = TRANSACTIONAL_COLORS;
+
+  return (
+    <EmailDocument title={title} previewText={previewText} css={TRANSACTIONAL_RESPONSIVE_CSS}>
+      <Body lang="vi" style={{ margin: 0, padding: 0, background: colors.page, fontFamily: FONT_STACK, color: colors.text }}>
+        <Section className="email-shell" data-email-shell="fairpay-transactional" style={{ width: "100%", background: colors.page, padding: "24px 12px" }}>
+          <Container
+            className="email-card-tx"
+            style={{
+              width: "100%",
+              maxWidth: "600px",
+              background: "#ffffff",
+              border: `1px solid ${colors.border}`,
+              borderRadius: "16px",
+              padding: "24px",
+            }}
+          >
+            <Text data-email-block="wordmark" style={{ margin: "0 0 20px", fontSize: "15px", lineHeight: "20px", fontWeight: 800, color: colors.brand }}>
+              FairPay
+            </Text>
+            {children}
+            <Section style={{ marginTop: "24px" }}>
+              <Button
+                className="cta-link"
+                href={ctaHref}
+                style={{
+                  display: "inline-block",
+                  boxSizing: "border-box",
+                  minHeight: "48px",
+                  borderRadius: "12px",
+                  background: colors.brand,
+                  color: "#ffffff",
+                  textDecoration: "none",
+                  fontSize: "15px",
+                  lineHeight: "18px",
+                  fontWeight: 700,
+                  padding: "15px 28px",
+                  textAlign: "center",
+                }}
+              >
+                {ctaLabel}
+              </Button>
+            </Section>
+            <Section data-email-block="footer" style={{ marginTop: "24px", paddingTop: "16px", borderTop: `1px solid ${colors.border}` }}>
+              {footer}
+            </Section>
+          </Container>
+        </Section>
+      </Body>
+    </EmailDocument>
+  );
+}
+
+export function TransactionalFooter({ lines }: { lines: string[] }) {
+  return (
+    <>
+      {lines.map((line) => (
+        <Text key={line} style={{ margin: 0, fontSize: "12px", lineHeight: "18px", color: TRANSACTIONAL_COLORS.secondary }}>
+          {line}
+        </Text>
+      ))}
+    </>
+  );
+}
+
+function LegacyShell({
   title,
   previewText,
   eyebrow,
@@ -35,19 +145,11 @@ export function FairPayShell({
   tone = "default",
   hero,
   children,
-}: FairPayShellProps) {
+}: LegacyShellProps) {
   const colors = toneMap[tone];
 
   return (
-    <Html lang="vi">
-      <Head>
-        <meta name="viewport" content="width=device-width,initial-scale=1" />
-        <meta name="color-scheme" content="light" />
-        <meta name="supported-color-schemes" content="light" />
-        <title>{title}</title>
-        <style dangerouslySetInnerHTML={{ __html: RESPONSIVE_CSS }} />
-      </Head>
-      <Preview useTitleTag={false}>{previewText}</Preview>
+    <EmailDocument title={title} previewText={previewText} css={RESPONSIVE_CSS}>
       <Body lang="vi" style={{ margin: 0, padding: 0, background: "#f4f7fb", fontFamily: FONT_STACK, color: "#1e293b" }}>
         <Section
           className="email-shell"
@@ -133,6 +235,6 @@ export function FairPayShell({
           </div>
         </Section>
       </Body>
-    </Html>
+    </EmailDocument>
   );
 }

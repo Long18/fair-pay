@@ -52,26 +52,6 @@ export interface InviteEmailContent {
   textSignature: string;
 }
 
-export interface DebtReminderEmailContent {
-  subject: string;
-  eyebrow: string;
-  heading: string;
-  subheadingAuth: string;
-  subheadingGuest: string;
-  greetingHtml: string;
-  notificationLabel: string;
-  viewLinkAuth: string;
-  viewLinkGuest: string;
-  breakdownLabel: string;
-  breakdownTitle: string;
-  breakdownGroupNote: string;
-  breakdownLegacyNote: string;
-  ctaLabelAuth: string;
-  ctaLabelGuest: string;
-  heroAlt: string;
-  footerHtml: string;
-}
-
 /** Vietnamese-only copy for the per-person debt reminder (`debt-reminder.static.json`). */
 export interface DebtReminderCopy {
   subject: string;
@@ -169,21 +149,14 @@ export interface InviteEmailInput {
   content?: Partial<InviteEmailContent>;
 }
 
-export interface DebtReminderEmailInput {
-  userName: string;
-  title: string;
-  message: string;
-  debtBreakdown?: ReminderDebtBreakdownItem[];
-  groupBreakdown?: ReminderGroupBreakdownItem[];
-  totalAmount?: number;
-  hasAuthAccount?: boolean;
-  appUrl?: string;
-  link?: string;
-  content?: Partial<DebtReminderEmailContent>;
-}
+export type DebtReminderEmailContent = DebtReminderCopy;
+
+/** The reminder email renders only from the enqueue snapshot; in-app `title`/`message` are never shown. */
+export type DebtReminderEmailInput = BuildReminderViewModelInput;
 
 export declare function renderInviteEmail(input: InviteEmailInput): Promise<RenderedEmail>;
 export declare function renderDebtReminderEmail(input: DebtReminderEmailInput): Promise<RenderedEmail>;
+export declare function renderDebtReminderViewModel(vm: ReminderViewModel): Promise<RenderedEmail>;
 export declare function buildReminderViewModel(input: BuildReminderViewModelInput): ReminderViewModel;
 export declare function formatReminderPlainText(vm: ReminderViewModel, content?: Partial<DebtReminderCopy>): string;
 export declare const defaultDebtReminderCopy: DebtReminderCopy;

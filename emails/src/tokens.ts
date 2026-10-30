@@ -17,6 +17,15 @@ export const toneMap: Record<EmailTone, {
   warning: { accent: "#fb923c", accentSoft: "#ffedd5", accentText: "#f97316", border: "#fed7aa" },
 };
 
+/** Neutral palette for transactional emails; brand = FairPay sky with AA contrast for white CTA text. */
+export const TRANSACTIONAL_COLORS = {
+  page: "#f4f7fb",
+  border: "#e2e8f0",
+  text: "#0f172a",
+  secondary: "#64748b",
+  brand: toneMap.default.accentText,
+};
+
 export const FONT_STACK = "Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif";
 
 export const RESPONSIVE_CSS = `
@@ -30,4 +39,11 @@ export const RESPONSIVE_CSS = `
   .cta-link { display: block !important; width: 100% !important; box-sizing: border-box !important; text-align: center !important; }
   .group-header-avatar { padding-bottom: 10px !important; }
   .group-header-amount { padding-top: 10px !important; text-align: left !important; }
+}`;
+
+export const TRANSACTIONAL_RESPONSIVE_CSS = `
+@media only screen and (max-width: 640px) {
+  .email-shell { padding: 10px 6px !important; }
+  .email-card-tx { padding: 16px !important; border-radius: 12px !important; }
+  .cta-link { display: block !important; width: 100% !important; box-sizing: border-box !important; text-align: center !important; }
 }`;

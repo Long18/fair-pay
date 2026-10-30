@@ -55,6 +55,13 @@ const twinB = debt("u-long-b", "Long", 200000, "lnguyen@yahoo.com");
 
 const multiGroupMinh = [debt("u-minh", "Minh Tuấn", 100000), debt("u-minh", "Minh Tuấn", 80000), debt("u-minh", "Minh Tuấn", 20000)];
 
+/** F2: the 850.000 ₫ / 3 người / 2 nhóm sample used across previews. */
+export const sampleReminderInput: BuildReminderViewModelInput = {
+  recipient: registered,
+  appUrl: DEFAULT_APP_URL,
+  context: sampleContext,
+};
+
 export const reminderFixtures: ReminderFixture[] = [
   {
     id: "F1",
@@ -70,7 +77,7 @@ export const reminderFixtures: ReminderFixture[] = [
       },
     },
   },
-  { id: "F2", label: "3 người / 2 nhóm · registered", input: { recipient: registered, appUrl: DEFAULT_APP_URL, context: sampleContext } },
+  { id: "F2", label: "3 người / 2 nhóm · registered", input: sampleReminderInput },
   { id: "F3", label: "3 người / 2 nhóm · guest", input: { recipient: guest, appUrl: DEFAULT_APP_URL, context: sampleContext } },
   {
     id: "F4",
@@ -168,6 +175,6 @@ export const reminderFixtures: ReminderFixture[] = [
 ];
 
 /** Fixtures that render a real email (F9 is skipped by the worker, F11 is a digest row). */
-export const renderableReminderFixtures = reminderFixtures.filter((fixture) =>
-  ["F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F10"].includes(fixture.id),
-);
+const RENDERABLE_FIXTURE_IDS = new Set(["F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F10"]);
+
+export const renderableReminderFixtures = reminderFixtures.filter((fixture) => RENDERABLE_FIXTURE_IDS.has(fixture.id));
