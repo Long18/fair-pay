@@ -29,6 +29,10 @@ const currencySymbols: Record<string, string> = {
   EUR: "€",
 };
 
+function formatAmountValue(value: number): string {
+  return Number.isInteger(value) ? formatNumber(value) : value.toString();
+}
+
 export const AmountInput: React.FC<AmountInputProps> = ({
   value,
   onChange,
@@ -38,9 +42,18 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   className,
   disabled = false,
 }) => {
-  const [displayValue, setDisplayValue] = useState<string>("");
-  const [isFocused, setIsFocused] = useState(false);
+  // null = not focused; string = in-progress edit draft
+  const [draftValue, setDraftValue] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const isFocused = draftValue !== null;
+  const displayValue =
+    draftValue !== null
+      ? draftValue
+      : value !== undefined && value !== null && Number.isFinite(value)
+        ? formatAmountValue(value)
+        : "";
+
   const parsedValue = useMemo(() => parseMoneyExpression(displayValue), [displayValue]);
   const isPositiveAmount = parsedValue.status === "valid" && (parsedValue.value ?? 0) > 0;
   const showPreview = hasMoneyExpressionOperator(displayValue) && parsedValue.status === "valid" && isPositiveAmount;
@@ -52,40 +65,31 @@ export const AmountInput: React.FC<AmountInputProps> = ({
         ? "Amount must be greater than 0"
         : null;
 
-  useEffect(() => {
-    if (isFocused) {
-      return;
-    }
-
-    if (value !== undefined && value !== null) {
-      const nextDisplayValue = Number.isInteger(value) ? formatNumber(value) : value.toString();
-      setDisplayValue(nextDisplayValue);
-      onExpressionStateChange?.({
-        rawValue: nextDisplayValue,
+  const expressionState = useMemo<AmountExpressionState>(() => {
+    if (value !== undefined && value !== null && Number.isFinite(value) && !isFocused) {
+      return {
+        rawValue: displayValue,
         status: "valid",
         value,
-      });
-      return;
+      };
     }
 
-    if (!displayValue) {
-      onExpressionStateChange?.({
-        rawValue: "",
-        status: "empty",
-      });
-    }
-  }, [displayValue, isFocused, onExpressionStateChange, value]);
+    return {
+      rawValue: displayValue,
+      status: displayValue ? parsedValue.status : "empty",
+      value: parsedValue.value,
+    };
+  }, [displayValue, isFocused, parsedValue.status, parsedValue.value, value]);
+
+  useEffect(() => {
+    onExpressionStateChange?.(expressionState);
+  }, [expressionState, onExpressionStateChange]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
     const nextParsedValue = parseMoneyExpression(inputValue);
 
-    setDisplayValue(inputValue);
-    onExpressionStateChange?.({
-      rawValue: inputValue,
-      status: nextParsedValue.status,
-      value: nextParsedValue.value,
-    });
+    setDraftValue(inputValue);
 
     if (nextParsedValue.status === "valid" && (nextParsedValue.value ?? 0) > 0) {
       onChange(nextParsedValue.value);
@@ -96,25 +100,20 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   };
 
   const handleFocus = () => {
-    setIsFocused(true);
-    // Select all text on focus for easy editing
+    setDraftValue(displayValue);
     setTimeout(() => {
       inputRef.current?.select();
     }, 0);
   };
 
   const handleBlur = () => {
-    setIsFocused(false);
-
-    if (parsedValue.status !== "valid" || parsedValue.value === undefined || parsedValue.value <= 0) {
-      return;
+    if (parsedValue.status === "valid" && parsedValue.value !== undefined && parsedValue.value > 0) {
+      onChange(parsedValue.value);
     }
-
-    setDisplayValue(Number.isInteger(parsedValue.value) ? formatNumber(parsedValue.value) : parsedValue.value.toString());
+    setDraftValue(null);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Blur input on Enter to dismiss keyboard on mobile
     if (e.key === "Enter") {
       e.currentTarget.blur();
     }

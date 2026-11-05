@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "@refinedev/react-hook-form";
 import type { FieldErrors } from "react-hook-form";
 import { useHaptics } from "@/hooks/use-haptics";
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef, type BaseSyntheticEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -61,27 +61,54 @@ import {
   waitingCoinSticker,
 } from "@/assets/expense-friend";
 
+const recurringSchema = z.object({
+  frequency: z.enum(["weekly", "bi_weekly", "monthly", "quarterly", "yearly", "custom"]),
+  interval: z.number().min(1),
+  start_date: z.date(),
+  end_date: z.date().nullable(),
+  notify_before_days: z.number().min(0),
+});
+
 const expenseSchema = z.object({
   description: z.string().min(1, "Description is required").max(200),
-  amount: z.number().positive("Amount must be positive"),
-  currency: z.string(),
+  amount: z.number({ error: "Enter a valid amount" }).positive("Amount must be positive"),
+  currency: z.string().min(1, "Currency is required"),
   category: z.string().optional(),
-  expense_date: z.string(),
+  expense_date: z.string().min(1, "Date is required"),
   paid_by_user_id: z.string().uuid("Please select who paid"),
   split_method: z.enum(["equal", "exact", "percentage"]),
   comment: z.string().max(1000, "Comment is too long").optional(),
   is_loan: z.boolean(),
   is_recurring: z.boolean(),
-  recurring: z.object({
-    frequency: z.enum(["weekly", "bi_weekly", "monthly", "quarterly", "yearly", "custom"]),
-    interval: z.number().min(1),
-    start_date: z.date(),
-    end_date: z.date().nullable(),
-    notify_before_days: z.number().min(0),
-  }).optional(),
+  recurring: recurringSchema.optional(),
+}).superRefine((data, ctx) => {
+  if (data.is_recurring && !data.recurring) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["recurring"],
+      message: "Complete the recurring schedule before saving",
+    });
+  }
 });
 
 export type ExpenseFormSchema = z.infer<typeof expenseSchema>;
+
+function getFirstFormErrorMessage(errors: FieldErrors<ExpenseFormSchema>): string | undefined {
+  const visit = (value: unknown): string | undefined => {
+    if (!value || typeof value !== "object") return undefined;
+    const record = value as Record<string, unknown>;
+    if (typeof record.message === "string" && record.message.length > 0) {
+      return record.message;
+    }
+    for (const child of Object.values(record)) {
+      const nested = visit(child);
+      if (nested) return nested;
+    }
+    return undefined;
+  };
+
+  return visit(errors);
+}
 
 interface ExpenseFormProps {
   groupId?: string;
@@ -127,8 +154,22 @@ export const ExpenseForm = ({
       split_method: defaultValues?.split_method || "equal",
       comment: defaultValues?.comment || "",
       is_loan: defaultValues?.is_loan || false,
-      is_recurring: false,
-      recurring: DEFAULT_RECURRING_VALUES,
+      is_recurring: defaultValues?.is_recurring || false,
+      recurring: {
+        frequency: defaultValues?.recurring?.frequency ?? DEFAULT_RECURRING_VALUES.frequency,
+        interval: defaultValues?.recurring?.interval ?? DEFAULT_RECURRING_VALUES.interval,
+        start_date: defaultValues?.recurring?.start_date instanceof Date
+          ? defaultValues.recurring.start_date
+          : defaultValues?.recurring?.start_date
+            ? new Date(defaultValues.recurring.start_date)
+            : new Date(),
+        end_date: defaultValues?.recurring?.end_date
+          ? (defaultValues.recurring.end_date instanceof Date
+            ? defaultValues.recurring.end_date
+            : new Date(defaultValues.recurring.end_date))
+          : null,
+        notify_before_days: defaultValues?.recurring?.notify_before_days ?? DEFAULT_RECURRING_VALUES.notify_before_days,
+      },
     },
   });
 
@@ -264,10 +305,31 @@ export const ExpenseForm = ({
     }
   }, [amount, splitMethod, participants.length, participantIdentitySignature, recalculate, isLoan, isFriendContext, paidByUserId, setSplitValue]);
 
+  const syncAmountBeforeValidate = () => {
+    const resolvedAmount = amountExpressionState.value ?? form.getValues("amount");
+    if (
+      amountExpressionState.status === "valid" &&
+      typeof resolvedAmount === "number" &&
+      Number.isFinite(resolvedAmount) &&
+      resolvedAmount > 0
+    ) {
+      form.setValue("amount", resolvedAmount, {
+        shouldDirty: false,
+        shouldTouch: false,
+        shouldValidate: false,
+      });
+    }
+  };
+
   const handleFormSubmit = (data: ExpenseFormSchema) => {
     const resolvedAmount = amountExpressionState.value ?? data.amount;
 
-    if (amountExpressionState.status !== "valid" || resolvedAmount <= 0) {
+    if (
+      amountExpressionState.status !== "valid" ||
+      typeof resolvedAmount !== "number" ||
+      !Number.isFinite(resolvedAmount) ||
+      resolvedAmount <= 0
+    ) {
       toast.error("Enter a valid amount before saving this expense.");
       return;
     }
@@ -300,6 +362,8 @@ export const ExpenseForm = ({
     const formValues: ExpenseFormValues = {
       ...data,
       amount: resolvedAmount,
+      category: data.category || undefined,
+      comment: data.comment || undefined,
       context_type: groupId ? "group" : "friend",
       group_id: groupId,
       is_loan: isLoan && isFriendContext ? true : false,
@@ -309,12 +373,14 @@ export const ExpenseForm = ({
   };
 
   const handleFormInvalid = (errors: FieldErrors<ExpenseFormSchema>) => {
-    const firstError = Object.values(errors).find((error) => error?.message);
-    toast.error(
-      typeof firstError?.message === "string"
-        ? firstError.message
-        : "Please fix the highlighted fields before saving.",
-    );
+    const message = getFirstFormErrorMessage(errors);
+    console.warn("[ExpenseForm] validation failed", errors);
+    toast.error(message || "Please fix the highlighted fields before saving.");
+  };
+
+  const handleValidatedSubmit = (event?: BaseSyntheticEvent) => {
+    syncAmountBeforeValidate();
+    return form.handleSubmit(handleFormSubmit, handleFormInvalid)(event);
   };
 
   const handleTemplateSelect = (template: {
@@ -339,7 +405,7 @@ export const ExpenseForm = ({
     return (
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit(handleFormSubmit, handleFormInvalid)}
+          onSubmit={handleValidatedSubmit}
           className="space-y-4 overflow-x-hidden max-w-full"
         >
           <FriendExpenseLayout
@@ -371,7 +437,7 @@ export const ExpenseForm = ({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit, handleFormInvalid)} className="space-y-4 overflow-x-hidden max-w-full">
+      <form onSubmit={handleValidatedSubmit} className="space-y-4 overflow-x-hidden max-w-full">
         {!isEdit && <ExpenseFormStepper activeStep={activeFormStep} />}
         {/* Quick Templates */}
         <QuickTemplates
