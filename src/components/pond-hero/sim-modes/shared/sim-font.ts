@@ -1,7 +1,7 @@
 let cachedSans: string | null = null;
 let cachedMono: string | null = null;
 
-/** Project body font stack (Soehne via Tailwind `font-sans`). */
+/** Project body font stack (Google Sans Flex via Tailwind `font-sans`). */
 export function projectSansFamily(): string {
   if (cachedSans) return cachedSans;
   if (typeof document === "undefined") return "sans-serif";
@@ -9,7 +9,7 @@ export function projectSansFamily(): string {
   return cachedSans;
 }
 
-/** Project monospace stack (Soehne Mono via Tailwind `font-mono`). */
+/** Project monospace stack (JetBrains Mono via Tailwind `font-mono`). */
 export function projectMonoFamily(): string {
   if (cachedMono) return cachedMono;
   if (typeof document === "undefined") return "monospace";
