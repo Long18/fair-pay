@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SpendingComparison } from "@/hooks/analytics/use-spending-comparison";
 import { formatNumber } from "@/lib/locale-utils";
@@ -12,18 +13,21 @@ interface ComparisonChartProps {
 
 export function ComparisonChart({
   data,
-  title = "Period Comparison",
+  title,
   isLoading = false,
 }: ComparisonChartProps) {
+  const { t } = useTranslation();
+  const chartTitle = title ?? t("analytics.periodComparison");
+
   if (isLoading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{title}</CardTitle>
+          <CardTitle>{chartTitle}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-64 text-muted-foreground">
-            Loading...
+            {t("analytics.loading")}
           </div>
         </CardContent>
       </Card>
@@ -34,11 +38,11 @@ export function ComparisonChart({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{title}</CardTitle>
+          <CardTitle>{chartTitle}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-64 text-muted-foreground">
-            No comparison data available
+            {t("analytics.noComparisonData")}
           </div>
         </CardContent>
       </Card>
@@ -70,13 +74,13 @@ export function ComparisonChart({
   return (
     <Card className="border-border shadow-sm">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base sm:text-lg">{title}</CardTitle>
+        <CardTitle className="text-base sm:text-lg">{chartTitle}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4 sm:space-y-6">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
             <div className="text-center">
-              <p className="text-xs sm:text-sm text-muted-foreground mb-2">Previous Period</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-2">{t("analytics.previousPeriod")}</p>
               <p className="text-xl sm:text-2xl font-bold">{formatNumber(data.previous_total)} ₫</p>
             </div>
 
@@ -89,14 +93,14 @@ export function ComparisonChart({
             </div>
 
             <div className="text-center">
-              <p className="text-xs sm:text-sm text-muted-foreground mb-2">Current Period</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-2">{t("analytics.currentPeriod")}</p>
               <p className="text-xl sm:text-2xl font-bold">{formatNumber(data.current_total)} ₫</p>
             </div>
           </div>
 
           <div className="border-t pt-4">
             <div className="flex justify-between items-center">
-              <span className="text-xs sm:text-sm text-muted-foreground">Difference</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">{t("analytics.difference")}</span>
               <span className={`text-base sm:text-lg font-semibold ${getTrendColor()}`}>
                 {data.difference > 0 ? "+" : ""}
                 {formatNumber(data.difference)} ₫
@@ -106,25 +110,15 @@ export function ComparisonChart({
 
           <div className="rounded-lg bg-muted p-3 sm:p-4">
             <p className="text-xs sm:text-sm text-center">
-              {data.trend === "increasing" && (
-                <>
-                  Your spending has <span className={`font-semibold ${themeIntentTones.warning.icon}`}>increased</span>{" "}
-                  by {Math.abs(data.percentage_change).toFixed(1)}% compared to the previous period.
-                </>
-              )}
-              {data.trend === "decreasing" && (
-                <>
-                  Great job! Your spending has{" "}
-                  <span className={`font-semibold ${themeIntentTones.success.icon}`}>decreased</span> by{" "}
-                  {Math.abs(data.percentage_change).toFixed(1)}% compared to the previous period.
-                </>
-              )}
-              {data.trend === "stable" && (
-                <>
-                  Your spending is <span className="font-semibold">stable</span> compared to the
-                  previous period.
-                </>
-              )}
+              {data.trend === "increasing" &&
+                t("analytics.comparisonIncreased", {
+                  value: Math.abs(data.percentage_change).toFixed(1),
+                })}
+              {data.trend === "decreasing" &&
+                t("analytics.comparisonDecreased", {
+                  value: Math.abs(data.percentage_change).toFixed(1),
+                })}
+              {data.trend === "stable" && t("analytics.comparisonStable")}
             </p>
           </div>
         </div>

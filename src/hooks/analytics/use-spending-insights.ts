@@ -65,8 +65,8 @@ export const useSpendingInsights = (options: UseSpendingInsightsOptions = {}) =>
         result.push({
           id: "spending-stable",
           type: "info",
-          title: "Consistent Spending",
-          description: "Your spending pattern is stable compared to the previous period",
+          title: i18n.t("analytics.insights.consistentSpending"),
+          description: i18n.t("analytics.insights.consistentSpendingDesc"),
           icon: "minus",
         });
       }

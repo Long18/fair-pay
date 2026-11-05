@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TopSpender } from "@/hooks/analytics/use-top-spenders";
@@ -14,17 +15,20 @@ interface TopSpendersProps {
 export function TopSpenders({
   data,
   isLoading = false,
-  title = "Top Spenders",
+  title,
 }: TopSpendersProps) {
+  const { t } = useTranslation();
+  const panelTitle = title ?? t("analytics.topSpenders");
+
   if (isLoading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{title}</CardTitle>
+          <CardTitle>{panelTitle}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-64 text-muted-foreground">
-            Loading...
+            {t("analytics.loading")}
           </div>
         </CardContent>
       </Card>
@@ -35,11 +39,11 @@ export function TopSpenders({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{title}</CardTitle>
+          <CardTitle>{panelTitle}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-64 text-muted-foreground">
-            No data available
+            {t("reports.noData")}
           </div>
         </CardContent>
       </Card>
@@ -64,7 +68,7 @@ export function TopSpenders({
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
           <TrophyIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-          {title}
+          {panelTitle}
         </CardTitle>
       </CardHeader>
       <CardContent className="px-3 sm:px-6">
@@ -93,7 +97,7 @@ export function TopSpenders({
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-xs sm:text-sm truncate">{spender.user_name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {spender.expense_count} expenses
+                  {spender.expense_count} {t("analytics.expenses")}
                 </p>
               </div>
 
@@ -107,7 +111,7 @@ export function TopSpenders({
 
         {data.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
-            No spending data available
+            {t("reports.noSpendingData")}
           </div>
         )}
       </CardContent>

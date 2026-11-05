@@ -3,7 +3,8 @@ import { useMemo } from 'react';
 import { Expense } from '@/modules/expenses/types';
 import { Profile } from '@/modules/profile/types';
 import { format, startOfMonth, eachMonthOfInterval, eachWeekOfInterval, eachDayOfInterval, isWithinInterval } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { enUS, vi } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 import { DateRange, DateRangePreset } from './use-spending-summary';
 
 export type TrendGranularity = 'day' | 'week' | 'month';
@@ -54,6 +55,8 @@ export function useSpendingTrend(
   granularity?: TrendGranularity
 ) {
   const { data: identity } = useGetIdentity<Profile>();
+  const { i18n } = useTranslation();
+  const dateLocale = i18n.language?.startsWith("vi") ? vi : enUS;
 
   const dateRange = customRange || getDateRangeForPreset(preset);
   const actualGranularity = granularity || determineGranularity(dateRange);
@@ -102,7 +105,7 @@ export function useSpendingTrend(
         break;
       case 'week':
         intervals = eachWeekOfInterval({ start: dateRange.start, end: dateRange.end });
-        formatStr = "'Tuần' w";
+        formatStr = dateLocale === vi ? "'Tuần' w" : "'Week' w";
         break;
       case 'month':
         intervals = eachMonthOfInterval({ start: dateRange.start, end: dateRange.end });
@@ -150,12 +153,12 @@ export function useSpendingTrend(
 
       return {
         date: key,
-        label: format(interval, formatStr, { locale: vi }),
+        label: format(interval, formatStr, { locale: dateLocale }),
         amount: data.amount,
         count: data.count,
       };
     });
-  }, [query.data, identity, dateRange, actualGranularity]);
+  }, [query.data, identity, dateRange, actualGranularity, dateLocale]);
 
   return {
     trend,

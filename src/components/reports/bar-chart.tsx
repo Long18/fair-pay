@@ -8,6 +8,7 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
+import { useTranslation } from "react-i18next";
 import { formatNumber } from "@/lib/locale-utils";
 import {
   ChartContainer,
@@ -34,19 +35,22 @@ interface BarChartProps {
 
 export function BarChart({
   data,
-  title = "Bar Chart",
+  title,
   showComparison = false,
   horizontal = false,
 }: BarChartProps) {
+  const { t } = useTranslation();
+  const chartTitle = title ?? t("analytics.barChart");
+
   if (data.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{title}</CardTitle>
+          <CardTitle>{chartTitle}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-64 text-muted-foreground">
-            No data available
+            {t("reports.noData")}
           </div>
         </CardContent>
       </Card>
@@ -55,11 +59,11 @@ export function BarChart({
 
   const chartConfig = {
     value: {
-      label: "Current",
+      label: t("analytics.currentPeriod"),
       color: "var(--chart-1)",
     },
     comparisonValue: {
-      label: "Previous",
+      label: t("analytics.previousPeriod"),
       color: "var(--chart-2)",
     },
   } satisfies ChartConfig;
@@ -74,11 +78,11 @@ export function BarChart({
   return (
     <Card className="flex flex-col border-border shadow-sm">
       <CardHeader className="pb-3 px-4 sm:px-6">
-        <CardTitle className="text-base sm:text-lg md:text-xl">{title}</CardTitle>
+        <CardTitle className="text-base sm:text-lg md:text-xl">{chartTitle}</CardTitle>
         <CardDescription className="text-xs sm:text-sm mt-1">
           {showComparison
-            ? `Current: ${formatNumber(totalValue)} ₫ • Previous: ${formatNumber(totalComparison)} ₫`
-            : `Total: ${formatNumber(totalValue)} ₫`}
+            ? `${t("analytics.currentPeriod")}: ${formatNumber(totalValue)} ₫ • ${t("analytics.previousPeriod")}: ${formatNumber(totalComparison)} ₫`
+            : `${t("analytics.total")}: ${formatNumber(totalValue)} ₫`}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-4 sm:pb-6 px-4 sm:px-6">

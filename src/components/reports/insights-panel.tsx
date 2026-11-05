@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useHaptics } from '@/hooks/use-haptics';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SpendingInsight } from "@/hooks/analytics/use-spending-insights";
@@ -27,8 +28,10 @@ interface InsightsPanelProps {
 export function InsightsPanel({
   insights,
   isLoading = false,
-  title = "Spending Insights",
+  title,
 }: InsightsPanelProps) {
+  const { t } = useTranslation();
+  const panelTitle = title ?? t("analytics.spendingInsights");
   const { tap } = useHaptics();
   // ── collapse state, persisted via localStorage ────────────────────────
   const [expanded, setExpanded] = useState<boolean>(() => {
@@ -70,11 +73,11 @@ export function InsightsPanel({
     return (
       <Card className="border-border shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base sm:text-lg">{title}</CardTitle>
+          <CardTitle className="text-base sm:text-lg">{panelTitle}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-32 text-muted-foreground">
-            Loading insights...
+            {t("analytics.loading")}
           </div>
         </CardContent>
       </Card>
@@ -148,10 +151,10 @@ export function InsightsPanel({
         onClick={handleToggle}
         role="button"
         aria-expanded={expanded}
-        aria-label={expanded ? `Collapse ${title}` : `Expand ${title}`}
+        aria-label={expanded ? t("analytics.collapse", { title: panelTitle }) : t("analytics.expand", { title: panelTitle })}
       >
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base sm:text-lg">{title}</CardTitle>
+          <CardTitle className="text-base sm:text-lg">{panelTitle}</CardTitle>
           <span className="text-muted-foreground transition-transform duration-200" style={{ transform: expanded ? "rotate(90deg)" : "rotate(0deg)" }}>
             <ChevronRightIcon className="h-4 w-4" />
           </span>

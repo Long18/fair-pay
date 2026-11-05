@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useRef } from "react";
 import { useGetIdentity, useGo, useList } from "@refinedev/core";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { enUS, vi } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
 
@@ -156,7 +156,8 @@ export const BalancesPage = () => {
   // ── identity & navigation ──────────────────────────────────────────────
   const { data: identity } = useGetIdentity<Profile>();
   const go = useGo();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language?.startsWith("vi") ? vi : enUS;
   const { isPro } = usePlan();
   const chartsRef = useRef<HTMLDivElement>(null);
 
@@ -353,13 +354,13 @@ export const BalancesPage = () => {
     exportEnhancedReportToCSV(
       {
         summary: [
-          { label: "Total Spent", value: `${summary.totalSpent} ₫` },
-          { label: "Total Received", value: `${summary.totalReceived} ₫` },
-          { label: "Net Balance", value: `${summary.netBalance} ₫` },
-          { label: "Expense Count", value: `${summary.expenseCount}` },
-          { label: "Average Expense", value: `${summary.averageExpense} ₫` },
-          { label: "You Owe", value: `${totalIOwe} ₫` },
-          { label: "Owed to You", value: `${totalOwedToMe} ₫` },
+          { label: t("reports.totalSpent"), value: `${summary.totalSpent} ₫` },
+          { label: t("reports.totalReceived"), value: `${summary.totalReceived} ₫` },
+          { label: t("reports.balance"), value: `${summary.netBalance} ₫` },
+          { label: t("analytics.totalExpenses"), value: `${summary.expenseCount}` },
+          { label: t("reports.average"), value: `${summary.averageExpense} ₫` },
+          { label: t("balances.youOwe"), value: `${totalIOwe} ₫` },
+          { label: t("balances.owedToYou"), value: `${totalOwedToMe} ₫` },
         ],
         categoryBreakdown: breakdown,
         trendData: trend.map((item) => ({
@@ -389,22 +390,27 @@ export const BalancesPage = () => {
       });
     }
     await exportToPDF({
-      title: "Reports & Balances",
+      title: t("reports.exportTitle"),
       dateRange: actualDateRange,
       chartElements,
       summary: [
-        { label: "Total Spent", value: `${summary.totalSpent} ₫` },
-        { label: "Total Received", value: `${summary.totalReceived} ₫` },
-        { label: "Net Balance", value: `${summary.netBalance} ₫` },
-        { label: "Expense Count", value: `${summary.expenseCount}` },
-        { label: "Average Expense", value: `${Math.round(summary.averageExpense)} ₫` },
-        { label: "You Owe", value: `${totalIOwe} ₫` },
-        { label: "Owed to You", value: `${totalOwedToMe} ₫` },
+        { label: t("reports.totalSpent"), value: `${summary.totalSpent} ₫` },
+        { label: t("reports.totalReceived"), value: `${summary.totalReceived} ₫` },
+        { label: t("reports.balance"), value: `${summary.netBalance} ₫` },
+        { label: t("analytics.totalExpenses"), value: `${summary.expenseCount}` },
+        { label: t("reports.average"), value: `${Math.round(summary.averageExpense)} ₫` },
+        { label: t("balances.youOwe"), value: `${totalIOwe} ₫` },
+        { label: t("balances.owedToYou"), value: `${totalOwedToMe} ₫` },
       ],
       tables: [
         {
-          title: "Category Breakdown",
-          headers: ["Category", "Amount", "Count", "Percentage"],
+          title: t("analytics.categoryBreakdown"),
+          headers: [
+            t("analytics.category"),
+            t("analytics.amount"),
+            t("analytics.count"),
+            t("analytics.percentage"),
+          ],
           rows: breakdown.map((item) => [
             item.category,
             `${item.amount} ₫`,
@@ -542,7 +548,7 @@ export const BalancesPage = () => {
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 animate-fade-in" style={{ animationDelay: "180ms" }}>
           <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             <FilterIcon className="h-4 w-4" />
-            <span>{t("reports.filters", "Filters")}</span>
+            <span>{t("reports.filters")}</span>
           </div>
           <div className="flex flex-wrap gap-2 flex-1">
             {/* Time Period */}
@@ -555,12 +561,12 @@ export const BalancesPage = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="this_month">This Month</SelectItem>
-                <SelectItem value="last_month">Last Month</SelectItem>
-                <SelectItem value="this_year">This Year</SelectItem>
-                <SelectItem value="last_year">Last Year</SelectItem>
-                <SelectItem value="all_time">All Time</SelectItem>
-                <SelectItem value="custom">Custom Range</SelectItem>
+                <SelectItem value="this_month">{t("analytics.thisMonth")}</SelectItem>
+                <SelectItem value="last_month">{t("analytics.lastMonth")}</SelectItem>
+                <SelectItem value="this_year">{t("analytics.thisYear")}</SelectItem>
+                <SelectItem value="last_year">{t("analytics.lastYear")}</SelectItem>
+                <SelectItem value="all_time">{t("analytics.allTime")}</SelectItem>
+                <SelectItem value="custom">{t("analytics.custom")}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -580,13 +586,13 @@ export const BalancesPage = () => {
                     {customRange?.from ? (
                       customRange.to ? (
                         <>
-                          {format(customRange.from, "dd MMM", { locale: vi })} – {format(customRange.to, "dd MMM yyyy", { locale: vi })}
+                          {format(customRange.from, "dd MMM", { locale: dateLocale })} – {format(customRange.to, "dd MMM yyyy", { locale: dateLocale })}
                         </>
                       ) : (
-                        format(customRange.from, "dd MMM yyyy", { locale: vi })
+                        format(customRange.from, "dd MMM yyyy", { locale: dateLocale })
                       )
                     ) : (
-                      <span>Pick dates</span>
+                      <span>{t("analytics.pickDate")}</span>
                     )}
                   </Button>
                 </PopoverTrigger>
@@ -599,6 +605,7 @@ export const BalancesPage = () => {
                     onSelect={setCustomRange}
                     numberOfMonths={2}
                     captionLayout="dropdown"
+                    locale={dateLocale}
                   />
                 </PopoverContent>
               </Popover>
@@ -616,7 +623,7 @@ export const BalancesPage = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Groups</SelectItem>
+                <SelectItem value="all">{t("analytics.allGroups")}</SelectItem>
                 {groups.map((group) => (
                   <SelectItem key={group.id} value={group.id}>
                     {group.name}
@@ -635,8 +642,8 @@ export const BalancesPage = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pie">Pie Chart</SelectItem>
-                  <SelectItem value="bar">Bar Chart</SelectItem>
+                  <SelectItem value="pie">{t("analytics.pieChart")}</SelectItem>
+                  <SelectItem value="bar">{t("analytics.barChart")}</SelectItem>
                 </SelectContent>
               </Select>
             )}
@@ -662,7 +669,7 @@ export const BalancesPage = () => {
             LOADING (reports section)
         ────────────────────────────────────────────────────────────── */}
         {isReportsLoading && (
-          <LoadingBeam text="Đang tải báo cáo..." />
+          <LoadingBeam text={t("analytics.loadingReports")} />
         )}
 
         {/* ──────────────────────────────────────────────────────────────
@@ -753,7 +760,7 @@ export const BalancesPage = () => {
                               label: item.category,
                               value: item.amount,
                             }))}
-                            title="Spending by Category"
+                            title={t("analytics.spendingByCategory")}
                           />
                         )}
                       </div>
@@ -812,7 +819,7 @@ export const BalancesPage = () => {
                 {/* ─── Balances Tab ──────────────────────────────────── */}
                 <TabsContent value="balances" className="space-y-4 mt-2 animate-fade-in">
                   {isBalancesLoading ? (
-                    <LoadingBeam text="Đang tải số dư..." />
+                    <LoadingBeam text={t("balances.loading")} />
                   ) : debts.length === 0 ? (
                     /* empty / all settled – clean empty state */
                     <Card className="border-0 shadow-sm">

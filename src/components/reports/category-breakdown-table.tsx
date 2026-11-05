@@ -11,6 +11,7 @@ import { TopCategory } from "@/hooks/analytics/use-top-categories";
 import { formatNumber } from "@/lib/locale-utils";
 import { getCategoryMeta } from "@/modules/expenses";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowUpIcon, ArrowDownIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 
@@ -26,8 +27,10 @@ type SortDirection = "asc" | "desc";
 export function CategoryBreakdownTable({
   data,
   isLoading = false,
-  title = "Category Breakdown",
+  title,
 }: CategoryBreakdownTableProps) {
+  const { t } = useTranslation();
+  const tableTitle = title ?? t("analytics.categoryBreakdown");
   const [sortField, setSortField] = useState<SortField>("total_amount");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const { tap } = useHaptics();
@@ -77,11 +80,11 @@ export function CategoryBreakdownTable({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{title}</CardTitle>
+          <CardTitle>{tableTitle}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-64 text-muted-foreground">
-            Loading...
+            {t("analytics.loading")}
           </div>
         </CardContent>
       </Card>
@@ -92,11 +95,11 @@ export function CategoryBreakdownTable({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{title}</CardTitle>
+          <CardTitle>{tableTitle}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-64 text-muted-foreground">
-            No data available
+            {t("reports.noData")}
           </div>
         </CardContent>
       </Card>
@@ -106,7 +109,7 @@ export function CategoryBreakdownTable({
   return (
     <Card className="border-border shadow-sm">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base sm:text-lg">{title}</CardTitle>
+        <CardTitle className="text-base sm:text-lg">{tableTitle}</CardTitle>
       </CardHeader>
       <CardContent className="px-3 sm:px-6">
         <div className="rounded-md border overflow-x-auto">
@@ -117,19 +120,19 @@ export function CategoryBreakdownTable({
                   className="cursor-pointer hover:bg-muted/50 text-xs sm:text-sm"
                   onClick={() => handleSort("category")}
                 >
-                  Category <SortIcon field="category" />
+                  {t("analytics.category")} <SortIcon field="category" />
                 </TableHead>
                 <TableHead
                   className="cursor-pointer hover:bg-muted/50 text-right text-xs sm:text-sm"
                   onClick={() => handleSort("total_amount")}
                 >
-                  Amount <SortIcon field="total_amount" />
+                  {t("analytics.amount")} <SortIcon field="total_amount" />
                 </TableHead>
                 <TableHead
                   className="cursor-pointer hover:bg-muted/50 text-right text-xs sm:text-sm"
                   onClick={() => handleSort("expense_count")}
                 >
-                  Count <SortIcon field="expense_count" />
+                  {t("analytics.count")} <SortIcon field="expense_count" />
                 </TableHead>
                 <TableHead
                   className="cursor-pointer hover:bg-muted/50 text-right text-xs sm:text-sm"
