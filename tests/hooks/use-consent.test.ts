@@ -10,11 +10,12 @@ describe("useConsent", () => {
     resetConsentCacheForTests();
   });
 
-  it("opens the modal with every category pre-selected while pending", () => {
+  it("shows the banner with every category pre-selected while pending", () => {
     const { result } = renderHook(() => useConsent());
 
     expect(result.current.isConsentPending).toBe(true);
-    expect(result.current.isConsentModalOpen).toBe(true);
+    expect(result.current.isConsentBannerVisible).toBe(true);
+    expect(result.current.isConsentModalOpen).toBe(false);
     expect(result.current.choices).toEqual({ preferences: true, experience: true, marketing: true });
   });
 
