@@ -1,10 +1,22 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
+import { motion } from "framer-motion";
 import { ArrowDownIcon, ArrowUpIcon, ScaleIcon } from "@/components/ui/icons";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { formatCurrency, type SupportedCurrency } from "@/lib/format-utils";
 import { useHaptics } from "@/hooks/use-haptics";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import type { FilterCounts, PaymentStateFilter } from "./activity-filter-controls";
+import {
+  DashboardMetricsIsland,
+  type DashboardMetricExpandRow,
+  type DashboardMetricItem,
+} from "../shared/dashboard-metrics-island";
+import {
+  DashboardNotchDock,
+  DASHBOARD_NOTCH_MENU_BAR_PT,
+} from "../shared/dashboard-notch-dock";
 
 export interface ActivityInsightStripProps {
   totalOwed: number;
@@ -16,6 +28,8 @@ export interface ActivityInsightStripProps {
   onFilterChange: (filter: PaymentStateFilter) => void;
   className?: string;
 }
+
+const FILTER_SPRING = { type: "spring" as const, stiffness: 420, damping: 32 };
 
 export const ActivityInsightStrip: React.FC<ActivityInsightStripProps> = ({
   totalOwed,
@@ -29,15 +43,15 @@ export const ActivityInsightStrip: React.FC<ActivityInsightStripProps> = ({
 }) => {
   const { t } = useTranslation();
   const { tap } = useHaptics();
+  const reducedMotion = useReducedMotion();
 
-  const moneyCards = [
+  const totals: readonly DashboardMetricItem[] = [
     {
       key: "owe",
       label: t("dashboard.activityFeed.insight.youOwe", "You owe"),
       value: formatCurrency(totalOwed, currency),
       icon: ArrowDownIcon,
       tone: "text-semantic-negative",
-      surface: "bg-semantic-negative/8",
     },
     {
       key: "owed",
@@ -45,7 +59,6 @@ export const ActivityInsightStrip: React.FC<ActivityInsightStripProps> = ({
       value: formatCurrency(totalToReceive, currency),
       icon: ArrowUpIcon,
       tone: "text-semantic-positive",
-      surface: "bg-semantic-positive/8",
     },
     {
       key: "net",
@@ -58,107 +71,137 @@ export const ActivityInsightStrip: React.FC<ActivityInsightStripProps> = ({
           : netBalance < 0
             ? "text-semantic-negative"
             : "text-muted-foreground",
-      surface: "bg-muted/60",
+      anchor: true,
     },
-  ] as const;
+  ];
 
   const statusFilters: Array<{
     value: PaymentStateFilter;
     label: string;
     count: number;
-    activeClass: string;
   }> = [
     {
       value: "all",
       label: t("dashboard.activityFeed.filters.all", "All"),
       count: counts.all,
-      activeClass: "border-primary bg-primary text-primary-foreground shadow-sm",
     },
     {
       value: "paid",
       label: t("dashboard.activityFeed.filters.paid", "Paid"),
       count: counts.paid,
-      activeClass:
-        "border-status-success-border bg-status-success-bg text-status-success-foreground shadow-sm",
     },
     {
       value: "partial",
       label: t("dashboard.activityFeed.filters.partial", "Partial"),
       count: counts.partial,
-      activeClass:
-        "border-status-info-border bg-status-info-bg text-status-info-foreground shadow-sm",
     },
     {
       value: "unpaid",
       label: t("dashboard.activityFeed.filters.unpaid", "Unpaid"),
       count: counts.unpaid,
-      activeClass:
-        "border-status-warning-border bg-status-warning-bg text-status-warning-foreground shadow-sm",
     },
   ];
 
+  const expandRows = React.useMemo((): readonly DashboardMetricExpandRow[] => {
+    const activeCount = counts[activeFilter];
+    const activeLabel = t(`dashboard.activityFeed.filters.${activeFilter}`, activeFilter);
+
+    return [
+      {
+        key: "active-filter",
+        label: t("dashboard.activityFeed.insight.expand.viewing", "Viewing"),
+        value: `${activeLabel} · ${activeCount}`,
+      },
+      {
+        key: "paid",
+        label: t("dashboard.activityFeed.filters.paid", "Paid"),
+        value: String(counts.paid),
+        tone: "text-semantic-positive",
+      },
+      {
+        key: "unpaid",
+        label: t("dashboard.activityFeed.filters.unpaid", "Unpaid"),
+        value: String(counts.unpaid),
+        tone: "text-semantic-negative",
+      },
+      {
+        key: "partial",
+        label: t("dashboard.activityFeed.filters.partial", "Partial"),
+        value: String(counts.partial),
+        tone: "text-muted-foreground",
+      },
+    ];
+  }, [activeFilter, counts, t]);
+
   return (
-    <div className={cn("space-y-3 border-b border-border bg-muted/20 p-4", className)}>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        {moneyCards.map((card) => (
-          <div
-            key={card.key}
-            className={cn(
-              "flex items-center gap-3 rounded-xl border border-border/70 px-3 py-2.5",
-              card.surface
-            )}
-          >
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-background/80">
-              <card.icon className={cn("size-4", card.tone)} />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                {card.label}
-              </p>
-              <p className={cn("truncate typography-amount-prominent", card.tone)}>{card.value}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+    <div className={cn("relative flex flex-col", className)}>
+      <DashboardNotchDock>
+        <DashboardMetricsIsland
+          items={totals}
+          variant="notch"
+          expandable
+          expandRows={expandRows}
+          expandAriaLabel={t(
+            "dashboard.activityFeed.insight.expand.toggle",
+            "Activity totals summary",
+          )}
+        />
+      </DashboardNotchDock>
 
       <div
-        className="grid grid-cols-2 gap-2 sm:grid-cols-4"
-        role="group"
-        aria-label={t("dashboard.activityFeed.filters.groupLabel", "Filter activity by payment state")}
+        className={cn(
+          "flex justify-center border-b border-border/60 px-3 py-2 sm:px-4 sm:py-2.5",
+          DASHBOARD_NOTCH_MENU_BAR_PT,
+        )}
       >
-        {statusFilters.map((filter) => {
-          const isActive = activeFilter === filter.value;
-          return (
-            <button
-              key={filter.value}
-              type="button"
-              onClick={() => {
-                tap();
-                onFilterChange(filter.value);
-              }}
-              aria-pressed={isActive}
-              className={cn(
-                "rounded-xl border px-3 py-2.5 text-left transition-all",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                isActive
-                  ? filter.activeClass
-                  : "border-border/80 bg-background/80 text-foreground hover:bg-muted/70"
-              )}
-            >
-              <p
+        <ToggleGroup
+          type="single"
+          value={activeFilter}
+          onValueChange={(value) => {
+            if (!value) return;
+            tap();
+            onFilterChange(value as PaymentStateFilter);
+          }}
+          variant="outline"
+          size="sm"
+          className="mx-auto h-8 w-auto max-w-full items-center gap-0.5 rounded-lg border border-border/60 bg-muted/40 p-0.5 shadow-none"
+          aria-label={t("dashboard.activityFeed.filters.groupLabel", "Filter activity by payment state")}
+        >
+          {statusFilters.map((filter) => {
+            const isActive = activeFilter === filter.value;
+            return (
+              <ToggleGroupItem
+                key={filter.value}
+                value={filter.value}
                 className={cn(
-                  "text-[11px] font-medium uppercase tracking-wide",
-                  isActive ? "opacity-90" : "text-muted-foreground"
+                  "relative h-7 min-w-0 flex-none gap-1 whitespace-nowrap rounded-md border-0 px-2 text-[11px] shadow-none sm:px-2.5 sm:text-xs",
+                  "data-[variant=outline]:border-0",
+                  "data-[state=on]:bg-transparent data-[state=on]:text-foreground data-[state=on]:shadow-none",
                 )}
               >
-                {filter.label}
-              </p>
-              <p className="mt-0.5 text-xl font-semibold tabular-nums tracking-tight">
-                {filter.count}
-              </p>
-            </button>
-          );
-        })}
+                {isActive ? (
+                  reducedMotion ? (
+                    <span
+                      className="absolute inset-0 rounded-md bg-background shadow-none ring-1 ring-border/60"
+                      aria-hidden
+                    />
+                  ) : (
+                    <motion.span
+                      layoutId="activity-filter-pill"
+                      className="absolute inset-0 rounded-md bg-background shadow-none ring-1 ring-border/60"
+                      transition={FILTER_SPRING}
+                      aria-hidden
+                    />
+                  )
+                ) : null}
+                <span className="relative z-10 inline-flex min-w-0 items-center gap-1">
+                  <span className="truncate">{filter.label}</span>
+                  <span className="shrink-0 tabular-nums text-muted-foreground">{filter.count}</span>
+                </span>
+              </ToggleGroupItem>
+            );
+          })}
+        </ToggleGroup>
       </div>
     </div>
   );

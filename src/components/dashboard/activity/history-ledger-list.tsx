@@ -31,6 +31,13 @@ import {
 import { useHaptics } from "@/hooks/use-haptics";
 import { formatCurrency } from "@/lib/locale-utils";
 import { cn } from "@/lib/utils";
+import {
+  BALANCE_EXPAND_GLASS_SURFACE,
+  BALANCE_TABLE_GLASS_DIVIDE,
+  BALANCE_TABLE_GLASS_SEPARATOR,
+  BALANCE_TABLE_ROW_BASE,
+  BALANCE_TABLE_ROW_ZEBRA_EVEN,
+} from "@/components/dashboard/balance/balance-table-surface";
 import type { EnhancedActivityItem, PaymentEvent } from "@/types/activity";
 
 import { EnhancedActivityRow } from "./enhanced-activity-row";
@@ -86,23 +93,23 @@ function PaymentTrail({
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-2">
+    <div className="divide-y divide-border/60 rounded-lg border border-border/60 bg-card">
       {events.map((event) => (
         <div
           key={event.id}
-          className="grid gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm md:grid-cols-[minmax(0,1fr)_auto]"
+          className="grid gap-1 px-3 py-2 text-sm md:grid-cols-[minmax(0,1fr)_auto] md:items-center"
         >
           <div className="min-w-0">
-            <p className="font-medium text-foreground">
+            <p className="text-sm font-medium text-foreground">
               {event.from_user_id === currentUserId ? t("common.you", "You") : event.from_user_name}
               {" → "}
               {event.to_user_id === currentUserId ? t("common.you", "You") : event.to_user_name}
             </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground">
               {formatDistanceToNow(new Date(event.created_at), { addSuffix: true })}
             </p>
           </div>
-          <p className="font-semibold tabular-nums text-foreground md:text-right">
+          <p className="text-sm font-semibold tabular-nums text-foreground md:text-right">
             {formatCurrency(event.amount, event.currency)}
           </p>
         </div>
@@ -162,7 +169,7 @@ export function HistoryLedgerList({
 
   if (isLoading) {
     return (
-      <div className="p-6">
+      <div className="px-3 py-6 sm:px-4">
         <LoadingBeam text={t("history.loading", "Loading history...")} />
       </div>
     );
@@ -170,7 +177,7 @@ export function HistoryLedgerList({
 
   if (activities.length === 0) {
     return (
-      <Empty className="py-12">
+      <Empty className="border-0 py-12">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <HistoryIcon className="h-6 w-6" />
@@ -188,8 +195,11 @@ export function HistoryLedgerList({
   }
 
   return (
-    <div className="space-y-4 p-6">
-      <AnimatedList items={paginatedActivities} className="block space-y-3 md:hidden">
+    <div className="flex flex-col gap-3">
+      <AnimatedList
+        items={paginatedActivities}
+        className={cn("block md:hidden", BALANCE_TABLE_GLASS_DIVIDE)}
+      >
         {paginatedActivities.map((activity, index) => (
           <AnimatedRow key={activity.id} index={index}>
             <EnhancedActivityRow
@@ -197,21 +207,34 @@ export function HistoryLedgerList({
               currentUserId={currentUserId}
               isExpanded={expandedRows.has(activity.id)}
               onToggleExpand={() => toggleRow(activity.id)}
+              variant="group"
             />
           </AnimatedRow>
         ))}
       </AnimatedList>
 
-      <div className="hidden overflow-hidden rounded-2xl border border-border bg-card shadow-sm md:block">
+      <div className="hidden md:block px-1">
         <Table>
           <TableHeader>
-            <TableRow className="hover:bg-transparent">
+            <TableRow
+              className={cn("hover:bg-transparent border-b", BALANCE_TABLE_GLASS_SEPARATOR)}
+            >
               <TableHead className="w-12" />
-              <TableHead>{t("dashboard.transaction", "Transaction")}</TableHead>
-              <TableHead>{t("dashboard.people", "People")}</TableHead>
-              <TableHead className="text-right">{t("dashboard.totalAmount", "Total")}</TableHead>
-              <TableHead className="text-right">{t("dashboard.myShare", "My share")}</TableHead>
-              <TableHead>{t("profile.status", "Status")}</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">
+                {t("dashboard.transaction", "Transaction")}
+              </TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">
+                {t("dashboard.people", "People")}
+              </TableHead>
+              <TableHead className="text-right text-xs font-medium text-muted-foreground">
+                {t("dashboard.totalAmount", "Total")}
+              </TableHead>
+              <TableHead className="text-right text-xs font-medium text-muted-foreground">
+                {t("dashboard.myShare", "My share")}
+              </TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">
+                {t("profile.status", "Status")}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -224,7 +247,8 @@ export function HistoryLedgerList({
                   <TableRow
                     className={cn(
                       "cursor-pointer",
-                      index % 2 === 0 && "bg-muted/10",
+                      BALANCE_TABLE_ROW_BASE,
+                      index % 2 === 0 && BALANCE_TABLE_ROW_ZEBRA_EVEN,
                       activity.paymentState === "paid" && "bg-status-success-bg/10"
                     )}
                     onClick={() => {
@@ -257,15 +281,15 @@ export function HistoryLedgerList({
                         </button>
                       ) : null}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-2.5">
                       <div className="min-w-0">
-                        <p className="font-semibold text-foreground">{activity.description}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
+                        <p className="typography-row-title truncate">{activity.description}</p>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">
                           {formatDistanceToNow(new Date(activity.activityDate), { addSuffix: true })}
                         </p>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-2.5 text-sm text-muted-foreground">
                       {getCounterpartyLabel(
                         activity,
                         currentUserId,
@@ -278,13 +302,13 @@ export function HistoryLedgerList({
                           }`
                       )}
                     </TableCell>
-                    <TableCell className="text-right font-semibold tabular-nums">
+                    <TableCell className="py-2.5 text-right typography-amount-prominent tabular-nums">
                       {formatCurrency(activity.totalAmount, activity.currency)}
                     </TableCell>
-                    <TableCell className="text-right font-semibold tabular-nums">
+                    <TableCell className="py-2.5 text-right typography-amount-prominent tabular-nums">
                       {formatCurrency(activity.userAmount, activity.currency)}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-2.5">
                       <PaymentStateBadge
                         state={activity.paymentState}
                         percentage={activity.partialPercentage}
@@ -294,8 +318,8 @@ export function HistoryLedgerList({
                   </TableRow>
 
                   {hasTrail && isExpanded && (
-                    <TableRow className="bg-muted/10">
-                      <TableCell colSpan={6} className="p-4">
+                    <TableRow className={BALANCE_EXPAND_GLASS_SURFACE}>
+                      <TableCell colSpan={6} className="px-3 py-2.5 sm:px-4">
                         <PaymentTrail events={activity.paymentEvents} currentUserId={currentUserId} />
                       </TableCell>
                     </TableRow>
@@ -308,15 +332,17 @@ export function HistoryLedgerList({
       </div>
 
       {totalPages > 1 && (
-        <PaginationControls
-          metadata={metadata}
-          onPageChange={(page) => {
-            setCurrentPage(page);
-            setExpandedRows(new Set());
-          }}
-          showFirstLast={true}
-          maxVisiblePages={5}
-        />
+        <div className="px-3 pb-3 sm:px-4 sm:pb-4">
+          <PaginationControls
+            metadata={metadata}
+            onPageChange={(page) => {
+              setCurrentPage(page);
+              setExpandedRows(new Set());
+            }}
+            showFirstLast={true}
+            maxVisiblePages={5}
+          />
+        </div>
       )}
     </div>
   );

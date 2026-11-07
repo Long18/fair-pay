@@ -23,6 +23,7 @@ interface DebtMonthGroupProps {
   defaultSettledExpanded?: boolean;
   children: React.ReactNode;
   settledChildren?: React.ReactNode;
+  className?: string;
 }
 
 function formatSignedCurrency(amount: number, currency: string) {
@@ -90,6 +91,7 @@ export function DebtMonthGroup({
   defaultSettledExpanded = false,
   children,
   settledChildren,
+  className,
 }: DebtMonthGroupProps) {
   const { t, i18n } = useTranslation();
   const [settledExpanded, setSettledExpanded] = useState(defaultSettledExpanded);
@@ -109,14 +111,12 @@ export function DebtMonthGroup({
   }, [monthKey, i18n.language]);
 
   return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between gap-3 border-b border-border/70 pb-2">
-        <h3 className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-          {monthLabel}
-        </h3>
+    <section className={cn("space-y-0", className)}>
+      <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-muted/20 px-3 py-1.5 sm:px-4">
+        <h3 className="text-[11px] font-medium text-muted-foreground">{monthLabel}</h3>
         <span
           className={cn(
-            "text-xs font-semibold tabular-nums",
+            "text-[11px] font-medium tabular-nums sm:text-xs",
             netAmount < 0
               ? "text-semantic-negative"
               : netAmount > 0
@@ -125,7 +125,7 @@ export function DebtMonthGroup({
           )}
         >
           {formatSignedCurrency(netAmount, currency)}{" "}
-          <span className="text-muted-foreground">
+          <span className="font-normal text-muted-foreground">
             {t("debts.netSuffix", "net")}
           </span>
         </span>
@@ -136,11 +136,11 @@ export function DebtMonthGroup({
       </div>
 
       {settledCount > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-2 px-3 pb-3 sm:px-4">
           <button
             type="button"
             onClick={() => setSettledExpanded((value) => !value)}
-            className="w-full rounded-xl border border-border bg-muted/35 px-4 py-3 text-left transition-colors hover:bg-muted/55"
+            className="mt-2 w-full rounded-lg border border-border/60 bg-muted/25 px-3 py-2.5 text-left transition-colors hover:bg-muted/40 sm:px-4"
             aria-expanded={settledExpanded}
           >
             <div className="flex items-start justify-between gap-3">
@@ -177,7 +177,7 @@ export function DebtMonthGroup({
           </button>
 
           {settledExpanded && settledChildren && (
-            <div className="divide-y divide-border/50 rounded-xl border border-border/60 bg-muted/15 px-2">
+            <div className="divide-y divide-border/60 rounded-lg border border-border/60 bg-muted/15">
               {settledChildren}
             </div>
           )}

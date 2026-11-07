@@ -24,6 +24,8 @@ interface SimplifiedBalanceViewProps {
   onSettleUp?: (toUserId: string, amount: number) => void;
   currency?: string;
   isLoading?: boolean;
+  /** Hide the 3-up summary row when the parent already shows net balance (e.g. group detail). */
+  showSummaryCards?: boolean;
 }
 
 export const SimplifiedBalanceView = ({
@@ -33,6 +35,7 @@ export const SimplifiedBalanceView = ({
   onSettleUp,
   currency = "VND",
   isLoading,
+  showSummaryCards = true,
 }: SimplifiedBalanceViewProps) => {
   const { t } = useTranslation();
   const { success } = useHaptics();
@@ -83,7 +86,7 @@ export const SimplifiedBalanceView = ({
   const netBalance = totalOwedToMe - totalIOwe;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Simplification Comparison Banner */}
       {simplifyDebts && simplifiedBalances.transactionsSaved > 0 && (
         <ComparisonBanner
@@ -95,50 +98,51 @@ export const SimplifiedBalanceView = ({
         />
       )}
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
-        <Card className="rounded-lg">
-          <CardContent className="p-3 sm:pt-6 sm:p-6">
-            <div className="text-center">
-              <p className="text-[10px] sm:text-sm text-muted-foreground leading-tight">{t("debts.youAreOwed", "You are owed")}</p>
-              <p className="text-base sm:text-2xl font-bold text-green-600 dark:text-green-400 mt-0.5 sm:mt-1 truncate">
-                {formatCurrency(totalOwedToMe)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+      {showSummaryCards && (
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <Card className="rounded-lg border-border/60 shadow-none">
+            <CardContent className="p-2.5 sm:p-4">
+              <div className="text-center">
+                <p className="text-[10px] sm:text-xs text-muted-foreground leading-tight">{t("debts.youAreOwed", "You are owed")}</p>
+                <p className="text-sm sm:text-lg font-semibold text-green-600 dark:text-green-400 mt-0.5 truncate tabular-nums">
+                  {formatCurrency(totalOwedToMe)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="rounded-lg">
-          <CardContent className="p-3 sm:pt-6 sm:p-6">
-            <div className="text-center">
-              <p className="text-[10px] sm:text-sm text-muted-foreground leading-tight">{t("debts.youOwe", "You owe")}</p>
-              <p className="text-base sm:text-2xl font-bold text-red-600 dark:text-red-400 mt-0.5 sm:mt-1 truncate">
-                {formatCurrency(totalIOwe)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+          <Card className="rounded-lg border-border/60 shadow-none">
+            <CardContent className="p-2.5 sm:p-4">
+              <div className="text-center">
+                <p className="text-[10px] sm:text-xs text-muted-foreground leading-tight">{t("debts.youOwe", "You owe")}</p>
+                <p className="text-sm sm:text-lg font-semibold text-red-600 dark:text-red-400 mt-0.5 truncate tabular-nums">
+                  {formatCurrency(totalIOwe)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="rounded-lg">
-          <CardContent className="p-3 sm:pt-6 sm:p-6">
-            <div className="text-center">
-              <p className="text-[10px] sm:text-sm text-muted-foreground leading-tight">{t("debts.netBalance", "Net balance")}</p>
-              <p
-                className={`text-base sm:text-2xl font-bold mt-0.5 sm:mt-1 truncate ${
-                  netBalance > 0
-                    ? "text-green-600 dark:text-green-400"
-                    : netBalance < 0
-                    ? "text-red-600 dark:text-red-400"
-                    : "text-muted-foreground"
-                }`}
-              >
-                {netBalance > 0 ? "+" : ""}
-                {formatCurrency(netBalance)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <Card className="rounded-lg border-border/60 shadow-none">
+            <CardContent className="p-2.5 sm:p-4">
+              <div className="text-center">
+                <p className="text-[10px] sm:text-xs text-muted-foreground leading-tight">{t("debts.netBalance", "Net balance")}</p>
+                <p
+                  className={`text-sm sm:text-lg font-semibold mt-0.5 truncate tabular-nums ${
+                    netBalance > 0
+                      ? "text-green-600 dark:text-green-400"
+                      : netBalance < 0
+                      ? "text-red-600 dark:text-red-400"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {netBalance > 0 ? "+" : ""}
+                  {formatCurrency(netBalance)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Payments I Need to Make */}
       {iOwe.length > 0 && (
@@ -262,21 +266,17 @@ export const SimplifiedBalanceView = ({
 
       {/* All Settled - Clean State */}
       {iOwe.length === 0 && owesMe.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <div className="flex flex-col items-center gap-2">
-              <div className="size-10 rounded-lg bg-muted flex items-center justify-center">
-                <CheckCircle2Icon className="h-5 w-5 text-green-500" />
-              </div>
-              <p className="text-base font-medium tracking-tight">
-                {t('dashboard.debtFreeTitle', "You're debt-free")}
-              </p>
-              <p className="text-sm text-muted-foreground max-w-md">
-                {t('dashboard.everyonePaidShare', 'Everyone has paid their share.')}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="rounded-lg border border-border/60 bg-muted/30 px-4 py-6 text-center">
+          <div className="flex flex-col items-center gap-1.5">
+            <CheckCircle2Icon className="h-5 w-5 text-semantic-positive" aria-hidden />
+            <p className="text-sm font-medium tracking-tight">
+              {t('dashboard.debtFreeTitle', "You're debt-free")}
+            </p>
+            <p className="text-xs text-muted-foreground max-w-md">
+              {t('dashboard.everyonePaidShare', 'Everyone has paid their share.')}
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );

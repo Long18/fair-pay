@@ -36,13 +36,14 @@ import {
   generateContextLine,
 } from "@/lib/activity-grouping";
 import type { SupportedCurrency } from "@/lib/format-utils";
+import { BALANCE_TABLE_GLASS_PANEL_BODY } from "@/components/dashboard/balance/balance-table-surface";
 
 // =============================================
 // Component Props
 // =============================================
 
 export type PaginationMode = "progressive" | "pagination";
-export type EnhancedActivityListVariant = "default" | "dashboard";
+export type EnhancedActivityListVariant = "default" | "dashboard" | "group";
 
 export interface EnhancedActivityListProps {
   activities: EnhancedActivityItem[];
@@ -97,6 +98,11 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
   const [searchQuery, setSearchQuery] = React.useState("");
   const { tap } = useHaptics();
   const isDashboard = variant === "dashboard";
+  const isGroup = variant === "group";
+  const isFlatList = isDashboard || isGroup;
+  /** Dashboard story tab uses compact group rows without card-in-card timeline chrome. */
+  const listRowVariant: EnhancedActivityListVariant =
+    variant === "dashboard" ? "group" : variant;
 
   // Filter activities
   const filteredActivities = React.useMemo(() => {
@@ -303,20 +309,16 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
   // Loading state
   if (isLoading) {
     return (
-      <div className={cn(isDashboard ? "space-y-0" : "space-y-4", className)}>
+      <div className={cn(isFlatList ? "space-y-0" : "space-y-4", className)}>
         {isDashboard ? (
           <>
-            <div className="space-y-3 border-b border-border bg-muted/20 p-4">
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div className="border-b border-border/60 bg-muted/20">
+              <div className="grid grid-cols-3 divide-x divide-border/60">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="h-[58px] animate-pulse rounded-xl bg-muted" />
+                  <div key={i} className="h-12 animate-pulse bg-muted/40 sm:h-14" />
                 ))}
               </div>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="h-[64px] animate-pulse rounded-xl bg-muted" />
-                ))}
-              </div>
+              <div className="h-10 animate-pulse border-t border-border/60 bg-muted/30 px-3 py-2" />
             </div>
             <ActivityRowSkeleton count={6} variant="timeline" />
           </>
@@ -363,8 +365,10 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
       className={cn(
         "flex flex-col gap-3",
         isDashboard
-          ? "sticky top-0 z-20 border-b border-border bg-card/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-card/85"
-          : "items-start justify-between sm:flex-row sm:items-center"
+          ? "border-b border-border/60 px-3 py-2 sm:px-4 sm:py-2.5"
+          : isGroup
+            ? "gap-1.5 pb-1"
+            : "items-start justify-between sm:flex-row sm:items-center"
       )}
     >
       {isDashboard ? (
@@ -378,7 +382,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
                 "dashboard.activityFeed.searchPlaceholder",
                 "Search people, expenses, groups…"
               )}
-              className="h-9 rounded-full border-border/80 bg-background pl-9 pr-9"
+              className="h-8 rounded-lg border border-border/60 bg-background pl-9 pr-9 text-sm shadow-none"
               aria-label={t("dashboard.activityFeed.searchAria", "Search activity")}
             />
             {searchQuery && (
@@ -404,20 +408,25 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
           )}
         </div>
       ) : (
-        <div className="flex w-full flex-col items-start justify-between gap-3 sm:flex-row sm:items-center viewport-transition-flex">
+        <div
+          className={cn(
+            "flex w-full items-center justify-between gap-1.5",
+            !isGroup && "flex-col items-start gap-3 sm:flex-row sm:items-center viewport-transition-flex"
+          )}
+        >
           {showFilters && (
             <ActivityFilterControls
               activeFilter={activeFilter}
               onFilterChange={debouncedFilterChange}
               counts={filterCounts}
-              compact={compactControls}
+              compact={isGroup || compactControls}
             />
           )}
           {showSort && (
             <ActivitySortControls
               activeSort={activeSort}
               onSortChange={debouncedSortChange}
-              compact={compactControls}
+              compact={isGroup || compactControls}
             />
           )}
         </div>
@@ -428,8 +437,8 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
   // No results after filtering / search
   if (filteredActivities.length === 0) {
     return (
-      <div className={cn(isDashboard ? "space-y-0" : "space-y-4", className)}>
-        {showSummary && !isDashboard && (
+      <div className={cn(isFlatList ? "space-y-0" : "space-y-4", className)}>
+        {showSummary && !isFlatList && (
           <ActivitySummary
             totalOwed={summaryMetrics.totalOwed}
             totalToReceive={summaryMetrics.totalToReceive}
@@ -441,6 +450,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
         )}
         {insight}
         {toolbar}
+        <div className={isDashboard ? BALANCE_TABLE_GLASS_PANEL_BODY : undefined}>
         <Empty className="border-0 py-14">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -476,15 +486,16 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
             </Button>
           )}
         </Empty>
+        </div>
       </div>
     );
   }
 
   const activityList = (
-    <div className={cn(isDashboard ? "space-y-0" : "space-y-4")}>
+    <div className={cn(isFlatList ? "space-y-0" : "space-y-4")}>
       {showTimeGrouping && timeGroups ? (
-        isDashboard ? (
-          <div className="divide-y divide-border">
+        isFlatList ? (
+          <div className="divide-y divide-border/60">
             {timeGroups.map((group) => (
               <ActivityTimePeriodGroup
                 key={group.period}
@@ -499,6 +510,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
                 duplicateIds={duplicateIds}
                 showActions={showActions}
                 variant={variant}
+                rowVariant={listRowVariant}
               />
             ))}
           </div>
@@ -518,13 +530,14 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
                   duplicateIds={duplicateIds}
                   showActions={showActions}
                   variant={variant}
+                  rowVariant={listRowVariant}
                 />
               </AnimatedRow>
             ))}
           </AnimatedList>
         )
-      ) : isDashboard ? (
-        <ItemGroup className="divide-y divide-border/70">
+      ) : isFlatList ? (
+        <ItemGroup className="divide-y divide-border/60">
           {visibleItems.map((activity) => (
             <EnhancedActivityRow
               key={activity.id}
@@ -534,7 +547,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
               onToggleExpand={() => handleToggleActivity(activity.id)}
               showDuplicateContext={duplicateIds.has(activity.id)}
               showActions={showActions}
-              variant={variant}
+              variant={listRowVariant}
             />
           ))}
         </ItemGroup>
@@ -549,7 +562,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
                 onToggleExpand={() => handleToggleActivity(activity.id)}
                 showDuplicateContext={duplicateIds.has(activity.id)}
                 showActions={showActions}
-                variant={variant}
+                variant={listRowVariant}
               />
             </AnimatedRow>
           ))}
@@ -558,7 +571,7 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
 
       {paginationMode === "pagination" ? (
         activitiesWithContext.length > pageSize && (
-          <div className={cn("pt-4", isDashboard && "border-t border-border px-4 pb-4")}>
+          <div className={cn("pt-3", isDashboard && "border-t border-border/60 px-3 pb-3 sm:px-4 sm:pb-4")}>
             <PaginationControls metadata={paginationMetadata} onPageChange={handlePageChange} />
           </div>
         )
@@ -586,8 +599,8 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
   );
 
   return (
-    <div ref={listRef} className={cn(isDashboard ? "space-y-0" : "space-y-4", className)}>
-      {showSummary && !isDashboard && (
+    <div ref={listRef} className={cn(isFlatList ? "space-y-0" : "space-y-4", className)}>
+      {showSummary && !isFlatList && (
         <ActivitySummary
           totalOwed={summaryMetrics.totalOwed}
           totalToReceive={summaryMetrics.totalToReceive}
@@ -599,8 +612,12 @@ export const EnhancedActivityList: React.FC<EnhancedActivityListProps> = ({
       )}
 
       {insight}
-      {(showFilters || showSort || isDashboard) && toolbar}
-      {activityList}
+      {(showFilters || showSort || isDashboard || isGroup) && toolbar}
+      {isDashboard ? (
+        <div className={BALANCE_TABLE_GLASS_PANEL_BODY}>{activityList}</div>
+      ) : (
+        activityList
+      )}
     </div>
   );
 };

@@ -11,10 +11,16 @@ import { getOweStatusColors, getPaymentStateColors } from "@/lib/status-colors";
 import { formatCurrency } from "@/lib/locale-utils";
 import { onButtonKeyDown } from "@/lib/a11y-keyboard";
 import { cn } from "@/lib/utils";
+import {
+  BALANCE_TABLE_ROW_BASE,
+  BALANCE_TABLE_ROW_HOVER,
+  BALANCE_TABLE_ROW_ZEBRA_EVEN,
+} from "./balance-table-surface";
 import type { Balance } from "./balance-types";
 
 interface BalanceStaticRowProps {
   balance: Balance;
+  index: number;
   disabled: boolean;
   showHistory: boolean;
   fullySettled: boolean;
@@ -24,6 +30,7 @@ interface BalanceStaticRowProps {
 
 export function BalanceStaticMobileRow({
   balance,
+  index,
   disabled,
   showHistory,
   fullySettled,
@@ -48,8 +55,10 @@ export function BalanceStaticMobileRow({
       onClick={onOpenProfile}
       onKeyDown={onButtonKeyDown(onOpenProfile)}
       className={cn(
-        "flex items-center justify-between gap-3 px-4 py-3 transition-colors",
-        "hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+        "flex items-center justify-between gap-2.5 px-3 py-2 sm:px-4 sm:py-2.5",
+        BALANCE_TABLE_ROW_HOVER,
+        index % 2 === 0 && BALANCE_TABLE_ROW_ZEBRA_EVEN,
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
         disabled && "cursor-not-allowed opacity-50",
         fullySettled && `opacity-60 ${getPaymentStateColors("paid").bg}`
       )}
@@ -164,8 +173,9 @@ export function BalanceStaticDesktopRow({
       variants={rowVariants}
       custom={index}
       className={cn(
-        "cursor-pointer border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
-        index % 2 === 0 && "bg-muted/50 dark:bg-muted/30",
+        "cursor-pointer [&_td]:py-1.5",
+        BALANCE_TABLE_ROW_BASE,
+        index % 2 === 0 && BALANCE_TABLE_ROW_ZEBRA_EVEN,
         disabled && "cursor-not-allowed opacity-50",
         fullySettled && `opacity-60 ${getPaymentStateColors("paid").bg}`
       )}

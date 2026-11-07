@@ -1,99 +1,93 @@
 import type { ReactNode } from "react";
 import { useLayoutEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { cn } from "@/lib/utils";
+import { BALANCE_EXPAND_MOTION_TRANSITION } from "./balance-expand-motion";
+import { BALANCE_EXPAND_GLASS_SURFACE } from "./balance-table-surface";
+
+/** Upper bound for collapse spring; keeps content mounted through exit height. */
+const COLLAPSE_MOUNT_MS = 380;
 
 interface BalanceExpandPanelProps {
   isExpanded: boolean;
   children: ReactNode;
   className?: string;
   contentClassName?: string;
+  /** When true, height tracks content without spring (avoids remeasure jerk mid-fetch). */
+  isContentLoading?: boolean;
 }
-
-const CLOSE_MS = 300;
 
 /**
  * Expand/collapse for balance row details.
  *
- * CSS grid `0fr` → `1fr` avoids Framer `height: "auto"` thrash.
- * Content stays mounted briefly on close so the collapse can animate;
- * on open it mounts in layout (before paint) so height measures correctly.
+ * Framer `height: auto` spring on one overflow-hidden shell (no AnimatePresence —
+ * avoids PopChildMeasure re-layout stutter). Content stays mounted through collapse.
+ * `prefers-reduced-motion` mounts instantly.
  */
 export function BalanceExpandPanel({
   isExpanded,
   children,
   className,
   contentClassName,
+  isContentLoading = false,
 }: BalanceExpandPanelProps) {
   const reducedMotion = useReducedMotion();
-  const [mounted, setMounted] = useState(isExpanded);
+  const [contentMounted, setContentMounted] = useState(isExpanded);
+  const heightTransition =
+    isExpanded && isContentLoading
+      ? { duration: 0 }
+      : BALANCE_EXPAND_MOTION_TRANSITION.height;
+
+  if (isExpanded && !contentMounted) {
+    setContentMounted(true);
+  }
 
   useLayoutEffect(() => {
     if (isExpanded) {
-      setMounted(true);
       return;
     }
-    if (reducedMotion) {
-      setMounted(false);
-      return;
-    }
-    const timer = window.setTimeout(() => setMounted(false), CLOSE_MS);
+    const timer = window.setTimeout(() => setContentMounted(false), COLLAPSE_MOUNT_MS);
     return () => window.clearTimeout(timer);
-  }, [isExpanded, reducedMotion]);
+  }, [isExpanded]);
+
+  if (reducedMotion) {
+    if (!isExpanded) {
+      return null;
+    }
+    return (
+      <div className={cn(BALANCE_EXPAND_GLASS_SURFACE, className)} aria-hidden={false}>
+        <div className={cn("relative p-4 pl-5", contentClassName)}>{children}</div>
+      </div>
+    );
+  }
 
   return (
-    <div
-      className={cn(
-        "grid min-h-0",
-        reducedMotion
-          ? isExpanded
-            ? "grid-rows-[1fr]"
-            : "grid-rows-[0fr]"
-          : [
-              "transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
-              "motion-reduce:transition-none",
-              isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-            ]
-      )}
+    <motion.div
+      initial={false}
+      animate={{
+        height: isExpanded ? "auto" : 0,
+        opacity: isExpanded ? 1 : 0,
+      }}
+      transition={{
+        height: heightTransition,
+        opacity: BALANCE_EXPAND_MOTION_TRANSITION.opacity,
+      }}
+      className="overflow-hidden"
       aria-hidden={!isExpanded}
-      // Prevent focus into clipped content while collapsed / closing.
       {...(!isExpanded ? { inert: true } : {})}
     >
-      <div className="min-h-0 overflow-hidden">
-        {mounted ? (
-          <div
-            className={cn(
-              "relative border-t border-border bg-muted/15",
-              className,
-              !isExpanded && "pointer-events-none",
-              reducedMotion
-                ? isExpanded
-                  ? "opacity-100"
-                  : "opacity-0"
-                : [
-                    "transition-opacity duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                    isExpanded ? "opacity-100" : "opacity-0",
-                  ]
-            )}
-          >
-            <span
-              className={cn(
-                "absolute inset-y-3 left-0 w-0.5 origin-top rounded-full bg-primary",
-                reducedMotion
-                  ? isExpanded
-                    ? "scale-y-100"
-                    : "scale-y-0"
-                  : [
-                      "transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                      isExpanded ? "scale-y-100" : "scale-y-0",
-                    ]
-              )}
-              aria-hidden
-            />
-            <div className={cn("relative p-4 pl-5", contentClassName)}>{children}</div>
-          </div>
-        ) : null}
-      </div>
-    </div>
+      {contentMounted ? (
+        <div
+          className={cn(
+            BALANCE_EXPAND_GLASS_SURFACE,
+            className,
+            !isExpanded && "pointer-events-none"
+          )}
+        >
+          <div className={cn("relative p-4 pl-5", contentClassName)}>{children}</div>
+        </div>
+      ) : null}
+    </motion.div>
   );
 }

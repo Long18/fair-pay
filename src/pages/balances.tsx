@@ -26,8 +26,6 @@ import { useSpendingInsights } from "@/hooks/analytics/use-spending-insights";
 // Layout primitives
 import { PageContainer } from "@/components/ui/page-container";
 import { PageContent } from "@/components/ui/page-content";
-import { PageHeader } from "@/components/ui/page-header";
-
 // UI components
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -75,6 +73,7 @@ import { exportUserExpensesCsv } from "@/lib/export/fetch-and-export-expenses";
 import { usePlan, EXPORT_REQUIRES_PRO } from "@/modules/billing";
 import { BudgetSection, CategoriesTemplatesSection } from "@/modules/budgets";
 import { Link } from "react-router";
+import { ScrollReveal, StaggerChildren } from "@/lib/motion";
 
 // Icons
 import {
@@ -88,7 +87,6 @@ import {
   CalendarIcon,
   ActivityIcon,
   TrendingUpIcon,
-  FilterIcon,
 } from "@/components/ui/icons";
 
 import { dispatchSettlementEvent } from "@/lib/settlement-events";
@@ -456,79 +454,10 @@ export const BalancesPage = () => {
 
   // ── render ─────────────────────────────────────────────────────────────
   return (
-    <PageContainer padding="none" variant="default" withBackground fullHeight>
+    <PageContainer padding="none" variant="default">
       <PageContent>
-        <PageHeader
-          title={t("reports.spendingInsights", "Insights")}
-          action={
-            <div className="flex items-center justify-end gap-2">
-              {EXPORT_REQUIRES_PRO && !isPro ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1.5 text-muted-foreground hover:text-foreground"
-                  asChild
-                >
-                  <Link to="/pricing">
-                    <DownloadIcon className="h-4 w-4" />
-                    <span className="hidden sm:inline text-xs">
-                      {t("billing.upgradeToExport", "Upgrade to export")}
-                    </span>
-                  </Link>
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    onClick={() => void handleExportExpensesCsv()}
-                    variant="ghost"
-                    size="sm"
-                    disabled={!identity?.id}
-                    className="gap-1.5 text-muted-foreground hover:text-foreground"
-                    aria-label={t("reports.exportExpensesCSV", "Export expenses CSV")}
-                  >
-                    <DownloadIcon className="h-4 w-4" />
-                    <span className="hidden sm:inline text-xs">
-                      {t("reports.exportExpensesCSV", "Expenses CSV")}
-                    </span>
-                  </Button>
-                  <Button
-                    onClick={handleExportCSV}
-                    variant="ghost"
-                    size="sm"
-                    disabled={isReportsLoading || breakdown.length === 0}
-                    className="gap-1.5 text-muted-foreground hover:text-foreground"
-                    aria-label={t("reports.exportCSV", "Export CSV")}
-                  >
-                    <DownloadIcon className="h-4 w-4" />
-                    <span className="hidden sm:inline text-xs">CSV</span>
-                  </Button>
-                  <Button
-                    onClick={handleExportPDF}
-                    variant="ghost"
-                    size="sm"
-                    disabled={isReportsLoading || breakdown.length === 0}
-                    className="gap-1.5 text-muted-foreground hover:text-foreground"
-                    aria-label={t("reports.exportPDF", "Export PDF")}
-                  >
-                    <FileTextIcon className="h-4 w-4" />
-                    <span className="hidden sm:inline text-xs">PDF</span>
-                  </Button>
-                </>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                disabled={isRefreshing || isBalancesLoading}
-                className="gap-2"
-                aria-label={t("balances.refresh", "Refresh")}
-              >
-                <RefreshCwIcon className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} aria-hidden="true" />
-                <span className="hidden sm:inline text-xs">{t("balances.refresh", "Refresh")}</span>
-              </Button>
-            </div>
-          }
-        />
+        <StaggerChildren className="flex flex-col gap-4">
+        <h1 className="sr-only">{t("analytics.spendingInsights", "Spending Insights")}</h1>
 
         {/* ──────────────────────────────────────────────────────────────
             ERROR BANNER
@@ -545,12 +474,10 @@ export const BalancesPage = () => {
         {/* ──────────────────────────────────────────────────────────────
             FILTER TOOLBAR – compact horizontal bar
         ────────────────────────────────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 animate-fade-in" style={{ animationDelay: "180ms" }}>
-          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-            <FilterIcon className="h-4 w-4" />
-            <span>{t("reports.filters")}</span>
-          </div>
-          <div className="flex flex-wrap gap-2 flex-1">
+        <ScrollReveal direction="up">
+        <div className="rounded-xl border border-border/60 bg-card p-3 sm:p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
             {/* Time Period */}
             <Select value={preset} onValueChange={handlePresetChange}>
               <SelectTrigger
@@ -631,39 +558,61 @@ export const BalancesPage = () => {
                 ))}
               </SelectContent>
             </Select>
+          </div>
 
-            {/* Chart Type – only relevant on charts tab */}
-            {activeTab === "charts" && (
-              <Select value={chartType} onValueChange={(v) => setChartType(v as "pie" | "bar")}>
-                <SelectTrigger
-                  id="chart-type"
-                  className="h-8 w-auto min-w-[100px] text-xs border-border bg-card rounded-lg px-3 shadow-none focus:ring-1 focus:ring-primary/30"
+          <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
+            {EXPORT_REQUIRES_PRO && !isPro ? (
+              <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
+                <Link to="/pricing">{t("billing.upgradeToExport", "View Pro plan")}</Link>
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs gap-1.5"
+                  onClick={() => void handleExportExpensesCsv()}
+                  disabled={!identity?.id}
                 >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pie">{t("analytics.pieChart")}</SelectItem>
-                  <SelectItem value="bar">{t("analytics.barChart")}</SelectItem>
-                </SelectContent>
-              </Select>
+                  <DownloadIcon className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">{t("reports.exportExpensesCSV", "Expenses")}</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={handleExportCSV}
+                  disabled={breakdown.length === 0}
+                >
+                  CSV
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs gap-1.5"
+                  onClick={handleExportPDF}
+                  disabled={breakdown.length === 0}
+                >
+                  <FileTextIcon className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">PDF</span>
+                </Button>
+              </>
             )}
-
-            {/* Comparison toggle – only relevant on charts tab */}
-            {activeTab === "charts" && (
-              <div className="flex items-center gap-2 ml-auto sm:ml-2 pl-3 border-l border-border">
-                <Label htmlFor="show-comparison" className="text-xs text-muted-foreground cursor-pointer whitespace-nowrap">
-                  {t("reports.showComparison", "Compare")}
-                </Label>
-                <Switch
-                  id="show-comparison"
-                  checked={showComparison}
-                  onCheckedChange={setShowComparison}
-                  className="h-4 w-7"
-                />
-              </div>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs gap-1.5"
+              onClick={handleRefresh}
+              disabled={isRefreshing || isBalancesLoading}
+              aria-label={t("balances.refresh", "Refresh")}
+            >
+              <RefreshCwIcon className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
+              {t("balances.refresh", "Refresh")}
+            </Button>
+          </div>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* ──────────────────────────────────────────────────────────────
             LOADING (reports section)
@@ -677,52 +626,50 @@ export const BalancesPage = () => {
         ────────────────────────────────────────────────────────────── */}
         {!isReportsLoading && (
           <>
-            {/* Spending summary stats row */}
-            <SpendingSummaryStats summary={summary} />
-
-            {/* Period comparison (conditional) */}
-            {showComparison && (
-              <ComparisonChart data={comparison} isLoading={comparisonLoading} />
-            )}
-
-            {/* Insights panel */}
-            <InsightsPanel insights={insights} isLoading={insightsLoading} />
-
-            <BudgetSection
-              actuals={breakdown.map((item) => ({
-                category: item.category,
-                amount: item.amount,
-              }))}
-            />
-
-            <CategoriesTemplatesSection />
-
-            {/* Tabs – underline variant for primary, pill for nested */}
             <div ref={chartsRef}>
               <Tabs
-                variant="underline"
+                variant="pill"
                 value={activeTab}
                 onValueChange={(v) => setActiveTab(v as MergedTab)}
-                className="space-y-4 md:space-y-6"
+                className="gap-4"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <TabsList className="w-full sm:w-auto">
-                    <TabsTrigger value="charts" className="text-xs sm:text-sm">
+                <div className="flex w-full items-center justify-center px-1 sm:px-0">
+                  <TabsList
+                    className={cn(
+                      "inline-flex h-auto w-full max-w-2xl flex-wrap justify-center gap-1 overflow-hidden rounded-xl border border-border bg-muted/40 p-1",
+                      showSpenders
+                        ? "grid grid-cols-2 max-sm:grid-cols-2 sm:grid sm:grid-cols-4"
+                        : "grid max-w-md grid-cols-2 sm:grid-cols-3"
+                    )}
+                  >
+                    <TabsTrigger
+                      value="charts"
+                      className="min-h-9 gap-1.5 rounded-md px-2 text-xs focus-visible:ring-offset-0 sm:text-sm"
+                    >
                       {t("reports.charts", "Charts")}
                     </TabsTrigger>
-                    <TabsTrigger value="breakdown" className="text-xs sm:text-sm">
+                    <TabsTrigger
+                      value="breakdown"
+                      className="min-h-9 gap-1.5 rounded-md px-2 text-xs focus-visible:ring-offset-0 sm:text-sm"
+                    >
                       {t("reports.breakdown", "Breakdown")}
                     </TabsTrigger>
-                    <TabsTrigger value="balances" className="text-xs sm:text-sm">
+                    <TabsTrigger
+                      value="balances"
+                      className="min-h-9 gap-1.5 rounded-md px-2 text-xs focus-visible:ring-offset-0 sm:text-sm"
+                    >
                       {t("balances.title", "Balances")}
                       {debts.length > 0 && (
-                        <span className="ml-1.5 text-xs bg-primary/10 text-primary rounded-full px-1.5 py-0.5">
+                        <span className="ml-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
                           {debts.length}
                         </span>
                       )}
                     </TabsTrigger>
                     {showSpenders && (
-                      <TabsTrigger value="spenders" className="text-xs sm:text-sm">
+                      <TabsTrigger
+                        value="spenders"
+                        className="min-h-9 gap-1.5 rounded-md px-2 text-xs focus-visible:ring-offset-0 sm:text-sm"
+                      >
                         {t("reports.topSpenders", "Top Spenders")}
                       </TabsTrigger>
                     )}
@@ -730,9 +677,45 @@ export const BalancesPage = () => {
                 </div>
 
                 {/* ─── Charts Tab ──────────────────────────────────── */}
-                <TabsContent value="charts" className="space-y-4 md:space-y-6 mt-2 animate-fade-in">
+                <TabsContent value="charts" className="space-y-4 mt-3 animate-fade-in">
+                  <SpendingSummaryStats summary={summary} />
+
+                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                    <Select value={chartType} onValueChange={(v) => setChartType(v as "pie" | "bar")}>
+                      <SelectTrigger
+                        id="chart-type"
+                        className="h-8 w-full sm:w-auto sm:min-w-[120px] text-xs border-border bg-card rounded-lg shadow-none"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pie">{t("analytics.pieChart")}</SelectItem>
+                        <SelectItem value="bar">{t("analytics.barChart")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="flex min-h-9 items-center gap-2">
+                      <Label
+                        htmlFor="show-comparison"
+                        className="cursor-pointer whitespace-nowrap text-xs text-muted-foreground"
+                      >
+                        {t("reports.showComparison", "Compare")}
+                      </Label>
+                      <Switch
+                        id="show-comparison"
+                        checked={showComparison}
+                        onCheckedChange={setShowComparison}
+                      />
+                    </div>
+                  </div>
+
+                  {showComparison && (
+                    <ComparisonChart data={comparison} isLoading={comparisonLoading} />
+                  )}
+
+                  <InsightsPanel insights={insights} isLoading={insightsLoading} />
+
                   {breakdown.length === 0 ? (
-                    <Card className="border-0 shadow-sm">
+                    <Card className="rounded-xl border border-border/60 shadow-none">
                       <CardContent className="py-16 text-center">
                         <div className="space-y-3 max-w-sm mx-auto">
                           <div className="flex justify-center">
@@ -766,7 +749,7 @@ export const BalancesPage = () => {
                       </div>
                       <div data-chart className="w-full">
                         {trend.length === 0 ? (
-                          <Card className="border-0 shadow-sm">
+                          <Card className="rounded-xl border border-border/60 shadow-none">
                             <CardContent className="py-16 text-center">
                               <div className="space-y-3 max-w-sm mx-auto">
                                 <div className="flex justify-center">
@@ -792,9 +775,16 @@ export const BalancesPage = () => {
                 </TabsContent>
 
                 {/* ─── Breakdown Tab ─────────────────────────────────── */}
-                <TabsContent value="breakdown" className="mt-2 animate-fade-in">
+                <TabsContent value="breakdown" className="space-y-4 mt-3 animate-fade-in">
+                  <BudgetSection
+                    actuals={breakdown.map((item) => ({
+                      category: item.category,
+                      amount: item.amount,
+                    }))}
+                  />
+                  <CategoriesTemplatesSection />
                   {topCategories && topCategories.length === 0 && !topCategoriesLoading ? (
-                    <Card className="border-0 shadow-sm">
+                    <Card className="rounded-xl border border-border/60 shadow-none">
                       <CardContent className="py-16 text-center">
                         <div className="space-y-3 max-w-sm mx-auto">
                           <div className="flex justify-center">
@@ -822,12 +812,12 @@ export const BalancesPage = () => {
                     <LoadingBeam text={t("balances.loading")} />
                   ) : debts.length === 0 ? (
                     /* empty / all settled – clean empty state */
-                    <Card className="border-0 shadow-sm">
+                    <Card className="rounded-xl border border-border/60 shadow-none">
                       <CardContent className="py-20 text-center">
                         <div className="space-y-3 max-w-sm mx-auto">
                           <div className="flex justify-center">
                             <div className="size-10 rounded-lg bg-muted flex items-center justify-center">
-                              <CheckCircle2Icon className="h-5 w-5 text-green-500" />
+                              <CheckCircle2Icon className="h-5 w-5 text-semantic-positive" />
                             </div>
                           </div>
                           <div className="space-y-1">
@@ -849,25 +839,33 @@ export const BalancesPage = () => {
                       onValueChange={(v) => setBalancesSubTab(v as "you-owe" | "owed-to-you")}
                       className="space-y-4"
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <TabsList className="w-full sm:w-auto">
-                          <TabsTrigger value="you-owe" className="text-xs sm:text-sm">
-                            {t("balances.youOwe", "You Owe")}
-                            {iOwe.length > 0 && (
-                              <span className="ml-1.5 text-xs bg-status-error-bg text-semantic-negative rounded-full px-1.5 py-0.5">
-                                {iOwe.length}
-                              </span>
-                            )}
-                          </TabsTrigger>
-                          <TabsTrigger value="owed-to-you" className="text-xs sm:text-sm">
-                            {t("balances.owedToYou", "Owed to You")}
-                            {owedToMe.length > 0 && (
-                              <span className="ml-1.5 text-xs bg-status-success-bg text-semantic-positive rounded-full px-1.5 py-0.5">
-                                {owedToMe.length}
-                              </span>
-                            )}
-                          </TabsTrigger>
-                        </TabsList>
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex w-full items-center justify-center sm:w-auto sm:justify-start">
+                          <TabsList className="grid h-auto w-full max-w-md grid-cols-2 gap-1 overflow-hidden rounded-xl border border-border bg-muted/40 p-1 sm:w-auto">
+                            <TabsTrigger
+                              value="you-owe"
+                              className="min-h-9 gap-1.5 rounded-md px-2 text-xs focus-visible:ring-offset-0 sm:text-sm"
+                            >
+                              {t("balances.youOwe", "You Owe")}
+                              {iOwe.length > 0 && (
+                                <span className="ml-0.5 rounded-full bg-status-error-bg px-1.5 py-0.5 text-[10px] text-semantic-negative">
+                                  {iOwe.length}
+                                </span>
+                              )}
+                            </TabsTrigger>
+                            <TabsTrigger
+                              value="owed-to-you"
+                              className="min-h-9 gap-1.5 rounded-md px-2 text-xs focus-visible:ring-offset-0 sm:text-sm"
+                            >
+                              {t("balances.owedToYou", "Owed to You")}
+                              {owedToMe.length > 0 && (
+                                <span className="ml-0.5 rounded-full bg-status-success-bg px-1.5 py-0.5 text-[10px] text-semantic-positive">
+                                  {owedToMe.length}
+                                </span>
+                              )}
+                            </TabsTrigger>
+                          </TabsList>
+                        </div>
 
                         {/* Sort selector */}
                         <Select
@@ -918,7 +916,7 @@ export const BalancesPage = () => {
                         {iOwe.length > 0 ? (
                           <>
                             {/* Settle All banner */}
-                            <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-md bg-gradient-to-r from-red-50 to-transparent dark:from-red-950/20 dark:to-transparent border border-red-100 dark:border-red-900/30">
+                            <div className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/40 px-4 py-2.5">
                               <p className="text-sm text-foreground">
                                 <span className="text-muted-foreground">{t("balances.youOweTotal", "You owe")}</span>{" "}
                                 <span className="font-bold tabular-nums text-semantic-negative">
@@ -932,7 +930,7 @@ export const BalancesPage = () => {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setSettleAllDialogOpen(true)}
-                                className="gap-1.5 h-8 text-xs shrink-0 border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800/40 dark:text-green-400 dark:hover:bg-green-950/30"
+                                className="h-8 shrink-0 gap-1.5 text-xs"
                                 aria-label={t("balances.settleAll", "Settle All")}
                                 disabled={!userIsAdmin}
                                 title={!userIsAdmin ? t("balances.onlyAdminCanSettle", "Only admin can settle debts you owe") : undefined}
@@ -944,12 +942,12 @@ export const BalancesPage = () => {
                             <SimplifiedDebts debts={iOwe} isLoading={isBalancesLoading} />
                           </>
                         ) : (
-                          <Card className="border-0 shadow-sm">
+                          <Card className="rounded-xl border border-border/60 shadow-none">
                             <CardContent className="py-12 text-center">
                               <div className="space-y-2.5">
                                 <div className="flex justify-center">
-                                  <div className="h-12 w-12 rounded-xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center">
-                                    <CheckCircle2Icon className="h-5.5 w-5.5 text-green-500 dark:text-green-400" />
+                                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-status-success-bg">
+                                    <CheckCircle2Icon className="h-5.5 w-5.5 text-semantic-positive" />
                                   </div>
                                 </div>
                                 <p className="text-sm text-muted-foreground">
@@ -973,7 +971,7 @@ export const BalancesPage = () => {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setSettleAllDialogOpen(true)}
-                                className="gap-1.5 h-8 text-xs shrink-0 border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800/40 dark:text-green-400 dark:hover:bg-green-950/30"
+                                className="h-8 shrink-0 gap-1.5 text-xs"
                                 aria-label={t("balances.settleAll", "Settle All")}
                               >
                                 <CheckCircle2Icon className="h-3.5 w-3.5" />
@@ -983,12 +981,12 @@ export const BalancesPage = () => {
                             <SimplifiedDebts debts={owedToMe} isLoading={isBalancesLoading} />
                           </>
                         ) : (
-                          <Card className="border-0 shadow-sm">
+                          <Card className="rounded-xl border border-border/60 shadow-none">
                             <CardContent className="py-12 text-center">
                               <div className="space-y-2.5">
                                 <div className="flex justify-center">
-                                  <div className="h-12 w-12 rounded-xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center">
-                                    <CheckCircle2Icon className="h-5.5 w-5.5 text-green-500 dark:text-green-400" />
+                                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-status-success-bg">
+                                    <CheckCircle2Icon className="h-5.5 w-5.5 text-semantic-positive" />
                                   </div>
                                 </div>
                                 <p className="text-sm text-muted-foreground">
@@ -1058,6 +1056,7 @@ export const BalancesPage = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        </StaggerChildren>
       </PageContent>
     </PageContainer>
   );

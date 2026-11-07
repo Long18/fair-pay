@@ -36,6 +36,12 @@ import { onButtonKeyDown } from "@/lib/a11y-keyboard";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/locale-utils";
+import {
+  BALANCE_TABLE_GLASS_DIVIDE,
+  BALANCE_TABLE_GLASS_SEPARATOR,
+  BALANCE_TABLE_ROW_BASE,
+  BALANCE_TABLE_ROW_ZEBRA_EVEN,
+} from "@/components/dashboard/balance/balance-table-surface";
 
 interface SettledDebt {
   counterparty_id: string | null;
@@ -152,13 +158,13 @@ function HistoryArchivePreview({
   }
 
   return (
-    <div className="space-y-3 rounded-2xl border border-border/80 bg-background/85 p-4">
-      <div className="space-y-2">
+    <div className="divide-y divide-border/60 rounded-lg border border-border/60 bg-card">
+      <div>
         {settledExpenses.map((expense) => (
           <button
             key={`${expense.expense_id}-${expense.expense_date}`}
             type="button"
-            className="grid w-full gap-3 rounded-xl bg-muted/25 px-3 py-3 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:grid-cols-[minmax(0,1fr)_auto]"
+            className="grid w-full gap-2 px-3 py-2.5 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:grid-cols-[minmax(0,1fr)_auto]"
             onClick={() => {
               tap();
               go({ to: `/expenses/show/${expense.expense_id}` });
@@ -193,8 +199,8 @@ function HistoryArchivePreview({
         ))}
       </div>
 
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-xs text-muted-foreground">{archiveNote}</span>
+      <div className="flex items-center justify-between gap-3 border-t border-border/60 px-3 py-2">
+        <span className="text-[11px] text-muted-foreground">{archiveNote}</span>
         {onViewDetails && (
           <Button
             variant="ghost"
@@ -242,9 +248,9 @@ function SettledRowExpandable({
         variants={rowVariants}
         custom={index}
         className={cn(
-          "hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors",
-          "cursor-pointer hover:bg-muted/40",
-          index % 2 === 0 && "bg-muted/10"
+          "cursor-pointer",
+          BALANCE_TABLE_ROW_BASE,
+          index % 2 === 0 && BALANCE_TABLE_ROW_ZEBRA_EVEN
         )}
         role="button"
         tabIndex={0}
@@ -257,8 +263,8 @@ function SettledRowExpandable({
           onToggleExpand();
         })}
       >
-        <TableCell className="py-4">
-          <div className="flex min-w-0 items-center gap-3">
+        <TableCell className="py-2.5">
+          <div className="flex min-w-0 items-center gap-2.5">
             <div className="relative">
               <Avatar className="h-10 w-10 rounded-xl border border-border/70">
                 <AvatarImage src={debt.counterparty_avatar_url || undefined} />
@@ -296,11 +302,11 @@ function SettledRowExpandable({
           </div>
         </TableCell>
 
-        <TableCell className="py-4">
+        <TableCell className="py-2.5">
           <SettledStatusBadge label={t("history.fullySettled", "Fully settled")} />
         </TableCell>
 
-        <TableCell className="py-4 text-right">
+        <TableCell className="py-2.5 text-right">
           <div className="text-right">
             <span className="block typography-amount-prominent tabular-nums">
               {formatCurrency(totalSettled, currency)}
@@ -311,13 +317,13 @@ function SettledRowExpandable({
           </div>
         </TableCell>
 
-        <TableCell className="py-4 text-center">
+        <TableCell className="py-2.5 text-center">
           <span className="inline-flex min-w-10 items-center justify-center rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground tabular-nums">
             {transactionCount}
           </span>
         </TableCell>
 
-        <TableCell className="py-4 text-right">
+        <TableCell className="py-2.5 text-right">
           <div className="flex items-center justify-end gap-2">
             <span className="inline-flex items-center gap-1 text-sm font-semibold text-status-success-foreground tabular-nums">
               <CheckIcon className="h-4 w-4" />
@@ -341,8 +347,8 @@ function SettledRowExpandable({
                 transition={{ duration: 0.2, ease: "easeInOut" }}
                 className="overflow-hidden"
               >
-                <div className="border-t bg-muted/15 px-5 py-4">
-                  <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                <div className="border-t border-border/60 bg-muted/20 px-3 py-2.5 sm:px-4">
+                  <div className="mb-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                     {t("history.recentSettledItems", "Recent settled items")}
                   </div>
                   <HistoryArchivePreview
@@ -555,7 +561,7 @@ export function SettledHistoryList({
 
   if (isLoading) {
     return (
-      <div className="p-6">
+      <div className="px-4 py-8 sm:px-6">
         <LoadingBeam text={t("history.loading", "Loading history...")} />
       </div>
     );
@@ -563,7 +569,7 @@ export function SettledHistoryList({
 
   if (settledDebts.length === 0) {
     return (
-      <Empty className="py-12">
+      <Empty className="border-0 py-12">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <ScaleIcon className="h-8 w-8" />
@@ -583,8 +589,11 @@ export function SettledHistoryList({
   }
 
   return (
-    <div className="space-y-4 p-6">
-      <AnimatedList items={paginatedDebts} className="block space-y-3 md:hidden">
+    <div className="flex flex-col gap-4">
+      <AnimatedList
+        items={paginatedDebts}
+        className={cn("block px-4 py-4 md:hidden", BALANCE_TABLE_GLASS_DIVIDE)}
+      >
         {paginatedDebts.map((debt, index) => {
           const rowId = debt.counterparty_id || debt.counterparty_email || debt.counterparty_name;
 
@@ -602,7 +611,7 @@ export function SettledHistoryList({
       </AnimatedList>
 
       <motion.div
-        className="hidden md:block overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+        className="hidden md:block"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -610,12 +619,24 @@ export function SettledHistoryList({
       >
         <Table>
           <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead>{t("profile.person", "Person")}</TableHead>
-              <TableHead>{t("profile.status", "Status")}</TableHead>
-              <TableHead className="text-right">{t("history.totalSettled", "Total settled")}</TableHead>
-              <TableHead className="text-center">{t("dashboard.transactions", "Transactions")}</TableHead>
-              <TableHead className="text-right">{t("dashboard.remainingAmount", "Remaining")}</TableHead>
+            <TableRow
+              className={cn("hover:bg-transparent border-b", BALANCE_TABLE_GLASS_SEPARATOR)}
+            >
+              <TableHead className="text-xs font-medium text-muted-foreground">
+                {t("profile.person", "Person")}
+              </TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">
+                {t("profile.status", "Status")}
+              </TableHead>
+              <TableHead className="text-right text-xs font-medium text-muted-foreground">
+                {t("history.totalSettled", "Total settled")}
+              </TableHead>
+              <TableHead className="text-center text-xs font-medium text-muted-foreground">
+                {t("dashboard.transactions", "Transactions")}
+              </TableHead>
+              <TableHead className="text-right text-xs font-medium text-muted-foreground">
+                {t("dashboard.remainingAmount", "Remaining")}
+              </TableHead>
             </TableRow>
           </TableHeader>
 
@@ -640,12 +661,14 @@ export function SettledHistoryList({
       </motion.div>
 
       {totalPages > 1 && (
-        <PaginationControls
-          metadata={metadata}
-          onPageChange={handlePageChange}
-          showFirstLast={true}
-          maxVisiblePages={5}
-        />
+        <div className="px-4 pb-4 sm:px-6">
+          <PaginationControls
+            metadata={metadata}
+            onPageChange={handlePageChange}
+            showFirstLast={true}
+            maxVisiblePages={5}
+          />
+        </div>
       )}
     </div>
   );

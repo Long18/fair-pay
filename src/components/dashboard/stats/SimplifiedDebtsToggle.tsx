@@ -52,14 +52,14 @@ export function SimplifiedDebtsToggle({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {canMinimize && (
-        <div className="flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-0.5">
-            <p className="text-sm font-medium">
+        <div className="flex flex-col gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 space-y-0.5">
+            <p className="text-xs font-medium leading-tight">
               {t("debts.minimizeTransfersTitle", "Minimize transfers")}
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground leading-snug">
               {t(
                 "debts.minimizeTransfersDescription",
                 "Settle multi-party balances with fewer payments. Totals stay the same."
@@ -68,7 +68,8 @@ export function SimplifiedDebtsToggle({
           </div>
           <Button
             type="button"
-            className="shrink-0 cursor-pointer gap-2"
+            size="sm"
+            className="h-8 shrink-0 cursor-pointer gap-1.5 text-xs"
             onClick={handleMinimize}
             disabled={isUpdating || rawCount === 0}
           >

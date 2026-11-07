@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useGetIdentity, useGo } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   CheckCircle2Icon,
@@ -42,8 +43,18 @@ function getFirstName(name: string) {
   return name.trim().split(/\s+/)[0] || name;
 }
 
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
 export function DebtBreakdownHeader({
   counterpartyName,
+  counterpartyAvatarUrl,
   netAmount,
   iOweThem,
   currency,
@@ -88,140 +99,148 @@ export function DebtBreakdownHeader({
     { name: counterpartyName },
   );
 
+  const primaryActionClass =
+    "h-10 min-w-0 min-h-10 flex-1 rounded-md px-3 text-sm sm:px-4";
+  const secondaryActionClass =
+    "h-10 min-h-10 shrink-0 rounded-md px-2.5 text-sm sm:px-3";
+
   return (
     <>
-      <section className="border-b border-border/60 pb-8 pt-2 md:pb-10 md:pt-4">
-        <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
-          <p className="text-base font-semibold tracking-tight text-foreground">
-            {counterpartyName}
-          </p>
-          <p className="mt-3 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-            {relationshipLabel}
-          </p>
-
+      <section className="border-b border-border/60 px-3 pb-4 pt-3 sm:px-4 sm:pb-5">
+        <div className="mx-auto w-full max-w-2xl sm:max-w-none">
           <p
             className={cn(
-              "mt-4 text-5xl font-extrabold tracking-[-0.05em] text-foreground sm:text-6xl",
-              iOweThem ? "text-semantic-negative" : "text-semantic-positive"
+              "text-center text-4xl font-bold tabular-nums tracking-tight sm:text-left sm:text-5xl",
+              iOweThem ? "text-semantic-negative" : "text-semantic-positive",
             )}
           >
             {formatSignedCurrency(iOweThem ? -netAmount : netAmount, currency)}
           </p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {t("debts.netBalance", "Net balance")}
-          </p>
 
-          <div className="mt-6 flex items-center gap-4 text-sm sm:gap-6">
-            <div className="flex flex-col items-center">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                {t("debts.youOweShort", "You owe")}
-              </span>
-              <span className="mt-1 font-semibold text-semantic-negative tabular-nums">
-                {formatCurrency(totalIOwe, currency)}
-              </span>
-            </div>
-            <div className="h-8 w-px bg-border" />
-            <div className="flex flex-col items-center">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                {t("debts.owesYouShort", "Owes you")}
-              </span>
-              <span className="mt-1 font-semibold text-semantic-positive tabular-nums">
-                {formatCurrency(totalTheyOwe, currency)}
-              </span>
+          <div className="mx-auto mt-3 flex w-full max-w-md items-center gap-3 sm:mx-0 sm:mt-4 sm:max-w-none">
+            <Avatar className="size-10 shrink-0 ring-2 ring-border/40 sm:size-12">
+              <AvatarImage src={counterpartyAvatarUrl ?? undefined} alt={counterpartyName} />
+              <AvatarFallback className="bg-muted text-sm font-semibold">
+                {getInitials(counterpartyName)}
+              </AvatarFallback>
+            </Avatar>
+
+            <div className="min-w-0 flex-1 text-left">
+              <p className="truncate text-base font-semibold tracking-tight text-foreground">
+                {counterpartyName}
+              </p>
+              <p className="mt-0.5 truncate text-sm text-muted-foreground">{relationshipLabel}</p>
             </div>
           </div>
 
-          <div className="mt-8 flex w-full max-w-md gap-3">
-            {canPayViaSePay && (
-              <Button
-                className="h-12 min-w-0 flex-1 rounded-xl px-3 text-sm sm:px-4"
-                onClick={() => {
-                  tap();
-                  setSepayDialogOpen(true);
-                }}
-              >
-                <CreditCardIcon className="h-4 w-4 shrink-0" />
-                <span className="truncate">
-                  {t("payments.payViaSePay", "Pay via SePay")}
-                </span>
-              </Button>
-            )}
+          {(totalIOwe > 0 || totalTheyOwe > 0) && (
+            <dl className="mx-auto mt-3 grid w-full max-w-md grid-cols-2 gap-x-4 gap-y-0.5 border-t border-border/60 pt-2.5 text-sm sm:mx-0 sm:max-w-none">
+              <div className="min-w-0 text-left">
+                <dt className="text-xs text-muted-foreground">
+                  {t("debts.youOweShort", "You owe")}
+                </dt>
+                <dd className="font-medium tabular-nums text-foreground">
+                  {formatCurrency(totalIOwe, currency)}
+                </dd>
+              </div>
+              <div className="min-w-0 text-right sm:text-left">
+                <dt className="text-xs text-muted-foreground">
+                  {t("debts.owesYouShort", "Owes you")}
+                </dt>
+                <dd className="font-medium tabular-nums text-foreground">
+                  {formatCurrency(totalTheyOwe, currency)}
+                </dd>
+              </div>
+            </dl>
+          )}
 
-            {canRecordPayment && (
-              <Button
-                className="h-12 min-w-0 flex-1 rounded-xl px-3 text-sm sm:px-4"
-                onClick={() => {
-                  tap();
-                  onRecordPayment?.();
-                }}
-              >
-                <CreditCardIcon className="h-4 w-4 shrink-0" />
-                <span className="truncate">
-                  {t("debts.recordPayment", "Record payment")}
-                </span>
-              </Button>
-            )}
+          <div className="mx-auto mt-4 flex w-full max-w-md flex-row flex-wrap items-center justify-center gap-2 sm:mx-0 sm:max-w-none sm:justify-start">
+                {canPayViaSePay && (
+                  <Button
+                    className={primaryActionClass}
+                    onClick={() => {
+                      tap();
+                      setSepayDialogOpen(true);
+                    }}
+                  >
+                    <CreditCardIcon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">
+                      {t("payments.payViaSePay", "Pay via SePay")}
+                    </span>
+                  </Button>
+                )}
 
-            {!canPayViaSePay && !canRecordPayment && canSettle && (
-              <Button
-                className="h-12 min-w-0 flex-1 rounded-xl px-3 text-sm sm:px-4"
-                onClick={() => {
-                  tap();
-                  onSettleAll?.();
-                }}
-                disabled={isSettlingAll}
-              >
-                <CheckCircle2Icon className="h-4 w-4 shrink-0" />
-                <span className="truncate">
-                  {isSettlingAll
-                    ? t("debts.settling", "Settling…")
-                    : t("debts.settleUp", "Settle up")}
-                </span>
-              </Button>
-            )}
+                {canRecordPayment && (
+                  <Button
+                    className={primaryActionClass}
+                    onClick={() => {
+                      tap();
+                      onRecordPayment?.();
+                    }}
+                  >
+                    <CreditCardIcon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">
+                      {t("debts.recordPayment", "Record payment")}
+                    </span>
+                  </Button>
+                )}
 
-            <Button
-              variant="outline"
-              className={cn(
-                "h-12 min-w-0 rounded-xl px-3 text-sm sm:px-4",
-                canPayViaSePay || canRecordPayment || canSettle ? "flex-1" : "flex-1"
-              )}
-              onClick={() => {
-                tap();
-                go({ to: `/expenses/create?with=${counterpartyId}` });
-              }}
-            >
-              <PlusIcon className="h-4 w-4 shrink-0" />
-              <span className="truncate">
-                {t("debts.addExpense", "Add expense")}
-              </span>
-            </Button>
+                {!canPayViaSePay && !canRecordPayment && canSettle && (
+                  <Button
+                    className={primaryActionClass}
+                    onClick={() => {
+                      tap();
+                      onSettleAll?.();
+                    }}
+                    disabled={isSettlingAll}
+                  >
+                    <CheckCircle2Icon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">
+                      {isSettlingAll
+                        ? t("debts.settling", "Settling…")
+                        : t("debts.settleUp", "Settle up")}
+                    </span>
+                  </Button>
+                )}
 
-            <SharePlatformPicker
-              shareUrl={getShareUrl}
-              destinationUrl={getDestinationUrl}
-              title={shareTitle}
-              text={shareText}
-              entityType="debt"
-              entityId={counterpartyId}
-              campaign="debt_share"
-              content="debt_detail_share_button"
-              templateKey="debt_detail_share_button"
-              successMessage={t("common.shareOpened", "Share link opened")}
-              copyMessage={t("common.linkCopied", "Link copied to clipboard")}
-              errorMessage={t("common.shareError", "Failed to share link")}
-              trigger={
                 <Button
                   variant="outline"
-                  className="h-12 w-12 shrink-0 rounded-xl px-0"
-                  onClick={tap}
-                  aria-label={t("common.share", "Share")}
+                  className={cn(secondaryActionClass, "min-w-0 flex-1 sm:flex-none sm:flex-initial")}
+                  onClick={() => {
+                    tap();
+                    go({ to: `/expenses/create?with=${counterpartyId}` });
+                  }}
                 >
-                  <ShareIcon className="h-4 w-4" />
-                  <span className="sr-only">{t("common.share", "Share")}</span>
+                  <PlusIcon className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{t("debts.addExpense", "Add expense")}</span>
                 </Button>
-              }
-            />
+
+                <SharePlatformPicker
+                  shareUrl={getShareUrl}
+                  destinationUrl={getDestinationUrl}
+                  title={shareTitle}
+                  text={shareText}
+                  entityType="debt"
+                  entityId={counterpartyId}
+                  campaign="debt_share"
+                  content="debt_detail_share_button"
+                  templateKey="debt_detail_share_button"
+                  successMessage={t("common.shareOpened", "Share link opened")}
+                  copyMessage={t("common.linkCopied", "Link copied to clipboard")}
+                  errorMessage={t("common.shareError", "Failed to share link")}
+                  trigger={
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="size-10 min-h-10 shrink-0 rounded-md"
+                      onClick={tap}
+                      aria-label={t("common.share", "Share")}
+                    >
+                      <ShareIcon className="h-4 w-4" />
+                      <span className="sr-only">{t("common.share", "Share")}</span>
+                    </Button>
+                  }
+                />
           </div>
         </div>
       </section>

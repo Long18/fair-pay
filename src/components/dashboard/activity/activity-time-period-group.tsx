@@ -21,6 +21,7 @@ export interface ActivityTimePeriodGroupProps {
   duplicateIds: Set<string>;
   showActions?: boolean;
   variant?: EnhancedActivityListVariant;
+  rowVariant?: EnhancedActivityListVariant;
   className?: string;
 }
 
@@ -33,12 +34,16 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
   duplicateIds,
   showActions = false,
   variant = "default",
+  rowVariant,
   className,
 }) => {
   const { t } = useTranslation();
   const { tap } = useHaptics();
   const hasActivities = group.activities.length > 0;
   const isDashboard = variant === "dashboard";
+  const isGroup = variant === "group";
+  const isFlatList = isDashboard || isGroup;
+  const effectiveRowVariant = rowVariant ?? variant;
   const labelByPeriod = {
     today: t("dashboard.activityFeed.time.today", "Today"),
     this_week: t("dashboard.activityFeed.time.thisWeek", "This Week"),
@@ -51,11 +56,11 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
   }
 
   return (
-    <section className={cn(isDashboard ? "space-y-0" : "space-y-3", className)}>
+    <section className={cn(isFlatList ? "space-y-0" : "space-y-3", className)}>
       <div
         className={cn(
           "flex items-center gap-2",
-          isDashboard && "sticky top-0 z-10 border-b border-border/60 bg-card/95 px-4 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-card/80"
+          (isDashboard || isGroup) && "border-b border-border/60 bg-muted/20 px-3 py-1.5"
         )}
       >
         <button
@@ -67,8 +72,8 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
           className={cn(
             "flex items-center gap-2 rounded-md px-1 py-1 transition-colors",
             "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-            isDashboard
-              ? "text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground"
+            isFlatList
+              ? "text-[11px] font-medium text-muted-foreground hover:text-foreground"
               : "text-sm font-semibold text-foreground hover:text-foreground/80"
           )}
           aria-label={
@@ -104,8 +109,8 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
           >
-            {isDashboard ? (
-              <ItemGroup className="divide-y divide-border/70">
+            {isFlatList ? (
+              <ItemGroup className="divide-y divide-border/60">
                 {group.activities.map((activity) => (
                   <EnhancedActivityRow
                     key={activity.id}
@@ -115,7 +120,7 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
                     onToggleExpand={() => onToggleActivity(activity.id)}
                     showDuplicateContext={duplicateIds.has(activity.id)}
                     showActions={showActions}
-                    variant={variant}
+                    variant={effectiveRowVariant}
                   />
                 ))}
               </ItemGroup>
@@ -130,7 +135,7 @@ export const ActivityTimePeriodGroup: React.FC<ActivityTimePeriodGroupProps> = (
                       onToggleExpand={() => onToggleActivity(activity.id)}
                       showDuplicateContext={duplicateIds.has(activity.id)}
                       showActions={showActions}
-                      variant={variant}
+                      variant={effectiveRowVariant}
                     />
                   </AnimatedRow>
                 ))}

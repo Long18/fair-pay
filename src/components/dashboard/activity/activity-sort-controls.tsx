@@ -56,7 +56,13 @@ export const ActivitySortControls: React.FC<ActivitySortControlsProps> = ({
     <div className={cn("flex items-center gap-2", compact && "gap-1.5", className)}>
       <ArrowUpDownIcon className={cn("text-muted-foreground", compact ? "h-3.5 w-3.5" : "h-4 w-4")} />
       <Select value={activeSort} onValueChange={(v) => { tap(); onSortChange(v as SortOption); }}>
-        <SelectTrigger className={cn(compact ? "h-8 w-[164px] rounded-full text-xs sm:text-sm" : "w-[200px] rounded-lg")}>
+        <SelectTrigger
+          className={cn(
+            compact
+              ? "h-8 w-[164px] rounded-lg border-border/60 text-xs shadow-none sm:text-sm"
+              : "w-[200px] rounded-lg"
+          )}
+        >
           <SelectValue placeholder={t("dashboard.activityFeed.sort.placeholder", "Sort by...")} />
         </SelectTrigger>
         <SelectContent>

@@ -24,7 +24,9 @@ import { AnimatedRow } from "@/components/ui/animated-row";
 import { BalanceRowSkeleton } from "@/components/skeletons/BalanceRowSkeleton";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useStaggerAnimation } from "@/hooks/ui/use-stagger-animation";
+import { DURATION_S, EASING } from "@/lib/motion";
 import { matchesSearchFields } from "@/lib/search-utils";
+import { cn } from "@/lib/utils";
 import {
   BalanceTableRowExpandable,
   BalanceTableRowExpandableMobile,
@@ -37,7 +39,14 @@ import {
   BalanceStaticDesktopRow,
   BalanceStaticMobileRow,
 } from "./balance-static-rows";
+import { buildBalanceSummaryContext } from "./balance-summary-context";
+import { useBalanceTotals } from "./summary-strip";
 
+import {
+  BALANCE_TABLE_GLASS_DIVIDE,
+  BALANCE_TABLE_GLASS_PANEL_BODY,
+  BALANCE_TABLE_GLASS_SEPARATOR,
+} from "./balance-table-surface";
 import type { Balance } from "./balance-types";
 
 export type { Balance } from "./balance-types";
@@ -49,6 +58,7 @@ interface BalanceTableProps {
   showHistory?: boolean;
   showExpenseBreakdown?: boolean;
   isLoading?: boolean;
+  className?: string;
 }
 
 function getBalanceRowId(balance: Balance) {
@@ -77,6 +87,7 @@ export function BalanceTable({
   showHistory = false,
   showExpenseBreakdown = false,
   isLoading = false,
+  className,
 }: BalanceTableProps) {
   const go = useGo();
   const { t } = useTranslation();
@@ -117,7 +128,6 @@ export function BalanceTable({
       staggerDelay: 0.05,
       rowDuration: 0.3,
       yOffset: 12,
-      maxStaggerCount: 15,
     }
   );
 
@@ -128,6 +138,12 @@ export function BalanceTable({
       owed: balances.filter((balance) => !balance.i_owe_them).length,
     }),
     [balances]
+  );
+
+  const balanceTotals = useBalanceTotals(balances);
+  const balanceSummaryContext = useMemo(
+    () => buildBalanceSummaryContext(balances),
+    [balances],
   );
 
   const metadata: PaginationMetadata = {
@@ -173,38 +189,54 @@ export function BalanceTable({
 
   if (isLoading && balances.length === 0) {
     return (
-      <BalanceRowSkeleton
-        count={Math.min(pageSize, 5)}
-        showHistory={showHistory}
-      />
+      <div className={cn("flex flex-col", className)}>
+        <BalanceTableToolbar
+          searchQuery={searchQuery}
+          onSearchChange={handleSearchChange}
+          activeFilter={activeFilter}
+          onFilterChange={handleFilterChange}
+          filterCounts={{ all: 0, owe: 0, owed: 0 }}
+          totals={balanceTotals}
+          summaryContext={balanceSummaryContext}
+          isLoading
+        />
+        <div className={BALANCE_TABLE_GLASS_PANEL_BODY}>
+          <BalanceRowSkeleton
+            count={Math.min(pageSize, 5)}
+            showHistory={showHistory}
+          />
+        </div>
+      </div>
     );
   }
 
   if (balances.length === 0) {
     return (
-      <Empty className="border-0 py-12">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <CheckCircle2Icon className="size-5 text-status-success-foreground" />
-          </EmptyMedia>
-          <EmptyTitle>
-            {disabled
-              ? t("dashboard.loginToSeeBalances", "Log in to view your balances")
-              : t("dashboard.debtFreeTitle", "You're debt-free")}
-          </EmptyTitle>
-          <EmptyDescription>
-            {disabled
-              ? t(
-                  "dashboard.loginToSeeBalancesDesc",
-                  "Log in to view your balances and track expenses"
-                )
-              : t(
-                  "dashboard.debtFreeDescription",
-                  "No one owes you and you don't owe anyone."
-                )}
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
+      <div className={cn("flex flex-col", className)}>
+        <Empty className="border-0 py-12">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <CheckCircle2Icon className="size-5 text-status-success-foreground" />
+            </EmptyMedia>
+            <EmptyTitle>
+              {disabled
+                ? t("dashboard.loginToSeeBalances", "Log in to view your balances")
+                : t("dashboard.debtFreeTitle", "You're debt-free")}
+            </EmptyTitle>
+            <EmptyDescription>
+              {disabled
+                ? t(
+                    "dashboard.loginToSeeBalancesDesc",
+                    "Log in to view your balances and track expenses"
+                  )
+                : t(
+                    "dashboard.debtFreeDescription",
+                    "No one owes you and you don't owe anyone."
+                  )}
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      </div>
     );
   }
 
@@ -213,15 +245,19 @@ export function BalanceTable({
   const listRevealKey = `${activeFilter}:${safePage}`;
 
   return (
-    <div className="flex flex-col">
+    <div className={cn("flex flex-col", className)}>
       <BalanceTableToolbar
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
         activeFilter={activeFilter}
         onFilterChange={handleFilterChange}
         filterCounts={filterCounts}
+        totals={balanceTotals}
+        summaryContext={balanceSummaryContext}
+        isLoading={isLoading}
       />
 
+      <div className={BALANCE_TABLE_GLASS_PANEL_BODY}>
       {filteredBalances.length === 0 ? (
         <Empty className="border-0 py-14">
           <EmptyHeader>
@@ -246,12 +282,12 @@ export function BalanceTable({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.12, ease: "easeOut" }}
+            transition={{ duration: DURATION_S.fast, ease: EASING.out }}
             className="flex flex-col"
           >
             <AnimatedList
               items={paginatedBalances}
-              className="divide-y divide-border md:hidden"
+              className={cn(BALANCE_TABLE_GLASS_DIVIDE, "md:hidden")}
             >
               {paginatedBalances.map((balance, index) => {
                 const rowId = getBalanceRowId(balance);
@@ -261,6 +297,7 @@ export function BalanceTable({
                     <AnimatedRow key={rowId} index={index}>
                       <BalanceTableRowExpandableMobile
                         balance={balance}
+                        index={index}
                         disabled={disabled}
                         currency={balance.currency || "VND"}
                         isExpanded={expandedRows.has(rowId)}
@@ -274,6 +311,7 @@ export function BalanceTable({
                   <AnimatedRow key={rowId} index={index}>
                     <BalanceStaticMobileRow
                       balance={balance}
+                      index={index}
                       disabled={disabled}
                       showHistory={showHistory}
                       fullySettled={showHistory && getDisplayAmount(balance) === 0}
@@ -293,24 +331,28 @@ export function BalanceTable({
             >
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[50px]" />
-                    <TableHead>{t("profile.person", "Person")}</TableHead>
-                    <TableHead>{t("profile.status", "Status")}</TableHead>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="h-9 w-10 px-2 text-xs font-medium text-muted-foreground" />
+                    <TableHead className="h-9 px-2 text-xs font-medium text-muted-foreground">
+                      {t("profile.person", "Person")}
+                    </TableHead>
+                    <TableHead className="h-9 px-2 text-xs font-medium text-muted-foreground">
+                      {t("profile.status", "Status")}
+                    </TableHead>
                     {showHistory ? (
                       <>
-                        <TableHead className="text-right">
+                        <TableHead className="h-9 px-2 text-right text-xs font-medium text-muted-foreground">
                           {t("dashboard.totalAmount", "Total")}
                         </TableHead>
-                        <TableHead className="text-right">
+                        <TableHead className="h-9 px-2 text-right text-xs font-medium text-muted-foreground">
                           {t("dashboard.settledAmount", "Settled")}
                         </TableHead>
-                        <TableHead className="text-center">
+                        <TableHead className="h-9 px-2 text-center text-xs font-medium text-muted-foreground">
                           {t("dashboard.transactions", "Txns")}
                         </TableHead>
                       </>
                     ) : null}
-                    <TableHead className="text-right">
+                    <TableHead className="h-9 px-2 text-right text-xs font-medium text-muted-foreground">
                       {showHistory
                         ? t("dashboard.remainingAmount", "Remaining")
                         : t("profile.amount", "Amount")}
@@ -358,7 +400,7 @@ export function BalanceTable({
       )}
 
       {totalPages > 1 && filteredBalances.length > 0 ? (
-        <div className="border-t border-border px-4 py-4">
+        <div className={cn("border-t px-3 py-2.5 sm:px-4", BALANCE_TABLE_GLASS_SEPARATOR)}>
           <PaginationControls
             metadata={metadata}
             onPageChange={handlePageChange}
@@ -367,6 +409,7 @@ export function BalanceTable({
           />
         </div>
       ) : null}
+      </div>
     </div>
   );
 }

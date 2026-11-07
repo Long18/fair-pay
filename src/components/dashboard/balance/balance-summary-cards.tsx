@@ -25,8 +25,8 @@ export const BalanceSummaryCards = ({
   return (
     <StaggerChildren staggerDelay={0.15} className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* Total Owed to Me */}
-      <Card className="border-border hover:shadow-md transition-shadow rounded-lg card-hover-lift">
-        <CardContent className="p-6">
+      <Card interactive className="rounded-lg border-border card-hover-lift">
+        <CardContent className="p-5">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-teal-50 dark:bg-teal-950/30 rounded-lg">
               <ArrowDownIcon className="h-6 w-6 text-teal-600 dark:text-teal-400" />
@@ -42,8 +42,8 @@ export const BalanceSummaryCards = ({
       </Card>
 
       {/* Total I Owe */}
-      <Card className="border-border hover:shadow-md transition-shadow rounded-lg card-hover-lift">
-        <CardContent className="p-6">
+      <Card interactive className="rounded-lg border-border card-hover-lift">
+        <CardContent className="p-5">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-red-50 dark:bg-red-950/30 rounded-lg">
               <ArrowUpIcon className="h-6 w-6 text-red-600 dark:text-red-400" />
@@ -59,8 +59,8 @@ export const BalanceSummaryCards = ({
       </Card>
 
       {/* Net Balance */}
-      <Card className="border-border hover:shadow-md transition-shadow rounded-lg card-hover-lift">
-        <CardContent className="p-6">
+      <Card interactive className="rounded-lg border-border card-hover-lift">
+        <CardContent className="p-5">
           <div className="flex items-center gap-4">
             <div className={`p-3 rounded-lg ${
               netBalance >= 0

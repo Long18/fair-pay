@@ -2,12 +2,16 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router";
 import { useGetIdentity, useOne } from "@refinedev/core";
 import { toast } from "sonner";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { BulkDeleteDialog } from "@/components/bulk-operations/BulkDeleteDialog";
 import { DebtBreakdownHeader } from "@/components/debts/debt-breakdown-header";
 import { DebtFilterTabs } from "@/components/debts/debt-filter-tabs";
+import {
+  BALANCE_TABLE_GLASS_PANEL,
+  BALANCE_TABLE_GLASS_PANEL_BODY,
+} from "@/components/dashboard/balance/balance-table-surface";
 import { DebtMonthGroup } from "@/components/debts/debt-month-group";
-import { ExpenseBreakdownItemSelectable } from "@/components/debts/expense-breakdown-item-selectable";
+import { BreakdownExpenseRow } from "@/components/debts/breakdown-expense-row";
 import { QuickSettlementDialog } from "@/components/payments/quick-settlement-dialog";
 import { SettlementCelebration } from "@/components/share/SettlementCelebration";
 import {
@@ -101,7 +105,6 @@ export const PersonDebtBreakdown = () => {
   const { settle, isSettling } = useSettleSplits();
   const { deleteSplits, isDeleting } = useDeleteSplits();
   const createPaymentMutation = useInstantCreate();
-  const prefersReducedMotion = useReducedMotion();
 
   const selectableExpenses = useMemo(() => {
     return expenses.filter(
@@ -423,7 +426,7 @@ export const PersonDebtBreakdown = () => {
   if (!counterparty?.data || !summary) {
     return (
       <PageContainer padding="none" variant="narrow">
-        <Card className="rounded-xl">
+        <Card className="rounded-xl border-border/60 shadow-none">
           <CardContent className="p-8">
             <Empty>
               <EmptyHeader>
@@ -449,7 +452,10 @@ export const PersonDebtBreakdown = () => {
 
   return (
     <PageContainer padding="none" variant="narrow" spacing="compact" className="pb-28">
-      <div className="space-y-0">
+      <section
+        className={BALANCE_TABLE_GLASS_PANEL}
+        aria-label={t("debts.debtsSummary", "Debts Summary")}
+      >
         <DebtBreakdownHeader
           counterpartyName={counterparty.data.full_name}
           counterpartyAvatarUrl={counterparty.data.avatar_url}
@@ -466,7 +472,7 @@ export const PersonDebtBreakdown = () => {
           shareVersionSource={shareVersionSource}
         />
 
-        <div className="sticky top-16 z-30 bg-background/95 py-4 backdrop-blur-sm md:top-20">
+        <div className="flex justify-center border-b border-border/60 px-3 py-2.5 sm:px-4">
           <DebtFilterTabs
             activeTab={activeTab}
             onTabChange={setActiveTab}
@@ -474,94 +480,96 @@ export const PersonDebtBreakdown = () => {
           />
         </div>
 
-        {filteredMonthGroups.length === 0 ? (
-          <div className="py-16">
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <ScaleIcon className="h-8 w-8" />
-                </EmptyMedia>
-                <EmptyTitle>
-                  {activeTab === "settled"
-                    ? t("debts.noSettledExpenses", "No settled expenses")
-                    : t("debts.allClear", "All clear!")}
-                </EmptyTitle>
-                <EmptyDescription>
-                  {t(
-                    "debts.noExpensesInFilter",
-                    "No expenses to show in this filter."
-                  )}
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          </div>
-        ) : (
-          <div className="space-y-8 pt-2">
-            {filteredMonthGroups.map((group) => (
-              <DebtMonthGroup
-                key={group.key}
-                monthKey={group.key}
-                netAmount={group.displayNetAmount}
-                currency={summary.currency}
-                settledCount={group.settled.length}
-                settledTotal={group.settledTotal}
-                participants={participants}
-                defaultSettledExpanded={activeTab === "settled"}
-                settledChildren={group.settled.map((expense) => (
-                  <ExpenseBreakdownItemSelectable
-                    key={expense.id}
-                    id={expense.expense_id}
-                    splitId={expense.id}
-                    description={expense.description}
-                    amount={expense.amount}
-                    currency={expense.currency}
-                    expenseDate={expense.expense_date}
-                    groupName={expense.group_name}
-                    category={expense.category}
-                    myShare={expense.my_share}
-                    direction={expense.direction}
-                    paidByName={
-                      expense.direction === "i_owe"
-                        ? counterparty.data.full_name
-                        : myName
-                    }
-                    status={expense.status}
-                    isSettled={expense.is_settled}
-                    settledAt={expense.settled_at}
-                    isSelected={false}
-                    onSelectChange={handleSelectChange}
-                  />
-                ))}
-              >
-                {group.unsettled.map((expense) => (
-                  <ExpenseBreakdownItemSelectable
-                    key={expense.id}
-                    id={expense.expense_id}
-                    splitId={expense.id}
-                    description={expense.description}
-                    amount={expense.amount}
-                    currency={expense.currency}
-                    expenseDate={expense.expense_date}
-                    groupName={expense.group_name}
-                    category={expense.category}
-                    myShare={expense.my_share}
-                    direction={expense.direction}
-                    paidByName={
-                      expense.direction === "i_owe"
-                        ? counterparty.data.full_name
-                        : myName
-                    }
-                    status={expense.status}
-                    isSettled={expense.is_settled}
-                    isSelected={selectedSplitIds.has(expense.id)}
-                    onSelectChange={handleSelectChange}
-                  />
-                ))}
-              </DebtMonthGroup>
-            ))}
-          </div>
-        )}
-      </div>
+        <div className={BALANCE_TABLE_GLASS_PANEL_BODY}>
+          {filteredMonthGroups.length === 0 ? (
+            <div className="py-16">
+              <Empty>
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <ScaleIcon className="h-8 w-8" />
+                  </EmptyMedia>
+                  <EmptyTitle>
+                    {activeTab === "settled"
+                      ? t("debts.noSettledExpenses", "No settled expenses")
+                      : t("debts.allClear", "All clear!")}
+                  </EmptyTitle>
+                  <EmptyDescription>
+                    {t(
+                      "debts.noExpensesInFilter",
+                      "No expenses to show in this filter."
+                    )}
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
+            </div>
+          ) : (
+            <div className="divide-y divide-border/60">
+              {filteredMonthGroups.map((group) => (
+                <DebtMonthGroup
+                  key={group.key}
+                  monthKey={group.key}
+                  netAmount={group.displayNetAmount}
+                  currency={summary.currency}
+                  settledCount={group.settled.length}
+                  settledTotal={group.settledTotal}
+                  participants={participants}
+                  defaultSettledExpanded={activeTab === "settled"}
+                  settledChildren={group.settled.map((expense) => (
+                    <BreakdownExpenseRow
+                      key={expense.id}
+                      id={expense.expense_id}
+                      splitId={expense.id}
+                      description={expense.description}
+                      amount={expense.amount}
+                      currency={expense.currency}
+                      expenseDate={expense.expense_date}
+                      groupName={expense.group_name}
+                      category={expense.category}
+                      myShare={expense.my_share}
+                      direction={expense.direction}
+                      paidByName={
+                        expense.direction === "i_owe"
+                          ? counterparty.data.full_name
+                          : myName
+                      }
+                      status={expense.status}
+                      isSettled={expense.is_settled}
+                      settledAt={expense.settled_at}
+                      isSelected={false}
+                      onSelectChange={handleSelectChange}
+                    />
+                  ))}
+                >
+                  {group.unsettled.map((expense) => (
+                    <BreakdownExpenseRow
+                      key={expense.id}
+                      id={expense.expense_id}
+                      splitId={expense.id}
+                      description={expense.description}
+                      amount={expense.amount}
+                      currency={expense.currency}
+                      expenseDate={expense.expense_date}
+                      groupName={expense.group_name}
+                      category={expense.category}
+                      myShare={expense.my_share}
+                      direction={expense.direction}
+                      paidByName={
+                        expense.direction === "i_owe"
+                          ? counterparty.data.full_name
+                          : myName
+                      }
+                      status={expense.status}
+                      isSettled={expense.is_settled}
+                      isSelected={selectedSplitIds.has(expense.id)}
+                      onSelectChange={handleSelectChange}
+                    />
+                  ))}
+                </DebtMonthGroup>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
       <AnimatePresence>
         {hasSelection && (

@@ -40,7 +40,7 @@ export interface EnhancedActivityRowProps {
   onToggleExpand: () => void;
   showDuplicateContext?: boolean;
   showActions?: boolean;
-  variant?: "default" | "dashboard";
+  variant?: "default" | "dashboard" | "group";
   className?: string;
 }
 
@@ -935,10 +935,147 @@ const DashboardActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRo
 
 DashboardActivityRow.displayName = "DashboardActivityRow";
 
+const GroupActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRowProps>(
+  (
+    {
+      activity,
+      currentUserId,
+      isExpanded,
+      onToggleExpand,
+      showDuplicateContext = false,
+      className,
+    },
+    ref
+  ) => {
+    const go = useGo();
+    const { t } = useTranslation();
+    const { tap } = useHaptics();
+    const displayAmount = getDashboardDisplayAmount(activity, currentUserId);
+    const hasPaymentEvents = activity.type === "expense" && activity.paymentEvents.length > 0;
+    const detailRoute =
+      activity.type === "payment"
+        ? `/payments/show/${activity.id}`
+        : `/expenses/show/${activity.id}`;
+
+    const handleRowClick = () => {
+      tap();
+      go({ to: detailRoute });
+    };
+
+    const handleExpandClick = (event: React.MouseEvent) => {
+      event.stopPropagation();
+      tap();
+      onToggleExpand();
+    };
+
+    const handleRowClickWithGuard = (event?: React.MouseEvent) => {
+      if (event && (event.target as HTMLElement).closest("[data-expand-control]")) {
+        return;
+      }
+      handleRowClick();
+    };
+
+    return (
+      <div ref={ref} className={cn("relative", className)}>
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={handleRowClickWithGuard}
+          onKeyDown={onButtonKeyDown(handleRowClickWithGuard)}
+          className="group flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset sm:px-4"
+        >
+          <PaymentStateBadge
+            state={activity.paymentState}
+            percentage={activity.partialPercentage}
+            size="sm"
+            className="shrink-0"
+          />
+
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium leading-tight">{activity.description}</p>
+            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+              {formatDistanceToNow(
+                new Date(activity.activityDate || activity.date),
+                { addSuffix: true }
+              )}
+              {" · "}
+              {activity.participantCount}{" "}
+              {activity.participantCount === 1
+                ? t("dashboard.activityFeed.person", "person")
+                : t("dashboard.activityFeed.people", "people")}
+              {showDuplicateContext && activity.contextLine ? ` · ${activity.contextLine}` : ""}
+            </p>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-1">
+            <span className={cn("text-sm font-semibold tabular-nums", displayAmount.className)}>
+              {displayAmount.prefix}
+              {displayAmount.label}
+            </span>
+            {hasPaymentEvents ? (
+              <button
+                type="button"
+                data-expand-control
+                onClick={handleExpandClick}
+                className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                aria-expanded={isExpanded}
+                aria-label={
+                  isExpanded
+                    ? t("dashboard.activityFeed.collapsePayments", "Collapse payment events")
+                    : t("dashboard.activityFeed.expandPayments", "Expand payment events")
+                }
+              >
+                {isExpanded ? (
+                  <ChevronDownIcon className="size-3.5" />
+                ) : (
+                  <ChevronRightIcon className="size-3.5" />
+                )}
+              </button>
+            ) : (
+              <ChevronRightIcon
+                className="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                aria-hidden
+              />
+            )}
+          </div>
+        </div>
+
+        <AnimatePresence initial={false}>
+          {isExpanded && hasPaymentEvents && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="overflow-hidden"
+            >
+              <div className="space-y-1.5 border-t border-border/40 bg-muted/20 py-2 pl-2">
+                {activity.paymentEvents.map((paymentEvent) => (
+                  <DefaultPaymentEventRow
+                    key={paymentEvent.id}
+                    event={paymentEvent}
+                    currentUserId={currentUserId}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+);
+
+GroupActivityRow.displayName = "GroupActivityRow";
+
 export const EnhancedActivityRow = React.forwardRef<HTMLDivElement, EnhancedActivityRowProps>(
   (props, ref) => {
     if (props.variant === "dashboard") {
       return <DashboardActivityRow ref={ref} {...props} />;
+    }
+
+    if (props.variant === "group") {
+      return <GroupActivityRow ref={ref} {...props} />;
     }
 
     return <DefaultActivityRow ref={ref} {...props} />;

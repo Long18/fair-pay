@@ -1,6 +1,7 @@
 import { useGo } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
+import { enUS, vi } from "date-fns/locale";
 import { motion, type Variants } from "framer-motion";
 import {
   TableCell,
@@ -19,6 +20,13 @@ import { journeyTracking } from "@/lib/journey-tracking";
 import { cn } from "@/lib/utils";
 import { BalanceRecentTransactionsPreview } from "./balance-recent-transactions-preview";
 import { BalanceExpandPanel } from "./balance-expand-panel";
+import { BALANCE_EXPAND_SPRING } from "./balance-expand-motion";
+import {
+  BALANCE_TABLE_ROW_BASE,
+  BALANCE_TABLE_ROW_EXPANDED,
+  BALANCE_TABLE_ROW_HOVER,
+  BALANCE_TABLE_ROW_ZEBRA_EVEN,
+} from "./balance-table-surface";
 
 interface Balance {
   counterparty_id: string | null;
@@ -45,10 +53,11 @@ interface BalanceTableRowExpandableProps {
   rowVariants?: Variants;
 }
 
-function formatShortDate(dateString?: string) {
+function formatShortDate(dateString: string | undefined, language: string) {
   if (!dateString) return "";
   try {
-    return format(new Date(dateString), "MMM d");
+    const locale = language.startsWith("vi") ? vi : enUS;
+    return format(new Date(dateString), "MMM d", { locale });
   } catch {
     return "";
   }
@@ -63,7 +72,7 @@ export function BalanceTableRowExpandable({
   onToggleExpand,
   rowVariants,
 }: BalanceTableRowExpandableProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const go = useGo();
   const { tap } = useHaptics();
   const { expenses, isLoading } = useContributingExpenses(
@@ -95,9 +104,10 @@ export function BalanceTableRowExpandable({
         variants={rowVariants}
         custom={index}
         className={cn(
-          "cursor-pointer border-b transition-colors hover:bg-muted/80 data-[state=selected]:bg-muted",
-          index % 2 === 0 && "bg-muted/50 dark:bg-muted/30",
-          isExpanded && "bg-muted/40 dark:bg-muted/35",
+          "cursor-pointer [&_td]:py-1.5",
+          BALANCE_TABLE_ROW_BASE,
+          index % 2 === 0 && !isExpanded && BALANCE_TABLE_ROW_ZEBRA_EVEN,
+          isExpanded && BALANCE_TABLE_ROW_EXPANDED,
           disabled && "cursor-not-allowed opacity-50",
           isFullySettled && `opacity-60 ${getPaymentStateColors("paid").bg}`
         )}
@@ -181,7 +191,8 @@ export function BalanceTableRowExpandable({
             </div>
             {balance.last_transaction_date ? (
               <span className="typography-metadata">
-                {t("dashboard.last", "Last")}: {formatShortDate(balance.last_transaction_date)}
+                {t("dashboard.last", "Last")}:{" "}
+                {formatShortDate(balance.last_transaction_date, i18n.language)}
               </span>
             ) : null}
           </div>
@@ -215,7 +226,7 @@ export function BalanceTableRowExpandable({
             )}
             <motion.span
               animate={{ rotate: isExpanded ? 180 : 0 }}
-              transition={{ type: "spring", stiffness: 380, damping: 28 }}
+              transition={BALANCE_EXPAND_SPRING}
               className="inline-flex"
             >
               <ChevronDownIcon className="size-5 shrink-0 text-muted-foreground" />
@@ -226,7 +237,11 @@ export function BalanceTableRowExpandable({
 
       <TableRow className="border-0 hover:bg-transparent data-[state=selected]:bg-transparent">
         <TableCell colSpan={4} className="border-0 p-0">
-          <BalanceExpandPanel isExpanded={isExpanded} contentClassName="px-4 py-4 sm:px-5">
+          <BalanceExpandPanel
+            isExpanded={isExpanded}
+            isContentLoading={isLoading}
+            contentClassName="px-4 py-4 sm:px-5"
+          >
             <BalanceRecentTransactionsPreview
               expenses={expenses}
               counterpartyName={balance.counterparty_name}
@@ -249,12 +264,13 @@ export function BalanceTableRowExpandable({
 
 export function BalanceTableRowExpandableMobile({
   balance,
+  index,
   disabled,
   currency,
   isExpanded,
   onToggleExpand,
-}: Omit<BalanceTableRowExpandableProps, "index" | "rowVariants">) {
-  const { t } = useTranslation();
+}: Omit<BalanceTableRowExpandableProps, "rowVariants">) {
+  const { t, i18n } = useTranslation();
   const go = useGo();
   const { tap } = useHaptics();
   const { expenses, isLoading } = useContributingExpenses(
@@ -274,7 +290,8 @@ export function BalanceTableRowExpandableMobile({
     <div
       className={cn(
         "transition-colors duration-200",
-        isExpanded && "bg-muted/25"
+        index % 2 === 0 && !isExpanded && BALANCE_TABLE_ROW_ZEBRA_EVEN,
+        isExpanded && BALANCE_TABLE_ROW_EXPANDED
       )}
     >
       <div
@@ -327,7 +344,8 @@ export function BalanceTableRowExpandableMobile({
           }
         })}
         className={cn(
-          "flex cursor-pointer items-center justify-between px-4 py-3 transition-colors hover:bg-muted/50",
+          "flex min-h-10 cursor-pointer items-center justify-between gap-2 px-3 py-2 sm:px-4",
+          BALANCE_TABLE_ROW_HOVER,
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
           disabled && "cursor-not-allowed opacity-50"
         )}
@@ -357,10 +375,10 @@ export function BalanceTableRowExpandableMobile({
             ) : null}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 items-center gap-2">
+            <div className="flex min-w-0 items-start gap-2">
               <p
                 className={cn(
-                  "typography-row-title truncate",
+                  "typography-row-title line-clamp-2 min-w-0 flex-1 leading-snug",
                   isFullySettled && "text-muted-foreground line-through"
                 )}
               >
@@ -370,37 +388,37 @@ export function BalanceTableRowExpandableMobile({
                 <UserGroupStack userId={balance.counterparty_id} size="xs" />
               ) : null}
             </div>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
+            <p className="typography-metadata mt-0.5 truncate">
               {isFullySettled ? (
                 <PaymentStateBadge state="paid" size="sm" />
               ) : (
-                <Badge
-                  variant={balance.i_owe_them ? "default" : "secondary"}
-                  className="text-xs"
-                >
-                  {balance.i_owe_them ? t("dashboard.youOwe") : t("dashboard.userOwesYou")}
-                </Badge>
+                <>
+                  <span className="text-foreground/80">
+                    {balance.i_owe_them ? t("dashboard.youOwe") : t("dashboard.userOwesYou")}
+                  </span>
+                  {balance.transaction_count !== undefined ? (
+                    <>
+                      <span aria-hidden="true"> · </span>
+                      <span className="tabular-nums">
+                        {balance.transaction_count} {t("dashboard.expenses", "expenses")}
+                      </span>
+                    </>
+                  ) : null}
+                  {balance.last_transaction_date ? (
+                    <>
+                      <span aria-hidden="true"> · </span>
+                      <span>
+                        {t("dashboard.last", "Last")}:{" "}
+                        {formatShortDate(balance.last_transaction_date, i18n.language)}
+                      </span>
+                    </>
+                  ) : null}
+                </>
               )}
-              {balance.transaction_count !== undefined ? (
-                <>
-                  <span className="typography-metadata">·</span>
-                  <span className="typography-metadata tabular-nums">
-                    {balance.transaction_count} {t("dashboard.expenses", "expenses")}
-                  </span>
-                </>
-              ) : null}
-              {balance.last_transaction_date ? (
-                <>
-                  <span className="typography-metadata">·</span>
-                  <span className="typography-metadata">
-                    {t("dashboard.last", "Last")}: {formatShortDate(balance.last_transaction_date)}
-                  </span>
-                </>
-              ) : null}
-            </div>
+            </p>
           </div>
         </div>
-        <div className="ml-3 flex items-center gap-2">
+        <div className="ml-1 flex shrink-0 items-center gap-1">
           {isFullySettled ? (
             <span
               className={cn(
@@ -419,7 +437,7 @@ export function BalanceTableRowExpandableMobile({
           )}
           <motion.span
             animate={{ rotate: isExpanded ? 180 : 0 }}
-            transition={{ type: "spring", stiffness: 380, damping: 28 }}
+            transition={BALANCE_EXPAND_SPRING}
             className="inline-flex"
           >
             <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground" />
@@ -427,7 +445,11 @@ export function BalanceTableRowExpandableMobile({
         </div>
       </div>
 
-      <BalanceExpandPanel isExpanded={isExpanded} contentClassName="px-4 py-3">
+      <BalanceExpandPanel
+        isExpanded={isExpanded}
+        isContentLoading={isLoading}
+        contentClassName="px-4 py-3"
+      >
         <BalanceRecentTransactionsPreview
           expenses={expenses}
           counterpartyName={balance.counterparty_name}
