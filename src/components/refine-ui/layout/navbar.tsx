@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   useLink,
@@ -13,6 +13,7 @@ import {
 } from "@refinedev/core";
 import { useIsMobile } from "@/hooks/ui/use-mobile";
 import { useScrolled } from "@/hooks/ui/use-scrolled";
+import { useNavChromeFloating } from "@/hooks/ui/use-nav-chrome-floating";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,17 @@ import { SearchModal, useSearchShortcut } from "@/components/global-search";
 import { Profile } from "@/modules/profile/types";
 import { useAdminAccess } from "@/modules/admin/hooks/use-admin-access";
 import { useHaptics } from "@/hooks/use-haptics";
+import { motion } from "framer-motion";
+import {
+  firstPaintChromeHeaderInitial,
+  firstPaintChromeHeaderTransition,
+  useFirstPaintNavigation,
+  useMotionRouteLoading,
+  useReducedMotion,
+  NAV_CHROME_ROUTE_SNAP,
+  NAV_CHROME_TRANSITION,
+  navChromeVariants,
+} from "@/lib/motion";
 
 import {
   FairPayIcon,
@@ -66,18 +78,37 @@ import {
 export function NavBar() {
   const isMobile = useIsMobile();
   const scrolled = useScrolled(10);
+  const { routeLoading } = useMotionRouteLoading();
   const { t } = useTranslation();
+  const reducedMotion = useReducedMotion();
+  const firstPaint = useFirstPaintNavigation();
+  const chromeMode = useNavChromeFloating(scrolled, routeLoading, reducedMotion);
+  const chromeTransition = useMemo(() => {
+    if (reducedMotion) return { duration: 0 };
+    if (routeLoading) return NAV_CHROME_ROUTE_SNAP;
+    return NAV_CHROME_TRANSITION;
+  }, [reducedMotion, routeLoading]);
 
   return (
-    <nav
+    <motion.nav
+      initial={
+        firstPaint ? firstPaintChromeHeaderInitial(reducedMotion) : false
+      }
+      animate={reducedMotion ? "docked" : chromeMode}
+      variants={navChromeVariants}
+      transition={chromeTransition}
+      style={{ top: 0, left: 0, right: 0 }}
+      data-fp-route-loading={routeLoading || undefined}
       className={cn(
         // Fixed positioning
         "fixed",
-        "inset-x-0",
         "z-40",
         // Centering and sizing
         "mx-auto",
         "w-full",
+        "max-w-[100vw]",
+        "min-w-0",
+        "overflow-x-hidden",
         // Height
         "h-14",
         "md:h-16",
@@ -92,20 +123,16 @@ export function NavBar() {
         "md:px-6",
         "py-2",
         "md:py-3",
-        // Animation
-        "transition-all",
+        "transition-[background-color,box-shadow,border-color,backdrop-filter]",
         "duration-500",
         "ease-out",
         // Safe area for iOS
         "safe-area-inset-top",
-        // ── Scroll-based states ──
-        scrolled
+        routeLoading &&
+          !reducedMotion &&
+          "fp-nav-hud-loading",
+        chromeMode === "floating"
           ? [
-              // Floating glass pill
-              "max-w-3xl",
-              "lg:max-w-5xl",
-              "top-3",
-              "rounded-2xl",
               "bg-background/60",
               "backdrop-blur-xl",
               "shadow-lg",
@@ -115,10 +142,6 @@ export function NavBar() {
               "border-border/40",
             ]
           : [
-              // Full-width solid bar at top
-              "max-w-full",
-              "top-0",
-              "rounded-none",
               "bg-background/95",
               "backdrop-blur-sm",
               "shadow-none",
@@ -139,7 +162,7 @@ export function NavBar() {
 
       {/* Right section: Actions */}
       <NavActions />
-    </nav>
+    </motion.nav>
   );
 }
 
@@ -149,6 +172,8 @@ function NavLogo() {
   const go = useGo();
   const { tap } = useHaptics();
   const { t } = useTranslation();
+  const { routeLoading } = useMotionRouteLoading();
+  const reducedMotion = useReducedMotion();
 
   return (
     <button
@@ -161,16 +186,18 @@ function NavLogo() {
       className={cn(
         "flex items-center gap-2",
         "hover:opacity-80",
-        "transition-opacity",
+        "transition-all duration-500 ease-out",
         "focus:outline-none",
         "focus-visible:ring-2",
         "focus-visible:ring-primary",
         "focus-visible:ring-offset-2",
-        "rounded-lg"
+        "rounded-lg",
+        routeLoading && !reducedMotion && "scale-[0.98] opacity-95",
       )}
       aria-label={t("header.goHome", "Go to home")}
+      aria-busy={routeLoading}
     >
-      <FairPayIcon className="w-10 h-10" />
+      <FairPayIcon className="h-10 w-10" />
       <span className="text-base md:text-lg font-bold">FairPay</span>
     </button>
   );
@@ -271,18 +298,14 @@ function NavActions() {
   useSearchShortcut(openSearch);
 
   return (
-    <div className="flex items-center gap-1 md:gap-2">
+    <div className="flex items-center gap-1">
       {/* Search button */}
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
-            className={cn(
-              "h-9 w-9 md:h-10 md:w-10",
-              "rounded-full",
-              "hover:bg-accent"
-            )}
+            className={cn("size-9", "rounded-full", "hover:bg-accent")}
             onClick={() => { tap(); setSearchOpen(true); }}
             aria-label={t("header.search")}
           >
@@ -296,12 +319,12 @@ function NavActions() {
 
       {/* Theme selector - hidden on very small screens */}
       <div className="hidden sm:block">
-        <ThemeSelector className="h-9 w-9 md:h-10 md:w-10" />
+        <ThemeSelector className="size-9 rounded-full hover:bg-accent" />
       </div>
 
       {/* Language toggle - hidden on mobile; match search/bell icon cluster */}
       {!isMobile && (
-        <LanguageToggle className="h-9 w-9 md:h-10 md:w-10 rounded-full hover:bg-accent" />
+        <LanguageToggle className="size-9 rounded-full hover:bg-accent" />
       )}
 
       {/* Notifications */}
@@ -332,6 +355,14 @@ function MobileNavMenu() {
     };
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
+  }, [open]);
+
+  // Keep mobile bottom nav in sync (hide while drawer open; avoids scroll-lock misalignment).
+  useEffect(() => {
+    document.documentElement.classList.toggle("mobile-nav-drawer-open", open);
+    return () => {
+      document.documentElement.classList.remove("mobile-nav-drawer-open");
+    };
   }, [open]);
 
   // Filter out hidden items
@@ -365,6 +396,7 @@ function MobileNavMenu() {
         side="left"
         className={cn(
           "w-[280px] sm:w-[320px]",
+          "max-w-[calc(100vw-1rem)]",
           "p-0",
           "safe-area-inset-top"
         )}
@@ -493,33 +525,33 @@ function UserDropdown() {
             <span className="text-sm font-semibold text-foreground">
               {identity.full_name || "User"}
             </span>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs font-medium text-foreground/80 tabular-nums">
               {identity.id.slice(0, 8)}
             </span>
           </div>
         )}
         <UserAvatar />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" className="w-56 max-w-[calc(100vw-1rem)]">
         {/* Mobile: Show user info in dropdown */}
         <div className="flex flex-col gap-1 px-2 py-2 md:hidden border-b border-border mb-1">
           <span className="text-sm font-semibold text-foreground">
             {identity.full_name || "User"}
           </span>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs font-medium text-foreground/80 tabular-nums">
             ID: {identity.id.slice(0, 8)}
           </span>
         </div>
 
         <DropdownMenuItem
-          onClick={() => { tap(); go({ to: `/profile/${identity.id}?edit=true` }); }}
-          data-track-id="menu:profile-edit"
+          onClick={() => { tap(); go({ to: `/profile/${identity.id}` }); }}
+          data-track-id="menu:profile"
           data-track-event="nav_click"
           data-track-type="menu-item"
           data-track-category="navigation"
         >
           <UserIcon className="h-4 w-4" />
-          <span>{t("auth.editProfile")}</span>
+          <span>{t("nav.profile")}</span>
         </DropdownMenuItem>
 
         <DropdownMenuItem
@@ -649,6 +681,10 @@ function getDisplayName(
 ): string {
   const label = item.meta?.label ?? item.label ?? item.name;
 
+  if (typeof label === "string" && label.includes(".")) {
+    return t(label);
+  }
+
   // Map resource names to translation keys
   const translationMap: Record<string, string> = {
     Dashboard: "dashboard.title",
@@ -656,6 +692,7 @@ function getDisplayName(
     Friends: "friends.title",
     Connections: "connections.title",
     Balances: "balances.title",
+    Insights: "analytics.spendingInsights",
     Reports: "reports.title",
     Settings: "settings.title",
   };

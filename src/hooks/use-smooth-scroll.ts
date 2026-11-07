@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import Lenis from "lenis";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { setMotionLenis } from "@/lib/motion/lenis-bridge";
 
 export function useSmoothScroll() {
   const lenisRef = useRef<Lenis | null>(null);
@@ -10,13 +11,15 @@ export function useSmoothScroll() {
     if (prefersReducedMotion) return;
 
     const lenis = new Lenis({
-      lerp: 0.1,
-      duration: 0.8,       // was 1.2 — shorter duration is more responsive on desktop
+      lerp: 0.08,
+      duration: 1.1,
       smoothWheel: true,
-      wheelMultiplier: 1.2, // slightly more scroll distance per wheel tick
+      wheelMultiplier: 1,
+      syncTouch: false,
     });
 
     lenisRef.current = lenis;
+    setMotionLenis(lenis);
 
     // Sync Lenis with GSAP ScrollTrigger
     lenis.on("scroll", ScrollTrigger.update);
@@ -33,6 +36,7 @@ export function useSmoothScroll() {
     });
 
     return () => {
+      setMotionLenis(null);
       lenis.destroy();
       import("gsap").then(({ gsap }) => {
         gsap.ticker.remove(tickerCallback);
