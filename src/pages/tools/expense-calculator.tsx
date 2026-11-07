@@ -33,11 +33,17 @@ export default function ExpenseCalculator() {
     if (totalAmount <= 0 || numPeople < 2) return [];
     if (!ratioMode) {
       const share = totalAmount / numPeople;
-      return Array.from({ length: numPeople }, (_, i) => ({ label: `Person ${i + 1}`, amount: share }));
+      return Array.from({ length: numPeople }, (_, i) => ({
+        label: t("tools.calculator.personN", { n: i + 1, defaultValue: `Người ${i + 1}` }),
+        amount: share,
+      }));
     }
     const ratioNums = ratios.slice(0, numPeople).map((r) => parseFloat(r) || 1);
     const totalRatio = ratioNums.reduce((a, b) => a + b, 0);
-    return ratioNums.map((r, i) => ({ label: `Person ${i + 1}`, amount: (r / totalRatio) * totalAmount }));
+    return ratioNums.map((r, i) => ({
+      label: t("tools.calculator.personN", { n: i + 1, defaultValue: `Người ${i + 1}` }),
+      amount: (r / totalRatio) * totalAmount,
+    }));
   })();
 
   const handlePeopleChange = (val: string) => {

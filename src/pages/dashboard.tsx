@@ -19,11 +19,17 @@ import { DashboardTracker } from "@/lib/analytics/index";
 import { journeyTracking } from "@/lib/journey-tracking";
 import { CACHE_CONFIG } from "@/lib/cache-config";
 import { WalletIcon, ActivityIcon, HistoryIcon } from "@/components/ui/icons";
-import { cn } from "@/lib/utils";
+import {
+  BALANCE_TABLE_GLASS_PANEL,
+  BALANCE_TABLE_GLASS_PANEL_WITH_NOTCH,
+} from "@/components/dashboard/balance/balance-table-surface";
 import { AnimatePresence, motion } from "framer-motion";
-import { ScrollReveal } from "@/components/ui/scroll-reveal";
+import { ScrollRevealStack, StorySection } from "@/lib/motion";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ensureScrollTrigger } from "@/lib/motion/gsap-scroll";
 import { FloatingDecoration } from "@/components/ui/floating-decoration";
 import { CoinShape, ChartLineShape, CircleShape, HexagonShape, WalletShape } from "@/components/ui/decorative-shapes";
+import { GuestLandingHero } from "@/components/landing";
 
 const DashboardPond = lazy(() =>
   import("@/components/pond-hero").then((m) => ({ default: m.DashboardPond })),
@@ -124,6 +130,15 @@ export const Dashboard = () => {
   }, []);
 
   useEffect(() => {
+    if (loading) return;
+    ensureScrollTrigger();
+    const id = requestAnimationFrame(() => {
+      ScrollTrigger.refresh();
+    });
+    return () => cancelAnimationFrame(id);
+  }, [loading, activeTab]);
+
+  useEffect(() => {
     if (!debtsLoading && identity?.id && debts.length > 0) {
       DashboardTracker.balanceChecked({
         hasDebts: true,
@@ -156,11 +171,23 @@ export const Dashboard = () => {
     return <DashboardLoadingBeam />;
   }
 
+  if (isGuest) {
+    return (
+      <PageContainer padding="none" variant="default">
+        <PageContent>
+          <GuestLandingHero />
+        </PageContent>
+      </PageContainer>
+    );
+  }
+
   return (
     <>
       <PageContainer padding="none" variant="default">
 
-          <PageContent className="relative">
+          <PageContent
+            className="relative dashboard-story-scroll"
+          >
             {/* Floating Decorations */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
               <FloatingDecoration speed="slow" top="10%" right="5%" opacity={0.06} delay={0}>
@@ -180,9 +207,10 @@ export const Dashboard = () => {
               </FloatingDecoration>
             </div>
 
-            {/* Tab Switcher */}
-            <ScrollReveal direction="up">
+            <StorySection tight className="flex flex-col justify-start gap-4">
+            {/* Tab Switcher — above fold; shell + brand curtain handle first paint */}
             <Tabs
+              variant="pill"
               value={activeTab}
               onValueChange={(value) => {
                 tap();
@@ -197,10 +225,14 @@ export const Dashboard = () => {
                 });
                 setActiveTab(tab);
               }}
-              className="gap-0"
+              className="gap-4"
             >
-              <div className="flex items-center justify-center w-full">
-                <TabsList data-onboarding-target="dashboard-tabs">
+              <div className="flex w-full items-center justify-center px-1 sm:px-0">
+                <TabsList
+                  data-onboarding-target="dashboard-tabs"
+                  aria-label={t("dashboard.tabsLabel", "Dashboard sections")}
+                  className="grid h-auto w-full max-w-md grid-cols-3 gap-1 overflow-hidden rounded-xl border border-border bg-muted/40 p-1 sm:max-w-lg sm:min-w-[320px]"
+                >
                   {([
                     { key: "balances" as const, label: t('balances.title', 'Balances'), icon: WalletIcon, count: balances.length },
                     { key: "activity" as const, label: t('dashboard.recentActivity', 'Activity'), icon: ActivityIcon, count: activities.length },
@@ -217,19 +249,13 @@ export const Dashboard = () => {
                         data-track-category="navigation"
                         data-track-flow="dashboard"
                         data-track-step={tab.key}
-                        className="gap-2 px-4"
+                        aria-label={tab.label}
+                        className="min-h-9 gap-1 rounded-md px-1.5 text-[10px] focus-visible:ring-offset-0 sm:min-h-10 sm:gap-1.5 sm:px-2 sm:text-xs"
                       >
-                        <Icon className="h-4 w-4" />
-                        <span>{tab.label}</span>
+                        <Icon className="size-3.5 shrink-0 sm:size-4" />
+                        <span className="truncate">{tab.label}</span>
                         {tab.count > 0 && (
-                          <span
-                            className={cn(
-                              "text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center",
-                              activeTab === tab.key
-                                ? "bg-primary/10 text-primary"
-                                : "bg-muted-foreground/10 text-muted-foreground"
-                            )}
-                          >
+                          <span className="ml-0.5 shrink-0 rounded-full bg-primary/10 px-1 py-0 text-[9px] leading-4 text-primary tabular-nums sm:px-1.5 sm:text-[10px]">
                             {tab.count}
                           </span>
                         )}
@@ -239,10 +265,9 @@ export const Dashboard = () => {
                 </TabsList>
               </div>
             </Tabs>
-            </ScrollReveal>
 
             {/* Tab Content */}
-            <div className="mt-6">
+            <div className="mt-2 sm:mt-3">
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                   key={activeTab}
@@ -253,13 +278,17 @@ export const Dashboard = () => {
                   className="space-y-4"
                 >
                   {activeTab === "balances" && (
-                    <>
+                    <div className="flex flex-col gap-4">
                       {debtsError && (
                         <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
                           {t('dashboard.errorLoadingDebts', 'Failed to load debts. Please try again.')}
                         </div>
                       )}
-                      <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
+                      <ScrollRevealStack direction="up" parallax parallaxDistance={40}>
+                      <section
+                        className={BALANCE_TABLE_GLASS_PANEL_WITH_NOTCH}
+                        aria-label={t("balances.title", "Balances")}
+                      >
                         <BalanceTable
                           balances={balances}
                           disabled={isGuest}
@@ -267,15 +296,20 @@ export const Dashboard = () => {
                           showExpenseBreakdown={true}
                           isLoading={!!identity?.id && debtsLoading}
                         />
-                      </div>
+                      </section>
+                      </ScrollRevealStack>
                       <Suspense fallback={null}>
                         <DashboardPond className="mt-8 border-t border-border/40 pt-8 md:mt-10 md:pt-10" />
                       </Suspense>
-                    </>
+                    </div>
                   )}
 
                   {activeTab === "activity" && (
-                    <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
+                    <ScrollRevealStack direction="up" parallax>
+                    <section
+                      className={BALANCE_TABLE_GLASS_PANEL_WITH_NOTCH}
+                      aria-label={t("dashboard.recentActivity", "Recent Activity")}
+                    >
                       <EnhancedActivityList
                         activities={activities}
                         currentUserId={identity?.id || ""}
@@ -291,48 +325,68 @@ export const Dashboard = () => {
                         paginationMode="pagination"
                         pageSize={10}
                       />
-                    </div>
+                    </section>
+                    </ScrollRevealStack>
                   )}
 
                   {activeTab === "history" && (
+                    <ScrollRevealStack direction="up" parallax>
                     <Tabs
+                      variant="pill"
                       value={historyView}
                       onValueChange={(value) => setHistoryView(value as "transactions" | "people")}
-                      className="space-y-4"
+                      className="gap-4"
                     >
-                      <TabsList className="grid w-full grid-cols-2 rounded-lg md:w-fit md:min-w-[320px]">
-                        <TabsTrigger value="transactions" className="rounded-md">
-                          {t("history.transactions", "Giao dịch")}
-                        </TabsTrigger>
-                        <TabsTrigger value="people" className="rounded-md">
-                          {t("history.byPerson", "Theo người")}
-                        </TabsTrigger>
-                      </TabsList>
+                      <div className="flex w-full items-center justify-center px-1 sm:px-0">
+                        <TabsList className="grid h-auto w-full max-w-md grid-cols-2 gap-1 overflow-hidden rounded-xl border border-border bg-muted/40 p-1 sm:w-auto sm:min-w-[320px]">
+                          <TabsTrigger
+                            value="transactions"
+                            className="min-h-9 rounded-md px-3 text-xs focus-visible:ring-offset-0 sm:text-sm"
+                          >
+                            {t("history.transactions", "Giao dịch")}
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="people"
+                            className="min-h-9 rounded-md px-3 text-xs focus-visible:ring-offset-0 sm:text-sm"
+                          >
+                            {t("history.byPerson", "Theo người")}
+                          </TabsTrigger>
+                        </TabsList>
+                      </div>
 
                       <TabsContent value="transactions" className="mt-0">
-                        <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
+                        <section
+                          className={BALANCE_TABLE_GLASS_PANEL}
+                          aria-label={t("history.transactions", "Transactions")}
+                        >
                           <HistoryLedgerList
                             activities={historyActivities}
                             currentUserId={identity?.id || ""}
                             isLoading={historyActivitiesLoading}
                             pageSize={10}
                           />
-                        </div>
+                        </section>
                       </TabsContent>
 
                       <TabsContent value="people" className="mt-0">
-                        <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
+                        <section
+                          className={BALANCE_TABLE_GLASS_PANEL}
+                          aria-label={t("history.byPerson", "By person")}
+                        >
                           <SettledHistoryList
                             debts={historyDebts}
                             isLoading={historyLoading}
                           />
-                        </div>
+                        </section>
                       </TabsContent>
                     </Tabs>
+                    </ScrollRevealStack>
                   )}
                 </motion.div>
               </AnimatePresence>
             </div>
+
+            </StorySection>
           </PageContent>
         </PageContainer>
 

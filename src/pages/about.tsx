@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { AboutUs } from "@/components/dashboard/legal/AboutUs";
 import { buildBreadcrumbSchema, injectJsonLd } from "@/lib/seo";
 
@@ -66,19 +67,29 @@ const FAQ_SCHEMA = {
 };
 
 export const AboutPage = () => {
+  const { t } = useTranslation();
+
   useEffect(() => {
-    document.title = "About FairPay - Free Expense Splitting App";
+    document.title = t("about.seo.title", "Về FairPay — Chia tiền công bằng");
     const meta = document.querySelector('meta[name="description"]');
-    if (meta) meta.setAttribute("content", "Learn about FairPay, our mission to make shared expenses simple, our team, and the technology behind the expense splitting app.");
+    if (meta) {
+      meta.setAttribute(
+        "content",
+        t("about.seo.description", "Giới thiệu FairPay và sứ mệnh chia sẻ chi phí minh bạch."),
+      );
+    }
 
     return injectJsonLd([
       { id: "faq-schema", data: FAQ_SCHEMA },
-      { id: "breadcrumb-about-schema", data: buildBreadcrumbSchema("About", "/about") },
+      {
+        id: "breadcrumb-about-schema",
+        data: buildBreadcrumbSchema(t("about.title", "Về chúng tôi"), "/about"),
+      },
     ]);
-  }, []);
+  }, [t]);
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-6">
+    <div className="container mx-auto max-w-4xl px-4 py-8 sm:py-10">
       <h1 className="sr-only">About FairPay - Split Expenses Fairly</h1>
       <AboutUs />
     </div>

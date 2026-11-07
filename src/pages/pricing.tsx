@@ -165,7 +165,7 @@ export default function PricingPage() {
           <Card className={cn("relative", !isPro && "border-primary/50 ring-1 ring-primary/20")}>
             {!isPro && (
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <span className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full">
+                <span className="bg-secondary text-secondary-foreground text-xs font-semibold px-3 py-1 rounded-full">
                   {t("billing.currentPlan", "Gói hiện tại")}
                 </span>
               </div>
@@ -194,7 +194,7 @@ export default function PricingPage() {
           <Card className={cn("relative", isPro && "border-primary/50 ring-1 ring-primary/20")}>
             {isPro && (
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <span className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full">
+                <span className="bg-secondary text-secondary-foreground text-xs font-semibold px-3 py-1 rounded-full">
                   {t("billing.currentPlan", "Gói hiện tại")}
                 </span>
               </div>
