@@ -11,8 +11,10 @@ import { toast } from "sonner";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { journeyTracking } from "@/lib/journey-tracking";
 import { usePlan, PaywallGate, MAX_FREE_GROUPS } from "@/modules/billing";
+import { useTranslation } from "react-i18next";
 
 export const GroupCreate = () => {
+  const { t } = useTranslation();
   const go = useGo();
   const createMutation = useInstantCreate();
   const { data: identity } = useGetIdentity<Profile>();
@@ -207,11 +209,11 @@ export const GroupCreate = () => {
       <ResponsiveDialog
         open={true}
         onOpenChange={handleClose}
-        title="Create New Group"
-        description="Create a group to share expenses with friends"
-        className="sm:max-w-2xl max-h-[90vh] overflow-y-auto"
+        title={t("groups.createNew", "Create new group")}
+        description={t("groups.createDescription", "Create a group to share expenses with friends")}
+        className="max-h-[90vh] overflow-y-auto sm:max-w-lg"
       >
-        <div className="space-y-6 py-4">
+        <div className="space-y-4 py-2">
           <GroupForm
             onSubmit={handleSubmit}
             isLoading={isSubmitting}

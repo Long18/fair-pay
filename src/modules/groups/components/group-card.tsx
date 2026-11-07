@@ -164,7 +164,7 @@ export function GroupCard({
             )}
           >
             <AvatarImage src={group.avatar_url || undefined} alt={group.name} />
-            <AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
+            <AvatarFallback className="bg-muted text-sm font-semibold text-foreground">
               {isArchived ? (
                 <ArchiveIcon className="size-5 text-amber-600" />
               ) : (
@@ -234,7 +234,7 @@ export function GroupCard({
                 <TooltipTrigger asChild>
                   <Avatar className="-ml-1.5 size-7 border-2 border-background first:ml-0">
                     <AvatarImage src={member.avatar_url || undefined} />
-                    <AvatarFallback className="text-[10px]">
+                    <AvatarFallback className="bg-muted text-[10px] text-foreground">
                       {getInitials(member.name)}
                     </AvatarFallback>
                   </Avatar>
@@ -293,7 +293,7 @@ export function GroupCard({
         {isMember ? (
           <>
             <Button
-              variant="default"
+              variant="outline"
               size="sm"
               className="min-w-0 flex-1"
               onClick={() => {

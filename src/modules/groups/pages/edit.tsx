@@ -14,8 +14,10 @@ import { PageHeader } from "@/components/ui/page-header";
 import { ArrowLeftIcon } from "@/components/ui/icons";
 import type { Profile } from "@/modules/profile/types";
 import { useHaptics } from "@/hooks/use-haptics";
+import { useTranslation } from "react-i18next";
 
 export const GroupEdit = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const go = useGo();
   const { data: identity } = useGetIdentity<Profile>();
@@ -173,8 +175,8 @@ export const GroupEdit = () => {
           </Button>
           <PageHeader
             className="flex-1"
-            title="Edit Group"
-            description={`Update ${group.name}`}
+            title={t("groups.editGroup", "Edit group")}
+            description={t("groups.editDescription", "Update {{name}}", { name: group.name })}
           />
         </div>
 

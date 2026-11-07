@@ -33,6 +33,8 @@ interface MemberListProps {
   showHeader?: boolean;
   /** Group context — passed to MemberCard so each member's group affiliation popover excludes the current group. */
   currentGroupId?: string;
+  /** Tighter rows for group show Members tab. */
+  layout?: "default" | "dense";
 }
 
 export const MemberList = ({
@@ -51,7 +53,9 @@ export const MemberList = ({
   memberStats,
   showHeader = true,
   currentGroupId,
+  layout = "default",
 }: MemberListProps) => {
+  const dense = layout === "dense";
   const [searchQuery, setSearchQuery] = useState("");
   const { tap } = useHaptics();
 
@@ -101,7 +105,7 @@ export const MemberList = ({
       )}
 
       {/* Member List */}
-      <div className="space-y-2">
+      <div className={dense ? "divide-y divide-border/60" : "space-y-2"}>
         {sortedMembers.map((member) => (
           <MemberCard
             key={member.id}
@@ -115,6 +119,7 @@ export const MemberList = ({
             isLoading={isLoading}
             showStats={showStats}
             currentGroupId={currentGroupId}
+            dense={dense}
           />
         ))}
 

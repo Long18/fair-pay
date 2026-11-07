@@ -40,6 +40,7 @@ interface MemberCardProps {
   showStats?: boolean;
   /** Group context for the member's other-groups stack — excludes the current group from the affiliation popover. */
   currentGroupId?: string;
+  dense?: boolean;
 }
 
 export function MemberCard({
@@ -53,6 +54,7 @@ export function MemberCard({
   isLoading,
   showStats = false,
   currentGroupId,
+  dense = false,
 }: MemberCardProps) {
   const { tap, warning } = useHaptics();
   const isCurrentUser = member.user_id === currentUserId;
@@ -77,18 +79,20 @@ export function MemberCard({
   return (
     <div
       className={cn(
-        "flex items-center justify-between p-4 border-2 rounded-lg transition-colors",
-        "hover:bg-accent/50",
-        isAdminRole && "border-primary/30 bg-primary/5"
+        "flex min-h-11 items-center justify-between gap-2 transition-colors",
+        dense
+          ? "px-1 py-2 sm:px-2 sm:py-1.5 hover:bg-muted/40"
+          : "rounded-lg border-2 p-4 hover:bg-accent/50",
+        !dense && isAdminRole && "border-primary/30 bg-primary/5"
       )}
     >
-      <div className="flex items-center gap-3 flex-1 min-w-0">
+      <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
         {/* Avatar with Role Ring */}
         <div className="relative shrink-0">
           <Avatar
             className={cn(
-              "h-12 w-12",
-              isAdminRole && "ring-2 ring-primary ring-offset-2"
+              dense ? "h-9 w-9 sm:h-10 sm:w-10" : "h-12 w-12",
+              isAdminRole && (dense ? "ring-2 ring-primary ring-offset-1" : "ring-2 ring-primary ring-offset-2")
             )}
           >
             <AvatarImage
@@ -107,53 +111,75 @@ export function MemberCard({
         </div>
 
         {/* Name + Role + Stats */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-semibold truncate">
+        <div className="min-w-0 flex-1">
+          <div
+            className={cn(
+              "flex min-w-0 gap-1.5",
+              dense
+                ? "flex-col sm:flex-row sm:flex-wrap sm:items-center"
+                : "flex-wrap items-center gap-2"
+            )}
+          >
+            <p className={cn("truncate font-semibold", dense && "text-sm")}>
               {member.profile?.full_name || "Unknown User"}
             </p>
-            {isCurrentUser && (
-              <Badge variant="secondary" className="text-xs">
-                You
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+              {isCurrentUser && (
+                <Badge variant="secondary" className="text-[10px] sm:text-xs">
+                  You
+                </Badge>
+              )}
+              <Badge
+                variant={isAdminRole ? "default" : "outline"}
+                className="text-[10px] sm:text-xs"
+              >
+                {isAdminRole ? "Admin" : "Member"}
               </Badge>
-            )}
-            <UserGroupStack
-              userId={member.user_id}
-              size="xs"
-              excludeGroupIds={currentGroupId ? [currentGroupId] : undefined}
-            />
-          </div>
-
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <Badge
-              variant={isAdminRole ? "default" : "outline"}
-              className="text-xs"
-            >
-              {isAdminRole ? "Admin" : "Member"}
-            </Badge>
-            {isCreator && (
-              <Badge variant="outline" className="text-xs">
-                Creator
-              </Badge>
-            )}
+              {isCreator && (
+                <Badge variant="outline" className="text-[10px] sm:text-xs">
+                  Creator
+                </Badge>
+              )}
+              <UserGroupStack
+                userId={member.user_id}
+                size="xs"
+                excludeGroupIds={currentGroupId ? [currentGroupId] : undefined}
+              />
+            </div>
           </div>
 
           {/* Member Stats */}
           {showStats && stats && (
-            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2 flex-wrap">
-              <div className="flex items-center gap-1">
-                <ReceiptIcon className="h-3 w-3" />
-                <span>{stats.expense_count} expenses</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <BanknoteIcon className="h-3 w-3" />
-                <span>{formatNumber(stats.total_paid)} ₫ paid</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <CalendarIcon className="h-3 w-3" />
-                <span>Joined {formatRelativeDate(member.joined_at)}</span>
-              </div>
-            </div>
+            <p
+              className={cn(
+                "text-muted-foreground",
+                dense
+                  ? "mt-0.5 line-clamp-1 text-[11px] sm:text-xs"
+                  : "mt-2 flex flex-wrap items-center gap-3 text-xs"
+              )}
+            >
+              {dense ? (
+                <>
+                  {stats.expense_count} expenses · {formatNumber(stats.total_paid)} ₫ paid · Joined{" "}
+                  {formatRelativeDate(member.joined_at)}
+                </>
+              ) : (
+                <>
+                  <span className="inline-flex items-center gap-1">
+                    <ReceiptIcon className="h-3 w-3" />
+                    {stats.expense_count} expenses
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <BanknoteIcon className="h-3 w-3" />
+                    {formatNumber(stats.total_paid)} ₫ paid
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <CalendarIcon className="h-3 w-3" />
+                    Joined {formatRelativeDate(member.joined_at)}
+                  </span>
+                </>
+              )}
+            </p>
           )}
         </div>
       </div>

@@ -32,11 +32,17 @@ import { Clock3Icon, Loader2Icon, LogInIcon, PlusIcon, SearchIcon } from '@/comp
 import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { matchesSearchFields } from '@/lib/search-utils';
+import { ScrollRevealStack, StaggerChildren } from '@/lib/motion';
 
 type FilterType = 'all' | 'active' | 'settled' | 'admin' | 'archived' | 'discover';
 type SortType = 'recent' | 'oldest' | 'name' | 'balance';
 
-export const GroupListContent = () => {
+export type GroupListContentProps = {
+  variant?: "default" | "compact";
+};
+
+export const GroupListContent = ({ variant = "default" }: GroupListContentProps) => {
+  const compact = variant === "compact";
   const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
   const { isPro } = usePlan();
@@ -51,7 +57,7 @@ export const GroupListContent = () => {
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [sortBy, setSortBy] = useState<SortType>('recent');
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 9;
+  const pageSize = compact ? 6 : 9;
   const joinPromptGroupId = searchParams.get('joinGroupId');
 
   // Fetch ALL groups with member counts via RPC
@@ -355,9 +361,10 @@ export const GroupListContent = () => {
   const hasGroups = allGroups.length > 0;
 
   return (
-    <div className="space-y-6">
+    <div className={compact ? "space-y-4" : "space-y-6"}>
       {/* Search & Filters */}
       {hasGroups && (
+        <ScrollRevealStack direction="up" parallax>
         <div className="flex flex-col gap-3 rounded-xl border border-border/80 bg-card/60 p-3 sm:flex-row sm:items-center">
           <div className="relative min-w-0 flex-1">
             <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -403,6 +410,7 @@ export const GroupListContent = () => {
             </SelectContent>
           </Select>
         </div>
+        </ScrollRevealStack>
       )}
 
       {/* Loading State */}
@@ -420,7 +428,8 @@ export const GroupListContent = () => {
       {/* Groups Grid */}
       {!isLoading && filteredGroups.length > 0 && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <ScrollRevealStack direction="up" parallax parallaxDistance={48}>
+          <StaggerChildren className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {paginatedGroups.map((group) => {
               const isGroupAdmin = group.groupMembers.some(
                 (m: any) => m.user_id === identity?.id && m.role === 'admin'
@@ -440,7 +449,8 @@ export const GroupListContent = () => {
                 />
               );
             })}
-          </div>
+          </StaggerChildren>
+          </ScrollRevealStack>
           <PaginationControls
             metadata={paginationMetadata}
             onPageChange={setCurrentPage}
