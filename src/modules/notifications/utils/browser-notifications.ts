@@ -1,28 +1,43 @@
+import { NOTIFICATION_SOUND_URL } from "../constants";
 import { Notification } from "../types";
+import { resolveNotificationTarget } from "./notification-navigation";
 
 /**
- * Warm up audio context on first user interaction.
- * Desktop browsers block audio.play() until user has interacted with the page.
- * This creates a silent audio context on first click/touch/keydown to unlock playback.
+ * Unlock notification audio on first user interaction.
+ * Browsers block audio.play() until gesture; empty Audio() does not reliably unlock.
  */
 let audioWarmedUp = false;
-const warmUpAudio = () => {
-  if (audioWarmedUp) return;
+
+export const isNotificationAudioUnlocked = (): boolean => audioWarmedUp;
+
+export const warmUpNotificationAudio = () => {
+  if (audioWarmedUp || typeof window === "undefined") return;
   audioWarmedUp = true;
   try {
-    const ctx = new (window.AudioContext || (window as unknown as Record<string, typeof AudioContext>).webkitAudioContext)();
-    const buffer = ctx.createBuffer(1, 1, 22050);
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(ctx.destination);
-    source.start(0);
-    const audio = new Audio();
-    audio.volume = 0;
-    audio.play().catch(() => {});
+    const Ctx =
+      window.AudioContext ||
+      (window as unknown as Record<string, typeof AudioContext>).webkitAudioContext;
+    if (Ctx) {
+      const ctx = new Ctx();
+      void ctx.resume();
+    }
+    const audio = new Audio(NOTIFICATION_SOUND_URL);
+    audio.volume = 0.001;
+    void audio
+      .play()
+      .then(() => {
+        audio.pause();
+        audio.currentTime = 0;
+      })
+      .catch(() => {
+        audioWarmedUp = false;
+      });
   } catch {
-    // Audio context not supported
+    audioWarmedUp = false;
   }
 };
+
+const warmUpAudio = warmUpNotificationAudio;
 
 if (typeof window !== "undefined") {
   const events = ["click", "touchstart", "keydown"] as const;
@@ -53,10 +68,11 @@ export const sendBrowserNotification = (notification: Notification) => {
       tag: notification.id,
     });
 
-    if (notification.link) {
+    const target = resolveNotificationTarget(notification);
+    if (target) {
       n.onclick = () => {
         window.focus();
-        window.location.href = notification.link!;
+        window.location.assign(target);
         n.close();
       };
     }

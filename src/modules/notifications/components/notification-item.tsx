@@ -6,6 +6,10 @@ import { getInitials } from "@/components/user-display";
 import { Notification } from "../types";
 import { formatDistanceToNow } from "date-fns";
 import { getNotificationMeta } from "./notification-theme";
+import {
+  navigateToNotificationTarget,
+  resolveNotificationTarget,
+} from "../utils/notification-navigation";
 
 interface NotificationItemProps {
   notification: Notification;
@@ -31,8 +35,9 @@ export const NotificationItem = ({
     if (!notification.is_read) {
       onMarkAsRead(notification.id);
     }
-    if (notification.link) {
-      go({ to: notification.link });
+    const target = resolveNotificationTarget(notification);
+    if (target) {
+      navigateToNotificationTarget(go, target);
       onClose?.();
     }
   };

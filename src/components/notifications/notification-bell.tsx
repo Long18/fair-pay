@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useHaptics } from "@/hooks/use-haptics";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { IndicatorBadge } from "@/components/ui/indicator-badge";
 import { BellIcon } from "@/components/ui/icons";
 import { NotificationCenter } from "./notification-center";
 import { useRecurringExpenses } from "@/modules/expenses/hooks/use-recurring-expenses";
@@ -29,18 +29,11 @@ export function NotificationBell() {
       <Button
         variant="ghost"
         size="icon"
-        className="relative"
+        className="relative overflow-visible"
         onClick={() => { tap(); setOpen(true); }}
       >
         <BellIcon className="h-5 w-5" />
-        {notificationCount > 0 && (
-          <Badge
-            variant="destructive"
-            className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]"
-          >
-            {notificationCount > 9 ? "9+" : notificationCount}
-          </Badge>
-        )}
+        <IndicatorBadge count={notificationCount} max={9} outline color="danger" />
       </Button>
 
       <NotificationCenter open={open} onOpenChange={setOpen} />

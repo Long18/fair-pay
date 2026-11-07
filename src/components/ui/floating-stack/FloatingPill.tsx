@@ -94,7 +94,7 @@ export const FloatingPill = React.forwardRef<HTMLButtonElement, FloatingPillProp
       isIconOnly && "aspect-square !px-0",
       "font-medium whitespace-nowrap",
       "transition-all duration-200 ease-out",
-      "hover:scale-105 active:scale-95",
+      "active:scale-95",
       variant === "glass"
         ? "hover:bg-card hover:shadow-xl hover:border-border"
         : variant === "primary"

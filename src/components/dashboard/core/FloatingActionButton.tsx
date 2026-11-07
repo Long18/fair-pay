@@ -1,21 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useGo } from "@refinedev/core";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useReducedMotion } from "@/hooks/ui/use-reduced-motion";
-import { PILL_STAGGER_MS } from "@/lib/floating-tokens";
+import { FAB_RIGHT_STACK, PILL_STAGGER_MS } from "@/lib/floating-tokens";
 import {
   FloatingActionStack,
   FloatingPill,
+  useRightFabLane,
 } from "@/components/ui/floating-stack";
-import {
-  PlusCircleIcon,
-  UserPlusIcon,
-} from "@/components/ui/icons";
+import { PlusCircleIcon, UserPlusIcon } from "@/components/ui/icons";
 import { journeyTracking } from "@/lib/journey-tracking";
-
 interface FloatingActionButtonProps {
   disabled?: boolean;
 }
@@ -29,8 +26,6 @@ interface FabAction {
   "data-track-id": string;
 }
 
-// ─── Asset icon helpers ────────────────────────────────────────────────────────
-
 function FabIcon({ src, alt = "" }: { src: string; alt?: string }) {
   return (
     <img
@@ -42,14 +37,24 @@ function FabIcon({ src, alt = "" }: { src: string; alt?: string }) {
   );
 }
 
-// ─── Component ─────────────────────────────────────────────────────────────────
-
+/**
+ * Dashboard Quick Actions — Native FloatingActionStack speed-dial (proven layout).
+ * Bencho CreateMenu is demo-only; it breaks inside fixed FAB lanes (narrow column).
+ */
 export function FloatingActionButton({ disabled = false }: FloatingActionButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const go = useGo();
   const { t } = useTranslation();
   const { tap } = useHaptics();
   const reducedMotion = useReducedMotion();
+  const { setPrimaryQuickActionsOpen } = useRightFabLane();
+
+  useEffect(
+    () => () => {
+      setPrimaryQuickActionsOpen(false);
+    },
+    [setPrimaryQuickActionsOpen],
+  );
 
   const actions: FabAction[] = [
     {
@@ -57,40 +62,62 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
       icon: <PlusCircleIcon className="h-5 w-5" />,
       label: t("dashboard.addExpense"),
       accent: true,
-      onClick: () => { tap(); go({ to: "/expenses/create" }); setIsOpen(false); },
+      onClick: () => {
+        tap();
+        go({ to: "/expenses/create" });
+        setIsOpen(false);
+      },
       "data-track-id": "cta:fab:expenses:create",
     },
     {
       key: "settleUp",
       icon: <FabIcon src="/assets/fab/fab-settle-up.png" />,
       label: t("dashboard.settleUp"),
-      onClick: () => { tap(); go({ to: "/payments/create" }); setIsOpen(false); },
+      onClick: () => {
+        tap();
+        go({ to: "/payments/create" });
+        setIsOpen(false);
+      },
       "data-track-id": "cta:fab:payments:create",
     },
     {
       key: "createGroup",
       icon: <FabIcon src="/assets/fab/fab-create-group.png" />,
       label: t("dashboard.createGroup"),
-      onClick: () => { tap(); go({ to: "/groups/create" }); setIsOpen(false); },
+      onClick: () => {
+        tap();
+        go({ to: "/groups/create" });
+        setIsOpen(false);
+      },
       "data-track-id": "cta:fab:groups:create",
     },
     {
       key: "inviteFriend",
       icon: <UserPlusIcon className="h-5 w-5" />,
       label: t("dashboard.inviteFriend"),
-      onClick: () => { tap(); go({ to: "/friends" }); setIsOpen(false); },
+      onClick: () => {
+        tap();
+        go({ to: "/friends" });
+        setIsOpen(false);
+      },
       "data-track-id": "cta:fab:friends",
     },
   ];
 
-  // Hide FAB for unauthenticated users
   if (disabled) return null;
 
   return (
     <FloatingActionStack
       side="right"
+      stackIndex={FAB_RIGHT_STACK.primary}
       isOpen={isOpen}
-      onClose={() => setIsOpen(false)}
+      onClose={() => {
+        setIsOpen(false);
+        setPrimaryQuickActionsOpen(false);
+      }}
+      showBackdrop
+      className="max-md:hidden"
+      entranceDelay={0.3}
       trigger={
         <FloatingPill
           variant="bare"
@@ -100,7 +127,8 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
           ariaHasPopup="menu"
           onClick={() => {
             tap();
-            if (!isOpen) {
+            const next = !isOpen;
+            if (next) {
               journeyTracking.trackEvent({
                 event_name: "dashboard_fab_clicked",
                 event_category: "dashboard",
@@ -109,7 +137,8 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
                 step_name: "fab-open",
               });
             }
-            setIsOpen(!isOpen);
+            setIsOpen(next);
+            setPrimaryQuickActionsOpen(next);
           }}
           dataAttributes={{ "data-onboarding-target": "fab-button" }}
           data-track-id="cta:fab:toggle"
@@ -118,7 +147,7 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
           data-track-category="dashboard"
           className={cn(
             "!rounded-full !bg-background border-[3px]",
-            isOpen ? "!border-foreground" : "border-primary"
+            isOpen ? "!border-foreground" : "border-primary",
           )}
         >
           <img
@@ -131,9 +160,9 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
       }
     >
       <AnimatePresence>
-        {isOpen && (
+        {isOpen ? (
           <motion.div
-            className="grid grid-cols-2 gap-2 w-56 rounded-2xl border border-border bg-card p-3 shadow-lg"
+            className="grid w-56 grid-cols-2 gap-2 rounded-2xl border border-border bg-card p-3 shadow-lg"
             initial={reducedMotion ? false : { opacity: 0, scale: 0.82 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.82 }}
@@ -149,7 +178,7 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
                 data-track-event="cta_click"
                 data-track-type="button"
                 data-track-category="dashboard"
-                className="flex flex-col items-center justify-center gap-1.5 h-[88px] rounded-xl bg-muted/60 hover:bg-muted transition-colors cursor-pointer"
+                className="flex h-[88px] cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl bg-muted/60 transition-colors hover:bg-muted"
                 initial={reducedMotion ? false : { opacity: 0, y: 8, scale: 0.9 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{
@@ -159,19 +188,19 @@ export function FloatingActionButton({ disabled = false }: FloatingActionButtonP
               >
                 <span
                   className={cn(
-                    "flex items-center justify-center h-10 w-10 rounded-full",
-                    action.accent ? "bg-primary/15" : "bg-background shadow-sm"
+                    "flex h-10 w-10 items-center justify-center rounded-full",
+                    action.accent ? "bg-primary/15" : "bg-background shadow-sm",
                   )}
                 >
                   {action.icon}
                 </span>
-                <span className="text-[11px] font-semibold text-foreground text-center leading-tight px-1">
+                <span className="px-1 text-center text-[11px] font-semibold leading-tight text-foreground">
                   {action.label}
                 </span>
               </motion.button>
             ))}
           </motion.div>
-        )}
+        ) : null}
       </AnimatePresence>
     </FloatingActionStack>
   );

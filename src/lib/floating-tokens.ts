@@ -76,22 +76,68 @@ export const FAB_SLOT_HEIGHT_PX = {
   lg: 56,
 } as const;
 
-/** Vertical gap between stacked FABs on the same side (matches FloatingActionStack `gap-3`). */
+/** Vertical gap between stacked FABs on the same side (12px = Tailwind `gap-3`). */
 export const FAB_STACK_GAP_PX = 12;
 
+/** Tailwind class for speed-dial spacing inside a stack — keep in sync with `FAB_STACK_GAP_PX`. */
+export const FAB_STACK_GAP_CLASS = "gap-3" as const;
+
 /**
- * Responsive bottom offset — mobile clears bottom-nav, desktop uses 1.5rem.
+ * One vertical lane step on the right FAB ladder (lg trigger height + inter-stack gap).
+ * `FAB_BOTTOM_OFFSET_BY_STACK` literals use multiples of this value (+68px per index).
+ */
+export const FAB_STACK_STEP_PX = FAB_SLOT_HEIGHT_PX.lg + FAB_STACK_GAP_PX;
+
+/** Bottom clearance above mobile tab bar / desktop footer lane (rem). */
+export const FAB_BOTTOM_BASE_REM = { mobile: 5, desktop: 5.25 } as const;
+
+/** Horizontal inset from viewport — matches `getSideOffsetClasses` (`right-4` / `md:right-6`). */
+export const FAB_SIDE_INSET_PX = { mobile: 16, md: 24 } as const;
+
+/**
+ * Right-side FAB lane indices (0 = bottom-most). Keep every app FAB on this ladder
+ * so siblings do not overlap.
+ */
+export const FAB_RIGHT_STACK = {
+  primary: 0,
+  agentInbox: 1,
+} as const;
+
+/** Left-side FAB lane (assistant, scroll) — avoids crowding Quick Actions on the right. */
+export const FAB_LEFT_STACK = {
+  chat: 0,
+  scrollToTop: 1,
+} as const;
+
+/** Pixels to show scroll-to-top control. */
+export const SCROLL_TO_TOP_THRESHOLD_PX = 400;
+
+/**
+ * Responsive bottom offset class strings — one entry per right-side FAB lane (0–4).
+ *
+ * Must stay **literal** full class names so Tailwind can scan and emit them.
+ * Do not build these with template literals + `${liftPx}` — JIT will not ship the CSS.
+ *
+ * Each step above index 0 lifts by one `FAB_STACK_STEP_PX` (68px at current token values).
+ */
+const FAB_BOTTOM_OFFSET_BY_STACK = [
+  "bottom-[calc(env(safe-area-inset-bottom)+5rem)] md:bottom-[calc(env(safe-area-inset-bottom,0px)+5.25rem)]",
+  "bottom-[calc(env(safe-area-inset-bottom)+5rem+68px)] md:bottom-[calc(env(safe-area-inset-bottom,0px)+5.25rem+68px)]",
+  "bottom-[calc(env(safe-area-inset-bottom)+5rem+136px)] md:bottom-[calc(env(safe-area-inset-bottom,0px)+5.25rem+136px)]",
+] as const;
+
+const FAB_MAX_STACK_INDEX = FAB_BOTTOM_OFFSET_BY_STACK.length - 1;
+
+/**
+ * Responsive bottom offset — mobile clears bottom-nav, desktop clears footer FAB lanes.
  *
  * `stackIndex` lifts the stack above lower siblings on the same side
  * (0 = bottom-most / primary FAB). Each step reserves an `lg` slot + gap
  * so mixed-size FABs still clear each other.
  */
 export function getBottomOffsetClasses(stackIndex = 0): string {
-  if (stackIndex <= 0) {
-    return "bottom-[calc(env(safe-area-inset-bottom)+5rem)] md:bottom-6";
-  }
-  const liftPx = stackIndex * (FAB_SLOT_HEIGHT_PX.lg + FAB_STACK_GAP_PX);
-  return `bottom-[calc(env(safe-area-inset-bottom)+5rem+${liftPx}px)] md:bottom-[calc(1.5rem+${liftPx}px)]`;
+  const index = Math.min(Math.max(0, stackIndex), FAB_MAX_STACK_INDEX);
+  return FAB_BOTTOM_OFFSET_BY_STACK[index]!;
 }
 
 /** Responsive side offset. */

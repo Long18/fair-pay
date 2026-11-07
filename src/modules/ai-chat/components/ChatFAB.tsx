@@ -1,8 +1,11 @@
-import { memo, useCallback } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { useHaptics } from "@/hooks/use-haptics";
+import { useMediaQuery } from "@/hooks/ui/use-media-query";
 import { AlertCircleIcon, CheckIcon } from "@/components/ui/icons";
 import { FloatingActionStack, FloatingPill } from "@/components/ui/floating-stack";
 import { cn } from "@/lib/utils";
+import { FAB_LEFT_STACK, FAB_RIGHT_STACK } from "@/lib/floating-tokens";
+import { useFullBleedStageOccludesFloating } from "@/hooks/ui/use-full-bleed-stage-occludes-floating";
 import { useAiChatContext } from "../AiChatContext";
 
 type FabState = "idle" | "loading" | "responding" | "done" | "error";
@@ -44,12 +47,12 @@ function FabIcon({ state }: { state: FabState }) {
     return <AlertCircleIcon size={15} className="text-destructive shrink-0" />;
   }
   return (
-    <span className="inline-flex items-center gap-[3px] shrink-0">
+    <span className="inline-flex items-center gap-[3px] shrink-0" aria-hidden>
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className="h-[6px] w-[6px] rounded-full bg-foreground/70"
-          style={{ animation: `fabDotPulse 1.7s ease-in-out ${i * 0.25}s infinite` }}
+          className="h-[6px] w-[6px] rounded-full bg-primary/80"
+          style={{ animation: `fabDotPulse 0.8s ease-in-out ${i * 0.16}s infinite` }}
         />
       ))}
     </span>
@@ -59,8 +62,18 @@ function FabIcon({ state }: { state: FabState }) {
 /** Opens the FairPay Assistant dialog. Expects AiChatProvider above. */
 export const ChatFAB = memo(function ChatFAB() {
   const { tap } = useHaptics();
+  const isMdUp = useMediaQuery("(min-width: 768px)");
+  const fabSide = isMdUp ? "left" : "right";
+  const stackIndex = useMemo(
+    () => (isMdUp ? FAB_LEFT_STACK.chat : FAB_RIGHT_STACK.primary),
+    [isMdUp],
+  );
   const { isChatOpen, openChat } = useAiChatContext();
   const fabState = useFabState();
+  const pondOccludesFab = useFullBleedStageOccludesFloating({
+    side: fabSide,
+    stackIndex,
+  });
 
   const handleOpen = useCallback(() => {
     tap();
@@ -79,7 +92,9 @@ export const ChatFAB = memo(function ChatFAB() {
       `}</style>
 
       <FloatingActionStack
-        side="left"
+        side={fabSide}
+        stackIndex={stackIndex}
+        hidden={pondOccludesFab}
         trigger={
           <FloatingPill
             variant="glass"
@@ -87,7 +102,7 @@ export const ChatFAB = memo(function ChatFAB() {
             onClick={handleOpen}
             ariaLabel="Open FairPay Assistant"
             className={cn(
-              "aspect-square !px-0 !min-w-[48px]",
+              "aspect-square !min-w-[48px] !px-0 overflow-hidden ring-1 ring-border/60",
               fabState === "done" && "border-emerald-300 dark:border-emerald-800",
               fabState === "error" && "border-destructive/40",
             )}

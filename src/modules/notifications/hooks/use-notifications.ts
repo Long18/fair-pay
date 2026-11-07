@@ -1,39 +1,19 @@
-import { createElement, useEffect, useState, useCallback, useRef } from "react";
-import { useGetIdentity, useList, useGo } from "@refinedev/core";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useGetIdentity, useList } from "@refinedev/core";
 import { useInstantUpdate } from "@/hooks/use-instant-mutation";
-import { toast } from "sonner";
 import { supabaseClient } from "@/utility";
 import { Profile } from "@/modules/profile/types";
 import { Notification } from "../types";
-import { NotificationToast } from "../components/notification-toast";
-import { useNotificationSound } from "./use-notification-sound";
-import { useIsMobile } from "@/hooks/ui/use-mobile";
-import { sendBrowserNotification, requestNotificationPermission } from "../utils/browser-notifications";
+import {
+  sendBrowserNotification,
+  requestNotificationPermission,
+} from "../utils/browser-notifications";
 import { formatDistanceToNow } from "date-fns";
 
 export const useNotifications = () => {
   const { data: identity } = useGetIdentity<Profile>();
-  const go = useGo();
   const [unreadCount, setUnreadCount] = useState(0);
-  const { play: playSound } = useNotificationSound();
   const permissionRequested = useRef(false);
-  const isMobile = useIsMobile();
-  const isMobileRef = useRef(isMobile);
-  useEffect(() => {
-    isMobileRef.current = isMobile;
-  }, [isMobile]);
-
-  // Keep stable refs for callbacks used inside the realtime effect closure.
-  // Without these, the effect captures stale versions of playSound/go/refetch
-  // from the initial render, causing intermittent failures on desktop.
-  const playSoundRef = useRef(playSound);
-  useEffect(() => {
-    playSoundRef.current = playSound;
-  }, [playSound]);
-  const goRef = useRef(go);
-  useEffect(() => {
-    goRef.current = go;
-  }, [go]);
 
   // Request browser notification permission once
   useEffect(() => {
@@ -116,51 +96,6 @@ export const useNotifications = () => {
 
       // Refetch via ref to always use the latest React Query refetch function
       refetchRef.current();
-
-      // Play sound via ref — ensures we use the latest Audio instance
-      playSoundRef.current();
-
-      // Show in-app toast only on desktop — enrich with actor profile async
-      if (!isMobileRef.current) {
-        const showToast = (n: Notification) => {
-          toast.custom(
-            (t) =>
-              createElement(
-                "div",
-                {
-                  className:
-                    "flex items-start gap-3 w-full max-w-sm rounded-xl bg-popover border border-border/60 shadow-lg p-3 cursor-pointer transition-all hover:bg-accent/50",
-                  onClick: () => {
-                    if (n.link) goRef.current({ to: n.link });
-                    toast.dismiss(t);
-                  },
-                },
-                createElement(NotificationToast, { notification: n })
-              ),
-            { duration: 5000, position: "bottom-left" }
-          );
-        };
-
-        if (raw.actor_id) {
-          Promise.resolve(
-            supabaseClient
-              .from("profiles")
-              .select("full_name, avatar_url")
-              .eq("id", raw.actor_id)
-              .single()
-          )
-            .then(({ data: profile }) => {
-              showToast({
-                ...raw,
-                actor_name: profile?.full_name ?? undefined,
-                actor_avatar: profile?.avatar_url ?? undefined,
-              });
-            })
-            .catch(() => showToast(raw));
-        } else {
-          showToast(raw);
-        }
-      }
 
       // Browser notification when tab is not focused
       sendBrowserNotification(raw);

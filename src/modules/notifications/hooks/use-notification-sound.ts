@@ -1,6 +1,5 @@
 import { useCallback, useRef } from "react";
-
-const SOUND_URL = "/assets/sounds/pop-notification.wav";
+import { NOTIFICATION_SOUND_URL } from "../constants";
 
 /**
  * Hook to play notification sound.
@@ -13,7 +12,7 @@ export const useNotificationSound = () => {
 
   const getAudio = useCallback(() => {
     if (!audioRef.current) {
-      audioRef.current = new Audio(SOUND_URL);
+      audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
       audioRef.current.volume = 0.5;
       // Preload the audio file so it's ready when needed
       audioRef.current.load();
@@ -34,10 +33,8 @@ export const useNotificationSound = () => {
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch(() => {
-          // Autoplay blocked — try creating a fresh Audio instance
-          // Some browsers release the autoplay lock per-element
           try {
-            const fresh = new Audio(SOUND_URL);
+            const fresh = new Audio(NOTIFICATION_SOUND_URL);
             fresh.volume = 0.5;
             fresh.play().catch(() => {});
           } catch {

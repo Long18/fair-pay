@@ -5,6 +5,7 @@ import { useReducedMotion } from "@/hooks/ui/use-reduced-motion";
 import {
   Z_FLOATING,
   FLOATING_SPRING,
+  FAB_STACK_GAP_CLASS,
   getBottomOffsetClasses,
   getSideOffsetClasses,
 } from "@/lib/floating-tokens";
@@ -101,13 +102,15 @@ export function FloatingActionStack({
           "fixed",
           getBottomOffsetClasses(stackIndex),
           getSideOffsetClasses(side),
-          "flex flex-col-reverse gap-3",
+          "flex flex-col-reverse",
+          FAB_STACK_GAP_CLASS,
           alignClasses,
           className
         )}
         style={{ zIndex: Z_FLOATING.pill }}
         initial={reducedMotion ? false : { scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
+        exit={reducedMotion ? undefined : { scale: 0.85, opacity: 0 }}
         transition={
           reducedMotion ? undefined : { ...FLOATING_SPRING, delay: entranceDelay }
         }

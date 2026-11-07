@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 import { useHaptics } from "@/hooks/use-haptics";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -16,7 +18,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useIsMobile } from "@/hooks/ui/use-mobile";
 import { useNotifications } from "../hooks/use-notifications";
 import { NotificationItem } from "./notification-item";
+import { IndicatorBadge } from "@/components/ui/indicator-badge";
 import { BellIcon } from "@/components/ui/icons";
+import { NOTIFICATION_PANEL_OPEN_EVENT } from "../utils/notification-panel-open";
+
+const BELL_LOOP_REPEAT_DELAY_S = 2.5;
 
 export const NotificationPanel = () => {
   const {
@@ -29,23 +35,85 @@ export const NotificationPanel = () => {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
   const { tap } = useHaptics();
+  const reducedMotion = useReducedMotion();
+
+  const prevUnreadRef = useRef<number | null>(null);
+  const [countIncreased, setCountIncreased] = useState(false);
+
+  const handleOpenChange = useCallback((next: boolean) => {
+    setOpen(next);
+  }, []);
+
+  const bellAttentionLoop = unreadCount > 0 && !open && !reducedMotion;
+
+  useEffect(() => {
+    const openFromToast = () => handleOpenChange(true);
+    window.addEventListener(NOTIFICATION_PANEL_OPEN_EVENT, openFromToast);
+    return () =>
+      window.removeEventListener(NOTIFICATION_PANEL_OPEN_EVENT, openFromToast);
+  }, [handleOpenChange]);
+
+  useEffect(() => {
+    const prev = prevUnreadRef.current;
+    if (prev === null) {
+      prevUnreadRef.current = unreadCount;
+      return;
+    }
+    prevUnreadRef.current = unreadCount;
+
+    if (unreadCount <= prev || unreadCount === 0 || reducedMotion) {
+      return;
+    }
+
+    const pulseOn = window.setTimeout(() => setCountIncreased(true), 0);
+    const pulseOff = window.setTimeout(() => setCountIncreased(false), 900);
+
+    return () => {
+      clearTimeout(pulseOn);
+      clearTimeout(pulseOff);
+    };
+  }, [unreadCount, reducedMotion]);
 
   const displayNotifications = notifications.slice(0, 50);
+
+  const badgeAttention = bellAttentionLoop || countIncreased;
 
   const bellButton = (
     <Button
       variant="ghost"
       size="icon"
-      className="relative h-9 w-9 md:h-10 md:w-10 rounded-full hover:bg-accent"
+      ripple={false}
+      className="relative size-9 overflow-visible rounded-full hover:bg-accent"
       data-onboarding-target="notification-panel"
       aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
     >
-      <BellIcon className="h-4 w-4 md:h-5 md:w-5" />
-      {unreadCount > 0 && (
-        <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-status-error-border bg-status-error text-[10px] font-bold text-destructive-foreground animate-in zoom-in-50 duration-200">
-          {unreadCount > 99 ? "99+" : unreadCount}
-        </span>
-      )}
+      <motion.span
+        className="inline-flex"
+        aria-hidden
+        animate={
+          bellAttentionLoop
+            ? { rotate: [0, -14, 12, -8, 6, 0] }
+            : { rotate: 0 }
+        }
+        transition={
+          bellAttentionLoop
+            ? {
+                duration: 0.48,
+                ease: "easeInOut",
+                repeat: Infinity,
+                repeatDelay: BELL_LOOP_REPEAT_DELAY_S,
+              }
+            : { duration: 0.2 }
+        }
+      >
+        <BellIcon className="size-4 md:size-5" />
+      </motion.span>
+      <IndicatorBadge
+        count={unreadCount}
+        attention={badgeAttention}
+        outline
+        color="danger"
+      />
     </Button>
   );
 
@@ -109,7 +177,7 @@ export const NotificationPanel = () => {
   // Mobile: Bottom drawer (Instagram-style)
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={setOpen}>
+      <Drawer open={open} onOpenChange={handleOpenChange}>
         <DrawerTrigger asChild>{bellButton}</DrawerTrigger>
         <DrawerContent className="max-h-[85vh] flex flex-col">
           <DrawerTitle className="sr-only">Notifications</DrawerTitle>
@@ -124,7 +192,7 @@ export const NotificationPanel = () => {
 
   // Desktop: Popover dropdown (Facebook-style)
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>{bellButton}</PopoverTrigger>
       <PopoverContent
         align="end"

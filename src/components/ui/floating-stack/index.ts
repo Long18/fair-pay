@@ -17,6 +17,11 @@ export type { FloatingPillProps } from "./FloatingPill";
 export { FloatingActionStack } from "./FloatingActionStack";
 export type { FloatingActionStackProps } from "./FloatingActionStack";
 
+export {
+  RightFabLaneProvider,
+  useRightFabLane,
+} from "./RightFabLaneContext";
+
 export { FloatingBar } from "./FloatingBar";
 export type { FloatingBarProps } from "./FloatingBar";
 
@@ -28,6 +33,13 @@ export {
   PILL_STAGGER_MS,
   FAB_SLOT_HEIGHT_PX,
   FAB_STACK_GAP_PX,
+  FAB_STACK_GAP_CLASS,
+  FAB_STACK_STEP_PX,
+  FAB_BOTTOM_BASE_REM,
+  FAB_SIDE_INSET_PX,
+  FAB_RIGHT_STACK,
+  FAB_LEFT_STACK,
+  SCROLL_TO_TOP_THRESHOLD_PX,
   getPillSizeClasses,
   getPillIconClasses,
   getBottomOffsetClasses,
