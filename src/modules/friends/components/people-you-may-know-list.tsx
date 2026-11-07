@@ -17,11 +17,14 @@ import {
 type PeopleYouMayKnowListProps = {
   enabled?: boolean;
   onConnected?: () => void;
+  /** Cap visible rows (e.g. Connections hub). */
+  limit?: number;
 };
 
 export function PeopleYouMayKnowList({
   enabled = true,
   onConnected,
+  limit,
 }: PeopleYouMayKnowListProps) {
   const { t } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
@@ -98,6 +101,18 @@ export function PeopleYouMayKnowList({
     }
   };
 
+  const [showAll, setShowAll] = useState(false);
+  const effectiveLimit =
+    limit != null && limit > 0 && !showAll ? limit : undefined;
+  const visibleSuggestions =
+    effectiveLimit != null && effectiveLimit > 0
+      ? suggestions.slice(0, effectiveLimit)
+      : suggestions;
+  const hiddenCount =
+    effectiveLimit != null && effectiveLimit > 0
+      ? Math.max(0, suggestions.length - effectiveLimit)
+      : 0;
+
   if (!enabled || (!isLoading && suggestions.length === 0)) {
     return null;
   }
@@ -121,7 +136,7 @@ export function PeopleYouMayKnowList({
         </div>
       ) : (
         <ul className="space-y-2">
-          {suggestions.map((item) => {
+          {visibleSuggestions.map((item) => {
             const isConnecting = connectingId === item.user_id;
             const isDismissingThis = dismissingId === item.user_id;
             return (
@@ -181,6 +196,20 @@ export function PeopleYouMayKnowList({
           })}
         </ul>
       )}
+      {hiddenCount > 0 ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 w-full text-muted-foreground"
+          onClick={() => setShowAll(true)}
+        >
+          {t("friends.showMoreSuggestions", {
+            defaultValue: "See {{count}} more",
+            count: hiddenCount,
+          })}
+        </Button>
+      ) : null}
     </div>
   );
 }

@@ -451,11 +451,11 @@ export const FriendShow = () => {
                     <CardHeader>
                       <CardTitle>{t('balances.title', 'Balances')}</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="space-y-4 p-4">
                       {balances.length === 0 ? (
                         <EmptyBalances onAction={handleAddExpense} />
                       ) : (
-                        <div className="space-y-6">
+                        <div className="space-y-4 [&_[data-slot=balance-row]]:min-h-11">
                           <SimplifiedBalanceView
                             balances={balances}
                             currentUserId={identity?.id || ""}
