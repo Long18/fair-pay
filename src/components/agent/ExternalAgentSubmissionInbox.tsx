@@ -23,7 +23,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { InboxIcon, CheckCircleIcon, XIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
-import { FloatingActionStack, FloatingPill } from "@/components/ui/floating-stack";
+import {
+  FloatingActionStack,
+  FloatingPill,
+  useRightFabLane,
+} from "@/components/ui/floating-stack";
+import { FAB_RIGHT_STACK } from "@/lib/floating-tokens";
 
 type SubmissionPayload = {
   description: string;
@@ -131,6 +136,7 @@ export function ExternalAgentSubmissionInbox() {
   const queryClient = useQueryClient();
   const [dismissed, setDismissed] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const { primaryQuickActionsOpen } = useRightFabLane();
 
   // Only run for authenticated users — unauthenticated visitors would get 401s.
   const { data: identity } = useGetIdentity();
@@ -213,6 +219,9 @@ export function ExternalAgentSubmissionInbox() {
       {showLauncher && (
         <FloatingActionStack
           side="right"
+          stackIndex={FAB_RIGHT_STACK.agentInbox}
+          hidden={primaryQuickActionsOpen}
+          className="max-md:hidden"
           trigger={
             <FloatingPill
               icon={<InboxIcon className="h-4 w-4" />}

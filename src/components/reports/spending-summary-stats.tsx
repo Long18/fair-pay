@@ -14,7 +14,7 @@ export function SpendingSummaryStats({ summary }: SpendingSummaryStatsProps) {
   
   return (
     <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-      <Card className="border-border shadow-sm">
+      <Card className="rounded-xl border border-border/60 shadow-none">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-xs sm:text-sm font-medium">{t('reports.totalSpent')}</CardTitle>
           <TrendingDownIcon className="h-4 w-4 text-destructive" />
@@ -29,7 +29,7 @@ export function SpendingSummaryStats({ summary }: SpendingSummaryStatsProps) {
         </CardContent>
       </Card>
 
-      <Card className="border-border shadow-sm">
+      <Card className="rounded-xl border border-border/60 shadow-none">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-xs sm:text-sm font-medium">{t('reports.totalReceived')}</CardTitle>
           <TrendingUpIcon className={`h-4 w-4 ${themeIntentTones.success.icon}`} />
@@ -44,7 +44,7 @@ export function SpendingSummaryStats({ summary }: SpendingSummaryStatsProps) {
         </CardContent>
       </Card>
 
-      <Card className="border-border shadow-sm">
+      <Card className="rounded-xl border border-border/60 shadow-none">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-xs sm:text-sm font-medium">{t('reports.balance')}</CardTitle>
           <ArrowUpDownIcon className="h-4 w-4 text-muted-foreground" />
@@ -59,7 +59,7 @@ export function SpendingSummaryStats({ summary }: SpendingSummaryStatsProps) {
         </CardContent>
       </Card>
 
-      <Card className="border-border shadow-sm">
+      <Card className="rounded-xl border border-border/60 shadow-none">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-xs sm:text-sm font-medium">{t('reports.average')}</CardTitle>
           <ReceiptIcon className="h-4 w-4 text-muted-foreground" />

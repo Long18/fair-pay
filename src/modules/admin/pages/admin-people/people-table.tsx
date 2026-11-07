@@ -99,6 +99,9 @@ export function PeopleTable<T>({
               {headerGroup.headers.map((header) => (
                 <TableHead
                   key={header.id}
+                  className={cn(
+                    (header.column.columnDef.meta as { className?: string } | undefined)?.className,
+                  )}
                   style={getCommonStyles({ column: header.column, isOverflowing: overflow })}
                 >
                   {header.isPlaceholder
@@ -130,6 +133,9 @@ export function PeopleTable<T>({
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
+                      className={cn(
+                        (cell.column.columnDef.meta as { className?: string } | undefined)?.className,
+                      )}
                       style={getCommonStyles({ column: cell.column, isOverflowing: overflow })}
                     >
                       <div className="truncate">

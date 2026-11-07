@@ -75,7 +75,9 @@ export function GrowthTab({ enabled, locale }: { enabled: boolean; locale: strin
   const { data: topReferrers, isLoading: referrersLoading } = useTopReferrers(enabled);
   const { data: subscriptionStats, isLoading: subscriptionLoading } = useSubscriptionStats(enabled);
 
-  const { containerVariants, rowVariants, animationKey } = useStaggerAnimation(KPI_SLOTS);
+  const { containerVariants, rowVariants, animationKey } = useStaggerAnimation(KPI_SLOTS, {
+    maxStaggerCount: 15,
+  });
   const shareChartConfig = useMemo(() => SHARE_CHART_CONFIG, []);
   const shareDescription = SHARE_CHANNELS.map((key) => SHARE_CHART_CONFIG[key].label).join(" · ");
 

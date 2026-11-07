@@ -18,6 +18,7 @@ import { AdminTabs, AdminTabsContent } from "../components/AdminTabs";
 import { useAdminTabParam } from "../hooks/use-admin-tab-param";
 import { useHaptics } from "@/hooks/use-haptics";
 import { formatSystemRole, relationOne, type RelationOne } from "./admin-people/utils";
+import { MotionPageShell } from "@/lib/motion";
 
 const MODERATOR_LIST_CLASS =
   "max-h-[calc(100dvh-14rem)] min-h-[12rem] divide-y overflow-y-auto rounded-md border";
@@ -287,26 +288,28 @@ export function ModeratorPeople() {
   };
 
   return (
-    <AdminTabs
-      value={activeTab}
-      onValueChange={handleTabChange}
-      header={
-        <AdminPageHeader
-          title={tAdmin("people.title")}
-          description={tAdmin("people.subtitle")}
-        />
-      }
-      items={[
-        { value: "users", label: tAdmin("people.usersTab"), icon: UsersIcon },
-        { value: "groups", label: tAdmin("people.groupsTab"), icon: GroupIcon },
-      ]}
-    >
-      <AdminTabsContent value="users">
-        <ModeratorUsersTab />
-      </AdminTabsContent>
-      <AdminTabsContent value="groups">
-        <ModeratorGroupsTab />
-      </AdminTabsContent>
-    </AdminTabs>
+    <MotionPageShell className="space-y-4">
+      <AdminTabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        header={
+          <AdminPageHeader
+            title={tAdmin("people.title")}
+            description={tAdmin("people.subtitle")}
+          />
+        }
+        items={[
+          { value: "users", label: tAdmin("people.usersTab"), icon: UsersIcon },
+          { value: "groups", label: tAdmin("people.groupsTab"), icon: GroupIcon },
+        ]}
+      >
+        <AdminTabsContent value="users">
+          <ModeratorUsersTab />
+        </AdminTabsContent>
+        <AdminTabsContent value="groups">
+          <ModeratorGroupsTab />
+        </AdminTabsContent>
+      </AdminTabs>
+    </MotionPageShell>
   );
 }

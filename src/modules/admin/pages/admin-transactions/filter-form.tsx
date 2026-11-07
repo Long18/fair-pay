@@ -42,7 +42,7 @@ export function FilterPopoverForm({ fields, onClear, onDone, canClear }: FilterP
   const idPrefix = useId();
 
   return (
-    <div className="space-y-3">
+    <div className="max-w-[min(100vw-2rem,24rem)] space-y-3">
       <p className="text-sm font-medium">{tAdmin("layout.shell.filters")}</p>
       <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
         {fields.map((field) => {

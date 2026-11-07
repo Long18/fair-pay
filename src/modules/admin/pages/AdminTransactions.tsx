@@ -8,6 +8,7 @@ import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { AdminTabs, AdminTabsContent } from "@/modules/admin/components/AdminTabs";
 import { useAdminTabParam } from "@/modules/admin/hooks/use-admin-tab-param";
 import { useAdminTranslation } from "../i18n";
+import { MotionPageShell } from "@/lib/motion";
 import { useAdminAccess } from "../hooks/use-admin-access";
 import { ExpensesTab } from "./admin-transactions/expenses-tab";
 import { PaymentsTab } from "./admin-transactions/payments-tab";
@@ -22,10 +23,11 @@ export function AdminTransactions() {
   const [activeTab, setActiveTab] = useAdminTabParam("expenses", validTabs);
 
   return (
-    <div className="space-y-4">
+    <MotionPageShell className="space-y-4">
       <AdminTabs
         value={activeTab}
         onValueChange={setActiveTab}
+        mobileAsSelect
         header={
           <AdminPageHeader
             title={tAdmin("transactions.title")}
@@ -63,6 +65,6 @@ export function AdminTransactions() {
           </AdminTabsContent>
         ) : null}
       </AdminTabs>
-    </div>
+    </MotionPageShell>
   );
 }

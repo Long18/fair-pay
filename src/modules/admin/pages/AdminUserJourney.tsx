@@ -32,6 +32,7 @@ import { JourneyWorkspace } from "../components/journey-canvas/JourneyWorkspace"
 import { JourneyCompactToolbar } from "../components/journey-canvas/JourneyCompactToolbar";
 import { JourneyOverviewSheet } from "../components/journey-canvas/JourneyOverviewSheet";
 import { useAdminTranslation } from "../i18n";
+import { MotionPageShell } from "@/lib/motion";
 import type {
   AdminUserRow,
   DeleteTrackingResponse,
@@ -201,16 +202,19 @@ export function AdminUserJourney() {
 
   if (isUserLoading && !user) {
     return (
-      <div className="flex items-center justify-center py-16 text-muted-foreground">
+      <MotionPageShell loading className="flex items-center justify-center py-16 text-muted-foreground">
         <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
         {tAdmin("journey.loadingUser")}
-      </div>
+      </MotionPageShell>
     );
   }
 
   return (
     <>
-      <div className="flex min-h-0 flex-col">
+      <MotionPageShell
+        loading={isOverviewLoading || isSessionsLoading}
+        className="flex min-h-0 min-w-0 flex-col overflow-x-hidden"
+      >
         <JourneyCompactToolbar
           userName={user?.full_name ?? tAdmin("common.user")}
           userEmail={user?.email}
@@ -243,7 +247,7 @@ export function AdminUserJourney() {
           eventsLoading={isEventsLoading}
           onViewRaw={setRawEvent}
         />
-      </div>
+      </MotionPageShell>
 
       <JourneyOverviewSheet
         open={overviewOpen}
@@ -254,7 +258,7 @@ export function AdminUserJourney() {
       />
 
       <Dialog open={!!rawEvent} onOpenChange={(open) => !open && setRawEvent(null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="w-[min(100vw-1rem,48rem)] max-w-[calc(100vw-1rem)]">
           <DialogHeader>
             <DialogTitle>{tAdmin("journey.rawMetadata")}</DialogTitle>
             <DialogDescription>

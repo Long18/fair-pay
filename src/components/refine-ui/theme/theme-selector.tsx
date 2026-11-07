@@ -62,11 +62,11 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
   const getModeDescription = (mode: string) => {
     switch (mode) {
       case "light":
-        return t("theme.light") + " theme";
+        return t("theme.modeLight", "Light theme");
       case "dark":
-        return t("theme.dark") + " theme";
+        return t("theme.modeDark", "Dark theme");
       case "system":
-        return t("theme.system") + " theme";
+        return t("theme.modeSystem", "System theme");
       default:
         return "";
     }
@@ -167,7 +167,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
           title={currentVariant.displayName}
         >
           <PaletteIcon className="h-[1.2rem] w-[1.2rem]" />
-          <span className="sr-only">Select color theme</span>
+          <span className="sr-only">{t("theme.selectColorTheme")}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="flex w-80 max-h-[min(600px,calc(100vh-96px))] flex-col overflow-hidden p-2">

@@ -23,6 +23,7 @@ import { UserAvatar } from "@/components/user-display";
 import { formatCurrency, formatDate } from "@/lib/locale-utils";
 import { getCategoryMeta } from "@/modules/expenses/lib/categories";
 import { cn } from "@/lib/utils";
+import { auditLogDetailDialogContentClassName } from "../../components/audit-log-detail-dialog";
 import { useAdminTranslation } from "../../i18n";
 import { AuditEntityDetailActions } from "./audit-entity-detail-actions";
 
@@ -175,7 +176,7 @@ function AuditEntityPreviewModal({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className={auditLogDetailDialogContentClassName}>
         <DialogHeader>
           <DialogTitle className="truncate pr-6">{title}</DialogTitle>
           <DialogDescription className="sr-only">{tAdmin("auditLogs.previewClickHint")}</DialogDescription>

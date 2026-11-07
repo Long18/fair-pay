@@ -54,6 +54,7 @@ export function createUsersTabColumns({
     },
     {
       id: "email", header: tAdmin("common.email"), accessorKey: "email", size: 220,
+      meta: { className: "hidden lg:table-cell" },
       cell: ({ row }) => {
         const extra = (row.original.emails ?? []).filter((e) => !e.is_primary);
         return (
@@ -86,6 +87,7 @@ export function createUsersTabColumns({
       header: tAdmin("people.accountStatus"),
       accessorFn: (row) => row.deactivated_at,
       size: 120,
+      meta: { className: "hidden xl:table-cell" },
       cell: ({ row }) => (
         <Badge variant={row.original.deactivated_at ? "outline" : "secondary"}>
           {row.original.deactivated_at
@@ -96,6 +98,7 @@ export function createUsersTabColumns({
     },
     {
       id: "journey_tracking_ignored", header: tAdmin("people.journeyTracking"), accessorFn: (row) => row.journey_tracking_ignored, size: 120,
+      meta: { className: "hidden xl:table-cell" },
       cell: ({ row }) => (
         <Badge variant={row.original.journey_tracking_ignored ? "outline" : "secondary"}>
           {row.original.journey_tracking_ignored ? tAdmin("status.ignored") : tAdmin("status.tracked")}

@@ -33,12 +33,14 @@ export function OverviewRecentActivityCard({ enabled }: { enabled: boolean }) {
             {tAdmin("overview.latestTrackedUsersDescription")}
           </CardDescription>
         </div>
+        <Button variant="link" size="sm" asChild className="h-auto min-h-11 shrink-0 px-2 py-2 text-xs">
         <Link
           to="/admin/people"
-          className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          className="inline-flex items-center gap-1 text-muted-foreground"
         >
           {tAdmin("overview.viewAllUsers")} <ArrowRightIcon className="h-3 w-3" />
         </Link>
+        </Button>
       </CardHeader>
 
       <CardContent className="flex-1 px-0">

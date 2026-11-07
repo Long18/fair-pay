@@ -210,7 +210,9 @@ export function RetentionTab({ enabled }: { enabled: boolean }) {
   const { data: debtAging, isLoading: debtLoading } = useDebtAging(enabled);
 
   const statItems = useMemo(() => [0, 1, 2], []);
-  const { containerVariants, rowVariants, animationKey } = useStaggerAnimation(statItems);
+  const { containerVariants, rowVariants, animationKey } = useStaggerAnimation(statItems, {
+    maxStaggerCount: 15,
+  });
   const pct = completionPercent(funnel);
 
   return (

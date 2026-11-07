@@ -24,6 +24,7 @@ import { useAdminAccess } from "../hooks/use-admin-access";
 import { useAdminTranslation } from "../i18n";
 import { AdminEmailDevTools } from "./admin-devtool/email-dev-tools";
 import type { AdminCapabilities } from "../access";
+import { MotionPageShell } from "@/lib/motion";
 
 const AdminEmailTemplateEditor = lazy(() =>
   import("./admin-devtool/email-template-editor").then((module) => ({ default: module.AdminEmailTemplateEditor }))
@@ -170,18 +171,21 @@ export function AdminDevTool() {
 
   if (!showTabs) {
     return (
-      <div className="space-y-4">
+      <MotionPageShell className="space-y-4">
         {header}
         {renderTab(soleTab ?? defaultTab, access, isApiDocsEnabled)}
-      </div>
+      </MotionPageShell>
     );
   }
 
   return (
+    <MotionPageShell className="space-y-4">
     <AdminTabs
       value={activeTab}
       onValueChange={setActiveTab}
       layout="rail"
+      mobileAsSelect
+      listClassName="scroll-px-4"
       header={header}
       items={tabItems}
     >
@@ -191,5 +195,6 @@ export function AdminDevTool() {
         </AdminTabsContent>
       ))}
     </AdminTabs>
+    </MotionPageShell>
   );
 }

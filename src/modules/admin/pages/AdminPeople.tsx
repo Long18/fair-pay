@@ -15,6 +15,7 @@ import { UsersTab } from "./admin-people/users-tab";
 import { GroupsTab } from "./admin-people/groups-tab";
 import { FriendshipsTab } from "./admin-people/friendships-tab";
 import { InviteFriendsTab } from "./admin-people/invite-friends-tab";
+import { MotionPageShell } from "@/lib/motion";
 
 const PEOPLE_TABS = ["users", "groups", "friendships", "invite"] as const;
 
@@ -34,6 +35,7 @@ export function AdminPeople() {
   };
 
   return (
+    <MotionPageShell className="space-y-4">
     <AdminTabs
       value={activeTab}
       onValueChange={handleTabChange}
@@ -63,5 +65,6 @@ export function AdminPeople() {
         <InviteFriendsTab />
       </AdminTabsContent>
     </AdminTabs>
+    </MotionPageShell>
   );
 }

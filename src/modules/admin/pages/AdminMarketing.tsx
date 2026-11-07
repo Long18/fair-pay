@@ -7,6 +7,7 @@ import { GrowthTab } from "./admin-marketing/growth-tab";
 import { RetentionTab } from "./admin-marketing/retention-tab";
 import { EmailsTab } from "./admin-marketing/emails-tab";
 import { ExperimentsTab } from "./admin-marketing/experiments-tab";
+import { MotionPageShell } from "@/lib/motion";
 
 const MARKETING_TABS = ["growth", "retention", "emails", "experiments"] as const;
 
@@ -17,16 +18,18 @@ export function AdminMarketing() {
 
   if (!canViewGrowth) {
     return (
-      <div className="flex items-center justify-center py-24">
+      <MotionPageShell className="flex items-center justify-center py-24">
         <p className="text-sm text-muted-foreground">{tAdmin("common.accessDenied")}</p>
-      </div>
+      </MotionPageShell>
     );
   }
 
   return (
+    <MotionPageShell className="space-y-4">
     <AdminTabs
       value={activeTab}
       onValueChange={setActiveTab}
+      className="[&_[data-slot=tracking-health]_button]:min-h-11 [&_[data-slot=tracking-health]_[role=tablist]]:h-11"
       header={
         <AdminPageHeader
           title={tAdmin("marketing.title")}
@@ -56,5 +59,6 @@ export function AdminMarketing() {
         <ExperimentsTab enabled={canViewGrowth && activeTab === "experiments"} />
       </AdminTabsContent>
     </AdminTabs>
+    </MotionPageShell>
   );
 }

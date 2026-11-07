@@ -51,7 +51,9 @@ export function AuditLogTable({
   compact,
 }: AuditLogListProps & { compact: boolean }) {
   const { tAdmin } = useAdminTranslation();
-  const { containerVariants, rowVariants, animationKey } = useStaggerAnimation(entries);
+  const { containerVariants, rowVariants, animationKey } = useStaggerAnimation(entries, {
+    maxStaggerCount: 15,
+  });
   const system = tAdmin("common.system");
 
   return (

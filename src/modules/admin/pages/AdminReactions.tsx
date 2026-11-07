@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { AdminDetailSheet } from "../components/AdminDetailSheet";
 import { AdminPageHeader } from "../components/AdminPageHeader";
+import { MotionPageShell } from "@/lib/motion";
 import { AdminTableScroll } from "../components/AdminTableScroll";
 import {
   AdminMobileCard,
@@ -495,7 +496,7 @@ export function AdminReactions() {
   const hasItems = !isLoading && !!items && items.length > 0;
 
   return (
-    <div className="flex flex-col gap-3">
+    <MotionPageShell loading={isLoading} className="gap-3">
       <AdminPageHeader
         title={tAdmin("reactions.title")}
         description={tAdmin("reactions.subtitle")}
@@ -550,12 +551,13 @@ export function AdminReactions() {
       {hasItems && (
         <>
           {/* Mobile cards */}
-          <div className="md:hidden">
+          <div className="md:hidden space-y-1">
             <AdminMobileCards
               items={items}
               getKey={(item) => item.id}
               renderItem={(item) => (
                 <AdminMobileCard
+                  className="min-h-11 border-0 border-b border-border/60 rounded-none px-0 py-3 last:border-b-0"
                   title={item.label}
                   description={item.code}
                   leading={<ReactionPreview item={item} />}
@@ -666,6 +668,6 @@ export function AdminReactions() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </MotionPageShell>
   );
 }

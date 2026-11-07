@@ -198,7 +198,9 @@ export function EmailsTab({ enabled }: { enabled: boolean }) {
   const { data: sentEmails, isLoading: emailsLoading } = useSentEmails(enabled);
 
   const statItems = useMemo(() => [0, 1, 2], []);
-  const { containerVariants, rowVariants, animationKey } = useStaggerAnimation(statItems);
+  const { containerVariants, rowVariants, animationKey } = useStaggerAnimation(statItems, {
+    maxStaggerCount: 15,
+  });
 
   const groupedByUser = useMemo((): UserEmailGroup[] => {
     if (!sentEmails) return [];

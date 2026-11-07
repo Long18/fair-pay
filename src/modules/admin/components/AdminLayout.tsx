@@ -105,7 +105,7 @@ export function AdminLayout() {
   return (
     <div
       data-admin-density={density}
-      className="flex min-h-screen flex-col [--admin-nav-h:3.5rem] md:[--admin-nav-h:4rem]"
+      className="flex min-h-screen max-w-[100vw] min-w-0 flex-col overflow-x-hidden [--admin-nav-h:3.5rem] md:[--admin-nav-h:4rem]"
     >
       <AdminNavBar isMobile={isMobile} />
       <main
@@ -231,7 +231,7 @@ function AdminLogo() {
 
 // ─── Desktop Nav Items ──────────────────────────────────────────────
 
-function DesktopAdminNav({ scrolled }: { scrolled: boolean }) {
+function DesktopAdminNav({ scrolled: _scrolled }: { scrolled: boolean }) {
   const { pathname } = useLocation();
   const isMobile = useIsMobile();
   const { tAdmin } = useAdminTranslation();
@@ -247,8 +247,8 @@ function DesktopAdminNav({ scrolled }: { scrolled: boolean }) {
           const active = isActive(item.path, pathname);
           const Icon = getNavItemIcon(item, access);
           const label = getNavItemLabel(item, access, tAdmin);
-          // Show label when: item is active, OR navbar is in full (not scrolled) state
-          const showLabel = active || !scrolled;
+          // Admin nav: always show labels at md+ (AP-A-CH-6 — no truncated 2-char labels)
+          const showLabel = true;
           return (
             <Tooltip key={item.key}>
               <TooltipTrigger asChild>

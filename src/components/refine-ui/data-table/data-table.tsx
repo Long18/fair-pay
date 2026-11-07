@@ -55,7 +55,9 @@ export function DataTable<TData extends BaseRecord>({
   const isLoading = tableQuery.isLoading;
 
   const rows = getRowModel().rows;
-  const { containerVariants, rowVariants, animationKey } = useStaggerAnimation(rows);
+  const { containerVariants, rowVariants, animationKey } = useStaggerAnimation(rows, {
+    maxStaggerCount: 15,
+  });
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLTableElement>(null);
