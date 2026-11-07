@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { STAGGER_MAX_CLIENT } from "@/lib/motion";
 import type { Variants } from "framer-motion";
 
 export interface StaggerAnimationOptions {
@@ -24,7 +25,7 @@ export function useStaggerAnimation(
   const {
     staggerDelay = 0.05,
     rowDuration = 0.3,
-    maxStaggerCount = 15,
+    maxStaggerCount = STAGGER_MAX_CLIENT,
     yOffset = 12,
   } = options;
 

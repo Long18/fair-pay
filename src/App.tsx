@@ -28,6 +28,7 @@ import { UndoManagerProvider } from "./contexts/undo-manager";
 import { analyticsManager } from "./lib/analytics/instance";
 import { JourneyTrackingBridge } from "./lib/journey-tracking";
 import { ConsentModal } from "./components/consent/ConsentModal";
+import { ConsentBanner } from "./components/consent/ConsentBanner";
 import { useConsent } from "./hooks/use-consent";
 import { ScrollToTop } from "./components/ui/scroll-to-top";
 import { SpeculationRules } from "./components/speculation-rules";
@@ -84,14 +85,13 @@ const FriendShow = lazy(() => import("./modules/friends").then(m => ({ default: 
 const ConnectionsPage = lazy(() => import("./pages/connections").then(m => ({ default: m.ConnectionsPage })));
 
 // Other modules
-const SettingsPage = lazy(() => import("./modules/settings").then(m => ({ default: m.SettingsPage })));
-const DonationSettings = lazy(() => import("./modules/settings").then(m => ({ default: m.DonationSettings })));
-const BankSettings = lazy(() => import("./modules/settings/pages/bank-settings").then(m => ({ default: m.BankSettingsPage })));
-const SepaySettings = lazy(() => import("./modules/settings/pages/sepay-settings").then(m => ({ default: m.SepaySettingsPage })));
+const SettingsPage = lazy(() => import("./pages/settings/index"));
+const DonationSettings = lazy(() => import("./pages/settings/donation"));
+const BankSettings = lazy(() => import("./pages/settings/bank"));
+const SepaySettings = lazy(() => import("./pages/settings/sepay"));
 const DonationWidget = lazy(() => import("./components/donation-widget").then(m => ({ default: m.DonationWidget })));
 // Onboarding module - lazy loaded (only needed on first visit)
 const OnboardingProvider = lazy(() => import("./modules/onboarding").then(m => ({ default: m.OnboardingProvider })));
-const OnboardingChecklistFAB = lazy(() => import("./modules/onboarding/components/OnboardingChecklist").then(m => ({ default: m.OnboardingChecklist })));
 
 // Tools pages
 const ExpenseCalculator = lazy(() => import("./pages/tools/expense-calculator"));
@@ -103,8 +103,8 @@ const PricingPage = lazy(() => import("./pages/pricing"));
 const RecurringExpensesPage = lazy(() => import("./pages/recurring-expenses"));
 
 // Legal pages
-const PrivacyPage = lazy(() => import("./pages/privacy").then(m => ({ default: m.PrivacyPage })));
-const TermsPage = lazy(() => import("./pages/terms").then(m => ({ default: m.TermsPage })));
+const PrivacyPage = lazy(() => import("./pages/legal/privacy"));
+const TermsPage = lazy(() => import("./pages/legal/terms"));
 const AboutPage = lazy(() => import("./pages/about").then(m => ({ default: m.AboutPage })));
 const ContactPage = lazy(() => import("./pages/contact").then(m => ({ default: m.ContactPage })));
 
@@ -316,7 +316,7 @@ function App() {
                     name: "balances",
                     list: "/balances",
                     meta: {
-                      label: "Insights",
+                      label: "nav.insights",
                       icon: <ActivityIcon className="w-5 h-5" />,
                     },
                   },
@@ -652,16 +652,12 @@ function App() {
                 <JourneyTrackingBridge />
                 <AnalyticsInitializer />
                 {isVercelAnalyticsEnabled ? <ConsentedVercelAnalytics /> : null}
+                <ConsentBanner />
                 <ConsentModal />
                 <ScrollToTop />
                 <Suspense fallback={null}>
                   <DonationWidget />
                 </Suspense>
-                <Authenticated key="onboarding-checklist" loading={null} fallback={null}>
-                  <Suspense fallback={null}>
-                    <OnboardingChecklistFAB />
-                  </Suspense>
-                </Authenticated>
                 <SmoothScrollInit />
                 </OnboardingProvider>
                 </Suspense>

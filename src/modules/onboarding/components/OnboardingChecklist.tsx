@@ -7,7 +7,13 @@ import { X, RotateCcw, ChevronRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { FloatingActionStack, FloatingPill } from "@/components/ui/floating-stack";
+import {
+  FloatingActionStack,
+  FloatingPill,
+  useRightFabLane,
+} from "@/components/ui/floating-stack";
+import { useMediaQuery } from "@/hooks/ui/use-media-query";
+import { FAB_RIGHT_STACK } from "@/lib/floating-tokens";
 import { useOnboardingProgress } from "../hooks/use-onboarding-progress";
 import { useOnboarding } from "./onboarding-provider";
 import { useTrackEvent } from "@/hooks/use-track-event";
@@ -98,6 +104,8 @@ export function OnboardingChecklist() {
   const { restart } = useOnboarding();
   const { track } = useTrackEvent();
   const [open, setOpen] = useState(false);
+  const isMdUp = useMediaQuery("(min-width: 768px)");
+  const { primaryQuickActionsOpen } = useRightFabLane();
 
   const checklistSteps = useChecklistSteps(identity?.id);
   const completedCount = checklistSteps.filter((s) => !!steps[s.key]).length;
@@ -135,8 +143,8 @@ export function OnboardingChecklist() {
   return (
     <FloatingActionStack
       side="right"
-      // Sit above the dashboard Quick Actions FAB (same corner, stackIndex 0).
-      stackIndex={1}
+      stackIndex={FAB_RIGHT_STACK.agentInbox}
+      hidden={isMdUp && primaryQuickActionsOpen}
       isOpen={open}
       onClose={() => setOpen(false)}
       showBackdrop={false}

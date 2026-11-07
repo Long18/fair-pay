@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import { useReducedMotion } from "@/hooks/ui/use-reduced-motion";
 import { ENTRANCE_Y, SPRING_GENTLE, STAGGER_DELAY } from "@/lib/animation";
+import { STAGGER_MAX_CLIENT } from "@/lib/motion";
 
 type HTMLTag = keyof React.JSX.IntrinsicElements extends infer K
   ? K extends keyof HTMLElementTagNameMap
@@ -35,16 +36,18 @@ function AnimatedList({
             React.isValidElement(child) && child.key != null
               ? child.key
               : index;
+          const skipStagger = reducedMotion || index >= STAGGER_MAX_CLIENT;
+          const staggerIndex = Math.min(index, STAGGER_MAX_CLIENT - 1);
           return (
             <motion.div
               key={key}
-              initial={reducedMotion ? false : { opacity: 0, y: ENTRANCE_Y }}
+              initial={skipStagger ? false : { opacity: 0, y: ENTRANCE_Y }}
               animate={{ opacity: 1, y: 0 }}
-              exit={reducedMotion ? {} : { opacity: 0, y: ENTRANCE_Y }}
+              exit={skipStagger ? {} : { opacity: 0, y: ENTRANCE_Y }}
               transition={
-                reducedMotion
+                skipStagger
                   ? { duration: 0 }
-                  : { ...SPRING_GENTLE, delay: index * STAGGER_DELAY }
+                  : { ...SPRING_GENTLE, delay: staggerIndex * STAGGER_DELAY }
               }
             >
               {child}
