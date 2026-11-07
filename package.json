@@ -168,6 +168,7 @@
     "supabase:studio": "supabase studio",
     "db:reset": "supabase db reset",
     "db:local:bootstrap": "./scripts/local-db-bootstrap.sh",
+    "db:local:notification-spam": "docker exec -i supabase_db_FairPay psql -U postgres -d postgres < supabase/seed/admin-unread-notifications-spam.sql",
     "db:types": "mkdir -p src/types && supabase gen types typescript --local > src/types/database.ts",
     "db:archive:seed": "./scripts/archive/seed-local.sh",
     "db:archive:seed-quick": "./scripts/archive/seed-quick.sh",
@@ -193,6 +194,7 @@
     "test:mcp": "vitest run tests/agent-mcp tests/ai-chat/mcp-client.test.ts",
     "test:mcp-sync": "vitest run tests/lib/agent-mcp-surface-sync.test.ts",
     "test:components": "vitest run tests/integration",
+    "motion:study": "node -e \"console.log('Motion patterns: docs/motion/load-scroll-route-patterns.md\\nLocal tooling: pnpm motion:local-tool:install')\"",
     "verify": "pnpm type-check && pnpm lint && pnpm test && pnpm build",
     "i18n:check": "node scripts/check-i18n-parity.mjs",
     "openapi:lint": "npx @redocly/cli@latest lint docs/openapi-external-agent-chatgpt.yaml",
@@ -202,7 +204,8 @@
     "email:dev": "pnpm --filter @fairpay/emails dev",
     "email:build": "node scripts/bundle-transactional-emails.mjs",
     "email:previews": "tsx --tsconfig emails/tsconfig.json scripts/generate-email-previews.ts",
-    "deploy:email-worker": "node scripts/deploy-send-email-notifications.mjs"
+    "deploy:email-worker": "node scripts/deploy-send-email-notifications.mjs",
+    "motion:local-tool:install": "bash scripts/motion/install-local-motion-tool.sh"
   },
   "browserslist": {
     "production": [

@@ -77,3 +77,6 @@ docs/superpowers/
 
 # Local email previews (pnpm email:previews)
 tmp/
+
+# FairPay-local tooling (Craft Anything study clone)
+.tools/
