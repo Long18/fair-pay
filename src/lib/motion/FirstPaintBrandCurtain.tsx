@@ -10,12 +10,9 @@ import {
   FirstPaintBrandBackground,
 } from "./brand-loader";
 import { usePreloaderDocumentLock } from "./use-preloader-document-lock";
-import { MM_PRELOADER } from "./mindmarket-preloader.tokens";
+import { PRELOADER_SHELL } from "./preloader-shell.tokens";
 
-/**
- * Cold load preloader — MindMarket `.c-preloader` grammar:
- * fixed veil → logo draw → clip-path wipe up (not opacity-only).
- */
+/** Cold load: fixed veil → logo draw → clip-path wipe up (not opacity-only). */
 export function FirstPaintBrandCurtain() {
   const reducedMotion = useReducedMotion();
   const coldLoad = isFirstPaintNavigation();
@@ -40,13 +37,13 @@ export function FirstPaintBrandCurtain() {
         <motion.div
           key="first-paint-curtain"
           className="pointer-events-none fixed inset-0 z-[35] flex flex-col items-center justify-center overflow-hidden"
-          style={{ clipPath: MM_PRELOADER.clipEnter }}
-          initial={{ clipPath: MM_PRELOADER.clipEnter }}
+          style={{ clipPath: PRELOADER_SHELL.clipEnter }}
+          initial={{ clipPath: PRELOADER_SHELL.clipEnter }}
           exit={{
-            clipPath: MM_PRELOADER.clipExit,
+            clipPath: PRELOADER_SHELL.clipExit,
             transition: {
-              duration: MM_PRELOADER.clipExitDuration,
-              ease: MM_PRELOADER.clipExitEase,
+              duration: PRELOADER_SHELL.clipExitDuration,
+              ease: PRELOADER_SHELL.clipExitEase,
             },
           }}
           aria-hidden

@@ -51,7 +51,7 @@ export {
   FIRST_PAINT_CURTAIN_MAX_MS,
 } from "./use-first-paint-curtain-ready";
 export { StorySection, type StorySectionProps } from "./StorySection";
-export { MM_PRELOADER, ROUTE_TRANSITION } from "./mindmarket-preloader.tokens";
+export { PRELOADER_SHELL, ROUTE_TRANSITION } from "./preloader-shell.tokens";
 export { MotionRouteCoordinator } from "./MotionRouteCoordinator";
 export {
   NAV_CHROME_ROUTE_SNAP,

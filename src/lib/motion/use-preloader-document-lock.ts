@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 const ATTR = "data-fp-preloader";
 
-/** While active, main app content stays hidden (MindMarket: narrative under fixed preloader). */
+/** While active, main app content stays hidden under the fixed load veil. */
 export function usePreloaderDocumentLock(active: boolean) {
   useEffect(() => {
     const root = document.documentElement;

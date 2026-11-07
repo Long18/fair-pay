@@ -11,7 +11,7 @@ import {
 } from "../first-paint";
 
 describe("scroll reveal tokens", () => {
-  it("matches MindMarket-adapted defaults", () => {
+  it("matches cold-load preloader defaults", () => {
     expect(SCROLL_REVEAL.start).toBe("top 88%");
     expect(SCROLL_REVEAL.duration).toBe(0.85);
     expect(SCROLL_REVEAL.distance).toBe(64);

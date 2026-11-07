@@ -5,7 +5,7 @@ import { ensureScrollTrigger } from "./gsap-scroll";
 import { scrollMotionToTop } from "./lenis-bridge";
 
 /**
- * MindMarket MPA: each navigation scrolls to top + replay section reveals.
+ * Each navigation scrolls to top and refreshes scroll-linked reveals.
  * SPA equivalent on pathname change.
  */
 export function useMotionRouteScroll() {

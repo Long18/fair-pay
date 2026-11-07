@@ -6,7 +6,7 @@ import { benchoTokenStyle } from "./bencho-token-vars";
 
 /* ══ Toast stack (bencho.dev/?c=toast-stack) ═══════════════════
    Controlled stack: parent passes up to three toasts, newest first.
-   Motion / frame / hover-open match the Bencho lab component. */
+   Motion / frame / hover-open match the reference lab component. */
 
 export type ToastKind = "success" | "info" | "error" | "warning";
 

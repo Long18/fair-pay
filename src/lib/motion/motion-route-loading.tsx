@@ -12,10 +12,10 @@ import {
 } from "react";
 import { useLocation } from "react-router";
 import { NAV_CHROME_ROUTE_SNAP_MS } from "./nav-chrome";
-import { ROUTE_TRANSITION } from "./mindmarket-preloader.tokens";
+import { ROUTE_TRANSITION } from "./preloader-shell.tokens";
 
 type MotionRouteLoading = {
-  /** MindMarket in-nav: header HUD spins until next view is ready (not full-screen preloader). */
+  /** In-app nav: header HUD until next view is ready (not full-screen preloader). */
   routeLoading: boolean;
   setRouteLoading: (loading: boolean) => void;
 };

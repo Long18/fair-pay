@@ -42,7 +42,7 @@ export const SHELL_TRANSITION: Transition = {
 };
 
 /**
- * First full document load (reload / cold navigate) — MindMarket-style pacing,
+ * First full document load (reload / cold navigate) — slower than in-app transitions.
  * slightly longer than in-app route transitions.
  */
 export const FIRST_PAINT_TRANSITION: Transition = {
@@ -53,7 +53,7 @@ export const FIRST_PAINT_TRANSITION: Transition = {
 export const FIRST_PAINT_ENTRANCE_Y = 28;
 
 /**
- * MindMarket-style load choreography: fixed NavBar leads, main shell follows.
+ * Load choreography: fixed NavBar leads, main shell follows.
  * Page hero cards (profile cover, group header) sit between header and body scroll reveals.
  */
 export const FIRST_PAINT_CHROME = {
@@ -71,7 +71,7 @@ export const FIRST_PAINT_HERO_ENTRANCE_Y = FIRST_PAINT_CHROME.heroEntranceY;
 
 /**
  * Scroll-linked section reveals (GSAP ScrollTrigger).
- * Aligned with MindMarket case study: `top 85%`, `power2.out`, ~600ms, 40px travel.
+ * Scroll reveal defaults: late viewport entry, eased opacity + translate.
  */
 export const SCROLL_REVEAL = {
   start: "top 88%",
@@ -81,7 +81,7 @@ export const SCROLL_REVEAL = {
   staggerDelay: 0.12,
 } as const;
 
-/** Scroll-linked drift while section crosses viewport (MindMarket `data-reveal-translate-x`). */
+/** Scroll-linked drift while section crosses viewport. */
 export const SCROLL_SCRUB = {
   start: "top bottom",
   end: "bottom top",

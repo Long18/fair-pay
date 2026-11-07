@@ -6,7 +6,7 @@ import { ScrollReveal, type ScrollRevealProps } from "./ScrollReveal";
 import { cn } from "@/lib/utils";
 
 export type ScrollRevealStackProps = ScrollRevealProps & {
-  /** Enable MindMarket-style scrub parallax on the revealed block. */
+  /** Enable scroll-scrubbed parallax on the revealed block. */
   parallax?: boolean;
   parallaxDistance?: ScrollParallaxProps["distance"];
   parallaxAxis?: ScrollParallaxProps["axis"];

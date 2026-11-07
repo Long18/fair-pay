@@ -39,7 +39,7 @@ function FabIcon({ src, alt = "" }: { src: string; alt?: string }) {
 
 /**
  * Dashboard Quick Actions — Native FloatingActionStack speed-dial (proven layout).
- * Bencho CreateMenu is demo-only; it breaks inside fixed FAB lanes (narrow column).
+ * Lab create-menu block is demo-only; it breaks inside fixed FAB lanes (narrow column).
  */
 export function FloatingActionButton({ disabled = false }: FloatingActionButtonProps) {
   const [isOpen, setIsOpen] = useState(false);

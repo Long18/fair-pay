@@ -11,7 +11,7 @@ export type StorySectionProps = PropsWithChildren<{
 }>;
 
 /**
- * Viewport-sized story block — MindMarket section rhythm adapted for app pages.
+ * Viewport-sized story block for full-height scroll sections on app pages.
  * Does not replace native routing; pairs with Lenis + ScrollReveal.
  */
 export function StorySection({

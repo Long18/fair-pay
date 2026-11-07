@@ -8,7 +8,7 @@ export type FirstPaintLogoStageProps = PropsWithChildren<{
 }>;
 
 /**
- * Isolated logo stage — MindMarket `data-preloader-svg-wrap` equivalent.
+ * Isolated logo stage (centered SVG wrap above the veil background).
  * Background lives in `FirstPaintBrandBackground`; only logo motion here.
  */
 export const FirstPaintLogoStage = forwardRef<HTMLDivElement, FirstPaintLogoStageProps>(

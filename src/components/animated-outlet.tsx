@@ -10,7 +10,7 @@ import {
 
 /**
  * Animated page transition wrapper around react-router's <Outlet />.
- * MindMarket in-nav: header HUD while loading, then page slides up from below (no full-screen veil).
+ * In-app nav: header HUD while loading, then page slides up (no full-screen veil on route change).
  */
 export function AnimatedOutlet() {
   const { pathname } = useLocation();

@@ -19,7 +19,7 @@ html.lenis, html.lenis body {
   pointer-events: none;
 }
 
-/* Dashboard story scroll — section-by-section pacing (MindMarket-adapted) */
+/* Dashboard story scroll — section-by-section pacing (marketing-story adapted) */
 @supports (scroll-snap-type: y proximity) {
   .dashboard-story-scroll {
     scroll-snap-type: y proximity;
@@ -37,7 +37,7 @@ html.lenis, html.lenis body {
   }
 }
 
-/* MindMarket `.c-preloader` — keep narrative hidden until veil exits */
+/* Preloader shell — keep narrative hidden until veil exits */
 html[data-fp-preloader="active"] .fp-motion-main {
   opacity: 0;
   pointer-events: none;
@@ -229,7 +229,7 @@ nav.fp-nav-hud-loading::after {
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "./styles/viewport-transitions.css";
-/* Bencho blocks (MIT) — token vars mapped on component roots */
+/* Lab UI blocks (MIT) — token vars mapped on component roots */
 @import "./components/bencho/styles/eye-tracker.css";
 @import "./components/bencho/styles/create-menu.css";
 @import "./components/bencho/styles/toast-stack.css";

@@ -4,7 +4,7 @@ import { useGSAP } from "@gsap/react";
 import { FP_LOADER_LOGO } from "./fairpay-loader-logo.tokens";
 
 /**
- * MindMarket-style preloader choreography on the **real** FairPay favicon mark
+ * Preloader stroke choreography on the **real** FairPay favicon mark
  * (not a substitute SVG). Decorative ring only — brand asset stays `favicon.ico`.
  */
 export function useFairPayLoaderLogoTimeline(

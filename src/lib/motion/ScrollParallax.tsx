@@ -16,7 +16,7 @@ export interface ScrollParallaxProps {
   /** Travel distance in px (sign flips with {@link direction}). */
   distance?: number;
   axis?: ScrollParallaxAxis;
-  /** Negative = counter-scroll (MindMarket `data-reveal-translate-x`). */
+  /** Negative = counter-scroll while the section crosses the viewport. */
   direction?: 1 | -1;
   /** ScrollTrigger scrub smoothing (seconds). */
   scrub?: number | boolean;
@@ -27,7 +27,7 @@ export interface ScrollParallaxProps {
 
 /**
  * Scroll-scrubbed translate — continuous motion while a section crosses the viewport.
- * MindMarket uses this on tall marketing blocks; keeps one-shot {@link ScrollReveal} for entrances.
+ * Tall sections use scrub drift; one-shot entrances stay on {@link ScrollReveal}.
  */
 export function ScrollParallax({
   children,

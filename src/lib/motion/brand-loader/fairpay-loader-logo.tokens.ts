@@ -1,10 +1,6 @@
-/**
- * FairPay loader logo motion — MindMarket preloader pacing on `/favicon.ico`.
- * Decorative ring stroke only; mark is always the brand favicon.
- * @see docs/motion/mindmarket-craft-study.md — `.c-preloader` + `c-preloader_svg`
- */
+/** Loader logo motion on `/favicon.ico` — decorative ring; mark is always the brand favicon. */
 export const FP_LOADER_LOGO = {
-  /** MindMarket uses ~translate(0, -15%) on preloader SVG wrap */
+  /** Stage enters slightly above center before stroke draw */
   stageEnterYPercent: -15,
   stageEnterDuration: 0.85,
   strokeDrawDuration: 0.95,
