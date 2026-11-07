@@ -302,8 +302,7 @@ export const SignUpForm = () => {
         <AuthVisualPanel />
 
         <Card className={cn(
-          "w-full max-w-md", "p-6 sm:p-8", "shadow-xl", "border",
-          "glass bg-card/95", "backdrop-blur-sm",
+          "w-full max-w-md", "p-6 sm:p-8", "rounded-xl", "border", "bg-card", "shadow-sm",
           "animate-in fade-in slide-in-from-bottom-4 duration-500"
         )}>
         <CardHeader className={cn("px-0", "pb-6", "text-center", "space-y-2")}>
@@ -321,8 +320,6 @@ export const SignUpForm = () => {
             {t("auth.joinToManage", { appName: title.text || "FairPay" })}
           </CardDescription>
         </CardHeader>
-
-        <Separator className="mb-6" />
 
         <CardContent className={cn("px-0", "space-y-5")}>
           {error && (
@@ -451,19 +448,15 @@ export const SignUpForm = () => {
               )}
             </Button>
 
-            <div className={cn("flex", "items-center", "gap-4", "my-6")}>
-              <Separator className={cn("flex-1")} />
-              <span className={cn("text-xs", "text-muted-foreground", "uppercase", "tracking-wider", "font-medium")}>
-                {t("auth.orContinueWith")}
-              </span>
-              <Separator className={cn("flex-1")} />
-            </div>
+            <p className="text-center text-sm text-muted-foreground">
+              {t("auth.orContinueWith")}
+            </p>
 
             <Button
               variant="outline"
               className={cn(
                 "w-full", "flex", "items-center", "justify-center", "gap-2.5", "h-11",
-                "border-2", "hover:bg-accent/50", "transition-all", "font-medium"
+                "hover:bg-accent/50", "transition-all", "font-medium"
               )}
               onClick={handleSignUpWithGoogle}
               type="button"

@@ -305,8 +305,7 @@ export const SignInForm = () => {
         <AuthVisualPanel />
 
         <Card className={cn(
-          "w-full max-w-md", "p-6 sm:p-8", "shadow-xl", "border",
-          "glass bg-card/95", "backdrop-blur-sm",
+          "w-full max-w-md", "p-6 sm:p-8", "rounded-xl", "border", "bg-card", "shadow-sm",
           "animate-in fade-in slide-in-from-bottom-4 duration-500"
         )}>
         <CardHeader className={cn("px-0", "pb-6", "text-center", "space-y-2")}>
@@ -324,8 +323,6 @@ export const SignInForm = () => {
             {t("auth.signInToAccount", { appName: title.text || "FairPay" })}
           </CardDescription>
         </CardHeader>
-
-        <Separator className="mb-6" />
 
         <CardContent className={cn("px-0", "space-y-5")}>
           {error && (
@@ -442,19 +439,15 @@ export const SignInForm = () => {
               </Link>
             </div>
 
-            <div className={cn("flex", "items-center", "gap-4", "my-6")}>
-              <Separator className={cn("flex-1")} />
-              <span className={cn("text-xs", "text-muted-foreground", "uppercase", "tracking-wider", "font-medium")}>
-                {t("auth.orContinueWith")}
-              </span>
-              <Separator className={cn("flex-1")} />
-            </div>
+            <p className="text-center text-sm text-muted-foreground">
+              {t("auth.orContinueWith")}
+            </p>
 
             <Button
               variant="outline"
               className={cn(
                 "w-full", "flex", "items-center", "justify-center", "gap-2.5", "h-11",
-                "border-2", "hover:bg-accent/50", "transition-all", "font-medium"
+                "hover:bg-accent/50", "transition-all", "font-medium"
               )}
               onClick={handleSignInWithGoogle}
               type="button"
@@ -476,15 +469,15 @@ export const SignInForm = () => {
               <>
                 <div className={cn("flex", "items-center", "gap-4", "my-6")}>
                   <Separator className={cn("flex-1")} />
-                  <span className={cn("text-xs", "text-muted-foreground", "uppercase", "tracking-wider", "font-medium")}>
-                    Local Development
+                  <span className={cn("text-xs", "text-muted-foreground", "font-medium")}>
+                    {t("auth.devSectionTitle", "Môi trường phát triển")}
                   </span>
                   <Separator className={cn("flex-1")} />
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <Button
                     variant="outline"
-                    className={cn("border-dashed border-amber-500/50 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20")}
+                    className={cn("border-dashed")}
                     onClick={() => handleDevSignIn("admin")}
                     disabled={isLoading}
                     type="button"
@@ -494,7 +487,7 @@ export const SignInForm = () => {
                   </Button>
                   <Button
                     variant="outline"
-                    className={cn("border-dashed border-emerald-500/50 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20")}
+                    className={cn("border-dashed")}
                     onClick={() => handleDevSignIn("moderator")}
                     disabled={isLoading}
                     type="button"
@@ -504,7 +497,7 @@ export const SignInForm = () => {
                   </Button>
                   <Button
                     variant="outline"
-                    className={cn("border-dashed border-blue-500/50 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20")}
+                    className={cn("border-dashed")}
                     onClick={() => handleDevSignIn("user")}
                     disabled={isLoading}
                     type="button"

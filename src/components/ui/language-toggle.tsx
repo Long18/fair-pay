@@ -48,7 +48,7 @@ export const LanguageToggle = ({ className }: LanguageToggleProps) => {
                 aria-label={t('settings.language')}
               >
                 <GlobeIcon className="h-4 w-4 md:h-5 md:w-5" />
-                <span className="absolute bottom-1 right-1 text-[9px] font-bold leading-none text-muted-foreground pointer-events-none">
+                <span className="absolute bottom-1 right-1 text-[9px] font-bold leading-none text-foreground pointer-events-none">
                   {currentLangCode}
                 </span>
                 <span className="sr-only">{t('settings.language')}</span>

@@ -19,18 +19,19 @@ import { Badge } from "@/components/ui/badge";
  * Use DataCard for self-contained data entities (balance summary, statistics, etc.)
  */
 const dataCardVariants = cva(
-  "", // Base classes handled by Card component
+  "gap-0",
   {
     variants: {
       variant: {
-        default: "shadow-sm hover:shadow-md",
+        default: "",
         elevated: "shadow-md hover:shadow-lg",
         flat: "shadow-none",
+        interactive: "shadow-sm hover:shadow-md",
       },
       padding: {
-        compact: "gap-3", // Tighter layout
-        comfortable: "gap-6", // Default spacing
-        spacious: "gap-8", // More whitespace
+        compact: "gap-2",
+        comfortable: "gap-4",
+        spacious: "gap-6",
       },
     },
     defaultVariants: {
@@ -66,8 +67,17 @@ function DataCard({
   padding,
   ...props
 }: DataCardProps) {
+  const elevation =
+    variant === "elevated"
+      ? "elevated"
+      : variant === "interactive"
+        ? "interactive"
+        : "flat";
+
   return (
     <Card
+      elevation={elevation}
+      interactive={variant === "interactive"}
       className={cn(dataCardVariants({ variant, padding }), className)}
       {...props}
     />

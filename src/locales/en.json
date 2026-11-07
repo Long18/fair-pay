@@ -58,7 +58,8 @@
     "uncategorized": "Uncategorized",
     "unnamed": "Unnamed",
     "viewAll": "View All",
-    "warning": "Warning"
+    "warning": "Warning",
+    "status": "Status"
   },
   "auth": {
     "login": "Login",
@@ -132,6 +133,17 @@
     "youOwe": "You owe",
     "youAreOwed": "You are owed",
     "netBalance": "Net Balance",
+    "balancesExpand": {
+      "people": "People in balances",
+      "topYouOwe": "Largest amount you owe",
+      "topOwedYou": "Largest amount owed to you",
+      "snapshot": "Snapshot",
+      "netPositive": "Overall, others owe you more than you owe.",
+      "netNegative": "Overall, you owe more than you're owed.",
+      "netZero": "Your totals are even."
+    },
+    "netBalanceSummary": "Balance summary",
+    "tabsLabel": "Dashboard sections",
     "yourNetBalance": "Your Net Balance",
     "activeBalances": "Active Balances",
     "recentActivity": "Recent Activity",
@@ -157,6 +169,9 @@
     "balancesSearchPlaceholder": "Search people…",
     "balancesSearchAria": "Search balances",
     "balancesFilterLabel": "Filter balances",
+    "balancesSummaryNetShort": "net",
+    "balancesSummaryOweShort": "owe",
+    "balancesSummaryOwedShort": "owed",
     "balancesFilteredEmptyTitle": "No people match",
     "balancesFilteredEmptyDescription": "Try a different name or filter",
     "expandBalanceRow": "Expand related expenses for {{name}}",
@@ -288,7 +303,11 @@
       "insight": {
         "youOwe": "You owe",
         "owedToYou": "Owed to you",
-        "net": "Net"
+        "net": "Net",
+        "expand": {
+          "viewing": "Viewing",
+          "toggle": "Activity totals summary"
+        }
       },
       "filters": {
         "all": "All",
@@ -348,6 +367,8 @@
     "errorLoadingDebts": "Failed to load debts. Please try again.",
     "viewAllExpenses": "View all {{count}} expenses",
     "pond": {
+      "sectionLabel": "Pond",
+      "scrollHint": "Scroll down — tap the water when you're here",
       "hint": "Tap water to add a duck · Use feed for ripples & fish",
       "hintMobile": "Tap water to add a duck",
       "feedMode": "Tap anywhere to feed the ducks",
@@ -494,7 +515,22 @@
     "restoreDescription": "This will restore the group. Members will be able to view expenses and add new ones again.",
     "restoreTitle": "Restore Group?",
     "settleAll": "Settle All",
-    "spendingByCategory": "Spending by Category"
+    "spendingByCategory": "Spending by Category",
+    "yourNetBalance": "Your net balance",
+    "topOwedToYou": "Owe you the most",
+    "summary": {
+      "totalTracked": "Total tracked",
+      "groupSize": "Group size",
+      "expenseCount_one": "{{count}} expense",
+      "expenseCount_other": "{{count}} expenses"
+    },
+    "tabs": {
+      "activity": "Activity",
+      "balances": "Balances",
+      "members": "Members",
+      "recurring": "Recurring",
+      "recurringExpenses": "Recurring Expenses"
+    }
   },
   "connections": {
     "title": "Connections",
@@ -510,6 +546,17 @@
   "expenses": {
     "title": "Expenses",
     "addExpense": "Add Expense",
+    "addTitle": "Add expense",
+    "addGroupSubtitle": "Add an expense for {{name}}",
+    "loadingForm": "Loading…",
+    "addedTitle": "Expense added!",
+    "balancesUpdating": "Balances are being updated…",
+    "splitBetween": "Split between",
+    "splitBetweenHint": "Select who shares this expense",
+    "expenseDetailsSubtitle": "What did you pay for?",
+    "howToSplit": "How to split?",
+    "advancedOptions": "Advanced options",
+    "recurringExpenseDescription": "Automatically create this expense on a schedule",
     "description": "Description",
     "amount": "Amount",
     "date": "Date",
@@ -599,7 +646,7 @@
       "empty": "No comments yet. Be the first to comment!",
       "friends": "Friends",
       "inputLabel": "Comment input",
-      "memberSince": "Joined ${memberSince}",
+      "memberSince": "Joined {{memberSince}}",
       "mention": "Mention someone",
       "mentionAll": "Tất cả người tham gia",
       "mentionHere": "Người đã bình luận",
@@ -607,14 +654,28 @@
       "participants": "Participants",
       "placeholder": "Write a comment...",
       "profileNotFound": "Profile not found",
+      "discussion": "Discussion",
+      "addReaction": "Add reaction",
+      "react": "React",
+      "reactPrompt": "Be the first to react",
+      "tapToReact": "Tap Add reaction on the right",
+      "reacted": "Reacted",
+      "reactionCount_one": "{{count}} reaction",
+      "reactionCount_other": "{{count}} reactions",
+      "reactionsOnComment": "Reactions on this comment",
+      "reactionsOnExpense": "Reactions on this expense",
       "reply": "Reply",
+      "replyLabel": "Reply",
       "replyPlaceholder": "Write a reply...",
       "send": "Send comment",
-      "showAll": "Show ${comments.length - maxVisible} older comments",
+      "showAll_one": "Show {{count}} older comment",
+      "showAll_other": "Show {{count}} older comments",
+      "showAllReplies_one": "Show {{count}} earlier reply",
+      "showAllReplies_other": "Show {{count}} earlier replies",
       "showLess": "Show less",
       "title": "Comments",
       "updateError": "Failed to update comment",
-      "viewProfile": "View ${displayText}",
+      "viewProfile": "View {{name}}'s profile",
       "viewProfileButton": "View Profile"
     },
     "createExpense": "Create expense",
@@ -974,7 +1035,12 @@
     "dismissError": "Failed to dismiss suggestion: {{message}}",
     "friendNotFound": "Friend not found",
     "friendsSince": "Friends since ${formatDateShort(friendship.created_at)}",
-    "mutualCount": "{{count}} mutual friends",
+    "mutualCount_one": "{{count}} mutual friend",
+    "mutualCount_other": "{{count}} mutual friends",
+    "showMoreRequests": "Show {{count}} more requests",
+    "showMorePending": "Show {{count}} more pending",
+    "moreSuggestions": "+{{count}} more suggestions",
+    "showMoreSuggestions": "See {{count}} more",
     "myFriends": "My Friends",
     "pending": "Pending",
     "pendingRequests": "Pending Requests",
@@ -1000,9 +1066,13 @@
   },
   "theme": {
     "selectTheme": "Select Theme",
+    "selectColorTheme": "Select color theme",
     "light": "Light",
     "dark": "Dark",
-    "system": "System"
+    "system": "System",
+    "modeLight": "Light",
+    "modeDark": "Dark",
+    "modeSystem": "System"
   },
   "settings": {
     "title": "Settings",
@@ -1290,6 +1360,9 @@
     "title": "Notifications",
     "markAllRead": "Mark All as Read",
     "noNotifications": "No notifications",
+    "newToastTitle": "{{count}} new notifications",
+    "previewMoreCount": "+ {{count}} more",
+    "view": "View",
     "debtAging": {
       "message": "You have {{count}} debt(s) pending for over 7 days",
       "viewDebts": "View debts",
@@ -1337,7 +1410,13 @@
     "openMenu": "Open navigation menu"
   },
   "nav": {
-    "adminDashboard": "Admin Dashboard"
+    "adminDashboard": "Admin Dashboard",
+    "home": "Home",
+    "connections": "Connections",
+    "addExpense": "Add expense",
+    "insights": "Spending insights",
+    "insightsShort": "Insights",
+    "profile": "Profile"
   },
   "footer": {
     "tagline": "Split expenses fairly",
@@ -1366,10 +1445,14 @@
     "connections": "Connections",
     "viewAllConnections": "View all connections",
     "viewAllGroups": "View all groups",
+    "viewAllFriends": "View all {{count}} friends",
+    "manageFriends": "Manage friends",
     "newGroup": "New Group",
     "created": "Created",
+    "groupCreatedOn": "Created {{date}}",
     "active": "Active",
     "updated": "Created {{date}}",
+    "createNewGroup": "Create new group",
     "memberSince": "Member since",
     "debtsSummary": "Debts Summary",
     "recentActivity": "Recent Activity",
@@ -1481,6 +1564,10 @@
     "youOweTotal": "You Owe"
   },
   "debts": {
+    "minimizeTransfers": "Minimize transfers",
+    "minimizeTransfersTitle": "Minimize transfers",
+    "minimizeTransfersDescription": "Settle multi-party balances with fewer payments. Totals stay the same.",
+    "minimizedActive": "This group settles with fewer transfers.",
     "simplify": "Simplify Debts",
     "simplifyTooltip": "Combines multiple payments into fewer transactions using smart optimization. The total amount owed remains the same.",
     "transactions": "transactions",

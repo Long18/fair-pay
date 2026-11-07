@@ -74,7 +74,7 @@ export function UserAvatar({ user, size = "md", className }: UserAvatarProps) {
       <AvatarFallback
         delayMs={0}
         className={cn(
-          "bg-primary/10 text-primary font-medium",
+          "bg-muted text-foreground font-medium",
           fallbackTextClass[size]
         )}
       >
