@@ -43,15 +43,15 @@ export function ProfileAboutSidebar({
   }, [isOwnProfile, isCompleted, steps]);
 
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn("space-y-3", className)}>
       {isOwnProfile && completionPercent !== null && completionPercent < 100 && (
-        <Card className="rounded-xl">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-medium">
+        <Card className="rounded-xl border border-border/60 shadow-sm">
+          <CardHeader className="py-3 pb-2">
+            <CardTitle className="text-sm font-semibold">
               {t("profile.completeYourProfile", "Complete your profile")}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-2 pb-3 pt-0">
             {isLoading ? (
               <Skeleton className="h-2 w-full" />
             ) : (
@@ -69,15 +69,15 @@ export function ProfileAboutSidebar({
         </Card>
       )}
 
-      <Card className="rounded-xl">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-medium">
+      <Card className="rounded-xl border border-border/60 shadow-sm">
+        <CardHeader className="py-3 pb-2">
+          <CardTitle className="text-sm font-semibold">
             {t("profile.about", "About")}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="space-y-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <CardContent className="space-y-4 pb-4 pt-0">
+          <div className="space-y-2">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               {t("profile.general", "General")}
             </p>
             <AboutRow
@@ -97,8 +97,8 @@ export function ProfileAboutSidebar({
             />
           </div>
 
-          <div className="space-y-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <div className="space-y-2 border-t border-border/50 pt-3">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               {t("profile.contacts", "Contacts")}
             </p>
             {profile.email ? (
@@ -110,8 +110,8 @@ export function ProfileAboutSidebar({
             )}
           </div>
 
-          <div className="space-y-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <div className="space-y-2 border-t border-border/50 pt-3">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               {t("profile.stats", "Stats")}
             </p>
             <AboutRow
@@ -137,8 +137,8 @@ export function ProfileAboutSidebar({
 
 function AboutRow({ icon, label }: { icon: ReactNode; label: string }) {
   return (
-    <div className="flex items-start gap-3 text-sm">
-      <span className="mt-0.5 text-muted-foreground shrink-0">{icon}</span>
+    <div className="flex items-start gap-2.5 text-sm leading-snug">
+      <span className="mt-0.5 shrink-0 text-muted-foreground">{icon}</span>
       <span className="min-w-0 break-words">{label}</span>
     </div>
   );

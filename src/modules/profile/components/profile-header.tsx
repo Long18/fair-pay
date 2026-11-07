@@ -14,6 +14,12 @@ import {
   CalendarIcon,
 } from "@/components/ui/icons";
 import { motion } from "framer-motion";
+import {
+  firstPaintHeroInitial,
+  firstPaintHeroTransition,
+  useFirstPaintNavigation,
+  useReducedMotion,
+} from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useOnboarding } from "@/modules/onboarding";
@@ -45,12 +51,24 @@ export const ProfileHeader = ({
   const { tap } = useHaptics();
   const { restart } = useOnboarding();
   const { isPro } = usePlan();
+  const reducedMotion = useReducedMotion();
+  const firstPaint = useFirstPaintNavigation();
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={
+        firstPaint
+          ? firstPaintHeroInitial(reducedMotion)
+          : reducedMotion
+            ? false
+            : { opacity: 0, y: 12 }
+      }
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35 }}
+      transition={
+        firstPaint
+          ? firstPaintHeroTransition(reducedMotion)
+          : { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }
+      }
       className={cn("relative overflow-hidden rounded-xl border bg-card", className)}
     >
       {/* Cover banner */}
@@ -65,12 +83,12 @@ export const ProfileHeader = ({
       </div>
 
       <div className="relative px-4 sm:px-6 pb-0">
-        {/* Avatar overlapping cover */}
-        <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12 sm:-mt-14">
+        {/* Avatar overlaps cover; name/meta stay on the card body for contrast */}
+        <div className="flex flex-col sm:flex-row sm:items-start gap-4 -mt-12 sm:-mt-14">
           <motion.div
             whileHover={isOwnProfile ? { scale: 1.03 } : undefined}
             whileTap={isOwnProfile ? { scale: 0.97 } : undefined}
-            className="relative mx-auto sm:mx-0 shrink-0"
+            className="relative z-10 mx-auto sm:mx-0 shrink-0"
           >
             <Avatar
               className={cn(
@@ -106,9 +124,10 @@ export const ProfileHeader = ({
             )}
           </motion.div>
 
-          <div className="flex-1 min-w-0 pb-2 text-center sm:text-left sm:pb-4">
+          <div className="flex flex-1 min-w-0 flex-col gap-4 sm:mt-14 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 pb-2 text-center sm:text-left sm:pb-0">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight truncate">
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground truncate">
                 {profile.full_name}
               </h1>
               {isOwnProfile && isPro && (
@@ -118,25 +137,25 @@ export const ProfileHeader = ({
               )}
             </div>
 
-            <div className="mt-2 flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-1 text-sm text-muted-foreground">
+            <div className="mt-2 flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-1 text-sm text-foreground/80">
               {profile.email && (
                 <span className="inline-flex items-center gap-1.5 max-w-full">
-                  <MailIcon size={14} className="shrink-0 opacity-70" />
+                  <MailIcon size={14} className="shrink-0 text-muted-foreground" />
                   <span className="truncate">{profile.email}</span>
                 </span>
               )}
               <span className="inline-flex items-center gap-1.5">
-                <CalendarIcon size={14} className="shrink-0 opacity-70" />
+                <CalendarIcon size={14} className="shrink-0 text-muted-foreground" />
                 {t("profile.joined", {
                   date: formatDateShort(profile.created_at),
                   defaultValue: `Joined ${formatDateShort(profile.created_at)}`,
                 })}
               </span>
             </div>
-          </div>
+            </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-center sm:justify-end gap-2 pb-4 sm:ml-auto">
+          <div className="flex items-center justify-center sm:justify-end gap-2 pb-4 sm:shrink-0">
             {isOwnProfile && (
               <Button
                 onClick={() => {
@@ -177,11 +196,12 @@ export const ProfileHeader = ({
               </Button>
             )}
           </div>
+          </div>
         </div>
 
         {/* Header tabs */}
         {tabs ? (
-          <div className="border-t -mx-4 sm:-mx-6 px-2 sm:px-4 overflow-x-auto">
+          <div className="border-t border-border/60 -mx-4 sm:-mx-6 overflow-hidden px-3 py-2.5 sm:px-4">
             {tabs}
           </div>
         ) : null}

@@ -1,14 +1,16 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "react-i18next";
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { UserIcon, ArrowRightIcon } from "@/components/ui/icons";
+import { getInitials } from "@/components/user-display";
+import { ChevronRightIcon, UserIcon } from "@/components/ui/icons";
 import { useGo } from "@refinedev/core";
 import { EmptyFriends } from "./profile-empty-states";
 import { useHaptics } from "@/hooks/use-haptics";
+import { onButtonKeyDown } from "@/lib/a11y-keyboard";
+
+const PROFILE_FRIENDS_TAB_PREVIEW = 5;
 
 interface Friend {
   id: string;
@@ -34,21 +36,17 @@ export const ProfileFriendsList = ({
 
   if (isLoading) {
     return (
-      <div className={cn("space-y-3", className)}>
-        {[...Array(3)].map((_, i) => (
-          <Card key={i} className="rounded-lg">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <Skeleton className="h-12 w-12 rounded-full" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-3 w-48" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      <ul className={cn("divide-y divide-border/60 rounded-lg border border-border/60", className)}>
+        {[...Array(4)].map((_, i) => (
+          <li key={i} className="flex items-center gap-3 px-3 py-2.5">
+            <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <Skeleton className="h-3.5 w-32" />
+              <Skeleton className="h-3 w-40" />
+            </div>
+          </li>
         ))}
-      </div>
+      </ul>
     );
   }
 
@@ -56,99 +54,69 @@ export const ProfileFriendsList = ({
     return <EmptyFriends className={className} />;
   }
 
-  // Show only top 3-5 friends as preview
-  const previewFriends = friends.slice(0, 5);
-  const hasMore = friends.length > 5;
+  const previewFriends = friends.slice(0, PROFILE_FRIENDS_TAB_PREVIEW);
+  const hasMore = friends.length > PROFILE_FRIENDS_TAB_PREVIEW;
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.05,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 10 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        type: "spring" as const,
-        stiffness: 100,
-        damping: 15,
-      },
-    },
+  const openFriend = (friendId: string) => {
+    tap();
+    go({ to: `/friends/${friendId}` });
   };
 
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className={cn("space-y-3", className)}
-    >
-      {/* Friends Count Header */}
-      <div className="flex items-center justify-between px-1">
-        <p className="text-sm text-muted-foreground">
-          {t('profile.friends.count', {
-            count: friends.length,
-            defaultValue: `${friends.length} friend${friends.length !== 1 ? 's' : ''}`
-          })}
-        </p>
-      </div>
+    <div className={cn("space-y-3", className)}>
+      <p className="px-0.5 text-xs text-muted-foreground">
+        {t("profile.friendsCount", { count: friends.length })}
+      </p>
 
-      {/* Preview List (top 3-5 friends, view-only) */}
-      {previewFriends.map((friend) => (
-        <motion.div
-          key={friend.id}
-          variants={itemVariants}
-        >
-          <Card className="rounded-lg">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={friend.avatar_url || undefined} alt={friend.full_name} />
-                  <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10">
-                    {friend.full_name
-                      ?.split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                      .toUpperCase() || <UserIcon size={20} />}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium line-clamp-1">{friend.full_name}</h4>
-                  {friend.email && (
-                    <p className="text-sm text-muted-foreground line-clamp-1">
-                      {friend.email}
-                    </p>
-                  )}
-                </div>
+      <ul className="divide-y divide-border/60 overflow-hidden rounded-lg border border-border/60">
+        {previewFriends.map((friend) => (
+          <li key={friend.id}>
+            <button
+              type="button"
+              className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/40"
+              onClick={() => openFriend(friend.id)}
+              onKeyDown={onButtonKeyDown(() => openFriend(friend.id))}
+            >
+              <Avatar className="h-9 w-9 shrink-0">
+                <AvatarImage src={friend.avatar_url || undefined} alt="" />
+                <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                  {friend.full_name
+                    ? getInitials(friend.full_name)
+                    : <UserIcon size={14} />}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{friend.full_name}</p>
+                {friend.email ? (
+                  <p className="truncate text-xs text-muted-foreground">{friend.email}</p>
+                ) : null}
               </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      ))}
+              <ChevronRightIcon size={16} className="shrink-0 text-muted-foreground" />
+            </button>
+          </li>
+        ))}
+      </ul>
 
-      {/* View All Friends Button */}
-      <motion.div variants={itemVariants}>
-        <Button
-          variant="outline"
-          className="w-full rounded-lg"
-          onClick={() => { tap(); go({ to: "/friends" }); }}
-        >
-          <span className="flex-1 text-center">
-            {hasMore
-              ? t('profile.friends.viewAll', `View All ${friends.length} Friends`)
-              : t('profile.friends.manageFriends', 'Manage Friends')}
-          </span>
-          <ArrowRightIcon size={16} className="ml-2" />
-        </Button>
-      </motion.div>
-    </motion.div>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-9 w-full text-muted-foreground"
+        onClick={() => {
+          tap();
+          go({ to: hasMore ? "/connections?tab=friends" : "/friends" });
+        }}
+      >
+        {hasMore
+          ? t("profile.viewAllFriends", {
+              count: friends.length,
+              defaultValue: `View all ${friends.length} friends`,
+            })
+          : t("profile.manageFriends", "Manage friends")}
+        {hasMore ? (
+          <span className="ml-1 tabular-nums text-foreground">({friends.length})</span>
+        ) : null}
+        <ChevronRightIcon size={14} className="ml-auto" />
+      </Button>
+    </div>
   );
 };

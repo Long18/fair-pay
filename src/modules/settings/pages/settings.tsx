@@ -17,6 +17,7 @@ import { useHaptics } from '@/hooks/use-haptics';
 import { ReferralCard, ReferralStats } from '@/modules/referrals';
 import { usePushNotification } from '@/modules/notifications/hooks/use-push-notification';
 import { journeyTracking } from '@/lib/journey-tracking';
+import { StaggerChildren } from '@/lib/motion';
 
 export function SettingsPage() {
   const {
@@ -59,24 +60,27 @@ export function SettingsPage() {
   return (
     <PageContainer padding="none" variant="narrow">
       <PageContent>
+      <StaggerChildren className="flex flex-col gap-6">
+      <div>
       <PageHeader
         title={t('settings.title')}
         description={t('settings.subtitle')}
       />
+      </div>
 
       <Tabs defaultValue="display" className="space-y-4 sm:space-y-6">
-        <TabsList className="grid w-full grid-cols-3 sm:max-w-md">
-          <TabsTrigger value="display" className="flex items-center gap-1.5 text-xs sm:text-sm sm:gap-2">
+        <TabsList className="grid w-full grid-cols-3 gap-1 sm:max-w-md">
+          <TabsTrigger value="display" className="flex min-h-11 flex-col items-center gap-0.5 px-1 text-[10px] sm:flex-row sm:gap-2 sm:text-sm">
             <SettingsIcon className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">{t('settings.display')}</span>
+            <span className="leading-tight">{t('settings.display')}</span>
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-1.5 text-xs sm:text-sm sm:gap-2">
+          <TabsTrigger value="notifications" className="flex min-h-11 flex-col items-center gap-0.5 px-1 text-[10px] sm:flex-row sm:gap-2 sm:text-sm">
             <BellIcon className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">{t('settings.notifications')}</span>
+            <span className="leading-tight">{t('settings.notifications')}</span>
           </TabsTrigger>
-          <TabsTrigger value="privacy" className="flex items-center gap-1.5 text-xs sm:text-sm sm:gap-2">
+          <TabsTrigger value="privacy" className="flex min-h-11 flex-col items-center gap-0.5 px-1 text-[10px] sm:flex-row sm:gap-2 sm:text-sm">
             <LockIcon className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">{t('settings.privacy')}</span>
+            <span className="leading-tight">{t('settings.privacy')}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -204,6 +208,7 @@ export function SettingsPage() {
         <ReferralCard />
         <ReferralStats />
       </div>
+      </StaggerChildren>
       </PageContent>
     </PageContainer>
   );
