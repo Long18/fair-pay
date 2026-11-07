@@ -9,6 +9,7 @@ import {
   ZapIcon,
   CoffeeIcon,
   FilmIcon,
+  ChevronRightIcon,
 } from "@/components/ui/icons";
 
 interface Template {
@@ -84,36 +85,61 @@ export const QuickTemplates: React.FC<QuickTemplatesProps> = ({
   const { tap } = useHaptics();
 
   return (
-    <div className={cn("space-y-2 overflow-x-hidden max-w-full", className)}>
-      <div className="text-sm font-medium text-muted-foreground">{t("expenses.quickTemplates")}</div>
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin -mx-1 px-1">
-        {templateConfigs.map((template) => {
-          const description = t(template.descriptionKey);
-          return (
-            <button
-              key={template.id}
-              type="button"
-              onClick={() => { tap(); onSelectTemplate({ description, category: template.category, amount: template.amount }); }}
-              className={cn(
-                "flex items-center gap-2 px-3 py-2 rounded-lg border whitespace-nowrap transition-all",
-                "hover:bg-accent hover:border-accent-foreground/20",
-                selectedTemplate === description
-                  ? "bg-primary/10 border-primary text-primary"
-                  : "bg-background border-border"
-              )}
-            >
-              <span className={cn(
-                "p-1 rounded",
-                selectedTemplate === description
-                  ? "bg-primary/20"
-                  : "bg-muted"
-              )}>
-                {template.icon}
-              </span>
-              <span className="text-sm font-medium">{t(template.labelKey)}</span>
-            </button>
-          );
-        })}
+    <div className={cn("min-w-0 w-full space-y-2", className)}>
+      <div className="text-sm font-medium text-muted-foreground">
+        {t("expenses.quickTemplates")}
+      </div>
+      <div className="relative min-w-0">
+        <div
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-4 bg-gradient-to-r from-background to-transparent"
+          aria-hidden="true"
+        />
+        <div
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 flex w-10 items-center justify-end bg-gradient-to-l from-background via-background/80 to-transparent pr-0.5 md:w-8"
+          aria-hidden="true"
+        >
+          <ChevronRightIcon className="h-4 w-4 text-muted-foreground/70 md:hidden" />
+        </div>
+        <ul
+          aria-label={t("expenses.quickTemplates")}
+          className="m-0 flex list-none gap-2 overflow-x-auto p-0 pb-2 scrollbar-none -mx-1 scroll-px-1 px-1 snap-x snap-mandatory"
+        >
+          {templateConfigs.map((template) => {
+            const description = t(template.descriptionKey);
+            return (
+              <li key={template.id} className="shrink-0 snap-start">
+              <button
+                type="button"
+                onClick={() => {
+                  tap();
+                  onSelectTemplate({
+                    description,
+                    category: template.category,
+                    amount: template.amount,
+                  });
+                }}
+                className={cn(
+                  "flex items-center gap-2 whitespace-nowrap rounded-lg border px-3 py-2 transition-all",
+                  "hover:bg-accent hover:border-accent-foreground/20",
+                  selectedTemplate === description
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-background",
+                )}
+              >
+                <span
+                  className={cn(
+                    "rounded p-1",
+                    selectedTemplate === description ? "bg-primary/20" : "bg-muted",
+                  )}
+                >
+                  {template.icon}
+                </span>
+                <span className="text-sm font-medium">{t(template.labelKey)}</span>
+              </button>
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </div>
   );

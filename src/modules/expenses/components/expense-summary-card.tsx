@@ -208,8 +208,8 @@ export const ExpenseSummaryCard = memo(({
     : null;
 
   return (
-    <Card className="rounded-xl border-2 shadow-sm overflow-hidden">
-      <CardContent className="p-4 md:p-6">
+    <Card className="overflow-hidden rounded-xl border border-border/60 shadow-none">
+      <CardContent className="p-4 md:p-5">
         {/* Header: Title + Date + Actions */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0 space-y-1.5">
@@ -306,97 +306,98 @@ export const ExpenseSummaryCard = memo(({
           </div>
         </div>
 
-        <Separator className="my-4" />
-
+        <div className="mt-4 space-y-3">
         {/* Amount + Payer */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, delay: 0.05 }}
           className={cn(
-            "p-4 rounded-lg border",
-            isLoan
-              ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/50 dark:border-amber-800/50"
-              : "bg-muted/30 border-border"
+            "grid gap-4 rounded-xl border border-border/60 p-4 sm:grid-cols-2",
+            isLoan ? "bg-status-warning-bg/40" : "bg-muted/20"
           )}
         >
           {isLoan && (
-            <div className="flex justify-center mb-3">
-              <Badge
-                variant="outline"
-                className="bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1"><path d="M11 15h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 17"/><path d="m7 21 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.75-2.91l-4.2 3.9"/><path d="m2 16 6 6"/><circle cx="16" cy="9" r="2.9"/><circle cx="6" cy="5" r="3"/></svg>
-                {t("expenses.loan")}
-              </Badge>
-            </div>
+            <Badge variant="outline" className="w-fit text-xs sm:col-span-2">
+              {t("expenses.loan")}
+            </Badge>
           )}
 
-          <div className="flex items-center gap-4">
-            <Avatar className={cn("h-12 w-12 border-2 shadow-sm", isLoan ? "border-amber-200 dark:border-amber-700" : "border-primary/20")}>
+          <div className="flex min-w-0 items-center gap-3">
+            <Avatar className="h-10 w-10 shrink-0">
               <AvatarImage src={expense.profiles?.avatar_url || undefined} alt={expense.profiles?.full_name} />
-              <AvatarFallback className="text-sm font-bold bg-muted">
+              <AvatarFallback className="bg-muted text-xs font-medium">
                 {expense.profiles?.full_name?.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2) || "?"}
               </AvatarFallback>
             </Avatar>
-
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">
                 {isLoan ? t("expenses.lentBy") : t("expenses.paidBy")}
               </p>
-              <p className="font-semibold text-sm mt-0.5 truncate">
-                {expense.profiles?.full_name || t("profile.unknown")}
-              </p>
-              {isLoan && borrowerName && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+              <p className="truncate font-medium">{expense.profiles?.full_name || t("profile.unknown")}</p>
+              {isLoan && borrowerName ? (
+                <p className="mt-0.5 text-xs text-muted-foreground">
                   {t("expenses.lentTo", { name: borrowerName })}
                 </p>
-              )}
+              ) : null}
             </div>
+          </div>
 
-            <div className="text-right shrink-0">
-              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                {isLoan ? t("expenses.loanAmount") : t("expenses.totalAmount")}
-              </p>
-              <div className="flex items-baseline justify-end gap-1.5 mt-0.5">
-                <span className={cn("text-2xl font-bold", isLoan ? "text-amber-600 dark:text-amber-400" : "text-primary")}>
-                  {formatNumber(expense.amount)}
-                </span>
-                <span className="text-sm font-medium text-muted-foreground">{expense.currency}</span>
-              </div>
-            </div>
+          <div className="sm:text-right">
+            <p className="text-xs text-muted-foreground">
+              {isLoan ? t("expenses.loanAmount") : t("expenses.totalAmount")}
+            </p>
+            <p className={cn("mt-0.5 text-xl font-semibold tabular-nums", isLoan ? "text-foreground" : "text-primary")}>
+              {formatNumber(expense.amount)}{" "}
+              <span className="text-sm font-medium text-muted-foreground">{expense.currency}</span>
+            </p>
           </div>
         </motion.div>
 
-        {/* Your Position - inline */}
+        {/* Your Position */}
         {userPosition && (
-          <>
-            <Separator className="my-4" />
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <UserIcon className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">{t("expense.yourPosition", "Your Position")}</span>
-                {userPosition.isSettled && (
-                  <Badge variant="outline" className="text-xs">{t("status.settled", "Settled")}</Badge>
-                )}
-              </div>
-              <span className={cn("text-lg font-bold", statusColors?.text)}>
-                {userPosition.netPosition >= 0 ? "+" : ""}
-                {formatCurrency(userPosition.netPosition, expense.currency)}
-              </span>
-            </div>
-            {(userPosition.iOwe > 0 || userPosition.iAmOwed > 0) && (
-              <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
-                {userPosition.iOwe > 0 && (
-                  <span>{t("expense.youOwe", "You owe")}: <span className={cn("font-medium", getOweStatusColors("owe").text)}>{formatCurrency(userPosition.iOwe, expense.currency)}</span></span>
-                )}
-                {userPosition.iAmOwed > 0 && (
-                  <span>{t("expense.youAreOwed", "You are owed")}: <span className={cn("font-medium", getOweStatusColors("owed").text)}>{formatCurrency(userPosition.iAmOwed, expense.currency)}</span></span>
-                )}
-              </div>
+          <div
+            className={cn(
+              "flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 px-4 py-3",
+              userPosition.isSettled ? "bg-muted/20" : "bg-muted/30"
             )}
-          </>
+          >
+            <div className="flex min-w-0 items-start gap-2">
+              <UserIcon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+              <div className="min-w-0 space-y-0.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-medium">{t("expense.yourPosition", "Your Position")}</p>
+                  {userPosition.isSettled ? (
+                    <Badge variant="secondary" className="text-xs">
+                      {t("status.settled", "Settled")}
+                    </Badge>
+                  ) : null}
+                </div>
+                {userPosition.iOwe > 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    {t("expense.youOwe", "You owe")}:{" "}
+                    <span className={cn("font-medium", getOweStatusColors("owe").text)}>
+                      {formatCurrency(userPosition.iOwe, expense.currency)}
+                    </span>
+                  </p>
+                ) : null}
+                {userPosition.iAmOwed > 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    {t("expense.youAreOwed", "You are owed")}:{" "}
+                    <span className={cn("font-medium", getOweStatusColors("owed").text)}>
+                      {formatCurrency(userPosition.iAmOwed, expense.currency)}
+                    </span>
+                  </p>
+                ) : null}
+              </div>
+            </div>
+            <span className={cn("text-lg font-semibold tabular-nums", statusColors?.text)}>
+              {userPosition.netPosition >= 0 ? "+" : ""}
+              {formatCurrency(userPosition.netPosition, expense.currency)}
+            </span>
+          </div>
         )}
+        </div>
 
         {/* Recurring Info - inline */}
         {recurringData && (
@@ -460,92 +461,114 @@ export const ExpenseSummaryCard = memo(({
         {(hasCommentsOrReactions || currentUser) && (
           <>
             <Separator className="my-4" />
-            <div className="space-y-3">
-              {/* Expense-level reactions */}
+            <div className="space-y-5">
               {(expenseReactions.length > 0 || reactionTypes.length > 0) && (
-                <ReactionBar
-                  reactions={expenseReactions}
-                  reactionTypes={reactionTypes}
-                  onToggle={handleToggleExpenseReaction}
-                  onCreateAndToggle={handleCreateAndToggleExpenseReaction}
-                  size="sm"
-                />
+                <section
+                  aria-labelledby="expense-reactions-heading"
+                  className="rounded-xl border border-border/60 bg-card px-3 py-2.5 md:px-4 shadow-none"
+                >
+                  <h3 id="expense-reactions-heading" className="sr-only">
+                    {t("expenses.comments.reactionsOnExpense", "Reactions on this expense")}
+                  </h3>
+                  <ReactionBar
+                    reactions={expenseReactions}
+                    reactionTypes={reactionTypes}
+                    onToggle={handleToggleExpenseReaction}
+                    onCreateAndToggle={handleCreateAndToggleExpenseReaction}
+                    size="sm"
+                    variant="social"
+                  />
+                </section>
               )}
 
-              {/* Comments */}
-              {commentsLoading ? (
-                <div className="flex gap-2.5">
-                  <Skeleton className="h-6 w-6 rounded-full shrink-0" />
-                  <div className="flex-1 space-y-1.5">
-                    <Skeleton className="h-3 w-20" />
-                    <Skeleton className="h-3 w-full" />
+              <section aria-labelledby="expense-discussion-heading">
+                <h3
+                  id="expense-discussion-heading"
+                  className="mb-2 px-0.5 text-xs font-medium text-muted-foreground"
+                >
+                  {t("expenses.comments.discussion", "Discussion")}
+                </h3>
+                <div className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-none">
+                  <div className="space-y-3 p-3 md:p-4">
+                    {commentsLoading ? (
+                      <div className="flex gap-2.5">
+                        <Skeleton className="h-6 w-6 rounded-full shrink-0" />
+                        <div className="flex-1 space-y-1.5">
+                          <Skeleton className="h-3 w-20" />
+                          <Skeleton className="h-3 w-full" />
+                        </div>
+                      </div>
+                    ) : comments.length > 0 ? (
+                      <div className="space-y-3">
+                        {comments.length > maxVisibleComments && !commentsExpanded && (
+                          <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            className="h-auto w-full justify-center px-0 text-xs text-muted-foreground"
+                            onClick={() => { tap(); setCommentsExpanded(true); }}
+                          >
+                            <ChevronDownIcon className="h-3.5 w-3.5 mr-1" />
+                            {t("expenses.comments.showAll", {
+                              count: comments.length - maxVisibleComments,
+                            })}
+                          </Button>
+                        )}
+                        {comments.length > maxVisibleComments && commentsExpanded && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full text-xs text-muted-foreground hover:text-foreground"
+                            onClick={() => { tap(); setCommentsExpanded(false); }}
+                          >
+                            <ChevronUpIcon className="h-3.5 w-3.5 mr-1" />
+                            {t("expenses.comments.showLess", "Show less")}
+                          </Button>
+                        )}
+                        {(commentsExpanded ? comments : comments.slice(-maxVisibleComments)).map((comment) => (
+                          <CommentItem
+                            key={comment.id}
+                            comment={comment}
+                            currentUserId={currentUser?.id}
+                            currentUser={currentUser}
+                            participants={participants}
+                            reactions={getReactionsForComment(comment.id)}
+                            reactionTypes={reactionTypes}
+                            onToggleReaction={(rtId) => handleToggleCommentReaction(comment.id, rtId)}
+                            onCreateAndToggleReaction={(emojiMartId, nativeEmoji, label) => handleCreateAndToggleCommentReaction(comment.id, emojiMartId, nativeEmoji, label)}
+                            onReply={handleReply(comment.id)}
+                            onUpdate={updateComment}
+                            onDelete={deleteComment}
+                            isSubmitting={isSubmitting}
+                          getReactionsForComment={getReactionsForComment}
+                          onToggleReplyReaction={handleToggleCommentReaction}
+                          onCreateAndToggleReplyReaction={handleCreateAndToggleCommentReaction}
+                          maxVisibleReplies={maxVisibleComments}
+                        />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground pl-3">
+                        {t("expenses.comments.empty", "No comments yet. Be the first to comment!")}
+                      </p>
+                    )}
+
+                    {currentUser && (
+                      <div className="border-t border-border/60 pt-3 pl-3">
+                        <CommentInput
+                          currentUser={currentUser}
+                          participants={participants}
+                          commenters={derivedCommenters}
+                          onSubmit={handleAddComment}
+                          isSubmitting={isSubmitting}
+                          customReactions={reactionTypes}
+                          compact={false}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
-              ) : comments.length > 0 ? (
-                <div className="space-y-3">
-                  {comments.length > maxVisibleComments && !commentsExpanded && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full text-xs text-muted-foreground hover:text-foreground"
-                      onClick={() => { tap(); setCommentsExpanded(true); }}
-                    >
-                      <ChevronDownIcon className="h-3.5 w-3.5 mr-1" />
-                      {t("expenses.comments.showAll", {
-                        count: comments.length - maxVisibleComments,
-                        defaultValue: `Show ${comments.length - maxVisibleComments} older comments`,
-                      })}
-                    </Button>
-                  )}
-                  {comments.length > maxVisibleComments && commentsExpanded && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full text-xs text-muted-foreground hover:text-foreground"
-                      onClick={() => { tap(); setCommentsExpanded(false); }}
-                    >
-                      <ChevronUpIcon className="h-3.5 w-3.5 mr-1" />
-                      {t("expenses.comments.showLess", "Show less")}
-                    </Button>
-                  )}
-                  {(commentsExpanded ? comments : comments.slice(-maxVisibleComments)).map((comment) => (
-                    <CommentItem
-                      key={comment.id}
-                      comment={comment}
-                      currentUserId={currentUser?.id}
-                      currentUser={currentUser}
-                      participants={participants}
-                      reactions={getReactionsForComment(comment.id)}
-                      reactionTypes={reactionTypes}
-                      onToggleReaction={(rtId) => handleToggleCommentReaction(comment.id, rtId)}
-                      onCreateAndToggleReaction={(emojiMartId, nativeEmoji, label) => handleCreateAndToggleCommentReaction(comment.id, emojiMartId, nativeEmoji, label)}
-                      onReply={handleReply(comment.id)}
-                      onUpdate={updateComment}
-                      onDelete={deleteComment}
-                      isSubmitting={isSubmitting}
-                      getReactionsForComment={getReactionsForComment}
-                      onToggleReplyReaction={handleToggleCommentReaction}
-                      onCreateAndToggleReplyReaction={handleCreateAndToggleCommentReaction}
-                    />
-                  ))}
-                </div>
-              ) : null}
-
-              {/* Comment input */}
-              {currentUser && (
-                <>
-                  {comments.length > 0 && <Separator />}
-                  <CommentInput
-                    currentUser={currentUser}
-                    participants={participants}
-                    commenters={derivedCommenters}
-                    onSubmit={handleAddComment}
-                    isSubmitting={isSubmitting}
-                    customReactions={reactionTypes}
-                    compact={comments.length === 0}
-                  />
-                </>
-              )}
+              </section>
             </div>
           </>
         )}

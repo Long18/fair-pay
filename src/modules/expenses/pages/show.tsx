@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useOne, useList, useGo, useGetIdentity } from "@refinedev/core";
 import { useInstantDelete } from "@/hooks/use-instant-mutation";
-import { useParams } from "react-router";
+import { useLocation, useParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Expense, Attachment } from "../types";
@@ -57,6 +57,7 @@ import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useTrackEvent } from "@/hooks/use-track-event";
 import { FloatingActionStack, FloatingPill } from "@/components/ui/floating-stack";
+import { FAB_RIGHT_STACK } from "@/lib/floating-tokens";
 
 // Helper to transform split data from RPC response
 const transformSplitData = (data: any[]) =>
@@ -97,11 +98,12 @@ export const ExpenseShow = () => {
   const [userIsAdmin, setUserIsAdmin] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
 
+  const location = useLocation();
+
   // Scroll-to-comment from notification link hash (Facebook-style)
   useEffect(() => {
-    const hash = window.location.hash;
-    if (!hash || !hash.startsWith("#comment-")) return;
-    // Wait for comments to render, then scroll
+    const hash = location.hash;
+    if (loading || !hash || !hash.startsWith("#comment-")) return;
     const timer = setTimeout(() => {
       const el = document.getElementById(hash.slice(1));
       if (el) {
@@ -111,7 +113,7 @@ export const ExpenseShow = () => {
       }
     }, 800);
     return () => clearTimeout(timer);
-  }, [loading]);
+  }, [loading, location.hash]);
 
   // Fetch recurring expense data linked to this expense (as template)
   const { data: recurringData } = useQuery({
@@ -526,12 +528,12 @@ export const ExpenseShow = () => {
         />
 
         {/* 2. Split Details */}
-        <Card className="rounded-xl border-2 shadow-sm">
-          <CardHeader className="pb-3">
+        <Card className="overflow-hidden rounded-xl border border-border/60 shadow-none">
+          <CardHeader className="border-b border-border/60 pb-3">
             <div className="flex items-center justify-between gap-3">
-              <CardTitle className="text-base flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold">
                 {t("expenses.splitDetails")}
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="h-6 rounded-md px-2 text-xs tabular-nums">
                   {splits.length}
                 </Badge>
               </CardTitle>
@@ -544,9 +546,9 @@ export const ExpenseShow = () => {
                   >
                     <AlertDialogTrigger asChild>
                       <Button
-                        variant="default"
+                        variant="outline"
                         size="sm"
-                        className="bg-green-600 hover:bg-green-700 shadow-sm"
+                        className="h-8 gap-1.5 text-xs"
                       >
                         <CheckCircle2Icon className="h-4 w-4 mr-1.5" />
                         {t("expenses.settleAll", "Settle All")}
@@ -584,7 +586,7 @@ export const ExpenseShow = () => {
                         <AlertDialogAction
                           onClick={handleSettleExpense}
                           disabled={settlingExpense}
-                          className="bg-green-600 hover:bg-green-700"
+                          className="min-h-11"
                         >
                           {settlingExpense ? (
                             <>
@@ -604,9 +606,9 @@ export const ExpenseShow = () => {
                 )}
             </div>
           </CardHeader>
-          <CardContent className="pt-0">
+          <CardContent className="p-0">
             <AnimatePresence mode="popLayout">
-              <div className="space-y-2">
+              <div className="divide-y divide-border/60">
                 {sortedSplits.map((split: any, index: number) => {
                   const isCurrentUserSplit = split.user_id === identity?.id;
                   const isSplitSettled = split.is_settled || isPaid;
@@ -785,10 +787,12 @@ export const ExpenseShow = () => {
       <div className="hidden md:block">
         <FloatingActionStack
           side="right"
+          stackIndex={FAB_RIGHT_STACK.primary}
           trigger={
             <FloatingPill
               variant="primary"
               size="lg"
+              icon={<PlusIcon className="h-6 w-6" />}
               ariaLabel={t("expenses.newExpense", "New expense")}
               onClick={() => {
                 tap();
@@ -799,10 +803,7 @@ export const ExpenseShow = () => {
                     : `/expenses/create`;
                 go({ to: url });
               }}
-              className="!rounded-2xl aspect-square !px-0 !min-w-14"
-            >
-              <PlusIcon className="h-6 w-6" />
-            </FloatingPill>
+            />
           }
         />
       </div>

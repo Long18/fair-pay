@@ -38,6 +38,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { ScrollReveal, StaggerChildren } from '@/lib/motion';
 
 interface RecurringExpenseListProps {
   groupId?: string;
@@ -131,17 +132,23 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
 
     const checked = selectedIds.has(item.id);
     return (
-      <div key={item.id} className="flex items-start gap-2">
+      <label
+        key={item.id}
+        className={cn(
+          "flex min-h-11 w-full cursor-pointer items-start gap-2 rounded-xl",
+          checked && "ring-1 ring-primary/30"
+        )}
+      >
         <Checkbox
-          className="mt-4"
+          className="mt-3 size-5 shrink-0"
           checked={checked}
           onCheckedChange={() => toggleSelected(item.id)}
-          aria-label={t('recurring.selectItem', 'Select recurring expense')}
+          aria-label={t("recurring.selectItem", "Select recurring expense")}
         />
-        <div className={cn('flex-1 min-w-0', checked && 'ring-1 ring-primary/30 rounded-xl')}>
+        <div className="min-w-0 flex-1">
           <RecurringExpenseCard recurring={item} onEdit={handleEdit} compact={compact} />
         </div>
-      </div>
+      </label>
     );
   };
 
@@ -265,6 +272,7 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
     return (
       <PageContainer padding="none" variant="default">
         <PageContent>
+          <ScrollReveal direction="up">
           <PageHeader
             title={t('recurring.pageTitle', 'Recurring Expenses')}
             description={t(
@@ -323,6 +331,7 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
               </div>
             }
           />
+          </ScrollReveal>
 
           {summaryLine ? (
             <p className="text-sm text-muted-foreground -mt-2">{summaryLine}</p>
@@ -335,6 +344,7 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
               description={t('recurring.noRecurringDescription')}
             />
           ) : (
+            <ScrollReveal direction="up">
             <div className="space-y-4">
               {selectedIds.size > 0 && (
                 <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2">
@@ -380,7 +390,9 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
                       </p>
                     </div>
                   ) : (
-                    active.map((item) => renderSelectableCard(item as RecurringExpense, true))
+                    <StaggerChildren className="space-y-3">
+                      {active.map((item) => renderSelectableCard(item as RecurringExpense, true))}
+                    </StaggerChildren>
                   )}
                 </TabsContent>
 
@@ -392,11 +404,14 @@ export function RecurringExpenseList({ groupId, friendshipId }: RecurringExpense
                       </p>
                     </div>
                   ) : (
-                    paused.map((item) => renderSelectableCard(item as RecurringExpense, true))
+                    <StaggerChildren className="space-y-3">
+                      {paused.map((item) => renderSelectableCard(item as RecurringExpense, true))}
+                    </StaggerChildren>
                   )}
                 </TabsContent>
               </Tabs>
             </div>
+            </ScrollReveal>
           )}
 
           <EditRecurringDialog

@@ -181,7 +181,6 @@ export const CommentSection = memo(({
                 <ChevronDownIcon className="h-3.5 w-3.5 mr-1" />
                 {t("expenses.comments.showAll", {
                   count: comments.length - maxVisible,
-                  defaultValue: `Show ${comments.length - maxVisible} older comments`,
                 })}
               </Button>
             )}

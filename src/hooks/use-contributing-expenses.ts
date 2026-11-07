@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabaseClient } from '@/utility/supabaseClient';
 import { useGetIdentity } from '@refinedev/core';
 import { Profile } from '@/modules/profile/types';
@@ -22,18 +22,36 @@ interface ContributingExpense {
   is_settled: boolean;
 }
 
+type FetchStatus = 'idle' | 'loading' | 'success' | 'error';
+
 export function useContributingExpenses(counterpartyId: string) {
   const { data: identity } = useGetIdentity<Profile>();
   const [expenses, setExpenses] = useState<ContributingExpense[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [status, setStatus] = useState<FetchStatus>('idle');
+  const [loadedForCounterpartyId, setLoadedForCounterpartyId] = useState<string | null>(
+    null
+  );
   const [error, setError] = useState<Error | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const lastLoadedCounterpartyIdRef = useRef<string | null>(null);
+
+  const shouldFetch = Boolean(identity?.id && counterpartyId);
+  const isLoading =
+    shouldFetch &&
+    loadedForCounterpartyId !== counterpartyId &&
+    status !== 'error';
 
   useEffect(() => {
     if (!identity?.id || !counterpartyId) return;
 
+    let cancelled = false;
+    const targetCounterpartyId = counterpartyId;
+
     async function fetchExpenses() {
-      setIsLoading(true);
+      if (lastLoadedCounterpartyIdRef.current !== targetCounterpartyId) {
+        setExpenses([]);
+      }
+      setStatus('loading');
       setError(null);
 
       try {
@@ -158,16 +176,25 @@ export function useContributingExpenses(counterpartyId: string) {
           new Date(b.expense_date).getTime() - new Date(a.expense_date).getTime()
         );
 
-        setExpenses(contributingExpenses);
+        if (!cancelled) {
+          setExpenses(contributingExpenses);
+          lastLoadedCounterpartyIdRef.current = targetCounterpartyId;
+          setLoadedForCounterpartyId(targetCounterpartyId);
+          setStatus('success');
+        }
       } catch (err) {
         console.error('Error fetching contributing expenses:', err);
-        setError(err as Error);
-      } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setError(err as Error);
+          setStatus('error');
+        }
       }
     }
 
     fetchExpenses();
+    return () => {
+      cancelled = true;
+    };
   }, [identity?.id, counterpartyId, refreshKey]);
 
   return {

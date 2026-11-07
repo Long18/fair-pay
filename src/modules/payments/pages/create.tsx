@@ -298,7 +298,7 @@ export const PaymentCreate = () => {
                       <Button
                         key={group.id}
                         variant="ghost"
-                        className="flex h-auto w-full items-center justify-between rounded-lg px-3 py-2 text-left"
+                        className="flex h-auto min-h-11 w-full items-center justify-between rounded-lg px-3 py-2 text-left"
                         onClick={() => handleSelectGroup(group.id)}
                       >
                         <div className="flex items-center gap-3">
@@ -323,7 +323,7 @@ export const PaymentCreate = () => {
                       <Button
                         key={friend.id}
                         variant="ghost"
-                        className="flex h-auto w-full items-center justify-between rounded-lg px-3 py-2 text-left"
+                        className="flex h-auto min-h-11 w-full items-center justify-between rounded-lg px-3 py-2 text-left"
                         onClick={() => handleSelectFriend(friend.id)}
                       >
                         <div className="flex items-center gap-3">

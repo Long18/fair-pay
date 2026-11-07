@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { SwipeableCard } from '@/components/ui/swipeable-card';
+import { SwipeableCard } from '@/components/recurring/swipeable-card';
 import {
   DropdownMenu,
   DropdownMenuContent,

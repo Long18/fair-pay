@@ -9,8 +9,7 @@ import { useTranslation } from "react-i18next";
 import { useGo } from "@refinedev/core";
 import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/use-haptics";
-import { formatDistanceToNow } from "date-fns";
-import { vi, enUS } from "date-fns/locale";
+import { formatDateShort } from "@/lib/locale-utils";
 
 interface MentionProfileCardProps {
   userId: string;
@@ -33,10 +32,9 @@ export const MentionProfileCard = memo(({
   className,
   children,
 }: MentionProfileCardProps) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { tap } = useHaptics();
   const go = useGo();
-  const dateLocale = i18n.language === "vi" ? vi : enUS;
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
@@ -67,7 +65,7 @@ export const MentionProfileCard = memo(({
     .slice(0, 2) || "?";
 
   const memberSince = profile?.created_at
-    ? formatDistanceToNow(new Date(profile.created_at), { addSuffix: true, locale: dateLocale })
+    ? formatDateShort(profile.created_at)
     : null;
 
   const handleOpenChange = useCallback((open: boolean) => {
@@ -147,7 +145,7 @@ export const MentionProfileCard = memo(({
               {memberSince && (
                 <div className="flex items-center gap-1.5 mt-2.5 text-xs text-muted-foreground">
                   <CalendarIcon className="h-3 w-3 shrink-0" />
-                  <span>{t("expenses.comments.memberSince", { time: memberSince, defaultValue: `Joined ${memberSince}` })}</span>
+                  <span>{t("expenses.comments.memberSince", { memberSince, defaultValue: `Joined ${memberSince}` })}</span>
                 </div>
               )}
               {/* View profile button */}

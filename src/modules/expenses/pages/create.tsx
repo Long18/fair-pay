@@ -381,10 +381,10 @@ export const ExpenseCreate = () => {
       <ResponsiveDialog
         open={true}
         onOpenChange={handleClose}
-        title="Loading..."
+        title={t("expenses.loadingForm", "Loading…")}
       >
         <div className="py-8 text-center">
-          <p>Loading expense form...</p>
+          <p>{t("expenses.loadingForm", "Loading…")}</p>
         </div>
       </ResponsiveDialog>
     );
@@ -394,8 +394,10 @@ export const ExpenseCreate = () => {
     <ResponsiveDialog
       open={true}
       onOpenChange={handleClose}
-      title={isGroupContext ? "Add Group Expense" : "Add Expense with Friend"}
-      className="sm:max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden"
+      title={
+        t("expenses.addTitle")
+      }
+      className="flex max-h-[min(90vh,100dvh)] flex-col overflow-hidden w-[min(42rem,100vw-2rem)] sm:max-w-2xl min-h-[calc(100dvh-7.5rem)] sm:min-h-0"
     >
       {showSuccessOverlay ? (
         <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
@@ -406,10 +408,10 @@ export const ExpenseCreate = () => {
             className="h-24 w-24 object-contain"
           />
           <p className="text-base font-bold text-foreground">
-            {"Expense added!"}
+            {t("expenses.addedTitle", "Expense added!")}
           </p>
           <p className="text-xs text-muted-foreground">
-            {"Balances are being updated…"}
+            {t("expenses.balancesUpdating", "Balances are being updated…")}
           </p>
         </div>
       ) : (

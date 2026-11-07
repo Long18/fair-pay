@@ -29,10 +29,10 @@ export const CATEGORY_CONFIG: Record<string, CategoryMeta> = {
   'Food & Drink': {
     name: 'Food & Drink',
     icon: UtensilsIcon,
-    color: themeIntentTones.accent.icon,
-    bgColor: themeIntentTones.accent.surface,
-    tone: 'accent',
-    chartColor: themeIntentTones.accent.chartColor,
+    color: themeIntentTones.chart5.icon,
+    bgColor: themeIntentTones.chart5.surface,
+    tone: 'chart5',
+    chartColor: themeIntentTones.chart5.chartColor,
   },
   'Transportation': {
     name: 'Transportation',

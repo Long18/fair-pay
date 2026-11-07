@@ -31,7 +31,6 @@ import { DEFAULT_RECURRING_VALUES } from "../types/recurring";
 import { AttachmentUpload, type AttachmentFile } from "./attachment-upload";
 import {
   RepeatIcon,
-  UsersIcon,
   MessageSquareIcon,
   ChevronDownIcon,
   CheckIcon,
@@ -50,13 +49,13 @@ import { FriendExpenseLayout } from "./friend-expense/friend-expense-layout";
 import { journeyTracking } from "@/lib/journey-tracking";
 import type { ExpenseFormStepKey } from "./expense-form-stepper";
 import { ExpenseFormStepper } from "./expense-form-stepper";
+import { ExpenseFormSplitSection } from "./expense-form-split-section";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
-  amountHeroBg,
   receiptCoinSticker,
   waitingCoinSticker,
 } from "@/assets/expense-friend";
@@ -446,22 +445,24 @@ export const ExpenseForm = ({
         />
 
         {/* Basic Info Card */}
-        <Card className="border-2 border-border/50 shadow-sm overflow-hidden">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-semibold">Expense Details</CardTitle>
-            <CardDescription>What did you pay for?</CardDescription>
+        <Card className="overflow-hidden border border-border/60">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg font-semibold">
+              {t("expenses.expenseDetails")}
+            </CardTitle>
+            <CardDescription>{t("expenses.expenseDetailsSubtitle")}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4 overflow-x-hidden">
+          <CardContent className="space-y-5">
             {/* Description */}
             <FormField
               control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>{t("expenses.description")}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="e.g., Lunch at restaurant"
+                      placeholder={t("expenses.descriptionPlaceholder")}
                       {...field}
                       className="h-11"
                     />
@@ -471,67 +472,57 @@ export const ExpenseForm = ({
               )}
             />
 
-            {/* Amount and Currency — hero card */}
-            <div
-              className="relative rounded-2xl overflow-hidden border border-border/40 shadow-sm"
-              style={{
-                backgroundImage: `url(${amountHeroBg})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-            >
-              <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px]" aria-hidden="true" />
-              <img
-                src={
-                  amountExpressionState.status === "valid" && (amountExpressionState.value ?? 0) > 0
-                    ? receiptCoinSticker
-                    : waitingCoinSticker
-                }
-                alt=""
-                aria-hidden="true"
-                className={cn(
-                  "absolute right-3 top-1/2 -translate-y-1/2 h-20 w-20 object-contain pointer-events-none select-none transition-opacity duration-300",
-                  amountExpressionState.status === "valid" && (amountExpressionState.value ?? 0) > 0
-                    ? "opacity-90"
-                    : "opacity-40"
-                )}
-              />
-              <div className="relative z-10 p-4 pr-24 space-y-3">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  {t("expenses.totalAmount", { defaultValue: "Total amount" })}
-                </p>
-                <div className="flex items-end gap-2">
-                  <div className="flex-1 min-w-0">
-                    <FormField
-                      control={form.control}
-                      name="amount"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <AmountInput
-                              value={field.value}
-                              onChange={field.onChange}
-                              onExpressionStateChange={setAmountExpressionState}
-                              currency={currency}
-                              placeholder="0"
-                              className="h-14 text-3xl font-bold border-0 bg-transparent shadow-none px-0 focus-visible:ring-0 tabular-nums"
-                              aria-label={t("expenses.amount", { defaultValue: "Amount" })}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+            {/* Amount and Currency */}
+            <div className="space-y-2">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                {t("expenses.totalAmount", { defaultValue: "Total amount" })}
+              </p>
+              <div className="relative rounded-xl border border-border/60 bg-muted/25 p-3 sm:p-4">
+                <img
+                  src={
+                    amountExpressionState.status === "valid" && (amountExpressionState.value ?? 0) > 0
+                      ? receiptCoinSticker
+                      : waitingCoinSticker
+                  }
+                  alt=""
+                  aria-hidden="true"
+                  className={cn(
+                    "pointer-events-none absolute right-2 top-1/2 hidden h-14 w-14 -translate-y-1/2 object-contain opacity-50 select-none transition-opacity duration-300 sm:block",
+                    amountExpressionState.status === "valid" && (amountExpressionState.value ?? 0) > 0
+                      ? "opacity-80"
+                      : "opacity-35",
+                  )}
+                />
+                <div className="flex min-h-10 items-center gap-2 sm:pr-16">
+                  <FormField
+                    control={form.control}
+                    name="amount"
+                    render={({ field }) => (
+                      <FormItem className="mb-0 min-w-0 flex-1 space-y-0">
+                        <FormControl>
+                          <AmountInput
+                            value={field.value}
+                            onChange={field.onChange}
+                            onExpressionStateChange={setAmountExpressionState}
+                            currency={currency}
+                            placeholder="0"
+                            className="h-11 min-h-10 w-full border-0 bg-transparent px-0 text-2xl font-semibold shadow-none tabular-nums focus-visible:ring-0 sm:text-3xl"
+                            aria-label={t("expenses.amount", { defaultValue: "Amount" })}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name="currency"
                     render={({ field }) => (
-                      <FormItem className="shrink-0 mb-1">
+                      <FormItem className="mb-0 shrink-0 space-y-0">
                         <FormControl>
                           <select
                             {...field}
-                            className="h-9 px-2 text-sm font-semibold border border-input/60 rounded-lg bg-background/70 text-muted-foreground cursor-pointer"
+                            className="h-10 min-h-10 cursor-pointer rounded-lg border border-input/60 bg-background px-2 text-sm font-semibold text-muted-foreground"
                             aria-label={t("expenses.currency", { defaultValue: "Currency" })}
                           >
                             <option value="VND">VND</option>
@@ -547,17 +538,18 @@ export const ExpenseForm = ({
             </div>
 
             {/* Date and Paid By */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="expense_date"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date</FormLabel>
+                  <FormItem className="space-y-2">
+                    <FormLabel>{t("expenses.date")}</FormLabel>
                     <FormControl>
                       <QuickDatePicker
                         value={field.value}
                         onChange={field.onChange}
+                        className="min-h-10"
                       />
                     </FormControl>
                     <FormMessage />
@@ -568,17 +560,18 @@ export const ExpenseForm = ({
                 control={form.control}
                 name="paid_by_user_id"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Paid by</FormLabel>
+                  <FormItem className="space-y-2">
+                    <FormLabel>{t("expenses.paidBy")}</FormLabel>
                     <FormControl>
                       <select
                         {...field}
-                        className="w-full h-11 px-3 border border-input rounded-lg bg-background"
+                        className="h-11 min-h-10 w-full rounded-lg border border-input bg-background px-3"
                       >
-                        <option value="">Select...</option>
+                        <option value="">{t("common.select")}</option>
                         {members.map((member) => (
                           <option key={member.id} value={member.id}>
-                            {member.full_name}{member.id === currentUserId ? ' (You)' : ''}
+                            {member.full_name}
+                            {member.id === currentUserId ? ` (${t("common.you")})` : ""}
                           </option>
                         ))}
                       </select>
@@ -594,8 +587,8 @@ export const ExpenseForm = ({
               control={form.control}
               name="category"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
+                <FormItem className="space-y-2">
+                  <FormLabel>{t("expenses.category")}</FormLabel>
                   <FormControl>
                     <CategoryGrid
                       value={field.value}
@@ -703,35 +696,25 @@ export const ExpenseForm = ({
 
         {/* Split Configuration Card - Hidden when loan mode is active */}
         {!(isLoan && isFriendContext) && (
-        <Card className="border-2 border-border/50 shadow-sm overflow-hidden">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <UsersIcon className="h-5 w-5" />
-              Split Between
-            </CardTitle>
-            <CardDescription>
-              Select who shares this expense
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 overflow-x-hidden">
+        <ExpenseFormSplitSection>
             {/* Split Method */}
             <FormField
               control={form.control}
               name="split_method"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>How to split?</FormLabel>
+                  <FormLabel>{t("expenses.howToSplit")}</FormLabel>
                   <FormControl>
                     <div
                       role="radiogroup"
-                      aria-label="How to split?"
+                      aria-label={t("expenses.howToSplit")}
                       className="flex gap-2"
                     >
                       {(["equal", "exact", "percentage"] as const).map((method) => {
                         const splitLabels: Record<string, string> = {
-                          equal: "Equally",
-                          exact: "Exact",
-                          percentage: "Percent",
+                          equal: t("expenses.splitEqualShort"),
+                          exact: t("expenses.splitExactShort"),
+                          percentage: t("expenses.splitPercentShort"),
                         };
                         return (
                           <label
@@ -778,8 +761,7 @@ export const ExpenseForm = ({
               onExpressionStateChange={setHasBlockingExactSplitExpressions}
               totalSplit={totalSplit}
             />
-          </CardContent>
-        </Card>
+        </ExpenseFormSplitSection>
         )}
 
         {/* Advanced Options - Collapsible */}
@@ -790,7 +772,7 @@ export const ExpenseForm = ({
               variant="ghost"
               className="w-full justify-between h-auto py-3 px-4 hover:bg-accent"
             >
-              <span className="text-sm font-medium">Advanced Options</span>
+              <span className="text-sm font-medium">{t("expenses.advancedOptions")}</span>
               <ChevronDownIcon
                 className={cn(
                   "h-4 w-4 transition-transform",
@@ -811,10 +793,10 @@ export const ExpenseForm = ({
                       <div className="space-y-0.5">
                         <FormLabel className="flex items-center gap-2">
                           <RepeatIcon className="h-4 w-4" />
-                          Recurring Expense
+                          {t("expenses.recurringExpense")}
                         </FormLabel>
                         <FormDescription>
-                          Automatically create this expense periodically
+                          {t("expenses.recurringExpenseDescription")}
                         </FormDescription>
                       </div>
                       <FormControl>
@@ -843,7 +825,7 @@ export const ExpenseForm = ({
               <CardContent className="pt-6">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm font-medium">Attachments</div>
+                    <div className="text-sm font-medium">{t("expenses.attachments")}</div>
                     {isAttachmentUploading && (
                       <Badge variant="secondary" className="text-xs">
                         Uploading…
@@ -873,7 +855,7 @@ export const ExpenseForm = ({
                     >
                       <div className="flex items-center gap-2">
                         <MessageSquareIcon className="h-4 w-4" />
-                        <span className="text-sm font-medium">Add Comment</span>
+                        <span className="text-sm font-medium">{t("expenses.addComment")}</span>
                       </div>
                       <ChevronDownIcon
                         className={cn(
@@ -893,7 +875,7 @@ export const ExpenseForm = ({
                             <MarkdownEditor
                               value={field.value || ""}
                               onChange={field.onChange}
-                              placeholder="Add any notes or details about this expense..."
+                              placeholder={t("expenses.commentPlaceholder")}
                               minHeight="min-h-[120px]"
                             />
                           </FormControl>
@@ -917,12 +899,12 @@ export const ExpenseForm = ({
           {isLoading ? (
             <>
               <span className="animate-spin mr-2">⏳</span>
-              {isEdit ? 'Updating...' : 'Creating...'}
+              {isEdit ? t("expenses.updating") : t("expenses.creating")}
             </>
           ) : (
             <>
               <CheckIcon className="h-5 w-5 mr-2" />
-              {isEdit ? 'Update Expense' : 'Create Expense'}
+              {isEdit ? t("expenses.updateExpense") : t("expenses.createExpense")}
             </>
           )}
         </Button>

@@ -15,6 +15,7 @@ import { Friendship } from "@/modules/friends/types";
 import { toast } from "sonner";
 import { supabaseClient } from "@/utility/supabaseClient";
 import { useTrackEvent } from "@/hooks/use-track-event";
+import { useTranslation } from "react-i18next";
 
 const toNumber = (value: unknown): number => {
   const parsed = Number(value);
@@ -22,6 +23,7 @@ const toNumber = (value: unknown): number => {
 };
 
 export const ExpenseEdit = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const go = useGo();
   const { data: identity } = useGetIdentity<Profile>();
@@ -503,10 +505,10 @@ export const ExpenseEdit = () => {
     <ResponsiveDialog
       open={true}
       onOpenChange={handleClose}
-      title="Edit Expense"
-      className="sm:max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden"
+      title={t("expenses.editTitle", "Edit expense")}
+      className="flex max-h-[min(90vh,100dvh)] flex-col overflow-hidden w-[min(42rem,100vw-2rem)] sm:max-w-2xl"
     >
-      <div className="space-y-6 overflow-x-hidden max-w-full">
+      <div className="max-w-full space-y-4 overflow-x-hidden overflow-y-auto pb-safe">
         <ExpenseForm
           key={id}
           groupId={expense.group_id || undefined}

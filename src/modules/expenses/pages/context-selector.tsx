@@ -14,6 +14,7 @@ import { useRecentExpenseContexts } from "@/modules/expenses/hooks/use-recent-ex
 import { ContextItemRow } from "@/modules/expenses/components/context-item-row";
 import { Search, X } from "lucide-react";
 import { matchesSearchText } from "@/lib/search-utils";
+import { useTranslation } from "react-i18next";
 
 type ExpenseContextOption = {
   id: string;
@@ -45,6 +46,7 @@ type GroupWithRole = GroupData & { _role: string };
 const RECENT_MAX = 3;
 
 export const ExpenseContextSelector = () => {
+  const { t } = useTranslation();
   const go = useGo();
   const [searchParams] = useSearchParams();
   const { tap } = useHaptics();
@@ -255,10 +257,10 @@ export const ExpenseContextSelector = () => {
       <ResponsiveDialog
         open={true}
         onOpenChange={handleClose}
-        title="Loading..."
+        title={t("expenses.loadingForm", "Loading…")}
       >
-        <div className="py-8 text-center text-sm text-muted-foreground">
-          Setting up expense form...
+        <div className="py-6 text-center text-sm text-muted-foreground">
+          {t("expenses.loadingForm", "Loading…")}
         </div>
       </ResponsiveDialog>
     );

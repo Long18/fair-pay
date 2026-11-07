@@ -34,6 +34,8 @@ interface CommentInputProps {
   autoFocus?: boolean;
   compact?: boolean;
   customReactions?: ReactionType[];
+  /** Extra classes on the root row (e.g. align with CommentItem card inset). */
+  className?: string;
 }
 
 export const CommentInput = memo(({
@@ -46,6 +48,7 @@ export const CommentInput = memo(({
   autoFocus = false,
   compact = false,
   customReactions = EMPTY_CUSTOM_REACTIONS,
+  className,
 }: CommentInputProps) => {
   const { t } = useTranslation();
   const { tap } = useHaptics();
@@ -280,32 +283,8 @@ export const CommentInput = memo(({
 
   const hasResults = filteredSpecial.length > 0 || filteredParticipants.length > 0 || filteredFriends.length > 0;
 
-  return (
-    <div className={cn("flex gap-2", compact ? "items-center" : "items-start")}>
-      {!compact && (
-        <Avatar className="h-8 w-8 shrink-0 mt-1">
-          <AvatarImage src={currentUser?.avatar_url || undefined} alt={currentUser?.full_name} />
-          <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-        </Avatar>
-      )}
-      <div className="flex-1 relative">
-        <div className="relative">
-          <textarea
-            ref={textareaRef}
-            value={content}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder || t("expenses.comments.placeholder", "Write a comment...")}
-            autoFocus={autoFocus}
-            rows={compact ? 1 : 2}
-            className={cn(
-              "w-full resize-none rounded-lg border bg-background px-3 py-2 text-sm",
-              "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-              compact ? "pr-16" : "pr-20"
-            )}
-            aria-label={t("expenses.comments.inputLabel", "Comment input")}
-          />
-          <div className="absolute right-1.5 bottom-1.5 flex items-center gap-1">
+  const composerActions = (
+    <>
             <Popover open={mentionOpen} onOpenChange={setMentionOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -439,8 +418,48 @@ export const CommentInput = memo(({
             >
               <SendIcon className="h-3.5 w-3.5" />
             </Button>
+    </>
+  );
+
+  return (
+    <div
+      className={cn(
+        "flex w-full gap-2.5",
+        compact ? "items-center" : "items-start",
+        className,
+      )}
+    >
+      {!compact && (
+        <Avatar className="h-8 w-8 shrink-0">
+          <AvatarImage src={currentUser?.avatar_url || undefined} alt={currentUser?.full_name} />
+          <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+        </Avatar>
+      )}
+      <div className="relative min-w-0 flex-1">
+        <textarea
+          ref={textareaRef}
+          value={content}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder || t("expenses.comments.placeholder", "Write a comment...")}
+          autoFocus={autoFocus}
+          rows={compact ? 1 : 2}
+          className={cn(
+            "w-full resize-none rounded-lg border bg-background px-3 py-2 text-sm",
+            "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+            compact && "pr-16",
+          )}
+          aria-label={t("expenses.comments.inputLabel", "Comment input")}
+        />
+        {compact ? (
+          <div className="absolute right-1.5 bottom-1.5 flex items-center gap-1">
+            {composerActions}
           </div>
-        </div>
+        ) : (
+          <div className="mt-1 flex items-center justify-end gap-0.5">
+            {composerActions}
+          </div>
+        )}
       </div>
     </div>
   );

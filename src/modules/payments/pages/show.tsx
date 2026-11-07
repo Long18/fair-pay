@@ -83,7 +83,7 @@ export const PaymentShow = () => {
         </Button>
         <PageHeader
           className="flex-1"
-          title={t("payments.showTitle", { defaultValue: "Payment Details" })}
+          title={t("payments.paymentDetails", "Payment details")}
           description={formatDate(payment.created_at)}
         />
       </div>
@@ -92,12 +92,12 @@ export const PaymentShow = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <HandCoinsIcon className="h-5 w-5 text-green-600" />
-            Payment Amount
+            <HandCoinsIcon className="h-5 w-5 text-semantic-positive" />
+            {t("payments.amount", "Amount")}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-3xl font-bold text-green-600">
+          <div className="text-3xl font-bold tabular-nums text-semantic-positive">
             {formatNumber(payment.amount)} {payment.currency || "VND"}
           </div>
         </CardContent>
@@ -106,14 +106,14 @@ export const PaymentShow = () => {
       {/* Payment Details Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Details</CardTitle>
+          <CardTitle>{t("common.details", "Details")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* From/To Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* From User */}
             <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">From</p>
+              <p className="text-sm text-muted-foreground">{t("payments.from", "From")}</p>
               {fromProfile ? (
                 <UserDisplay
                   user={{
@@ -136,7 +136,7 @@ export const PaymentShow = () => {
 
             {/* To User */}
             <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">To</p>
+              <p className="text-sm text-muted-foreground">{t("payments.to", "To")}</p>
               {toProfile ? (
                 <UserDisplay
                   user={{
@@ -161,21 +161,21 @@ export const PaymentShow = () => {
           {/* Context (Group or Friend) */}
           {group && (
             <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Group</p>
+              <p className="text-sm text-muted-foreground">{t("common.group", "Group")}</p>
               <Badge variant="outline">{group.name}</Badge>
             </div>
           )}
 
           {/* Payment Date */}
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">Payment Date</p>
+            <p className="text-sm text-muted-foreground">{t("payments.date", "Date")}</p>
             <p className="font-medium">{formatDate(payment.payment_date)}</p>
           </div>
 
           {/* Note */}
           {payment.note && (
             <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Note</p>
+              <p className="text-sm text-muted-foreground">{t("payments.note", "Note")}</p>
               <p className="text-sm bg-muted p-3 rounded-lg">{payment.note}</p>
             </div>
           )}

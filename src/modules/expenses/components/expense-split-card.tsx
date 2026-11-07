@@ -96,22 +96,20 @@ export const ExpenseSplitCard = ({
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
+      exit={{ opacity: 0, y: -8 }}
       className={cn(
-        "group border-2 rounded-lg transition-all duration-200 overflow-hidden",
-        isSplitSettled
-          ? cn(paidColors.bg, paidColors.border)
-          : isCurrentUser
-            ? "border-primary/30 bg-primary/5 hover:border-primary/50 hover:bg-primary/10"
-            : "hover:border-primary/50 hover:bg-accent/30 bg-card"
+        "group bg-card transition-colors",
+        isSplitSettled && paidColors.bg,
+        !isSplitSettled && isCurrentUser && "bg-primary/5",
+        !isSplitSettled && !isCurrentUser && "hover:bg-muted/30"
       )}
     >
       {/* Main Content */}
       <div
         className={cn(
-          "p-4 cursor-pointer",
+          "px-4 py-3 md:px-5 md:py-3.5 cursor-pointer",
           "md:cursor-default" // Disable expand on desktop
         )}
         role="button"
@@ -133,18 +131,11 @@ export const ExpenseSplitCard = ({
         <div className="flex items-center justify-between gap-3">
           {/* User Info */}
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <Avatar className={cn(
-              "h-10 w-10 md:h-12 md:w-12 border-2 shadow-sm ring-2 ring-offset-1 ring-offset-background transition-all duration-200 flex-shrink-0",
-              isSplitSettled
-                ? cn(paidColors.border, "ring-status-success-border")
-                : "border-background ring-primary/20 group-hover:ring-primary/50"
-            )}>
+            <Avatar className="h-10 w-10 shrink-0 md:h-11 md:w-11">
               <AvatarImage src={split.profiles?.avatar_url || undefined} alt={split.profiles?.full_name} />
               <AvatarFallback className={cn(
-                "text-xs md:text-sm font-semibold",
-                isSplitSettled
-                  ? cn(paidColors.bg, paidColors.text)
-                  : "bg-gradient-to-br from-muted to-muted/50"
+                "bg-muted text-xs font-medium md:text-sm",
+                isSplitSettled && paidColors.text
               )}>
                 {getInitials(split.profiles?.full_name)}
               </AvatarFallback>
@@ -230,8 +221,8 @@ export const ExpenseSplitCard = ({
                 <TooltipTrigger asChild>
                   <Button
                     size="sm"
-                    variant="default"
-                    className="bg-status-success-foreground hover:bg-status-success-foreground/90 min-h-[44px] min-w-[44px]"
+                    variant="outline"
+                    className="h-8 shrink-0 gap-1.5 text-xs"
                     onClick={() => { success(); onSettle(split); }}
                     disabled={isSettling}
                   >

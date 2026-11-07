@@ -2,7 +2,7 @@ import { useState, useCallback, memo, useMemo } from "react";
 import { useHaptics } from "@/hooks/use-haptics";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { CornerDownRightIcon, PencilIcon, Trash2Icon } from "@/components/ui/icons";
+import { ChevronDownIcon, ChevronUpIcon, CornerDownRightIcon, PencilIcon, Trash2Icon } from "@/components/ui/icons";
 import { ReactionBar } from "./reaction-bar";
 import { CommentInput } from "./comment-input";
 import { MentionProfileCard } from "./mention-profile-card";
@@ -23,6 +23,8 @@ function escapeRegex(str: string): string {
   return result;
 }
 
+const DEFAULT_MAX_VISIBLE_REPLIES = 3;
+
 interface CommentItemProps {
   comment: ExpenseComment;
   currentUserId: string | undefined;
@@ -40,6 +42,7 @@ interface CommentItemProps {
   getReactionsForComment?: (commentId: string) => ReactionSummary[];
   onToggleReplyReaction?: (commentId: string, reactionTypeId: string) => void;
   onCreateAndToggleReplyReaction?: (commentId: string, emojiMartId: string, nativeEmoji: string, label: string) => void;
+  maxVisibleReplies?: number;
 }
 
 export const CommentItem = memo(({
@@ -59,11 +62,13 @@ export const CommentItem = memo(({
   getReactionsForComment,
   onToggleReplyReaction,
   onCreateAndToggleReplyReaction,
+  maxVisibleReplies = DEFAULT_MAX_VISIBLE_REPLIES,
 }: CommentItemProps) => {
   const { t, i18n } = useTranslation();
   const { tap, warning } = useHaptics();
   const [replying, setReplying] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [repliesExpanded, setRepliesExpanded] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
   const dateLocale = i18n.language === "vi" ? vi : enUS;
   const isOwn = comment.user_id === currentUserId;
@@ -144,7 +149,13 @@ export const CommentItem = memo(({
   };
 
   return (
-    <div id={`comment-${comment.id}`} className={cn("group scroll-mt-20", isReply && "ml-8 md:ml-10")}>
+    <div
+      id={`comment-${comment.id}`}
+      className={cn(
+        "group scroll-mt-20",
+        isReply ? "relative" : "rounded-lg border border-border/60 bg-background/90 p-3",
+      )}
+    >
       <div className="flex gap-2.5">
         {/* Commenter avatar — wrapped in MentionProfileCard */}
         <MentionProfileCard userId={comment.user_id} displayText={comment.user.full_name} className="shrink-0">
@@ -159,6 +170,11 @@ export const CommentItem = memo(({
             <MentionProfileCard userId={comment.user_id} displayText={comment.user.full_name}>
               <span className="text-sm font-medium truncate cursor-pointer hover:underline">{comment.user.full_name}</span>
             </MentionProfileCard>
+            {isReply && (
+              <span className="text-[10px] font-medium uppercase tracking-wide text-primary/80">
+                {t("expenses.comments.replyLabel", "Reply")}
+              </span>
+            )}
             <span className="text-xs text-muted-foreground">{timeAgo}</span>
             {comment.is_edited && (
               <span className="text-xs text-muted-foreground italic">
@@ -195,6 +211,9 @@ export const CommentItem = memo(({
 
           {!editing && (
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+              <span className="sr-only">
+                {t("expenses.comments.reactionsOnComment", "Reactions on this comment")}
+              </span>
               <ReactionBar
                 reactions={reactions}
                 reactionTypes={reactionTypes}
@@ -254,24 +273,60 @@ export const CommentItem = memo(({
           )}
 
           {!isReply && comment.replies && comment.replies.length > 0 && (
-            <div className="mt-3 space-y-3">
-              {comment.replies.map((reply) => (
-                <CommentReplyItem
-                  key={reply.id}
-                  reply={reply}
-                  currentUserId={currentUserId}
-                  currentUser={currentUser}
-                  participants={participants}
-                  reactionTypes={reactionTypes}
-                  getReactionsForComment={getReactionsForComment}
-                  onToggleReplyReaction={onToggleReplyReaction}
-                  onCreateAndToggleReplyReaction={onCreateAndToggleReplyReaction}
-                  onReply={onReply}
-                  onUpdate={onUpdate}
-                  onDelete={onDelete}
-                  isSubmitting={isSubmitting}
-                />
-              ))}
+            <div className="mt-3 space-y-2 border-l border-border/70 ml-3 pl-4 md:ml-4 md:pl-5">
+              {comment.replies.length > maxVisibleReplies && !repliesExpanded && (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto justify-start px-0 text-xs text-muted-foreground"
+                  onClick={() => {
+                    tap();
+                    setRepliesExpanded(true);
+                  }}
+                >
+                  <ChevronDownIcon className="h-3.5 w-3.5 mr-1 shrink-0" />
+                  {t("expenses.comments.showAllReplies", {
+                    count: comment.replies.length - maxVisibleReplies,
+                  })}
+                </Button>
+              )}
+              {comment.replies.length > maxVisibleReplies && repliesExpanded && (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto justify-start px-0 text-xs text-muted-foreground"
+                  onClick={() => {
+                    tap();
+                    setRepliesExpanded(false);
+                  }}
+                >
+                  <ChevronUpIcon className="h-3.5 w-3.5 mr-1 shrink-0" />
+                  {t("expenses.comments.showLess", "Show less")}
+                </Button>
+              )}
+              <div className="space-y-3">
+                {(repliesExpanded ? comment.replies : comment.replies.slice(-maxVisibleReplies)).map(
+                  (reply) => (
+                    <CommentReplyItem
+                      key={reply.id}
+                      reply={reply}
+                      currentUserId={currentUserId}
+                      currentUser={currentUser}
+                      participants={participants}
+                      reactionTypes={reactionTypes}
+                      getReactionsForComment={getReactionsForComment}
+                      onToggleReplyReaction={onToggleReplyReaction}
+                      onCreateAndToggleReplyReaction={onCreateAndToggleReplyReaction}
+                      onReply={onReply}
+                      onUpdate={onUpdate}
+                      onDelete={onDelete}
+                      isSubmitting={isSubmitting}
+                    />
+                  ),
+                )}
+              </div>
             </div>
           )}
         </div>
