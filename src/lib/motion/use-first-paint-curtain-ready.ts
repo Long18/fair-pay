@@ -17,12 +17,13 @@ export function useFirstPaintCurtainReady(enabled: boolean): boolean {
     const started = performance.now();
     let documentLoaded = document.readyState === "complete";
     let cancelled = false;
+    let dismissTimer: ReturnType<typeof setTimeout> | undefined;
 
     const tryDismiss = () => {
       if (cancelled || !documentLoaded) return;
       const elapsed = performance.now() - started;
       const remaining = Math.max(0, FIRST_PAINT_CURTAIN_MIN_MS - elapsed);
-      window.setTimeout(() => {
+      dismissTimer = window.setTimeout(() => {
         if (!cancelled) setReadyToDismiss(true);
       }, remaining);
     };
@@ -46,6 +47,9 @@ export function useFirstPaintCurtainReady(enabled: boolean): boolean {
       cancelled = true;
       window.removeEventListener("load", onLoad);
       window.clearTimeout(maxTimer);
+      if (dismissTimer !== undefined) {
+        window.clearTimeout(dismissTimer);
+      }
     };
   }, [enabled]);
 
