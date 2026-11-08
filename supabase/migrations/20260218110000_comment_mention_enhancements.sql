@@ -9,22 +9,22 @@
 DROP TRIGGER IF EXISTS audit_expense_comments ON expense_comments;
 CREATE TRIGGER audit_expense_comments
   AFTER INSERT OR UPDATE OR DELETE ON expense_comments
-  FOR EACH ROW EXECUTE FUNCTION create_audit_log();
+  FOR EACH ROW EXECUTE FUNCTION log_table_changes();
 
 DROP TRIGGER IF EXISTS audit_expense_reactions ON expense_reactions;
 CREATE TRIGGER audit_expense_reactions
   AFTER INSERT OR UPDATE OR DELETE ON expense_reactions
-  FOR EACH ROW EXECUTE FUNCTION create_audit_log();
+  FOR EACH ROW EXECUTE FUNCTION log_table_changes();
 
 DROP TRIGGER IF EXISTS audit_comment_mentions ON comment_mentions;
 CREATE TRIGGER audit_comment_mentions
   AFTER INSERT OR UPDATE OR DELETE ON comment_mentions
-  FOR EACH ROW EXECUTE FUNCTION create_audit_log();
+  FOR EACH ROW EXECUTE FUNCTION log_table_changes();
 
 DROP TRIGGER IF EXISTS audit_reaction_types ON reaction_types;
 CREATE TRIGGER audit_reaction_types
   AFTER INSERT OR UPDATE OR DELETE ON reaction_types
-  FOR EACH ROW EXECUTE FUNCTION create_audit_log();
+  FOR EACH ROW EXECUTE FUNCTION log_table_changes();
 
 -- ============================================================
 -- 2. UPDATE add_expense_comment to support @all / @here

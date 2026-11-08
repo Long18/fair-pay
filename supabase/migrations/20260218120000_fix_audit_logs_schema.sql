@@ -47,3 +47,43 @@ BEGIN
     ALTER TABLE audit_logs ADD COLUMN user_agent TEXT;
   END IF;
 END $$;
+
+-- Keep log_table_changes() aligned with audit_logs column name (operation vs action)
+CREATE OR REPLACE FUNCTION log_table_changes()
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public, pg_temp
+LANGUAGE plpgsql
+AS $fn$
+DECLARE
+  v_user_id UUID;
+  v_old JSONB;
+  v_new JSONB;
+  v_record_id UUID;
+BEGIN
+  v_user_id := auth.uid();
+
+  IF TG_OP = 'DELETE' THEN
+    v_old := to_jsonb(OLD);
+    v_new := NULL;
+    v_record_id := OLD.id;
+  ELSIF TG_OP = 'INSERT' THEN
+    v_old := NULL;
+    v_new := to_jsonb(NEW);
+    v_record_id := NEW.id;
+  ELSIF TG_OP = 'UPDATE' THEN
+    v_old := to_jsonb(OLD);
+    v_new := to_jsonb(NEW);
+    v_record_id := NEW.id;
+  END IF;
+
+  INSERT INTO audit_logs (table_name, record_id, operation, old_data, new_data, user_id, created_at)
+  VALUES (TG_TABLE_NAME, v_record_id, TG_OP, v_old, v_new, v_user_id, NOW());
+
+  IF TG_OP = 'DELETE' THEN
+    RETURN OLD;
+  ELSE
+    RETURN NEW;
+  END IF;
+END;
+$fn$;

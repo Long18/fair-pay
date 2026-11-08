@@ -808,7 +808,7 @@ BEGIN
     new_data := jsonb_build_object('field', 'new_value');
 
     INSERT INTO audit_logs (
-      table_name, record_id, action, old_data, new_data, user_id, created_at
+      table_name, record_id, operation, old_data, new_data, user_id, created_at
     )
     VALUES (
       table_name,
@@ -837,6 +837,11 @@ DECLARE
   balance_currency TEXT;
   i INT;
 BEGIN
+  IF to_regclass('public.balance_history') IS NULL THEN
+    RAISE NOTICE 'Skipping balance_history seed (table not present in this schema)';
+    RETURN;
+  END IF;
+
   FOR i IN 1..100 LOOP
     SELECT id INTO balance_user_id FROM profiles ORDER BY RANDOM() LIMIT 1;
     balance_snapshot_date := CURRENT_DATE - (random() * 90)::INT;

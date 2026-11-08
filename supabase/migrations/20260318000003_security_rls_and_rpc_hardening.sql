@@ -50,7 +50,7 @@ REVOKE EXECUTE ON FUNCTION public.get_all_users_debt_summary(INT, INT) FROM anon
 REVOKE EXECUTE ON FUNCTION public.simplify_group_debts(UUID) FROM anon;
 
 -- User activity/analytics RPCs - revoke anon
-REVOKE EXECUTE ON FUNCTION public.get_user_activities(UUID, INTEGER) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.get_user_activities(UUID, INTEGER, INTEGER) FROM anon;
 REVOKE EXECUTE ON FUNCTION public.get_balance_history(UUID, DATE, DATE, TEXT) FROM anon;
 REVOKE EXECUTE ON FUNCTION public.get_top_categories(DATE, DATE, UUID, INTEGER) FROM anon;
 REVOKE EXECUTE ON FUNCTION public.get_leaderboard_data(INTEGER, INTEGER) FROM anon;
@@ -59,7 +59,7 @@ REVOKE EXECUTE ON FUNCTION public.get_leaderboard_data(INTEGER, INTEGER) FROM an
 GRANT EXECUTE ON FUNCTION public.get_who_owes_who(INT, INT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_all_users_debt_summary(INT, INT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.simplify_group_debts(UUID) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.get_user_activities(UUID, INTEGER) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_user_activities(UUID, INTEGER, INTEGER) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_balance_history(UUID, DATE, DATE, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_top_categories(DATE, DATE, UUID, INTEGER) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_leaderboard_data(INTEGER, INTEGER) TO authenticated;

@@ -1,6 +1,9 @@
 -- Add periods_covered to member prepaid info so UI can show
 -- "1 payment covering 5 months" instead of only payment count.
 
+-- Postgres cannot change OUT/RETURNS TABLE shape via CREATE OR REPLACE alone.
+DROP FUNCTION IF EXISTS public.get_all_members_prepaid_info(UUID);
+
 CREATE OR REPLACE FUNCTION public.get_all_members_prepaid_info(
   p_recurring_expense_id UUID
 )

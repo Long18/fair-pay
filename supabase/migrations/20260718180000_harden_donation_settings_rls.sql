@@ -6,6 +6,11 @@ DROP POLICY IF EXISTS "Authenticated users can insert donation settings"
 DROP POLICY IF EXISTS "Authenticated users can update donation settings"
   ON public.donation_settings;
 
+DROP POLICY IF EXISTS "Admins can insert donation settings"
+  ON public.donation_settings;
+DROP POLICY IF EXISTS "Admins can update donation settings"
+  ON public.donation_settings;
+
 CREATE POLICY "Admins can insert donation settings"
   ON public.donation_settings
   FOR INSERT
