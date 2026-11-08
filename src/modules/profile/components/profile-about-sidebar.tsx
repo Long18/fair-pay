@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { formatDateShort } from "@/lib/locale-utils";
 import type { Profile } from "../types";
 import { useOnboardingProgress } from "@/modules/onboarding";
+import { ReferralCard, ReferralStats } from "@/modules/referrals";
 
 const COMPLETION_KEYS = ["profile", "friend", "group", "expense", "settle"] as const;
 
@@ -43,7 +44,12 @@ export function ProfileAboutSidebar({
   }, [isOwnProfile, isCompleted, steps]);
 
   return (
-    <div className={cn("space-y-3", className)}>
+    <aside
+      className={cn(
+        "space-y-3 md:sticky md:top-20 md:max-h-[calc(100dvh-6rem)] md:overflow-y-auto md:overscroll-contain",
+        className,
+      )}
+    >
       {isOwnProfile && completionPercent !== null && completionPercent < 100 && (
         <Card className="rounded-xl border border-border/60 shadow-sm">
           <CardHeader className="py-3 pb-2">
@@ -67,6 +73,13 @@ export function ProfileAboutSidebar({
             )}
           </CardContent>
         </Card>
+      )}
+
+      {isOwnProfile && (
+        <div className="space-y-3 md:space-y-0">
+          <ReferralCard className="rounded-xl border border-border/60 shadow-none md:rounded-b-none" />
+          <ReferralStats className="md:rounded-t-none md:border-t-0" />
+        </div>
       )}
 
       <Card className="rounded-xl border border-border/60 shadow-sm">
@@ -131,7 +144,7 @@ export function ProfileAboutSidebar({
           </div>
         </CardContent>
       </Card>
-    </div>
+    </aside>
   );
 }
 

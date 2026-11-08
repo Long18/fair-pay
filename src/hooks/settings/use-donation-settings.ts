@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseClient } from '@/utility/supabaseClient';
 import { DonationSettings } from '@/types/donation';
+import { resolveDonationSettings } from '@/lib/donation/dev-preview-settings';
 
 const DONATION_SETTINGS_KEY = ['donation-settings'];
 
@@ -15,12 +16,12 @@ export function useDonationSettings() {
 
       if (error) {
         if (error.code === 'PGRST116') {
-          return null;
+          return resolveDonationSettings(null);
         }
         throw error;
       }
 
-      return data as DonationSettings;
+      return resolveDonationSettings(data as DonationSettings);
     },
     staleTime: 5 * 60 * 1000,
   });

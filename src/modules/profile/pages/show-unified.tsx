@@ -719,7 +719,7 @@ export const ProfileShowUnified = () => {
                       onTabChange={(tab) => { tap(); setActiveTab(tab); }}
                     >
                       <TabsContent value="overview" className="mt-0">
-                        <StaggerChildren className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+                        <StaggerChildren className="grid gap-6 md:grid-cols-[minmax(0,280px)_minmax(0,1fr)] md:items-start">
                           <ProfileAboutSidebar
                             profile={profile}
                             isOwnProfile={isOwnProfile}

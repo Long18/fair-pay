@@ -135,11 +135,12 @@ export function useSepaySettings(): UseSepaySettingsReturn {
  */
 export function usePayeeSepaySettings(userId: string | undefined) {
   const [isConfigured, setIsConfigured] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(() => Boolean(userId));
 
   useEffect(() => {
     if (!userId) {
       setIsConfigured(false);
+      setIsLoading(false);
       return;
     }
 

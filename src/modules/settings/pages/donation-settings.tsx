@@ -37,6 +37,7 @@ export const DonationSettings = () => {
   const [bankAccount, setBankAccount] = useState('');
   const [bankCode, setBankCode] = useState('');
   const [accountName, setAccountName] = useState('');
+  const [donationAmount, setDonationAmount] = useState('');
 
   useEffect(() => {
     if (settings) {
@@ -54,6 +55,7 @@ export const DonationSettings = () => {
         setBankAccount(settings.bank_info.account || '');
         setBankCode(settings.bank_info.bank || '');
         setAccountName(settings.bank_info.accountName || '');
+        setDonationAmount(settings.bank_info.amount || '');
       }
     }
   }, [settings]);
@@ -108,6 +110,7 @@ export const DonationSettings = () => {
           account: bankAccount || undefined,
           bank: bankCode || undefined,
           accountName: accountName || undefined,
+          amount: donationAmount.trim() || undefined,
         },
       });
 
@@ -259,6 +262,17 @@ export const DonationSettings = () => {
               value={bankCode}
               onChange={(e) => setBankCode(e.target.value)}
               placeholder="VCB"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="donationAmount">{t('settings.donation.amount', 'Suggested Amount (VND)')}</Label>
+            <Input
+              id="donationAmount"
+              inputMode="numeric"
+              value={donationAmount}
+              onChange={(e) => setDonationAmount(e.target.value.replace(/[^\d]/g, ''))}
+              placeholder="50000"
             />
           </div>
         </CardContent>

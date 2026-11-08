@@ -9,7 +9,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useGetIdentity } from '@refinedev/core';
 import { Profile } from '@/modules/profile/types';
 import { supabaseClient } from '@/utility/supabaseClient';
-import { BankInfo, UserSettings } from '@/types/user-settings';
+import { BankInfo } from '@/types/user-settings';
+import { resolveDevBankInfo } from '@/lib/bank/dev-preview-bank-settings';
+import { isAdmin } from '@/lib/rbac';
 
 interface UseBankSettingsReturn {
   bankInfo: BankInfo | null;
@@ -45,7 +47,8 @@ export function useBankSettings(): UseBankSettingsReturn {
         throw fetchError;
       }
 
-      setBankInfo(data?.bank_info || null);
+      const raw = (data?.bank_info as BankInfo | null) ?? null;
+      setBankInfo(resolveDevBankInfo(raw));
     } catch (err) {
       console.error('Error loading bank settings:', err);
       setError('Failed to load bank settings');
@@ -59,6 +62,11 @@ export function useBankSettings(): UseBankSettingsReturn {
     if (!identity?.id) {
       setError('User not authenticated');
       return;
+    }
+
+    if (!(await isAdmin())) {
+      setError('Bank settings are admin-only');
+      throw new Error('Bank settings are admin-only');
     }
 
     setIsSaving(true);
@@ -89,6 +97,11 @@ export function useBankSettings(): UseBankSettingsReturn {
   // Clear bank settings
   const clearBankInfo = useCallback(async () => {
     if (!identity?.id) return;
+
+    if (!(await isAdmin())) {
+      setError('Bank settings are admin-only');
+      throw new Error('Bank settings are admin-only');
+    }
 
     setIsSaving(true);
     setError(null);
@@ -140,12 +153,13 @@ export function useBankSettings(): UseBankSettingsReturn {
  */
 export function usePayeeBankSettings(userId: string | undefined) {
   const [bankInfo, setBankInfo] = useState<BankInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(() => Boolean(userId));
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userId) {
       setBankInfo(null);
+      setIsLoading(false);
       return;
     }
 
@@ -157,13 +171,14 @@ export function usePayeeBankSettings(userId: string | undefined) {
           .from('user_settings')
           .select('bank_info')
           .eq('user_id', userId)
-          .single();
+          .maybeSingle();
 
         if (fetchError && fetchError.code !== 'PGRST116') {
           throw fetchError;
         }
 
-        setBankInfo(data?.bank_info || null);
+        const raw = (data?.bank_info as BankInfo | null) ?? null;
+        setBankInfo(resolveDevBankInfo(raw));
       } catch (err) {
         console.error('Error fetching payee bank settings:', err);
         setError('Failed to load payee bank info');

@@ -35,6 +35,7 @@ const HOOKS_DOMAIN_MAPPING: HooksMappingEntry[] = [
   { domain: "payment", file: "use-sepay-order.ts" },
   { domain: "payment", file: "use-sepay-settings.ts" },
   { domain: "payment", file: "use-bank-settings.ts" },
+  { domain: "payment", file: "use-momo-info-settings.ts" },
 
   // analytics/ — Requirement 2.4
   { domain: "analytics", file: "use-spending-comparison.ts" },

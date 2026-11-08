@@ -16,6 +16,15 @@ interface ImportMetaEnv {
     // Feature flags
     readonly VITE_ENABLE_VERCEL_ANALYTICS?: string;
     readonly VITE_ENABLE_ADMIN_API_DOCS?: string;
+    // Bank / MoMo settings local dev preview
+    readonly VITE_BANK_SETTINGS_PREVIEW?: string;
+    readonly VITE_BANK_PREVIEW_BANK_CODE?: string;
+    readonly VITE_BANK_PREVIEW_ACCOUNT?: string;
+    readonly VITE_BANK_PREVIEW_ACCOUNT_NAME?: string;
+    readonly VITE_BANK_PREVIEW_MOMO_PHONE?: string;
+    readonly VITE_BANK_PREVIEW_MOMO_NAME?: string;
+    readonly VITE_BANK_PREVIEW_VIETQR_URL?: string;
+    readonly VITE_BANK_PREVIEW_MOMO_QR_URL?: string;
 }
 
 interface ImportMeta {

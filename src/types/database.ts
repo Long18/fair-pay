@@ -452,6 +452,7 @@ export type Database = {
         Row: {
           avatar_image_url: string | null
           bank_info: Json | null
+          momo_info: Json | null
           created_at: string | null
           cta_text: Json | null
           donate_message: Json | null
@@ -1971,6 +1972,7 @@ export type Database = {
           allow_friend_requests: boolean | null
           allow_group_invites: boolean | null
           bank_info: Json | null
+          momo_info: Json | null
           created_at: string | null
           default_currency: string | null
           email_notifications: boolean | null

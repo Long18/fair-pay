@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
 import { EmptyFriends, EmptyGroups } from "./profile-empty-states";
-
 const PROFILE_ACTIVITY_PREVIEW = 6;
 const PROFILE_GROUP_PREVIEW = 4;
 const PROFILE_MY_GROUPS_PREVIEW = 5;

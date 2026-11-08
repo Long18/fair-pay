@@ -127,10 +127,9 @@ export function ReminderSettingsComponent() {
     notify?.({
       type: "success",
       message: t("settings.testEmailSent", "Test email sent"),
-      description: t(
-        "settings.testEmailDescription",
-        `A test reminder has been sent to ${localSettings.email}`
-      ),
+      description: t("settings.testEmailDescription", {
+        email: localSettings.email,
+      }),
     });
   };
 
@@ -147,7 +146,7 @@ export function ReminderSettingsComponent() {
 
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden rounded-xl border shadow-sm">
+      <Card className="overflow-hidden rounded-xl border border-border/60 shadow-none">
         <CardHeader className="border-b bg-muted/30">
           <div className="flex items-center gap-2">
             <span className="inline-flex size-9 items-center justify-center rounded-lg border bg-background text-primary">
@@ -278,7 +277,7 @@ export function ReminderSettingsComponent() {
         </CardContent>
       </Card>
 
-      <Card className="rounded-xl border shadow-sm">
+      <Card className="rounded-xl border border-border/60 shadow-none">
         <CardHeader>
           <div className="flex items-center gap-2">
             <CalendarIcon className="h-5 w-5 text-primary" />

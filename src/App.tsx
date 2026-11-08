@@ -88,6 +88,7 @@ const ConnectionsPage = lazy(() => import("./pages/connections").then(m => ({ de
 const SettingsPage = lazy(() => import("./pages/settings/index"));
 const DonationSettings = lazy(() => import("./pages/settings/donation"));
 const BankSettings = lazy(() => import("./pages/settings/bank"));
+const MomoReceiveSettings = lazy(() => import("./pages/settings/momo"));
 const SepaySettings = lazy(() => import("./pages/settings/sepay"));
 const DonationWidget = lazy(() => import("./components/donation-widget").then(m => ({ default: m.DonationWidget })));
 // Onboarding module - lazy loaded (only needed on first visit)
@@ -611,6 +612,11 @@ function App() {
                     <Route path="/settings/bank" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <BankSettings />
+                      </Suspense>
+                    } />
+                    <Route path="/settings/momo" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <MomoReceiveSettings />
                       </Suspense>
                     } />
                     <Route path="/settings/sepay" element={

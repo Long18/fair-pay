@@ -12,6 +12,13 @@ export interface BankInfo {
   accountName?: string;  // Account holder name
 }
 
+/** Per-user MoMo wallet (manual QR transfer; no auto-settle). */
+export interface MomoInfo {
+  accountName?: string;
+  phone?: string;
+  qrCodeImageUrl?: string;
+}
+
 export interface SepayConfig {
   /** SePay API token (from my.sepay.vn → API Token) for webhook auth */
   api_token: string;
@@ -66,6 +73,7 @@ export interface UserSettings {
 
   // Banking payment fields
   bank_info: BankInfo | null;
+  momo_info: MomoInfo | null;
   qr_code_image_url: string | null;
 
   // SePay Payment Gateway config
