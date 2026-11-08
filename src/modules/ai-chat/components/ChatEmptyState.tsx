@@ -25,7 +25,7 @@ export const ChatEmptyState = memo(function ChatEmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-5 px-2 py-8 sm:px-4 sm:py-10 text-center animate-in fade-in-0 duration-500",
+        "flex flex-col items-center justify-center gap-4 px-2 py-6 sm:px-4 sm:py-8 text-center animate-in fade-in-0 duration-500",
         className,
       )}
     >
@@ -36,19 +36,12 @@ export const ChatEmptyState = memo(function ChatEmptyState({
         <FairPayIcon size={28} className="rounded-sm opacity-90" />
       </div>
 
-      <div className="max-w-md space-y-2">
+      <div className="max-w-sm space-y-2">
         <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
           {t(greetingKey, { name })}
         </h1>
-        <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-left shadow-none sm:text-center">
-          <p className="text-sm leading-relaxed text-muted-foreground">{t("aiChat.welcome")}</p>
-        </div>
-        <ul className="max-w-md space-y-1.5 text-left text-xs leading-relaxed text-muted-foreground sm:text-center sm:list-none">
-          <li>{t("aiChat.onboarding.firstSend")}</li>
-          <li>{t("aiChat.onboarding.webgpu")}</li>
-          <li>{t("aiChat.onboarding.privacy")}</li>
-          <li>{t("aiChat.onboarding.capabilities")}</li>
-        </ul>
+        <p className="text-sm leading-snug text-muted-foreground">{t("aiChat.welcome")}</p>
+        <p className="text-xs text-muted-foreground/80">{t("aiChat.empty.hint")}</p>
       </div>
     </div>
   );

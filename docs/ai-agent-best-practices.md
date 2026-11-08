@@ -71,6 +71,22 @@ Keep separate loops only if:
 
 Until then, prefer **skills** (system prompt tiers), **tools** (MCP + legacy reads), and **deterministic planner** steps.
 
+## Read intent registry (P0)
+
+Declarative read queries live in [`read-intent-registry.ts`](../src/modules/ai-chat/orchestrator/read-intent-registry.ts). Each entry defines:
+
+| Field | Purpose |
+|-------|---------|
+| `id` | Stable name for tests and docs |
+| `priority` | When multiple patterns match, highest wins |
+| `matches(text)` | Intent detection (regex + guards) |
+| `toolName` / `toolArguments` | First planner round |
+| `format` / `beforeFormat` | Second round after tool data |
+
+`planReadIntentStep` is the single read planner entry; `FairPayChatOrchestrator` calls it before the expense-write `planDeterministicStep`.
+
+**Add a new read intent:** append to `READ_INTENT_REGISTRY`, add a `matches` test in `orchestrator/__tests__/read-intent-registry.test.ts`, and extend `isPlannerOnlyUserMessage` coverage via `isReadIntentMessage`.
+
 ## Product coverage (honest scope)
 
 | Area | In-app agent today |

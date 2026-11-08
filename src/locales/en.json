@@ -2400,7 +2400,10 @@
     "noPreviousChats": "No previous chats",
     "deleteChat": "Delete",
     "today": "Today",
-    "welcome": "Ask about balances, groups, recent expenses, or prepare a safe group expense preview.",
+    "welcome": "Balances, groups, expenses, or a group expense preview.",
+    "empty": {
+      "hint": "First message may download the on-device model. Use the shortcuts below."
+    },
     "weakModelWarning": {
       "title": "This model struggles with expense chat",
       "body": "Switch to Hermes 3 · Llama 3.2 3B (or larger) for reliable Vietnamese expense previews.",

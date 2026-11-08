@@ -14,13 +14,8 @@ import {
 } from '../utils/vietnamese-expense-intent'
 import { extractDirectiveJson, normalizeModelOutput } from '../utils/normalize-model-output'
 import {
-  planDebtSummaryStep,
-  planGroupListStep,
-  planFriendsListStep,
-  planRecentExpensesStep,
-  planRecentExpenseCommentsStep,
-  planExpenseCommentsThreadStep,
   planDeterministicStep,
+  planReadIntentStep,
   isPlannerOnlyUserMessage,
   type PlannerTurnState,
 } from './deterministic-planner'
@@ -249,21 +244,11 @@ export class FairPayChatOrchestrator {
     }
 
     const runPlanner = (): ReturnType<typeof planDeterministicStep> => {
-      const debt = planDebtSummaryStep(displayUserText, plannerState, { language })
-      if (debt) return debt
-      const groups = planGroupListStep(displayUserText, plannerState, { language })
-      if (groups) return groups
-      const friends = planFriendsListStep(displayUserText, plannerState, {
+      const readStep = planReadIntentStep(displayUserText, plannerState, {
         language,
         viewerUserId: this.deps.actorUserId,
       })
-      if (friends) return friends
-      const expenses = planRecentExpensesStep(displayUserText, plannerState, { language })
-      if (expenses) return expenses
-      const recentComments = planRecentExpenseCommentsStep(displayUserText, plannerState, { language })
-      if (recentComments) return recentComments
-      const expenseComments = planExpenseCommentsThreadStep(displayUserText, plannerState, { language })
-      if (expenseComments) return expenseComments
+      if (readStep) return readStep
       return planDeterministicStep(expenseContext, plannerState, plannerOptions)
     }
 
