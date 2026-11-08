@@ -25,6 +25,7 @@ import {
 import { formatNumber } from '@/lib/locale-utils';
 import { useHaptics } from '@/hooks/use-haptics';
 import { usePayeeBankSettings } from '@/hooks/payment/use-bank-settings';
+import { paymentMethodSheetClass } from './payment-method-menu-item';
 import {
   generateVietQRUrl,
   generatePaymentReference,
@@ -157,6 +158,7 @@ export function VietQRPaymentDialog({
     <BottomSheet
       open={open}
       onOpenChange={onOpenChange}
+      className={paymentMethodSheetClass}
       title={t('payments.vietqr.title', 'Pay via VietQR')}
       description={t('payments.vietqr.description', 'Scan the QR code with your banking app')}
       footer={footerButtons}
@@ -190,7 +192,7 @@ export function VietQRPaymentDialog({
         ) : qrUrl ? (
           <div className="flex flex-col items-center space-y-4">
             {/* QR Code */}
-            <div className="relative w-64 h-64 rounded-lg border bg-white p-2 shadow-sm">
+            <div className="relative w-full max-w-56 rounded-lg border bg-white p-2 shadow-sm sm:max-w-64">
               <img
                 src={qrUrl}
                 alt="VietQR Code"

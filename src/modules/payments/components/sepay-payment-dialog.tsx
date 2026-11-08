@@ -22,6 +22,7 @@ import {
 import { formatNumber } from '@/lib/locale-utils';
 import { useHaptics } from '@/hooks/use-haptics';
 import { useSepayOrder } from '@/hooks/payment/use-sepay-order';
+import { paymentMethodSheetClass } from './payment-method-menu-item';
 
 interface SepayPaymentDialogProps {
   open: boolean;
@@ -134,6 +135,7 @@ export function SepayPaymentDialog({
     <BottomSheet
       open={open}
       onOpenChange={handleClose}
+      className={paymentMethodSheetClass}
       title={t('payments.sepay.title', 'Pay via QR Transfer')}
       description={t('payments.sepay.description', 'Scan QR code with your banking app to transfer')}
       footer={footerButtons}
