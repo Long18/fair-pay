@@ -20,7 +20,7 @@ Guidance for AI coding agents working in this repository.
    pnpm db:local:bootstrap
    ```
 
-   That runs `db reset` (migrations + config.toml seeds), then applies [`supabase/baseline.sql`](supabase/baseline.sql) (core tables are **not** applied by `supabase start` / `db reset` alone). Do **not** manually re-seed afterward — seeds already ran via config. Prefer remote unless you need a full local DB.
+   Order: `supabase start` → `db reset` (migrations **off**) → [`supabase/baseline.sql`](supabase/baseline.sql) → [`supabase/scripts/local/ensure-baseline-gaps.sql`](supabase/scripts/local/ensure-baseline-gaps.sql) → `supabase migration up` → config.toml seeds. Do **not** use `pnpm supabase db reset` alone (no core tables). Copy keys from `pnpm supabase:status` into `.env.local` (`VITE_SUPABASE_URL=http://127.0.0.1:54321`). Prefer remote unless you need full local schema.
 5. `pnpm dev` → http://localhost:3000
 
 Do **not** assume `pnpm supabase:start` or `pnpm db:reset` alone yields a usable schema.
@@ -78,7 +78,7 @@ Admin page splits target **≤800 LOC** per primary page entry file (hooks + sec
 Project agents live in [`.cursor/agents/`](.cursor/agents/) (local; do not assume they are committed):
 
 - `fairpay-agent-mcp` — MCP Edge Function, catalogs, security boundaries, MCP tests
-- `fairpay-ai-chat` — In-app WebLLM chat (mlc-ai/web-llm): worker/cache, model catalog, compact/full prompts, orchestrator, preview→UI confirm
+- `fairpay-ai-chat` — In-app WebLLM chat (`@mlc-ai/web-llm`, pin in `webllm-app-config.ts`): worker/cache, model catalog, compact/full prompts, orchestrator, preview→UI confirm. Docs: [docs/ai-agent-best-practices.md](docs/ai-agent-best-practices.md), [docs/ai-chat-rea-investigation.md](docs/ai-chat-rea-investigation.md). Validate: `pnpm test:ai-chat` + `pnpm test:mcp`
 - `fairpay-external-agent` — ChatGPT Actions / no-key external agent API (not in-app WebLLM)
 - `tech-debt-triage` — Readonly debt inventory / ranked backlog
 - `debt-cleanup` — Scoped one-ticket cleanup executor

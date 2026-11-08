@@ -64,7 +64,7 @@ export const MCP_TOOLS: readonly McpToolDefinition[] = [
     name: 'fairpay_resolve_expense_context',
     title: 'Resolve FairPay expense context',
     description:
-      'Read-only preflight for an expense request. Confirms actor identity, group-vs-personal scope, group candidates, and member candidates before any preview is created.',
+      'Read-only preflight for an expense request. Confirms actor identity, group-vs-personal scope, group candidates, and member candidates before any preview is created. Never returns status ready without a resolved payer and every participant resolved.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,

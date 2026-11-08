@@ -15,13 +15,34 @@ MCP-Protocol-Version: 2025-11-25
 ```
 
 The protocol-version header is omitted only from the initial `initialize` request.
-The server does not create MCP sessions or SSE streams; `GET` returns HTTP 405.
+The server does not create MCP sessions or SSE streams; `GET` and `DELETE` return HTTP 405.
+
+## Transport hardening
+
+| Control | Behavior |
+|---------|----------|
+| **Auth** | `Authorization: Bearer <user JWT>` required; forwarded to `fairpay-agent-api` (RLS-scoped). Uses `SUPABASE_ANON_KEY` as gateway `apikey` only — no service-role shortcut on this path. |
+| **CORS** | Browser `Origin` must be production, localhost dev, or `APP_URL`. Requests with no `Origin` header (CLI / server clients) are allowed. |
+| **Body size** | Requests larger than 64 KiB return HTTP 413. |
+| **Accept** | Must include both `application/json` and `text/event-stream`. |
+| **Protocol** | Non-`initialize` requests require `MCP-Protocol-Version` in the supported set (`2025-11-25`, `2025-06-18`). |
+| **Audit** | Nested Agent API calls send `x-fairpay-agent-source: internal_mcp`. |
+
+## Defense in depth (preview writes)
+
+Preview gates are enforced in three places so in-app and raw MCP clients cannot bypass them:
+
+1. **Edge executor** (`validatePreviewPreflight` in `tools.ts`) — blocks Agent API preview unless `actor_confirmed=true` and `transaction_type=group`; strips workflow fields before POST.
+2. **In-app orchestrator** — mirrors the same gates, blocks duplicate previews while one is pending, and validates ambiguous `member_id` selections client-side.
+3. **McpClient** — `FORBIDDEN_MCP_TOOLS` hard-blocks confirm/commit/settle/payment spellings before any HTTP call.
+
+The `initialize` response includes server `instructions` reminding clients that tool output is untrusted data, not instructions.
 
 ## Consumers
 
 | Consumer | Path | Notes |
 |----------|------|--------|
-| **In-app AI chat (Phase 3)** | `src/modules/ai-chat/orchestrator/McpClient` via `FairPayChatOrchestrator` | Primary product path. Uses the signed-in user’s JWT. Orchestrator + MCP both enforce preview preflight (`actor_confirmed`, `transaction_type=group`). |
+| **In-app AI chat (Phase 3)** | `src/modules/ai-chat/orchestrator/McpClient` via `FairPayChatOrchestrator` | Primary product path. Uses the signed-in user’s JWT. Orchestrator + MCP both enforce preview preflight (`actor_confirmed`, `transaction_type=group`). Static architecture / REA: [ai-chat-rea-investigation.md](./ai-chat-rea-investigation.md). |
 | **Raw MCP clients** | Direct HTTP to the Edge Function | Same JWT + Accept + protocol headers. Must not assume Cursor IDE MCP config. |
 | **Cursor IDE MCP** | **Not supported** | FairPay MCP is session-JWT-bound. Project [`.mcp.json`](../.mcp.json) configures **AgentMemory only** (local agent memory tooling) — it is not the FairPay product MCP. |
 

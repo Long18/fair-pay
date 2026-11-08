@@ -15,6 +15,8 @@ Prefer **remote** Supabase (see root `AGENTS.md`). Use local only when needed:
 pnpm db:local:bootstrap
 ```
 
+Bootstrap script: [`scripts/local-db-bootstrap.sh`](../scripts/local-db-bootstrap.sh) (baseline → gap fill → migrations → seeds). Local-only gap SQL: [`supabase/scripts/local/ensure-baseline-gaps.sql`](../supabase/scripts/local/ensure-baseline-gaps.sql). For Cursor agents: hosted schema via Supabase MCP; local DB via CLI/`docker exec` — see [`.mcp.README.md`](../.mcp.README.md).
+
 ## When to add a migration
 
 - Any RPC / table / RLS / grant change that must reach production

@@ -22,6 +22,7 @@ When changing FairPay agent tooling, keep these surfaces aligned.
 - [ ] `member_id` still means `group_members.id` (never `profiles.id`)
 - [ ] No confirm / commit / settle / payment tools exposed to MCP or no-key external agents
 - [ ] `pnpm test:mcp` and/or `pnpm test:agent` run for touched domain
+- [ ] In-app ai-chat: `pnpm exec vitest run src/modules/ai-chat/ tests/ai-chat/ src/lib/local-llm/__tests__/` (see [ai-agent-best-practices.md](./ai-agent-best-practices.md))
 - [ ] If OpenAPI YAML changed: `pnpm openapi:sync` (+ `pnpm openapi:lint` when schema structure changes)
 - [ ] GPT instructions doc updated when ChatGPT Actions flow changes
 
