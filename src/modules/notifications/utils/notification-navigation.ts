@@ -50,6 +50,7 @@ export function resolveNotificationTarget(
       if (normalizedStored?.startsWith("/expenses/")) return normalizedStored;
       return stored;
     case "payment_recorded":
+    case "payment_pending_confirmation":
       return normalizedStored ?? "/balances";
     case "recurring_due_reminder":
       return "/recurring-expenses";

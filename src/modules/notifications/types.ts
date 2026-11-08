@@ -3,6 +3,7 @@ export type NotificationType =
   | 'expense_updated'
   | 'expense_deleted'
   | 'payment_recorded'
+  | 'payment_pending_confirmation'
   | 'friend_request'
   | 'friend_accepted'
   | 'added_to_group'

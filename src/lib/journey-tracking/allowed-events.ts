@@ -72,6 +72,8 @@ export const ALLOWED_TRACKING_EVENT_NAMES = [
   "payment_options_opened",
   "payment_method_selected",
   "payment_qr_opened",
+  "payment_momo_manual_opened",
+  "payment_momo_manual_claimed",
   // Group flow
   "group_detail_opened",
   "group_create_button_clicked",

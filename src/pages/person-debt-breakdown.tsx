@@ -32,6 +32,7 @@ import { FloatingBar } from "@/components/ui/floating-stack";
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingBeam } from "@/components/ui/loading-beam";
 import { useDebtSummary } from "@/hooks/balance/use-debt-summary";
+import { useDebtPaymentPayee } from "@/hooks/payment/use-debt-payment-payee";
 import { useDeleteSplits } from "@/hooks/use-delete-splits";
 import { useContributingExpenses } from "@/hooks/use-contributing-expenses";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -100,6 +101,13 @@ export const PersonDebtBreakdown = () => {
     userId!,
     counterparty?.data?.full_name || "",
     counterparty?.data?.avatar_url
+  );
+
+  const debtPaymentPayee = useDebtPaymentPayee(
+    userId,
+    counterparty?.data?.full_name,
+    expenses,
+    summary?.total_i_owe ?? 0,
   );
 
   const { settle, isSettling } = useSettleSplits();
@@ -470,6 +478,9 @@ export const PersonDebtBreakdown = () => {
           isSettlingAll={isSettling}
           onRecordPayment={handleRecordPayment}
           shareVersionSource={shareVersionSource}
+          paymentPayeeId={debtPaymentPayee?.payeeId}
+          paymentPayeeName={debtPaymentPayee?.payeeName}
+          allowSepay={debtPaymentPayee?.allowSepay}
         />
 
         <div className="flex justify-center border-b border-border/60 px-3 py-2.5 sm:px-4">

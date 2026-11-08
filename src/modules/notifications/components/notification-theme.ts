@@ -26,6 +26,7 @@ export type NotificationMeta = {
 const notificationMetaByType: Record<Notification["type"], NotificationMeta> = {
   expense_added: { icon: ReceiptIcon, tone: "accent" },
   payment_recorded: { icon: HandCoinsIcon, tone: "success" },
+  payment_pending_confirmation: { icon: HandCoinsIcon, tone: "warning" },
   friend_request: { icon: UserPlusIcon, tone: "info" },
   friend_accepted: { icon: UsersIcon, tone: "brand" },
   added_to_group: { icon: UsersIcon, tone: "brand" },
