@@ -87,6 +87,20 @@ describe("read-intent golden phrases", () => {
   );
 });
 
+describe("assistant meta golden phrases", () => {
+  it.each([
+    "bạn có thể làm gì",
+    "những khả năng bạn có thể làm trong fairpay nè",
+    "làm 10 thứ ở trên đi",
+    "Tổng hợp FairPay",
+  ])("classifies meta intent for %s", (text) => {
+    const caps = looksLikeCapabilitiesQuery(text);
+    const digest = looksLikeReadDigestQuery(text);
+    expect(caps || digest).toBe(true);
+    expect(matchReadIntent(text)).toBeNull();
+  });
+});
+
 describe("guessReadIntentId golden phrases", () => {
   it.each(GUESS_GOLDEN.map((c) => [c.text, c.expectedId] as const))(
     "guessReadIntentId(%j) -> %s",
