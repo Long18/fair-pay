@@ -112,7 +112,9 @@ function buildCompactToolsSection(): string {
 - fairpay_preview_expense: group expense preview only after resolve context is ready. User confirms in UI.
 
 Example first reply for "how much do I owe?":
-{"type":"tool_call","name":"get_debt_summary","arguments":{}}`;
+{"type":"tool_call","name":"get_debt_summary","arguments":{}}
+
+Named group (members/expenses): fairpay_list_groups, then get_group_details with group_id.`;
 }
 
 function buildFullToolsSection(): string {

@@ -6,6 +6,7 @@ import {
   type ParsedExpenseContext,
 } from "../utils/transaction-scope";
 import { shouldAutoStartExpenseWorkflow } from "../utils/vietnamese-expense-intent";
+import { groupsFromListPayload, pickGroupId } from "../utils/pick-group";
 import type { PlannerDecision, PlannerTurnState } from "./planner-types";
 import {
   extractExpenseIdFromText,
@@ -16,47 +17,12 @@ import {
 } from "./read-intent-registry";
 
 export type { PlannerDecision, PlannerTurnState } from "./planner-types";
-export { extractExpenseIdFromText, planReadIntentStep, matchReadIntent } from "./read-intent-registry";
-
-interface GroupRow {
-  id: string;
-  name?: string;
-}
-
-function normalizeName(value: string): string {
-  return value.normalize("NFKC").trim().toLowerCase().replace(/\s+/g, " ");
-}
-
-function groupsFromListPayload(data: unknown): GroupRow[] {
-  if (typeof data !== "object" || data === null) return [];
-  const groups = (data as { groups?: unknown }).groups;
-  if (!Array.isArray(groups)) return [];
-  return groups.filter(
-    (g): g is GroupRow =>
-      typeof g === "object" && g !== null && typeof (g as GroupRow).id === "string",
-  );
-}
-
-function pickGroupId(
-  groups: GroupRow[],
-  groupNameHint: string | null,
-  selectedGroupId?: string,
-): { groupId: string } | { ask: true } | { ambiguous: GroupRow[] } {
-  if (selectedGroupId) return { groupId: selectedGroupId };
-
-  if (groupNameHint) {
-    const hint = normalizeName(groupNameHint);
-    const matches = groups.filter((g) => normalizeName(g.name ?? "") === hint);
-    if (matches.length === 1) return { groupId: matches[0].id };
-    const partial = groups.filter((g) => normalizeName(g.name ?? "").includes(hint));
-    if (partial.length === 1) return { groupId: partial[0].id };
-    if (partial.length > 1) return { ambiguous: partial };
-  }
-
-  if (groups.length === 1) return { groupId: groups[0].id };
-  if (groups.length === 0) return { ask: true };
-  return { ask: true };
-}
+export {
+  extractExpenseIdFromText,
+  planReadIntentStep,
+  matchReadIntent,
+  plannerStatePatchAfterReadTool,
+} from "./read-intent-registry";
 
 function resolvedMemberId(entry: unknown): string | null {
   if (typeof entry !== "object" || entry === null) return null;

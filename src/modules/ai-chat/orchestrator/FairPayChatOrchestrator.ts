@@ -16,6 +16,7 @@ import { extractDirectiveJson, normalizeModelOutput } from '../utils/normalize-m
 import {
   planDeterministicStep,
   planReadIntentStep,
+  plannerStatePatchAfterReadTool,
   isPlannerOnlyUserMessage,
   type PlannerTurnState,
 } from './deterministic-planner'
@@ -393,6 +394,13 @@ export class FairPayChatOrchestrator {
 
       const toolResult = await this.executeToolCall(toolCall, currentPreview)
       plannerState = {
+        ...plannerState,
+        ...plannerStatePatchAfterReadTool(
+          displayUserText,
+          toolCall.function.name,
+          toolResult.modelData,
+          plannerState,
+        ),
         lastToolName: toolCall.function.name,
         lastToolData: toolResult.modelData,
       }

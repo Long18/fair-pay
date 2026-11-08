@@ -87,6 +87,12 @@ Declarative read queries live in [`read-intent-registry.ts`](../src/modules/ai-c
 
 **Add a new read intent:** append to `READ_INTENT_REGISTRY`, add a `matches` test in `orchestrator/__tests__/read-intent-registry.test.ts`, and extend `isPlannerOnlyUserMessage` coverage via `isReadIntentMessage`.
 
+**Golden phrase eval:** regression table for real user / quick-action copy lives in [`read-intent-golden.test.ts`](../src/modules/ai-chat/orchestrator/__tests__/read-intent-golden.test.ts) (Vietnamese + English, i18n suggestions, negatives). After changing `matches` regex or priorities, run:
+
+```bash
+pnpm exec vitest run src/modules/ai-chat/orchestrator/__tests__/read-intent-golden.test.ts
+```
+
 **Hollow refusal recovery:** if the local model returns a generic “I don’t have information…” final JSON, `looksLikeHollowRefusal` + `guessReadIntentId` forces a read tool call instead of showing the refusal. Quick-action pill prompts in i18n are aligned to `matchReadIntent` so they stay planner-only (no WebLLM wait).
 
 ## Product coverage (honest scope)
