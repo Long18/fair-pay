@@ -89,7 +89,14 @@
     "createYourAccount": "Create your account",
     "joinToManage": "Join {{appName}} to manage your shared expenses",
     "emailAddress": "Email address",
-    "emailPlaceholder": "name@example.com",
+    "emailPlaceholder": "Enter your email",
+    "passwordPlaceholder": "Enter your password",
+    "passwordCreatePlaceholder": "Create a password",
+    "passwordHintMinLength": "At least 6 characters",
+    "devSectionTitle": "Local development",
+    "devQuickLoginAdmin": "Admin",
+    "devQuickLoginModerator": "Moderator",
+    "devQuickLoginUser": "User",
     "emailRequired": "Email is required",
     "invalidEmail": "Please enter a valid email address",
     "passwordRequired": "Password is required",
@@ -122,7 +129,8 @@
     "backToLogin": "Back to login",
     "oauthMergedAccountHint": "This sign-in was linked to an account that was merged. Try again, or use another email on the same FairPay profile.",
     "oauthError": "Sign-in failed. Please try again.",
-    "mergedAccountSignOut": "Sign out to continue with your primary account"
+    "mergedAccountSignOut": "Sign out to continue with your primary account",
+    "accountDeactivated": "This account has been deactivated. Contact your administrator if you need access again."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -930,8 +938,20 @@
     "groups": "Groups",
     "history": "Payment History",
     "momo": {
+      "accountNameLabel": "Account name",
+      "claimAlreadyPending": "You already reported this payment — waiting for {{name}} to confirm.",
+      "claimError": "Could not send payment notice. {{message}}",
+      "claimSubmitting": "Submitting…",
+      "claimSuccess": "Submitted — waiting for {{name}} to confirm receipt.",
       "description": "Scan the QR code with your MoMo app to pay",
+      "done": "I have paid",
       "error": "Failed to create payment request",
+      "label": "MoMo QR",
+      "manualPayDescription": "Pay {{amount}} to {{name}}",
+      "payerManualHint": "After you transfer in MoMo, tap \"I have paid\" so the recipient can confirm in FairPay.",
+      "phoneLabel": "Phone",
+      "qrAlt": "MoMo payment QR",
+      "sublabel": "Scan payee MoMo QR",
       "instructions": "Please include the reference code in the transfer note",
       "noUnpaidExpenses": "No unpaid expenses found",
       "payTo": "Pay to {{name}}",
@@ -1134,7 +1154,16 @@
     "1weekBefore": "1 week before",
     "2weeksBefore": "2 weeks before",
     "3daysBefore": "3 days before",
+    "momoReceive": {
+      "configure": "Configure MoMo",
+      "openSettings": "Go to MoMo settings",
+      "pageDescription": "Name and phone are enough for friends to pay you. Confirm MoMo receipts manually in FairPay.",
+      "settingsLinkDescription": "Set your MoMo name and phone so others can pay you.",
+      "title": "MoMo receive settings"
+    },
     "bank": {
+      "adminOnly": "VietQR bank setup is available to administrators only. Configure MoMo to receive payments from friends.",
+      "adminPageDescription": "Configure your bank account so others can pay you via VietQR.",
       "accountName": "Account Holder Name",
       "accountNameHelp": "Enter exactly as shown on your bank account",
       "accountNumber": "Account Number",
@@ -1145,14 +1174,38 @@
       "cleared": "Bank settings cleared",
       "configured": "Your bank account is configured. Others can pay you via VietQR.",
       "description": "Configure your bank account to receive payments via VietQR",
+      "devPreviewHint": "Using sample data (dev preview).",
       "fillToPreview": "Fill in details to preview QR",
+      "pageDescription": "Set up how others can pay you via VietQR or MoMo.",
       "notConfigured": "Set up your bank account so others can pay you via VietQR.",
       "preview": "QR Preview",
       "previewNote": "Sample QR with 10,000 VND",
       "saveError": "Failed to save bank settings",
       "saved": "Bank settings saved successfully",
       "selectBank": "Select your bank",
-      "title": "Bank Account Settings"
+      "tabs": {
+        "momo": "MoMo",
+        "vietqr": "VietQR"
+      },
+      "title": "Bank Account Settings",
+      "momo": {
+        "accountName": "Full name (account holder)",
+        "accountNamePlaceholder": "NGUYEN VAN A",
+        "allFieldsRequired": "Full name and phone number are required",
+        "clear": "Remove MoMo info",
+        "clearError": "Failed to clear MoMo settings",
+        "cleared": "MoMo settings cleared",
+        "confirmSave": "Save anyway",
+        "confirmTitle": "Confirm save MoMo settings",
+        "manualConfirmWarning": "MoMo payments are not confirmed automatically. You will need to mark payments as received manually in FairPay.",
+        "phone": "Phone number",
+        "qrCode": "MoMo QR code image",
+        "qrHelp": "Optional: upload a receive QR from the MoMo app.",
+        "qrPreviewAlt": "MoMo QR preview",
+        "saveError": "Failed to save MoMo settings",
+        "saved": "MoMo settings saved successfully",
+        "schemaNotReady": "MoMo settings need a database update. Apply migration 20261108103000_add_momo_info_to_user_settings.sql (run `pnpm db:local:bootstrap` locally or `supabase db push` on your project), then reload and try again."
+      }
     },
     "calendarDescription": "Add recurring expenses to your calendar automatically",
     "calendarInfo": "Calendar events are created 24 hours before each expense is due. You can customize event details in your calendar app.",
@@ -1163,6 +1216,8 @@
     "dailyDigestDescription": "Summary of expenses due today",
     "donation": {
       "accountName": "Account Holder Name",
+      "amount": "Suggested Amount (VND)",
+      "amountLabel": "Suggested amount",
       "avatar": "Avatar Image",
       "bankAccount": "Account Number",
       "bankApp": "Bank App",
@@ -1171,6 +1226,7 @@
       "bankInfo": "Bank Information",
       "bankInfoDescription": "Configure VietQR bank information for direct app deeplinks",
       "chooseBank": "Choose your bank app",
+      "copyButton": "Copy",
       "copyFailed": "Unable to copy {{label}}",
       "copyField": "Copy {{label}}",
       "copySuccess": "{{label}} copied",
@@ -1252,7 +1308,7 @@
     "syncActive": "Sync Active",
     "syncDescription": "Your recurring expenses will appear as calendar events",
     "test": "Test",
-    "testEmailDescription": "A test reminder has been sent to ${settings.email}",
+    "testEmailDescription": "A test reminder has been sent to {{email}}",
     "testEmailSent": "Test email sent",
     "weeklyDigest": "Weekly digest",
     "weeklyDigestDescription": "Summary of expenses due this week"
@@ -1374,7 +1430,15 @@
     "overdue": "Overdue",
     "upcoming": "Upcoming This Week",
     "viewAll": "View All Recurring Expenses",
-    "was": "Was due"
+    "was": "Was due",
+    "push": {
+      "title": "Push Notifications",
+      "description": "Receive browser alerts for activity and reminders",
+      "enable": "Enable push notifications",
+      "enabled": "Push notifications are on",
+      "denied": "Push notifications are blocked in your browser",
+      "unsupported": "Push notifications are not supported in this browser"
+    }
   },
   "activity": {
     "streak": "{{count}} day streak"
@@ -2234,6 +2298,17 @@
     "text": "Split expenses with friends",
     "cta": "Try FairPay free"
   },
+  "guest": {
+    "hero": {
+      "title": "Split money fairly and transparently",
+      "subtitle": "FairPay helps you track debts, group expenses, and settle payments with ease.",
+      "tagline": "Split bills · track balances · settle in one place.",
+      "ctaSignup": "Sign up for free",
+      "ctaLogin": "Sign in",
+      "calculatorLead": "No account yet?",
+      "calculatorLink": "Try the expense calculator"
+    }
+  },
   "experiments": {
     "tabLabel": "Experiments",
     "title": "A/B Experiments",
@@ -2317,9 +2392,10 @@
   },
   "aiChat": {
     "title": "FairPay Assistant",
-    "subtitle": "Local browser AI for FairPay workflows",
+    "subtitle": "On-device help for balances, groups, and expenses",
     "clearChat": "Clear chat",
     "newChat": "New Chat",
+    "history": "History",
     "chatHistory": "Chat History",
     "noPreviousChats": "No previous chats",
     "deleteChat": "Delete",
@@ -2344,14 +2420,18 @@
     "attachComingSoon": "Attach file (coming soon)",
     "micComingSoon": "Voice input (coming soon)",
     "scrollToLatest": "Latest",
+    "scrollToLatestAria": "Scroll to latest message",
     "greeting": {
       "morning": "Good morning, {{name}}",
       "afternoon": "Good afternoon, {{name}}",
       "evening": "Good evening, {{name}}",
       "fallbackName": "there"
     },
+    "quickActionsLabel": "Quick actions",
     "sidebar": {
       "searchPlaceholder": "Search chats…",
+      "emptyHint": "Your chats will show up here after you send a message.",
+      "noSearchResults": "No chats match your search.",
       "today": "Today",
       "yesterday": "Yesterday",
       "previous7Days": "Previous 7 Days",
@@ -2377,15 +2457,34 @@
       "suggestedQuestions": "Suggested questions",
       "footer": "Insights are generated locally in your browser — no data is sent to any server."
     },
+    "onboarding": {
+      "firstSend": "First message downloads or loads the on-device model (may take a minute).",
+      "webgpu": "Use Chrome or Edge with WebGPU enabled for the best experience.",
+      "privacy": "Reads and previews run on your device; only confirmed actions use FairPay servers."
+    },
+    "errors": {
+      "noWebWorker": "Local AI needs a browser that supports Web Workers.",
+      "noWebGpu": "Local AI needs WebGPU — try Chrome or Edge on a recent version.",
+      "webGpuLimits": "This device’s WebGPU limits are too low. Pick a smaller model or use another browser.",
+      "modelNotReady": "Load a local model before chatting (model selector below the input).",
+      "workerFailed": "The on-device AI worker stopped. Refresh the page and try again.",
+      "loadFailed": "Could not load the local AI model. Try another model or free disk space.",
+      "chatFailed": "On-device chat failed. Try again or switch to a recommended model.",
+      "network": "Cannot reach FairPay tools. Check your connection and try again."
+    },
     "status": {
       "unavailable": "Local AI unavailable",
-      "loading": "Loading local model {{pct}}%",
+      "loading": "Downloading model… {{pct}}%",
+      "loadingFromDevice": "Loading from device… {{pct}}%",
+      "preparing": "Preparing local AI…",
+      "loadFailed": "Could not load the model",
       "ready": "Local AI ready",
       "error": "Local AI error",
       "idle": "Choose a local model",
       "idleDetail": "Type a message — the model loads automatically on first send."
     },
     "suggestions": {
+      "label": "Suggestions",
       "whoOwes": "Who owes me money?",
       "recentActivity": "Summarize recent activity",
       "dinnerExpense": "Prepare dinner expense for 4 people",
@@ -2408,6 +2507,7 @@
       "cached": "Downloaded",
       "deleteCache": "Delete cache",
       "loadModel": "Load",
+      "downloadModel": "Download",
       "switchModel": "Switch & load",
       "checkingCache": "Checking…",
       "manageCacheTitle": "Manage downloaded models",
@@ -2420,7 +2520,9 @@
       "loadCached": "Load (cached)",
       "modelsDownloaded_one": "{{count}} model downloaded",
       "modelsDownloaded_other": "{{count}} models downloaded",
-      "noModelsDownloaded": "No models downloaded"
+      "noModelsDownloaded": "No models downloaded",
+      "webLlmRuntime": "WebLLM {{version}} · on-device",
+      "weakForExpenses": "Weak for expenses"
     }
   },
   "about": {
@@ -2478,6 +2580,10 @@
     "openingDescription": "Add the event in the new tab"
   },
   "consent": {
+    "banner": {
+      "short": "We use cookies to keep FairPay reliable and improve your experience."
+    },
+    "customize": "Customize cookies",
     "categories": {
       "experience": "Improve service quality and personalize your experience",
       "marketing": "Show features, offers and content that match your interests",
