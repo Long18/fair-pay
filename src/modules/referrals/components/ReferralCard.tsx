@@ -8,8 +8,9 @@ import { CopyIcon, ShareIcon } from "@/components/ui/icons";
 import { useMyReferralCode } from "../hooks/use-referral";
 import { useExperiment } from "@/modules/experiments";
 import { journeyTracking } from "@/lib/journey-tracking";
+import { cn } from "@/lib/utils";
 
-export function ReferralCard() {
+export function ReferralCard({ className }: { className?: string }) {
   const { t } = useTranslation();
   const { data: code, isLoading } = useMyReferralCode();
   const [copying, setCopying] = useState(false);
@@ -58,7 +59,7 @@ export function ReferralCard() {
   };
 
   return (
-    <Card>
+    <Card className={cn(className)}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ShareIcon className="h-4 w-4 text-muted-foreground" />
@@ -92,7 +93,7 @@ export function ReferralCard() {
           </div>
         ) : null}
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2 max-md:flex-row max-md:flex-wrap">
           <Button
             variant="outline"
             size="sm"
