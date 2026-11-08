@@ -60,6 +60,43 @@ export function messagesFingerprint(messages: readonly ChatMessage[]): string {
   return `${messages.length}:${last.id}:${last.content.length}`;
 }
 
+const PERSISTED_HISTORY_MAX_MESSAGES = 80;
+const PERSISTED_TOOL_CONTENT_MAX_CHARS = 512;
+
+/**
+ * Tool results in orchestrator history can be large (friends list, digest payloads).
+ * Stripping them before localStorage JSON.stringify avoids multi‑MB sync writes that freeze the tab.
+ */
+export function trimHistoryForPersistence(
+  history: readonly ConversationMessage[],
+): ConversationMessage[] {
+  const slice =
+    history.length > PERSISTED_HISTORY_MAX_MESSAGES
+      ? history.slice(-PERSISTED_HISTORY_MAX_MESSAGES)
+      : history;
+
+  return slice.map((msg) => {
+    if (msg.role !== "tool") return { ...msg };
+    const content = msg.content ?? "";
+    if (content.length <= PERSISTED_TOOL_CONTENT_MAX_CHARS) return { ...msg };
+    return {
+      ...msg,
+      content: JSON.stringify({
+        omitted: true,
+        reason: "tool_payload_trimmed_for_storage",
+        previousLength: content.length,
+      }),
+    };
+  });
+}
+
+export function prepareConversationForStorage(conv: Conversation): Conversation {
+  return {
+    ...conv,
+    history: trimHistoryForPersistence(conv.history),
+  };
+}
+
 export function loadStore(): ChatStore | null {
   try {
     const raw = window.localStorage.getItem(STORE_KEY);

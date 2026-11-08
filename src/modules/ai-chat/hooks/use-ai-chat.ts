@@ -38,6 +38,7 @@ import {
   saveStore,
   upsertConversation,
   messagesFingerprint,
+  prepareConversationForStorage,
 } from "../utils/chat-storage";
 import { recognizeReceiptText } from "../utils/receipt-ocr-client";
 import {
@@ -233,6 +234,8 @@ export function useAiChat(): UseAiChatReturn {
 
   // ── Persist store whenever messages or store changes ───────────────────────
   const storeRef = useRef(store);
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const persistIdleRef = useRef<number | null>(null);
   useEffect(() => { storeRef.current = store; }, [store]);
 
   useEffect(() => {
@@ -252,13 +255,45 @@ export function useAiChat(): UseAiChatReturn {
       messages,
       history: historyRef.current,
     };
-    const nextStore = upsertConversation(
-      { ...storeRef.current, activeId: conversationId },
-      conv,
-      { touchActivity },
-    );
-    setStore(nextStore);
-    saveStore(nextStore);
+
+    const flushPersist = () => {
+      const convForStore = prepareConversationForStorage(conv);
+      const nextStore = upsertConversation(
+        { ...storeRef.current, activeId: conversationId },
+        convForStore,
+        { touchActivity },
+      );
+      setStore(nextStore);
+      saveStore(nextStore);
+    };
+
+    if (persistTimerRef.current !== null) {
+      window.clearTimeout(persistTimerRef.current);
+    }
+    if (persistIdleRef.current !== null && typeof cancelIdleCallback !== "undefined") {
+      cancelIdleCallback(persistIdleRef.current);
+      persistIdleRef.current = null;
+    }
+
+    persistTimerRef.current = window.setTimeout(() => {
+      persistTimerRef.current = null;
+      if (typeof requestIdleCallback !== "undefined") {
+        persistIdleRef.current = requestIdleCallback(flushPersist, { timeout: 2_500 });
+      } else {
+        flushPersist();
+      }
+    }, 400);
+
+    return () => {
+      if (persistTimerRef.current !== null) {
+        window.clearTimeout(persistTimerRef.current);
+        persistTimerRef.current = null;
+      }
+      if (persistIdleRef.current !== null && typeof cancelIdleCallback !== "undefined") {
+        cancelIdleCallback(persistIdleRef.current);
+        persistIdleRef.current = null;
+      }
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, conversationId]);
 

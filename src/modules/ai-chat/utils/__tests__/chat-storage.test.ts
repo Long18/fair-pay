@@ -8,6 +8,7 @@ import {
   makeConversation,
   messagesFingerprint,
   normalizeStore,
+  trimHistoryForPersistence,
 } from "../chat-storage";
 
 const STORE_KEY = "fairpay-ai-chat-store-v2";
@@ -104,6 +105,17 @@ describe("chat-storage", () => {
     const loaded = loadStore();
     expect(loaded!.conversations[0].createdAt).toBeTruthy();
     expect(normalizeStore(loaded!).conversations[0].updatedAt).toBeTruthy();
+  });
+
+  it("trimHistoryForPersistence omits large tool payloads", () => {
+    const huge = "x".repeat(2_000);
+    const history: ConversationMessage[] = [
+      { role: "user", content: "hi" },
+      { role: "tool", tool_call_id: "t1", content: huge },
+    ];
+    const trimmed = trimHistoryForPersistence(history);
+    expect(trimmed[1].content).toContain("tool_payload_trimmed_for_storage");
+    expect(trimmed[1].content!.length).toBeLessThan(huge.length);
   });
 
   it("clearStore removes v2 key", () => {
