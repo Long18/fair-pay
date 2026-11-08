@@ -31,7 +31,7 @@ import { LoadingStatusBubble } from "./LoadingStatusBubble";
 import { ModelSelectDialog } from "./ModelSelectDialog";
 import { TypingIndicator } from "./TypingIndicator";
 import { useAiChatContext } from "../AiChatContext";
-import type { ChatMessage as ChatMessageType } from "../types";
+import { messagesForThreadRender } from "../utils/thread-messages";
 
 type ActiveTab = "chat" | "insights";
 type InsightsState = "idle" | "loading" | "ready";
@@ -92,6 +92,11 @@ export const ChatPanelContent = memo(function ChatPanelContent({ onClear }: Chat
     selectConversation,
     deleteConversation,
   } = useAiChatContext();
+
+  const threadMessages = useMemo(
+    () => messagesForThreadRender(messages, isLoading, localLlmStatus),
+    [messages, isLoading, localLlmStatus],
+  );
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [modelDialogOpen, setModelDialogOpen] = useState(false);
@@ -354,9 +359,10 @@ export const ChatPanelContent = memo(function ChatPanelContent({ onClear }: Chat
                 )}
 
                 {/* Messages with date dividers */}
-                {messages.reduce<React.ReactNode[]>((nodes, message, index) => {
+                {threadMessages.reduce<React.ReactNode[]>((nodes, message, index) => {
                   const dateKey = isoDateKey(message.created_at);
-                  const prevDateKey = index > 0 ? isoDateKey(messages[index - 1].created_at) : null;
+                  const prevDateKey =
+                    index > 0 ? isoDateKey(threadMessages[index - 1].created_at) : null;
                   const showDivider = dateKey !== prevDateKey;
 
                   if (showDivider) {
@@ -384,7 +390,8 @@ export const ChatPanelContent = memo(function ChatPanelContent({ onClear }: Chat
                         userInfo={identity}
                         isStreaming={
                           isLoading &&
-                          index === messages.length - 1 &&
+                          localLlmStatus.state !== "loading" &&
+                          index === threadMessages.length - 1 &&
                           message.role === "assistant"
                         }
                       />
@@ -405,9 +412,7 @@ export const ChatPanelContent = memo(function ChatPanelContent({ onClear }: Chat
 
                 {/* Loading status bubble — shown while model is loading/downloading */}
                 {isLoading && localLlmStatus.state === "loading" && (
-                  <div className="py-1">
-                    <LoadingStatusBubble localLlmStatus={localLlmStatus} />
-                  </div>
+                  <LoadingStatusBubble localLlmStatus={localLlmStatus} />
                 )}
 
                 {/* Typing indicator — shown when model is ready but still generating */}

@@ -1,20 +1,12 @@
 /**
- * LoadingStatusBubble — shows agent loading/download status inline in the
- * chat thread, styled like a normal assistant message.
- *
- * Animates the status label character-by-character (type-in → hold → erase),
- * cycling through loading stages until the agent is ready. Respects
- * prefers-reduced-motion by falling back to a static label with a simple fade.
- *
- * Accessibility: the bubble is an aria-live="polite" region so screen readers
- * announce status changes without spamming on every character.
+ * Model load / error status in the chat thread — banner with progress bar,
+ * not a fake assistant message (no typewriter erase on % updates).
  */
 import { memo, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { FairPayIcon } from "@/components/ui/icons";
+import { Progress } from "@/components/ui/progress";
+import { Loader2Icon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
-import { useTypewriterStatus } from "../hooks/use-typewriter-status";
 import type { LocalLlmStatus } from "@/lib/local-llm/types";
 
 interface LoadingStatusBubbleProps {
@@ -26,75 +18,77 @@ export const LoadingStatusBubble = memo(function LoadingStatusBubble({
 }: LoadingStatusBubbleProps) {
   const { t } = useTranslation();
 
-  const label = useMemo(() => {
-    switch (localLlmStatus.state) {
-      case "loading": {
-        const pct = Math.round(localLlmStatus.progress * 100);
-        return localLlmStatus.fromCache
-          ? t("aiChat.status.loadingFromDevice", { pct })
-          : t("aiChat.status.loading", { pct });
-      }
-      case "error":
-        return t("aiChat.status.loadFailed");
-      default:
-        return t("aiChat.status.preparing");
+  const { title, hint, pct, isError } = useMemo(() => {
+    if (localLlmStatus.state === "loading") {
+      const progress = Math.min(100, Math.max(0, Math.round(localLlmStatus.progress * 100)));
+      return {
+        title: localLlmStatus.fromCache
+          ? t("aiChat.status.loadingFromDevice", { pct: progress })
+          : t("aiChat.status.loading", { pct: progress }),
+        hint: localLlmStatus.fromCache
+          ? t("aiChat.status.loadingHintCached")
+          : t("aiChat.status.loadingHintDownload"),
+        pct: progress,
+        isError: false,
+      };
     }
+    if (localLlmStatus.state === "error") {
+      return {
+        title: localLlmStatus.message || t("aiChat.status.loadFailed"),
+        hint: t("aiChat.status.loadingHintError"),
+        pct: 0,
+        isError: true,
+      };
+    }
+    return {
+      title: t("aiChat.status.preparing"),
+      hint: t("aiChat.status.idleDetail"),
+      pct: 0,
+      isError: false,
+    };
   }, [localLlmStatus, t]);
 
-  const isActive =
-    localLlmStatus.state === "loading" || localLlmStatus.state === "idle";
-
-  const { displayText, isAnimating } = useTypewriterStatus(label, isActive);
-
-  const isError = localLlmStatus.state === "error";
+  const showProgress = localLlmStatus.state === "loading";
 
   return (
-    <div className="flex gap-3">
-      {/* Avatar — same as ChatMessage assistant avatar */}
-      <div className="relative shrink-0">
-        <Avatar className="h-8 w-8 border bg-background">
-          <AvatarFallback className="bg-background p-1 text-primary">
-            <FairPayIcon size={22} className="rounded-sm" />
-          </AvatarFallback>
-        </Avatar>
-        {/* Status dot */}
-        <span
-          className={cn(
-            "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-background",
-            isError
-              ? "bg-destructive"
-              : "bg-amber-500 animate-pulse",
-          )}
-        />
-      </div>
-
-      {/* Bubble */}
-      <div
-        // aria-live="polite" — announces full text changes, not individual chars.
-        // aria-atomic="true" — reader reads the whole updated string at once.
-        aria-live="polite"
-        aria-atomic="true"
-        className={cn(
-          "relative flex min-h-[36px] min-w-[48px] items-center rounded-2xl rounded-tl-sm border px-4 py-2 text-sm shadow-sm",
-          isError
-            ? "border-destructive/20 bg-destructive/10 text-destructive"
-            : "bg-card text-card-foreground",
-          // Fade in the bubble itself
-          "animate-in fade-in duration-200",
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      className={cn(
+        "my-2 rounded-xl border p-4 shadow-sm animate-in fade-in duration-200",
+        isError
+          ? "border-destructive/25 bg-destructive/5"
+          : "border-primary/15 bg-primary/[0.04]",
+      )}
+    >
+      <div className="flex gap-3">
+        {!isError && (
+          <Loader2Icon
+            size={20}
+            className="mt-0.5 shrink-0 animate-spin text-primary"
+            aria-hidden
+          />
         )}
-      >
-        {/* Visible text — screen readers get the full label via aria-live,
-            so hiding the cursor character from them is intentional */}
-        <span aria-hidden="true">
-          {displayText}
-          {/* Blinking cursor shown only while typing/holding */}
-          {isAnimating && (
-            <span className="ml-0.5 inline-block h-[1em] w-px animate-[blink_1s_step-end_infinite] bg-current align-middle" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <p
+            className={cn(
+              "text-sm font-medium leading-snug",
+              isError ? "text-destructive" : "text-foreground",
+            )}
+          >
+            {title}
+          </p>
+          <p className="text-xs leading-relaxed text-muted-foreground">{hint}</p>
+          {showProgress && (
+            <>
+              <Progress value={pct} className="h-1.5" aria-label={title} />
+              <p className="text-right text-[11px] font-medium tabular-nums text-muted-foreground">
+                {pct}%
+              </p>
+            </>
           )}
-        </span>
-
-        {/* Screen-reader-only full label — not affected by animation */}
-        <span className="sr-only">{label}</span>
+        </div>
       </div>
     </div>
   );

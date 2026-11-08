@@ -69,6 +69,22 @@ pnpm test:mcp
 
 `webllm-catalog-upstream.test.ts` asserts every picker model id exists in `prebuiltAppConfig`.
 
+## Read-only capabilities (planner-first)
+
+These questions should hit **deterministic planner** → tools → formatters **without** trusting the local LLM for facts:
+
+| User intent (examples) | Tool | Transport |
+|------------------------|------|-----------|
+| Nợ / ai nợ tôi | `get_debt_summary` | Edge `ai-chat` |
+| Nhóm / tham gia nhóm nào | `fairpay_list_groups` | MCP |
+| Bạn bè / những bạn nào | `get_friends` | Edge `ai-chat` (deploy after code change) |
+| Top chi / thu chi | `get_expenses` + sort | Edge `ai-chat` |
+| Bình luận gần đây / thread | `get_recent_expense_comments` / `get_expense_comments` | Edge `ai-chat` |
+
+If the model still answers with “Tôi không có thông tin…”, the orchestrator **re-plans** when `isPlannerOnlyUserMessage` is true.
+
+**Write / money / confirm:** preview expense via MCP only; confirm stays in FairPay UI (forbidden MCP tools).
+
 ## Out of scope (unless product asks)
 
 - `fairpay-agent-orchestrator` / `OPENAI_API_KEY` / `VITE_AI_CHAT_CLOUD_ORCHESTRATOR`

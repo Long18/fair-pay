@@ -55,6 +55,45 @@ async function executeTool(
         const { data, error } = await q
         return error ? { result: null, error: error.message } : { result: data }
       }
+      case 'get_expense_comments': {
+        const expenseId = args.expense_id as string
+        if (!expenseId) return { result: null, error: 'expense_id is required' }
+        const { data, error } = await supabase.rpc('get_expense_comments', { p_expense_id: expenseId })
+        return error ? { result: null, error: error.message } : { result: data }
+      }
+      case 'get_friends': {
+        const { data, error } = await supabase
+          .from('friendships')
+          .select(`
+            id,
+            user_a,
+            user_b,
+            user_a_profile:profiles!friendships_user_a_fkey(id, full_name, email),
+            user_b_profile:profiles!friendships_user_b_fkey(id, full_name, email)
+          `)
+          .or(`user_a.eq.${userId},user_b.eq.${userId}`)
+          .eq('status', 'accepted')
+          .limit(50)
+        return error ? { result: null, error: error.message } : { result: data }
+      }
+      case 'get_recent_expense_comments': {
+        const rawLimit = Number(args.limit) || 15
+        const limit = Math.min(Math.max(rawLimit, 1), 30)
+        const { data, error } = await supabase
+          .from('expense_comments')
+          .select(`
+            id,
+            content,
+            created_at,
+            expense_id,
+            profiles ( full_name ),
+            expenses ( id, description, expense_date, group_id )
+          `)
+          .is('parent_id', null)
+          .order('created_at', { ascending: false })
+          .limit(limit)
+        return error ? { result: null, error: error.message } : { result: data }
+      }
       default:
         return { result: null, error: `Unknown tool: ${toolName}` }
     }

@@ -20,6 +20,7 @@ import ChatMessage from "./ChatMessage";
 import { LoadingStatusBubble } from "./LoadingStatusBubble";
 import { TypingIndicator } from "./TypingIndicator";
 import { useAiChatContext } from "../AiChatContext";
+import { messagesForThreadRender } from "../utils/thread-messages";
 
 function formatDateDivider(
   iso: string,
@@ -83,7 +84,11 @@ export const ChatThread = memo(function ChatThread({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const lastMessageCountRef = useRef(messages.length);
-  const isEmpty = messages.length === 0 && !pendingPreview;
+  const threadMessages = useMemo(
+    () => messagesForThreadRender(messages, isLoading, localLlmStatus),
+    [messages, isLoading, localLlmStatus],
+  );
+  const isEmpty = threadMessages.length === 0 && !pendingPreview;
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -123,10 +128,10 @@ export const ChatThread = memo(function ChatThread({
         <div className="mx-auto max-w-3xl px-4 py-5 space-y-1">
           {isEmpty && emptyState}
 
-          {messages.reduce<ReactNode[]>((nodes, message, index) => {
+          {threadMessages.reduce<ReactNode[]>((nodes, message, index) => {
             const dateKey = isoDateKey(message.created_at);
             const prevDateKey =
-              index > 0 ? isoDateKey(messages[index - 1].created_at) : null;
+              index > 0 ? isoDateKey(threadMessages[index - 1].created_at) : null;
             const showDivider = dateKey !== prevDateKey;
 
             if (showDivider) {
@@ -158,7 +163,8 @@ export const ChatThread = memo(function ChatThread({
                   userInfo={identity}
                   isStreaming={
                     isLoading &&
-                    index === messages.length - 1 &&
+                    localLlmStatus.state !== "loading" &&
+                    index === threadMessages.length - 1 &&
                     message.role === "assistant"
                   }
                 />
@@ -178,9 +184,7 @@ export const ChatThread = memo(function ChatThread({
           )}
 
           {isLoading && localLlmStatus.state === "loading" && (
-            <div className="py-1">
-              <LoadingStatusBubble localLlmStatus={localLlmStatus} />
-            </div>
+            <LoadingStatusBubble localLlmStatus={localLlmStatus} />
           )}
 
           {isLoading &&

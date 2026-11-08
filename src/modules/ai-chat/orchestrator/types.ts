@@ -59,6 +59,7 @@ export interface OrchestratorDeps {
   actorIdentityConfirmed?: boolean;
   actorEmail?: string;
   actorName?: string;
+  actorUserId?: string;
 }
 
 export interface ProcessTurnOptions {

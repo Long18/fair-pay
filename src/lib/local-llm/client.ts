@@ -14,6 +14,7 @@ import {
   type WebLlmModelId,
 } from "./types";
 import { WEBLLM_APP_CONFIG, WEBLLM_LEGACY_APP_CONFIG } from "./webllm-app-config";
+import { createChunkBatcher, createLoadingStatusThrottle } from "./ui-throttle";
 
 type PendingRequest = {
   resolve: (value: unknown) => void;
@@ -28,6 +29,15 @@ type LocalLlmRequestWithoutId =
 const listeners = new Set<LocalLlmStatusListener>();
 const pending = new Map<number, PendingRequest>();
 const chunkListeners = new Map<number, (delta: string) => void>();
+const chunkBatchers = new Map<number, ReturnType<typeof createChunkBatcher>>();
+
+let pendingLoadingStatus: LocalLlmStatus | null = null;
+const flushLoadingStatus = createLoadingStatusThrottle(() => {
+  if (pendingLoadingStatus) {
+    status = pendingLoadingStatus;
+    listeners.forEach((listener) => listener(status));
+  }
+});
 
 let worker: Worker | null = null;
 let requestId = 0;
@@ -89,17 +99,19 @@ function ensureWorker(): Worker {
     const message = event.data;
 
     if (message.type === "loading") {
-      setStatus({
+      pendingLoadingStatus = {
         state: "loading",
         model: message.model,
         progress: message.progress,
         message: message.message,
         fromCache: message.fromCache,
-      });
+      };
+      flushLoadingStatus();
       return;
     }
 
     if (message.type === "ready") {
+      pendingLoadingStatus = null;
       setStatus({ state: "ready", model: message.model });
       if (typeof message.id === "number") {
         pending.get(message.id)?.resolve(status);
@@ -109,11 +121,25 @@ function ensureWorker(): Worker {
     }
 
     if (message.type === "chunk") {
-      chunkListeners.get(message.id)?.(message.delta);
+      const listener = chunkListeners.get(message.id);
+      if (listener) {
+        let batcher = chunkBatchers.get(message.id);
+        if (!batcher) {
+          batcher = createChunkBatcher((delta) => listener(delta));
+          chunkBatchers.set(message.id, batcher);
+        }
+        batcher.push(message.delta);
+      }
       return;
     }
 
     if (message.type === "response") {
+      const batcher = chunkBatchers.get(message.id);
+      if (batcher) {
+        batcher.flush();
+        batcher.dispose();
+        chunkBatchers.delete(message.id);
+      }
       chunkListeners.delete(message.id);
       pending.get(message.id)?.resolve({ message: { content: message.content } });
       pending.delete(message.id);
@@ -149,9 +175,12 @@ function ensureWorker(): Worker {
   return worker;
 }
 
+const LOCAL_LLM_CHAT_TIMEOUT_MS = 90_000;
+
 function postRequest<T>(
   request: LocalLlmRequestWithoutId,
   onChunk?: (delta: string) => void,
+  options?: { timeoutMs?: number },
 ): Promise<T> {
   const id = ++requestId;
   const activeWorker = ensureWorker();
@@ -161,9 +190,35 @@ function postRequest<T>(
   }
 
   return new Promise<T>((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const finish = (fn: () => void) => {
+      if (timer !== undefined) clearTimeout(timer);
+      fn();
+    };
+
+    const disposeChunkBatcher = () => {
+      const batcher = chunkBatchers.get(id);
+      if (batcher) {
+        batcher.dispose();
+        chunkBatchers.delete(id);
+      }
+    };
+
+    if (options?.timeoutMs && options.timeoutMs > 0) {
+      timer = setTimeout(() => {
+        pending.delete(id);
+        chunkListeners.delete(id);
+        disposeChunkBatcher();
+        finish(() => reject(new Error("LOCAL_LLM_CHAT_TIMEOUT")));
+      }, options.timeoutMs);
+    }
+
     pending.set(id, {
-      resolve: (value) => resolve(value as T),
-      reject,
+      resolve: (value) => finish(() => resolve(value as T)),
+      reject: (err) => {
+        disposeChunkBatcher();
+        finish(() => reject(err));
+      },
     });
     activeWorker.postMessage({ id, ...request } satisfies LocalLlmWorkerRequest);
   }).finally(() => {
@@ -346,6 +401,7 @@ export const chat: AssistantChatFn = async (messages, options): Promise<Assistan
       },
     },
     options.onChunk,
+    { timeoutMs: LOCAL_LLM_CHAT_TIMEOUT_MS },
   );
 };
 

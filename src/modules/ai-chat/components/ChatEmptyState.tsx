@@ -47,6 +47,7 @@ export const ChatEmptyState = memo(function ChatEmptyState({
           <li>{t("aiChat.onboarding.firstSend")}</li>
           <li>{t("aiChat.onboarding.webgpu")}</li>
           <li>{t("aiChat.onboarding.privacy")}</li>
+          <li>{t("aiChat.onboarding.capabilities")}</li>
         </ul>
       </div>
     </div>

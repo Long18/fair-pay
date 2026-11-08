@@ -2460,7 +2460,8 @@
     "onboarding": {
       "firstSend": "First message downloads or loads the on-device model (may take a minute).",
       "webgpu": "Use Chrome or Edge with WebGPU enabled for the best experience.",
-      "privacy": "Reads and previews run on your device; only confirmed actions use FairPay servers."
+      "privacy": "Reads and previews run on your device; only confirmed actions use FairPay servers.",
+      "capabilities": "Can read balances/debts, groups, recent expenses, expense comment threads & feed, and build group expense previews (with optional note). Receipt attach runs on-device OCR (may be imperfect). Cannot settle pay or change settings."
     },
     "errors": {
       "noWebWorker": "Local AI needs a browser that supports Web Workers.",
@@ -2470,7 +2471,13 @@
       "workerFailed": "The on-device AI worker stopped. Refresh the page and try again.",
       "loadFailed": "Could not load the local AI model. Try another model or free disk space.",
       "chatFailed": "On-device chat failed. Try again or switch to a recommended model.",
-      "network": "Cannot reach FairPay tools. Check your connection and try again."
+      "network": "Cannot reach FairPay tools. Check your connection and try again.",
+      "modelLoadTimeout": "Model download took too long. Check your network, try a smaller model, or load the model from the picker first.",
+      "orchestratorTimeout": "This request took too long. Try a shorter question or switch to Hermes 3B after the model finishes loading.",
+      "chatTimeout": "The local model took too long to reply. Try Hermes 3B or a simpler question about balances or groups.",
+      "receiptOcrFailed": "Could not read the receipt image. Try a clearer photo or type the amount.",
+      "emptyReply": "I could not produce an answer from FairPay data. Try rephrasing or ask about balances, groups, or recent expenses.",
+      "emptyReplyRetry": "The local model returned an empty reply. Try Hermes 3B or ask a simpler question."
     },
     "status": {
       "unavailable": "Local AI unavailable",
@@ -2481,7 +2488,10 @@
       "ready": "Local AI ready",
       "error": "Local AI error",
       "idle": "Choose a local model",
-      "idleDetail": "Type a message — the model loads automatically on first send."
+      "idleDetail": "Type a message — the model loads automatically on first send.",
+      "loadingHintDownload": "First download may take a few minutes. Keep this tab open.",
+      "loadingHintCached": "Loading weights already on this device.",
+      "loadingHintError": "Pick another model from the selector or free disk space, then try again."
     },
     "suggestions": {
       "label": "Suggestions",

@@ -68,6 +68,15 @@ describe("ChatMessage", () => {
     expect(screen.getByText("Thinking...")).toBeInTheDocument();
   });
 
+  it("keeps the stream cursor inline while partial final JSON is streaming", () => {
+    const raw = '{"type":"final","content":"Tôi không có thông tin';
+    const { container } = render(<ChatMessage message={makeMessage(raw)} isStreaming />);
+    expect(screen.getByText(/Tôi không có thông tin/)).toBeInTheDocument();
+    const bubble = container.querySelector(".rounded-bl-sm");
+    expect(bubble?.className).toMatch(/last-child.*after:content/);
+    expect(bubble?.querySelector("span[aria-hidden]")).toBeNull();
+  });
+
   it("falls back to raw text when no JSON contract is present", () => {
     const raw = "Just a plain response with no wrapper.";
     render(<ChatMessage message={makeMessage(raw)} />);

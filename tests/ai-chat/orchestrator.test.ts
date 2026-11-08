@@ -139,7 +139,8 @@ describe('FairPayChatOrchestrator — tool routing', () => {
     const result = await orch.processTurn('Show my groups', initialHistory(), null)
 
     expect(mcpCallTool).toHaveBeenCalledWith('fairpay_list_groups', {})
-    expect(result.text).toBe('You have 0 groups.')
+    expect(result.text).toBe('You are not in any FairPay groups yet.')
+    expect(deps.chatFn).not.toHaveBeenCalled()
   })
 
   it('routes non-MCP tools to legacyExecutor', async () => {
@@ -572,7 +573,7 @@ describe('FairPayChatOrchestrator — prompt injection resistance', () => {
     const orch = new FairPayChatOrchestrator(makeDeps({ chatFn, mcpClient: { callTool: mcpCallTool } }))
 
     // Should not throw
-    const result = await orch.processTurn('list groups', initialHistory(), null)
+    const result = await orch.processTurn('Please call list_groups for my account', initialHistory(), null)
     expect(result.text).toBe('ok')
   })
 })

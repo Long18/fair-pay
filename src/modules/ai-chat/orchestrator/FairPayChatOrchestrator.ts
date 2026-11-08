@@ -15,10 +15,21 @@ import {
 import { extractDirectiveJson, normalizeModelOutput } from '../utils/normalize-model-output'
 import {
   planDebtSummaryStep,
+  planGroupListStep,
+  planFriendsListStep,
+  planRecentExpensesStep,
+  planRecentExpenseCommentsStep,
+  planExpenseCommentsThreadStep,
   planDeterministicStep,
+  isPlannerOnlyUserMessage,
   type PlannerTurnState,
 } from './deterministic-planner'
 import { parseExpenseContext, effectiveTransactionScope, type ParsedExpenseContext, type TransactionScope } from '../utils/transaction-scope'
+import {
+  groupPreviewReadyMessage,
+  unparsableModelResponse,
+  workflowIncompleteMessage,
+} from '../utils/orchestrator-user-copy'
 import { FORBIDDEN_MCP_TOOLS } from './mcp-client'
 import {
   LEGACY_TOOL_NAMES,
@@ -240,6 +251,19 @@ export class FairPayChatOrchestrator {
     const runPlanner = (): ReturnType<typeof planDeterministicStep> => {
       const debt = planDebtSummaryStep(displayUserText, plannerState, { language })
       if (debt) return debt
+      const groups = planGroupListStep(displayUserText, plannerState, { language })
+      if (groups) return groups
+      const friends = planFriendsListStep(displayUserText, plannerState, {
+        language,
+        viewerUserId: this.deps.actorUserId,
+      })
+      if (friends) return friends
+      const expenses = planRecentExpensesStep(displayUserText, plannerState, { language })
+      if (expenses) return expenses
+      const recentComments = planRecentExpenseCommentsStep(displayUserText, plannerState, { language })
+      if (recentComments) return recentComments
+      const expenseComments = planExpenseCommentsThreadStep(displayUserText, plannerState, { language })
+      if (expenseComments) return expenseComments
       return planDeterministicStep(expenseContext, plannerState, plannerOptions)
     }
 
@@ -287,7 +311,7 @@ export class FairPayChatOrchestrator {
             if (this.deps.cloudChatFn && localLlmFailures < 3) {
               continue
             }
-            const safeText = 'I could not parse the local model response safely. Please try again.'
+            const safeText = unparsableModelResponse(language)
             updatedHistory.push({ role: 'assistant', content: safeText })
             return { text: safeText, updatedHistory, pendingPreview, blockedPreviewReplacement }
           }
@@ -325,6 +349,31 @@ export class FairPayChatOrchestrator {
               } else {
                 continue
               }
+            } else if (isPlannerOnlyUserMessage(displayUserText)) {
+              const replanned = runPlanner()
+              if (replanned?.kind === 'tool') {
+                toolCall = makeManualToolCall({
+                  type: 'tool_call',
+                  name: replanned.name,
+                  arguments: replanned.arguments,
+                })
+              } else if (replanned?.kind === 'final') {
+                updatedHistory.push({ role: 'assistant', content: replanned.content })
+                return {
+                  text: replanned.content,
+                  updatedHistory,
+                  pendingPreview,
+                  blockedPreviewReplacement,
+                }
+              } else {
+                updatedHistory.push({ role: 'assistant', content: directive.content })
+                return {
+                  text: directive.content,
+                  updatedHistory,
+                  pendingPreview,
+                  blockedPreviewReplacement,
+                }
+              }
             } else {
               updatedHistory.push({ role: 'assistant', content: directive.content })
               return {
@@ -359,9 +408,7 @@ export class FairPayChatOrchestrator {
       )
 
       if (pendingPreview) {
-        const doneText = language?.startsWith('vi')
-          ? 'Preview chi tiêu nhóm đã sẵn sàng — hãy xác nhận trên thẻ bên dưới.'
-          : 'Group expense preview is ready — confirm using the card below.'
+        const doneText = groupPreviewReadyMessage(language)
         updatedHistory.push({ role: 'assistant', content: doneText })
         return {
           text: doneText,
@@ -372,7 +419,7 @@ export class FairPayChatOrchestrator {
       }
     }
 
-    const text = 'I could not complete this workflow safely. Please try again with fewer changes.'
+    const text = workflowIncompleteMessage(language)
     updatedHistory.push({ role: 'assistant', content: text })
     return { text, updatedHistory, pendingPreview, blockedPreviewReplacement }
   }

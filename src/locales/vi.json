@@ -2459,7 +2459,8 @@
     "onboarding": {
       "firstSend": "Tin nhắn đầu tiên sẽ tải mô hình trên thiết bị (có thể mất một phút).",
       "webgpu": "Dùng Chrome hoặc Edge bật WebGPU để có trải nghiệm tốt nhất.",
-      "privacy": "Đọc và xem trước chạy trên máy bạn; chỉ thao tác xác nhận mới gọi máy chủ FairPay."
+      "privacy": "Đọc và xem trước chạy trên máy bạn; chỉ thao tác xác nhận mới gọi máy chủ FairPay.",
+      "capabilities": "Đọc nợ/số dư, nhóm, chi tiêu gần đây, bình luận chi phí (feed & theo expense), tạo preview chi nhóm (có thể kèm ghi chú). Đính ảnh hóa đơn chạy OCR trên máy (có thể sai). Không thanh toán/settle, không đổi cài đặt."
     },
     "errors": {
       "noWebWorker": "AI cục bộ cần trình duyệt hỗ trợ Web Worker.",
@@ -2469,7 +2470,13 @@
       "workerFailed": "Worker AI trên thiết bị đã dừng. Tải lại trang và thử lại.",
       "loadFailed": "Không tải được mô hình AI cục bộ. Thử mô hình khác hoặc giải phóng dung lượng.",
       "chatFailed": "Chat cục bộ thất bại. Thử lại hoặc chọn mô hình được đề xuất.",
-      "network": "Không kết nối được công cụ FairPay. Kiểm tra mạng và thử lại."
+      "network": "Không kết nối được công cụ FairPay. Kiểm tra mạng và thử lại.",
+      "modelLoadTimeout": "Tải mô hình quá lâu. Kiểm tra mạng, chọn mô hình nhỏ hơn, hoặc tải mô hình từ bộ chọn trước.",
+      "orchestratorTimeout": "Yêu cầu mất quá nhiều thời gian. Hãy hỏi ngắn hơn hoặc dùng Hermes 3B sau khi mô hình tải xong.",
+      "chatTimeout": "Mô hình cục bộ phản hồi quá lâu. Thử Hermes 3B hoặc hỏi đơn giản về nợ/nhóm.",
+      "receiptOcrFailed": "Không đọc được ảnh hóa đơn. Chụp rõ hơn hoặc nhập số tiền bằng tay.",
+      "emptyReply": "Không tạo được câu trả lời từ dữ liệu FairPay. Thử diễn đạt lại hoặc hỏi về nợ, nhóm, chi tiêu gần đây.",
+      "emptyReplyRetry": "Mô hình cục bộ trả về rỗng. Thử Hermes 3B hoặc câu hỏi đơn giản hơn."
     },
     "status": {
       "unavailable": "AI cục bộ không khả dụng",
@@ -2480,7 +2487,10 @@
       "ready": "AI cục bộ sẵn sàng",
       "error": "Lỗi AI cục bộ",
       "idle": "Chọn mô hình AI cục bộ",
-      "idleDetail": "Nhập tin nhắn — mô hình sẽ tự tải khi gửi lần đầu."
+      "idleDetail": "Nhập tin nhắn — mô hình sẽ tự tải khi gửi lần đầu.",
+      "loadingHintDownload": "Lần tải đầu có thể vài phút. Giữ tab này mở.",
+      "loadingHintCached": "Đang nạp bộ trọng số đã có trên thiết bị.",
+      "loadingHintError": "Chọn mô hình khác hoặc giải phóng dung lượng, rồi thử lại."
     },
     "suggestions": {
       "label": "Gợi ý",

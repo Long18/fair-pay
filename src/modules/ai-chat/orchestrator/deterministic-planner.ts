@@ -1,5 +1,12 @@
 import type { ParsedVietnameseExpenseIntent } from "../utils/vietnamese-expense-intent";
 import { formatDebtSummaryResponse } from "../utils/format-debt-summary";
+import { formatGroupListResponse } from "../utils/format-group-list";
+import {
+  formatExpenseCommentsThread,
+  formatRecentExpenseComments,
+} from "../utils/format-expense-comments";
+import { formatRecentExpensesResponse } from "../utils/format-expenses-list";
+import { formatFriendsListResponse } from "../utils/format-friends-list";
 import {
   buildMissingGroupNameMessage,
   buildPersonalOrLoanGuidance,
@@ -145,9 +152,70 @@ function buildPreviewArgs(
   };
 }
 
-function looksLikeDebtQuery(text: string): boolean {
+export function looksLikeDebtQuery(text: string): boolean {
   // Avoid bare `no` — it matches substrings like "another". No \b for Vietnamese.
-  return /(?:nợ|đang\s+nợ|ai\s+đang\s+nợ|ai\s+nợ|\bdebt\b|\bbalance\b|who\s+owes|how much.*owe)/i.test(text);
+  return /(?:nợ|đang\s+nợ|ai\s+đang\s+nợ|ai\s+nợ|bao nhiêu.*nợ|nợ.*bao nhiêu|\bdebt\b|\bbalance\b|who\s+owes|how much.*owe)/i.test(
+    text,
+  );
+}
+
+export function looksLikeGroupListQuery(text: string): boolean {
+  return /(?:nhóm\s+(?:của\s+)?tôi|danh\s+sách\s+nhóm|các\s+nhóm|tôi\s+ở\s+nhóm|tham\s*gia\s+.*nhóm|nhóm\s+nào|đang\s+(?:ở|tham\s*gia)\s+.*nhóm|which\s+groups|my\s+groups|list\s+groups|what\s+groups)/i.test(
+    text,
+  );
+}
+
+export function looksLikeFriendsQuery(text: string): boolean {
+  return /(?:bạn\s+bè|bạn\s+nào|những\s+bạn|danh\s+sách\s+bạn|friend(?:s)?\s+(?:do\s+i\s+have|list)|who\s+are\s+my\s+friends|connections)/i.test(
+    text,
+  );
+}
+
+export function looksLikeRecentExpensesQuery(text: string): boolean {
+  return /(?:top\s*\d*|khoản\s+chi|chi\s+tiêu|thu\s*chi|expenses?|spending|mức\s+chi|bao\s+nhiêu.*chi)/i.test(
+    text,
+  );
+}
+
+function topNFromText(text: string): number {
+  const match = text.match(/\btop\s*(\d{1,2})\b/i);
+  if (match) return Math.min(Number(match[1]) || 3, 20);
+  if (/top\s*3|ba\s+khoản/i.test(text)) return 3;
+  return 10;
+}
+
+const EXPENSE_ID_RE =
+  /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i;
+
+export function extractExpenseIdFromText(text: string): string | null {
+  const match = text.match(EXPENSE_ID_RE);
+  return match ? match[0] : null;
+}
+
+export function looksLikeRecentCommentsQuery(text: string): boolean {
+  if (extractExpenseIdFromText(text)) return false;
+  return /(?:bình\s*luận|comment).*(?:mới|gần\s*đây|recent|latest)|(?:comment\s+mới|ai\s+đã\s+bình\s*luận|recent\s+comments)/i.test(
+    text,
+  );
+}
+
+export function looksLikeExpenseCommentsQuery(text: string): boolean {
+  const hasId = Boolean(extractExpenseIdFromText(text));
+  return (
+    hasId &&
+    /(?:bình\s*luận|comment|thread|trả\s*lời)/i.test(text)
+  );
+}
+
+export function isPlannerOnlyUserMessage(text: string): boolean {
+  return (
+    looksLikeDebtQuery(text) ||
+    looksLikeGroupListQuery(text) ||
+    looksLikeFriendsQuery(text) ||
+    looksLikeRecentExpensesQuery(text) ||
+    looksLikeRecentCommentsQuery(text) ||
+    looksLikeExpenseCommentsQuery(text)
+  );
 }
 
 export function planDebtSummaryStep(
@@ -163,6 +231,96 @@ export function planDebtSummaryStep(
     };
   }
   return { kind: "tool", name: "get_debt_summary", arguments: {} };
+}
+
+export function planGroupListStep(
+  displayUserText: string,
+  state?: PlannerTurnState,
+  options?: { language?: string },
+): PlannerDecision | null {
+  if (!looksLikeGroupListQuery(displayUserText)) return null;
+  if (state?.lastToolName === "fairpay_list_groups") {
+    return {
+      kind: "final",
+      content: formatGroupListResponse(state.lastToolData, options?.language),
+    };
+  }
+  return { kind: "tool", name: "fairpay_list_groups", arguments: {} };
+}
+
+export function planFriendsListStep(
+  displayUserText: string,
+  state?: PlannerTurnState,
+  options?: { language?: string; viewerUserId?: string },
+): PlannerDecision | null {
+  if (!looksLikeFriendsQuery(displayUserText)) return null;
+  if (state?.lastToolName === "get_friends") {
+    if (!options?.viewerUserId) {
+      return {
+        kind: "final",
+        content:
+          options?.language?.startsWith("vi") ?
+            "Không xác định được tài khoản. Hãy đăng nhập lại." :
+            "Could not resolve your account. Please sign in again.",
+      };
+    }
+    return {
+      kind: "final",
+      content: formatFriendsListResponse(state.lastToolData, options.viewerUserId, options.language),
+    };
+  }
+  return { kind: "tool", name: "get_friends", arguments: {} };
+}
+
+export function planRecentExpensesStep(
+  displayUserText: string,
+  state?: PlannerTurnState,
+  options?: { language?: string },
+): PlannerDecision | null {
+  if (!looksLikeRecentExpensesQuery(displayUserText)) return null;
+  const limit = topNFromText(displayUserText);
+  if (state?.lastToolName === "get_expenses") {
+    return {
+      kind: "final",
+      content: formatRecentExpensesResponse(state.lastToolData, {
+        language: options?.language,
+        topN: limit,
+      }),
+    };
+  }
+  return { kind: "tool", name: "get_expenses", arguments: { limit: Math.max(limit, 10) } };
+}
+
+export function planRecentExpenseCommentsStep(
+  displayUserText: string,
+  state?: PlannerTurnState,
+  options?: { language?: string },
+): PlannerDecision | null {
+  if (!looksLikeRecentCommentsQuery(displayUserText)) return null;
+  if (state?.lastToolName === "get_recent_expense_comments") {
+    return {
+      kind: "final",
+      content: formatRecentExpenseComments(state.lastToolData, options?.language),
+    };
+  }
+  return { kind: "tool", name: "get_recent_expense_comments", arguments: { limit: 15 } };
+}
+
+export function planExpenseCommentsThreadStep(
+  displayUserText: string,
+  state?: PlannerTurnState,
+  options?: { language?: string },
+): PlannerDecision | null {
+  if (!looksLikeExpenseCommentsQuery(displayUserText)) return null;
+  const expenseId = extractExpenseIdFromText(displayUserText);
+  if (!expenseId) return null;
+  if (state?.lastToolName === "get_expense_comments") {
+    return {
+      kind: "final",
+      content: formatExpenseCommentsThread(state.lastToolData, options?.language),
+    };
+  }
+  return { kind: "tool", name: "get_expense_comments", arguments: { expense_id: expenseId } };
 }
 
 export function planDeterministicStep(

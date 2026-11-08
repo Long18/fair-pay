@@ -1,6 +1,6 @@
 // Phase 3 - React state bridge for the FairPay chat orchestrator.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useGetIdentity } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
 import {
@@ -39,9 +39,10 @@ import {
   upsertConversation,
   messagesFingerprint,
 } from "../utils/chat-storage";
+import { recognizeReceiptText } from "../utils/receipt-ocr-client";
 import {
   buildReceiptDraftPrompt,
-  extractReceiptDraftFromFilename,
+  extractReceiptDraft,
 } from "../utils/receipt-ocr-stub";
 import {
   parseExpenseContext,
@@ -50,6 +51,11 @@ import {
 import {
   appendExpenseIntentToUserMessage,
 } from "../utils/vietnamese-expense-intent";
+import { isPlannerOnlyUserMessage } from "../orchestrator/deterministic-planner";
+import { resolveResponseLanguage } from "../utils/detect-user-message-language";
+import { waitForLocalModelReady } from "../utils/wait-for-local-model";
+
+const ORCHESTRATOR_TURN_TIMEOUT_MS = 120_000;
 
 export type { Conversation } from "../utils/chat-storage";
 
@@ -109,6 +115,9 @@ function localizeAiChatError(
     "Local AI chat failed.": "aiChat.errors.chatFailed",
     "Cannot reach FairPay tools. Please check your connection and try again.":
       "aiChat.errors.network",
+    MODEL_LOAD_TIMEOUT: "aiChat.errors.modelLoadTimeout",
+    ORCHESTRATOR_TIMEOUT: "aiChat.errors.orchestratorTimeout",
+    LOCAL_LLM_CHAT_TIMEOUT: "aiChat.errors.chatTimeout",
   };
   const key = known[message];
   return key ? t(key) : message;
@@ -121,7 +130,7 @@ function freshConvId(): string {
 export function useAiChat(): UseAiChatReturn {
   const { data: identity } = useGetIdentity<Profile>();
   const { i18n, t } = useTranslation();
-  const language = i18n.resolvedLanguage || i18n.language;
+  const uiLanguage = i18n.resolvedLanguage || i18n.language;
   const [selectedModel, setSelectedModel] = useState<WebLlmModelId>(() => getSelectedModel());
 
   const systemPrompt = useMemo(
@@ -129,10 +138,10 @@ export function useAiChat(): UseAiChatReturn {
       buildSystemPrompt({
         userName: identity?.full_name,
         userEmail: identity?.email,
-        language,
+        language: uiLanguage,
         tier: resolveSystemPromptTier(selectedModel),
       }),
-    [identity?.full_name, identity?.email, language, selectedModel],
+    [identity?.full_name, identity?.email, uiLanguage, selectedModel],
   );
 
   // ── Store bootstrap ───────────────────────────────────────────────────────
@@ -193,15 +202,32 @@ export function useAiChat(): UseAiChatReturn {
     }
   }, [systemPrompt]);
 
-  useEffect(() => subscribeLocalLlmStatus(setLocalLlmStatus), []);
+  useEffect(
+    () =>
+      subscribeLocalLlmStatus((next) => {
+        startTransition(() => setLocalLlmStatus(next));
+      }),
+    [],
+  );
 
   // Auto-load the selected model on mount if it's already cached on this device
   useEffect(() => {
     const s = getLocalLlmStatus();
     if (s.state !== "idle") return;
-    void checkModelCached(s.model).then((cached) => {
-      if (cached) void loadModel(s.model);
-    });
+
+    const warmup = () => {
+      void checkModelCached(s.model).then((cached) => {
+        if (cached) void loadModel(s.model);
+      });
+    };
+
+    if (typeof requestIdleCallback !== "undefined") {
+      const idleId = requestIdleCallback(warmup, { timeout: 4_000 });
+      return () => cancelIdleCallback(idleId);
+    }
+
+    const timeoutId = window.setTimeout(warmup, 150);
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   // ── Persist store whenever messages or store changes ───────────────────────
@@ -292,10 +318,11 @@ export function useAiChat(): UseAiChatReturn {
       actorIdentityConfirmed: Boolean(identity?.email?.trim() || identity?.full_name?.trim()),
       actorEmail: identity?.email ?? undefined,
       actorName: identity?.full_name ?? undefined,
+      actorUserId: identity?.id,
     });
 
     return orchestratorRef.current;
-  }, [getAccessToken, identity?.email, identity?.full_name]);
+  }, [getAccessToken, identity?.email, identity?.full_name, identity?.id]);
 
   const selectLocalModel = useCallback((model: WebLlmModelId) => {
     setError(null);
@@ -413,28 +440,36 @@ export function useAiChat(): UseAiChatReturn {
 
       setMessages((prev) => [...prev, userMsg, placeholderMsg]);
 
-      if (localLlmStatus.state !== "ready") {
+      const turnLanguage = resolveResponseLanguage(trimmed, uiLanguage);
+      const turnSystemPrompt = buildSystemPrompt({
+        userName: identity?.full_name,
+        userEmail: identity?.email,
+        language: turnLanguage,
+        tier: resolveSystemPromptTier(selectedModel),
+      });
+      if (historyRef.current[0]?.role === "system") {
+        historyRef.current[0] = { role: "system", content: turnSystemPrompt };
+      }
+
+      const plannerOnly = isPlannerOnlyUserMessage(trimmed);
+      const modelReady = getLocalLlmStatus().state === "ready";
+
+      if (!plannerOnly && !modelReady) {
         try {
-          const settled = await new Promise<LocalLlmStatus>((resolve) => {
-            void loadModel(selectedModel);
-            const unsub = subscribeLocalLlmStatus((s) => {
-              if (s.state === "ready" || s.state === "unsupported" || s.state === "error") {
-                unsub();
-                resolve(s);
-              }
-            });
-          });
+          const settled = await waitForLocalModelReady(selectedModel);
 
           if (settled.state === "unsupported") {
             setError(localizeAiChatError(settled.reason, t));
             setMessages((prev) => prev.filter((m) => m.id !== userMsg.id && m.id !== streamingId));
-            setIsLoading(false);
             return;
           }
           if (settled.state === "error") {
-            setError(localizeAiChatError(settled.message, t));
+            const msg =
+              settled.message === "MODEL_LOAD_TIMEOUT"
+                ? "MODEL_LOAD_TIMEOUT"
+                : settled.message;
+            setError(localizeAiChatError(msg, t));
             setMessages((prev) => prev.filter((m) => m.id !== userMsg.id && m.id !== streamingId));
-            setIsLoading(false);
             return;
           }
         } catch (err) {
@@ -442,17 +477,20 @@ export function useAiChat(): UseAiChatReturn {
             err instanceof Error ? err.message : "Failed to load local AI model.";
           setError(localizeAiChatError(raw, t));
           setMessages((prev) => prev.filter((m) => m.id !== userMsg.id && m.id !== streamingId));
-          setIsLoading(false);
           return;
         }
+      } else if (plannerOnly && !modelReady) {
+        void loadModel(selectedModel);
       }
 
       onChunkRef.current = (delta: string) => {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === streamingMsgIdRef.current ? { ...m, content: m.content + delta } : m,
-          ),
-        );
+        const streamId = streamingMsgIdRef.current;
+        if (!streamId || !delta) return;
+        startTransition(() => {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === streamId ? { ...m, content: m.content + delta } : m)),
+          );
+        });
       };
 
       try {
@@ -463,7 +501,7 @@ export function useAiChat(): UseAiChatReturn {
           expenseContext.intent,
           scope,
         );
-        const result = await getOrchestrator().processTurn(
+        const turnPromise = getOrchestrator().processTurn(
           orchestratorUserText,
           historyRef.current,
           pendingPreview,
@@ -472,9 +510,13 @@ export function useAiChat(): UseAiChatReturn {
             expenseIntent: expenseContext.intent,
             expenseContext,
             transactionScope: scope,
-            language,
+            language: turnLanguage,
           },
         );
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          window.setTimeout(() => reject(new Error("ORCHESTRATOR_TIMEOUT")), ORCHESTRATOR_TURN_TIMEOUT_MS);
+        });
+        const result = await Promise.race([turnPromise, timeoutPromise]);
         historyRef.current = result.updatedHistory;
 
         if (result.pendingPreview) {
@@ -491,18 +533,20 @@ export function useAiChat(): UseAiChatReturn {
           });
         }
 
+        const replyText =
+          result.text?.trim() ||
+          (plannerOnly
+            ? t("aiChat.errors.emptyReply", { lng: turnLanguage })
+            : t("aiChat.errors.emptyReplyRetry", { lng: turnLanguage }));
         const finalMsg: ChatMessage = {
           id: makeMessageId("assistant"),
           conversation_id: conversationIdRef.current || "local",
           role: "assistant",
-          content: result.text,
+          content: replyText,
           metadata: { mode: "info", status: "success" },
           created_at: new Date().toISOString(),
         };
-        setMessages((prev) => [
-          ...prev.filter((m) => m.id !== streamingId),
-          ...(result.text ? [finalMsg] : []),
-        ]);
+        setMessages((prev) => [...prev.filter((m) => m.id !== streamingId), finalMsg]);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Local AI chat failed.";
         const friendly =
@@ -518,16 +562,39 @@ export function useAiChat(): UseAiChatReturn {
         setIsLoading(false);
       }
     },
-    [conversationId, getOrchestrator, identity, language, localLlmStatus, pendingPreview, selectedModel, t],
+    [
+      conversationId,
+      getOrchestrator,
+      identity?.email,
+      identity?.full_name,
+      localLlmStatus,
+      pendingPreview,
+      selectedModel,
+      t,
+      uiLanguage,
+    ],
   );
 
   const attachReceiptImage = useCallback(
     async (file: File) => {
-      const draft = extractReceiptDraftFromFilename(file.name);
-      const prompt = buildReceiptDraftPrompt(draft);
-      await sendMessage(prompt);
+      setIsLoading(true);
+      setError(null);
+      try {
+        const ocrText = await recognizeReceiptText(file);
+        const draft = extractReceiptDraft(file.name, { ocrText });
+        const prompt = buildReceiptDraftPrompt(draft);
+        setIsLoading(false);
+        await sendMessage(prompt);
+      } catch {
+        setIsLoading(false);
+        setError(
+          t("aiChat.errors.receiptOcrFailed", {
+            defaultValue: "Could not read the receipt image. Try a clearer photo or type the amount.",
+          }),
+        );
+      }
     },
-    [sendMessage],
+    [sendMessage, t],
   );
 
   const dismissPreview = useCallback(() => {

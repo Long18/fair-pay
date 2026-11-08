@@ -88,6 +88,7 @@ User: "Thêm giao dịch ngày 28/07/2026 với Tuyến mua chuối 10.000 Vnd"
 Use amount 10000 for "10.000 Vnd". After preview, tell the user to confirm the card in the UI.`;
 
 const SHARED_RULES = `Rules:
+- Match the language of the user's latest message in every {"type":"final"} reply (same language as LANGUAGE above — do not switch to English if they wrote Vietnamese, or vice versa).
 - Do not call confirm or commit tools. Never call confirm or commit. Expense confirmation and commit are controlled only by the FairPay UI. Never call settle or payment tools.
 - If a preview is pending, do not create another. Ask the user to confirm or cancel the card.
 - Do not guess members. If names are ambiguous, ask for member_id or email.
@@ -104,6 +105,8 @@ function buildCompactToolsSection(): string {
 - get_debt_details: expense-level debt vs one counterparty (needs counterparty_id from summary)
 - get_group_details: one group — members + recent expenses (needs group_id)
 - get_expenses: recent expenses (optional group_id)
+- get_recent_expense_comments: recent expense comment feed (read-only)
+- get_expense_comments: full thread on one expense (needs expense_id)
 - fairpay_get_me: identity only if missing above or user asks "who am I"
 - fairpay_preview_expense: group expense preview only after resolve context is ready. User confirms in UI.
 
@@ -119,6 +122,8 @@ function buildFullToolsSection(): string {
 - get_debt_details: Expense-level debt breakdown with one counterparty. Requires counterparty_id from get_debt_summary.
 - get_group_details: Group details including members and recent expenses. Requires group_id.
 - get_expenses: Returns recent expenses (optionally filtered by group, date, payer). Use when the user asks "show my expenses", "what did I spend on X", "recent expenses in group Y", or for any historical transaction lookup.
+- get_recent_expense_comments: Returns recent top-level comments on expenses (read-only social context). Use when the user asks about recent comments or activity on expenses.
+- get_expense_comments: Returns the comment thread (with replies) for one expense. Requires expense_id from get_expenses or get_group_details.
 - fairpay_list_group_members: Returns members of a specific group. Use to resolve participant names to member_ids before previewing an expense.
 - fairpay_resolve_expense_context: Read-only preflight for an expense. Confirms actor identity, group-vs-personal scope, group, payer, and participants before fairpay_preview_expense.
 - fairpay_check_expense_duplicates: Checks recent group expenses for a likely duplicate before creating a preview.

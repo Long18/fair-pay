@@ -25,6 +25,9 @@ export const LEGACY_TOOL_NAMES: ReadonlySet<string> = new Set([
   'get_debt_details',
   'get_group_details',
   'get_expenses',
+  'get_friends',
+  'get_expense_comments',
+  'get_recent_expense_comments',
 ])
 
 export const PHASE3_TOOL_DEFINITIONS = [
@@ -247,6 +250,45 @@ export const PHASE3_TOOL_DEFINITIONS = [
         properties: {
           group_id: { type: 'string', description: 'Optional group UUID to filter by' },
           limit: { type: 'number', description: 'Max results (default 10)' },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_friends',
+      description:
+        'List FairPay friends (accepted friendships) for the authenticated user. Use for "who are my friends" questions.',
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_expense_comments',
+      description:
+        'Read the comment thread (top-level comments and replies) on one expense. Requires expense_id from get_expenses or group details.',
+      parameters: {
+        type: 'object',
+        properties: {
+          expense_id: { ...UUID_SCHEMA, description: 'Expense UUID' },
+        },
+        required: ['expense_id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_recent_expense_comments',
+      description:
+        'List recent top-level expense comments across FairPay (read-only). Use for "recent comments" or activity questions.',
+      parameters: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', minimum: 1, maximum: 30, description: 'Max rows (default 15)' },
         },
         required: [],
       },

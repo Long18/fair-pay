@@ -58,10 +58,11 @@ export const ChatMessage = memo(function ChatMessage({ message, userInfo, isStre
   const hasContent = displayContent.length > 0;
   const timestamp = useMemo(() => formatTime(message.created_at), [message.created_at]);
 
-  // Inline cursor rides at the end of the last rendered block (paragraph/li/etc.)
-  const showInlineCursor = !isUser && isStreaming && hasContent && (parsed?.isFinalParsed ?? false);
-  // Placeholder cursor for the empty-content edge case (no tokens yet, or still parsing JSON)
-  const showPlaceholderCursor = !isUser && (!hasContent || (isStreaming && !parsed?.isFinalParsed && !parsed?.isReasoningOpen));
+  const isAssistantStreaming = !isUser && isStreaming && !parsed?.isReasoningOpen;
+  // Cursor at end of last markdown block while any answer text is visible (including partial JSON).
+  const showInlineCursor = isAssistantStreaming && hasContent;
+  // Lone cursor only before the first visible token.
+  const showPlaceholderCursor = isAssistantStreaming && !hasContent;
 
   const [reasoningOpen, setReasoningOpen] = useState(false);
 
@@ -85,7 +86,8 @@ export const ChatMessage = memo(function ChatMessage({ message, userInfo, isStre
             isError && "border-destructive/30 bg-destructive/10 text-destructive",
             // Inline blinking cursor at the end of the last block, so it tracks
             // the last character of the streaming text.
-            showInlineCursor && "[&>*:last-child]:after:content-['▊'] [&>*:last-child]:after:ml-0.5 [&>*:last-child]:after:inline-block [&>*:last-child]:after:animate-pulse [&>*:last-child]:after:text-primary [&>*:last-child]:after:font-normal [&>*:last-child]:after:align-baseline",
+            showInlineCursor &&
+              "[&_*:last-child]:after:ml-0.5 [&_*:last-child]:after:inline-block [&_*:last-child]:after:h-[1.1em] [&_*:last-child]:after:w-0.5 [&_*:last-child]:after:shrink-0 [&_*:last-child]:after:rounded-sm [&_*:last-child]:after:bg-primary/60 [&_*:last-child]:after:align-text-bottom [&_*:last-child]:after:content-['']",
           )}
         >
           {/* Reasoning block — collapsed by default, pulsing while still streaming */}
@@ -126,7 +128,10 @@ export const ChatMessage = memo(function ChatMessage({ message, userInfo, isStre
           </ReactMarkdown>
 
           {showPlaceholderCursor && (
-            <span className="ml-0.5 inline-block h-4 w-1 translate-y-0.5 animate-pulse rounded-full bg-primary" />
+            <span
+              className="inline-block h-[1.1em] w-0.5 shrink-0 rounded-sm bg-primary/60 align-text-bottom"
+              aria-hidden
+            />
           )}
         </div>
 

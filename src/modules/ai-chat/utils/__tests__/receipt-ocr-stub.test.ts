@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildReceiptDraftPrompt,
+  extractReceiptDraft,
   extractReceiptDraftFromFilename,
 } from "../receipt-ocr-stub";
 
@@ -20,6 +21,15 @@ describe("extractReceiptDraftFromFilename", () => {
   it("parses dotted thousands in filename", () => {
     const draft = extractReceiptDraftFromFilename("bill-250.000.jpg");
     expect(draft.amount).toBe(250000);
+  });
+
+  it("uses OCR text for amount and description", () => {
+    const draft = extractReceiptDraft("scan.jpg", {
+      ocrText: "HIGHLAND COFFEE\nTOTAL 89.000 VND",
+    });
+    expect(draft.amount).toBe(89000);
+    expect(draft.description.toLowerCase()).toContain("highland");
+    expect(draft.ocrText).toBeTruthy();
   });
 
   it("falls back when no amount is present", () => {
