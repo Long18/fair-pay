@@ -7,28 +7,28 @@ export interface FriendRow {
 export function friendsFromPayload(data: unknown, viewerId: string): FriendRow[] {
   if (!Array.isArray(data)) return [];
 
-  return data
-    .map((row) => {
-      const r = row as {
-        user_a?: string;
-        user_b?: string;
-        user_a_profile?: { id?: string; full_name?: string | null; email?: string | null };
-        user_b_profile?: { id?: string; full_name?: string | null; email?: string | null };
-      };
-      const profile =
-        r.user_a === viewerId
-          ? r.user_b_profile
-          : r.user_b === viewerId
-            ? r.user_a_profile
-            : null;
-      if (!profile?.id) return null;
-      return {
-        id: profile.id,
-        full_name: profile.full_name,
-        email: profile.email,
-      } satisfies FriendRow;
-    })
-    .filter((f): f is FriendRow => f !== null);
+  const friends: FriendRow[] = [];
+  for (const row of data) {
+    const r = row as {
+      user_a?: string;
+      user_b?: string;
+      user_a_profile?: { id?: string; full_name?: string | null; email?: string | null };
+      user_b_profile?: { id?: string; full_name?: string | null; email?: string | null };
+    };
+    const profile =
+      r.user_a === viewerId
+        ? r.user_b_profile
+        : r.user_b === viewerId
+          ? r.user_a_profile
+          : undefined;
+    if (!profile?.id) continue;
+    friends.push({
+      id: profile.id,
+      full_name: profile.full_name,
+      email: profile.email,
+    });
+  }
+  return friends;
 }
 
 export function formatFriendsListResponse(

@@ -10,7 +10,10 @@ function normalizeName(value: string): string {
 }
 
 export function groupsFromListPayload(data: unknown): GroupRow[] {
-  return normalizeGroupsListPayload(data).groups;
+  return normalizeGroupsListPayload(data).groups.map((g) => ({
+    id: g.id,
+    name: g.name ?? undefined,
+  }));
 }
 
 export type PickGroupResult =

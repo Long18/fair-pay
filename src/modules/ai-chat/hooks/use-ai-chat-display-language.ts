@@ -27,6 +27,6 @@ export function useAiChatDisplayLanguage(): ResponseLanguageCode {
       }
     }
 
-    return resolveResponseLanguage("", uiLang) as ResponseLanguageCode;
+    return resolveResponseLanguage("", uiLang);
   }, [conversations, i18n.language, i18n.resolvedLanguage, messages]);
 }

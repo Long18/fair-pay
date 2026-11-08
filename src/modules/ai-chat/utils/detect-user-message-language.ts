@@ -21,7 +21,7 @@ export function detectUserMessageLanguage(text: string): ResponseLanguageCode {
 export function resolveResponseLanguage(
   userText: string,
   uiLanguageFallback?: string,
-): string {
+): ResponseLanguageCode {
   if (userText.trim()) {
     return detectUserMessageLanguage(userText);
   }
