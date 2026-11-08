@@ -45,23 +45,57 @@ export function BalanceStaticMobileRow({
     ? getOweStatusColors("owe")
     : getOweStatusColors("owed");
 
+  const rowClassName = cn(
+    "flex items-center justify-between gap-2.5 px-3 py-2 sm:px-4 sm:py-2.5",
+    !disabled && BALANCE_TABLE_ROW_HOVER,
+    index % 2 === 0 && BALANCE_TABLE_ROW_ZEBRA_EVEN,
+    !disabled && "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+    fullySettled && `opacity-60 ${getPaymentStateColors("paid").bg}`,
+  );
+
+  if (disabled) {
+    return (
+      <div className={rowClassName} aria-label={balance.counterparty_name}>
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <div className="relative shrink-0">
+            <UserAvatar
+              user={{
+                full_name: balance.counterparty_name,
+                avatar_url: balance.counterparty_avatar_url ?? null,
+              }}
+              size="lg"
+              className="border-2 border-border"
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="typography-row-title truncate">{balance.counterparty_name}</p>
+            {showHistory && lastDateLabel ? (
+              <p className="text-xs text-muted-foreground">{lastDateLabel}</p>
+            ) : null}
+          </div>
+        </div>
+        <span
+          className={cn(
+            "shrink-0 text-sm font-semibold tabular-nums",
+            statusColors.text,
+          )}
+        >
+          {formatCurrency(amountValue, balance.currency ?? "VND")}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div
       role="button"
-      tabIndex={disabled ? -1 : 0}
+      tabIndex={0}
       aria-label={t("dashboard.openBalanceProfile", "Open profile for {{name}}", {
         name: balance.counterparty_name,
       })}
       onClick={onOpenProfile}
       onKeyDown={onButtonKeyDown(onOpenProfile)}
-      className={cn(
-        "flex items-center justify-between gap-2.5 px-3 py-2 sm:px-4 sm:py-2.5",
-        BALANCE_TABLE_ROW_HOVER,
-        index % 2 === 0 && BALANCE_TABLE_ROW_ZEBRA_EVEN,
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
-        disabled && "cursor-not-allowed opacity-50",
-        fullySettled && `opacity-60 ${getPaymentStateColors("paid").bg}`
-      )}
+      className={rowClassName}
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <div className="relative shrink-0">

@@ -54,6 +54,7 @@ import {
 import { isPlannerOnlyUserMessage } from "../orchestrator/deterministic-planner";
 import { resolveResponseLanguage } from "../utils/detect-user-message-language";
 import { waitForLocalModelReady } from "../utils/wait-for-local-model";
+import type { AssistantToolTraceStep } from "../orchestrator/tool-trace";
 
 const ORCHESTRATOR_TURN_TIMEOUT_MS = 120_000;
 
@@ -268,6 +269,7 @@ export function useAiChat(): UseAiChatReturn {
 
   const onChunkRef = useRef<((delta: string) => void) | undefined>(undefined);
   const streamingMsgIdRef = useRef<string | null>(null);
+  const liveToolTraceRef = useRef<AssistantToolTraceStep[]>([]);
 
   const chatFnWithStreaming = useCallback<typeof localLlmChat>(
     (messages, options) => localLlmChat(messages, { ...options, onChunk: onChunkRef.current }),
@@ -429,6 +431,7 @@ export function useAiChat(): UseAiChatReturn {
 
       const streamingId = makeMessageId("assistant-streaming");
       streamingMsgIdRef.current = streamingId;
+      liveToolTraceRef.current = [];
       const placeholderMsg: ChatMessage = {
         id: streamingId,
         conversation_id: activeId,
@@ -511,6 +514,43 @@ export function useAiChat(): UseAiChatReturn {
             expenseContext,
             transactionScope: scope,
             language: turnLanguage,
+            onToolRound: (toolName, phase) => {
+              const streamId = streamingMsgIdRef.current;
+              if (!streamId) return;
+              let next = [...liveToolTraceRef.current];
+              if (phase === "start") {
+                next = next.filter((s) => !(s.name === toolName && s.status === "running"));
+                next.push({ name: toolName, status: "running" });
+              } else {
+                const status = phase === "done" ? "done" : "error";
+                let patched = false;
+                for (let i = next.length - 1; i >= 0; i -= 1) {
+                  if (next[i].name === toolName && next[i].status === "running") {
+                    next[i] = { name: toolName, status };
+                    patched = true;
+                    break;
+                  }
+                }
+                if (!patched) next.push({ name: toolName, status });
+              }
+              liveToolTraceRef.current = next;
+              startTransition(() => {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === streamId
+                      ? {
+                          ...m,
+                          metadata: {
+                            ...m.metadata,
+                            tool_trace: next,
+                            response_language: turnLanguage,
+                          },
+                        }
+                      : m,
+                  ),
+                );
+              });
+            },
           },
         );
         const timeoutPromise = new Promise<never>((_, reject) => {
@@ -538,12 +578,34 @@ export function useAiChat(): UseAiChatReturn {
           (plannerOnly
             ? t("aiChat.errors.emptyReply", { lng: turnLanguage })
             : t("aiChat.errors.emptyReplyRetry", { lng: turnLanguage }));
+        const toolTrace =
+          result.toolTrace?.length ? result.toolTrace : liveToolTraceRef.current.length
+            ? liveToolTraceRef.current
+            : undefined;
+        const structuredUi = Boolean(
+          result.readDigest || result.entitySurface || result.assistantCapabilities,
+        );
         const finalMsg: ChatMessage = {
           id: makeMessageId("assistant"),
           conversation_id: conversationIdRef.current || "local",
           role: "assistant",
           content: replyText,
-          metadata: { mode: "info", status: "success" },
+          metadata: {
+            mode: "info",
+            status: "success",
+            ...(structuredUi || toolTrace?.length
+              ? { response_language: turnLanguage }
+              : {}),
+            ...(result.readDigest
+              ? {
+                  read_digest: result.readDigest,
+                  viewer_user_id: identity?.id,
+                }
+              : {}),
+            ...(result.entitySurface ? { entity_surface: result.entitySurface } : {}),
+            ...(result.assistantCapabilities ? { assistant_capabilities: true } : {}),
+            ...(toolTrace?.length ? { tool_trace: [...toolTrace] } : {}),
+          },
           created_at: new Date().toISOString(),
         };
         setMessages((prev) => [...prev.filter((m) => m.id !== streamingId), finalMsg]);
@@ -559,6 +621,7 @@ export function useAiChat(): UseAiChatReturn {
       } finally {
         onChunkRef.current = undefined;
         streamingMsgIdRef.current = null;
+        liveToolTraceRef.current = [];
         setIsLoading(false);
       }
     },

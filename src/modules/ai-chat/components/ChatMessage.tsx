@@ -10,6 +10,10 @@ import { ChevronDownIcon, FairPayIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import type { ChatMessage as ChatMessageType } from "../types";
 import { parseAssistantStream } from "../utils/parse-assistant-stream";
+import ReadDigestCard from "./ReadDigestCard";
+import ChatEntityListCard from "./ChatEntityListCard";
+import AssistantCapabilitiesCard from "./AssistantCapabilitiesCard";
+import AssistantToolTrace from "./AssistantToolTrace";
 
 interface UserInfo {
   full_name?: string;
@@ -20,6 +24,7 @@ interface ChatMessageProps {
   message: ChatMessageType;
   userInfo?: UserInfo;
   isStreaming?: boolean;
+  onQuickPrompt?: (prompt: string) => void;
 }
 
 function getInitials(name?: string): string {
@@ -43,9 +48,20 @@ function formatTime(iso: string): string {
   }
 }
 
-export const ChatMessage = memo(function ChatMessage({ message, userInfo, isStreaming = false }: ChatMessageProps) {
+export const ChatMessage = memo(function ChatMessage({
+  message,
+  userInfo,
+  isStreaming = false,
+  onQuickPrompt,
+}: ChatMessageProps) {
   const isUser = message.role === "user";
   const isError = message.metadata?.status === "failure";
+  const readDigest = !isUser ? message.metadata?.read_digest : undefined;
+  const entitySurface = !isUser ? message.metadata?.entity_surface : undefined;
+  const assistantCapabilities = !isUser ? message.metadata?.assistant_capabilities : undefined;
+  const toolTrace = !isUser ? message.metadata?.tool_trace : undefined;
+  const responseLanguage = message.metadata?.response_language;
+  const richSurface = Boolean(readDigest || entitySurface || assistantCapabilities);
   const userInitials = useMemo(() => getInitials(userInfo?.full_name), [userInfo?.full_name]);
 
   // Parse the raw model output for assistant messages only
@@ -60,9 +76,9 @@ export const ChatMessage = memo(function ChatMessage({ message, userInfo, isStre
 
   const isAssistantStreaming = !isUser && isStreaming && !parsed?.isReasoningOpen;
   // Cursor at end of last markdown block while any answer text is visible (including partial JSON).
-  const showInlineCursor = isAssistantStreaming && hasContent;
+  const showInlineCursor = isAssistantStreaming && hasContent && !richSurface;
   // Lone cursor only before the first visible token.
-  const showPlaceholderCursor = isAssistantStreaming && !hasContent;
+  const showPlaceholderCursor = isAssistantStreaming && !hasContent && !richSurface;
 
   const [reasoningOpen, setReasoningOpen] = useState(false);
 
@@ -76,14 +92,26 @@ export const ChatMessage = memo(function ChatMessage({ message, userInfo, isStre
         </Avatar>
       )}
 
-      <div className={cn("flex max-w-[85%] flex-col", isUser ? "items-end" : "items-start")}>
+      <div
+        className={cn(
+          "flex flex-col",
+          isUser
+            ? "max-w-[85%] items-end"
+            : richSurface
+              ? "w-full max-w-[min(100%,40rem)] items-stretch"
+              : "max-w-[85%] items-start",
+        )}
+      >
         <div
           className={cn(
-            "rounded-2xl px-3.5 py-2.5 text-[14px] leading-[1.55] shadow-sm break-words",
+            "break-words",
+            richSurface && !isUser
+              ? "w-full"
+              : "rounded-2xl px-3.5 py-2.5 text-[14px] leading-[1.55] shadow-sm",
             isUser
-              ? "rounded-br-sm bg-primary text-primary-foreground"
-              : "rounded-bl-sm border bg-card text-card-foreground",
-            isError && "border-destructive/30 bg-destructive/10 text-destructive",
+              ? "rounded-2xl rounded-br-sm bg-primary px-3.5 py-2.5 text-[14px] leading-[1.55] text-primary-foreground shadow-sm"
+              : !richSurface && "rounded-bl-sm border bg-card text-card-foreground",
+            isError && !richSurface && "border-destructive/30 bg-destructive/10 text-destructive",
             // Inline blinking cursor at the end of the last block, so it tracks
             // the last character of the streaming text.
             showInlineCursor &&
@@ -113,19 +141,42 @@ export const ChatMessage = memo(function ChatMessage({ message, userInfo, isStre
             </Collapsible>
           )}
 
-          <ReactMarkdown
-            components={{
-              p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-              ul: ({ children }) => <ul className="mb-2 list-disc pl-4 last:mb-0">{children}</ul>,
-              ol: ({ children }) => <ol className="mb-2 list-decimal pl-4 last:mb-0">{children}</ol>,
-              li: ({ children }) => <li className="mb-1 last:mb-0">{children}</li>,
-              code: ({ children }) => (
-                <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">{children}</code>
-              ),
-            }}
-          >
-            {displayContent}
-          </ReactMarkdown>
+          {toolTrace && toolTrace.length > 0 ? (
+            <AssistantToolTrace
+              steps={toolTrace}
+              language={responseLanguage}
+              defaultOpen={isStreaming && toolTrace.some((s) => s.status === "running")}
+            />
+          ) : null}
+
+          {readDigest ? (
+            <ReadDigestCard
+              bag={readDigest}
+              language={responseLanguage}
+              viewerUserId={message.metadata?.viewer_user_id}
+            />
+          ) : entitySurface ? (
+            <ChatEntityListCard surface={entitySurface} language={responseLanguage} />
+          ) : assistantCapabilities ? (
+            <AssistantCapabilitiesCard
+              language={responseLanguage}
+              onQuickPrompt={onQuickPrompt}
+            />
+          ) : (
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                ul: ({ children }) => <ul className="mb-2 list-disc pl-4 last:mb-0">{children}</ul>,
+                ol: ({ children }) => <ol className="mb-2 list-decimal pl-4 last:mb-0">{children}</ol>,
+                li: ({ children }) => <li className="mb-1 last:mb-0">{children}</li>,
+                code: ({ children }) => (
+                  <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">{children}</code>
+                ),
+              }}
+            >
+              {displayContent}
+            </ReactMarkdown>
+          )}
 
           {showPlaceholderCursor && (
             <span

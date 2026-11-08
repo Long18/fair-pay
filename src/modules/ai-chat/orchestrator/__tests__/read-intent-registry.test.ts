@@ -22,6 +22,15 @@ describe("read-intent-registry", () => {
       lastToolData: { groups: [] },
     });
     expect(second?.kind).toBe("final");
+
+    const third = planReadIntentStep("which groups am I in?", {
+      lastToolName: "fairpay_list_groups",
+      lastToolData: { groups: [{ id: "g1", name: "Trip" }] },
+    });
+    expect(third).toMatchObject({
+      kind: "final",
+      entitySurface: { kind: "groups", groups: [{ id: "g1", name: "Trip" }] },
+    });
   });
 
   it("maps quick-action style prompts to intents", () => {

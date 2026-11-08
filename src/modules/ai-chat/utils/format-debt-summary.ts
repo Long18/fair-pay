@@ -13,7 +13,7 @@ function formatAmount(amount: number, currency: string): string {
   return `${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
 }
 
-function debtRows(data: unknown): DebtSummaryRow[] {
+export function debtRows(data: unknown): DebtSummaryRow[] {
   if (Array.isArray(data)) return data as DebtSummaryRow[];
   if (typeof data === "object" && data !== null) {
     const wrapped = data as { data?: unknown; result?: unknown; summary?: unknown };

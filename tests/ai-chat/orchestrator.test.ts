@@ -179,7 +179,11 @@ describe('FairPayChatOrchestrator — tool routing', () => {
   it('confirms all Phase 2 MCP tool names route to mcpClient', async () => {
     // Verify MCP_TOOL_NAMES all route to mcpClient (not legacyExecutor)
     for (const toolName of MCP_TOOL_NAMES) {
-      const mcpCallTool = vi.fn().mockResolvedValue({})
+      const mcpResult =
+        toolName === 'fairpay_list_groups'
+          ? { groups: [{ id: 'g1', name: 'Demo' }] }
+          : {}
+      const mcpCallTool = vi.fn().mockResolvedValue(mcpResult)
       const legacyExecutor: LegacyToolExecutor = vi.fn()
       const args = toolName === 'fairpay_preview_expense'
         ? { actor_confirmed: true, transaction_type: 'group', group_id: 'g1' }
@@ -584,7 +588,7 @@ describe('FairPayChatOrchestrator — tool error resilience', () => {
   it('wraps MCP tool errors as { error: ... } so the model can handle them gracefully', async () => {
     let modelSawError = false
     const chatFn: AssistantChatFn = vi.fn()
-      .mockResolvedValueOnce(toolCompletion('fairpay_list_groups', {}))
+      .mockResolvedValueOnce(toolCompletion('fairpay_get_me', {}))
       .mockImplementation(async (msgs) => {
         const toolMsg = [...msgs].reverse().find((m) => m.role === 'tool')
         if (toolMsg && toolMsg.role === 'tool') {

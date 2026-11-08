@@ -1,6 +1,7 @@
 import { formatDebtSummaryResponse } from "../utils/format-debt-summary";
 import { formatGroupDetailsResponse } from "../utils/format-group-details";
 import { formatGroupListResponse } from "../utils/format-group-list";
+import { chatEntitySurfaceFromReadTool } from "../utils/chat-entity-surface";
 import {
   formatExpenseCommentsThread,
   formatRecentExpenseComments,
@@ -305,9 +306,15 @@ export function planReadIntentStep(
   if (state?.lastToolName === intent.toolName) {
     const blocked = intent.beforeFormat?.(ctx);
     if (blocked) return blocked;
+    const entitySurface = chatEntitySurfaceFromReadTool(
+      intent.id,
+      state.lastToolData,
+      ctx.viewerUserId,
+    );
     return {
       kind: "final",
       content: intent.format(state.lastToolData, ctx),
+      ...(entitySurface ? { entitySurface } : {}),
     };
   }
 

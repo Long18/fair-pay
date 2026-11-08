@@ -1,3 +1,5 @@
+import { normalizeGroupsListPayload } from "./format-group-list";
+
 export interface GroupRow {
   id: string;
   name?: string;
@@ -8,13 +10,7 @@ function normalizeName(value: string): string {
 }
 
 export function groupsFromListPayload(data: unknown): GroupRow[] {
-  if (typeof data !== "object" || data === null) return [];
-  const groups = (data as { groups?: unknown }).groups;
-  if (!Array.isArray(groups)) return [];
-  return groups.filter(
-    (g): g is GroupRow =>
-      typeof g === "object" && g !== null && typeof (g as GroupRow).id === "string",
-  );
+  return normalizeGroupsListPayload(data).groups;
 }
 
 export type PickGroupResult =

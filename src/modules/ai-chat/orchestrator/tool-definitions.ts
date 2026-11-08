@@ -23,6 +23,7 @@ export const MCP_TOOL_NAMES: ReadonlySet<string> = new Set([
 export const LEGACY_TOOL_NAMES: ReadonlySet<string> = new Set([
   'get_debt_summary',
   'get_debt_details',
+  'get_groups',
   'get_group_details',
   'get_expenses',
   'get_friends',

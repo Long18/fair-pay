@@ -8,6 +8,14 @@ vi.mock("@/hooks/ui/use-reduced-motion", () => ({
   useReducedMotion: () => false,
 }));
 
+vi.mock("@refinedev/core", () => ({
+  useGo: () => vi.fn(),
+}));
+
+vi.mock("@/hooks/use-haptics", () => ({
+  useHaptics: () => ({ tap: vi.fn() }),
+}));
+
 function makeMessage(content: string, role: ChatMessageType["role"] = "assistant"): ChatMessageType {
   return {
     id: `${role}-1`,
@@ -81,5 +89,76 @@ describe("ChatMessage", () => {
     const raw = "Just a plain response with no wrapper.";
     render(<ChatMessage message={makeMessage(raw)} />);
     expect(screen.getByText(raw)).toBeInTheDocument();
+  });
+
+  it("renders ReadDigestCard when metadata includes read_digest", () => {
+    const message: ChatMessageType = {
+      ...makeMessage("## Tổng hợp FairPay\n\n..."),
+      metadata: {
+        mode: "info",
+        status: "success",
+        response_language: "vi",
+        read_digest: {
+          debt: [{ counterparty_name: "Alice", amount: 50, currency: "VND", i_owe_them: false }],
+          groups: [],
+          friends: [],
+          expenses: [],
+          comments: [],
+        },
+      },
+    };
+    render(<ChatMessage message={message} />);
+    expect(screen.getByTestId("read-digest-card")).toBeInTheDocument();
+    expect(screen.queryByText(/## Tổng hợp/)).not.toBeInTheDocument();
+  });
+
+  it("renders ChatEntityListCard when metadata includes entity_surface", () => {
+    const message: ChatMessageType = {
+      ...makeMessage("Groups markdown list..."),
+      metadata: {
+        mode: "info",
+        status: "success",
+        response_language: "en",
+        entity_surface: {
+          kind: "groups",
+          groups: [{ id: "g-1", name: "Lunch club" }],
+        },
+      },
+    };
+    render(<ChatMessage message={message} />);
+    expect(screen.getByTestId("chat-entity-list-card")).toBeInTheDocument();
+    expect(screen.queryByText(/Groups markdown/)).not.toBeInTheDocument();
+  });
+
+  it("renders AssistantCapabilitiesCard when metadata includes assistant_capabilities", () => {
+    const message: ChatMessageType = {
+      ...makeMessage("**Capabilities** markdown"),
+      metadata: {
+        mode: "info",
+        status: "success",
+        assistant_capabilities: true,
+        response_language: "vi",
+      },
+    };
+    render(<ChatMessage message={message} />);
+    expect(screen.getByTestId("assistant-capabilities-card")).toBeInTheDocument();
+    expect(screen.queryByText(/Capabilities/)).not.toBeInTheDocument();
+  });
+
+  it("renders collapsible tool trace from metadata", () => {
+    const message: ChatMessageType = {
+      ...makeMessage(""),
+      metadata: {
+        mode: "info",
+        status: "success",
+        response_language: "en",
+        tool_trace: [
+          { name: "get_debt_summary", status: "done" },
+          { name: "fairpay_list_groups", status: "done" },
+        ],
+      },
+    };
+    render(<ChatMessage message={message} />);
+    expect(screen.getByText("Used 2 tools")).toBeInTheDocument();
   });
 });

@@ -7,7 +7,7 @@ export interface ExpenseListRow {
   category?: string | null;
 }
 
-function rowsFromData(data: unknown): ExpenseListRow[] {
+export function rowsFromData(data: unknown): ExpenseListRow[] {
   if (Array.isArray(data)) return data as ExpenseListRow[];
   if (typeof data === "object" && data !== null) {
     const obj = data as { data?: unknown; result?: unknown };

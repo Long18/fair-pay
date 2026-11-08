@@ -4,7 +4,7 @@ export interface FriendRow {
   email?: string | null;
 }
 
-function friendsFromPayload(data: unknown, viewerId: string): FriendRow[] {
+export function friendsFromPayload(data: unknown, viewerId: string): FriendRow[] {
   if (!Array.isArray(data)) return [];
 
   return data

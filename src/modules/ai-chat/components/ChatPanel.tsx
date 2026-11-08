@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Sheet,
   SheetContent,
@@ -7,6 +8,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useMediaQuery } from "@/hooks/ui/use-media-query";
+import { useAiChatDisplayLanguage } from "../hooks/use-ai-chat-display-language";
 import { FloatingChatWindow } from "./FloatingChatWindow";
 import { ChatPanelContent } from "./ChatPanelContent";
 
@@ -16,6 +18,8 @@ interface ChatPanelProps {
 }
 
 export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
+  const displayLanguage = useAiChatDisplayLanguage();
+  const { t } = useTranslation(undefined, { lng: displayLanguage });
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   if (isDesktop) {
@@ -34,8 +38,8 @@ export const ChatPanel = memo(function ChatPanel({ open, onOpenChange }: ChatPan
       <SheetContent className="flex flex-col w-full h-[100dvh] sm:h-full gap-0 p-0 sm:max-w-[520px]">
         {/* Visually hidden title for accessibility */}
         <SheetHeader className="sr-only">
-          <SheetTitle>FairPay Assistant</SheetTitle>
-          <SheetDescription>AI-powered chat assistant</SheetDescription>
+          <SheetTitle>{t("aiChat.title")}</SheetTitle>
+          <SheetDescription>{t("aiChat.subtitle")}</SheetDescription>
         </SheetHeader>
         <ChatPanelContent />
       </SheetContent>

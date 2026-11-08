@@ -316,6 +316,66 @@ describe("FairPayChatOrchestrator manual JSON protocol", () => {
   });
 });
 
+describe("FairPayChatOrchestrator structured read UI", () => {
+  it("returns assistantCapabilities for capability questions", async () => {
+    const chatFn = vi.fn<AssistantChatFn>();
+    const result = await orchestrator(chatFn).processTurn(
+      "bạn có thể làm gì",
+      baseHistory(),
+      null,
+      { language: "vi" },
+    );
+
+    expect(chatFn).not.toHaveBeenCalled();
+    expect(result.assistantCapabilities).toBe(true);
+  });
+
+  it("returns a five-step toolTrace for digest workflow", async () => {
+    const legacyExecutor = vi.fn<LegacyToolExecutor>(async (name) => {
+      if (name === "get_debt_summary") return [];
+      if (name === "get_groups") {
+        return [{ group_id: "g1", groups: { id: "g1", name: "Trip" } }];
+      }
+      if (name === "get_friends") return [];
+      if (name === "get_expenses") return [];
+      if (name === "get_recent_expense_comments") return [];
+      return { ok: true };
+    });
+    const mcpClient: McpClientInterface = {
+      callTool: vi.fn(async (name) => {
+        if (name === "fairpay_list_groups") {
+          throw new Error("MCP groups unavailable");
+        }
+        return {};
+      }),
+    };
+    const chatFn = vi.fn<AssistantChatFn>();
+
+    const result = await orchestrator(chatFn, { legacyExecutor, mcpClient }).processTurn(
+      "Tổng hợp FairPay",
+      baseHistory(),
+      null,
+      { language: "vi" },
+    );
+
+    expect(chatFn).not.toHaveBeenCalled();
+    expect(result.readDigest).toBeDefined();
+    expect(result.toolTrace?.map((s) => s.name)).toEqual([
+      "get_debt_summary",
+      "fairpay_list_groups",
+      "get_friends",
+      "get_expenses",
+      "get_recent_expense_comments",
+    ]);
+    expect(result.toolTrace?.every((s) => s.status === "done")).toBe(true);
+    expect(legacyExecutor).toHaveBeenCalledWith("get_groups", {});
+    expect(result.readDigest?.groups).toEqual({
+      groups: [{ id: "g1", name: "Trip", description: null }],
+    });
+  });
+
+});
+
 describe("FairPayChatOrchestrator MAX_TOOL_ROUNDS", () => {
   it("stops after at most 10 tool rounds when the model keeps requesting tools", async () => {
     const toolCallJson = JSON.stringify({

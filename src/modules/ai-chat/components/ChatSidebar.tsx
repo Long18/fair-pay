@@ -24,6 +24,8 @@ interface ChatSidebarProps {
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
   onNewChat: () => void;
+  /** Match AiChatView chrome + orchestrator (vi/en) when app locale differs. */
+  language?: string;
   className?: string;
 }
 
@@ -46,9 +48,10 @@ export const ChatSidebar = memo(function ChatSidebar({
   onSelect,
   onDelete,
   onNewChat,
+  language,
   className,
 }: ChatSidebarProps) {
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation(undefined, language ? { lng: language } : undefined);
   const { tap } = useHaptics();
   const [query, setQuery] = useState("");
 

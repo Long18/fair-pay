@@ -11,6 +11,7 @@ import {
   ZapIcon,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { useAiChatDisplayLanguage } from "../hooks/use-ai-chat-display-language";
 import {
   getWebLlmModelEntry,
   type LocalLlmStatus,
@@ -42,7 +43,8 @@ export const ChatInput = memo(function ChatInput({
   onOpenModelDialog,
   compact = false,
 }: ChatInputProps) {
-  const { t } = useTranslation();
+  const displayLanguage = useAiChatDisplayLanguage();
+  const { t } = useTranslation(undefined, { lng: displayLanguage });
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);

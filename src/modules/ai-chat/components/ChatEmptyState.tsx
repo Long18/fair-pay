@@ -2,17 +2,20 @@ import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { FairPayIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import type { ResponseLanguageCode } from "../utils/detect-user-message-language";
 
 interface ChatEmptyStateProps {
   firstName?: string;
   className?: string;
+  language?: ResponseLanguageCode;
 }
 
 export const ChatEmptyState = memo(function ChatEmptyState({
   firstName,
   className,
+  language,
 }: ChatEmptyStateProps) {
-  const { t } = useTranslation();
+  const { t } = useTranslation(undefined, { lng: language });
   const hour = new Date().getHours();
   const greetingKey =
     hour < 12

@@ -34,9 +34,34 @@ function extractThreadRows(data: unknown): ExpenseCommentRow[] {
   return [];
 }
 
-function extractFeedRows(data: unknown): ExpenseCommentRow[] {
+function normalizeCommentRow(row: unknown): ExpenseCommentRow {
+  const r = row as Record<string, unknown>;
+  const authorName =
+    (r.profiles as ExpenseCommentRow["profiles"])?.full_name?.trim() ||
+    (r.user as ExpenseCommentRow["user"])?.full_name?.trim() ||
+    (typeof r.author_name === "string" ? r.author_name.trim() : "") ||
+    undefined;
+  const content =
+    (typeof r.content === "string" ? r.content : undefined) ??
+    (typeof r.body === "string" ? r.body : undefined);
+  return {
+    ...(r as ExpenseCommentRow),
+    content: content ?? null,
+    ...(authorName && !r.profiles && !r.user
+      ? { profiles: { full_name: authorName } }
+      : {}),
+  };
+}
+
+export function extractFeedRows(data: unknown): ExpenseCommentRow[] {
   if (Array.isArray(data)) {
-    return data as ExpenseCommentRow[];
+    return data.map(normalizeCommentRow);
+  }
+  if (typeof data === "object" && data !== null) {
+    const obj = data as { comments?: unknown; data?: unknown; result?: unknown };
+    for (const candidate of [obj.comments, obj.data, obj.result]) {
+      if (Array.isArray(candidate)) return candidate.map(normalizeCommentRow);
+    }
   }
   return [];
 }

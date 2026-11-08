@@ -6,7 +6,9 @@ import { FloatingActionStack, FloatingPill } from "@/components/ui/floating-stac
 import { cn } from "@/lib/utils";
 import { FAB_LEFT_STACK, FAB_RIGHT_STACK } from "@/lib/floating-tokens";
 import { useFullBleedStageOccludesFloating } from "@/hooks/ui/use-full-bleed-stage-occludes-floating";
+import { useTranslation } from "react-i18next";
 import { useAiChatContext } from "../AiChatContext";
+import { useAiChatDisplayLanguage } from "../hooks/use-ai-chat-display-language";
 
 type FabState = "idle" | "loading" | "responding" | "done" | "error";
 
@@ -69,6 +71,8 @@ export const ChatFAB = memo(function ChatFAB() {
     [isMdUp],
   );
   const { isChatOpen, openChat } = useAiChatContext();
+  const displayLanguage = useAiChatDisplayLanguage();
+  const { t } = useTranslation(undefined, { lng: displayLanguage });
   const fabState = useFabState();
   const pondOccludesFab = useFullBleedStageOccludesFloating({
     side: fabSide,
@@ -100,7 +104,7 @@ export const ChatFAB = memo(function ChatFAB() {
             variant="glass"
             size="default"
             onClick={handleOpen}
-            ariaLabel="Open FairPay Assistant"
+            ariaLabel={t("aiChat.openAssistant")}
             className={cn(
               "aspect-square !min-w-[48px] !px-0 overflow-hidden ring-1 ring-border/60",
               fabState === "done" && "border-emerald-300 dark:border-emerald-800",

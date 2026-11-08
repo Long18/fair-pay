@@ -79,7 +79,15 @@ export const ChatThread = memo(function ChatThread({
     localLlmStatus,
     clearPreview,
     confirmPreview,
+    sendMessage,
   } = useAiChatContext();
+
+  const onQuickPrompt = useCallback(
+    (prompt: string) => {
+      void sendMessage(prompt);
+    },
+    [sendMessage],
+  );
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
@@ -161,6 +169,7 @@ export const ChatThread = memo(function ChatThread({
                 <ChatMessage
                   message={message}
                   userInfo={identity}
+                  onQuickPrompt={onQuickPrompt}
                   isStreaming={
                     isLoading &&
                     localLlmStatus.state !== "loading" &&

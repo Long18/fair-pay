@@ -1,4 +1,7 @@
 import type { AgentPreviewResponse } from "@/lib/agent-api/types";
+import type { ReadDigestBag } from "../utils/format-read-digest";
+import type { ChatEntitySurface } from "../utils/chat-entity-surface";
+import type { AssistantToolTraceStep } from "./tool-trace";
 import type {
   ParsedExpenseContext,
   TransactionScope,
@@ -69,6 +72,8 @@ export interface ProcessTurnOptions {
   expenseContext?: ParsedExpenseContext | null;
   language?: string;
   transactionScope?: TransactionScope;
+  /** Live UI: tool round started or finished (planner / deterministic tools). */
+  onToolRound?: (toolName: string, phase: "start" | "done" | "error") => void;
 }
 
 export interface ProcessTurnResult {
@@ -76,4 +81,9 @@ export interface ProcessTurnResult {
   updatedHistory: ConversationMessage[];
   pendingPreview: AgentPreviewResponse | null;
   blockedPreviewReplacement: boolean;
+  /** Raw tool payloads for structured chat UI (read digest). */
+  readDigest?: ReadDigestBag;
+  assistantCapabilities?: boolean;
+  entitySurface?: ChatEntitySurface;
+  toolTrace?: AssistantToolTraceStep[];
 }

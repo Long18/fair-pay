@@ -93,6 +93,8 @@ describe("assistant meta golden phrases", () => {
     "những khả năng bạn có thể làm trong fairpay nè",
     "làm 10 thứ ở trên đi",
     "Tổng hợp FairPay",
+    "FairPay summary",
+    "what can you do",
   ])("classifies meta intent for %s", (text) => {
     const caps = looksLikeCapabilitiesQuery(text);
     const digest = looksLikeReadDigestQuery(text);

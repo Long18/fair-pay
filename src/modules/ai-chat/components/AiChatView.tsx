@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/use-haptics";
 import type { Profile } from "@/modules/profile/types";
 import { useAiChatContext } from "../AiChatContext";
+import { useAiChatDisplayLanguage } from "../hooks/use-ai-chat-display-language";
 import { ChatEmptyState } from "./ChatEmptyState";
 import { ChatInput } from "./ChatInput";
 import { ChatInsightsPanel } from "./ChatInsightsPanel";
@@ -38,7 +39,8 @@ function firstNameFrom(fullName?: string | null): string | undefined {
 
 /** Chat UI body (sidebar + thread) sized to fill a dialog or other fixed-height shell. */
 export const AiChatView = memo(function AiChatView() {
-  const { t } = useTranslation();
+  const displayLanguage = useAiChatDisplayLanguage();
+  const { t } = useTranslation(undefined, { lng: displayLanguage });
   const { data: identity } = useGetIdentity<Profile>();
   const { tap } = useHaptics();
   const {
@@ -128,6 +130,7 @@ export const AiChatView = memo(function AiChatView() {
     onSelect: handleSelectConversation,
     onDelete: deleteConversation,
     onNewChat: handleNewChat,
+    language: displayLanguage,
   };
 
   return (
@@ -221,7 +224,10 @@ export const AiChatView = memo(function AiChatView() {
             <>
               <ChatThread
                 emptyState={
-                  <ChatEmptyState firstName={firstNameFrom(identity?.full_name)} />
+                  <ChatEmptyState
+                    firstName={firstNameFrom(identity?.full_name)}
+                    language={displayLanguage}
+                  />
                 }
               />
 

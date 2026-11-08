@@ -31,6 +31,7 @@ import { LoadingStatusBubble } from "./LoadingStatusBubble";
 import { ModelSelectDialog } from "./ModelSelectDialog";
 import { TypingIndicator } from "./TypingIndicator";
 import { useAiChatContext } from "../AiChatContext";
+import { useAiChatDisplayLanguage } from "../hooks/use-ai-chat-display-language";
 import { messagesForThreadRender } from "../utils/thread-messages";
 
 type ActiveTab = "chat" | "insights";
@@ -71,7 +72,8 @@ interface ChatPanelContentProps {
 }
 
 export const ChatPanelContent = memo(function ChatPanelContent({ onClear }: ChatPanelContentProps) {
-  const { t } = useTranslation();
+  const displayLanguage = useAiChatDisplayLanguage();
+  const { t } = useTranslation(undefined, { lng: displayLanguage });
   const { data: identity } = useGetIdentity<Profile>();
   const {
     messages,

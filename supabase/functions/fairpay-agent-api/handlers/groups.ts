@@ -1,13 +1,11 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { okJson, errJson, requireAuth } from '../response.ts'
 
-interface GroupMemberCountRow { count: number }
 interface GroupRow {
   id: string
   name: string
   description: string | null
   is_archived: boolean
-  group_members: GroupMemberCountRow[]
 }
 interface GroupMembershipRow {
   role: string
@@ -18,13 +16,13 @@ export async function handleGroups(supabase: SupabaseClient): Promise<Response> 
   const auth = await requireAuth(supabase)
   if (auth.error) return auth.error
 
+  // Avoid embedding group_members(count) from within group_members — PostgREST can fail that shape.
   const { data, error: qErr } = await supabase
     .from('group_members')
     .select(`
       role,
       groups!inner(
-        id, name, description, is_archived,
-        group_members(count)
+        id, name, description, is_archived
       )
     `)
     .eq('user_id', auth.user.id)
@@ -32,16 +30,29 @@ export async function handleGroups(supabase: SupabaseClient): Promise<Response> 
 
   if (qErr) return errJson(500, 'QUERY_ERROR', qErr.message)
 
-  const groups = ((data ?? []) as GroupMembershipRow[]).map((row) => ({
-    id: row.groups.id,
-    name: row.groups.name,
-    description: row.groups.description,
-    is_archived: row.groups.is_archived,
-    member_count: row.groups.group_members?.[0]?.count ?? 0,
-    member_role: row.role,
-  }))
+  const byId = new Map<string, {
+    id: string
+    name: string
+    description: string | null
+    is_archived: boolean
+    member_role: string
+  }>()
 
-  return okJson({ groups })
+  for (const row of (data ?? []) as GroupMembershipRow[]) {
+    const g = row.groups
+    if (!g?.id) continue
+    if (!byId.has(g.id)) {
+      byId.set(g.id, {
+        id: g.id,
+        name: g.name,
+        description: g.description,
+        is_archived: g.is_archived,
+        member_role: row.role,
+      })
+    }
+  }
+
+  return okJson({ groups: Array.from(byId.values()) })
 }
 
 export async function handleGroupMembers(

@@ -1,5 +1,6 @@
 import { buildCapabilitiesMessage } from "../utils/assistant-capabilities-copy";
 import { formatReadDigest, type ReadDigestBag } from "../utils/format-read-digest";
+import { normalizeGroupsListPayload } from "../utils/format-group-list";
 import type { PlannerDecision, PlannerTurnState } from "./planner-types";
 
 const CAPABILITIES_PATTERN =
@@ -65,8 +66,10 @@ export function plannerStatePatchForDigestTool(
   if (!state.readDigestActive) return {};
   const step = DIGEST_STEPS.find((s) => s.tool === toolName);
   if (!step) return {};
+  const bagPatch =
+    step.key === "groups" ? normalizeGroupsListPayload(toolData) : toolData;
   return {
-    digestBag: { ...digestBagFromState(state), [step.key]: toolData },
+    digestBag: { ...digestBagFromState(state), [step.key]: bagPatch },
   };
 }
 
@@ -76,7 +79,11 @@ export function planAssistantMetaStep(
   options?: { language?: string; viewerUserId?: string },
 ): PlannerDecision | null {
   if (looksLikeCapabilitiesQuery(displayUserText)) {
-    return { kind: "final", content: buildCapabilitiesMessage(options?.language) };
+    return {
+      kind: "final",
+      content: buildCapabilitiesMessage(options?.language),
+      assistantCapabilities: true,
+    };
   }
 
   const digestActive = state?.readDigestActive || looksLikeReadDigestQuery(displayUserText);
@@ -91,6 +98,7 @@ export function planAssistantMetaStep(
         language: options?.language,
         viewerUserId: options?.viewerUserId,
       }),
+      readDigestBag: bag,
     };
   }
 

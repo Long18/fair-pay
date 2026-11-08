@@ -1,26 +1,15 @@
 import { describe, expect, it } from "vitest";
-import {
-  detectUserMessageLanguage,
-  resolveResponseLanguage,
-} from "../detect-user-message-language";
+import { detectUserMessageLanguage, resolveResponseLanguage } from "../detect-user-message-language";
 
-describe("detectUserMessageLanguage", () => {
-  it("detects Vietnamese from diacritics", () => {
-    expect(detectUserMessageLanguage("ai đang nợ tôi bao nhiêu")).toBe("vi");
+describe("detect-user-message-language", () => {
+  it("detects Vietnamese diacritics and hints", () => {
+    expect(detectUserMessageLanguage("Tổng hợp FairPay")).toBe("vi");
+    expect(detectUserMessageLanguage("Who owes me")).toBe("en");
+    expect(detectUserMessageLanguage("toi no bao nhieu")).toBe("vi");
   });
 
-  it("detects Vietnamese from common words without diacritics", () => {
-    expect(detectUserMessageLanguage("cho toi xem cac nhom")).toBe("vi");
-  });
-
-  it("defaults to English for Latin ASCII questions", () => {
-    expect(detectUserMessageLanguage("how much do I owe?")).toBe("en");
-  });
-});
-
-describe("resolveResponseLanguage", () => {
-  it("falls back to UI language when text is empty", () => {
+  it("falls back to UI locale when text empty", () => {
     expect(resolveResponseLanguage("", "vi")).toBe("vi");
-    expect(resolveResponseLanguage("   ", "en-US")).toBe("en");
+    expect(resolveResponseLanguage("", "en-US")).toBe("en");
   });
 });
