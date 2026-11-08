@@ -67,6 +67,7 @@ import {
   SettingsIcon,
   HeartIcon,
   BanknoteIcon,
+  QrCodeIcon,
   CreditCardIcon,
   ListIcon,
   PanelLeftIcon,
@@ -563,6 +564,17 @@ function UserDropdown() {
         >
           <SettingsIcon className="h-4 w-4" />
           <span>{t("settings.title")}</span>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          onClick={() => { tap(); go({ to: "/settings/momo" }); }}
+          data-track-id="menu:momo-receive-settings"
+          data-track-event="nav_click"
+          data-track-type="menu-item"
+          data-track-category="navigation"
+        >
+          <QrCodeIcon className="h-4 w-4" />
+          <span>{t("settings.momoReceive.title", "MoMo receive settings")}</span>
         </DropdownMenuItem>
 
         <DropdownMenuItem
