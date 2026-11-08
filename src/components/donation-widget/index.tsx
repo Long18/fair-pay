@@ -10,6 +10,7 @@ import { useIsMobile } from '@/hooks/ui/use-mobile';
 
 import { HeartIcon } from "@/components/ui/icons";
 import { useHaptics } from "@/hooks/use-haptics";
+import { shouldForceDonationWidgetVisible } from '@/lib/donation/dev-preview-settings';
 // Admin email that can always see the widget (even when disabled)
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'admin@fairpay.com';
 
@@ -112,8 +113,10 @@ export function DonationWidget() {
     return null;
   }
 
-  // Only show if enabled or admin is viewing
-  if (!settings.is_enabled && !isAdmin) {
+  const forceDevPreview = shouldForceDonationWidgetVisible();
+
+  // Only show if enabled, admin is viewing, or local preview is forced
+  if (!settings.is_enabled && !isAdmin && !forceDevPreview) {
     return null;
   }
 
