@@ -87,6 +87,8 @@ Declarative read queries live in [`read-intent-registry.ts`](../src/modules/ai-c
 
 **Add a new read intent:** append to `READ_INTENT_REGISTRY`, add a `matches` test in `orchestrator/__tests__/read-intent-registry.test.ts`, and extend `isPlannerOnlyUserMessage` coverage via `isReadIntentMessage`.
 
+**Hollow refusal recovery:** if the local model returns a generic “I don’t have information…” final JSON, `looksLikeHollowRefusal` + `guessReadIntentId` forces a read tool call instead of showing the refusal. Quick-action pill prompts in i18n are aligned to `matchReadIntent` so they stay planner-only (no WebLLM wait).
+
 ## Product coverage (honest scope)
 
 | Area | In-app agent today |

@@ -2444,7 +2444,8 @@
       "balances": "Balances",
       "expense": "Add expense",
       "groups": "Groups",
-      "settle": "Settle up"
+      "friends": "Friends",
+      "spending": "Top spending"
     },
     "tabs": {
       "chat": "Chat",
@@ -2499,9 +2500,10 @@
     "suggestions": {
       "label": "Suggestions",
       "whoOwes": "Who owes me money?",
-      "recentActivity": "Summarize recent activity",
-      "dinnerExpense": "Prepare dinner expense for 4 people",
-      "groupsAttention": "Which groups need attention?"
+      "myGroups": "Which groups am I in?",
+      "myFriends": "Who are my FairPay friends?",
+      "topSpending": "Top 5 expenses by amount",
+      "dinnerExpense": "Prepare dinner expense for 4 people"
     },
     "cloudAssist": {
       "title": "Cloud assist",

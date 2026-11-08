@@ -75,20 +75,13 @@ export const AiChatView = memo(function AiChatView() {
   const pills = useMemo(
     () => [
       { key: "balances", label: t("aiChat.pills.balances"), prompt: t("aiChat.suggestions.whoOwes") },
+      { key: "groups", label: t("aiChat.pills.groups"), prompt: t("aiChat.suggestions.myGroups") },
+      { key: "friends", label: t("aiChat.pills.friends"), prompt: t("aiChat.suggestions.myFriends") },
+      { key: "spending", label: t("aiChat.pills.spending"), prompt: t("aiChat.suggestions.topSpending") },
       {
         key: "expense",
         label: t("aiChat.pills.expense"),
         prompt: t("aiChat.suggestions.dinnerExpense"),
-      },
-      {
-        key: "groups",
-        label: t("aiChat.pills.groups"),
-        prompt: t("aiChat.suggestions.groupsAttention"),
-      },
-      {
-        key: "settle",
-        label: t("aiChat.pills.settle"),
-        prompt: t("aiChat.suggestions.recentActivity"),
       },
     ],
     [t],
@@ -236,7 +229,7 @@ export const AiChatView = memo(function AiChatView() {
                 <div className="mx-auto w-full max-w-3xl min-w-0 space-y-3">
                   {isEmpty && (
                     <div
-                      className="grid min-w-0 grid-cols-2 gap-2 animate-in fade-in-0 slide-in-from-bottom-1 duration-300"
+                      className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 animate-in fade-in-0 slide-in-from-bottom-1 duration-300"
                       role="group"
                       aria-label={t("aiChat.quickActionsLabel")}
                     >

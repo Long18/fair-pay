@@ -19,6 +19,8 @@ import {
   isPlannerOnlyUserMessage,
   type PlannerTurnState,
 } from './deterministic-planner'
+import { guessReadIntentId } from './read-intent-registry'
+import { looksLikeHollowRefusal } from '../utils/model-refusal'
 import { parseExpenseContext, effectiveTransactionScope, type ParsedExpenseContext, type TransactionScope } from '../utils/transaction-scope'
 import {
   groupPreviewReadyMessage,
@@ -334,8 +336,21 @@ export class FairPayChatOrchestrator {
               } else {
                 continue
               }
-            } else if (isPlannerOnlyUserMessage(displayUserText)) {
-              const replanned = runPlanner()
+            } else if (
+              isPlannerOnlyUserMessage(displayUserText)
+              || looksLikeHollowRefusal(directive.content)
+            ) {
+              const guessedId = guessReadIntentId(displayUserText)
+              const replanned =
+                isPlannerOnlyUserMessage(displayUserText)
+                  ? runPlanner()
+                  : guessedId
+                    ? planReadIntentStep(displayUserText, plannerState, {
+                        language,
+                        viewerUserId: this.deps.actorUserId,
+                        forceIntentId: guessedId,
+                      })
+                    : null
               if (replanned?.kind === 'tool') {
                 toolCall = makeManualToolCall({
                   type: 'tool_call',

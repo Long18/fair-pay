@@ -58,7 +58,7 @@ const GROUP_LIST_PATTERN =
   /(?:nhóm\s+(?:của\s+)?tôi|danh\s+sách\s+nhóm|các\s+nhóm|tôi\s+ở\s+nhóm|tham\s*gia\s+.*nhóm|nhóm\s+nào|đang\s+(?:ở|tham\s*gia)\s+.*nhóm|which\s+groups|my\s+groups|list\s+groups|what\s+groups)/i;
 
 const FRIENDS_PATTERN =
-  /(?:bạn\s+bè|bạn\s+nào|những\s+bạn|danh\s+sách\s+bạn|friend(?:s)?\s+(?:do\s+i\s+have|list)|who\s+are\s+my\s+friends|connections)/i;
+  /(?:bạn\s+bè|bạn\s+nào|những\s+bạn|danh\s+sách\s+bạn|friend(?:s)?\s+(?:do\s+i\s+have|list)|who\s+are\s+my\s+(?:\w+\s+)*friends?|connections)/i;
 
 const RECENT_EXPENSES_PATTERN =
   /(?:top\s*\d*|khoản\s+chi|chi\s+tiêu|thu\s*chi|\bspending\b|mức\s+chi|bao\s+nhiêu.*chi|\bmy\s+expenses\b|\brecent\s+expenses\b|\blist\s+expenses\b)/i;
@@ -166,12 +166,36 @@ export function getReadIntent(id: ReadIntentId): ReadIntentDefinition {
   return intent;
 }
 
+/** Fallback when regex misses but user clearly asks about one domain (used after hollow refusals). */
+export function guessReadIntentId(text: string): ReadIntentId | null {
+  const direct = matchReadIntent(text);
+  if (direct) return direct.id;
+  if (blocksRecentExpensesRead(text)) return null;
+
+  const scores: Partial<Record<ReadIntentId, number>> = {};
+  if (/(?:nợ|đang nợ|who\s+owes|balances?|số dư)/i.test(text)) scores.debt_summary = 3;
+  if (/(?:nhóm|groups?)/i.test(text)) scores.group_list = 2;
+  if (/(?:bạn bè|bạn nào|friends?|connections)/i.test(text)) scores.friends_list = 2;
+  if (!blocksRecentExpensesRead(text) && RECENT_EXPENSES_PATTERN.test(text)) {
+    scores.recent_expenses = 1;
+  }
+  if (RECENT_COMMENTS_PATTERN.test(text) && !extractExpenseIdFromText(text)) {
+    scores.recent_comments = 2;
+  }
+
+  const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  if (ranked.length === 0 || ranked[0][1] < 1) return null;
+  return ranked[0][0] as ReadIntentId;
+}
+
 export function planReadIntentStep(
   displayUserText: string,
   state?: PlannerTurnState,
-  options?: { language?: string; viewerUserId?: string },
+  options?: { language?: string; viewerUserId?: string; forceIntentId?: ReadIntentId },
 ): PlannerDecision | null {
-  const intent = matchReadIntent(displayUserText);
+  const intent = options?.forceIntentId
+    ? getReadIntent(options.forceIntentId)
+    : matchReadIntent(displayUserText);
   if (!intent) return null;
 
   const ctx: ReadIntentPlanContext = {

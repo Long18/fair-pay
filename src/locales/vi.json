@@ -2443,7 +2443,8 @@
       "balances": "Số dư",
       "expense": "Thêm chi tiêu",
       "groups": "Nhóm",
-      "settle": "Tất toán"
+      "friends": "Bạn bè",
+      "spending": "Chi nhiều"
     },
     "tabs": {
       "chat": "Chat",
@@ -2497,10 +2498,11 @@
     },
     "suggestions": {
       "label": "Gợi ý",
-      "whoOwes": "Ai đang nợ tôi tiền?",
-      "recentActivity": "Tóm tắt hoạt động gần đây",
-      "dinnerExpense": "Chuẩn bị chi phí bữa tối cho 4 người",
-      "groupsAttention": "Nhóm nào cần xem xét?"
+      "whoOwes": "Ai đang nợ tôi?",
+      "myGroups": "Tôi đang tham gia nhóm nào?",
+      "myFriends": "Tôi có những bạn nào?",
+      "topSpending": "Top 5 khoản chi theo số tiền",
+      "dinnerExpense": "Chuẩn bị chi phí bữa tối cho 4 người"
     },
     "cloudAssist": {
       "title": "Hỗ trợ cloud",

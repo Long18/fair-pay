@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  guessReadIntentId,
   matchReadIntent,
   planReadIntentStep,
   READ_INTENT_REGISTRY,
@@ -21,6 +22,16 @@ describe("read-intent-registry", () => {
       lastToolData: { groups: [] },
     });
     expect(second?.kind).toBe("final");
+  });
+
+  it("maps quick-action style prompts to intents", () => {
+    expect(matchReadIntent("Tôi đang tham gia nhóm nào?")?.id).toBe("group_list");
+    expect(matchReadIntent("Top 5 expenses by amount")?.id).toBe("recent_expenses");
+    expect(matchReadIntent("Who are my FairPay friends?")?.id).toBe("friends_list");
+  });
+
+  it("guess returns debt for owe questions without exact regex", () => {
+    expect(guessReadIntentId("tình hình balance của tôi")).toBe("debt_summary");
   });
 
   it("does not treat confirm/add expense as expense list reads", () => {

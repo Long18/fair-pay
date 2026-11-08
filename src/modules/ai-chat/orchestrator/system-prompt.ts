@@ -104,7 +104,8 @@ function buildCompactToolsSection(): string {
 - get_debt_summary: who owes whom / net balances
 - get_debt_details: expense-level debt vs one counterparty (needs counterparty_id from summary)
 - get_group_details: one group — members + recent expenses (needs group_id)
-- get_expenses: recent expenses (optional group_id)
+- get_expenses: recent expenses (optional group_id); use for "top spending" / thu chi
+- get_friends: accepted FairPay friends list
 - get_recent_expense_comments: recent expense comment feed (read-only)
 - get_expense_comments: full thread on one expense (needs expense_id)
 - fairpay_get_me: identity only if missing above or user asks "who am I"
