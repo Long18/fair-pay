@@ -8,6 +8,7 @@ import {
 import { shouldAutoStartExpenseWorkflow } from "../utils/vietnamese-expense-intent";
 import { groupsFromListPayload, pickGroupId } from "../utils/pick-group";
 import type { PlannerDecision, PlannerTurnState } from "./planner-types";
+import { isAssistantMetaMessage, planAssistantMetaStep } from "./assistant-meta";
 import {
   extractExpenseIdFromText,
   getReadIntent,
@@ -23,6 +24,12 @@ export {
   matchReadIntent,
   plannerStatePatchAfterReadTool,
 } from "./read-intent-registry";
+export {
+  isAssistantMetaMessage,
+  planAssistantMetaStep,
+  initialPlannerStateForMessage,
+  plannerStatePatchForDigestTool,
+} from "./assistant-meta";
 
 function resolvedMemberId(entry: unknown): string | null {
   if (typeof entry !== "object" || entry === null) return null;
@@ -138,7 +145,7 @@ export function looksLikeExpenseCommentsQuery(text: string): boolean {
 }
 
 export function isPlannerOnlyUserMessage(text: string): boolean {
-  return isReadIntentMessage(text);
+  return isReadIntentMessage(text) || isAssistantMetaMessage(text);
 }
 
 export function planDebtSummaryStep(

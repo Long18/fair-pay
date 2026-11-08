@@ -14,9 +14,12 @@ import {
 } from '../utils/vietnamese-expense-intent'
 import { extractDirectiveJson, normalizeModelOutput } from '../utils/normalize-model-output'
 import {
+  planAssistantMetaStep,
   planDeterministicStep,
   planReadIntentStep,
   plannerStatePatchAfterReadTool,
+  plannerStatePatchForDigestTool,
+  initialPlannerStateForMessage,
   isPlannerOnlyUserMessage,
   type PlannerTurnState,
 } from './deterministic-planner'
@@ -235,7 +238,9 @@ export class FairPayChatOrchestrator {
     let pendingPreview: AgentPreviewResponse | null = null
     let currentPreview = activePendingPreview
     let blockedPreviewReplacement = false
-    let plannerState: PlannerTurnState = {}
+    let plannerState: PlannerTurnState = {
+      ...initialPlannerStateForMessage(displayUserText),
+    }
     let localLlmFailures = 0
 
     const plannerOptions = {
@@ -246,11 +251,15 @@ export class FairPayChatOrchestrator {
       hasPendingPreview: Boolean(currentPreview),
     }
 
+    const metaOptions = {
+      language,
+      viewerUserId: this.deps.actorUserId,
+    }
+
     const runPlanner = (): ReturnType<typeof planDeterministicStep> => {
-      const readStep = planReadIntentStep(displayUserText, plannerState, {
-        language,
-        viewerUserId: this.deps.actorUserId,
-      })
+      const metaStep = planAssistantMetaStep(displayUserText, plannerState, metaOptions)
+      if (metaStep) return metaStep
+      const readStep = planReadIntentStep(displayUserText, plannerState, metaOptions)
       if (readStep) return readStep
       return planDeterministicStep(expenseContext, plannerState, plannerOptions)
     }
@@ -341,17 +350,18 @@ export class FairPayChatOrchestrator {
               isPlannerOnlyUserMessage(displayUserText)
               || looksLikeHollowRefusal(directive.content)
             ) {
+              const metaRetry = planAssistantMetaStep(displayUserText, plannerState, metaOptions)
               const guessedId = guessReadIntentId(displayUserText)
               const replanned =
-                isPlannerOnlyUserMessage(displayUserText)
+                metaRetry
+                ?? (isPlannerOnlyUserMessage(displayUserText)
                   ? runPlanner()
                   : guessedId
                     ? planReadIntentStep(displayUserText, plannerState, {
-                        language,
-                        viewerUserId: this.deps.actorUserId,
+                        ...metaOptions,
                         forceIntentId: guessedId,
                       })
-                    : null
+                    : null)
               if (replanned?.kind === 'tool') {
                 toolCall = makeManualToolCall({
                   type: 'tool_call',
@@ -397,6 +407,11 @@ export class FairPayChatOrchestrator {
         ...plannerState,
         ...plannerStatePatchAfterReadTool(
           displayUserText,
+          toolCall.function.name,
+          toolResult.modelData,
+          plannerState,
+        ),
+        ...plannerStatePatchForDigestTool(
           toolCall.function.name,
           toolResult.modelData,
           plannerState,

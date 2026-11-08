@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { looksLikeCapabilitiesQuery, looksLikeReadDigestQuery } from "../assistant-meta";
 import {
   guessReadIntentId,
   matchReadIntent,
