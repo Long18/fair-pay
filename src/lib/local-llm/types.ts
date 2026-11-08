@@ -3,6 +3,7 @@ import type { ConversationMessage } from "@/modules/ai-chat/orchestrator";
 /**
  * Curated catalog of web-llm models, mirroring the chat models from
  * https://github.com/mlc-ai/web-llm `prebuiltAppConfig` (model_type=LLM).
+ * Package pin: `@mlc-ai/web-llm` (see package.json); catalog ids must exist upstream.
  *
  * Each entry captures the metadata needed to render the model picker:
  *  - `id`            – the exact web-llm model id (passed to CreateMLCEngine)
@@ -316,6 +317,16 @@ export const WEB_LLM_MODEL_LIST: readonly WebLlmModelEntry[] = [
     quantization: "q4f16_1",
     description: "Hermes 2 Pro finetune on Mistral 7B.",
   },
+  {
+    id: "NeuralHermes-2.5-Mistral-7B-q4f16_1-MLC",
+    label: "NeuralHermes 2.5 · Mistral 7B",
+    family: "Mistral",
+    vramMB: 4573,
+    lowResource: false,
+    contextLength: 4096,
+    quantization: "q4f16_1",
+    description: "Neural chat finetune on Mistral 7B — solid tool-style replies.",
+  },
 
   // --- Qwen 3 ---
   {
@@ -467,6 +478,27 @@ export const WEB_LLM_MODEL_LIST: readonly WebLlmModelEntry[] = [
 
   // --- Gemma ---
   {
+    id: "gemma-4-E2B-it-q4f16_1-MLC",
+    label: "Gemma 4 · E2B",
+    family: "Gemma",
+    vramMB: 3387,
+    lowResource: false,
+    contextLength: 4096,
+    quantization: "q4f16_1",
+    description: "Gemma 4 E2B — stronger local assistant (WebLLM 0.2.87+).",
+    recommended: true,
+  },
+  {
+    id: "gemma-4-E2B-it-q4f32_1-MLC",
+    label: "Gemma 4 · E2B (f32)",
+    family: "Gemma",
+    vramMB: 3863,
+    lowResource: false,
+    contextLength: 4096,
+    quantization: "q4f32_1",
+    description: "Gemma 4 E2B with f32 weights for sharper outputs.",
+  },
+  {
     id: "gemma3-1b-it-q4f16_1-MLC",
     label: "Gemma 3 · 1B",
     family: "Gemma",
@@ -600,6 +632,17 @@ export const WEB_LLM_MODEL_LIST: readonly WebLlmModelEntry[] = [
 
   // --- TinyLlama (fallback / compat) ---
   {
+    id: "TinyLlama-1.1B-Chat-v0.4-q4f16_1-MLC-1k",
+    label: "TinyLlama 1.1B v0.4 (1k ctx)",
+    family: "TinyLlama",
+    vramMB: 675,
+    lowResource: true,
+    contextLength: 1024,
+    quantization: "q4f16_1",
+    description: "TinyLlama v0.4 — updated weights for low-VRAM browsers.",
+    recommended: true,
+  },
+  {
     id: "TinyLlama-1.1B-Chat-v1.0-q4f16_1-MLC-1k",
     label: "TinyLlama 1.1B (1k ctx)",
     family: "TinyLlama",
@@ -607,8 +650,7 @@ export const WEB_LLM_MODEL_LIST: readonly WebLlmModelEntry[] = [
     lowResource: true,
     contextLength: 1024,
     quantization: "q4f16_1",
-    description: "Smallest chat model – best for low-VRAM browsers.",
-    recommended: true,
+    description: "Legacy TinyLlama v1.0 — used if storage quota fallback triggers.",
   },
   {
     id: "TinyLlama-1.1B-Chat-v1.0-q4f16_1-MLC",

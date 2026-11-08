@@ -315,3 +315,23 @@ describe("FairPayChatOrchestrator manual JSON protocol", () => {
     );
   });
 });
+
+describe("FairPayChatOrchestrator MAX_TOOL_ROUNDS", () => {
+  it("stops after at most 10 tool rounds when the model keeps requesting tools", async () => {
+    const toolCallJson = JSON.stringify({
+      type: "tool_call",
+      name: "fairpay_list_groups",
+      arguments: {},
+    });
+    const chatFn = vi.fn<AssistantChatFn>().mockResolvedValue(completion(toolCallJson));
+    const mcpClient: McpClientInterface = {
+      callTool: vi.fn(async () => ({ groups: [] })),
+    };
+
+    const result = await orchestrator(chatFn, { mcpClient }).processTurn("loop test", baseHistory(), null);
+
+    expect(chatFn).toHaveBeenCalledTimes(11);
+    expect(mcpClient.callTool).toHaveBeenCalledTimes(11);
+    expect(result.text).toContain("could not complete this workflow safely");
+  });
+});

@@ -9,7 +9,8 @@
  * Accessibility: the bubble is an aria-live="polite" region so screen readers
  * announce status changes without spamming on every character.
  */
-import { memo } from "react";
+import { memo, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { FairPayIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
@@ -20,30 +21,28 @@ interface LoadingStatusBubbleProps {
   localLlmStatus: LocalLlmStatus;
 }
 
-/** Map LocalLlmStatus to a human-readable label for the current stage. */
-function statusLabel(status: LocalLlmStatus): string {
-  switch (status.state) {
-    case "loading": {
-      const pct = Math.round(status.progress * 100);
-      if (status.fromCache) {
-        return `Đang nạp từ thiết bị... ${pct}%`;
-      }
-      return `Đang tải mô hình... ${pct}%`;
-    }
-    case "error":
-      return "Lỗi khi tải mô hình";
-    default:
-      return "Đang chuẩn bị...";
-  }
-}
-
 export const LoadingStatusBubble = memo(function LoadingStatusBubble({
   localLlmStatus,
 }: LoadingStatusBubbleProps) {
+  const { t } = useTranslation();
+
+  const label = useMemo(() => {
+    switch (localLlmStatus.state) {
+      case "loading": {
+        const pct = Math.round(localLlmStatus.progress * 100);
+        return localLlmStatus.fromCache
+          ? t("aiChat.status.loadingFromDevice", { pct })
+          : t("aiChat.status.loading", { pct });
+      }
+      case "error":
+        return t("aiChat.status.loadFailed");
+      default:
+        return t("aiChat.status.preparing");
+    }
+  }, [localLlmStatus, t]);
+
   const isActive =
     localLlmStatus.state === "loading" || localLlmStatus.state === "idle";
-
-  const label = statusLabel(localLlmStatus);
 
   const { displayText, isAnimating } = useTypewriterStatus(label, isActive);
 

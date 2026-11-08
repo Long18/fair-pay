@@ -249,7 +249,8 @@ export async function loadModel(model = getSelectedModel()): Promise<LocalLlmSta
         if (isStorageBufferLimitError(fallbackError)) {
           setStatus({
             state: "unsupported",
-            reason: "Your WebGPU device cannot run local AI models. Using cloud AI instead.",
+            reason:
+              "Your WebGPU device cannot run local AI models. Try a smaller model in the picker or use another browser with WebGPU.",
           });
           return getLocalLlmStatus();
         }

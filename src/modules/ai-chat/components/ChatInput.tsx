@@ -112,9 +112,9 @@ export const ChatInput = memo(function ChatInput({
   return (
     <div
       className={cn(
-        "rounded-2xl border bg-background shadow-sm transition-all",
-        "focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/15",
-        !compact && "rounded-3xl shadow-md",
+        "rounded-xl border border-border/60 bg-card shadow-none transition-colors",
+        "focus-within:border-primary/35 focus-within:ring-2 focus-within:ring-primary/10",
+        compact && "rounded-2xl",
       )}
     >
       <Textarea

@@ -1,9 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
+import packageJson from "../../../../package.json";
 import {
   resolveWebLlmAppConfig,
+  WEB_LLM_PACKAGE_VERSION,
   WEBLLM_APP_CONFIG,
   WEBLLM_LEGACY_APP_CONFIG,
 } from "../webllm-app-config";
+
+describe("web-llm package pin", () => {
+  it("matches package.json dependency", () => {
+    expect(WEB_LLM_PACKAGE_VERSION).toBe(packageJson.dependencies["@mlc-ai/web-llm"]);
+  });
+});
 
 describe("resolveWebLlmAppConfig", () => {
   it("prefers IndexedDB when the model is already there", async () => {

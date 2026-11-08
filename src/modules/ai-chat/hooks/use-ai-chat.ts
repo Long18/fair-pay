@@ -90,6 +90,30 @@ function localModelUnsupported(status: LocalLlmStatus): string | null {
   return null;
 }
 
+/** Map worker / client English errors to localized copy when we have a known key. */
+function localizeAiChatError(
+  message: string,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  const known: Record<string, string> = {
+    "Local AI requires a browser with Web Worker support.":
+      "aiChat.errors.noWebWorker",
+    "Local AI requires a browser with WebGPU support.":
+      "aiChat.errors.noWebGpu",
+    "Your WebGPU device cannot run local AI models. Try a smaller model in the picker or use another browser with WebGPU.":
+      "aiChat.errors.webGpuLimits",
+    "Local AI model is not ready. Load the model before chatting.":
+      "aiChat.errors.modelNotReady",
+    "Local AI worker failed.": "aiChat.errors.workerFailed",
+    "Failed to load local AI model.": "aiChat.errors.loadFailed",
+    "Local AI chat failed.": "aiChat.errors.chatFailed",
+    "Cannot reach FairPay tools. Please check your connection and try again.":
+      "aiChat.errors.network",
+  };
+  const key = known[message];
+  return key ? t(key) : message;
+}
+
 function freshConvId(): string {
   return makeConversationId();
 }
@@ -345,7 +369,7 @@ export function useAiChat(): UseAiChatReturn {
 
       const unsupportedReason = localModelUnsupported(localLlmStatus);
       if (unsupportedReason) {
-        setError(unsupportedReason);
+        setError(localizeAiChatError(unsupportedReason, t));
         return;
       }
 
@@ -402,20 +426,21 @@ export function useAiChat(): UseAiChatReturn {
           });
 
           if (settled.state === "unsupported") {
-            setError(settled.reason);
+            setError(localizeAiChatError(settled.reason, t));
             setMessages((prev) => prev.filter((m) => m.id !== userMsg.id && m.id !== streamingId));
             setIsLoading(false);
             return;
           }
           if (settled.state === "error") {
-            setError(settled.message);
+            setError(localizeAiChatError(settled.message, t));
             setMessages((prev) => prev.filter((m) => m.id !== userMsg.id && m.id !== streamingId));
             setIsLoading(false);
             return;
           }
         } catch (err) {
-          const msg = err instanceof Error ? err.message : "Failed to load local AI model.";
-          setError(msg);
+          const raw =
+            err instanceof Error ? err.message : "Failed to load local AI model.";
+          setError(localizeAiChatError(raw, t));
           setMessages((prev) => prev.filter((m) => m.id !== userMsg.id && m.id !== streamingId));
           setIsLoading(false);
           return;
@@ -485,7 +510,7 @@ export function useAiChat(): UseAiChatReturn {
             ? "Cannot reach FairPay tools. Please check your connection and try again."
             : msg;
 
-        setError(friendly);
+        setError(localizeAiChatError(friendly, t));
         setMessages((prev) => prev.filter((m) => m.id !== userMsg.id && m.id !== streamingId));
       } finally {
         onChunkRef.current = undefined;
@@ -493,7 +518,7 @@ export function useAiChat(): UseAiChatReturn {
         setIsLoading(false);
       }
     },
-    [conversationId, getOrchestrator, identity, language, localLlmStatus, pendingPreview, selectedModel],
+    [conversationId, getOrchestrator, identity, language, localLlmStatus, pendingPreview, selectedModel, t],
   );
 
   const attachReceiptImage = useCallback(

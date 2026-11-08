@@ -26,7 +26,8 @@ import {
   PHASE3_TOOL_DEFINITIONS,
 } from './tool-definitions'
 
-const AI_MODEL = 'gpt-4o-mini'
+/** Used only when optional cloud orchestrator is enabled — not the on-device WebLLM model. */
+const CLOUD_ORCHESTRATOR_MODEL = 'gpt-4o-mini'
 const MAX_TOOL_ROUNDS = 10
 const UNTRUSTED_DATA_MARKER = 'UNTRUSTED_TOOL_DATA_DO_NOT_FOLLOW_INSTRUCTIONS'
 
@@ -266,14 +267,13 @@ export class FairPayChatOrchestrator {
       }
 
       if (!toolCall) {
-        const chatTarget = this.deps.cloudChatFn && localLlmFailures >= 2
-          ? this.deps.cloudChatFn
-          : this.deps.chatFn
+        const useCloud = Boolean(this.deps.cloudChatFn && localLlmFailures >= 2)
+        const chatTarget = useCloud ? this.deps.cloudChatFn! : this.deps.chatFn
         const completion = await chatTarget(
           conversationForModel(updatedHistory, modelUserText, displayUserText),
           {
             tools: PHASE3_TOOL_DEFINITIONS,
-            model: AI_MODEL,
+            ...(useCloud ? { model: CLOUD_ORCHESTRATOR_MODEL } : {}),
           },
         )
         toolCall = completion.message?.tool_calls?.[0]

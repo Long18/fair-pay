@@ -213,7 +213,7 @@ describe("local LLM client", () => {
     expect(WEB_LLM_MODEL_LIST.length).toBeGreaterThanOrEqual(40);
     expect(WEB_LLM_MODEL_OPTIONS.length).toBe(WEB_LLM_MODEL_LIST.length);
 
-    expect(DEFAULT_WEB_LLM_MODEL).toBe("Llama-3.2-1B-Instruct-q4f16_1-MLC");
+    expect(DEFAULT_WEB_LLM_MODEL).toBe("Hermes-3-Llama-3.2-3B-q4f16_1-MLC");
     expect(isWebLlmModelId(DEFAULT_WEB_LLM_MODEL)).toBe(true);
     expect(isWebLlmModelId(WEB_LLM_COMPAT_MODEL)).toBe(true);
 
@@ -225,6 +225,9 @@ describe("local LLM client", () => {
     expect(ids).toContain("SmolLM2-1.7B-Instruct-q4f16_1-MLC");
     expect(ids).toContain("Qwen3-1.7B-q4f16_1-MLC");
     expect(ids).toContain("gemma3-1b-it-q4f16_1-MLC");
+    expect(ids).toContain("gemma-4-E2B-it-q4f16_1-MLC");
+    expect(ids).toContain("NeuralHermes-2.5-Mistral-7B-q4f16_1-MLC");
+    expect(ids).toContain("TinyLlama-1.1B-Chat-v0.4-q4f16_1-MLC-1k");
     expect(ids).toContain("TinyLlama-1.1B-Chat-v1.0-q4f16_1-MLC-1k");
 
     for (const model of WEB_LLM_MODEL_LIST) {

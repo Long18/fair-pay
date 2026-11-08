@@ -1,5 +1,8 @@
 import { prebuiltAppConfig, type AppConfig } from "@mlc-ai/web-llm";
 
+/** Keep in sync with `dependencies["@mlc-ai/web-llm"]` in package.json. */
+export const WEB_LLM_PACKAGE_VERSION = "0.2.87";
+
 /** Mirrors web-llm `CacheBackend` (not re-exported from the package entry). */
 type CacheBackend = NonNullable<AppConfig["cacheBackend"]>;
 

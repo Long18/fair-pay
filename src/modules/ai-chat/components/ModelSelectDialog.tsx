@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
   CheckCircleIcon,
   CheckIcon,
@@ -17,6 +18,7 @@ import {
   Loader2Icon,
   MonitorIcon,
   RefreshCwIcon,
+  SearchIcon,
   SparklesIcon,
   StarIcon,
   Trash2Icon,
@@ -32,8 +34,10 @@ import {
   type WebLlmModelEntry,
   type WebLlmModelFamily,
   type WebLlmModelId,
+  isWeakExpenseChatModel,
 } from "@/lib/local-llm/types";
 import { FAMILY_ICONS } from "@/assets/webllm-icons";
+import { WEB_LLM_PACKAGE_VERSION } from "@/lib/local-llm/webllm-app-config";
 import { cn } from "@/lib/utils";
 import { isCloudOrchestratorComingSoon } from "../orchestrator/cloud-orchestrator-client";
 
@@ -57,6 +61,16 @@ function formatVram(mb: number): string {
 /** Derive a base model key from label (strips quantization hint like "(f32)"). */
 function baseModelKey(entry: WebLlmModelEntry): string {
   return `${entry.family}::${entry.label.replace(/\s*\(.*?\)\s*$/, "").trim()}`;
+}
+
+function filterChipClass(active: boolean, withIcon = false) {
+  return cn(
+    "inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+    withIcon ? "gap-1.5" : "gap-1",
+    active
+      ? "border-transparent bg-primary text-primary-foreground shadow-none"
+      : "border-border/60 bg-background text-foreground hover:bg-accent",
+  );
 }
 
 /** Group flat model list into base models, each with quantization variants. */
@@ -97,7 +111,6 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
   const [cachedModels, setCachedModels] = useState<Set<string>>(new Set());
   const [checkingCache, setCheckingCache] = useState(false);
   const [deletingModels, setDeletingModels] = useState<Set<string>>(new Set());
-  const searchRef = useRef<HTMLInputElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const loadedModelId =
@@ -200,46 +213,32 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="flex max-w-lg flex-col gap-0 overflow-hidden p-0 sm:max-w-[620px]"
-        style={{ maxHeight: "min(92dvh, 740px)" }}
+        className={cn(
+          "flex max-h-[min(90dvh,740px)] max-w-lg flex-col gap-0 overflow-hidden",
+          "border-border/60 p-0 sm:max-w-[620px]",
+        )}
       >
-        {/* ── Header ── */}
-        <DialogHeader className="shrink-0 px-5 pt-4 pb-3">
-          <DialogTitle className="text-lg font-bold">
-            {t("aiChat.modelPicker.title")}
-          </DialogTitle>
+        {/* Medium picker width: max-w-lg mobile margin, 620px sm+ (AI model grid) */}
+        <DialogHeader className="shrink-0 space-y-0 px-5 pt-5 pb-3 pr-12">
+          <DialogTitle>{t("aiChat.modelPicker.title")}</DialogTitle>
         </DialogHeader>
 
-        {/* ── Green selected model banner ── */}
         {loadedEntry && (
-          <div className="mx-5 mb-3 flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-white shadow-sm">
-            <CheckIcon size={14} className="shrink-0" />
-            <span className="text-sm font-semibold truncate">
-              {loadedEntry.label}
-            </span>
+          <div className="mx-5 mb-3 flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-emerald-800">
+            <CheckIcon size={14} className="shrink-0 text-emerald-600" />
+            <span className="truncate text-sm font-semibold">{loadedEntry.label}</span>
           </div>
         )}
 
-        {/* ── Search ── */}
         <div className="px-5 pb-3">
           <div className="relative">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-              width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-            >
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input
-              ref={searchRef}
-              type="text"
+            <SearchIcon className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground opacity-50" />
+            <Input
+              type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t("aiChat.modelPicker.searchPlaceholder")}
-              className={cn(
-                "w-full rounded-lg border border-input bg-muted/40 pl-9 pr-3 py-2.5 text-sm",
-                "placeholder:text-muted-foreground",
-                "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 transition-colors",
-              )}
+              className="h-10 pl-9"
             />
           </div>
         </div>
@@ -250,24 +249,14 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
             <button
               type="button"
               onClick={() => setActiveFamily("Lightweight")}
-              className={cn(
-                "inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                activeFamily === "Lightweight"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-              )}
+              className={filterChipClass(activeFamily === "Lightweight")}
             >
               {t("aiChat.modelPicker.lightweight")}
             </button>
             <button
               type="button"
               onClick={() => setActiveFamily("All")}
-              className={cn(
-                "inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                activeFamily === "All"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-              )}
+              className={filterChipClass(activeFamily === "All")}
             >
               {t("aiChat.modelPicker.allModels")}
             </button>
@@ -276,12 +265,7 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
                 key={family}
                 type="button"
                 onClick={() => setActiveFamily(family)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                  activeFamily === family
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                )}
+                className={filterChipClass(activeFamily === family, true)}
               >
                 <img
                   src={FAMILY_ICONS[family]}
@@ -320,10 +304,10 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
                   data-model-key={key}
                   tabIndex={-1}
                   className={cn(
-                    "rounded-xl border transition-all outline-none",
+                    "rounded-xl border border-border/60 bg-card shadow-none outline-none transition-colors",
                     isExpanded
-                      ? "bg-primary/5 border-primary/30 ring-1 ring-primary/20 col-span-1 sm:col-span-2"
-                      : "bg-background hover:border-muted-foreground/30",
+                      ? "col-span-1 border-primary/25 bg-muted/30 sm:col-span-2"
+                      : "hover:bg-accent/40",
                   )}
                 >
                   {/* Card header — tap to expand or select if single variant */}
@@ -364,7 +348,7 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
 
                   {/* Expanded variant list */}
                   {isExpanded && (
-                    <div className="border-t px-3 py-2 space-y-1.5">
+                    <div className="space-y-1.5 border-t border-border/60 px-3 py-2">
                       {baseModel.variants.map((variant) => {
                         const isCached = cachedModels.has(variant.id);
                         const isLoaded = loadedModelId === variant.id;
@@ -376,9 +360,7 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
                             key={variant.id}
                             className={cn(
                               "flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs transition-colors",
-                              isLoaded
-                                ? "bg-emerald-50 dark:bg-emerald-950/30"
-                                : "hover:bg-accent",
+                              isLoaded ? "bg-emerald-500/10" : "hover:bg-accent/60",
                             )}
                           >
                             {/* Quantization + metadata */}
@@ -390,8 +372,13 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
                               {formatVram(variant.vramMB)}
                             </span>
                             {variant.lowResource && (
-                              <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                              <span className="rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                                 {t("aiChat.modelPicker.lowVram")}
+                              </span>
+                            )}
+                            {isWeakExpenseChatModel(variant.id) && (
+                              <span className="rounded-md border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-900 dark:text-amber-100">
+                                {t("aiChat.modelPicker.weakForExpenses")}
                               </span>
                             )}
                             <span className="inline-flex items-center gap-1 text-muted-foreground">
@@ -405,7 +392,7 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
                             {checkingCache ? (
                               <span className="h-4 w-10 animate-pulse rounded bg-muted" />
                             ) : isCached ? (
-                              <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                              <span className="inline-flex items-center gap-1 font-medium text-emerald-700">
                                 <DownloadIcon size={10} />
                                 {t("aiChat.modelPicker.onDevice")}
                               </span>
@@ -424,17 +411,17 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
                               <button
                                 type="button"
                                 onClick={() => handleSelectModel(variant.id)}
-                                className="inline-flex h-7 items-center gap-1 rounded-md border bg-background px-2 text-xs font-medium hover:bg-accent transition-colors"
+                                className="inline-flex h-7 items-center gap-1 rounded-md border border-border/60 bg-background px-2 text-xs font-medium transition-colors hover:bg-accent"
                               >
                                 {isCached ? (
                                   <>
                                     <RefreshCwIcon size={10} />
-                                    Load
+                                    {t("aiChat.modelPicker.loadModel")}
                                   </>
                                 ) : (
                                   <>
                                     <DownloadIcon size={10} />
-                                    Download
+                                    {t("aiChat.modelPicker.downloadModel")}
                                   </>
                                 )}
                               </button>
@@ -468,9 +455,9 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
         </div>
 
         {isCloudOrchestratorComingSoon() && (
-          <div className="shrink-0 border-t px-5 py-3">
+          <div className="shrink-0 border-t border-border/60 px-5 py-3">
             <div
-              className="flex items-start gap-3 rounded-xl border border-dashed bg-muted/30 px-3 py-2.5"
+              className="flex items-start gap-3 rounded-xl border border-dashed border-border/60 bg-muted/30 px-3 py-2.5 shadow-none"
               aria-disabled="true"
             >
               <SparklesIcon size={16} className="mt-0.5 shrink-0 text-muted-foreground" />
@@ -490,14 +477,19 @@ export const ModelSelectDialog = memo(function ModelSelectDialog({
         )}
 
         {/* ── Footer ── */}
-        <DialogFooter className="shrink-0 border-t px-5 py-3">
+        <DialogFooter className="shrink-0 border-t border-border/60 px-5 py-3">
           <div className="flex w-full items-center justify-between gap-2">
             <span className="text-xs text-muted-foreground">
-              {checkingCache
-                ? t("aiChat.modelPicker.checkingCache")
-                : cachedModels.size > 0
-                  ? t("aiChat.modelPicker.modelsDownloaded", { count: cachedModels.size })
-                  : t("aiChat.modelPicker.noModelsDownloaded")}
+              <span className="block">
+                {checkingCache
+                  ? t("aiChat.modelPicker.checkingCache")
+                  : cachedModels.size > 0
+                    ? t("aiChat.modelPicker.modelsDownloaded", { count: cachedModels.size })
+                    : t("aiChat.modelPicker.noModelsDownloaded")}
+              </span>
+              <span className="block text-[10px] text-muted-foreground/80">
+                {t("aiChat.modelPicker.webLlmRuntime", { version: WEB_LLM_PACKAGE_VERSION })}
+              </span>
             </span>
             <div className="flex gap-2">
               <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>

@@ -2,6 +2,7 @@ import {
   memo,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -20,7 +21,11 @@ import { LoadingStatusBubble } from "./LoadingStatusBubble";
 import { TypingIndicator } from "./TypingIndicator";
 import { useAiChatContext } from "../AiChatContext";
 
-function formatDateDivider(iso: string): string {
+function formatDateDivider(
+  iso: string,
+  labels: { today: string; yesterday: string },
+  locale?: string,
+): string {
   try {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return "";
@@ -35,9 +40,9 @@ function formatDateDivider(iso: string): string {
       d.getFullYear() === yesterday.getFullYear() &&
       d.getMonth() === yesterday.getMonth() &&
       d.getDate() === yesterday.getDate();
-    if (isToday) return "Today";
-    if (isYesterday) return "Yesterday";
-    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    if (isToday) return labels.today;
+    if (isYesterday) return labels.yesterday;
+    return d.toLocaleDateString(locale, { month: "short", day: "numeric" });
   } catch {
     return "";
   }
@@ -56,8 +61,15 @@ export const ChatThread = memo(function ChatThread({
   emptyState,
   className,
 }: ChatThreadProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { data: identity } = useGetIdentity<Profile>();
+  const dateLabels = useMemo(
+    () => ({
+      today: t("aiChat.sidebar.today"),
+      yesterday: t("aiChat.sidebar.yesterday"),
+    }),
+    [t],
+  );
   const {
     messages,
     isLoading,
@@ -118,7 +130,11 @@ export const ChatThread = memo(function ChatThread({
             const showDivider = dateKey !== prevDateKey;
 
             if (showDivider) {
-              const label = formatDateDivider(message.created_at);
+              const label = formatDateDivider(
+                message.created_at,
+                dateLabels,
+                i18n.resolvedLanguage || i18n.language,
+              );
               if (label) {
                 nodes.push(
                   <div

@@ -1,4 +1,5 @@
 import { memo, useCallback, useMemo, useState } from "react";
+import { isWeakExpenseChatModel } from "@/lib/local-llm/types";
 import { useTranslation } from "react-i18next";
 import { useGetIdentity } from "@refinedev/core";
 import { loadModel } from "@/lib/local-llm/client";
@@ -65,6 +66,11 @@ export const AiChatView = memo(function AiChatView() {
     isLoading || Boolean(pendingPreview) || localLlmStatus.state === "unsupported";
 
   const isEmpty = messages.length === 0 && !pendingPreview;
+
+  const showWeakModelWarning = useMemo(
+    () => isWeakExpenseChatModel(selectedModel),
+    [selectedModel],
+  );
 
   const pills = useMemo(
     () => [
@@ -135,40 +141,45 @@ export const AiChatView = memo(function AiChatView() {
     <div className="flex h-full min-h-0 flex-col bg-background">
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* Desktop sidebar */}
-        <div className="hidden h-full w-[280px] shrink-0 lg:block xl:w-[300px]">
+        <div className="hidden h-full w-[260px] shrink-0 lg:block xl:w-[280px]">
           <ChatSidebar {...sidebarProps} />
         </div>
 
         {/* Main pane */}
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2.5 pr-12 sm:px-4 sm:pr-14">
-            <div className="flex min-w-0 items-center gap-2">
+          <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border/60 px-3 py-2 pr-12 sm:px-4 sm:py-2.5 sm:pr-14">
+            <div className="flex min-w-0 items-center gap-2.5">
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 size="icon"
-                className="h-9 w-9 shrink-0 rounded-xl lg:hidden"
+                className="h-9 w-9 shrink-0 rounded-xl border-border/60 shadow-none lg:hidden"
                 onClick={() => {
                   tap();
                   setMobileHistoryOpen(true);
                 }}
                 aria-label={t("aiChat.chatHistory")}
               >
-                <MenuIcon size={18} />
+                <MenuIcon size={17} />
               </Button>
-              <FairPayIcon size={18} className="hidden rounded-sm sm:block shrink-0" />
+              <div
+                className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-card shadow-none sm:flex"
+                aria-hidden
+              >
+                <FairPayIcon size={18} className="rounded-sm" />
+              </div>
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold leading-tight">
+                <p className="truncate text-sm font-semibold leading-tight sm:text-[15px]">
                   {t("aiChat.title")}
                 </p>
-                <p className="truncate text-[11px] text-muted-foreground">
+                <p className="hidden truncate text-[11px] text-muted-foreground sm:block">
                   {t("aiChat.subtitle")}
                 </p>
               </div>
             </div>
 
             <div className="flex shrink-0 items-center gap-1">
-              <div className="mr-1 inline-flex rounded-full bg-muted p-[3px]">
+              <div className="mr-0.5 inline-flex rounded-xl border border-border/60 bg-muted/40 p-0.5">
                 {(["chat", "insights"] as const).map((tab) => (
                   <button
                     key={tab}
@@ -178,9 +189,9 @@ export const AiChatView = memo(function AiChatView() {
                       setActiveTab(tab);
                     }}
                     className={cn(
-                      "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-semibold transition-all",
+                      "inline-flex items-center gap-1.5 rounded-[10px] px-2.5 py-1 text-[11px] font-semibold transition-colors sm:px-3 sm:text-[12px]",
                       activeTab === tab
-                        ? "bg-background text-foreground shadow-sm"
+                        ? "bg-card text-foreground shadow-none"
                         : "text-muted-foreground hover:text-foreground",
                     )}
                     aria-current={activeTab === tab ? "page" : undefined}
@@ -221,10 +232,14 @@ export const AiChatView = memo(function AiChatView() {
                 }
               />
 
-              <div className="shrink-0 border-t bg-background/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-sm sm:px-4">
-                <div className="mx-auto max-w-3xl space-y-3">
+              <div className="shrink-0 border-t border-border/60 bg-background px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-4">
+                <div className="mx-auto w-full max-w-3xl min-w-0 space-y-3">
                   {isEmpty && (
-                    <div className="flex flex-wrap justify-center gap-2 animate-in fade-in-0 slide-in-from-bottom-1 duration-300">
+                    <div
+                      className="grid min-w-0 grid-cols-2 gap-2 animate-in fade-in-0 slide-in-from-bottom-1 duration-300"
+                      role="group"
+                      aria-label={t("aiChat.quickActionsLabel")}
+                    >
                       {pills.map((pill) => (
                         <button
                           key={pill.key}
@@ -232,14 +247,37 @@ export const AiChatView = memo(function AiChatView() {
                           onClick={() => handleSuggestion(pill.prompt)}
                           disabled={inputDisabled}
                           className={cn(
-                            "rounded-full border bg-background px-3.5 py-1.5 text-xs font-medium text-foreground",
-                            "transition-colors hover:border-primary/40 hover:bg-primary/5",
+                            "min-w-0 rounded-xl border border-border/60 bg-card px-3 py-2.5 text-left text-xs font-medium text-foreground shadow-none",
+                            "transition-colors hover:border-primary/30 hover:bg-muted/40",
                             "disabled:pointer-events-none disabled:opacity-40",
+                            pill.key === "balances" || pill.key === "expense"
+                              ? "font-semibold"
+                              : "",
                           )}
                         >
                           {pill.label}
                         </button>
                       ))}
+                    </div>
+                  )}
+                  {showWeakModelWarning && (
+                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-950 dark:text-amber-100">
+                      <p className="font-medium">{t("aiChat.weakModelWarning.title")}</p>
+                      <p className="mt-0.5 text-[11px] opacity-90">
+                        {t("aiChat.weakModelWarning.body")}
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-2 h-7 text-xs"
+                        onClick={() => {
+                          tap();
+                          setModelDialogOpen(true);
+                        }}
+                      >
+                        {t("aiChat.weakModelWarning.action")}
+                      </Button>
                     </div>
                   )}
                   <ChatInput

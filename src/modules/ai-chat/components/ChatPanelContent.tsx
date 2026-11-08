@@ -258,7 +258,7 @@ export const ChatPanelContent = memo(function ChatPanelContent({ onClear }: Chat
               className="h-8 gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground"
             >
               <ClockIcon size={13} />
-              <span>History</span>
+              <span>{t("aiChat.history")}</span>
             </Button>
             {/* New chat button — outline, always shows icon + label (ChatGPT/Claude style) */}
             <Button
@@ -270,7 +270,7 @@ export const ChatPanelContent = memo(function ChatPanelContent({ onClear }: Chat
               aria-label={t("aiChat.newChat")}
             >
               <PencilIcon size={13} />
-              <span>New chat</span>
+              <span>{t("aiChat.newChat")}</span>
             </Button>
             {/* Clear (delete current) button — icon only, destructive utility */}
             <Button
@@ -334,7 +334,7 @@ export const ChatPanelContent = memo(function ChatPanelContent({ onClear }: Chat
                     <div className="rounded-2xl border bg-muted/30 p-4 text-sm text-muted-foreground leading-relaxed">
                       {t("aiChat.welcome")}
                     </div>
-                    <p className="text-xs font-medium text-muted-foreground px-1">Suggestions</p>
+                    <p className="text-xs font-medium text-muted-foreground px-1">{t("aiChat.suggestions.label")}</p>
                     <div className="grid grid-cols-2 gap-2">
                       {suggestions.map((suggestion) => (
                         <Button
@@ -432,11 +432,11 @@ export const ChatPanelContent = memo(function ChatPanelContent({ onClear }: Chat
                 <button
                   type="button"
                   onClick={scrollToBottom}
-                  aria-label="Scroll to latest message"
+                  aria-label={t("aiChat.scrollToLatestAria")}
                   className="flex items-center gap-1.5 rounded-full border bg-background/95 px-3 py-1.5 text-xs font-medium text-foreground shadow-md backdrop-blur-sm transition-all hover:bg-accent"
                 >
                   <ArrowDownIcon size={12} />
-                  Latest
+                  {t("aiChat.scrollToLatest")}
                 </button>
               </div>
             )}
