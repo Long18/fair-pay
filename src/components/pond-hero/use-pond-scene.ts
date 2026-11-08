@@ -5,6 +5,7 @@ import {
   useState,
   type RefObject,
 } from "react";
+import { useTrackEvent } from "@/hooks/use-track-event";
 import { randomDuckLine, randomFishLine } from "./quotes";
 import { pondSound } from "./sound";
 import {
@@ -60,6 +61,7 @@ export function usePondScene({
   >([]);
   const [speech, setSpeech] = useState<{ text: string; entityIndex: number } | null>(null);
   const lastLineRef = useRef<string | undefined>(undefined);
+  const { track } = useTrackEvent();
 
   useEffect(() => {
     onRippleRef.current = onRipple;
@@ -145,13 +147,21 @@ export function usePondScene({
 
       if (feedMode) {
         dropFood(stateRef.current, nx, ny, time, (a, b, c) => onRippleRef.current(a, b, c));
+        track("dashboard_pond_interaction", {
+          interaction_type: "pond_tap",
+          feed_mode: true,
+        });
         return;
       }
       spawnDuck(stateRef.current, nx, ny, time);
       onRippleRef.current(nx, ny, 1);
       pondSound.plop(nx);
+      track("dashboard_pond_interaction", {
+        interaction_type: "pond_tap",
+        feed_mode: false,
+      });
     },
-    [containerRef, feedMode, timeRef],
+    [containerRef, feedMode, timeRef, track],
   );
 
   const onEntityClick = useCallback(

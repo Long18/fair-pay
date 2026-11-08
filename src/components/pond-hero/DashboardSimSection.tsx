@@ -1,7 +1,17 @@
-import { lazy, Suspense, useState, useSyncExternalStore, type ComponentType } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ComponentType,
+} from "react";
 import { PondFeedControl } from "./DashboardPond";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { useTrackEvent } from "@/hooks/use-track-event";
 import { PondSoundToggle } from "./PondSoundToggle";
 import { POND_SOUND_EVENT, pondSound } from "./sound";
 
@@ -61,9 +71,96 @@ function subscribeSound(cb: () => void) {
 
 export function DashboardSimSection({ className }: { className?: string }) {
   const { t } = useTranslation();
+  const { track } = useTrackEvent();
   const [mode, setMode] = useState<SimModeId>("pond");
   const [pondFeed, setPondFeed] = useState(false);
   const soundOn = useSyncExternalStore(subscribeSound, pondSound.isEnabled, () => false);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const modeRef = useRef<SimModeId>(mode);
+  const sessionStartRef = useRef(0);
+  const impressionSentRef = useRef(false);
+  const sessionEndSentRef = useRef(false);
+
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
+
+  useEffect(() => {
+    sessionStartRef.current = Date.now();
+  }, []);
+
+  const emitSessionEnd = useCallback(
+    (endReason: "hidden" | "unmount") => {
+      if (sessionEndSentRef.current) return;
+      sessionEndSentRef.current = true;
+      track("dashboard_pond_session_end", {
+        duration_ms: Date.now() - sessionStartRef.current,
+        mode: modeRef.current,
+        end_reason: endReason,
+      });
+    },
+    [track],
+  );
+
+  useEffect(() => {
+    const root = sectionRef.current;
+    if (!root) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting || impressionSentRef.current) return;
+        impressionSentRef.current = true;
+        track("dashboard_pond_impression", { mode: modeRef.current });
+      },
+      { threshold: 0.05 },
+    );
+    io.observe(root);
+    return () => io.disconnect();
+  }, [track]);
+
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        emitSessionEnd("hidden");
+        return;
+      }
+      sessionStartRef.current = Date.now();
+      sessionEndSentRef.current = false;
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      emitSessionEnd("unmount");
+    };
+  }, [emitSessionEnd]);
+
+  const selectMode = useCallback(
+    (next: SimModeId) => {
+      if (next === mode) return;
+      track("dashboard_pond_mode_changed", { from_mode: mode, to_mode: next });
+      setMode(next);
+    },
+    [mode, track],
+  );
+
+  const togglePondFeed = useCallback(() => {
+    const enabled = !pondFeed;
+    track("dashboard_pond_feed_toggled", { enabled });
+    setPondFeed(enabled);
+  }, [pondFeed, track]);
+
+  const onPondFeedChange = useCallback(
+    (enabled: boolean) => {
+      if (pondFeed === enabled) return;
+      track("dashboard_pond_feed_toggled", { enabled });
+      setPondFeed(enabled);
+    },
+    [pondFeed, track],
+  );
+
+  const toggleModeSound = useCallback(() => {
+    const enabled = pondSound.toggle();
+    track("dashboard_pond_sound_toggled", { enabled, mode });
+  }, [mode, track]);
 
   const pondHint = pondFeed
     ? t("dashboard.pond.feedMode", "Tap anywhere to feed the ducks")
@@ -76,7 +173,7 @@ export function DashboardSimSection({ className }: { className?: string }) {
   const Sim = mode === "pond" ? null : SIMS[mode];
 
   return (
-    <div className={cn("w-full", className)}>
+    <div ref={sectionRef} className={cn("w-full", className)}>
       {mode === "pond" ? (
         <p
           className={cn(
@@ -103,7 +200,7 @@ export function DashboardSimSection({ className }: { className?: string }) {
                 className="size-full"
                 hideFeedBar
                 feedMode={pondFeed}
-                onFeedModeChange={setPondFeed}
+                onFeedModeChange={onPondFeedChange}
               />
             </div>
           </Suspense>
@@ -111,10 +208,7 @@ export function DashboardSimSection({ className }: { className?: string }) {
       </div>
 
       {mode === "pond" ? (
-        <PondFeedControl
-          active={pondFeed}
-          onClick={() => setPondFeed((v) => !v)}
-        />
+        <PondFeedControl active={pondFeed} onClick={togglePondFeed} />
       ) : null}
 
       <div className="mt-4 flex flex-wrap items-center justify-center gap-2 px-1">
@@ -123,7 +217,7 @@ export function DashboardSimSection({ className }: { className?: string }) {
             <button
               type="button"
               aria-current={mode === id}
-              onClick={() => setMode(id)}
+              onClick={() => selectMode(id)}
               className={cn(
                 "rounded px-1.5 py-0.5 text-[10px] font-medium tracking-wide transition-colors sm:text-[11px]",
                 mode === id
@@ -134,7 +228,7 @@ export function DashboardSimSection({ className }: { className?: string }) {
               {t(`dashboard.pond.modes.${id}`, id)}
             </button>
             {mode === id && SOUND_MODES.has(id) ? (
-              <PondSoundToggle enabled={soundOn} onToggle={() => pondSound.toggle()} />
+              <PondSoundToggle enabled={soundOn} onToggle={toggleModeSound} />
             ) : null}
           </span>
         ))}

@@ -14,6 +14,7 @@ import { PondSoundToggle } from "./PondSoundToggle";
 import { pondSound } from "./sound";
 import { usePondTheme } from "./theme";
 import { usePondLayout } from "./use-pond-layout";
+import { trackEvent } from "@/lib/analytics/track";
 import { usePondScene } from "./use-pond-scene";
 
 export function PondFeedControl({
@@ -259,7 +260,11 @@ export function PondViewport({
           <div className="absolute right-2 top-2 z-10 sm:right-3 sm:top-3">
             <PondSoundToggle
               enabled={soundOn}
-              onToggle={() => setSoundOn(pondSound.toggle())}
+              onToggle={() => {
+                const enabled = pondSound.toggle();
+                setSoundOn(enabled);
+                trackEvent("dashboard_pond_sound_toggled", { enabled, mode: "pond" });
+              }}
             />
           </div>
         </div>

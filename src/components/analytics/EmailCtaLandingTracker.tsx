@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useIsAuthenticated } from "@refinedev/core";
 import { useLocation, useNavigate } from "react-router";
-import { analytics } from "@/lib/analytics";
+import { trackEvent } from "@/lib/analytics/track";
 import {
   emailCtaVariantForPath,
   isAuthPath,
@@ -32,10 +32,9 @@ export function EmailCtaLandingTracker() {
 
     if (!pending || isLoading || !authenticated || isAuthPath(location.pathname)) return;
 
-    analytics.track({
-      action: "email_cta_landed",
-      category: "email",
-      label: pending.src,
+    trackEvent({
+      eventName: "email_cta_landed",
+      flowName: "email",
       properties: { src: pending.src, variant: pending.variant },
     });
     savePendingEmailCtaLanding(null);

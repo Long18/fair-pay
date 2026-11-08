@@ -77,7 +77,7 @@ All parts lowercase, separated by underscores. Minimum two segments required.
 | `settings` | `bank`, `payment` | `save_submitted`, `save_success`, `save_failed` |
 | `report` | | `generated`, `exported` |
 | `auth` | `login`, `signup` | `started`, `submitted`, `success`, `failed` |
-| `dashboard` | `tab`, `balance_card`, `activity_item`, `fab` | `changed`, `clicked` |
+| `dashboard` | `tab`, `balance_card`, `activity_item`, `fab`, `pond` | `changed`, `clicked`, `impression`, `mode_changed`, `feed_toggled`, `sound_toggled`, `session_end`, `interaction` |
 | `share` | `method` | `clicked`, `selected`, `success`, `failed` |
 
 ### Examples
@@ -380,6 +380,8 @@ profile_opened
 | `settings_bank_save_submitted` | Bank settings save clicked |
 | `settings_bank_save_success` | Bank settings saved |
 | `settings_bank_save_failed` | Bank settings save failed |
+| `settings_bank_momo_save_success` | MoMo receive QR settings saved |
+| `settings_bank_momo_save_failed` | MoMo receive settings save failed |
 | `settings_payment_save_submitted` | Payment method settings saved |
 | `settings_payment_save_success` | Payment settings saved |
 | `settings_payment_save_failed` | Payment settings save failed |
@@ -389,6 +391,11 @@ profile_opened
 |-------|------|
 | `report_generated` | Report preview generated |
 | `report_exported` | Report exported (CSV/PDF) |
+
+### Email attribution
+| Event | When |
+|-------|------|
+| `email_cta_landed` | Authenticated user lands from email CTA (`?src=email_*`), once per pending session |
 
 ### Share Events
 | Event | When |
@@ -406,6 +413,108 @@ profile_opened
 | `dashboard_balance_card_clicked` | Balance row tapped |
 | `dashboard_activity_item_clicked` | Activity item tapped |
 | `dashboard_fab_clicked` | Floating action button tapped |
+
+#### Pond canvas hero (dashboard sim)
+
+Decorative canvas hero on the authenticated dashboard (`DashboardSimSection` / `pond-hero`). Names follow **`dashboard_pond_<action>`** — area `dashboard`, object `pond`, action per [`<area>_<object>_<action>`](#event-naming-convention) (same pattern as existing `dashboard_*` events in [`allowed-events.ts`](../../src/lib/journey-tracking/allowed-events.ts)).
+
+**Scope**
+- Logged-in dashboard only; not guest landing.
+- No coordinates, entity IDs, or speech text (decorative UI).
+- When `prefers-reduced-motion` is on, the pond viewport does not render — still fire **`dashboard_pond_impression`** with `reduced_motion: true` if the hero shell mounts.
+
+**Funnel (happy path)**
+```
+dashboard_pond_impression
+→ dashboard_pond_mode_changed (optional, repeat)
+→ dashboard_pond_feed_toggled | dashboard_pond_sound_toggled (optional)
+→ dashboard_pond_interaction (parameterized, repeat)
+→ dashboard_pond_session_end (leave dashboard or unload)
+```
+
+| Event | When |
+|-------|------|
+| `dashboard_pond_impression` | Pond hero enters view (e.g. IntersectionObserver ≥5% visible) once per dashboard visit |
+| `dashboard_pond_mode_changed` | User picks a mode chip (`pond`, `sheep`, `beach`, …) |
+| `dashboard_pond_feed_toggled` | Feed control on/off (pond mode only) |
+| `dashboard_pond_sound_toggled` | Ambient sound on/off (pond viewport or sound-capable sim modes) |
+| `dashboard_pond_interaction` | Canvas/sim gesture (see `action` below) |
+| `dashboard_pond_session_end` | Dashboard unmount, `visibilitychange` hidden, or idle cap after last pond event |
+
+**Mode values (`mode`, `previous_mode`)** — align with `SimModeId` in `DashboardSimSection.tsx`:
+`pond` · `sheep` · `beach` · `rocks` · `magnify` · `ocean` · `soccer` · `papaya` · `frog` · `meadow` · `bench`
+
+**Pond-specific properties** (in `properties`; common auto-fields still apply)
+
+| Property | Type | Events | Description |
+|----------|------|--------|-------------|
+| `mode` | string | all except `session_end`* | Active sim mode |
+| `previous_mode` | string | `mode_changed` | Mode before change |
+| `feed_mode` | boolean | `feed_toggled`, `interaction` | Feed mode on at time of event |
+| `sound_enabled` | boolean | `sound_toggled`, `session_end` | Global pond sound flag after toggle |
+| `reduced_motion` | boolean | `impression`, `session_end` | OS reduced-motion preference |
+| `duration_ms` | number | `session_end` | Ms from first pond funnel event this visit to session end |
+| `interaction_count` | number | `session_end` | Count of `dashboard_pond_interaction` this visit |
+| `modes_visited` | string[] | `session_end` | Distinct modes used this visit (order preserved) |
+| `action` | string | `interaction` | Interaction kind (see table below) |
+| `entity_type` | `duck` \| `fish` | `interaction` | When `action` is `entity_tap` |
+
+\* `session_end` should include `mode_at_end` (same enum as `mode`) instead of live `mode` if the user left mid-mode.
+
+**`dashboard_pond_interaction` — `action` values**
+
+| `action` | When |
+|----------|------|
+| `water_tap_spawn_duck` | Water tap while feed mode off (spawn duck + ripple) |
+| `water_tap_drop_food` | Water tap while feed mode on (pellets + ripple) |
+| `entity_tap` | Duck or fish tapped (speech bubble; no text in analytics) |
+
+Sound-capable non-pond modes (`beach`, `ocean`, `meadow`, `bench`) may reuse `dashboard_pond_interaction` later with mode-specific `action` values; until defined, track only `mode_changed` + `sound_toggled` for those modes.
+
+**Example calls** (implementation + allowlist are separate work)
+
+```typescript
+const { track } = useTrackEvent();
+
+track({
+  eventName: 'dashboard_pond_impression',
+  flowName: 'dashboard',
+  stepName: 'pond_hero',
+  properties: { mode: 'pond', reduced_motion: false },
+});
+
+track({
+  eventName: 'dashboard_pond_mode_changed',
+  flowName: 'dashboard',
+  properties: { mode: 'beach', previous_mode: 'pond' },
+});
+
+track({
+  eventName: 'dashboard_pond_interaction',
+  flowName: 'dashboard',
+  properties: {
+    mode: 'pond',
+    feed_mode: false,
+    action: 'entity_tap',
+    entity_type: 'duck',
+  },
+});
+
+track({
+  eventName: 'dashboard_pond_session_end',
+  flowName: 'dashboard',
+  properties: {
+    mode_at_end: 'pond',
+    duration_ms: 42000,
+    interaction_count: 7,
+    modes_visited: ['pond', 'beach', 'pond'],
+    sound_enabled: false,
+    reduced_motion: false,
+  },
+});
+```
+
+> **Allowlist:** These names are **not** in `ALLOWED_TRACKING_EVENT_NAMES` yet. Add them to [`allowed-events.ts`](../../src/lib/journey-tracking/allowed-events.ts) + edge mirror and ship a DB constraint migration before production traffic (see [Adding a New Event](#adding-a-new-event)).
 
 ---
 

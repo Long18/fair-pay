@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { trackEvent } from "@/lib/analytics/track";
 import { sfx } from "../audio/sfx";
 import { usePondTheme } from "../theme";
 import { SoccerDuckSvg } from "./soccer/DuckSvg";
@@ -136,6 +137,10 @@ export function SoccerSim({ className }: { className?: string }) {
     const onGoal = (team: Team) => {
       flashRef.current = 1;
       sfx.cheer();
+      trackEvent("dashboard_pond_interaction", {
+        interaction_type: "soccer_goal",
+        team,
+      });
       setShowFlash(true);
       setGoalTeam(team);
       setFlashPhase(1);

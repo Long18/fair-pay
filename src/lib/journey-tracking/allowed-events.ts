@@ -33,6 +33,8 @@ export const ALLOWED_TRACKING_EVENT_NAMES = [
   "invite_accepted",
   "settlement_completed",
   "profile_viewed_from_shared_link",
+  // Email attribution
+  "email_cta_landed",
   // Share
   "share_link_generated",
   "share_button_clicked",
@@ -109,6 +111,8 @@ export const ALLOWED_TRACKING_EVENT_NAMES = [
   "settings_bank_save_submitted",
   "settings_bank_save_success",
   "settings_bank_save_failed",
+  "settings_bank_momo_save_success",
+  "settings_bank_momo_save_failed",
   "settings_payment_save_submitted",
   "settings_payment_save_success",
   "settings_payment_save_failed",
@@ -120,6 +124,12 @@ export const ALLOWED_TRACKING_EVENT_NAMES = [
   "dashboard_balance_card_clicked",
   "dashboard_activity_item_clicked",
   "dashboard_fab_clicked",
+  "dashboard_pond_impression",
+  "dashboard_pond_mode_changed",
+  "dashboard_pond_feed_toggled",
+  "dashboard_pond_sound_toggled",
+  "dashboard_pond_session_end",
+  "dashboard_pond_interaction",
   "activity_filter_changed",
   // Onboarding
   "onboarding_checklist_viewed",
