@@ -9,6 +9,7 @@ import { SettledHistoryList } from "@/components/dashboard/activity/SettledHisto
 import { EnhancedActivityList } from "@/components/dashboard/activity/enhanced-activity";
 import { HistoryLedgerList } from "@/components/dashboard/activity/history-ledger-list";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageContent } from "@/components/ui/page-content";
 import { useAggregatedDebts } from "@/hooks/balance/use-aggregated-debts";
@@ -30,6 +31,8 @@ import { ensureScrollTrigger } from "@/lib/motion/gsap-scroll";
 import { FloatingDecoration } from "@/components/ui/floating-decoration";
 import { CoinShape, ChartLineShape, CircleShape, HexagonShape, WalletShape } from "@/components/ui/decorative-shapes";
 import { GuestLandingHero } from "@/components/landing";
+import { useIsMobile } from "@/hooks/ui/use-mobile";
+import { useDashboardParallelLoad } from "@/hooks/dashboard/use-dashboard-parallel-load";
 
 const DashboardPond = lazy(() =>
   import("@/components/pond-hero").then((m) => ({ default: m.DashboardPond })),
@@ -37,6 +40,7 @@ const DashboardPond = lazy(() =>
 
 export const Dashboard = () => {
   const { data: identity, isLoading: identityLoading } = useGetIdentity<Profile>();
+  const isMobile = useIsMobile();
   const { t } = useTranslation();
   const { tap } = useHaptics();
   const [activeTab, setActiveTab] = usePersistedState<"balances" | "activity" | "history">("dashboard-tab", "balances");
@@ -44,6 +48,25 @@ export const Dashboard = () => {
     "dashboard-history-view",
     "transactions"
   );
+  const [mobilePondEnabled, setMobilePondEnabled] = usePersistedState(
+    "dashboard-mobile-pond-enabled",
+    false,
+  );
+  const [loading, setLoading] = useState(true);
+  const visibilityDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastRefetchTimeRef = useRef<number>(0);
+
+  const showDashboardPond = !isMobile || mobilePondEnabled;
+
+  const { historyPrefetchReady } = useDashboardParallelLoad({
+    userId: identity?.id,
+    isMobile,
+  });
+
+  useEffect(() => {
+    if (!showDashboardPond || !isMobile) return;
+    void import("@/components/pond-hero");
+  }, [showDashboardPond, isMobile]);
 
   const tabOrder = ["balances", "activity", "history"] as const;
   const currentIndex = tabOrder.indexOf(activeTab);
@@ -62,23 +85,23 @@ export const Dashboard = () => {
   });
 
   // History debts (only fetched when history tab is active and user is authenticated)
+  const historyDataEnabled =
+    !!identity?.id && (activeTab === "history" || historyPrefetchReady);
+
   const { data: historyDebts = [], isLoading: historyLoading } = useAggregatedDebts({
-    includeHistory: activeTab === "history",
-    enabled: !!identity?.id && activeTab === "history",
+    includeHistory: true,
+    enabled: historyDataEnabled,
   });
 
+  // Load recent activity in parallel with balances (same mount) so tab badges and Activity tab are ready.
   const {
     activities,
     isLoading: activitiesLoading
-  } = useEnhancedActivity({ limit: 50, enabled: !!identity?.id && activeTab === "activity" });
+  } = useEnhancedActivity({ limit: 50, enabled: !!identity?.id });
   const {
     activities: historyActivities,
     isLoading: historyActivitiesLoading,
-  } = useEnhancedActivity({ limit: "all", enabled: !!identity?.id && activeTab === "history" });
-
-  const [loading, setLoading] = useState(true);
-  const visibilityDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastRefetchTimeRef = useRef<number>(0);
+  } = useEnhancedActivity({ limit: "all", enabled: historyDataEnabled });
 
   // Refetch data when component mounts or becomes visible (with debounce and stale time check)
   useEffect(() => {
@@ -130,13 +153,13 @@ export const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || debtsLoading || activitiesLoading) return;
     ensureScrollTrigger();
     const id = requestAnimationFrame(() => {
       ScrollTrigger.refresh();
     });
     return () => cancelAnimationFrame(id);
-  }, [loading, activeTab]);
+  }, [loading, activeTab, debtsLoading, activitiesLoading]);
 
   useEffect(() => {
     if (!debtsLoading && identity?.id && debts.length > 0) {
@@ -298,9 +321,32 @@ export const Dashboard = () => {
                         />
                       </section>
                       </ScrollRevealStack>
-                      <Suspense fallback={null}>
-                        <DashboardPond className="mt-8 border-t border-border/40 pt-8 md:mt-10 md:pt-10" />
-                      </Suspense>
+                      {showDashboardPond ? (
+                        <Suspense fallback={null}>
+                          <DashboardPond className="mt-8 border-t border-border/40 pt-8 md:mt-10 md:pt-10" />
+                        </Suspense>
+                      ) : isMobile ? (
+                        <div className="mt-8 border-t border-border/40 pt-8 text-center">
+                          <p className="mb-3 text-xs text-muted-foreground px-4">
+                            {t(
+                              "dashboard.pond.mobileOptInHint",
+                              "Hiệu ứng ao vịt dùng GPU — bật nếu máy bạn ổn định.",
+                            )}
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="min-h-10"
+                            onClick={() => {
+                              tap();
+                              setMobilePondEnabled(true);
+                            }}
+                          >
+                            {t("dashboard.pond.mobileOptInCta", "Bật hiệu ứng ao")}
+                          </Button>
+                        </div>
+                      ) : null}
                     </div>
                   )}
 

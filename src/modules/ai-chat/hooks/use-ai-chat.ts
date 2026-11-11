@@ -98,6 +98,32 @@ function localModelUnsupported(status: LocalLlmStatus): string | null {
   return null;
 }
 
+let cachedLocalModelWarmupScheduled = false;
+
+/**
+ * Pre-load a cached WebLLM weights bundle. Only call when the user opens chat —
+ * not on every dashboard visit (GPU RAM + pond WebGL already compete on "/").
+ */
+export function scheduleCachedLocalLlmWarmup(): void {
+  if (cachedLocalModelWarmupScheduled) return;
+  cachedLocalModelWarmupScheduled = true;
+
+  const warmup = () => {
+    const s = getLocalLlmStatus();
+    if (s.state !== "idle") return;
+    void checkModelCached(s.model).then((cached) => {
+      if (cached) void loadModel(s.model);
+    });
+  };
+
+  if (typeof requestIdleCallback !== "undefined") {
+    requestIdleCallback(warmup, { timeout: 4_000 });
+    return;
+  }
+
+  window.setTimeout(warmup, 150);
+}
+
 /** Map worker / client English errors to localized copy when we have a known key. */
 function localizeAiChatError(
   message: string,
@@ -211,26 +237,6 @@ export function useAiChat(): UseAiChatReturn {
       }),
     [],
   );
-
-  // Auto-load the selected model on mount if it's already cached on this device
-  useEffect(() => {
-    const s = getLocalLlmStatus();
-    if (s.state !== "idle") return;
-
-    const warmup = () => {
-      void checkModelCached(s.model).then((cached) => {
-        if (cached) void loadModel(s.model);
-      });
-    };
-
-    if (typeof requestIdleCallback !== "undefined") {
-      const idleId = requestIdleCallback(warmup, { timeout: 4_000 });
-      return () => cancelIdleCallback(idleId);
-    }
-
-    const timeoutId = window.setTimeout(warmup, 150);
-    return () => window.clearTimeout(timeoutId);
-  }, []);
 
   // ── Persist store whenever messages or store changes ───────────────────────
   const storeRef = useRef(store);

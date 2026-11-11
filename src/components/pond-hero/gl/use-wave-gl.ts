@@ -19,8 +19,14 @@ function compileShader(gl: WebGLRenderingContext, type: number, source: string) 
 
 function resizeCanvasToDisplaySize(canvas: HTMLCanvasElement) {
   const rect = canvas.getBoundingClientRect();
-  canvas.width = Math.round(rect.width);
-  canvas.height = Math.round(rect.height);
+  const isNarrow =
+    typeof window !== "undefined" && window.innerWidth < 768;
+  const dpr = Math.min(
+    typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1,
+    isNarrow ? 1.25 : 2,
+  );
+  canvas.width = Math.max(1, Math.round(rect.width * dpr));
+  canvas.height = Math.max(1, Math.round(rect.height * dpr));
 }
 
 export function useWaveGL(

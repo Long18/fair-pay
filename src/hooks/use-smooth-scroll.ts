@@ -8,7 +8,9 @@ export function useSmoothScroll() {
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReducedMotion) return;
+    const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+    // Phones: native scroll only — Lenis + GSAP ticker fights iOS/Android compositor and adds cost.
+    if (prefersReducedMotion || coarsePointer) return;
 
     const lenis = new Lenis({
       lerp: 0.08,

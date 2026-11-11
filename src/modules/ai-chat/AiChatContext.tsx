@@ -12,7 +12,7 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
-import { useAiChat } from "./hooks/use-ai-chat";
+import { scheduleCachedLocalLlmWarmup, useAiChat } from "./hooks/use-ai-chat";
 import { journeyTracking } from "@/lib/journey-tracking";
 
 type AiChatCtx = ReturnType<typeof useAiChat> & {
@@ -47,6 +47,7 @@ export function AiChatProvider({ children }: { children: ReactNode }) {
   }, [chat.isLoading, chat.messages.length]);
 
   const openChat = useCallback(() => {
+    scheduleCachedLocalLlmWarmup();
     journeyTracking.trackEvent({
       event_name: "ai_chat_opened",
       event_category: "ai_chat",

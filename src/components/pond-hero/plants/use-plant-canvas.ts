@@ -45,7 +45,7 @@ export function usePlantCanvas(
 
     const tick = () => {
       if (!visibleRef.current) {
-        rafRef.current = requestAnimationFrame(tick);
+        rafRef.current = 0;
         return;
       }
       if (clustersRef.current.length === 0 && innerSizeRef.current) layout();
