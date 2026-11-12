@@ -90,6 +90,7 @@ const DonationSettings = lazy(() => import("./pages/settings/donation"));
 const BankSettings = lazy(() => import("./pages/settings/bank"));
 const MomoReceiveSettings = lazy(() => import("./pages/settings/momo"));
 const SepaySettings = lazy(() => import("./pages/settings/sepay"));
+const Pay2SSettings = lazy(() => import("./pages/settings/pay2s"));
 const DonationWidget = lazy(() => import("./components/donation-widget").then(m => ({ default: m.DonationWidget })));
 // Onboarding module - lazy loaded (only needed on first visit)
 const OnboardingProvider = lazy(() => import("./modules/onboarding").then(m => ({ default: m.OnboardingProvider })));
@@ -622,6 +623,11 @@ function App() {
                     <Route path="/settings/sepay" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <SepaySettings />
+                      </Suspense>
+                    } />
+                    <Route path="/settings/pay2s" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <Pay2SSettings />
                       </Suspense>
                     } />
                     <Route path="/profile/edit" element={

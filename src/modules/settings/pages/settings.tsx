@@ -10,7 +10,7 @@ import { PageContent } from '@/components/ui/page-content';
 import { PageHeader } from '@/components/ui/page-header';
 import { useUserSettings } from '../hooks/use-user-settings';
 import { DisplaySettingsForm, NotificationSettingsForm, PrivacySettingsForm } from '../components';
-import { SettingsIcon, BellIcon, LockIcon, RotateCcwIcon, QrCodeIcon } from "@/components/ui/icons";
+import { SettingsIcon, BellIcon, LockIcon, RotateCcwIcon, QrCodeIcon, LinkIcon } from "@/components/ui/icons";
 import { useTranslation } from 'react-i18next';
 import { ReminderSettingsComponent } from '@/components/settings/reminder-settings';
 import { useOnboarding } from '@/modules/onboarding';
@@ -135,6 +135,34 @@ export function SettingsPage() {
               >
                 <QrCodeIcon className="h-4 w-4" />
                 {t('settings.momoReceive.configure', 'Configure MoMo')}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className={SETTINGS_CARD}>
+            <CardHeader>
+              <CardTitle>{t('settings.pay2s.title', 'Pay2S bank sync')}</CardTitle>
+              <CardDescription>
+                {t(
+                  'settings.pay2s.settingsLinkDescription',
+                  'Optionally link Pay2S so FairPay can spot incoming transfers and suggest matches.'
+                )}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  tap();
+                  go({ to: '/settings/pay2s' });
+                }}
+                data-track-id="settings:pay2s"
+                data-track-event="nav_click"
+                data-track-type="button"
+                data-track-category="settings"
+              >
+                <LinkIcon className="h-4 w-4" />
+                {t('settings.pay2s.configure', 'Configure Pay2S')}
               </Button>
             </CardContent>
           </Card>

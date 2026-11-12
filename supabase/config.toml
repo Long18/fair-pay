@@ -172,6 +172,21 @@ verify_jwt = true
 # Polar Standard Webhooks signature; no Supabase JWT.
 verify_jwt = false
 
+[functions.pay2s-oauth-start]
+# Authenticated; returns the Pay2S authorize URL (state + PKCE stored server-side).
+verify_jwt = true
+
+[functions.pay2s-oauth-callback]
+# Browser redirect from Pay2S; user is identified by the one-time state only.
+verify_jwt = false
+
+[functions.pay2s-webhook]
+# Pay2S HMAC (X-Pay2S-Signature); no Supabase JWT.
+verify_jwt = false
+
+[functions.pay2s-disconnect]
+verify_jwt = true
+
 [auth]
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used

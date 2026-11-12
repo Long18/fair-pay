@@ -103,6 +103,7 @@ pnpm type-check
 
 ## Related docs
 
+- [`docs/pay2s-oauth.md`](./pay2s-oauth.md) — optional Pay2S OAuth bank sync (suggested matches only)
 - [`AGENTS.md`](../AGENTS.md) — agent runbook and guardrails
 - [`.mcp.README.md`](../.mcp.README.md) — MCP vs local DB
 - [`docs/baseline-drift-process.md`](./baseline-drift-process.md) — baseline vs migrations

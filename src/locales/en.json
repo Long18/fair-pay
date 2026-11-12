@@ -1154,6 +1154,53 @@
     "1weekBefore": "1 week before",
     "2weeksBefore": "2 weeks before",
     "3daysBefore": "3 days before",
+    "pay2s": {
+      "title": "Pay2S bank sync",
+      "description": "Optional. Link Pay2S so FairPay can see incoming transfers and suggest which debt they pay. You always confirm payments yourself.",
+      "settingsLinkDescription": "Optionally link Pay2S so FairPay can spot incoming transfers and suggest matches.",
+      "configure": "Configure Pay2S",
+      "connect": "Connect Pay2S",
+      "connecting": "Redirecting…",
+      "reconnect": "Reconnect",
+      "disconnect": "Disconnect",
+      "scopeNote": "FairPay only reads your selected bank account and its transactions. It cannot move money. You can disconnect anytime, here or at pay2s.vn.",
+      "connectedAt": "Connected",
+      "lastEvent": "Last transaction",
+      "expiringSoon_one": "Your Pay2S connection expires in {{count}} day. Reconnect to keep syncing.",
+      "expiringSoon_other": "Your Pay2S connection expires in {{count}} days. Reconnect to keep syncing.",
+      "needsReconnect": "This connection is no longer valid. Reconnect to resume syncing.",
+      "recentTitle": "Recent transactions",
+      "recentDescription": "Suggested matches must be confirmed in the debt/payment screens.",
+      "noTransactions": "No transactions yet.",
+      "suggested": "Matches a payment request",
+      "dismiss": "Dismiss",
+      "connectionStatus": {
+        "active": "Connected",
+        "expired": "Expired",
+        "revoked": "Disconnected",
+        "error": "Error"
+      },
+      "errors": {
+        "load_failed": "Could not load your Pay2S connection.",
+        "connect_failed": "Could not start the Pay2S connection. Pay2S may not be configured yet.",
+        "disconnect_failed": "Could not disconnect. Please try again.",
+        "dismiss_failed": "Could not dismiss this transaction."
+      },
+      "status": {
+        "connected": "Pay2S connected.",
+        "denied": "You declined access on Pay2S.",
+        "invalid_request": "The Pay2S response was incomplete. Please try again.",
+        "invalid_state": "This connection attempt expired. Please start again.",
+        "invalid_issuer": "The Pay2S response could not be verified.",
+        "no_bank": "No bank account was shared. Select a bank on Pay2S and try again.",
+        "app_not_approved": "FairPay is not approved by Pay2S for your account yet.",
+        "personal_app_owner_only": "This Pay2S app is limited to its owner's account.",
+        "active_plan_required": "Your Pay2S account needs an active plan to use this feature.",
+        "invalid_grant": "Pay2S rejected the authorization. Please try again.",
+        "webhook_secret_missing": "Could not finish setting up transaction alerts. Please reconnect.",
+        "error": "Could not connect Pay2S. Please try again."
+      }
+    },
     "momoReceive": {
       "configure": "Configure MoMo",
       "openSettings": "Go to MoMo settings",

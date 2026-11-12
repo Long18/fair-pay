@@ -1154,6 +1154,52 @@
     "1weekBefore": "Trước 1 tuần",
     "2weeksBefore": "Trước 2 tuần",
     "3daysBefore": "Trước 3 ngày",
+    "pay2s": {
+      "title": "Đồng bộ ngân hàng Pay2S",
+      "description": "Tùy chọn. Liên kết Pay2S để FairPay thấy tiền chuyển đến và gợi ý khoản nợ tương ứng. Bạn luôn là người xác nhận thanh toán.",
+      "settingsLinkDescription": "Liên kết Pay2S (tùy chọn) để FairPay nhận biết tiền chuyển đến và gợi ý đối soát.",
+      "configure": "Cấu hình Pay2S",
+      "connect": "Kết nối Pay2S",
+      "connecting": "Đang chuyển hướng…",
+      "reconnect": "Kết nối lại",
+      "disconnect": "Ngắt kết nối",
+      "scopeNote": "FairPay chỉ đọc tài khoản ngân hàng bạn chọn và giao dịch của tài khoản đó, không thể chuyển tiền. Bạn có thể ngắt kết nối bất cứ lúc nào, tại đây hoặc ở pay2s.vn.",
+      "connectedAt": "Đã kết nối",
+      "lastEvent": "Giao dịch gần nhất",
+      "expiringSoon_other": "Kết nối Pay2S sẽ hết hạn sau {{count}} ngày. Hãy kết nối lại để tiếp tục đồng bộ.",
+      "needsReconnect": "Kết nối này không còn hợp lệ. Hãy kết nối lại để tiếp tục đồng bộ.",
+      "recentTitle": "Giao dịch gần đây",
+      "recentDescription": "Các gợi ý đối soát cần được xác nhận ở màn hình nợ/thanh toán.",
+      "noTransactions": "Chưa có giao dịch.",
+      "suggested": "Khớp một yêu cầu thanh toán",
+      "dismiss": "Bỏ qua",
+      "connectionStatus": {
+        "active": "Đã kết nối",
+        "expired": "Hết hạn",
+        "revoked": "Đã ngắt kết nối",
+        "error": "Lỗi"
+      },
+      "errors": {
+        "load_failed": "Không tải được kết nối Pay2S.",
+        "connect_failed": "Không thể bắt đầu kết nối Pay2S. Có thể Pay2S chưa được cấu hình.",
+        "disconnect_failed": "Không thể ngắt kết nối. Vui lòng thử lại.",
+        "dismiss_failed": "Không thể bỏ qua giao dịch này."
+      },
+      "status": {
+        "connected": "Đã kết nối Pay2S.",
+        "denied": "Bạn đã từ chối cấp quyền trên Pay2S.",
+        "invalid_request": "Phản hồi từ Pay2S chưa đầy đủ. Vui lòng thử lại.",
+        "invalid_state": "Phiên kết nối đã hết hạn. Vui lòng bắt đầu lại.",
+        "invalid_issuer": "Không xác minh được phản hồi từ Pay2S.",
+        "no_bank": "Chưa chia sẻ tài khoản ngân hàng nào. Hãy chọn ngân hàng trên Pay2S rồi thử lại.",
+        "app_not_approved": "FairPay chưa được Pay2S duyệt cho tài khoản của bạn.",
+        "personal_app_owner_only": "Ứng dụng Pay2S này chỉ dùng được với tài khoản của chủ ứng dụng.",
+        "active_plan_required": "Tài khoản Pay2S cần có gói đang hoạt động để dùng tính năng này.",
+        "invalid_grant": "Pay2S từ chối yêu cầu cấp quyền. Vui lòng thử lại.",
+        "webhook_secret_missing": "Chưa thiết lập xong thông báo giao dịch. Vui lòng kết nối lại.",
+        "error": "Không thể kết nối Pay2S. Vui lòng thử lại."
+      }
+    },
     "momoReceive": {
       "configure": "Cấu hình MoMo",
       "openSettings": "Đến cài đặt MoMo",
